@@ -1380,10 +1380,46 @@ artifact-specific evidence.
 - Both migration branches contain their current integration bases and pass
   `git diff --check`.
 
-Current merge readiness is therefore **not ready** until:
+## Reconciliation evidence (2026-08-16)
 
-- Release A is isolated, reviewed, tested, and deployed as the explicit
-  transition Runtime;
-- Release B reconciles current App operational changes and passes against the
-  deployed Release A artifact;
-- Release C removes the compatibility bridge and passes the post-cutover gate.
+The staged branches now provide current source-readiness evidence while keeping
+deployment ordering explicit:
+
+- Release A is isolated at Runtime commit `ca172fcc`; complete Runtime CI
+  passes, the branch is clean, and exact-artifact verification is a required
+  gate. It has not yet been deployed.
+- The operational App recovery source is preserved by commits `ff43b06053` and
+  `ebdb976d7a` on a separate snapshot branch. Release B semantically ports the
+  valid behavior instead of restoring the legacy declaration or SDK boundary.
+- The deployed transition SDK artifact
+  `sdk-bb0cb08a4900ea8cb1c2af94ac76d1486adb8b9a` has tree SHA-256
+  `afc424fc18b839ae15221ea89671d5342279e9b6bbd6a856e22a40c908f212f1`.
+  The real Runtime loader bundles and loads all seven canonical Apps against
+  those exact bytes with zero legacy declarations.
+- Complete local checks pass for AKS (657 tests plus two workflow-input tests),
+  Evaluation (61), Gym (77), Scout (54), May conversation (5), and May-agent
+  platform (6). The canary worker is covered by exact Runtime loading and the
+  Evaluation App canary contract.
+- The Apps integrity gate reports zero production or test imports of
+  `@may-agent/sdk/legacy` and zero `defineProjectApp` declarations.
+
+Operational reconciliation intentionally does not copy three obsolete legacy
+mechanisms:
+
+- task-action validation remains pure; it does not append a preflight ledger
+  while deciding whether an action is valid;
+- approval verification does not fall back to host-private App/project paths,
+  and Evaluation requires exact public event or artifact identities for every
+  non-ok finding;
+- the workspace-integrity observer does not read host-private task state or a
+  removed preflight ledger. A more precise active-workspace classification must
+  wait for a bounded host-provided claim snapshot; until then the existing
+  conservative `task/*` classification remains unchanged.
+
+Current rollout readiness is therefore:
+
+- Release A: source-complete and reviewable, deployment pending;
+- Release B: semantically reconciled and source-verified, final merge commit
+  and post-Release-A deployment canary pending;
+- Release C: intentionally pending until Release B reports zero legacy use in
+  production for the agreed canary window.

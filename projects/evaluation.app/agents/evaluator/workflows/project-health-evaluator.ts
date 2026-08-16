@@ -288,10 +288,15 @@ export function projectHealthJudgmentFromExecution(
       : candidate;
   const verification = strings(raw.verification);
   const observations = record(raw.observations ?? candidate.observations);
+  const affectedArtifacts = strings(
+    raw.affectedArtifacts ?? raw.affected_artifacts,
+  );
+  const verdict = text(raw.verdict);
   const complete = Boolean(
-    VERDICTS.has(text(raw.verdict)) &&
+    VERDICTS.has(verdict) &&
     text(raw.mainConcern ?? raw.main_concern) &&
     Array.isArray(raw.affectedArtifacts ?? raw.affected_artifacts) &&
+    (verdict === "ok" || affectedArtifacts.length > 0) &&
     text(raw.recommendedChange ?? raw.recommended_change) &&
     verification.length > 0 &&
     HUMAN_REQUESTS.has(
@@ -573,6 +578,8 @@ Return through finish() with result exactly shaped as:
 }
 
 Set notify=true only when requestedHumanAction is decide, approve, or provide-input and the human decision is genuinely required now. The target already has an App owner, so never request assign-owner. If evidence is unavailable or contradictory, return watch with the exact missing proof and no human notification.
+
+Every non-ok judgment must name at least one exact public affected artifact. For approval-delivery concerns, cite the exact public event ID as \`event:<id>#project.approval.requested#approvalId=<id>\` (and any later delivery or superseding event), not an empty artifact list, a generic stale-escalation claim, or a host-private \`.state\` ledger path. A non-ok judgment without an exact named artifact is incomplete and will be rejected rather than routed to the target owner.
 
 Exact wake fact:
 \`\`\`json

@@ -13,6 +13,8 @@ import {
   admissionReportRequiresStandaloneVerification,
   advancedCampaignRepairPullRequest,
   alignCleanRepairWorkspace,
+  alreadyRepairedTestIssueEvidence,
+  alreadyRepairedTestIssueProblem,
   boundedChangedFileEvidence,
   boundedEvidence,
   canonicalTaskPullRequest,
@@ -21,6 +23,7 @@ import {
   campaignRepairReplayObservation,
   campaignRepairReady,
   changedFilesMayAffectSpec,
+  currentObservationShowsNoRepairNeeded,
   currentRecoveryBaselineRunId,
   execute,
   failureInvestigationClassificationGuidance,
@@ -784,6 +787,261 @@ ${JSON.stringify({
         "meaningfully-revised-head",
       ),
     ).toBeNull();
+  });
+
+  test("accepts the s_1786668330691_4 already-repaired shared-fixture shape without changing HEAD", async () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-already-fixed-"),
+    );
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      writeFileSync(
+        join(root, "fixture.ts"),
+        "// AgentPoolsWithEmptySubnetError fixed\n",
+      );
+      git(root, "add", "fixture.ts");
+      git(root, "commit", "-m", "fix shared fixture subnet request");
+      const headCommit = git(root, "rev-parse", "HEAD");
+      const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "1786668330691",
+    failureFingerprint: "AgentPoolsWithEmptySubnetError",
+    status: "pass",
+    category: "none",
+  },
+})}
+`)!;
+      expect(currentObservationShowsNoRepairNeeded(input)).toBe(true);
+      let attempts = 0;
+      const decision = {
+        classification: "test_issue" as const,
+        repairNecessity: "already_repaired" as const,
+        summary:
+          "Historical shared-fixture AgentPoolsWithEmptySubnetError is already repaired.",
+        evidence: ["historical-session:s_1786668330691_4"],
+        changedFiles: [],
+        fixProvenance: ["commit:fixture-fix;defect:empty-subnet-agent-pool"],
+        currentEquivalentSourceEvidence: [
+          "fixture.ts now omits the invalid empty-subnet agent-pool request",
+        ],
+        exactCurrentSourcePassingProof: {
+          pipelineRunId: "1786668330691",
+          sourceBranch: "refs/heads/main",
+          sourceCommit: headCommit,
+          status: "pass",
+        },
+      };
+      const ctx = workflowContext({
+        runAgent: async () => {
+          attempts += 1;
+          return { status: "success", structuredResult: decision };
+        },
+      });
+
+      const outcome = await runFailureInvestigation(ctx, input, {
+        workspaceDir: root,
+        prompt:
+          "Classify historical root cause separately from repair necessity.",
+        headCommit,
+      });
+      expect(attempts).toBe(1);
+      expect(outcome).toMatchObject({
+        kind: "decision",
+        nextCommit: headCommit,
+        decision: { repairNecessity: "already_repaired", changedFiles: [] },
+      });
+      expect(alreadyRepairedTestIssueProblem(decision, headCommit)).toBeNull();
+      expect(alreadyRepairedTestIssueEvidence(decision)).toEqual(
+        expect.arrayContaining([
+          "classification:test_issue",
+          "repair-necessity:already_repaired",
+          "source-change-file-count:0",
+          "publication-disposition:not_applicable:already_repaired",
+          `exact-current-source-pass:pipeline-run=1786668330691;sourceBranch=refs/heads/main;sourceCommit=${headCommit};status=pass`,
+        ]),
+      );
+      expect(git(root, "rev-parse", "HEAD")).toBe(headCommit);
+      expect(git(root, "status", "--porcelain=v1")).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("converges the accepted already-repaired path without publication or an empty commit", async () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-already-fixed-execute-"),
+    );
+    const remote = join(root, "remote.git");
+    const repoDir = join(root, "repo");
+    const workspaceDir = join(root, "workspace");
+    const appDir = join(root, "app");
+    try {
+      git(root, "init", "--bare", remote);
+      git(root, "init", repoDir);
+      git(repoDir, "config", "user.name", "Repair Test");
+      git(repoDir, "config", "user.email", "repair@example.test");
+      writeFileSync(
+        join(repoDir, "fixture.ts"),
+        "// no empty subnet agent pool\n",
+      );
+      git(repoDir, "add", "fixture.ts");
+      git(repoDir, "commit", "-m", "repair shared fixture");
+      git(repoDir, "branch", "-M", "main");
+      git(repoDir, "remote", "add", "origin", remote);
+      git(repoDir, "push", "-u", "origin", "main");
+      git(remote, "symbolic-ref", "HEAD", "refs/heads/main");
+      git(root, "clone", remote, workspaceDir);
+      git(workspaceDir, "checkout", "-b", "task/already-repaired");
+      mkdirSync(appDir, { recursive: true });
+      const headCommit = git(workspaceDir, "rev-parse", "HEAD");
+      let dispatchCount = 0;
+      const ctx = workflowContext({
+        appDir,
+        projectDir: repoDir,
+        workspaceDir,
+        task: `## Reconciliation Task\n${JSON.stringify({
+          taskId: "domain/master-validation-failure/spec.example/fp",
+          generation: 1,
+          input: {
+            specId: "spec.example",
+            pipelineRunId: "1786668330691",
+            failureFingerprint: "AgentPoolsWithEmptySubnetError",
+            sourceBranch: "refs/heads/main",
+            sourceCommit: headCommit,
+            status: "pass",
+            category: "none",
+            reason:
+              "Historical shared-fixture AgentPoolsWithEmptySubnetError; current exact main passes.",
+          },
+          children: { live: [], completed: [] },
+        })}`,
+        runAgent: async (_agent: unknown, prompt: string) => {
+          expect(prompt).toContain(
+            "Do not manufacture a duplicate source change",
+          );
+          expect(prompt).not.toContain("make the smallest source fix");
+          return {
+            status: "success",
+            structuredResult: {
+              classification: "test_issue",
+              repairNecessity: "already_repaired",
+              summary: "Historical fixture defect is already repaired.",
+              evidence: ["historical-session:s_1786668330691_4"],
+              changedFiles: [],
+              fixProvenance: ["commit:shared-fixture-repair"],
+              currentEquivalentSourceEvidence: [
+                "fixture.ts omits the invalid empty-subnet agent pool",
+              ],
+              exactCurrentSourcePassingProof: {
+                pipelineRunId: "1786668330691",
+                sourceBranch: "refs/heads/main",
+                sourceCommit: headCommit,
+                status: "pass",
+              },
+            },
+          };
+        },
+        dispatchEvent: () => {
+          dispatchCount += 1;
+        },
+      });
+
+      expect(await execute(ctx)).toMatchObject({
+        status: "done",
+        output: {
+          state: "converged",
+          evidence: expect.arrayContaining([
+            "classification:test_issue",
+            "repair-necessity:already_repaired",
+            "source-change-file-count:0",
+            "publication-disposition:not_applicable:already_repaired",
+          ]),
+          actions: [],
+        },
+      });
+      expect(dispatchCount).toBe(0);
+      expect(git(workspaceDir, "rev-parse", "HEAD")).toBe(headCommit);
+      expect(git(workspaceDir, "status", "--porcelain=v1")).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects insufficient unchanged-HEAD already-repaired claims without demanding a duplicate fix", async () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-already-fixed-reject-"),
+    );
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      git(root, "commit", "--allow-empty", "-m", "current main");
+      const headCommit = git(root, "rev-parse", "HEAD");
+      const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "1786668330691",
+    failureFingerprint: "AgentPoolsWithEmptySubnetError",
+    status: "pass",
+    category: "none",
+  },
+})}
+`)!;
+      const prompts: string[] = [];
+      const ctx = workflowContext({
+        runAgent: async (_agent: unknown, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "success",
+            structuredResult: {
+              classification: "test_issue",
+              repairNecessity: "already_repaired",
+              summary: "It passes now.",
+              evidence: ["current-status:pass"],
+              changedFiles: [],
+              fixProvenance: [],
+              currentEquivalentSourceEvidence: [],
+            },
+          };
+        },
+      });
+
+      const outcome = await runFailureInvestigation(ctx, input, {
+        workspaceDir: root,
+        prompt: "Review current pass/none observation.",
+        headCommit,
+      });
+      expect(prompts).toHaveLength(2);
+      expect(prompts[1]).toContain(
+        "unchanged-HEAD already_repaired claim is insufficient",
+      );
+      expect(prompts[1]).toContain("Do not create a duplicate fix");
+      expect(outcome).toMatchObject({
+        kind: "blocked",
+        result: {
+          evidence: {
+            evidence: expect.arrayContaining([
+              "repair-necessity:already_repaired",
+              "already-repaired-proof-rejected:already-repaired decision lacks fix provenance",
+              `unchanged-head:${headCommit}`,
+            ]),
+          },
+        },
+      });
+      expect(git(root, "rev-parse", "HEAD")).toBe(headCommit);
+      expect(git(root, "status", "--porcelain=v1")).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("retries a test-issue classification once and blocks instead of falsely converging without a fix", async () => {

@@ -1,6 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import {
+  acquireCanonicalMutationLease,
+  requiredMutationHolder,
+} from "./lib/canonical-mutation-lease.ts";
 
 function git(
   cwd: string,
@@ -37,6 +41,21 @@ const outputPath = join(
   appDir,
   "evidence/ops/task-workspace-canonical-restoration-20260721.json",
 );
+const lease = acquireCanonicalMutationLease({
+  projectId: "aks-rp-e2e",
+  canonicalPath: repoDir,
+  holder: requiredMutationHolder(),
+  checkpointPath: join(appDir, ".state/checkpoints/canonical-mutations.jsonl"),
+  fingerprint: () => ({
+    head: git(repoDir, ["rev-parse", "HEAD"], true).stdout,
+    indexAndWorktree: git(
+      repoDir,
+      ["status", "--porcelain=v1", "--untracked-files=all"],
+      true,
+    ).stdout,
+  }),
+});
+process.on("exit", () => lease.release());
 const taskState = JSON.parse(
   readFileSync(join(appDir, ".state/tasks/state.json"), "utf8"),
 );
@@ -66,15 +85,20 @@ if (!beforeStatus)
   );
 
 const workspacePath = join(repoDir, "workspace");
-if (existsSync(workspacePath)) renameSync(workspacePath, scratchPath);
+if (existsSync(workspacePath))
+  lease.mutate("move canonical scratch workspace", () =>
+    renameSync(workspacePath, scratchPath),
+  );
 
-git(repoDir, [
-  "stash",
-  "push",
-  "--include-untracked",
-  "-m",
-  "task-workspace-root-quarantine-20260721",
-]);
+lease.mutate("stash canonical dirty bytes", () =>
+  git(repoDir, [
+    "stash",
+    "push",
+    "--include-untracked",
+    "-m",
+    "task-workspace-root-quarantine-20260721",
+  ]),
+);
 const stashCommit = git(repoDir, ["rev-parse", "refs/stash"]).stdout;
 if (
   git(repoDir, ["status", "--porcelain=v1", "--untracked-files=all"]).stdout
@@ -84,10 +108,18 @@ if (
   );
 }
 
-git(repoDir, ["switch", "dev"]);
-git(repoDir, ["merge", "--ff-only", "origin/dev"]);
-git(repoDir, ["worktree", "add", quarantinePath, sourceBranch]);
-git(quarantinePath, ["stash", "apply", stashCommit]);
+lease.mutate("switch canonical branch to dev", () =>
+  git(repoDir, ["switch", "dev"]),
+);
+lease.mutate("fast-forward canonical dev", () =>
+  git(repoDir, ["merge", "--ff-only", "origin/dev"]),
+);
+lease.mutate("create quarantine worktree in shared Git metadata", () =>
+  git(repoDir, ["worktree", "add", quarantinePath, sourceBranch]),
+);
+lease.mutate("apply preserved stash to quarantine worktree", () =>
+  git(quarantinePath, ["stash", "apply", stashCommit]),
+);
 const quarantineStatus = git(quarantinePath, [
   "status",
   "--porcelain=v1",
@@ -99,13 +131,17 @@ if (quarantineStatus !== beforeStatus) {
   );
 }
 if (existsSync(scratchPath))
-  renameSync(scratchPath, join(quarantinePath, "workspace"));
+  lease.mutate("move scratch bytes into quarantine worktree", () =>
+    renameSync(scratchPath, join(quarantinePath, "workspace")),
+  );
 if (git(repoDir, ["rev-parse", "refs/stash"]).stdout !== stashCommit) {
   throw new Error(
     `Another stash replaced ${stashCommit}; leaving it intact for recovery`,
   );
 }
-git(repoDir, ["stash", "drop", "stash@{0}"]);
+lease.mutate("drop verified recovery stash", () =>
+  git(repoDir, ["stash", "drop", "stash@{0}"]),
+);
 
 const finalBranch = git(repoDir, ["branch", "--show-current"]).stdout;
 const finalHead = git(repoDir, ["rev-parse", "HEAD"]).stdout;

@@ -71,12 +71,25 @@ export function candidateRuntimeDataPolicyViolations(
   });
 }
 
+export const historyOnlyAncestryStrategy = "history-only-ancestry" as const;
+
+export type HistoryOnlyAncestryProof = {
+  integrationStrategy: typeof historyOnlyAncestryStrategy;
+  integrationCommit: string;
+  sourceCommit: string;
+  firstParentCommit: string;
+  firstParentTree: string;
+  integrationTree: string;
+  historyOnlyDiff: boolean;
+};
+
 export type DirectDevIntegrationResult =
   | {
       state: "integrated";
       sourceCommit: string;
       targetCommit: string;
       targetRef: string;
+      historyOnlyProof?: HistoryOnlyAncestryProof;
     }
   | {
       state: "unchanged";
@@ -155,6 +168,280 @@ async function git(
   return output;
 }
 
+export async function verifyHistoryOnlyAncestryCandidate(input: {
+  workspaceDir: string;
+  candidateCommit: string;
+  expectedFirstParent: string;
+  expectedSourceCommit: string;
+}): Promise<HistoryOnlyAncestryProof | null> {
+  const parents = (
+    await git(input.workspaceDir, [
+      "show",
+      "-s",
+      "--format=%P",
+      input.candidateCommit,
+    ])
+  ).stdout
+    .split(/\s+/)
+    .filter(Boolean);
+  if (
+    parents.length !== 2 ||
+    parents[0] !== input.expectedFirstParent ||
+    parents[1] !== input.expectedSourceCommit
+  ) {
+    return null;
+  }
+  const firstParentTree = (
+    await git(input.workspaceDir, [
+      "show",
+      "-s",
+      "--format=%T",
+      input.expectedFirstParent,
+    ])
+  ).stdout;
+  const integrationTree = (
+    await git(input.workspaceDir, [
+      "show",
+      "-s",
+      "--format=%T",
+      input.candidateCommit,
+    ])
+  ).stdout;
+  const historyOnlyDiff =
+    (
+      await git(
+        input.workspaceDir,
+        [
+          "diff-tree",
+          "--exit-code",
+          input.expectedFirstParent,
+          input.candidateCommit,
+          "--",
+        ],
+        true,
+      )
+    ).status === 0;
+  if (firstParentTree !== integrationTree || !historyOnlyDiff) return null;
+  return {
+    integrationStrategy: historyOnlyAncestryStrategy,
+    integrationCommit: input.candidateCommit,
+    sourceCommit: input.expectedSourceCommit,
+    firstParentCommit: input.expectedFirstParent,
+    firstParentTree,
+    integrationTree,
+    historyOnlyDiff,
+  };
+}
+
+async function integrateHistoryOnlyAncestry(input: {
+  repoDir: string;
+  workspaceDir: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  validationCommands: DirectDevValidationCommand[];
+  maxAttempts: number;
+}): Promise<DirectDevIntegrationResult> {
+  const targetBranch = "dev";
+  const targetRef = "origin/dev";
+  let lastError = "";
+  const remoteSourceRef = `refs/remotes/origin/${input.sourceBranch}`;
+  const fetchSource = await git(
+    input.workspaceDir,
+    ["fetch", "origin", `refs/heads/${input.sourceBranch}:${remoteSourceRef}`],
+    true,
+  );
+  if (
+    fetchSource.status !== 0 &&
+    (
+      await git(
+        input.workspaceDir,
+        ["cat-file", "-e", `${input.sourceCommit}^{commit}`],
+        true,
+      )
+    ).status !== 0
+  ) {
+    return {
+      state: "failed",
+      sourceCommit: input.sourceCommit,
+      targetRef,
+      error: `could not fetch or resolve exact tested source: ${fetchSource.stderr || fetchSource.stdout}`,
+    };
+  }
+
+  for (let attempt = 1; attempt <= input.maxAttempts; attempt += 1) {
+    const fetchRepo = await git(
+      input.repoDir,
+      ["fetch", "origin", targetBranch],
+      true,
+    );
+    const fetchWorkspace = await git(
+      input.workspaceDir,
+      ["fetch", "origin", targetBranch],
+      true,
+    );
+    if (fetchRepo.status !== 0 || fetchWorkspace.status !== 0) {
+      lastError =
+        fetchRepo.stderr ||
+        fetchRepo.stdout ||
+        fetchWorkspace.stderr ||
+        fetchWorkspace.stdout;
+      continue;
+    }
+    const firstParentCommit = (
+      await git(input.workspaceDir, ["rev-parse", targetRef])
+    ).stdout;
+    if (
+      (
+        await git(
+          input.workspaceDir,
+          [
+            "merge-base",
+            "--is-ancestor",
+            input.sourceCommit,
+            firstParentCommit,
+          ],
+          true,
+        )
+      ).status === 0
+    ) {
+      return {
+        state: "integrated",
+        sourceCommit: input.sourceCommit,
+        targetCommit: firstParentCommit,
+        targetRef,
+      };
+    }
+
+    const firstParentTree = (
+      await git(input.workspaceDir, [
+        "show",
+        "-s",
+        "--format=%T",
+        firstParentCommit,
+      ])
+    ).stdout;
+    const candidate = await git(
+      input.workspaceDir,
+      [
+        "commit-tree",
+        firstParentTree,
+        "-p",
+        firstParentCommit,
+        "-p",
+        input.sourceCommit,
+        "-m",
+        `Integrate tested source ancestry ${input.sourceCommit}`,
+      ],
+      true,
+    );
+    if (candidate.status !== 0 || !candidate.stdout) {
+      return {
+        state: "failed",
+        sourceCommit: input.sourceCommit,
+        targetRef,
+        error: `could not construct history-only integration commit: ${candidate.stderr || candidate.stdout}`,
+      };
+    }
+    const proof = await verifyHistoryOnlyAncestryCandidate({
+      workspaceDir: input.workspaceDir,
+      candidateCommit: candidate.stdout,
+      expectedFirstParent: firstParentCommit,
+      expectedSourceCommit: input.sourceCommit,
+    });
+    if (!proof) {
+      return {
+        state: "validation-failed",
+        sourceCommit: candidate.stdout,
+        targetRef,
+        replayBaseCommit: firstParentCommit,
+        error:
+          "history-only candidate changed the fetched origin/dev tree or had unexpected parents",
+      };
+    }
+
+    await git(input.workspaceDir, ["reset", "--hard", firstParentCommit]);
+    for (const validation of input.validationCommands) {
+      const result = await runCommand(
+        input.workspaceDir,
+        validation.command,
+        validation.args,
+      );
+      if (result.status !== 0) {
+        return {
+          state: "validation-failed",
+          sourceCommit: candidate.stdout,
+          targetRef,
+          replayBaseCommit: firstParentCommit,
+          error: `${validation.name} failed: ${result.stderr || result.stdout || "unknown error"}`,
+        };
+      }
+    }
+
+    const push = await git(
+      input.workspaceDir,
+      ["push", "origin", `${candidate.stdout}:refs/heads/${targetBranch}`],
+      true,
+    );
+    if (push.status !== 0) {
+      lastError = push.stderr || push.stdout;
+      continue;
+    }
+    await git(input.repoDir, ["fetch", "origin", targetBranch]);
+    await git(input.workspaceDir, ["fetch", "origin", targetBranch]);
+    const publishedCommit = (
+      await git(input.workspaceDir, ["rev-parse", targetRef])
+    ).stdout;
+    const publishedTree = (
+      await git(input.workspaceDir, [
+        "show",
+        "-s",
+        "--format=%T",
+        publishedCommit,
+      ])
+    ).stdout;
+    const candidateReachable =
+      (
+        await git(
+          input.workspaceDir,
+          ["merge-base", "--is-ancestor", candidate.stdout, publishedCommit],
+          true,
+        )
+      ).status === 0;
+    const sourceReachable =
+      (
+        await git(
+          input.workspaceDir,
+          ["merge-base", "--is-ancestor", input.sourceCommit, publishedCommit],
+          true,
+        )
+      ).status === 0;
+    if (
+      candidateReachable &&
+      sourceReachable &&
+      publishedTree === firstParentTree
+    ) {
+      return {
+        state: "integrated",
+        sourceCommit: input.sourceCommit,
+        targetCommit: publishedCommit,
+        targetRef,
+        historyOnlyProof: proof,
+      };
+    }
+    lastError =
+      "fresh-fetch proof did not preserve candidate ancestry and the fetched first-parent tree";
+  }
+
+  return {
+    state: "failed",
+    sourceCommit: input.sourceCommit,
+    targetRef,
+    error:
+      lastError ||
+      `Could not update ${targetRef} after ${String(input.maxAttempts)} attempts`,
+  };
+}
+
 export async function integrateDirectlyIntoDev(input: {
   repoDir: string;
   workspaceDir: string;
@@ -162,12 +449,24 @@ export async function integrateDirectlyIntoDev(input: {
   sourceCommit: string;
   taskBaseCommit: string;
   validationCommands: DirectDevValidationCommand[];
+  integrationStrategy?: typeof historyOnlyAncestryStrategy;
   maxAttempts?: number;
 }): Promise<DirectDevIntegrationResult> {
   const targetBranch = "dev";
   const targetRef = "origin/dev";
   const maxAttempts = input.maxAttempts ?? 3;
   let lastError = "";
+
+  if (input.integrationStrategy === historyOnlyAncestryStrategy) {
+    return integrateHistoryOnlyAncestry({
+      repoDir: input.repoDir,
+      workspaceDir: input.workspaceDir,
+      sourceBranch: input.sourceBranch,
+      sourceCommit: input.sourceCommit,
+      validationCommands: input.validationCommands,
+      maxAttempts,
+    });
+  }
 
   if (
     (

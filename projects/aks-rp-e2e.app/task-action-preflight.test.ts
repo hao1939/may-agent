@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { TaskAction } from "@may-agent/sdk";
 import { validateAksTaskAction } from "./app.js";
+import { decideDomainWriteRouting } from "./domain-write-routing.js";
 
 const exactCommit = "0123456789abcdef0123456789abcdef01234567";
 
@@ -93,5 +94,48 @@ describe("AKS task-action prepared-source preflight", () => {
         }),
       ),
     ).toContain("exact 40-character Git commit");
+  });
+});
+
+describe("AKS domain write routing preflight", () => {
+  function domainAction(
+    workflow?: string,
+    outcome = "Edit repository source and commit the bounded repair.",
+  ): TaskAction {
+    return {
+      kind: "create-task",
+      id: "domain/write-routing-test",
+      parentId: "group/domain-work",
+      outcome,
+      acceptance: ["Publish the accepted source change."],
+      mode: "achieve",
+      outputs: [],
+      priority: "P1",
+      owner: "aks-explorer",
+      ...(workflow ? { workflow } : {}),
+      input: {},
+    };
+  }
+
+  it("rejects an ordinary unbound owner task that requires source writes", () => {
+    expect(validateAksTaskAction(domainAction())).toContain(
+      "ordinary unbound owner execution is read-only",
+    );
+  });
+
+  it("routes a learned write workflow to its declared task workspace", () => {
+    expect(
+      validateAksTaskAction(domainAction("domain-task-execution")),
+    ).toBeNull();
+  });
+
+  it("keeps ordinary read-only owner judgment supported", () => {
+    const action = domainAction(
+      undefined,
+      "Inspect current repository evidence without editing, committing, or publishing source.",
+    );
+    action.acceptance = ["Return a read-only disposition with exact evidence."];
+    expect(decideDomainWriteRouting(action).decision).toBe("read-only-owner");
+    expect(validateAksTaskAction(action)).toBeNull();
   });
 });

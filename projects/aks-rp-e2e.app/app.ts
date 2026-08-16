@@ -22,6 +22,7 @@ import {
   standingLoopIntent,
 } from "./task-loops.js";
 import { parseApprovalDecision } from "./agents/app-ops/workflows/lib/approval-decision.js";
+import { decideDomainWriteRouting } from "./domain-write-routing.js";
 import { aksObservers } from "./watchers/observers.js";
 
 const projectId = "aks-rp-e2e";
@@ -40,6 +41,9 @@ const scenarioTestFrontierMinLeaves = 3;
  * spec-live-reconciliation; explicit source identifies a dedicated task branch.
  */
 export function validateAksTaskAction(action: TaskAction): string | null {
+  const writeRouting = decideDomainWriteRouting(action);
+  if (writeRouting.reason) return writeRouting.reason;
+
   if (
     (action.kind !== "create-task" && action.kind !== "update-task") ||
     action.workflow !== "spec-live-reconciliation"

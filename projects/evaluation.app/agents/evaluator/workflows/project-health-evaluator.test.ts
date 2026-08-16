@@ -193,6 +193,44 @@ describe("canonical project-health evaluator", () => {
     ).toBe(false);
   });
 
+  test("rejects non-ok approval concerns without an exact public artifact", () => {
+    const base = {
+      ...judgment,
+      mainConcern: "An approval request may not have reached its recipient.",
+      affectedArtifacts: [],
+      dedupeKey: "aks-rp-e2e.app:approval-delivery-evidence-gap",
+      observations: {
+        approvalDelivery: { undelivered: 1 },
+        sourceRevisions: ["events:5686269"],
+      },
+    };
+    const incomplete = projectHealthJudgmentFromExecution("aks-rp-e2e.app", {
+      id: "s_approval_gap",
+      kind: "agent",
+      status: "done",
+      summary: "approval audit",
+      output: base,
+    });
+    expect(incomplete.complete).toBe(false);
+
+    const grounded = projectHealthJudgmentFromExecution("aks-rp-e2e.app", {
+      id: "s_approval_grounded",
+      kind: "agent",
+      status: "done",
+      summary: "approval audit",
+      output: {
+        ...base,
+        affectedArtifacts: [
+          "event:5686269#project.approval.requested#approvalId=aks-rp-e2e:approval:cleanup",
+        ],
+      },
+    });
+    expect(grounded.complete).toBe(true);
+    expect(grounded.judgment.affectedArtifacts).toEqual([
+      "event:5686269#project.approval.requested#approvalId=aks-rp-e2e:approval:cleanup",
+    ]);
+  });
+
   test("publishes one compact report and state record", () => {
     const publication = projectHealthPublication("gym.app", judgment, {
       id: "s_audit",

@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import type { AksObserverContext } from "./context.js";
 import {
   observeAksPipelines,
+  appendTrackedPipelineRunId,
   artifactRunCandidates,
   artifactDirectoryReady,
   boundedTrackedRunIds,
@@ -290,27 +291,20 @@ describe("progressive artifact scan selection", () => {
     expect(boundedTrackedRunIds(["2", "1", "3", "2"], 2)).toEqual(["3", "2"]);
   });
 
-  test("does not let an unchanged historical campaign retry artifacts forever", () => {
-    const selected = artifactRunCandidates({
-      runs: [
-        {
-          ...completed,
-          runId: "100",
-          fingerprint: "old-terminal",
-        },
-        {
-          ...completed,
-          runId: "150",
-          fingerprint: "just-finished",
-        },
-        {
-          ...completed,
-          runId: "200",
-          fingerprint: "current-live",
-          status: "inProgress",
-          result: "inProgress",
-        },
-      ],
+  test("retains an unchanged historical campaign only while bounded artifact recovery is pending", () => {
+    const runs = [
+      { ...completed, runId: "100", fingerprint: "old-terminal" },
+      { ...completed, runId: "150", fingerprint: "just-finished" },
+      {
+        ...completed,
+        runId: "200",
+        fingerprint: "current-live",
+        status: "inProgress",
+        result: "inProgress",
+      },
+    ];
+    const input = {
+      runs,
       previouslyTrackedRunIds: new Set(["100", "150", "200"]),
       priorFingerprints: {
         "100": "old-terminal",
@@ -318,9 +312,25 @@ describe("progressive artifact scan selection", () => {
         "200": "current-live",
       },
       observedArtifacts: {},
-    }).map((run) => run.runId);
+    };
 
-    expect(selected).toEqual(["150", "200"]);
+    expect(artifactRunCandidates(input).map((run) => run.runId)).toEqual([
+      "150",
+      "200",
+    ]);
+    expect(
+      artifactRunCandidates({
+        ...input,
+        pendingTerminalArtifactRunIds: new Set(["100"]),
+      }).map((run) => run.runId),
+    ).toEqual(["100", "150", "200"]);
+    expect(
+      artifactRunCandidates({
+        ...input,
+        pendingTerminalArtifactRunIds: new Set(["100"]),
+        terminalArtifactUnavailableRunIds: new Set(["100"]),
+      }).map((run) => run.runId),
+    ).toEqual(["150", "200"]);
   });
 
   test("drops missing historical run ids after Azure returns current runs", () => {
@@ -343,6 +353,14 @@ describe("progressive artifact scan selection", () => {
         priorRunIds: ["100", "200"],
         runs: [],
         pendingTerminalArtifactRunIds: new Set(),
+      }),
+    ).toEqual(["200", "100"]);
+
+    expect(
+      retainedTrackedRunIds({
+        priorRunIds: ["100", "200"],
+        runs: [active, { ...completed, runId: "100" }],
+        pendingTerminalArtifactRunIds: new Set(["100"]),
       }),
     ).toEqual(["200", "100"]);
   });
@@ -775,6 +793,179 @@ describe("AKS pipeline watcher", () => {
         },
       ]),
     ).toBeNull();
+  });
+
+  test("recovers an older unchanged terminal campaign after a newer campaign starts and emits stable observations exactly once", async () => {
+    const { ctx, emitted } = fixture();
+    const statePath = ctx.appPath(".state/watchers/aks-pipeline.json");
+    const oldRun = {
+      runId: "176781818",
+      fingerprint: "terminal-fingerprint",
+      status: "completed",
+      result: "failed",
+      sourceBranch: "refs/heads/validation/master-validation-176781818",
+      sourceVersion: "old-commit",
+      finishTime: "2026-08-15T06:00:00Z",
+      queueTime: "2026-08-15T05:00:00Z",
+      artifacts: [],
+      progressive: true,
+      artifactObservable: true,
+    };
+    const newerRun = {
+      ...oldRun,
+      runId: "176784770",
+      fingerprint: "newer-live",
+      status: "inProgress",
+      result: "inProgress",
+      finishTime: null,
+      artifacts: [],
+    };
+    mkdirSync(dirname(statePath), { recursive: true });
+    writeFileSync(
+      statePath,
+      JSON.stringify({
+        schemaVersion: "10",
+        adoFingerprints: { [oldRun.runId]: oldRun.fingerprint },
+        trackedRunIds: [],
+      }),
+    );
+    appendTrackedPipelineRunId(ctx.appPath("."), oldRun.runId);
+    let artifactListings = 0;
+    let downloads = 0;
+    const dependencies = {
+      scanAdoRuns: async () => [oldRun, newerRun],
+      getTimeline: async () => [],
+      listArtifactNames: async (runId: string) => {
+        if (runId !== oldRun.runId) return [];
+        artifactListings += 1;
+        return artifactListings === 1 ? [] : ["slice-01-test-results"];
+      },
+      downloadArtifact: async (
+        runId: string,
+        artifactName: string,
+        destination: string,
+      ) => {
+        if (runId !== oldRun.runId || artifactName !== "slice-01-test-results")
+          return false;
+        downloads += 1;
+        mkdirSync(destination, { recursive: true });
+        writeFileSync(
+          join(destination, "result.json"),
+          JSON.stringify({
+            status: "failed",
+            specResults: [
+              {
+                specId: "spec.target140",
+                status: "fail",
+                category: "runner_failure",
+                reason: "stable recovered result",
+              },
+            ],
+          }),
+        );
+        return true;
+      },
+    };
+
+    await observeAksPipelines(ctx, dependencies);
+    let state = JSON.parse(readFileSync(statePath, "utf8"));
+    expect(state.trackedRunIds).toContain(oldRun.runId);
+    expect(state.terminalArtifactAttempts).toEqual({ [oldRun.runId]: 1 });
+    expect(
+      emitted.filter((event) => event.type === "pipeline.spec.observed"),
+    ).toHaveLength(0);
+
+    await observeAksPipelines(ctx, dependencies);
+    state = JSON.parse(readFileSync(statePath, "utf8"));
+    expect(state.trackedRunIds).not.toContain(oldRun.runId);
+    expect(state.terminalArtifactAttempts).toEqual({});
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline.spec.observed" &&
+          event.pipelineRunId === oldRun.runId,
+      ),
+    ).toHaveLength(1);
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline.failure.observed" &&
+          event.pipelineRunId === oldRun.runId,
+      ),
+    ).toHaveLength(1);
+
+    await observeAksPipelines(ctx, dependencies);
+    expect(artifactListings).toBe(2);
+    expect(downloads).toBe(1);
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline.spec.observed" &&
+          event.pipelineRunId === oldRun.runId,
+      ),
+    ).toHaveLength(1);
+  });
+
+  test("bounds permanently unavailable terminal artifact retries and emits one durable disposition", async () => {
+    const { ctx, emitted } = fixture();
+    const statePath = ctx.appPath(".state/watchers/aks-pipeline.json");
+    const run = {
+      runId: "176780615",
+      fingerprint: "terminal-fingerprint",
+      status: "completed",
+      result: "failed",
+      sourceBranch: "refs/heads/validation/master-validation-176780615",
+      sourceVersion: "old-commit",
+      finishTime: "2026-08-15T04:00:00Z",
+      queueTime: "2026-08-15T03:00:00Z",
+      artifacts: ["slice-01-test-results"],
+      progressive: true,
+      artifactObservable: true,
+    };
+    mkdirSync(dirname(statePath), { recursive: true });
+    writeFileSync(
+      statePath,
+      JSON.stringify({
+        schemaVersion: "10",
+        adoFingerprints: { [run.runId]: "previous-live" },
+        trackedRunIds: [run.runId],
+      }),
+    );
+    let downloads = 0;
+    const dependencies = {
+      scanAdoRuns: async () => [run],
+      listArtifactNames: async () => ["slice-01-test-results"],
+      downloadArtifact: async () => {
+        downloads += 1;
+        return false;
+      },
+    };
+
+    for (let attempt = 0; attempt < 4; attempt += 1)
+      await observeAksPipelines(ctx, dependencies);
+
+    const state = JSON.parse(readFileSync(statePath, "utf8"));
+    expect(downloads).toBe(3);
+    expect(state.trackedRunIds).not.toContain(run.runId);
+    expect(state.terminalArtifactAttempts).toEqual({});
+    expect(state.terminalArtifactUnavailable[run.runId]).toContain(
+      run.fingerprint,
+    );
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline-artifact.unavailable" &&
+          event.pipelineRunId === run.runId,
+      ),
+    ).toHaveLength(1);
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline.failure.observed" &&
+          event.pipelineRunId === run.runId &&
+          event.category === "terminal_artifact_unavailable",
+      ),
+    ).toHaveLength(1);
   });
 
   test("does not accept an empty or malformed artifact directory", () => {

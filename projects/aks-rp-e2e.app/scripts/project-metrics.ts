@@ -15,8 +15,10 @@ type TaskAttempt = {
   metadata?: { id?: string };
   taskId?: string;
   state?: string;
+  handler?: string;
   startedAt?: string;
   sessionId?: string;
+  lease?: { expiresAt?: string; sessionId?: string };
 };
 type TaskTree = {
   root_task_id?: string;
@@ -784,7 +786,8 @@ function loopUnrepresentedRecordDetails(): {
   }
 
   const specLoopState = loadSpecLoopState();
-  const specLoopTaskId = specLoopState.loopTaskId || "aks-spec-verification-loop";
+  const specLoopTaskId =
+    specLoopState.loopTaskId || "aks-spec-verification-loop";
   if (!authorityTaskIds.has(specLoopTaskId)) {
     const fallback = specLoopRepresentationAuthority({
       tree: projectionTree,
@@ -2500,6 +2503,21 @@ function sessionFinishedWithinTerminalCompletionGrace(
   });
 }
 
+function persistedSessionStatus(sessionId: string): string | null {
+  if (!existsSync(stateDbPath)) return null;
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    const row = db
+      .query("select status from sessions where sessionId = ? limit 1")
+      .get(sessionId) as { status?: unknown } | null;
+    return typeof row?.status === "string" ? row.status : null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
 function sessionRestartReason(sessionId: string): string | null {
   if (!existsSync(stateDbPath)) return "session-not-running";
   const db = new Database(stateDbPath, { readonly: true });
@@ -2941,7 +2959,29 @@ function activeTaskAttemptId(task: TaskNode): string {
   return "";
 }
 
-function activeTaskSessionId(task: TaskNode): string {
+export function terminalOwnerAttemptHasExpiredLease(
+  attempt: TaskAttempt | null | undefined,
+  sessionStatus: string | null | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (
+    attempt?.state !== "running" ||
+    !attempt.handler?.startsWith("owner:") ||
+    !attempt.sessionId ||
+    attempt.lease?.sessionId !== attempt.sessionId ||
+    sessionStatus === "running" ||
+    sessionStatus === "idle"
+  ) {
+    return false;
+  }
+  const expiresAt = Date.parse(attempt.lease?.expiresAt ?? "");
+  return Number.isFinite(expiresAt) && expiresAt <= nowMs;
+}
+
+export function activeTaskSessionId(
+  task: TaskNode,
+  tree = loadTaskTree(),
+): string {
   if (typeof task.session_id === "string" && task.session_id.trim()) {
     return task.session_id.trim();
   }
@@ -2952,6 +2992,17 @@ function activeTaskSessionId(task: TaskNode): string {
   for (const key of ["sessionId", "session_id"]) {
     const value = triggerData?.[key];
     if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  const resource = taskId ? recordValue(tree.resources?.[taskId]) : null;
+  const status = recordValue(resource?.status);
+  const attemptId =
+    typeof status?.currentAttemptId === "string"
+      ? status.currentAttemptId.trim()
+      : "";
+  const attempt = attemptId ? recordValue(tree.attempts?.[attemptId]) : null;
+  if (typeof attempt?.sessionId === "string" && attempt.sessionId.trim()) {
+    return attempt.sessionId.trim();
   }
   return "";
 }
@@ -2987,7 +3038,7 @@ function recentTerminalSessionObservedAtMs(input: {
     Number.isFinite(input.lastSessionEndedAt)
     ? input.lastSessionEndedAt
     : typeof input.lastSessionLastActivityAt === "number" &&
-          Number.isFinite(input.lastSessionLastActivityAt)
+        Number.isFinite(input.lastSessionLastActivityAt)
       ? input.lastSessionLastActivityAt
       : null;
 }
@@ -3001,7 +3052,10 @@ export function ownerSessionRecentCompletionGapLooksHealthy(input: {
   gapGraceMs?: number;
 }): boolean {
   if (input.sessionStatus !== "done") return false;
-  if (input.sessionOutcome === "error" || input.sessionOutcome === "interrupted") {
+  if (
+    input.sessionOutcome === "error" ||
+    input.sessionOutcome === "interrupted"
+  ) {
     return false;
   }
   const lastObservedAt = recentTerminalSessionObservedAtMs(input);
@@ -3096,10 +3150,7 @@ export function workflowDispatchRecentStartLooksHealthy(input: {
   nowMs?: number;
   gapGraceMs?: number;
 }): boolean {
-  if (
-    input.dispatchStatus !== "started" &&
-    input.dispatchStatus !== "done"
-  ) {
+  if (input.dispatchStatus !== "started" && input.dispatchStatus !== "done") {
     return false;
   }
   const dispatchTimestamp =
@@ -3109,11 +3160,8 @@ export function workflowDispatchRecentStartLooksHealthy(input: {
       : null;
   if (dispatchTimestamp === null) return false;
   const nowMs = input.nowMs ?? Date.now();
-  const gapGraceMs =
-    input.gapGraceMs ?? workflowDispatchStartGraceMs;
-  return (
-    nowMs >= dispatchTimestamp && nowMs - dispatchTimestamp <= gapGraceMs
-  );
+  const gapGraceMs = input.gapGraceMs ?? workflowDispatchStartGraceMs;
+  return nowMs >= dispatchTimestamp && nowMs - dispatchTimestamp <= gapGraceMs;
 }
 
 function workflowDispatchRecentStartLooksHealthyFromRow(
@@ -3261,8 +3309,7 @@ export function ownerTaskSessionMatchesTaskId(input: {
   taskId?: string | null;
   sessionTask?: string | null;
 }): boolean {
-  const taskId =
-    typeof input.taskId === "string" ? input.taskId.trim() : "";
+  const taskId = typeof input.taskId === "string" ? input.taskId.trim() : "";
   const sessionTask =
     typeof input.sessionTask === "string" ? input.sessionTask : "";
   if (!taskId || !sessionTask) return false;
@@ -3299,8 +3346,7 @@ function ownerTaskSessionRowMatchesTaskId(
   if (ownerTaskSessionMatchesTaskId({ taskId, sessionTask: inlineTask })) {
     return true;
   }
-  const taskRef =
-    typeof row.task_ref === "string" ? row.task_ref.trim() : "";
+  const taskRef = typeof row.task_ref === "string" ? row.task_ref.trim() : "";
   if (!taskRef) return false;
   return ownerTaskSessionMatchesTaskId({
     taskId,
@@ -3472,7 +3518,8 @@ function activeWorkflowTaskSessionRow(
           ? workflowRow.workflowTask
           : "";
       if (!taskIdPattern.test(taskText)) continue;
-      if (!hasSessions) return normalizeWorkflowTaskLivenessRow(workflowRow, null);
+      if (!hasSessions)
+        return normalizeWorkflowTaskLivenessRow(workflowRow, null);
       const workflowRunId =
         typeof workflowRow.workflowRunId === "string"
           ? workflowRow.workflowRunId.trim()
@@ -3540,7 +3587,10 @@ function activeWorkflowDispatchEventRow(
         limit 1
       `,
       )
-      .get("aks-rp-e2e", taskId, minTimestampMs) as Record<string, unknown> | null;
+      .get("aks-rp-e2e", taskId, minTimestampMs) as Record<
+      string,
+      unknown
+    > | null;
   } catch {
     return null;
   } finally {
@@ -3602,6 +3652,20 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     ? featureCompactByTaskId.get(taskId)
     : undefined;
   const currentAttemptId = activeTaskAttemptId(task) || null;
+  const canonicalTree = loadTaskTree();
+  const currentAttempt = currentAttemptId
+    ? canonicalTree.attempts?.[currentAttemptId]
+    : null;
+  if (
+    terminalOwnerAttemptHasExpiredLease(
+      currentAttempt,
+      currentAttempt?.sessionId
+        ? persistedSessionStatus(currentAttempt.sessionId)
+        : null,
+    )
+  ) {
+    return "terminal-owner-session-expired-lease";
+  }
 
   if (
     task.workflow === "single-spec-verifier" &&

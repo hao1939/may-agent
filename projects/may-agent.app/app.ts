@@ -9,7 +9,7 @@ import {
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
-const projectOwnerAgent = "tech-lead";
+const projectOwnerAgent = "may";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
@@ -277,7 +277,7 @@ const app = defineApp({
   actions: {
     "advance-project": {
       description:
-        "Ask tech-lead to review and advance the May-agent platform project.",
+        "Ask May to review and advance the May-agent platform project.",
       inputSchema: Type.Object({}, { additionalProperties: true }),
       toInput: (data) =>
         platformOwnerReview("manual-advance", { params: data }),

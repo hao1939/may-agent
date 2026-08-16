@@ -32,7 +32,7 @@ describe("canonical may-agent platform App", () => {
     expect(app).toMatchObject({
       id: "may-agent",
       version: 1,
-      owner: "tech-lead",
+      owner: "may",
       inbox: { batch: "single", maxConcurrent: 2 },
       tasks: { attach: true, maxConcurrent: 2 },
     });
@@ -97,7 +97,7 @@ describe("may-agent task routing", () => {
         event(
           "metric.breach",
           { metricId: "runtime.some-platform-metric" },
-          { owner: "agent:tech-lead" },
+          { owner: "agent:may" },
         ),
       ),
     ).toMatchObject({
@@ -109,7 +109,7 @@ describe("may-agent task routing", () => {
         event(
           "metric.breach",
           { metricId: "project.health.finding-count" },
-          { owner: "agent:tech-lead" },
+          { owner: "agent:may" },
         ),
       ),
     ).toBeNull();

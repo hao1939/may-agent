@@ -2219,4 +2219,231 @@ exit 0
       rmSync(fixture.root, { recursive: true, force: true });
     }
   });
+
+  it("adds watchdog-safe batching checkpoints only for bulk deterministic regeneration tasks", async () => {
+    const prompts: string[] = [];
+    const inspectPrompt = async (task: Record<string, unknown>) => {
+      await execute(
+        context({
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(task)}\n\`\`\``,
+          runAgent: (async (_agent: string, prompt: string) => {
+            prompts.push(prompt);
+            return {
+              status: "done",
+              sessionId: `session-${prompts.length}`,
+              lastAssistantText: "waiting",
+              structuredResult: {
+                state: "waiting",
+                summary: "prompt inspected",
+                evidence: ["prompt-inspected"],
+                actions: [],
+                conditions: [
+                  {
+                    id: `prompt-${prompts.length}`,
+                    type: "pipeline-run.state",
+                    subject: `pipeline-run:prompt-${prompts.length}`,
+                    expected: { field: "state", equals: "completed" },
+                  },
+                ],
+              },
+            };
+          }) as LegacyAgentCall,
+        }),
+      );
+    };
+
+    await inspectPrompt({
+      taskId: "domain/regenerate-all-packages",
+      outcome:
+        "Deterministically regenerate all 94 stale packages repository-wide.",
+      acceptance: ["Regenerate every stale package and pass the full check."],
+      input: {},
+    });
+    await inspectPrompt({
+      taskId: "domain/repair-one-file",
+      outcome: "Repair one bounded source file.",
+      acceptance: ["Commit the scoped source change."],
+      input: {},
+    });
+
+    expect(prompts[0]).toContain(
+      "Bulk deterministic regeneration watchdog contract",
+    );
+    expect(prompts[0]).toContain("timeout of at most 240000ms");
+    expect(prompts[0]).toContain("call checkpoint()");
+    expect(prompts[0]).toContain("same task-owned worktree");
+    expect(prompts[0]).toContain("fresh-origin reachability verification");
+    expect(prompts[1]).not.toContain(
+      "Bulk deterministic regeneration watchdog contract",
+    );
+  });
+
+  it("corrects waiting that closes its sole live child without an exact Condition", async () => {
+    const prompts: string[] = [];
+    const waiting = {
+      state: "waiting" as const,
+      summary: "the sole proof child is complete",
+      evidence: ["proof reviewed"],
+      actions: [
+        {
+          kind: "close-task" as const,
+          taskId: "domain/review-proof",
+          expectedGeneration: 1,
+          summary: "Proof accepted.",
+        },
+      ],
+      conditions: [],
+    };
+    const result = await execute(
+      context({
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+          taskId: "domain/review",
+          children: { live: ["domain/review-proof"], completed: [] },
+          input: {},
+        })}\n\`\`\``,
+        runAgent: (async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "done",
+            sessionId: "session-review",
+            lastAssistantText: "waiting",
+            structuredResult: waiting,
+          };
+        }) as LegacyAgentCall,
+        runAgentSession: (async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "done",
+            sessionId: "session-review",
+            lastAssistantText: "corrected",
+            structuredResult: {
+              ...waiting,
+              summary: "waiting on an exact review fact",
+              conditions: [
+                {
+                  id: "review-approved",
+                  type: "review.state",
+                  subject: "project:aks-rp-e2e",
+                  expected: { field: "approved", equals: true },
+                },
+              ],
+            },
+          };
+        }) as LegacyAgentCall,
+      }),
+    );
+
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("after its actions are applied");
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "waiting",
+        conditions: [{ id: "review-approved" }],
+      },
+    });
+  });
+
+  it("accepts and verifies an evidence-rich unchanged disposition", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => ({
+            status: "done",
+            sessionId: "session-unchanged",
+            lastAssistantText: "unchanged",
+            structuredResult: {
+              state: "converged",
+              summary: "current authority still agrees",
+              evidence: [
+                "disposition:unchanged",
+                "hot-evidence:scoped checks passed at current HEAD",
+              ],
+              actions: [],
+            },
+          })) as LegacyAgentCall,
+        }),
+      );
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/unchanged",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        result.output as TaskReconcileResult,
+      );
+      expect(result).toMatchObject({
+        status: "done",
+        output: {
+          state: "converged",
+          summary: expect.stringContaining(
+            "Validated as an unchanged disposition",
+          ),
+          evidence: expect.arrayContaining([
+            "task-branch:task/example",
+            "integration:validated-unchanged-disposition",
+          ]),
+        },
+      });
+      expect(verification).toMatchObject({
+        accepted: true,
+        evidence: expect.arrayContaining([
+          "verification-unchanged-disposition:accepted",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not let an unchanged marker bypass the material source gate", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => {
+            writeFileSync(
+              join(fixture.workspaceDir, "later-change.txt"),
+              "material\n",
+            );
+            git(fixture.workspaceDir, "add", "later-change.txt");
+            git(fixture.workspaceDir, "commit", "-m", "material source change");
+            return {
+              status: "done",
+              sessionId: "session-false-unchanged",
+              lastAssistantText: "unchanged",
+              structuredResult: {
+                state: "converged",
+                summary: "incorrectly claimed unchanged",
+                evidence: [
+                  "disposition:unchanged",
+                  "hot-evidence:review completed",
+                ],
+                actions: [],
+              },
+            };
+          }) as LegacyAgentCall,
+        }),
+      );
+      expect(result).toMatchObject({
+        status: "done",
+        output: {
+          state: "needs-owner",
+          summary: "Unchanged disposition contains a source-changing tree",
+          evidence: expect.arrayContaining([
+            "material-success-candidate:requires-source-gate",
+          ]),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
 });

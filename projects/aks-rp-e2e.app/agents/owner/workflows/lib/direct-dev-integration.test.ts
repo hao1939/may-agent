@@ -9,7 +9,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
-import { integrateDirectlyIntoDev } from "./direct-dev-integration.js";
+import {
+  historyOnlyAncestryStrategy,
+  integrateDirectlyIntoDev,
+  verifyHistoryOnlyAncestryCandidate,
+} from "./direct-dev-integration.js";
 
 const roots: string[] = [];
 
@@ -346,5 +350,137 @@ describe("integrateDirectlyIntoDev", () => {
       encoding: "utf8",
     });
     expect(inherited.status).not.toBe(0);
+  });
+
+  test("publishes an identical-tree merge with fetched dev first and tested source second", async () => {
+    const setup = setupDivergedTask();
+    const targetTree = git(
+      setup.seed,
+      "show",
+      "-s",
+      "--format=%T",
+      "origin/dev",
+    );
+
+    const result = await integrateDirectlyIntoDev({
+      repoDir: setup.seed,
+      workspaceDir: setup.task,
+      sourceBranch: "task/example",
+      sourceCommit: setup.taskBaseCommit,
+      taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [],
+      integrationStrategy: historyOnlyAncestryStrategy,
+    });
+
+    expect(result.state).toBe("integrated");
+    expect(
+      result.state === "integrated" && result.historyOnlyProof,
+    ).toMatchObject({
+      sourceCommit: setup.taskBaseCommit,
+      firstParentCommit: setup.currentDevCommit,
+      firstParentTree: targetTree,
+      integrationTree: targetTree,
+      historyOnlyDiff: true,
+    });
+    git(setup.seed, "fetch", "origin", "dev");
+    expect(
+      git(setup.seed, "show", "-s", "--format=%P", "origin/dev").split(" "),
+    ).toEqual([setup.currentDevCommit, setup.taskBaseCommit]);
+    expect(git(setup.seed, "show", "origin/dev:dev.txt")).toBe("current dev");
+    expect(
+      spawnSync("git", ["show", "origin/dev:inherited.txt"], {
+        cwd: setup.seed,
+        encoding: "utf8",
+      }).status,
+    ).not.toBe(0);
+  });
+
+  test("rejects a candidate whose merge tree differs from its first parent", async () => {
+    const setup = setupDivergedTask();
+    git(setup.task, "fetch", "origin", "dev");
+    const sourceTree = git(
+      setup.task,
+      "show",
+      "-s",
+      "--format=%T",
+      setup.taskBaseCommit,
+    );
+    const changedCandidate = git(
+      setup.task,
+      "commit-tree",
+      sourceTree,
+      "-p",
+      setup.currentDevCommit,
+      "-p",
+      setup.taskBaseCommit,
+      "-m",
+      "unsafe tree-changing merge",
+    );
+
+    expect(
+      await verifyHistoryOnlyAncestryCandidate({
+        workspaceDir: setup.task,
+        candidateCommit: changedCandidate,
+        expectedFirstParent: setup.currentDevCommit,
+        expectedSourceCommit: setup.taskBaseCommit,
+      }),
+    ).toBeNull();
+  });
+
+  test("rebuilds against a newly fetched dev tip after a publication race", async () => {
+    const setup = setupDivergedTask();
+    const marker = join(setup.seed, "race-marker");
+    const raceScript = [
+      "const {existsSync,writeFileSync}=require('node:fs');",
+      "const {spawnSync}=require('node:child_process');",
+      `const cwd=${JSON.stringify(setup.seed)}, marker=${JSON.stringify(marker)};`,
+      "if(!existsSync(marker)){writeFileSync(marker,'raced');writeFileSync(cwd+'/race.txt','new dev tip\\n');for(const args of [['add','race.txt'],['commit','-m','race dev'],['push','origin','dev']]){const r=spawnSync('git',args,{cwd,encoding:'utf8'});if(r.status!==0){process.stderr.write(r.stderr||r.stdout);process.exit(r.status||1)}}}",
+    ].join("");
+
+    const result = await integrateDirectlyIntoDev({
+      repoDir: setup.seed,
+      workspaceDir: setup.task,
+      sourceBranch: "task/example",
+      sourceCommit: setup.taskBaseCommit,
+      taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [
+        {
+          name: "inject one dev race",
+          command: process.execPath,
+          args: ["-e", raceScript],
+        },
+      ],
+      integrationStrategy: historyOnlyAncestryStrategy,
+    });
+
+    expect(result.state).toBe("integrated");
+    expect(
+      result.state === "integrated" &&
+        result.historyOnlyProof?.firstParentCommit,
+    ).toBe(git(setup.seed, "rev-parse", "dev"));
+    git(setup.seed, "fetch", "origin", "dev");
+    expect(git(setup.seed, "show", "origin/dev:race.txt")).toBe("new dev tip");
+  });
+
+  test("ordinary direct-dev integration still rejects merge commits", async () => {
+    const setup = setupDivergedTask();
+    git(setup.task, "fetch", "origin", "dev");
+    git(setup.task, "merge", "--no-edit", "origin/dev");
+    const mergeCommit = git(setup.task, "rev-parse", "HEAD");
+
+    const result = await integrateDirectlyIntoDev({
+      repoDir: setup.seed,
+      workspaceDir: setup.task,
+      sourceBranch: "task/example",
+      sourceCommit: mergeCommit,
+      taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [],
+    });
+
+    expect(result).toMatchObject({
+      state: "requires-replay",
+      reason: "attempt-has-merge-commits",
+      mergeCommits: [mergeCommit],
+    });
   });
 });

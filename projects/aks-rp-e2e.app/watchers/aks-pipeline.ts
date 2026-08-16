@@ -21,6 +21,8 @@ type PipelineWatcherState = {
   adoFingerprints?: Record<string, string>;
   trackedRunIds?: string[];
   observedArtifacts?: Record<string, string>;
+  terminalArtifactAttempts?: Record<string, number>;
+  terminalArtifactUnavailable?: Record<string, string>;
   overdueQueueRunIds?: string[];
   liveProgressFingerprints?: Record<string, string>;
   checkedAt?: string;
@@ -230,6 +232,7 @@ const MAX_PROGRESS_ARTIFACTS_PER_SCAN = 3;
 const MAX_PROGRESS_TIMELINE_DETAILS_PER_RUN = 12;
 export const MAX_TASK_ARTIFACT_RUNS_PER_SCAN = 12;
 export const MAX_TRACKED_RUN_IDS = 25;
+export const MAX_TERMINAL_ARTIFACT_ATTEMPTS = 3;
 export const MASTER_VALIDATION_QUEUE_OVERDUE_MS = 90 * 60 * 1_000;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
@@ -1024,6 +1027,8 @@ export function hasObservedArtifactsForRun(
 export function artifactRunCandidates(input: {
   runs: ObservedAdoRun[];
   previouslyTrackedRunIds: Set<string>;
+  pendingTerminalArtifactRunIds?: Set<string>;
+  terminalArtifactUnavailableRunIds?: Set<string>;
   priorFingerprints: Record<string, string>;
   observedArtifacts: Record<string, string>;
   taskRunLimit?: number;
@@ -1074,20 +1079,29 @@ export function artifactRunCandidates(input: {
       ["completed", "canceled"].includes(run.status) &&
       input.previouslyTrackedRunIds.has(run.runId) &&
       input.priorFingerprints[run.runId] === run.fingerprint;
-    // A completed master-validation campaign gets one transition scan. Once a
-    // newer campaign exists, an unchanged old campaign must not retry a
-    // permanently absent or malformed artifact forever and starve live work.
-    // Focused task-owned runs retain their independent artifact recovery path.
-    if (terminalHistoricalProgressive) return false;
+    // A completed master-validation campaign gets one transition scan. A
+    // failed materialization explicitly retains that run for a bounded retry
+    // window even after a newer campaign starts. Once the window ends, the
+    // watcher emits and records an artifact-unavailable disposition instead of
+    // retrying forever or starving live work.
+    if (input.terminalArtifactUnavailableRunIds?.has(run.runId)) return false;
+    if (
+      terminalHistoricalProgressive &&
+      !input.pendingTerminalArtifactRunIds?.has(run.runId)
+    ) {
+      return false;
+    }
     return (
       (run.progressive ||
         selectedTaskIds.has(run.runId) ||
-        historicalSpecRunIds.has(run.runId)) &&
+        historicalSpecRunIds.has(run.runId) ||
+        input.pendingTerminalArtifactRunIds?.has(run.runId)) &&
       shouldScanProgressiveArtifacts({
         run,
         wasTracked: input.previouslyTrackedRunIds.has(run.runId),
         priorFingerprint: input.priorFingerprints[run.runId],
-        forceRescan,
+        forceRescan:
+          forceRescan || input.pendingTerminalArtifactRunIds?.has(run.runId),
       })
     );
   });
@@ -2367,9 +2381,43 @@ export function pipelineLevelEvent(observed: ObservedAdoRun): AksObserverEvent {
   };
 }
 
+export type PipelineWatcherDependencies = {
+  scanAdoRuns?: (trackedRunIds: string[]) => Promise<ObservedAdoRun[]>;
+  getTimeline?: (runId: string) => Promise<AdoTimelineRecord[]>;
+  listArtifactNames?: (runId: string) => Promise<string[]>;
+  downloadArtifact?: (
+    runId: string,
+    artifactName: string,
+    destination: string,
+    ready?: (root: string) => boolean,
+  ) => Promise<boolean>;
+};
+
+export function terminalArtifactUnavailableEvent(input: {
+  run: ObservedAdoRun;
+  artifactNames: string[];
+  attempts: number;
+}): AksObserverEvent {
+  const base = pipelineFactBase(input.run);
+  const data = {
+    ...base,
+    artifactNames: input.artifactNames,
+    attempts: input.attempts,
+    reason: `Azure DevOps run ${input.run.runId} remained terminal but its advertised result artifacts could not be materialized after ${input.attempts} bounded attempts.`,
+  };
+  return {
+    type: "pipeline-artifact.unavailable",
+    source: "aks-pipeline-watcher",
+    target: { project: "aks-rp-e2e" },
+    ...data,
+    data,
+  };
+}
+
 /** Observe domain pipeline artifacts and emit facts; never reads or changes task state. */
 export async function observeAksPipelines(
   ctx: AksObserverContext,
+  dependencies: PipelineWatcherDependencies = {},
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/aks-pipeline.json");
   const prior = readState(statePath);
@@ -2396,7 +2444,7 @@ export async function observeAksPipelines(
     ...(prior.localCompletionFingerprints ?? prior.fingerprints ?? {}),
   };
   const registrationRunIds = registeredTrackedRunIds(ctx.appPath("."));
-  const adoRuns = await scanAdoPipelineRuns(
+  const adoRuns = await (dependencies.scanAdoRuns ?? scanAdoPipelineRuns)(
     boundedTrackedRunIds(
       [...(prior.trackedRunIds ?? []), ...registrationRunIds],
       100,
@@ -2416,7 +2464,11 @@ export async function observeAksPipelines(
             run.progressive && !["completed", "canceled"].includes(run.status),
         )
         .map(
-          async (run) => [run.runId, await getAdoTimeline(run.runId)] as const,
+          async (run) =>
+            [
+              run.runId,
+              await (dependencies.getTimeline ?? getAdoTimeline)(run.runId),
+            ] as const,
         ),
     ),
   );
@@ -2424,7 +2476,9 @@ export async function observeAksPipelines(
   const artifactNamesForRun = async (runId: string): Promise<string[]> => {
     const existing = artifactNamesByRun.get(runId);
     if (existing) return existing;
-    const names = await listAdoArtifactNames(runId);
+    const names = await (
+      dependencies.listArtifactNames ?? listAdoArtifactNames
+    )(runId);
     artifactNamesByRun.set(runId, names);
     return names;
   };
@@ -2460,10 +2514,23 @@ export async function observeAksPipelines(
     ...(prior.liveProgressFingerprints ?? {}),
   };
   const previouslyTrackedRunIds = new Set(prior.trackedRunIds ?? []);
-  const pendingTerminalArtifactRunIds = new Set<string>();
+  const terminalArtifactAttempts = {
+    ...(prior.terminalArtifactAttempts ?? {}),
+  };
+  const terminalArtifactUnavailable = {
+    ...(prior.terminalArtifactUnavailable ?? {}),
+  };
+  const pendingTerminalArtifactRunIds = new Set([
+    ...Object.keys(terminalArtifactAttempts),
+    ...registrationRunIds,
+  ]);
   const artifactRuns = artifactRunCandidates({
     runs: adoRuns,
     previouslyTrackedRunIds,
+    pendingTerminalArtifactRunIds,
+    terminalArtifactUnavailableRunIds: new Set(
+      Object.keys(terminalArtifactUnavailable),
+    ),
     priorFingerprints: priorAdoFingerprints,
     observedArtifacts,
   });
@@ -2493,7 +2560,7 @@ export async function observeAksPipelines(
         !(recordedPlanRoot && planDirectoryReady(recordedPlanRoot)) &&
         !planDirectoryReady(planRoot) &&
         downloadedArtifacts < MAX_PROGRESS_ARTIFACTS_PER_SCAN &&
-        (await downloadAdoArtifact(
+        (await (dependencies.downloadArtifact ?? downloadAdoArtifact)(
           observed.runId,
           "plan-inputs",
           planRoot,
@@ -2534,6 +2601,8 @@ export async function observeAksPipelines(
       .filter((name) => /^slice-\d+-test-results$/.test(name))
       .sort()
       .reverse();
+    let attemptedResultArtifactDownload = false;
+    let materializedResultArtifact = false;
     for (const artifactName of names) {
       const key = artifactKey(observed.runId, artifactName);
       const root = ctx.appPath(
@@ -2543,9 +2612,17 @@ export async function observeAksPipelines(
       if (recordedRoot && artifactDirectoryReady(recordedRoot)) continue;
       if (!artifactDirectoryReady(root)) {
         if (downloadedArtifacts >= MAX_PROGRESS_ARTIFACTS_PER_SCAN) continue;
-        if (!(await downloadAdoArtifact(observed.runId, artifactName, root)))
+        attemptedResultArtifactDownload = true;
+        if (
+          !(await (dependencies.downloadArtifact ?? downloadAdoArtifact)(
+            observed.runId,
+            artifactName,
+            root,
+          ))
+        )
           continue;
         downloadedArtifacts += 1;
+        materializedResultArtifact = true;
       }
       observedArtifacts[key] = root;
       ctx.emit(materializedArtifactEvent(observed, artifactName, root));
@@ -2621,7 +2698,7 @@ export async function observeAksPipelines(
       status: observed.status,
       result: observed.result,
       progressive: observed.progressive,
-      artifactsReady: readyRoots.length === names.length,
+      artifactsReady: names.length > 0 && readyRoots.length === names.length,
       observedVerdictCount: artifactObservations.length,
       observedFailureCount: admissionFailures.length + artifactFailures.length,
     });
@@ -2629,15 +2706,79 @@ export async function observeAksPipelines(
       ctx.emit(pipelineFailureEvent(noVerdictFailure));
       observedFailures += 1;
     }
-    if (
+    const expectedResultArtifactNames = [
+      ...new Set([
+        ...observed.artifacts.filter((name) =>
+          /^slice-\d+-test-results$/.test(name),
+        ),
+        ...names.filter((name) => /^slice-\d+-test-results$/.test(name)),
+      ]),
+    ];
+    const terminalArtifactsMissing =
       ["completed", "canceled"].includes(observed.status) &&
-      names.some((artifactName) => {
-        const root =
-          observedArtifacts[artifactKey(observed.runId, artifactName)];
-        return !root || !artifactDirectoryReady(root);
-      })
-    ) {
-      pendingTerminalArtifactRunIds.add(observed.runId);
+      ((expectedResultArtifactNames.length === 0 &&
+        pendingTerminalArtifactRunIds.has(observed.runId)) ||
+        expectedResultArtifactNames.some((artifactName) => {
+          const root =
+            observedArtifacts[artifactKey(observed.runId, artifactName)];
+          return !root || !artifactDirectoryReady(root);
+        }));
+    if (terminalArtifactsMissing) {
+      const countFailedAttempt =
+        expectedResultArtifactNames.length === 0 ||
+        attemptedResultArtifactDownload;
+      if (materializedResultArtifact) {
+        delete terminalArtifactAttempts[observed.runId];
+        pendingTerminalArtifactRunIds.add(observed.runId);
+        continue;
+      }
+      if (!countFailedAttempt) {
+        pendingTerminalArtifactRunIds.add(observed.runId);
+        continue;
+      }
+      const attempts = (terminalArtifactAttempts[observed.runId] ?? 0) + 1;
+      terminalArtifactAttempts[observed.runId] = attempts;
+      if (attempts >= MAX_TERMINAL_ARTIFACT_ATTEMPTS) {
+        const dispositionFingerprint = `${observed.fingerprint}:${expectedResultArtifactNames.join(",")}`;
+        if (
+          terminalArtifactUnavailable[observed.runId] !== dispositionFingerprint
+        ) {
+          ctx.emit(
+            terminalArtifactUnavailableEvent({
+              run: observed,
+              artifactNames: expectedResultArtifactNames,
+              attempts,
+            }),
+          );
+          ctx.emit(
+            pipelineFailureEvent({
+              pipelineRunId: observed.runId,
+              sourceBranch: observed.sourceBranch ?? "",
+              sourceCommit: observed.sourceVersion ?? "",
+              artifactName: expectedResultArtifactNames.join(","),
+              artifactPath: `ado://build/${observed.runId}/artifacts`,
+              sliceId: "artifact-materialization",
+              specId: "pipeline.master-validation.artifact-materialization",
+              status: "error",
+              category: "terminal_artifact_unavailable",
+              reason: `Azure DevOps advertised ${expectedResultArtifactNames.join(", ")} for terminal run ${observed.runId}, but the watcher could not materialize them after ${attempts} bounded attempts. This is an evidence-carrier disposition, not an AKS product verdict.`,
+              fingerprint: createHash("sha256")
+                .update(dispositionFingerprint)
+                .digest("hex")
+                .slice(0, 20),
+            }),
+          );
+          observedFailures += 1;
+          terminalArtifactUnavailable[observed.runId] = dispositionFingerprint;
+        }
+        delete terminalArtifactAttempts[observed.runId];
+        pendingTerminalArtifactRunIds.delete(observed.runId);
+      } else {
+        pendingTerminalArtifactRunIds.add(observed.runId);
+      }
+    } else {
+      delete terminalArtifactAttempts[observed.runId];
+      pendingTerminalArtifactRunIds.delete(observed.runId);
     }
   }
 
@@ -2661,6 +2802,8 @@ export async function observeAksPipelines(
     adoFingerprints,
     trackedRunIds,
     observedArtifacts,
+    terminalArtifactAttempts,
+    terminalArtifactUnavailable,
     overdueQueueRunIds: [...overdueQueueRunIds].slice(-100),
     liveProgressFingerprints: retainedLiveProgressFingerprints,
     checkedAt,
