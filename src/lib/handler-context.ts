@@ -11,6 +11,12 @@ import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
 import type { AgentSDK } from "./sdk.js";
 
+/** Host maintenance files can observe/repair mechanics, but cannot launch App work. */
+export type HandlerSDK = Pick<
+  AgentSDK,
+  "emit" | "getDb" | "query" | "metrics" | "log" | "message" | "paths"
+>;
+
 /** Canonical event envelope delivered to handlers. */
 export interface EventEnvelope {
   type: string;
@@ -43,8 +49,7 @@ export interface EventEnvelope {
  * Handler-specific session lifecycle helpers remain on ctx directly.
  */
 export interface HandlerContext {
-  /** Agent SDK — the canonical capability surface. */
-  sdk: AgentSDK;
+  sdk: HandlerSDK;
 
   /** Name of the agent that owns this handler (e.g., "may") */
   agentName: string;
@@ -71,6 +76,11 @@ export interface HandlerContext {
   /** Read messages from a session. */
   readSessionMessages(sessionId: string): unknown[];
 }
+
+/** Retained standalone-agent adapter. Canonical Apps do not use this path. */
+export type WorkflowHandlerContext = Omit<HandlerContext, "sdk"> & {
+  sdk: AgentSDK;
+};
 
 /**
  * The shape a handler module must export.

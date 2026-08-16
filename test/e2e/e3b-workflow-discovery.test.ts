@@ -1,48 +1,41 @@
 /**
- * E3b — Workflow discovery and dispatch
+ * E3b — Workflow discovery and scheduled execution
  *
  * Validates that the agent-scoped workflow resolver finds a workflow file in
  * agents/<name>/workflows/ and dispatches it end-to-end, exercising:
  *   - workflow file discovery (agent-scoped path)
- *   - handler → sdk.runWorkflow → workflow execution → result
+ *   - configured workflow → workflow execution → result
  *   - workflow_runs table persistence
- *   - missing-workflow negative path
  *
  * Validates documented behavior of:
  *   - workflow-authoring.md § Workflow Location
- *   - handler-authoring.md § Example: Event-To-Workflow Bridge
- *   - sdk-quickstart.md § Run an Agent / Choose the Right Primitive
+ *
+ * File handlers intentionally cannot launch workflows. Declarative
+ * configuration chooses this standalone workflow and the Host runs it.
  *
  * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import {
-  openSandboxDb,
-  pollUntil,
-  queryEvents,
-  queryWorkflowRuns,
-} from "./lib/live-daemon.js";
+import { openSandboxDb, pollUntil, queryEvents, queryWorkflowRuns } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
-function eventPayload(row: { data: string | null }): Record<string, unknown> {
-  const parsed = JSON.parse(row.data ?? "{}");
-  return (parsed.data ?? parsed) as Record<string, unknown>;
-}
-
-describe("E3b: workflow discovery and dispatch", () => {
+describe("E3b: workflow discovery and scheduled execution", () => {
   let sb: Sandbox;
   const t0 = Date.now();
 
   beforeAll(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
-      fixtureHandlers: { may: ["e2e-dispatch-workflow"] },
       fixtureWorkflows: { may: ["e2e-noop-workflow"] },
       cronJson: {
         may: [
           {
             name: "e2e-dispatch",
-            handler: "e2e-dispatch-workflow",
+            handler: {
+              workflow: "e2e-noop-workflow",
+              agent: "may",
+              task: "e2e test task",
+            },
             intervalMs: 10000,
             agent: "may",
             enabled: true,
@@ -58,32 +51,20 @@ describe("E3b: workflow discovery and dispatch", () => {
   });
 
   test(
-    "workflow is discovered, dispatched, completes, and persists in workflow_runs",
+    "a configured workflow is discovered, completes, and persists in workflow_runs",
     async () => {
       const db = openSandboxDb(sb.dbPath);
       try {
-        // Wait for the dispatch attempt + result.
+        // Wait for the App-authored workflow to run.
         const result = await pollUntil(
           () => {
-            const attempts = queryEvents(db, { types: ["e2e.dispatch.attempt"], since: t0, limit: 5 });
-            const results = queryEvents(db, { types: ["e2e.dispatch.result"], since: t0, limit: 5 });
             const ran = queryEvents(db, { types: ["e2e.workflow_ran"], since: t0, limit: 5 });
-            if (attempts.length >= 1 && results.length >= 1 && ran.length >= 1) {
-              return { attempts, results, ran };
-            }
-            return null;
+            return ran.length >= 1 ? { ran } : null;
           },
-          { timeoutMs: 45_000, intervalMs: 500, description: "workflow dispatch + execution events" },
+          { timeoutMs: 45_000, intervalMs: 500, description: "scheduled workflow execution event" },
         );
 
-        // Workflow ran end-to-end.
         expect(result.ran.length).toBeGreaterThanOrEqual(1);
-
-        const dispatchResultData = JSON.parse(result.results[0].data ?? "{}");
-        const inner = dispatchResultData.data ?? dispatchResultData;
-        expect(inner.workflow).toBe("e2e-noop-workflow");
-        expect(inner.status).toBe("done");
-        expect(inner.summary).toContain("e2e-noop-workflow completed");
 
         // workflow_runs row materialized.
         const runs = queryWorkflowRuns(db, { workflow: "e2e-noop-workflow", since: t0 });
@@ -97,56 +78,4 @@ describe("E3b: workflow discovery and dispatch", () => {
     90_000,
   );
 
-  test(
-    "missing workflow: dispatch returns error, no workflow_runs row, no exception bubbles",
-    async () => {
-      let missingSb: Sandbox | undefined;
-      const missingWorkflow = "e2e-missing-workflow";
-      const missingT0 = Date.now();
-
-      missingSb = await buildSandbox({
-        fixtureAgents: ["may"],
-        fixtureHandlers: { may: ["e2e-dispatch-workflow"] },
-        cronJson: {
-          may: [
-            {
-              name: "e2e-dispatch-missing",
-              handler: "e2e-dispatch-workflow",
-              handlerConfig: { workflow: missingWorkflow },
-              intervalMs: 10000,
-              agent: "may",
-              enabled: true,
-            },
-          ],
-        },
-      });
-      await missingSb.daemonReady;
-
-      const db = openSandboxDb(missingSb.dbPath);
-      try {
-        const result = await pollUntil(
-          () => {
-            const results = queryEvents(db, { types: ["e2e.dispatch.result"], since: missingT0, limit: 5 })
-              .map(eventPayload)
-              .filter((data) => data.workflow === missingWorkflow);
-            const error = results.find((data) => data.status === "error");
-            return error ?? null;
-          },
-          { timeoutMs: 45_000, intervalMs: 500, description: "missing workflow dispatch error" },
-        );
-
-        expect(result.error).toContain(`Workflow "${missingWorkflow}" not found`);
-
-        const runs = queryWorkflowRuns(db, { workflow: missingWorkflow, since: missingT0 });
-        expect(runs).toEqual([]);
-
-        const handlerFailures = queryEvents(db, { types: ["handler.failed"], since: missingT0, limit: 5 });
-        expect(handlerFailures).toEqual([]);
-      } finally {
-        db.close();
-        await missingSb.close();
-      }
-    },
-    70_000,
-  );
 });

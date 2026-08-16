@@ -127,7 +127,6 @@ export type AppAction<TInputSchema extends TSchema = TSchema> = {
 export type AppWorkspace = {
   kind: "git" | "local";
   localPath: string;
-  repo?: string;
   branch?: string;
 };
 

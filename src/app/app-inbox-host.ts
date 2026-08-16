@@ -20,6 +20,7 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxHealth,
   listAppInboxAssociatedSessionClaims,
   listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
@@ -372,6 +373,15 @@ export class AppInboxHost {
 
   get(id: string): AppInboxItem | null {
     return getAppInboxItem(this.#db, id);
+  }
+
+  readyCount(appId: string): number {
+    const app = this.#requiredApp(appId);
+    return listAppInboxHealth(this.#db, { appId: app.id, now: this.#now() })[0]?.ready ?? 0;
+  }
+
+  maxConcurrent(appId: string): number {
+    return this.#requiredApp(appId).inbox?.maxConcurrent ?? 1;
   }
 
   wake(waitingOn: { kind: AppInboxWaitKind; id: string }): number {

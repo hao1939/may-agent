@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { AppTaskCapacity, AppTaskController } from "././app-task-controller.js";
+import { AppTaskController } from "././app-task-controller.js";
+import { HostCapacity } from "./host-capacity.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const started = Date.now();
@@ -93,7 +94,7 @@ describe("AppTaskController", () => {
   });
 
   it("yields to the event loop between shared-capacity handoffs", async () => {
-    const capacity = new AppTaskCapacity(1);
+    const capacity = new HostCapacity(1);
     const started: string[] = [];
     let releaseFirst: (() => void) | undefined;
     const controller = new AppTaskController({
@@ -122,8 +123,8 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
-  it("shares one daemon capacity across independent app controllers", async () => {
-    const capacity = new AppTaskCapacity(1);
+  it("shares one Host capacity across independent App controllers", async () => {
+    const capacity = new HostCapacity(1);
     const started: string[] = [];
     const releases = new Map<string, () => void>();
     const controllerA = new AppTaskController({
@@ -159,9 +160,8 @@ describe("AppTaskController", () => {
     controllerB.close();
   });
 
-  it("shares one app limit across replacement controllers without waiting for a full drain", async () => {
-    const daemonCapacity = new AppTaskCapacity(10);
-    const appCapacity = new AppTaskCapacity(2, daemonCapacity);
+  it("shares the Host limit across replacement controllers", async () => {
+    const appCapacity = new HostCapacity(2);
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
     let releaseCurrent: (() => void) | undefined;
@@ -192,7 +192,6 @@ describe("AppTaskController", () => {
     await waitUntil(() => started.includes("current"));
     expect(started).toEqual(["old", "current"]);
     expect(appCapacity.snapshot()).toEqual({ running: 2, waiting: 0 });
-    expect(daemonCapacity.snapshot()).toEqual({ running: 2, waiting: 0 });
 
     releaseOld?.();
     releaseCurrent?.();
@@ -200,8 +199,8 @@ describe("AppTaskController", () => {
     current.close();
   });
 
-  it("keeps replacement controllers within their shared app limit", async () => {
-    const appCapacity = new AppTaskCapacity(1);
+  it("keeps replacement controllers within the shared Host limit", async () => {
+    const appCapacity = new HostCapacity(1);
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
     let releaseCurrent: (() => void) | undefined;
@@ -240,7 +239,7 @@ describe("AppTaskController", () => {
   });
 
   it("chooses the current front task only after shared capacity is available", async () => {
-    const capacity = new AppTaskCapacity(1);
+    const capacity = new HostCapacity(1);
     const started: string[] = [];
     let releaseBlocker: (() => void) | undefined;
     let releaseGoal: (() => void) | undefined;
@@ -407,9 +406,8 @@ describe("AppTaskController", () => {
   });
 
   it("cancels stale capacity waits when hot reload replaces controllers", async () => {
-    const globalCapacity = new AppTaskCapacity(1);
-    const appCapacity = new AppTaskCapacity(5, globalCapacity);
-    const releaseGlobal = await globalCapacity.acquire();
+    const appCapacity = new HostCapacity(1);
+    const releaseGlobal = await appCapacity.acquire();
     const started: string[] = [];
 
     for (let index = 0; index < 50; index++) {
@@ -435,7 +433,7 @@ describe("AppTaskController", () => {
     current.enqueue("current");
     await new Promise((resolve) => setTimeout(resolve, 5));
     expect(started).toEqual([]);
-    expect(globalCapacity.snapshot().waiting).toBe(1);
+    expect(appCapacity.snapshot().waiting).toBe(1);
 
     releaseGlobal();
     await waitUntil(() => started.includes("current"));

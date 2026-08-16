@@ -10,6 +10,7 @@ import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.
 import { AppRegistry } from "./app-registry.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
+import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
 import {
@@ -130,6 +131,10 @@ export async function runAppRuntime(opts: {
   } = opts.appArgs;
 
   const bus = new EventBus();
+  const configuredHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 2);
+  const hostCapacity = new HostCapacity(
+    Number.isInteger(configuredHostConcurrency) && configuredHostConcurrency > 0 ? configuredHostConcurrency : 2,
+  );
   attachEventPersistence({ bus, persistDir: opts.persistDir });
 
   let taskSessionId: string | undefined;
@@ -185,6 +190,7 @@ export async function runAppRuntime(opts: {
     bus,
     cronEnabled: CRON_ENABLED,
     appRegistry,
+    hostCapacity,
   });
 
   const appTasks = createAppTaskCapability({
@@ -199,7 +205,7 @@ export async function runAppRuntime(opts: {
     db: getDb(opts.persistDir),
     manager,
     bus,
-    runOwner: appTasks.runOwner,
+    runOwner: (work) => hostCapacity.run(work),
     attachTask: appTasks.attach,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),

@@ -55,7 +55,8 @@ import { readRuntimeTaskView } from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
-import { AppTaskCapacity, AppTaskController } from "./app-task-controller.js";
+import { AppTaskController } from "./app-task-controller.js";
+import { HostCapacity } from "./host-capacity.js";
 import type { AppTaskQueueOptions } from "./app-task-queue.js";
 import {
   matchingAppTaskConditionTaskIds,
@@ -139,6 +140,7 @@ export interface AppTaskRuntimeOptions {
   sharedRoot?: string;
   manager: SubagentManager;
   bus: EventBus;
+  hostCapacity: HostCapacity;
   appRegistry?: AppRegistry;
   /** Prospective canonical generation used during one coordinated reload. */
   appRegistrySnapshot?: AppRegistrySnapshot;
@@ -2178,46 +2180,6 @@ function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTa
 }
 
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
-const appTaskCapacityByBus = new WeakMap<EventBus, AppTaskCapacity>();
-const appTaskCapacityByAppByBus = new WeakMap<EventBus, Map<string, AppTaskCapacity>>();
-// This is mechanical host backpressure, not an app scheduler. Every resource
-// remains independently reconciled, but a recovery burst must leave enough CPU
-// and memory for event ingress, persistence, and human control.
-const DEFAULT_GLOBAL_APP_TASK_CONCURRENCY = 2;
-
-export function appTaskGlobalConcurrency(value: unknown = process.env.MAY_APP_TASK_GLOBAL_CONCURRENCY): number {
-  const configured = Number(value ?? DEFAULT_GLOBAL_APP_TASK_CONCURRENCY);
-  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_GLOBAL_APP_TASK_CONCURRENCY;
-}
-
-function taskCapacityForBus(bus: EventBus): AppTaskCapacity {
-  const existing = appTaskCapacityByBus.get(bus);
-  if (existing) return existing;
-  const capacity = new AppTaskCapacity(appTaskGlobalConcurrency());
-  appTaskCapacityByBus.set(bus, capacity);
-  return capacity;
-}
-
-/** Transitional shared execution budget for task and App-owner reconciles. */
-export function runWithAppTaskRuntimeCapacity<T>(bus: EventBus, work: () => Promise<T>): Promise<T> {
-  return taskCapacityForBus(bus).run(work);
-}
-
-function taskCapacityForApp(bus: EventBus, appId: string, maxConcurrent: number): AppTaskCapacity {
-  let capacities = appTaskCapacityByAppByBus.get(bus);
-  if (!capacities) {
-    capacities = new Map();
-    appTaskCapacityByAppByBus.set(bus, capacities);
-  }
-  const existing = capacities.get(appId);
-  if (existing) {
-    existing.resize(maxConcurrent);
-    return existing;
-  }
-  const capacity = new AppTaskCapacity(maxConcurrent, taskCapacityForBus(bus));
-  capacities.set(appId, capacity);
-  return capacity;
-}
 
 function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, note: string): DeliveryResult {
   return {
@@ -2231,7 +2193,7 @@ function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, n
 function admitResolvedAppTaskEvent(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
-  controller: AppTaskController;
+  controller?: AppTaskController;
   event: Record<string, unknown>;
   intent: AppTaskIntent | null;
   targetedTaskId?: string;
@@ -2241,8 +2203,10 @@ function admitResolvedAppTaskEvent(input: {
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
   const config = appTaskConfig(descriptor);
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, input.conditionTaskIds ?? []);
-  for (const wake of conditionWakes) {
-    enqueueAppTask(controller, config, wake.taskId, { front: true });
+  if (controller) {
+    for (const wake of conditionWakes) {
+      enqueueAppTask(controller, config, wake.taskId, { front: true });
+    }
   }
   const conditionDelivery = conditionWakes.length
     ? appTaskDelivery(descriptor, conditionWakes.map((wake) => wake.taskId).join(","), "task Condition event accepted")
@@ -2259,7 +2223,7 @@ function admitResolvedAppTaskEvent(input: {
     }
     const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
     if (triggerResult.kind === "recorded") {
-      enqueueAppTask(controller, config, targetedTaskId, { front: true });
+      if (controller) enqueueAppTask(controller, config, targetedTaskId, { front: true });
       return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
     }
     if (triggerResult.kind === "waiting") {
@@ -2279,7 +2243,7 @@ function admitResolvedAppTaskEvent(input: {
     trigger: event,
   });
   interruptSupersededObservationSessions(opts, observation);
-  if (observation.kind === "observed") {
+  if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       front: event.type === "project.comment.created",
     });
@@ -2305,7 +2269,7 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
   }
   const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
   const opts = appRouterOptionsByBus.get(input.bus);
-  if (!controller || !opts) {
+  if (!opts || (!controller && !descriptor.reconciliationPaused)) {
     throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
   }
   return admitResolvedAppTaskEvent({
@@ -2436,7 +2400,7 @@ function installConventionTaskControllers(
     }
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-      capacity: taskCapacityForApp(opts.bus, descriptor.id, descriptor.app.tasks?.maxConcurrent ?? 1),
+      capacity: opts.hostCapacity,
       // A superseded generation may still be finishing a reconcile that owns
       // the task-state lock. Queue the replacement immediately, but do not let
       // it claim work until every previous controller has drained.
@@ -2557,7 +2521,7 @@ export function attachLoadedAppTask(input: {
     throw new Error(`App ${descriptor.id} does not declare task reconciliation`);
   }
   const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
-  if (!controller) {
+  if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`App ${descriptor.id} task reconciliation is not active`);
   }
   const loaderOptions = appRouterOptionsByBus.get(input.bus);
@@ -2603,7 +2567,7 @@ export function attachLoadedAppTask(input: {
     },
   });
   interruptSupersededObservationSessions(loaderOptions, observation);
-  if (observation.kind === "observed") {
+  if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId);
   }
   return {
@@ -2797,11 +2761,13 @@ function recoverInterruptedAppTasks(
  * generic stale-session resumption so task-owned sessions are reconciled by
  * their durable task state first.
  */
-export function recoverInstalledAppTasks(opts: AppTaskRuntimeOptions): Set<string> {
+export function recoverInstalledAppTasks(bus: EventBus): Set<string> {
+  const opts = appRouterOptionsByBus.get(bus);
+  if (!opts) return new Set();
   return recoverInterruptedAppTasks(
     opts,
-    appRouterDescriptorsByBus.get(opts.bus) ?? [],
-    appTaskControllersByBus.get(opts.bus) ?? new Map(),
+    appRouterDescriptorsByBus.get(bus) ?? [],
+    appTaskControllersByBus.get(bus) ?? new Map(),
     true,
   );
 }

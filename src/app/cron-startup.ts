@@ -72,9 +72,7 @@ export function shouldResumeStartupSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts } = options;
 
-  const claimedAppTaskSessionIds = recoverInstalledAppTasks({
-    ...loaderOpts,
-  });
+  const claimedAppTaskSessionIds = recoverInstalledAppTasks(bus);
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
     shouldResume: (sessionId, session) => shouldResumeStartupSession(sessionId, session, claimedAppTaskSessionIds),
