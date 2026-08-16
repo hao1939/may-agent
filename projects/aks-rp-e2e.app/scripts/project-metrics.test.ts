@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import {
   activeTaskAssignments,
+  activeTaskAttemptId,
   activeTaskSessionId,
+  composeTaskTreeMetricView,
   assignmentStillLooksUnconsumed,
   liveTaskMetricFrontier,
   normalizeWorkflowTaskLivenessRow,
@@ -15,6 +17,46 @@ import {
   workflowDispatchRecentStartLooksHealthy,
   workflowRunRecentSessionGapLooksHealthy,
 } from "./project-metrics.ts";
+
+describe("composeTaskTreeMetricView", () => {
+  it("combines projected root/tasks with canonical resources/attempts", () => {
+    const projection = {
+      root_task_id: "project",
+      active_task_ids: ["ops/repair"],
+      tasks: {
+        project: { id: "project", children: ["ops/repair"] },
+        "ops/repair": { id: "ops/repair", children: [], phase: "running" },
+      },
+    };
+    const canonical = {
+      root_task_id: "stale-canonical-root",
+      resources: {
+        "ops/repair": { status: { currentAttemptId: "attempt-7" } },
+      },
+      attempts: {
+        "attempt-7": {
+          metadata: { id: "attempt-7" },
+          taskId: "ops/repair",
+          state: "running",
+        },
+      },
+    };
+
+    expect(composeTaskTreeMetricView(projection, canonical)).toMatchObject({
+      root_task_id: "project",
+      active_task_ids: ["ops/repair"],
+      tasks: projection.tasks,
+      resources: canonical.resources,
+      attempts: canonical.attempts,
+    });
+  });
+});
+
+describe("activeTaskAttemptId", () => {
+  it("does not dereference a missing projected task while canonical attempts roll up", () => {
+    expect(activeTaskAttemptId(undefined)).toBe("");
+  });
+});
 
 describe("activeTaskSessionId", () => {
   it("reads the current canonical attempt session when the task projection omits legacy session fields", () => {

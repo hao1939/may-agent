@@ -62,8 +62,29 @@ function taskTreeConfig(input: {
   };
 }
 
+export function composeTaskTreeMetricView(
+  projection: TaskTree,
+  canonical: TaskTree,
+): TaskTree {
+  return {
+    ...canonical,
+    ...projection,
+    root_task_id: projection.root_task_id,
+    active_task_ids: projection.active_task_ids,
+    tasks: projection.tasks,
+    resources: canonical.resources,
+    attempts: canonical.attempts,
+  };
+}
+
 function readTaskTree(config: TaskTreeConfigLike): TaskTree {
-  return JSON.parse(readFileSync(config.statePath, "utf8")) as TaskTree;
+  const projection = JSON.parse(
+    readFileSync(config.treePath, "utf8"),
+  ) as TaskTree;
+  const canonical = JSON.parse(
+    readFileSync(config.statePath, "utf8"),
+  ) as TaskTree;
+  return composeTaskTreeMetricView(projection, canonical);
 }
 
 function readTaskTreeProjection(config: TaskTreeConfigLike): TaskTree {
@@ -2934,7 +2955,8 @@ function activeTaskResource(task: TaskNode): Record<string, unknown> | null {
   return recordValue(loadTaskTree().resources?.[taskId] ?? null);
 }
 
-function activeTaskAttemptId(task: TaskNode): string {
+export function activeTaskAttemptId(task: TaskNode | null | undefined): string {
+  if (!task) return "";
   const trace = recordValue(task.trace);
   for (const key of [
     "current_attempt_id",
