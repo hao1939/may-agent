@@ -3,12 +3,10 @@ import { join, resolve } from "node:path";
 import type { AppDefinition } from "@may-agent/sdk";
 import { importRuntimeModule, type RuntimeImportOptions } from "../../lib/runtime-import.js";
 import { assertValidAppDefinition } from "../app-definition-validation.js";
-import { adaptLegacyProjectApp } from "./legacy-project-app-adapter.js";
 
 export type LoadedAppDefinition = {
   appDir: string;
   definition: AppDefinition;
-  compatibility: "canonical" | "legacy-project-app";
 };
 
 export function listAppDefinitionFiles(projectsRoot: string): string[] {
@@ -39,16 +37,11 @@ export async function loadAppDefinitions(
     const exported = mod.default ?? mod.app;
     if (!exported || typeof exported !== "object")
       throw new Error(`App module ${modulePath} must default-export an App definition`);
-    const adapted = adaptLegacyProjectApp(exported);
-    const definition = adapted ?? exported;
+    const definition = exported;
     assertValidAppDefinition(definition);
     if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
     ids.add(definition.id);
-    loaded.push({
-      appDir: resolve(modulePath, ".."),
-      definition,
-      compatibility: adapted ? "legacy-project-app" : "canonical",
-    });
+    loaded.push({ appDir: resolve(modulePath, ".."), definition });
   }
   return loaded;
 }
