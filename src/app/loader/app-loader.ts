@@ -8,6 +8,7 @@ import { adaptLegacyProjectApp } from "./legacy-project-app-adapter.js";
 export type LoadedAppDefinition = {
   appDir: string;
   definition: AppDefinition;
+  compatibility: "canonical" | "legacy-project-app";
 };
 
 export function listAppDefinitionFiles(projectsRoot: string): string[] {
@@ -38,11 +39,16 @@ export async function loadAppDefinitions(
     const exported = mod.default ?? mod.app;
     if (!exported || typeof exported !== "object")
       throw new Error(`App module ${modulePath} must default-export an App definition`);
-    const definition = adaptLegacyProjectApp(exported) ?? exported;
+    const adapted = adaptLegacyProjectApp(exported);
+    const definition = adapted ?? exported;
     assertValidAppDefinition(definition);
     if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
     ids.add(definition.id);
-    loaded.push({ appDir: resolve(modulePath, ".."), definition });
+    loaded.push({
+      appDir: resolve(modulePath, ".."),
+      definition,
+      compatibility: adapted ? "legacy-project-app" : "canonical",
+    });
   }
   return loaded;
 }
