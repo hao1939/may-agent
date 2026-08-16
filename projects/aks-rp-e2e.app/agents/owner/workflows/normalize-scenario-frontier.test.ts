@@ -2205,6 +2205,81 @@ describe("normalize scenario frontier workflow", () => {
     ]);
   });
 
+  test("skips an immutable completed quality task id while selecting another unrepresented row", async () => {
+    const qualityRow = (name: string) => ({
+      specId: `spec.feature-a.${name}`,
+      specFile: `features/feature-a/specs/${name}.json`,
+      featureId: "feature-a",
+      scenarioTestPath: `features/feature-a/tests/${name}.test.ts`,
+      adapterPath: "",
+      directVitestImplementation: true,
+      scenarioSignals: {
+        hasCheckModeGuard: true,
+        hasExecuteFlag: true,
+        hasMutationGateEnv: true,
+        writesArchiveEvidence: true,
+        hasCleanupSignal: false,
+        mentionsSharedFixture: false,
+        hasHardCodedSubscriptionDefault: false,
+      },
+    });
+    const spec = (name: string) =>
+      JSON.stringify({
+        id: `spec.feature-a.${name}`,
+        probeRef: `features/feature-a/tests/${name}.test.ts`,
+        implementation: {
+          type: "typescript-vitest",
+          path: `features/feature-a/tests/${name}.test.ts`,
+        },
+        featureId: "feature-a",
+        sourceRefs: ["https://learn.microsoft.com/azure/example"],
+      });
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: true,
+      activeSpecCount: 2,
+      repositoryCheckExitCode: 0,
+      reportRows: [qualityRow("case-a"), qualityRow("case-b")],
+      files: {
+        "features/feature-a/specs/case-a.json": spec("case-a"),
+        "features/feature-a/specs/case-b.json": spec("case-b"),
+        "features/feature-a/tests/case-a.test.ts": "// case-a quality row\n",
+        "features/feature-a/tests/case-b.test.ts": "// case-b quality row\n",
+      },
+    });
+    const taskInput = { requiredRepositoryCheckCommand: "bun run check" };
+    const initial = (await execute(
+      context(ws.appDir, ws.projectDir, taskInput),
+    )) as any;
+    const completedId = initial.output.actions.find(
+      (action: any) =>
+        action.input.scenarioTestPath ===
+        "features/feature-a/tests/case-a.test.ts",
+    ).id;
+    const statePath = join(ws.appDir, ".state", "tasks", "state.json");
+    const state = JSON.parse(await Bun.file(statePath).text());
+    state.receipts[completedId] = {
+      parentId: "scenario-normalization",
+      summary:
+        "Immutable completed receipt for the same stable quality task id.",
+      evidence: [],
+    };
+    await writeFile(statePath, JSON.stringify(state));
+
+    const result = (await execute(
+      context(ws.appDir, ws.projectDir, taskInput),
+    )) as any;
+
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0].id).not.toBe(completedId);
+    expect(result.output.actions[0].input.scenarioTestPath).toBe(
+      "features/feature-a/tests/case-b.test.ts",
+    );
+    expect(result.output.evidence).toContain(
+      "completed-receipt-represented-quality-rows:1",
+    );
+  });
+
   test("upgrades active quality leaves that still allow terminal disposition", async () => {
     const ws = await workspace({
       missingAdapterFiles: [],

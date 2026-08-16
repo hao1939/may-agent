@@ -1038,6 +1038,14 @@ function branchCandidateEvidence(
     : "unchecked";
 }
 
+function completedTaskIds(
+  reconciliation: TaskReconciliationContext | undefined,
+): ReadonlySet<string> {
+  return new Set(
+    (reconciliation?.children.completed ?? []).map((child) => child.taskId),
+  );
+}
+
 function graphNodes(
   reconciliation: TaskReconciliationContext | undefined,
 ): GraphNode[] {
@@ -1344,13 +1352,18 @@ function plainRowMatchesNode(row: PlainCarrierRow, node: GraphNode): boolean {
   );
 }
 
+function adapterRowTaskId(row: FrontierRow, originDevCommit: string): string {
+  const workRevision = digest(`${originDevCommit}:${row.adapterPath}`);
+  return `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}-${workRevision.slice(0, 8)}`;
+}
+
 function actionForRow(
   row: FrontierRow,
   originDevCommit: string,
   report: InventoryReport,
 ): TaskAction {
   const workRevision = digest(`${originDevCommit}:${row.adapterPath}`);
-  const id = `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}-${workRevision.slice(0, 8)}`;
+  const id = adapterRowTaskId(row, originDevCommit);
   return {
     kind: "create-task",
     id,
@@ -1396,13 +1409,21 @@ function actionForRow(
   };
 }
 
+function plainCarrierRowTaskId(
+  row: PlainCarrierRow,
+  originDevCommit: string,
+): string {
+  const workRevision = digest(`${originDevCommit}:${row.scenarioTestPath}`);
+  return `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
+}
+
 function actionForPlainCarrierRow(
   row: PlainCarrierRow,
   originDevCommit: string,
   report: InventoryReport,
 ): TaskAction {
   const workRevision = digest(`${originDevCommit}:${row.scenarioTestPath}`);
-  const id = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
+  const id = plainCarrierRowTaskId(row, originDevCommit);
   const owningSpecs = row.specIds.join(", ") || "its current consumers";
   return {
     kind: "create-task",
@@ -1906,6 +1927,14 @@ function qualityRowWorkRevision(
   return digest(`${originDevCommit}:${row.scenarioTestPath}:quality`);
 }
 
+function qualityRowTaskId(
+  row: QualityFrontierRow,
+  originDevCommit: string,
+): string {
+  const workRevision = qualityRowWorkRevision(row, originDevCommit);
+  return `domain/reconcile-direct-scenario-quality-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
+}
+
 function qualityRowOutcome(row: QualityFrontierRow): string {
   const owningSpecs = row.specIds.join(", ") || "its current consumers";
   return `Normalize current origin/dev direct scenario carrier quality for ${row.scenarioTestPath} (${owningSpecs}) so the standalone .test.ts implementation matches the learned direct-carrier contract without ${row.issueCodes.join(", ")}.`;
@@ -1964,8 +1993,7 @@ function actionForQualityRow(
   originDevCommit: string,
   report: InventoryReport,
 ): TaskAction {
-  const workRevision = qualityRowWorkRevision(row, originDevCommit);
-  const id = `domain/reconcile-direct-scenario-quality-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
+  const id = qualityRowTaskId(row, originDevCommit);
   return {
     kind: "create-task",
     id,
@@ -2087,6 +2115,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const minRunnableLeaves = desiredRunnableMin(ctx);
   const nodes = graphNodes(ctx.reconciliation);
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const completedIds = completedTaskIds(ctx.reconciliation);
 
   return withCleanOriginDev(projectDir, (worktreeDir, source) => {
     const {
@@ -2223,8 +2252,14 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         );
       }
       if (fileLayoutOnlyComplete && qualityRows.length > 0) {
-        const rowsNeedingWork = qualityRows.filter(
+        const unrepresentedRows = qualityRows.filter(
           (row) => !rowHasSourceNormalizationOwner(row, nodesById),
+        );
+        const completedReceiptRows = unrepresentedRows.filter((row) =>
+          completedIds.has(qualityRowTaskId(row, originDevCommit)),
+        );
+        const rowsNeedingWork = unrepresentedRows.filter(
+          (row) => !completedIds.has(qualityRowTaskId(row, originDevCommit)),
         );
         const accounting = loopFrontierAccounting(
           qualityRows.flatMap((row) =>
@@ -2308,6 +2343,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             `actionable-quality-rows:${accounting.actionableTaskIds.length}`,
             `waiting-quality-rows:${accounting.waitingTaskIds.length}`,
             `unrepresented-quality-rows:${rowsNeedingWork.length}`,
+            ...(completedReceiptRows.length > 0
+              ? [
+                  `completed-receipt-represented-quality-rows:${completedReceiptRows.length}`,
+                ]
+              : []),
           ],
           qualityRows,
           (row) =>
@@ -2387,8 +2427,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
               specReferencedRows,
               nodes,
             );
-        const rowsNeedingWork = rows.filter(
+        const unrepresentedRows = rows.filter(
           (row) => !rowHasSourceNormalizationOwner(row, nodesById),
+        );
+        const completedReceiptRows = unrepresentedRows.filter((row) =>
+          completedIds.has(plainCarrierRowTaskId(row, originDevCommit)),
+        );
+        const rowsNeedingWork = unrepresentedRows.filter(
+          (row) =>
+            !completedIds.has(plainCarrierRowTaskId(row, originDevCommit)),
         );
         const accounting = loopFrontierAccounting(
           rows.flatMap((row) =>
@@ -2473,6 +2520,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             `actionable-plain-rows:${accounting.actionableTaskIds.length}`,
             `waiting-plain-rows:${accounting.waitingTaskIds.length}`,
             `unrepresented-plain-rows:${rowsNeedingWork.length}`,
+            `completed-receipt-represented-plain-rows:${completedReceiptRows.length}`,
           ],
           rows,
           (row) =>
@@ -2503,8 +2551,14 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     }
 
     const rows = buildRows(worktreeDir, missingAdapterFiles, nodes);
-    const rowsNeedingWork = rows.filter(
+    const unrepresentedRows = rows.filter(
       (row) => row.representedTaskIds.length === 0,
+    );
+    const completedReceiptRows = unrepresentedRows.filter((row) =>
+      completedIds.has(adapterRowTaskId(row, originDevCommit)),
+    );
+    const rowsNeedingWork = unrepresentedRows.filter(
+      (row) => !completedIds.has(adapterRowTaskId(row, originDevCommit)),
     );
     const accounting = loopFrontierAccounting(
       rows.flatMap((row) =>
@@ -2549,6 +2603,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       [
         ...evidence,
         `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length};owner-handoffs=${capacity.ownerHandoffTaskIds.length}`,
+        `completed-receipt-represented-adapter-rows:${completedReceiptRows.length}`,
       ],
       rows,
       (row) =>
