@@ -1294,9 +1294,11 @@ describe("App inbox runtime", () => {
       );
     }
     const deliveries: Array<{ event: AgentEvent; result: unknown }> = [];
+    const persistedEvents: AgentEvent[] = [];
     const bus = new EventBus();
     let rowId = 100;
     bus.setPersistenceSubscriber((event) => {
+      persistedEvents.push(event);
       Object.defineProperty(event, EVENT_ROW_ID, { value: rowId++, configurable: true });
     });
     bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
@@ -1320,11 +1322,19 @@ describe("App inbox runtime", () => {
       owner: "agent:evaluator",
       data: { from: "may", to: "evaluator", content: "not a probe" },
     });
+    const humanNotification = bus.emit({
+      type: "message.created",
+      source: "agent:tech-lead",
+      owner: "human:operator",
+      data: { from: "tech-lead", to: "human", content: "Daily ops digest." },
+    });
 
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
     expect(deliveries).toEqual([]);
     expect(ambiguous[EVENT_ROW_ID]).toBeDefined();
     expect(incompatible[EVENT_ROW_ID]).toBeDefined();
+    expect(humanNotification[EVENT_ROW_ID]).toBeDefined();
+    expect(persistedEvents.filter((event) => event.type === "subscriber.failed")).toHaveLength(2);
   });
 
   it("preserves human channel metadata through admission and owner dispatch", async () => {

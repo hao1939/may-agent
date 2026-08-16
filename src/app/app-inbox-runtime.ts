@@ -113,7 +113,7 @@ function normalizedAgent(value: unknown): string | undefined {
   return value.trim().replace(/^agent:/, "");
 }
 
-const NON_AGENT_MESSAGE_SENDERS = new Set(["human", "operator", "telegram", "console", "socket"]);
+const NON_AGENT_MESSAGE_PARTICIPANTS = new Set(["human", "operator", "telegram", "console", "socket"]);
 
 function addressedAgentMessage(event: AgentEvent):
   | {
@@ -135,7 +135,15 @@ function addressedAgentMessage(event: AgentEvent):
   // can still point at a channel-facing agent.
   const targetOwner = normalizedAgent(data.to);
   const sender = normalizedAgent(data.from) ?? normalizedAgent((event as { source?: unknown }).source);
-  if (!targetOwner || !sender || sender === targetOwner || NON_AGENT_MESSAGE_SENDERS.has(sender)) return undefined;
+  if (
+    !targetOwner ||
+    !sender ||
+    sender === targetOwner ||
+    NON_AGENT_MESSAGE_PARTICIPANTS.has(sender) ||
+    NON_AGENT_MESSAGE_PARTICIPANTS.has(targetOwner)
+  ) {
+    return undefined;
+  }
   if (data.intent === "chat.start" || data.intent === "fork") return undefined;
 
   const context: Record<string, unknown> = {};
