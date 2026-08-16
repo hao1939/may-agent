@@ -12,6 +12,7 @@ import type { AgentLoaderOptions } from "./agent-loader.js";
 import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
+import type { HostCapacity } from "./host-capacity.js";
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
@@ -24,6 +25,7 @@ export async function prepareDaemonAgents(opts: {
   bus: EventBus;
   cronEnabled: boolean;
   appRegistry: AppRegistry;
+  hostCapacity: HostCapacity;
 }): Promise<{ loaderOpts: AgentLoaderOptions; appTaskOptions?: AppTaskRuntimeOptions }> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
@@ -136,6 +138,7 @@ export async function prepareDaemonAgents(opts: {
       sharedRoot: opts.sharedRoot,
       manager: opts.manager,
       bus: opts.bus,
+      hostCapacity: opts.hostCapacity,
       registerLocalAgent,
       appRegistry: opts.appRegistry,
     };

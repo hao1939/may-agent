@@ -23,7 +23,7 @@ describe("cron startup recovery", () => {
   it("runs installed App task recovery before generic stale-session resumption", () => {
     const source = readFileSync(new URL("./cron-startup.ts", import.meta.url), "utf8");
     const recoveryImport = source.indexOf('import { recoverInstalledAppTasks } from "./app-task-runtime.js";');
-    const recoveryCall = source.indexOf("const claimedAppTaskSessionIds = recoverInstalledAppTasks({");
+    const recoveryCall = source.indexOf("const claimedAppTaskSessionIds = recoverInstalledAppTasks(bus);");
     const staleResume = source.indexOf("manager.resumeStaleSessions(");
 
     expect(recoveryImport).toBeGreaterThan(-1);

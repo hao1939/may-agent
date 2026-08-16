@@ -60,7 +60,8 @@ export type StartAppInboxRuntimeOptions = {
     dependency: { kind: "task" | "session"; id: string };
   }) => Promise<AppDependencyObservation | null>;
   runOwner?: <T>(work: () => Promise<T>) => Promise<T>;
-  maxConcurrentApps?: number;
+  /** Maximum request batches the Host may process at once. */
+  maxConcurrentRequests?: number;
   scanIntervalMs?: number;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -206,13 +207,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     maxBatchSize: options.maxBatchSize,
   });
   host.recoverDeliveries();
-  const active = new Set<string>();
+  const active = new Map<string, number>();
   const dirty = new Set<string>();
   const pending: string[] = [];
   const queued = new Set<string>();
-  const maxConcurrentApps = options.maxConcurrentApps ?? 2;
-  if (!Number.isSafeInteger(maxConcurrentApps) || maxConcurrentApps <= 0) {
-    throw new Error("App inbox maxConcurrentApps must be a positive safe integer");
+  const maxConcurrentRequests = options.maxConcurrentRequests ?? 2;
+  if (!Number.isSafeInteger(maxConcurrentRequests) || maxConcurrentRequests <= 0) {
+    throw new Error("App request concurrency must be a positive safe integer");
   }
   let closed = false;
   let deliveryEnabled = false;
@@ -227,23 +228,31 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
   });
   observerRuntime.replace(loaded);
-  const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number }>();
+  const scheduleActivations = new Map<
+    string,
+    { fingerprint: string; activatedAt: number; lastEventSlot?: number }
+  >();
 
   const refreshScheduleActivations = (): void => {
     const activeKeys = new Set<string>();
     for (const { definition } of loaded) {
       for (const schedule of definition.schedules ?? []) {
-        if (!schedule.input) continue;
         const key = `${definition.id}/${schedule.id}`;
         activeKeys.add(key);
         const fingerprint = JSON.stringify({
           intervalMs: schedule.intervalMs,
-          input: schedule.input,
-          catchUp: schedule.catchUp ?? "latest",
+          ...(schedule.input
+            ? { input: schedule.input, catchUp: schedule.catchUp ?? "latest" }
+            : { event: schedule.event }),
           enabled: schedule.enabled !== false,
         });
         if (scheduleActivations.get(key)?.fingerprint !== fingerprint) {
-          scheduleActivations.set(key, { fingerprint, activatedAt: now() });
+          const activatedAt = now();
+          scheduleActivations.set(key, {
+            fingerprint,
+            activatedAt,
+            ...(!schedule.input ? { lastEventSlot: Math.floor(activatedAt / schedule.intervalMs) } : {}),
+          });
         }
       }
     }
@@ -313,18 +322,24 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const pump = (): void => {
-    while (!closed && active.size < maxConcurrentApps) {
+    const activeCount = () => [...active.values()].reduce((total, count) => total + count, 0);
+    while (!closed && activeCount() < maxConcurrentRequests) {
       const appId = pending.shift();
       if (!appId) return;
       queued.delete(appId);
-      if (active.has(appId) || !dirty.has(appId)) continue;
-      active.add(appId);
+      if (!dirty.has(appId)) continue;
+      const appActive = active.get(appId) ?? 0;
+      if (appActive >= host.maxConcurrent(appId)) continue;
+      active.set(appId, appActive + 1);
       dirty.delete(appId);
-      void host
-        .reconcileOnce(appId)
+      const work = host.reconcileOnce(appId);
+      // reconcileOnce claims its batch before its first asynchronous boundary.
+      // Requeue immediately when another independent item is ready and both
+      // the App and Host still have room.
+      if (host.readyCount(appId) > 0) schedule(appId);
+      void work
         .then((outcome) => {
           report(appId, outcome);
-          if (outcome.claimed > 0) dirty.add(appId);
           pumpDeliveries();
         })
         .catch((error) => {
@@ -334,7 +349,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           });
         })
         .finally(() => {
-          active.delete(appId);
+          const remaining = (active.get(appId) ?? 1) - 1;
+          if (remaining > 0) active.set(appId, remaining);
+          else active.delete(appId);
           if (dirty.has(appId)) schedule(appId);
           pump();
         });
@@ -344,7 +361,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const schedule = (appId: string): void => {
     if (closed || !host.appIds().includes(appId)) return;
     dirty.add(appId);
-    if (active.has(appId) || queued.has(appId)) return;
+    if (queued.has(appId)) return;
+    const appActive = active.get(appId) ?? 0;
+    if (appActive >= host.maxConcurrent(appId)) return;
+    const activeCount = [...active.values()].reduce((total, count) => total + count, 0);
+    // When Host capacity is full, let another App queue ahead of additional
+    // work for the App that is already running. This preserves round-robin
+    // fairness without preventing real per-App concurrency when room exists.
+    if (appActive > 0 && activeCount >= maxConcurrentRequests) return;
     queued.add(appId);
     pending.push(appId);
     pump();
@@ -375,11 +399,25 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const currentTime = now();
     for (const { definition } of loaded) {
       for (const configuredSchedule of definition.schedules ?? []) {
-        if (!configuredSchedule.input) continue;
         if (configuredSchedule.enabled === false) continue;
         const activation = scheduleActivations.get(`${definition.id}/${configuredSchedule.id}`);
         if (!activation) continue;
         const slot = Math.floor(currentTime / configuredSchedule.intervalMs);
+        if (!configuredSchedule.input) {
+          if (activation.lastEventSlot === undefined || slot <= activation.lastEventSlot) continue;
+          const event = configuredSchedule.event;
+          options.bus.emit({
+            ...event,
+            source: event.source ?? `app:${definition.id}:schedule:${configuredSchedule.id}`,
+            owner: event.owner ?? `app:${definition.id}`,
+            data: {
+              ...record(event.data),
+              idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+            },
+          } as AgentEvent);
+          activation.lastEventSlot = slot;
+          continue;
+        }
         const slotStartedAt = slot * configuredSchedule.intervalMs;
         if ((configuredSchedule.catchUp ?? "latest") === "none" && slotStartedAt < activation.activatedAt) continue;
         const admitted = host.admit({
