@@ -55,9 +55,9 @@ user request once, and if the retry is still empty leaves the session `idle`
 with a visible error on the `session.idle` event.
 
 This persistent-chat policy applies to direct agent chat. Ordinary May input
-uses the durable `may` App contract instead: one human request owns one App
-inbox item and each owner pass uses a bounded job session. A restart may replace
-that session without replacing or replaying the human request. See
+publishes `app.input.requested`: one linked May request owns one App inbox item,
+and each owner pass uses a bounded job session. A restart may replace that
+session without replacing or replaying the opening event or human request. See
 [Human Control Surfaces](human-control-surfaces.md).
 
 ## Chat Turn Causality
@@ -76,6 +76,17 @@ new trace even though the session id remains unchanged.
 `requestId` is retained only as legacy metadata. It must not open, close, or
 correlate lifecycle pairs. Persisted event ids, explicit pair contracts, and
 trace links are authoritative.
+
+## Session controls
+
+Steer and cancel are required event types with an exact `target.sessionId`.
+The Host rejects a missing or nonexistent target before issuing a receipt. A
+bare cancel never expands to cancel-all.
+
+Acceptance means the deterministic session controller durably correlated the
+operation or the exact idempotent state already holds. It does not mean the
+session has reached its requested terminal state. Callers use the opening event
+ID and linked session read to observe progress.
 
 ## Session Tree
 

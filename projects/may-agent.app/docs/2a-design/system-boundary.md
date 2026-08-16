@@ -17,9 +17,10 @@ third owner or something an App composes.
 ## The boundary in one flow
 
 ```text
-input or fact
-  -> Host stores it
-  -> App decides what it means
+event
+  -> Host validates and stores it
+  -> explicit event route creates any linked responsibility
+  -> App decides what domain work means
   -> Host runs bounded work when the App asks
   -> App decides whether the result is enough
   -> Host stores, recovers, and delivers the result
@@ -140,16 +141,17 @@ bounded workflows. The SDK does not expose SQL, files and locks, queues,
 leases, scheduler handles, event-bus handles, process recovery, delivery
 internals, or global paths.
 
-External interfaces have only four kinds of write:
+External interfaces have one state-changing operation:
 
 ```text
-admit App input
-publish fact
-control an exact task or session
-control Host lifecycle
+publish(event)
 ```
 
-They do not call App owners or the model runner directly.
+The event type selects one of four existing Host meanings: App input, reported
+fact, exact task/session control, or Host lifecycle control. `get(eventId)`
+reads delivery and linked outcomes; `subscribe(filter)` observes events.
+Adapters do not call App owners or the model runner directly, and Apps do not
+receive this Host interface.
 
 ## Extension rule
 

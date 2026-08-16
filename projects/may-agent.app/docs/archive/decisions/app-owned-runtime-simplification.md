@@ -843,14 +843,14 @@ forbidden.
 
 Acceptance would require coordinated updates to:
 
-- [System Model](../2a-design/system-model.md);
-- [Architecture](../2a-design/architecture.md);
-- [Infra Surface Design](../2a-design/system-boundary.md);
-- [Agent App Contract](../2a-design/agent-app.md);
-- [SDK](../2a-design/sdk.md);
-- [Events](../2a-design/events.md);
-- [Escalation](../2a-design/escalation.md);
-- [Message Lifecycle](../2a-design/message-lifecycle.md); and
+- [System Model](../../2a-design/system-model.md);
+- [Architecture](../../2a-design/architecture.md);
+- [Infra Surface Design](../../2a-design/system-boundary.md);
+- [Agent App Contract](../../2a-design/agent-app.md);
+- [SDK](../../2a-design/sdk.md);
+- [Events](../../2a-design/events.md);
+- [Escalation](../../2a-design/escalation.md);
+- [Message Lifecycle](../../2a-design/message-lifecycle.md); and
 - [Agent App External Interaction](agent-app-external-interaction-contract.md).
 
 The task, workflow, session, and agent execution contracts should remain

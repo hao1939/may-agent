@@ -12,8 +12,8 @@ Host = persist, schedule, run, recover, deliver
 App  = define meaning, policy, desired outcomes, acceptance
 ```
 
-Agents and workflows are bounded code an App may ask the Host to run. Requests,
-tasks, and facts are durable records the Host stores. They are useful names,
+Agents and workflows are bounded code an App may ask the Host to run. Events,
+requests, tasks, and facts are durable records the Host stores. They are useful names,
 but they do not add more owners or layers to the model.
 
 See [Projects](projects.md) for durable project posture,
@@ -32,7 +32,8 @@ an outcome may need several tries         -> task
 something happened but creates no work    -> fact
 ```
 
-The Host stores all three. The App decides which one an input or fact creates.
+Every input or fact first enters as an event. The App decides which linked
+request or task, if any, that event creates.
 In code, a request is stored in the App inbox, and task policy is exposed as a
 `TaskIntent` resolver. Those are implementation names, not more layers.
 
@@ -166,11 +167,16 @@ request carries a stable identity, source, typed input, optional parent, and
 optional dependency observation. Host-private rows, claims, leases, channel
 metadata, and persistence handles never enter App code.
 
+Addressed ingress uses a required `app.input.requested` event. Acceptance means
+the Host created or found exactly one durable request and linked it to the event
+ID. The request—not the opening event—retains mutable status and result state.
+
 The optional pure `route(request)` policy may return the same disposition
 vocabulary as the owner:
 
 - `complete`: finish this exact request with a correlated result;
-- `delegate`: create a child request addressed to another App; or
+- `delegate`: ask the Host to publish a child App-input event and create its
+  linked request; or
 - `task`: attach this request to an existing task or desired `TaskIntent`.
 
 Returning `null` asks the owner for one bounded judgment. An inbox item remains
@@ -182,10 +188,11 @@ may answer directly or delegate to another App and review the child result.
 It has no schedules, observers, or task attachment, so conversational
 ownership cannot become a background project controller.
 
-## Facts and subscriptions
+## Events and subscriptions
 
-Events are durable facts and edge-triggered wakes. They do not own work and do
-not directly launch an agent.
+Events carry requests or facts into the Host. Required event types create one
+linked responsibility; record-only facts may wake zero or more declared routes.
+Events do not own mutable work or directly launch an agent.
 
 Top-level App `subscriptions` are intentionally rare. Each has a stable ID, an
 event selector, and a pure `toInput(event)` translator. A non-null result
@@ -209,15 +216,15 @@ does not contain an application event-name catalog.
 
 ## Actions, schedules, and observers
 
-An action is discoverable typed ingress. The host validates action input,
-translates it through `toInput`, and admits the result to the App inbox. An
-action cannot publish an actionable event as a shortcut around correlated
+An action is discoverable typed ingress. The Host validates action input,
+translates it through `toInput`, and publishes `app.input.requested`. An action
+cannot invent another actionable event as a shortcut around correlated
 admission.
 
 A schedule declares exactly one destination:
 
-- `{ input }` creates a correlated inbox obligation and may declare `none` or
-  `latest` catch-up; or
+- `{ input }` publishes a correlated `app.input.requested` event and may declare
+  `none` or `latest` catch-up; or
 - `{ event }` publishes a fact through the shared scheduler and does not replay
   missed facts.
 

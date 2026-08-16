@@ -140,7 +140,8 @@ and not safely retryable.
 
 For every human-rooted request, verify:
 
-1. one normalized human input produced one idempotent May App admission;
+1. one normalized human input produced one idempotent `app.input.requested`
+   event and linked May App admission;
 2. one durable inbox item owns the request;
 3. every delegated child or task wait uses an exact dependency identity;
 4. owner attempts are bounded and replaceable;

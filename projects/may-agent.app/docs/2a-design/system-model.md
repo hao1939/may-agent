@@ -15,9 +15,10 @@ boundary between an App and the Host. Neither is a third owner.
 
 ## Words to remember
 
-Only **Host** and **App** are architectural concepts. Four ordinary record
+Only **Host** and **App** are architectural concepts. Five ordinary record
 names are useful when reading code:
 
+- an **event** is input or change that durably entered the Host;
 - a **request** is an input that still needs a result;
 - a **task** is an outcome that may take several tries;
 - a **fact** is something that happened; and
@@ -31,10 +32,11 @@ owns the work.
 ## The whole flow
 
 ```text
-input or fact
+event
   -> Host stores it
-  -> App says what it means
-  -> Host stores the resulting request or desired task
+  -> event type selects an explicit route
+  -> Host stores any resulting request, task, or control operation
+  -> App says what domain work means
   -> Host runs one bounded attempt
   -> App accepts, waits, delegates, or asks for another attempt
   -> Host recovers unfinished work and delivers the result
@@ -48,7 +50,7 @@ queues, retries, leases, recovery, or delivery.
 The Host owns mechanics:
 
 - load and validate App definitions;
-- admit and persist inputs and facts;
+- validate and persist events before routing them;
 - store App requests, tasks, attempts, results, and delivery evidence;
 - schedule declared inputs, facts, and observations;
 - limit concurrent work across the process and within each App;
@@ -100,6 +102,7 @@ create a new attempt, but it must keep the same request or task identity.
 
 | Record | Meaning | Owner |
 | --- | --- | --- |
+| Event | Input or change that crossed the Host boundary | Host |
 | App request | One addressed input still owed a correlated result | Host storage, App policy |
 | Task | One desired outcome that may need repeated attempts | Host storage, App policy |
 | Fact | Something observed that may wake declared work | Host storage |
@@ -110,17 +113,19 @@ create a new attempt, but it must keep the same request or task identity.
 Queues, leases, traces, metrics, sessions, and projections support these
 records. They never become alternate work owners.
 
-## Inputs, facts, and time
+## Events and time
 
-- An addressed input creates one durable App request.
+- Every state-changing input first becomes one event.
+- An addressed `app.input.requested` event creates one durable App request.
 - A declared subscription translates a fact into an App request or task intent.
 - An exact task target wakes only that task.
 - A schedule creates an input or publishes a fact.
 - An observer reads external state and returns facts.
 - A metric describes what happened; it does not create work by itself.
 
-Unhandled facts stay facts. The Host never guesses an owner or starts an agent
-because an event was not handled.
+Record-only facts remain valid with no consumer. Required event types must have
+one semantic route that durably accepts responsibility. The Host never guesses
+an owner or starts an agent because an event was not handled.
 
 ## Waiting and delegation
 
@@ -147,7 +152,8 @@ Host
   src/app/app-runtime.ts          composition and lifecycle
   src/app/app-inbox-*.ts          requests and delivery
   src/app/app-task-*.ts           durable tasks
-  src/app/event-bus.ts            facts
+  src/app/event-interface.ts      publish, get, subscribe boundary
+  src/app/event-bus.ts            persistence-first internal delivery
   src/lib/agent-execution.ts      bounded execution
 
 App
@@ -173,3 +179,4 @@ Boundary
 8. Host maintenance cannot start App-owned model work.
 9. The public SDK exposes meaning and bounded capabilities, not Host internals.
 10. New code uses `defineApp`; retired ProjectApp and handler-owned work paths do not return.
+11. Public writes use `publish(event)`; linked records, not events, retain mutable work state.

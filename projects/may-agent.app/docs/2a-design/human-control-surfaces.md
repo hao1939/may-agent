@@ -11,23 +11,25 @@ contract. They may present different interaction styles, but they cannot create
 different ownership, completion, or recovery semantics.
 
 ```text
-ordinary human input -> May App request -> answer or delegation -> May review
-                     -> channel delivery -> correlated completion
+app.input.requested -> linked May App request -> answer or delegation
+                    -> May review -> channel delivery -> correlated completion
 ```
 
-The May inbox item—not a chat session, event pair, trace, reply ID, or inferred
-topic—is the durable authority for one human request that requires a result.
+The opening event is the correlation/navigation identity. The linked May inbox
+item—not a chat session, event pair, trace, reply ID, or inferred topic—is the
+durable authority for one human request that requires a result.
 
 ## Layers
 
 ```text
 transport
   -> normalize human/channel identity and reply anchor
-  -> typed ingress
-     -> ordinary request: admit to May App
-     -> explicit control: deterministic controller
-     -> project comment: publish fact to declared Agent App subscription
-     -> App action: validate schema and admit App input
+  -> construct one typed EventInput
+  -> Host publish(event)
+     -> ordinary request: required May App route
+     -> explicit control: required deterministic route
+     -> project comment: record-only declared App route
+     -> App action: validate schema, then required App input route
   -> canonical runtime ownership
   -> bounded read/progress/delivery projection
 ```
@@ -38,7 +40,8 @@ completion.
 
 ## Ordinary human requests
 
-Every ordinary turn is admitted to the `may` App with:
+Every ordinary turn publishes one `app.input.requested` event targeting the
+`may` App. The event links to exactly one admitted May request with:
 
 - stable request ID and idempotency key;
 - human/channel source identity;
@@ -134,9 +137,11 @@ Some explicit commands do not need May judgment:
 - reload, restart, shutdown, or status where authorized; and
 - invoke a declared App action after schema validation.
 
-The controller applies these mechanically and records a typed result. When the
-control originated inside an ordinary human request, that result and any human
-response remain linked to the May inbox item.
+Each control is a required event with an exact target. The controller accepts
+it mechanically only after its operation is durably correlated or the exact
+idempotent state already holds. When the control originated inside an ordinary
+human request, that result and any human response remain linked to the May
+inbox item.
 
 Bare or ambiguous cancellation never expands to cancel-all. An approval applies
 only to the exact task/Condition generation named by the prompt.
@@ -154,8 +159,9 @@ project.comment.created fact
   -> correlated Agent App inbox request
 ```
 
-The HTTP/transport receipt proves only that the fact was persisted or request
-admitted. The project App's result and any attached task remain separate. A
+The HTTP/transport receipt distinguishes the event being `recorded` from a
+required route being `accepted` and includes linked identities. The project
+App's result and any attached task remain separate. A
 project comment that is merely a deterministic changed fact may instead be
 handled by a task subscription, but this classification must be explicit and
 tested.
@@ -163,7 +169,8 @@ tested.
 ### Declared App action
 
 ```text
-discover action schema -> validate parameters -> action.toInput -> App admission
+discover action schema -> validate parameters -> action.toInput
+  -> app.input.requested -> linked App request
 ```
 
 An action does not emit an actionable semantic event as a shortcut. Its App
@@ -221,7 +228,7 @@ counts as semantic delivery or creates work.
 
 ### May Console
 
-May Console uses the same May App admission and session-control endpoints. It
+May Console uses the same event publication and read operations. It
 may display richer execution context but has no privileged ownership path.
 
 ## Honest receipts and status

@@ -5,7 +5,7 @@
 **Evaluator:** `evaluation.app`
 **Decision:** Accepted (2026-07-21) — narrower wording per evaluation report
 **Evaluation report:**
-[Task workspace convention evaluation study](../../../evaluation.app/reports/design-studies/task-workspace-convention.md)
+[Task workspace convention evaluation study](../../../../evaluation.app/reports/design-studies/task-workspace-convention.md)
 **Related:**
 [Projects](../../2a-design/projects.md),
 [App Root Layout](../../2a-design/app-root-layout.md),

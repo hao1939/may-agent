@@ -33,7 +33,7 @@ recovery.
 open stores
   -> load agents and Apps
   -> validate one complete App generation
-  -> attach request, fact, schedule, observer, and task routes
+  -> attach event routes, schedules, observers, and task workers
   -> recover unfinished work
   -> attach external ingress and delivery
 ```
@@ -46,7 +46,7 @@ subscriptions, and workers are closed when replaced.
 The Host stores identity and intent before it queues work. The code calls this
 "admission":
 
-- an input becomes an App request;
+- an input event is persisted before its App request or control operation;
 - a subscribed fact becomes an App request or TaskIntent;
 - a task trigger is recorded before a worker is woken; and
 - a child dependency is stored before the child starts.
@@ -99,14 +99,25 @@ It does not receive the Host database, event bus, queues, scheduler, manager,
 or recovery state. A workflow finishes, blocks, or returns a task result; it
 does not remain alive as a background controller.
 
-## Facts, schedules, and observers
+## Events, schedules, and observers
 
-The Host stores facts and evaluates declared routes. It never falls back to an
-owner when no route matches.
+The Host exposes one small event boundary over the existing persistence-first
+bus:
 
-An App schedule has exactly one destination: input or fact. An observer has one
-job: read external state and return facts. Both are replaced atomically with
-their App generation.
+```text
+publish(event) -> EventReceipt
+get(eventId)   -> EventView
+subscribe(filter)
+```
+
+An explicit table marks the small set of `required` types. Everything else is
+record-only for trusted internal producers. The boundary validates and derives
+the envelope, then delegates to existing App inbox, task, session, and lifecycle
+routes. It is not another broker, queue, service, or handler framework.
+
+An App schedule has exactly one event destination: an App input request or a
+fact. An observer has one job: read external state and return facts. Both are
+replaced atomically with their App generation.
 
 ## Host maintenance
 
@@ -140,17 +151,20 @@ not reconstruction authority.
 
 ## Interfaces
 
-Control socket, HTTP, console, Telegram, and Web UI normalize writes into one of
-four operations:
+Control socket, HTTP, console, Telegram, and Web UI receive only a bounded
+interface context:
 
 ```text
-admit App input
-publish fact
-control exact task/session
-control Host lifecycle
+publish(event)
+get(eventId)
+subscribe(filter)
+bounded read models
 ```
 
-Interfaces do not call App owners, task stores, or the model runner directly.
+Event definitions retain the four semantic families—App input, fact, exact
+control, and Host lifecycle control—without exposing four transport APIs.
+Compatibility commands are thin event constructors. Interfaces do not receive
+the EventBus, manager, database, task store, App owner, or model runner.
 
 ## Shutdown
 

@@ -34,6 +34,18 @@ It does not export raw SQL, task-state files and locks, scheduler handles,
 global runtime paths, queue/lease/recovery APIs, prompt packets, or a generic
 owner-inbox/event handler context.
 
+The Host's generic `publish/get/subscribe` interface is also not an SDK
+capability. Apps keep narrow typed operations:
+
+- return a `delegate` disposition and let the Host publish the child App input;
+- return facts from observers;
+- use fact-only `ctx.events.emit` inside a bounded workflow; and
+- return results/intents for Host admission.
+
+All reach the same persistence path after the App boundary accepts them, but
+App code cannot forge provenance, control sessions, or publish arbitrary
+required event types.
+
 There is one App declaration function: `defineApp`. The former
 `defineProjectApp` declaration and `@may-agent/sdk/legacy` entry point have been
 removed.
@@ -84,7 +96,8 @@ launch an agent or workflow while deciding how a fact routes.
 
 An App schedule contains exactly one of:
 
-- `input`, for a correlated inbox obligation with optional catch-up; or
+- `input`, which the Host turns into a correlated `app.input.requested` event
+  with optional catch-up; or
 - `event`, for a fact published by the Host scheduler.
 
 An observer receives only `ObserverContext` and returns facts for the host to

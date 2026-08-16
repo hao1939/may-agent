@@ -12,8 +12,8 @@ Time is a wake source, not a work authority. The shared runtime owns timer
 mechanics; each App declares what a due slot means.
 
 ```text
-due slot -> App input admission
-         -> fact publication
+due slot -> publish required App-input event
+         -> publish record-only fact
          -> bounded observer run -> facts
          -> host-private maintenance job -> evidence/facts/repair
 ```
@@ -85,8 +85,9 @@ obligation that deserves its own correlated disposition:
 }
 ```
 
-The host validates the input against the App schema and derives idempotency from
-App ID, schedule ID, and slot. `latest` may admit only the newest missed slot
+The Host validates the input, derives idempotency from App ID, schedule ID, and
+slot, and publishes `app.input.requested`. Its standard required route creates
+the linked App request. `latest` may admit only the newest missed slot
 after downtime; `none` resumes from the next live slot. Catch-up never replays
 an unbounded backlog.
 

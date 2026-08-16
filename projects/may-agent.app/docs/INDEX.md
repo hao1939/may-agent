@@ -93,9 +93,7 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
-| Document                                                         | Status         | Purpose                                                   |
-| ---------------------------------------------------------------- | -------------- | --------------------------------------------------------- |
-| [chat-agent-separation.md](3-proposals/chat-agent-separation.md) | Active tracker | Close remaining chat restart, trace, and delegation gaps. |
+There are no active proposals or trackers.
 
 Completed proposals do not remain in the active proposal folder.
 

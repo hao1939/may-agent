@@ -154,13 +154,13 @@ edges or infer completion from delivery.
 
 ## Steering Contract
 
-Every mutation/control affordance maps to typed App admission, a deterministic
-daemon control, or an explicitly published fact. Examples:
+Every mutation/control affordance constructs an allowlisted `EventInput` and
+uses the shared `publish` operation. Examples:
 
 | Human intent | Canonical path |
 | --- | --- |
-| Ordinary human request | Admit one request to the `may` App |
-| Steer an active session | Deterministic typed session control linked to its May request when applicable |
+| Ordinary human request | Required `app.input.requested` event targeting `may` |
+| Steer an active session | Required exact session event linked to its May request when applicable |
 | Comment/steer project | Publish `project.comment.created`; the declared App subscription admits one correlated Agent App request |
 | Invoke declared App action | Discover schema, validate input, translate and admit the App input |
 | Cancel session | `session.cancel.requested` |
@@ -182,7 +182,7 @@ meaning directly.
 | --- | --- |
 | Live socket/read model | Current activity and incremental updates |
 | Historical read APIs | Bounded queries over persisted events, sessions, metrics, and project state |
-| Steering POST/control | Typed App admission or deterministic control persisted through the canonical runtime |
+| Steering POST/control | `publish(EventInput)` with an honest durable receipt |
 
 The UI should prefer event-driven updates. Polling is an explicit fallback for
 a surface that lacks a live feed, not a hidden second source of state.
@@ -221,8 +221,8 @@ Telegram remains the preferred mobile notification/conversation surface.
 ## Integrity Checklist
 
 - Every visible state names its source and freshness.
-- Every control maps to canonical App admission, an exact task/control target,
-  or an observation-only fact and shows an honest async receipt.
+- Every control maps to an allowlisted event type and exact target and shows an
+  honest `recorded`/`accepted` receipt.
 - Project and task meaning comes from project-owned state/read models.
 - Event graphs render server-provided causality without browser repair.
 - Agent App activity and standalone heartbeat activity are not conflated.

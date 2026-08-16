@@ -1,61 +1,81 @@
 # Events, Delivery, And App Inboxes
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. Canonical facts, App/task subscriptions,
-exact wakes, and App Inbox admission are live; owner-event-pair work lifecycles
-are retired.
+**Implementation status:** Implemented. `publish`, `get`, and `subscribe` share
+the persistence-first event path; App input links to its durable request, and
+owner-event-pair work lifecycles are retired.
 
 ## Purpose
 
-An event records a fact that crossed a boundary and may wake an explicitly
-declared consumer.
+An event records input or change that crossed the Host boundary. It may ask one
+route to accept responsibility or report a fact for zero or more consumers.
 
 ```text
-publish fact -> persist -> match declared routes -> persist resulting obligation -> acknowledge
+publish(event) -> validate -> persist -> route -> persist linked responsibility -> receipt
 ```
 
-An event does not own work, promise a response, or launch an agent. Addressed
-work lives in an App inbox. Durable desired work lives in an App task. Facts
-with no actionable obligation remain observation only.
+The event ID is the root correlation identity. An event does not replace mutable
+work state: addressed work lives in an App request, durable desired work lives
+in a task, and exact controls link to their owning session or operation.
 
 Read [system-model.md](system-model.md) for the relationship among requests,
 tasks, facts, and execution; [agent-app.md](agent-app.md) for authoring routes;
 and [event-graph.md](event-graph.md) for causal graph details.
 
-## Authoring envelope
+## Public interface
 
-Apps, observers, and workflows publish the stable public shape:
+Every adapter uses the same three operations:
+
+```text
+publish(event)    durably enter an event
+get(eventId)      inspect delivery and linked outcomes
+subscribe(filter) observe events
+```
+
+The caller supplies semantic input only:
 
 ```ts
-type AppEvent<TData = unknown> = {
+type EventInput<TData = Record<string, unknown>> = {
   type: string;
   data: TData;
-  source?: string;
-  owner?: string;
   target?: {
     appId?: string;
-    project?: string;
     taskId?: string;
-    executionId?: string;
     sessionId?: string;
-    metricId?: string;
-    owner?: string;
-    human?: boolean;
   };
-  urgency?: "low" | "normal" | "high" | "immediate";
+  idempotencyKey?: string;
 };
 ```
 
-`type` and `data` describe the fact. `target` narrows its intended domain or
-exact runtime object. `source`, `owner`, and `urgency` preserve attribution and
-operational context; `owner` is not a fallback instruction to create work.
+The Host assigns persistence identity, time, trusted source, owner, and trace.
+External callers cannot assert those fields. `target` selects an exact object
+inside the route chosen by `type`; it does not grant arbitrary control.
 
-The host adds persistence identity, time, trace, retention, and delivery
-metadata. Compatibility adapters may normalize older flat envelopes only at an
-explicit ingress boundary; canonical App code reads typed `event.data` and
-`event.target`.
+`publish` returns an event ID, `recorded` or `accepted`, and any linked request,
+task, session, delivery, or operation identity. Neither state means domain work
+is complete. `get` returns that bounded view again from durable state.
 
-## Three routing outcomes
+App code still uses typed SDK events, dispositions, and capabilities. It never
+receives this Host interface or the raw EventBus.
+
+## Delivery contracts
+
+Each admitted event type has one delivery contract:
+
+- `record`: persistence is sufficient; zero or more declared routes may react.
+- `required`: exactly one semantic route must durably accept responsibility.
+
+Required types are explicitly defined and validated before persistence. Trusted
+internal producers may publish an unregistered record-only fact. External
+adapters admit only explicit type/schema allowlists. Logging, metrics, tracing,
+and stream observers never count as the one required accepter.
+
+`app.input.requested`, direct-agent `chat.start.requested`, exact session
+controls, and Host lifecycle controls are required. Ordinary reported facts
+are record-only. A required event may remain `recorded` after persistence when
+its route temporarily fails; recovery retries the same event and identity.
+
+## Routing outcomes
 
 The host matches only declared routes:
 
@@ -63,7 +83,7 @@ The host matches only declared routes:
 App subscription  -> pure toInput(event) -> correlated App inbox request
 task subscription -> pure resolve(event) -> persisted TaskIntent and trigger
 exact task target -> wake that task identity
-no actionable route -> retain as observation/unhandled fact
+no actionable route -> retain a valid record-only fact
 ```
 
 An App subscription has a stable subscription ID and creates a request only
@@ -85,18 +105,24 @@ execution, or generic rule that turns an unhandled fact into owner work.
 
 ## Addressed requests
 
-Addressed input enters the destination App directly rather than masquerading as
-an event commitment:
+Addressed input uses one standard required event:
 
-- human input enters the `may` App;
+```text
+app.input.requested target.appId=<app>
+  -> validate App input
+  -> create or find one durable App request
+  -> return the request link
+```
+
+- human input publishes this event for the `may` App;
 - App delegation creates a child App inbox item;
 - an App action translates validated parameters to App input;
 - an input schedule creates a time-correlated App input; and
 - an App subscription translates a fact into an independent request only when
   that fact genuinely requires its own disposition.
 
-An unknown App address is rejected and retained as a visible admission
-failure. It does not fall back to a generic owner inbox or May.
+An unknown App address is rejected before a receipt exists. It does not fall
+back to a generic owner inbox or May.
 
 The inbox item persists `pending -> handling -> done`, with claims, lease
 fencing, dependency links, restart recovery, and delivery correlation owned by
@@ -105,8 +131,8 @@ returns `complete`, `delegate`, or `task`.
 
 ## Delivery acceptance
 
-Event delivery metadata answers whether a declared consumer accepted the fact,
-not whether the resulting work finished. The durable acknowledgement point is:
+Event delivery metadata answers whether the event type's contract is satisfied,
+not whether resulting work finished. The durable acknowledgement point is:
 
 | Route                       | Accepted after                                                 |
 | --------------------------- | -------------------------------------------------------------- |
@@ -115,6 +141,7 @@ not whether the resulting work finished. The durable acknowledgement point is:
 | Exact task target           | task wake/trigger is durably correlated                        |
 | Human/channel adapter       | adapter accepts the outbound delivery operation                |
 | Observation-only projection | projection explicitly accepts responsibility for that evidence |
+| Record-only event           | persistence; no semantic accepter is required                  |
 
 Logging, UI tailing, passive metrics, database writing, and unrelated broad
 subscribers do not count as semantic acceptance.
@@ -123,8 +150,9 @@ For asynchronous work, accepted means “the correct durable owner now has it,�
 not “finished.” Completion remains in the App inbox item, task resource,
 delivery operation, or other owning domain record.
 
-Unknown unaddressed facts may be marked unhandled and surfaced operationally.
-Unknown addressed work is an admission failure. Those are different defects.
+Record-only facts with no consumer remain valid observations. A required event
+without durable acceptance remains visible for recovery. Invalid or unknown
+external input and nonexistent required targets create no event receipt.
 
 ## Results and correlation
 
@@ -151,8 +179,8 @@ for audit but cannot replace inbox/task/delivery completion.
 ## Human-rooted flow
 
 ```text
-human input
-  -> May inbox request
+app.input.requested target.appId=may
+  -> linked May inbox request
   -> direct result or child App dependency
   -> May result review
   -> channel delivery operation
@@ -168,17 +196,18 @@ request owns the response.
 Direct typed runtime controls may bypass owner judgment, but their result and
 delivery remain linked to the originating May request.
 
-## Core fact vocabulary
+## Core event vocabulary
 
 The executable schemas remain authoritative. Cross-boundary vocabulary stays
-small and expresses facts, not work queues.
+small. Event types may ask for responsibility or report facts; neither turns
+the event stream into a work queue.
 
 ### Human and execution
 
 - normalized human ingress and channel delivery facts;
 - `session.start`, `session.idle`, and `session.end`;
 - workflow/execution result and failure facts;
-- targeted cancellation, approval, and runtime-control facts where a shared
+- targeted cancellation, approval, and runtime-control requests where a shared
   controller owns deterministic handling.
 
 Ordinary human language is admitted to May rather than routed through a generic
@@ -216,10 +245,10 @@ subscription or exact target.
 
 ## Schedules and observers
 
-An event schedule publishes a typed fact through the shared scheduler. It does
-not create an inbox item and does not replay missed facts. An input schedule is
-not an event route; it admits a correlated App request and applies its declared
-catch-up policy.
+An event schedule publishes a typed fact through the shared scheduler. An input
+schedule publishes a time-correlated `app.input.requested` event. The schedule
+applies its declared catch-up policy before publication; the standard route
+then admits the linked App request.
 
 An observer reads current external state and returns facts for the host to
 publish after a successful bounded run. It cannot mutate inbox/task state or
@@ -228,9 +257,9 @@ admission and task intent use stable idempotency/correlation.
 
 ## Durability and retention
 
-“Durable event” means the fact and its causal metadata are persisted for audit
-and reconciliation. The in-process bus is not a general work queue and does not
-promise implicit exactly-once replay.
+“Durable event” means the input/change and its causal metadata are persisted for
+audit and reconciliation. The in-process bus is not a general work queue and
+does not promise implicit exactly-once replay.
 
 The event row retains bounded routing, delivery, causality, and correlation
 metadata. Large immutable bodies may be stored content-addressably before the
@@ -239,7 +268,7 @@ resolve the full body only when required.
 
 Retention protects:
 
-- facts referenced by unfinished App requests, task triggers, Conditions, or
+- events referenced by unfinished App requests, task triggers, Conditions, or
   delivery operations;
 - retained trace parents and closure links;
 - human roots/results whose delivery evidence is still required; and
@@ -253,7 +282,7 @@ artifacts.
 
 Operational checks distinguish:
 
-- unhandled observation from failed addressed admission;
+- valid record-only observation from failed required admission;
 - delivery acceptance from semantic completion;
 - a persisted task trigger from queue pressure;
 - a correlated App request from a callerless inbox item;
@@ -263,15 +292,15 @@ Operational checks distinguish:
 
 The App inbox health surface reports pending age, claim/handling latency, lease
 reclaim, dependency waits, result admission, and delivery waits. Event health
-reports pending/unhandled facts and delivery failures; it does not infer owner
-work from them.
+reports required events awaiting acceptance and delivery failures; it does not
+infer owner work from record-only facts.
 
 Detailed procedures live in
 [event-runtime-audit.md](../2b-manual/event-runtime-audit.md).
 
 ## Integrity checklist
 
-- Every published fact has a canonical typed envelope.
+- Every published event has a canonical typed envelope.
 - Every fact-to-work transition is explicitly declared and idempotent.
 - App subscriptions create correlated requests; task subscriptions persist
   desired intent; exact task targets wake only the named task.

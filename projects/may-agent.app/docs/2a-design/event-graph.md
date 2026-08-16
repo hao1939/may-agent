@@ -23,8 +23,9 @@ parentKey = display hierarchy inside the graph
 provenance = whether an edge was persisted or projected from lifecycle, correlation, or transcript data
 ```
 
-Events remain the source of truth for cross-boundary facts. Addressed work and
-durable desired work remain authoritative in App Inbox and task records. The
+Events are the root identity for input or change crossing the Host boundary.
+Addressed work and durable desired work remain authoritative in App request and
+task records linked from that event. The
 event graph introduces no parallel request, approval, escalation, or task
 lifecycle; it records causal relationships so humans, agents, and UI can answer:
 
@@ -57,6 +58,13 @@ event meaning that the event chain did not carry. Side tables and transcripts
 may add supporting detail, but they must not create a missing causal parent or
 pretend that context was passed when it was not.
 
+`get(eventId)` is the compact entry point. It returns the stored event, its
+`recorded`/`accepted` delivery state, and bounded links to authoritative
+request, task, session, delivery, or operation records. Those links expose
+current state without copying mutable work truth into the event row. The graph
+may expand them as supporting nodes but cannot treat them as event children
+unless a causal edge was actually persisted.
+
 Async boundaries must preserve trace explicitly. A queued event handler derives
 one child trace from the persisted triggering event and passes that trace through
 handler, workflow, and session events. If this propagation is absent, the graph
@@ -64,20 +72,23 @@ must show the session as disconnected; the UI must not repair it heuristically.
 
 ## Human-Rooted Trace Contract
 
-`human.input.received` is the transport-neutral boundary fact for free-form
-input. It is the trace root for one human turn. Ordinary input to May creates
-exactly one `app.input.requested`; that event admits one durable May App inbox
-item whose identity, not the trace, owns eventual handling:
+Ordinary free-form input has one semantic root. The adapter publishes
+`app.input.requested` for May and attaches trusted human/channel provenance.
+That event admits one durable May App request whose identity, not the trace,
+owns eventual handling:
 
 ```text
-human.input.received
-  -> app.input.requested (appId=may)
-    -> May App inbox item
-      -> bounded owner session
-        -> App result
-          -> app.response.delivery.requested
-            -> channel.delivery.completed
+app.input.requested (target.appId=may)
+  -> linked May App request
+    -> bounded owner session
+      -> App result
+        -> app.response.delivery.requested
+          -> channel.delivery.completed
 ```
+
+Historical `human.input.received -> app.input.requested` chains remain valid
+compatibility evidence, but new ingress does not create two events for one
+human turn.
 
 Deterministic controls instead emit one exact `session.steer.requested`,
 `session.cancel.requested`, `project.approval.submitted`, or
@@ -90,17 +101,15 @@ or May request. Each direct-agent turn starts a new trace even when it reuses
 the session. A reply to a prior notification or result references that durable
 fact; it does not recover ownership from the chat session.
 
-Direct-agent new-chat and explicit-steer turns have these compatibility shapes:
+Direct-agent new-chat and explicit-steer turns use one required root event:
 
 ```text
-human.input.received
-  -> chat.start.requested
-    -> session.start
-      -> session.idle
-
-human.input.received
-  -> session.steer.requested
+chat.start.requested
+  -> session.start
     -> session.idle
+
+session.steer.requested
+  -> session.idle
 ```
 
 The terminal `session.idle` or `session.end` event belongs to the triggering
@@ -837,8 +846,9 @@ graph model in the browser.
 
 ## Non-Goals
 
-- Do not add a request/commitment lifecycle object; human work is represented
-  by the root event, its trace, existing entity state, and derived read models.
+- Do not add a second request/commitment lifecycle. The canonical App inbox
+  request owns addressed work; the root event, trace, and graph only explain
+  its cause and linked evidence.
 - Do not replace task trees, metrics, sessions, or workflow run records.
 - Do not make the event trace a workflow engine.
 - Do not store every token or large tool output in event rows.

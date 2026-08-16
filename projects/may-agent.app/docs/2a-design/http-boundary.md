@@ -1,9 +1,9 @@
 # HTTP API And Web UI Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Bounded reads and controls use canonical App
-admission, fact publication, and deterministic-control paths. Compatibility
-endpoints cannot create alternate work authority.
+**Implementation status:** Bounded reads and controls use the shared event
+publication/read path. Compatibility endpoints are thin event constructors and
+cannot create alternate work authority.
 
 ## Purpose
 
@@ -14,7 +14,7 @@ second runtime.
 ```text
 browser
   -> bounded read
-     or App admission / fact publication / deterministic control
+     or publish(EventInput)
   -> canonical daemon authority
   -> App request, task, session, metric, event, or delivery projection
 ```
@@ -60,32 +60,39 @@ cannot write inferred state back or become a reconciler.
 
 ## Write boundary
 
-Every state-changing request enters exactly one path:
+Every state-changing request enters one operation:
 
-1. **App input admission** for addressed work;
-2. **fact publication** for a changed observation;
-3. **declared App action** translated to App input;
-4. **exact task/approval control** owned by the task runtime; or
-5. **deterministic Host control** owned by the Host.
+```text
+POST /api/events -> publish(event) -> EventReceipt
+```
+
+The admitted event type retains the existing meaning: App input, reported fact,
+declared App action translated to input, exact control, or Host lifecycle
+control. The transport does not implement separate queues or receipts for
+those meanings.
 
 Examples:
 
 | Human intent | Canonical path |
 | --- | --- |
-| Ordinary conversation | Admit one request to the `may` App |
-| Explicitly steer/cancel session | Exact session control |
+| Ordinary conversation | Publish `app.input.requested` for the `may` App |
+| Explicitly steer/cancel session | Publish an exact required session event |
 | Comment on project | Publish `project.comment.created`; declared App subscription may admit a correlated request |
 | Invoke App action | Discover schema, validate, call `toInput`, admit App request |
 | Submit approval | Update exact owning task/Condition through typed control |
-| Reload/restart/shutdown | Deterministic runtime control |
-| Publish provider/lifecycle fact | Validated fact ingress |
+| Reload/restart/shutdown | Publish a required Host-control event |
+| Publish provider/lifecycle fact | Publish a record-only event |
 
-`POST /api/events` is fact ingress only. It is not permission to invent domain
-commands, address an owner by fallback, or bypass App actions.
+`POST /api/events` accepts an explicit allowlist of request, fact, and control
+types with type-specific schemas. Callers supply `type`, `target`, `data`, and
+an optional idempotency key. HTTP assigns trusted provenance; callers cannot
+assert `source`, `owner`, or trace ancestry. The endpoint is not permission to
+invent a domain type, address an owner by fallback, or bypass App actions.
 
-Receipts state exactly what became durable: request ID, event ID, task/control
-operation ID, or admission failure. An HTTP `2xx` never proves owner handling,
-task convergence, human delivery, or domain completion.
+The receipt always includes the event ID, `recorded` or `accepted`, and linked
+request/task/session/operation identities when present. HTTP returns `202` for
+durable required events still awaiting acceptance. No HTTP `2xx` proves task
+convergence, human delivery, or domain completion.
 
 ## App and project boundary
 
@@ -110,8 +117,9 @@ task meaning independently.
 
 ## Event and websocket boundary
 
-Historical event queries are bounded HTTP reads. Live websockets stream the
-same canonical facts and projection changes.
+`GET /api/events/:id` returns the bounded event, delivery state, and linked
+outcomes. Historical queries remain bounded. Live websockets stream the same
+canonical events and projection changes.
 
 Browser receipt of a websocket frame is observation only. It does not satisfy
 semantic event delivery, App request handling, task work, or human delivery.
@@ -131,8 +139,8 @@ an arbitrary server filesystem root.
 
 ## Compatibility
 
-Compatibility endpoints may preserve old client shapes only when they
-normalize immediately into one canonical admission/fact/control operation.
+Compatibility endpoints may preserve old client shapes only when they become a
+small `EventInput` constructor and call the same `publish` function.
 They cannot define a second payload meaning, lifecycle, task mutation path,
 owner fallback, or execution route.
 
@@ -142,8 +150,7 @@ move without relying on legacy event-pair or session-follow-through behavior.
 ## Integrity checklist
 
 - Reads are bounded projections with source, freshness, and honest unknowns.
-- Every write maps to exactly one App admission, fact, exact task control, or
-  runtime control.
+- Every write uses one allowlisted `publish(EventInput)` operation.
 - An HTTP receipt never appears as semantic completion.
 - App/task meaning remains in canonical runtime and App-owned state.
 - Browser/websocket observation never counts as delivery acceptance.
