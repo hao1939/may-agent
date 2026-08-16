@@ -153,7 +153,8 @@ manual is the human reference. Important examples include:
 - `agents` for call/fork/list/peek/cancel;
 - `message` for durable notifications;
 - `workflow` for list/run/resume;
-- `cli-delegation` for durable `run_cli_agent` tasks;
+- `cli-delegation` for native-worker execution records inside a bounded caller
+  attempt, never as App/task ownership;
 - `system-status`, `cron`, `checkpoint`, `scrape`, and `finish` where needed.
 
 Local domain tools live under the owning global or app-local agent's `tools/`

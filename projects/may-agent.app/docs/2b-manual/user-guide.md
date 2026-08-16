@@ -3,19 +3,25 @@
 ## Starting an Instance
 
 ```bash
-# Run these commands from /app/projects/may-agent.
+# Run these commands from the Runtime repository.
 
-# Local full stack: chat + cron + console + socket + web UI
-./start.sh
+# Build and start the containerized service
+bun run recreate
 
-# Direct interactive chat with May
-bun src/app/may.ts --chat --console --socket
+# Attach the May Console to the running container daemon
+docker exec -it may-agent may-console
 
-# Direct interactive chat with a different agent
-bun src/app/may.ts --agent bob --chat --console --socket
+# Or attach from a source checkout that can reach the daemon state directory
+node packages/terminal/bin/may-console.cjs
 
-# Full production mode (chat + cron + telegram)
-bun src/app/may.ts --chat --console --socket --cron --telegram
+# Development-only, single-process readline console plus daemon socket
+bun src/app/may.ts --console --socket
+
+# Use --chat as a compatibility alias for the quiet console view
+bun src/app/may.ts --chat --socket
+
+# Local full service interfaces
+bun src/app/may.ts --console --socket --cron --telegram --web
 
 # Cron-only daemon (no interactive chat)
 bun src/app/may.ts --cron --socket
@@ -29,8 +35,8 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 
 | Flag | Description |
 |------|-------------|
-| `--chat` | Enable interactive chat session (persistent) |
-| `--console` | Enable terminal UI (readline prompt) |
+| `--chat` | Compatibility alias that enables the quiet built-in console view |
+| `--console` | Enable the built-in development readline console |
 | `--socket` | Enable Unix socket for external control |
 | `--cron` | Enable cron jobs (heartbeats, JS handlers, scheduled tasks) |
 | `--telegram` | Enable Telegram bot for notifications |
@@ -50,67 +56,46 @@ At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
 | `MODEL_API_KEY` | Credential for the shared model API. Defaults to `not-needed` for an unauthenticated local endpoint. |
 | `MAY_DAEMON_QUIET=1` | Suppresses the daemon-mode `info` log forwarder. By default, when neither `--console` nor `--chat` is enabled, the daemon forwards `bus.emit({type:"info"})` events through `log()` so operator-facing messages (reload summaries, telegram diagnostics, startup checks) are visible. Set this to `1` to opt out. |
 
-When `--console` or `--chat` IS enabled, `attachConsoleUI` handles `info`
+When `--console` or its `--chat` alias is enabled, `attachConsoleUI` handles `info`
 events (along with session text, tool calls, etc.) and the daemon-mode
 forwarder is not attached — avoiding duplicate prints.
 
-### Local Startup
-
-```bash
-./start.sh
-```
-
-`start.sh` loads `.env`, starts the virtual display/browser helpers, then runs
-`bun src/app/may.ts --chat --cron --console --socket --web "$@"`.
-
 For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 
-## Chat Session
+## Human Requests
 
-When `--chat` is enabled, may-agent creates a **persistent chat session** (`ChatSession`).
-The session survives across messages. The append-only transcript keeps full
-history; long active contexts may use the runtime's compact resume snapshot.
+Console, Web, Telegram, and control-socket text all admit one durable request
+to the `may` App. Each owner pass is a bounded job session; the inbox item, not
+the session, owns eventual handling and restart recovery.
 
 ```
-you> implement a retry mechanism for failed API calls
+may> implement a retry mechanism for failed API calls
       ↓
-  ChatSession sends to interface agent's persistent session
-  Agent processes, delegates to sub-agents, returns to idle
-  
-you> now add tests for it
+  one May App request -> answer or typed App delegation
+
+may> now add tests for it
       ↓
-  Same session — agent has full context from previous request
+  a new May App request with bounded conversation context
 ```
 
-### Built-in Commands
+Conversation context can relate the requests, but it never substitutes for a
+durable dependency. Long-running work must be delegated to an App or attached
+to a task before the current owner pass ends.
+
+### May Console Controls
 
 | Command | Action |
 |---------|--------|
-| `status` | List all active sessions |
-| `cancel` | Cancel current task (session stays alive) |
-| `cancel all` | Cancel all running sessions |
-| `/new` | Close current session, start fresh on next message |
-| `reload` | Scan for new agent.json files and register them |
-| `close` | Permanently destroy session + shutdown |
+| `cancel all` | Cancel all running sessions explicitly |
+| `/steer <session> <message>` | Steer one named execution session |
+| `/cancel <session>` | Cancel one named execution session |
+| `reload` | Reload agent and App definitions |
+| `close` | Shut down the runtime |
 | `restart` | Graceful restart (exit code 100) |
-| `Ctrl+C` | Cancel task if running, shutdown if idle |
+| `Ctrl+C` | Cancel running sessions on first press, shut down otherwise |
 
-### @agent Prefix
-
-```
-you> @dev fix the failing test in test/retry.test.ts
-```
-
-Routes through the interface agent's persistent chat session as an explicit
-delegation request. May is instructed to fork the named agent, stay responsive,
-peek at the result, and report back.
-
-| | Normal input | `@agent` prefix |
-|---|---|---|
-| Routes through | Interface agent's persistent session | Interface agent's persistent session |
-| Interface agent sees result? | Yes | Yes |
-| Session kind | `chat` | `chat` plus May-managed fork |
-| Use case | General coordination | Explicit delegation to a named agent |
+Bare text never implicitly steers the latest session. Use the explicit session
+controls when you intend to operate on execution state.
 
 ## Agents
 
@@ -166,7 +151,7 @@ indexes are read on demand.
 | `query_db` / `query-db` | Read-only DB query tool |
 | `system-status` / `system_status` | Runtime status summary |
 | `checkpoint` | Persist explicit session checkpoints |
-| `cli-delegation` | Start durable native coding-worker tasks through `run_cli_agent` |
+| `cli-delegation` | Start a native coding-worker process with a persistent worker record; not an App/task ownership boundary |
 | `finish` | Finish the current task with a structured result |
 
 ### Adding a New Agent
@@ -174,7 +159,7 @@ indexes are read on demand.
 1. Create `agents/<name>/agent.json`
 2. Create `agents/<name>/AGENTS.md` — identity and mission
 3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows
-4. Restart or type `reload` in chat
+4. Restart or invoke the `reload` control
 
 See [Agent Convention](agent-convention.md) for full directory layout.
 
@@ -204,7 +189,7 @@ and durable desired work uses a task.
 
 | Kind | Created by | Lifecycle |
 |------|-----------|-----------|
-| `chat` | ChatSession | Persistent — stays idle between messages. User owns. |
+| `chat` | Explicit direct-agent chat | Persistent execution context; never May App work authority. |
 | `job` | `agents.fork` and other background/detached dispatch | Bounded background work with restart recovery policy. |
 | `call` | `agents.call`, workflow `ctx.agents.call`, standalone heartbeat agent step | Bounded synchronous work owned by its caller/workflow. |
 
@@ -248,7 +233,8 @@ DAEMON_INSTANCE=background may-agent --emit trigger.metrics-snapshot '{}'
 # socket namespace, execute the same control command inside the container.
 docker exec may-agent may-agent --emit trigger.metrics-snapshot '{}'
 
-# Send a chat-style delegation through the running daemon
+# Send a compatibility agent notification through the running daemon.
+# This does not create durable App work.
 DAEMON_INSTANCE=background may-agent --send scout --message "review your active project"
 
 # From a source checkout

@@ -141,22 +141,29 @@ WHERE p.status = 'closed'
   AND ot.trace_id != ct.trace_id;
 ```
 
-For human-rooted work, inspect complete traces and verify this shape:
+For human-rooted work, verify the trace plus durable App lineage. One trace is
+not expected to own every asynchronous attempt:
 
 ```text
 human.input.received
-  -> exactly one semantic intent
-    -> session/workflow/task/rejection/no-op
-      -> terminal closure
-        -> channel delivery projection
+  -> exactly one semantic intent: app.input.requested or deterministic control
+    -> exact App inbox item/source reference
+      -> bounded owner attempt and optional child App/task dependency
+        -> App result and correlated channel delivery operation
 ```
 
-Also check that persistent-chat turns use distinct traces unless reply context
-links them, that bookkeeping acceptance does not hide a missing domain/owner
-reaction, and that generated human output has a linked transport delivery.
+Also check that each May App request has one human intent, that bookkeeping
+acceptance does not hide a missing App disposition, and that generated human
+output has a correlated transport delivery. Trace identity supplies causality
+inside and between observed attempts; the inbox, dependency, and delivery IDs
+supply eventual-handling authority across restarts. Direct-agent
+persistent-chat turns, if used, must have distinct traces unless reply context
+links them.
 
-Golden-trace tests should cover new chat, existing chat, correction, approval,
-cancellation, async fork/workflow/CLI delegation, failure, and cold resume.
+Trace tests should cover new May requests, later/corrective requests, approval,
+cancellation, App delegation and delivery, failure, and recovery. Compatibility
+execution tests separately cover async fork/workflow/CLI events and direct-chat
+cold resume.
 
 ## Audit Smells
 

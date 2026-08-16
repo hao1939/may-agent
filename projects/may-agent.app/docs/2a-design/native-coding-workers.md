@@ -1,22 +1,28 @@
 # Native Coding Workers
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for durable tasks, native session reuse,
-classified failures, expected-output validation, and opt-in prepared-worktree
-enforcement; partial-result parsing, automatic worktree creation, UI, and
-metrics remain open.
+**Implementation status:** Implemented as a compatibility execution adapter
+with persistent worker records, native session reuse, classified failures,
+expected-output validation, and opt-in prepared-worktree enforcement.
 
-May can delegate bounded coding work to native coding agents such as Codex CLI
-and Claude Code. These tools are not terminal tabs and they are not project
-owners. They are worker runtimes behind May's event system.
+Direct execution sessions can delegate bounded coding work to native coding
+agents such as Codex CLI and Claude Code. These tools are not terminal tabs,
+project owners, App requests, or tasks. They are worker runtimes behind the
+event system.
+
+Canonical App owners cannot call `run_cli_agent` directly. The App-owner tool
+policy excludes asynchronous work outside the fenced disposition. An App owner
+that needs native-worker evidence must obtain and review it inside one bounded
+awaited agent/workflow call, or return durable ownership as an App delegation
+or task disposition before its attempt ends.
 
 ## Mental Model
 
 ```text
-human or project owner asks May to delegate coding work
+an execution session needs bounded native-worker evidence
         |
         v
-May agent decides whether delegation is useful
+the calling agent decides whether delegation is useful
         |
         v
 tool call: run_cli_agent(...)
@@ -33,16 +39,17 @@ Codex CLI or Claude Code
         |
         v
 cli.task.completed / cli.task.failed / cli.task.orphaned
-  returns evidence to the owner for judgment
+  returns evidence to the caller for judgment
 ```
 
-The owner decides whether to accept, retry, ask for review, or create follow-up
-work. The worker only reports what it did.
+The live caller decides whether to accept, retry, or return the evidence. The
+worker only reports what it did. If the caller ends before reviewing the
+result, the artifact remains observable but does not become durable unfinished
+work.
 
-The native worker result is not automatically accepted as truth. It is an input
-to the owner. May or the project owner still judges whether the answer is good
-enough, whether the patch should be used, and what follow-up event or task is
-needed.
+The native worker result is not automatically accepted as truth. It is evidence
+for the bounded caller. The owning App still judges whether the answer is good
+enough and expresses any durable follow-up through its disposition.
 
 When the purpose is a second or third opinion, independence matters:
 
@@ -56,23 +63,24 @@ When the purpose is a second or third opinion, independence matters:
 - Resolve disagreement with primary evidence. A majority vote is not proof.
 - Ask for a third opinion only when the decision is material and the evidence
   still leaves meaningful uncertainty.
-- May owns the final decision, action, and follow-through.
+- The accountable App owns the final decision, action, and follow-through.
 
 The split is intentional:
 
-- The tool call records May's decision to delegate work; `cli.task.requested`
-  is the durable lifecycle opener in the existing trace.
-- The event is the durable handoff.
+- The tool call records the caller's decision to start a worker;
+  `cli.task.requested` is the persistent process-lifecycle opener in the
+  existing trace.
+- The event is the process handoff, not an App/task ownership transfer.
 - The runner is the runtime owner of the external process.
 - The native CLI process is replaceable implementation detail.
 - The owner-facing completion is compact; full native output stays in
   artifacts.
 
-May should not block inside a long Codex or Claude process. Once the tool has
-accepted the task, May can keep working while the runner tracks the native
-worker.
+The runtime does not block inside the Codex or Claude process. The calling
+attempt, however, must remain open until it observes and reviews the terminal
+worker result if that result is required for its own answer.
 
-Accepted is not completed. Before May uses a result, it waits for
+Accepted is not completed. Before a caller uses a result, it waits for
 `cli.task.completed`, `cli.task.failed`, or `cli.task.orphaned`, then inspects
 `result.md`, `result.json`, and `events.jsonl`. A retry must name the observed
 failure category and change the failed assumption, such as timeout, context,
@@ -81,14 +89,13 @@ recovery.
 
 ## Why This Exists
 
-External coding agents are useful when May needs a second opinion, a focused
-review, or a patch attempt that can run independently. They are bad as hidden
-terminal automations because terminals are human surfaces, not durable process
-state.
+External coding agents are useful for a second opinion, focused review, or
+isolated patch attempt within a bounded execution. They are bad as hidden work
+queues because worker records do not own eventual completion.
 
 The correct boundary is an adapter:
 
-- May owns task intent, routing, review, and project state.
+- The caller owns the bounded intent and review; the App owns project state.
 - The CLI worker owns one native coding-agent process.
 - The adapter translates May events into native CLI calls and native streams
   back into May events and artifacts.
@@ -97,13 +104,13 @@ This is the same core pattern used by OpenClaw/Hermes-style coding-agent
 integration: the framework owns orchestration, while Codex or Claude owns code
 execution. The "magic" is small:
 
-- teach the owner when to use the native coding agent;
+- teach the caller when to use the native coding agent;
 - launch the native runtime in the right mode;
 - remember the native session id;
 - parse the native event stream;
-- return a durable result for owner review.
+- return a persisted worker result for caller review.
 
-The native worker does not become May's planner.
+The native worker does not become an App planner or owner.
 
 ## Current Implementation
 
@@ -128,7 +135,7 @@ Shipped behavior today:
   `result.json`, plus `session.json` when the native session id is known.
 - Completion requires a successful process, usable output, and any requested
   JSON/required-field contract. Failures are classified by category.
-- The source May session receives a compact `session.steer.requested` update
+- A still-live source session receives a compact `session.steer.requested` update
   with paths and session id when `sourceSessionId` is available.
 - `files` are added to the worker prompt as scoped context.
 - `worktree` is used as the native process cwd when provided.
@@ -137,10 +144,10 @@ Shipped behavior today:
 
 ## Runtime Flow
 
-When a user says "ask Codex to review this", the expected flow is:
+Within a compatible bounded execution session, the flow is:
 
 ```text
-May calls run_cli_agent({
+caller invokes run_cli_agent({
   tool: "codex",
   mode: "review",
   prompt: "...focused review packet...",
@@ -184,11 +191,11 @@ cli-task-runner emits one terminal event:
   cli.task.completed | cli.task.failed | cli.task.orphaned
 ```
 
-Only a compact completion is injected back into May's session. The full native
-stream stays in the task artifacts.
+Only a compact completion is injected back into a still-live source session.
+The full native stream stays in the task artifacts.
 
 ```text
-May session receives:
+source session receives:
   CLI task <taskId> completed.
   Tool: codex
   Summary: ...
@@ -206,9 +213,8 @@ Disk receives:
   session.json
 ```
 
-Do not paste the full native tool stream into May's conversation by default.
-That would pollute May's context and make owner judgment harder. May can read
-the artifact files when it needs details.
+Do not paste the full native tool stream into the caller's context by default.
+The caller can read the artifact files when it needs details.
 
 ## Skill-Guided Operation
 
@@ -217,7 +223,7 @@ when to use tmux/PTY, which flags avoid prompts, how to resume, how to monitor
 background work, and when to isolate work with git worktrees. That is worth
 copying as an operating pattern.
 
-May should use the same split:
+The runtime uses the same split:
 
 - A skill or design guide teaches agents how to decide and packetize native
   coding work.
@@ -229,9 +235,11 @@ details.
 
 ## Event Contract
 
-The current event contract is intentionally small. `cli.task.requested` is the
-handoff to the runtime. `cli.task.started` is observability. Exactly one of
-`cli.task.completed`, `cli.task.failed`, or `cli.task.orphaned` closes the task.
+The current event contract is intentionally small. The historical `cli.task.*`
+name identifies a native-worker process record, not a canonical App task.
+`cli.task.requested` is the handoff to the runtime, `cli.task.started` is
+observability, and exactly one of `cli.task.completed`, `cli.task.failed`, or
+`cli.task.orphaned` closes the worker run.
 
 ```typescript
 cli.task.requested {
@@ -334,12 +342,11 @@ cli.task.orphaned {
 `cli.task.requested` targets `runtime:cli-task-runner`. Terminal events return
 to `sourceOwner`, usually the agent that requested the worker.
 
-For a May-owned worker started from Telegram, the originating trace is part of
-the durable CLI record. A live source May session receives the terminal update.
-If that session is gone, the runtime may start one fresh May result-review turn
-on the same trace and latest indexed human reply target. That review judges the
-artifact before replying; it does not forward the raw worker result or infer
-new authority. This is a narrow recovery path, not a generic task store.
+The originating trace is part of the durable CLI record. A live source session
+receives the terminal update. If that session is gone, the runtime retains the
+artifacts but does not invent a replacement owner or human reply. Work that
+must survive caller loss belongs in an App request or task before the caller
+ends.
 
 ## State Semantics
 
@@ -350,7 +357,7 @@ The CLI task state describes the worker process, not the project outcome.
 | `cli.task.started`   | The runner accepted the request and spawned the native process.                   | Usually observe only.                                               |
 | `cli.task.completed` | The native worker produced a usable result artifact.                              | Review the result and decide whether the original work is resolved. |
 | `cli.task.failed`    | The native worker could not produce a usable result.                              | Retry, adjust prompt/config, or handle the failure directly.        |
-| `cli.task.orphaned`  | May restarted while the native worker was running, so runtime ownership was lost. | Inspect artifacts/session id, then resume or retry.                 |
+| `cli.task.orphaned`  | Runtime restarted while the native worker was running, so process ownership was lost. | Inspect artifacts/session id, then resume or retry from an owning attempt. |
 
 The runner owns the deadline. Once it expires, the task fails as `timeout`
 regardless of the native process exit code. The runner stops the whole CLI
@@ -369,8 +376,8 @@ Each external runtime has its own session concept:
 - Codex emits a thread id from JSONL events.
 - Claude emits a session id in stream output.
 
-May stores these as native worker session ids. If `reuseSession` is true, May
-can resume the latest native session for that owner and tool. If
+The runner stores these as native worker session ids. If `reuseSession` is true,
+it can resume the latest native session for that owner and tool. If
 `resumeSessionId` is provided, it wins for that request.
 
 Session reuse is useful for continuity, but it is not a substitute for a clear
@@ -408,7 +415,7 @@ an adapter implementation detail. May should still expose the same durable
 
 ## Runtime Model Endpoint
 
-May, Codex, and Claude use the shared model API configured by
+May Runtime, Codex, and Claude use the shared model API configured by
 `MODEL_BASE_URL` and `MODEL_API_KEY`. The clients only depend on their standard
 wire protocols; LiteLLM is the current external implementation, not a runtime
 concept.
@@ -425,7 +432,7 @@ The practical check is simple:
 codex exec --json --skip-git-repo-check --sandbox read-only -o /tmp/codex-smoke.md "Reply with exactly: ok"
 ```
 
-If that works for the daemon user, May can launch Codex through
+If that works for the daemon user, a compatible execution session can launch Codex through
 `run_cli_agent`. A custom Codex home must contain the generated endpoint
 configuration before the worker starts.
 
@@ -484,8 +491,9 @@ main repo
   -> worktree C for issue/spec C
 ```
 
-Each worker receives one worktree, one task, and one expected artifact. May or
-the project owner reviews and merges; the worker does not own broad repo state.
+Each worker receives one worktree, one task, and one expected artifact. The
+bounded caller reviews the evidence and the owning App admits any result; the
+worker does not own broad repo state.
 The runner accepts worktrees inside the project parent, so sibling git
 worktrees are supported.
 
@@ -500,7 +508,7 @@ terminal CLI event to the owner and optionally steers the source session with a
 compact update. The owner can then:
 
 - accept the result;
-- ask May to review it;
+- return it to the owning App for review;
 - retry with a better prompt;
 - create a follow-up task;
 - reject the result and keep the original work open.
@@ -513,11 +521,11 @@ judgment.
 A correct implementation should satisfy these checks:
 
 1. `run_cli_agent` returns quickly with `{ taskId, status: "accepted" }`.
-2. A durable task directory exists before the external CLI starts.
+2. A persistent worker directory exists before the external CLI starts.
 3. `cli.task.requested` is addressed to `runtime:cli-task-runner`.
 4. `cli-task-runner` emits `started` and exactly one terminal event.
 5. Terminal events are addressed back to `sourceOwner`.
-6. Source chat sessions receive only compact steering text.
+6. Still-live source sessions receive only compact steering text.
 7. Full native output is recoverable from artifact paths.
 8. Restart recovery marks in-flight tasks `orphaned`.
 9. Session ids are stored for explicit resume or `reuseSession`.
@@ -525,9 +533,9 @@ A correct implementation should satisfy these checks:
 
 ## Human Surface
 
-Humans should not need to know whether the worker is Codex, Claude, a terminal,
-or a subprocess unless they explicitly ask. Natural requests such as these
-should route through May's judgment:
+Humans should not need to know whether a bounded worker is Codex, Claude, a
+terminal, or a subprocess unless they explicitly ask. Natural requests such as
+these enter the May App first:
 
 - "ask Codex to review this"
 - "get a second opinion"
@@ -535,8 +543,9 @@ should route through May's judgment:
 - "delegate this investigation"
 - "let Claude try a patch"
 
-May may still answer directly when the task is small or already clear. External
-workers are capacity, not an obligation.
+May may answer directly or delegate the outcome to the accountable App. That
+App may use a bounded awaited worker call as implementation capacity; it cannot
+turn `run_cli_agent` into an asynchronous ownership path.
 
 ## Open Design Gaps
 
@@ -547,10 +556,10 @@ workers are capacity, not an obligation.
    validation remains optional follow-up.
 3. Patch mode can require an explicitly prepared isolated worktree. Automatic
    safe worktree creation and cleanup remain open.
-4. UI should show active CLI worker tasks with native session id, status,
+4. UI should show active CLI worker records with native session id, status,
    result path, and events path.
 5. Metrics should track request count, completion rate, orphan count, timeout
    rate, average duration, and failed-parser/no-output rate.
 
 Improve the existing adapter in place: add partial-result parsing, UI/read-model
-visibility, and task metrics without introducing another worker execution path.
+visibility, and worker metrics without introducing another execution path.
