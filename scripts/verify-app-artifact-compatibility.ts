@@ -56,12 +56,9 @@ try {
         appsRoot,
         sdkRoot,
         sdkTreeSha256: treeDigest(sdkRoot),
+        authoringBoundary: "canonical",
         appCount: loaded.length,
         apps: loaded.map(({ definition }) => definition.id).sort(),
-        legacyApps: loaded
-          .filter(({ compatibility }) => compatibility === "legacy-project-app")
-          .map(({ definition }) => definition.id)
-          .sort(),
       },
       null,
       2,

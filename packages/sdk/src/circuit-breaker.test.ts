@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { checkCircuitBreaker, recordCircuitOutcome, resetCircuitBreaker } from "./legacy.js";
+import { checkCircuitBreaker, recordOutcome as recordCircuitOutcome, resetCircuitBreaker } from "./circuit-breaker.js";
 import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
