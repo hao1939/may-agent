@@ -14,6 +14,7 @@ function immutableEntries(entries: LoadedAppDefinition[]): readonly Readonly<Loa
       Object.freeze({
         appDir: entry.appDir,
         definition: Object.freeze(entry.definition),
+        compatibility: entry.compatibility,
       }),
     ),
   );
@@ -36,7 +37,11 @@ export class AppRegistry {
   }
 
   entries(): LoadedAppDefinition[] {
-    return this.current.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
+    return this.current.entries.map((entry) => ({
+      appDir: entry.appDir,
+      definition: entry.definition,
+      compatibility: entry.compatibility,
+    }));
   }
 
   snapshot(): AppRegistrySnapshot {

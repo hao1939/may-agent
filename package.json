@@ -9,6 +9,7 @@
     "check:event-graph": "bun scripts/event-graph-check.ts",
     "ci": "bun run check && bun run check:sdk && bun run test",
     "verify": "bun run ci",
+    "verify:apps-artifact": "bun scripts/verify-app-artifact-compatibility.ts",
     "test": "bun test --path-ignore-patterns='bundle/**' src/ packages/ test/",
     "test:unit": "bun test --path-ignore-patterns='bundle/**' src/ packages/",
     "test:integration": "bun test test/integration",

@@ -232,6 +232,26 @@ export async function runAppRuntime(opts: {
     runtime: appTaskOptions,
   });
   const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
+  const legacyAppMetricId = "may-agent.migration.legacy-app-count";
+  observerMetrics.define({
+    id: legacyAppMetricId,
+    name: "Loaded legacy Agent App declarations",
+    owner: "may-agent",
+    project: "may-agent",
+    type: "gauge",
+    target: 0,
+    unit: "apps",
+    priority: "P1",
+    source: "AppRegistry compatibility provenance",
+    description: "Transition-only count; Release C requires zero across the canonical Apps canary window.",
+  });
+  const recordLegacyAppCount = () =>
+    observerMetrics.record(
+      legacyAppMetricId,
+      appRegistry.snapshot().entries.filter((entry) => entry.compatibility === "legacy-project-app").length,
+      { measuredBy: "app-registry" },
+    );
+  recordLegacyAppCount();
 
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
@@ -301,6 +321,7 @@ export async function runAppRuntime(opts: {
         const result = await appTasks.publishGeneration({ snapshot, publish: commit });
         taskApps = result.apps;
       });
+      recordLegacyAppCount();
       return { appIds, taskApps };
     },
   });

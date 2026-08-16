@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { listAppDefinitionFiles, loadAppDefinitions } from "./app-loader.js";
@@ -40,6 +40,7 @@ describe("canonical App loader", () => {
     expect(loaded[0]).toMatchObject({
       appDir: join(root, "evaluation.app"),
       definition: { id: "evaluation-canary", owner: "evaluator" },
+      compatibility: "canonical",
     });
   });
 
@@ -107,6 +108,8 @@ describe("canonical App loader", () => {
       observations: ["evaluation.reviewed"],
       tasks: { attach: true, subscriptions: ["evaluation.task"], maxConcurrent: 3 },
     });
+    expect(loaded.find(({ definition: app }) => app.id === "evaluation")?.compatibility).toBe("legacy-project-app");
+    expect(loaded.find(({ definition: app }) => app.id === "aks-rp-e2e")?.compatibility).toBe("legacy-project-app");
     expect(aks).toMatchObject({
       id: "aks-rp-e2e",
       schedules: [
@@ -125,37 +128,6 @@ describe("canonical App loader", () => {
         event: { type: "evaluation.review", data: { value: "ready" } },
       },
     });
-  });
-
-  it("prepares every current project App through the immutable staged SDK bundle path", async () => {
-    const stagedSdk = "/app/projects/may-agent/bundle/sdk-9c17ac0bc2332e7f4248b5653a9e981c1ecaa4d8";
-    if (!existsSync(stagedSdk) || !existsSync("/app/projects")) return;
-    const cacheRoot = mkdtempSync(join(tmpdir(), "app-loader-staged-"));
-    roots.push(cacheRoot);
-    const previousSdkRoot = process.env.MAY_AGENT_SDK_ROOT;
-    process.env.MAY_AGENT_SDK_ROOT = stagedSdk;
-    try {
-      const loaded = await loadAppDefinitions("/app/projects", {
-        forceBundle: true,
-        cacheDir: join(cacheRoot, "cache"),
-      });
-      expect(loaded.length).toBeGreaterThan(0);
-      const byId = new Map(loaded.map(({ definition }) => [definition.id, definition]));
-      const evaluation = byId.get("evaluation");
-      expect(evaluation).toBeDefined();
-      const pipelineReview = (evaluation?.schedules ?? []).filter((schedule) =>
-        schedule.id.startsWith("evaluation-pipeline-review"),
-      );
-      expect(pipelineReview.length).toBeGreaterThan(0);
-      for (const schedule of pipelineReview) {
-        expect((schedule as { emits?: unknown[] }).emits?.length ?? 0).toBeGreaterThan(0);
-        expect((schedule as { event?: { type?: string } }).event?.type).toBe("evaluation.pipeline.check");
-      }
-      expect(byId.get("aks-rp-e2e")).toBeDefined();
-    } finally {
-      if (previousSdkRoot === undefined) delete process.env.MAY_AGENT_SDK_ROOT;
-      else process.env.MAY_AGENT_SDK_ROOT = previousSdkRoot;
-    }
   });
 
   it("rejects duplicate App ids before starting the host", async () => {
