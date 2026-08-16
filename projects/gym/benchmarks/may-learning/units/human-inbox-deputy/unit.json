@@ -17,11 +17,11 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
-      "section": "Outbound Human Inbox Deputy"
+      "section": "Proactive Human Attention"
     },
     {
       "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md",
-      "section": "Telegram Contract"
+      "section": "Telegram"
     },
     {
       "path": "../may-agent.app/docs/2a-design/message-lifecycle.md",

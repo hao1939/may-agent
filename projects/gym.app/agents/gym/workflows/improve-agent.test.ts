@@ -1332,18 +1332,11 @@ describe("single agent-improvement loop", () => {
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
     expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(targets.map(({ id }) => id)).toEqual([
-      "cli-worker-opinions",
-      "initiative-and-approval",
-      "system-deputy-operations",
-      "system-deputy-learning-intake",
-      "human-inbox-deputy",
-      "admission-review-closure",
-      "practical-judgment",
-      "signals-and-context",
+      "app-outcome-management",
     ]);
-    expect(
-      targets.find(({ id }) => id === "system-deputy-operations")?.scenarios,
-    ).toContain("may-learn-understand-telegram-reply-intent");
+    expect(targets[0]?.scenarios).toContain(
+      "may-app-delegate-recurring-outcome",
+    );
 
     const visited: string[] = [];
     const exhausted = await runCurriculumSequence(targets, async (target) => {
@@ -1365,7 +1358,7 @@ describe("single agent-improvement loop", () => {
     visited.length = 0;
     const stopped = await runCurriculumSequence(targets, async (target) => {
       visited.push(target.id);
-      return target.id === "system-deputy-operations"
+      return target.id === "app-outcome-management"
         ? {
             type: "done",
             summary: "Waiting for exact approval.",
@@ -1386,18 +1379,14 @@ describe("single agent-improvement loop", () => {
           };
     });
     expect(stopped.state).toBe("stopped");
-    expect(visited).toEqual([
-      "cli-worker-opinions",
-      "initiative-and-approval",
-      "system-deputy-operations",
-    ]);
+    expect(visited).toEqual(["app-outcome-management"]);
 
     visited.length = 0;
     const deferredIssue = await runCurriculumSequence(
       targets,
       async (target) => {
         visited.push(target.id);
-        return target.id === "system-deputy-operations"
+        return target.id === "app-outcome-management"
           ? {
               type: "done",
               summary: "Gym found an evaluator issue but no May behavior gap.",

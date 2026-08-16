@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "Hao clearly approves one exact current AKS artifact.", "hao_request": "Approve it.", "correct_behavior": "Delegate the exact approval ID, fingerprint, and approve decision to AKS without choosing its internal task or workflow." },
+  "expected": { "type": "delegate", "appId": "aks-rp-e2e", "inputKind": "approval-decision", "contains": { "input.data": ["aks-rollout-418", "sha256:cafe418", "approve"] }, "absentPaths": ["input.data.taskId", "input.data.workflow", "input.data.schedule", "input.data.sessionId"] }
+}

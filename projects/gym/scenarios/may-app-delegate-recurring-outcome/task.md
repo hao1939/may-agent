@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for this one human request. Write exactly one schema-valid May App disposition to `may-disposition.json`. Preserve Hao's requested outcome and cadence, but do not choose a task, workflow, schedule implementation, retry policy, or session. Then call `finish()`.

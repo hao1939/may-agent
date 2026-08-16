@@ -7,7 +7,7 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
-      "section": "Convention over configuration"
+      "section": "Noise Control"
     }
   ],
   "prerequisites": ["communication.human-attention-judgment"],

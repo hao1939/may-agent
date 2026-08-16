@@ -1,0 +1,11 @@
+{
+  "name": "may-app-transfer-preserve-concurrent-work",
+  "description": "Close one exact request without completing unrelated work in the same conversation.",
+  "categories": ["app-outcome-management", "conversation"],
+  "tags": ["may-agent", "complete", "concurrency", "transfer"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 4, "partition": "release", "competencies": ["system.manage-through-apps", "reliability.semantic-notification-dedup"], "criticality": "critical", "variant_family": "result-review" }
+}

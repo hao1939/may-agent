@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "AKS owns a durable investigation that may outlive this May attempt.", "hao_request": "Find why AKS master validation failed and get it healthy.", "correct_behavior": "Delegate once to aks-rp-e2e with the failed build, desired healthy outcome, and terminal proof; leave task and workflow selection to the App." },
+  "expected": { "type": "delegate", "appId": "aks-rp-e2e", "inputKind": "problem-investigation", "contains": { "input.data": ["176033245", "networking-3", "root cause", "passing"] }, "absentPaths": ["input.data.taskId", "input.data.workflow", "input.data.schedule", "input.data.sessionId", "input.data.retryPolicy"] }
+}

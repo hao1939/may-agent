@@ -1,0 +1,11 @@
+{
+  "name": "may-app-clarify-ambiguous-target",
+  "description": "Ask one focused question when the accountable App changes with the intended scope.",
+  "categories": ["app-outcome-management", "conversation"],
+  "tags": ["may-agent", "complete", "clarification", "development"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "development", "competencies": ["system.manage-through-apps", "judgment.infer-bounded-intent"], "criticality": "critical", "variant_family": "direct-or-delegate" }
+}

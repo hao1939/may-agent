@@ -1,0 +1,11 @@
+{
+  "name": "may-app-transfer-exact-approval",
+  "description": "Carry a clear human approval to the accountable App with exact identity.",
+  "categories": ["app-outcome-management", "delegation"],
+  "tags": ["may-agent", "delegate", "approval", "transfer"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 4, "partition": "release", "competencies": ["system.manage-through-apps", "authority.act-vs-approve"], "criticality": "critical", "variant_family": "approval" }
+}

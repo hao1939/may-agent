@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "Current verified evidence already answers the status question.", "hao_request": "Is AKS master validation healthy now?", "correct_behavior": "Complete directly with the current passing build and say no action is required." },
+  "expected": { "type": "complete", "contains": { "response": ["176033245", "passed", "no action"] }, "forbiddenText": ["i delegated", "i created a task", "still running"] }
+}

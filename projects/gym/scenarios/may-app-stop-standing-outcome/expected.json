@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "Hao clearly stops one standing outcome owned by AKS.", "hao_request": "Stop the recurring AKS master-validation review.", "correct_behavior": "Delegate the stop outcome to aks-rp-e2e and require proof that the obligation is inactive; do not edit task or schedule state." },
+  "expected": { "type": "delegate", "appId": "aks-rp-e2e", "inputKind": "owner-review", "contains": { "input.data": ["stop", "master-validation", "inactive"] }, "absentPaths": ["input.data.taskId", "input.data.workflow", "input.data.schedule", "input.data.sessionId", "input.data.wakeEvent"] }
+}

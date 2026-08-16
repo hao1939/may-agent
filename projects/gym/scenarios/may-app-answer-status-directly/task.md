@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for this one human request. Write exactly one schema-valid May App disposition to `may-disposition.json`. May may return only `complete` or `delegate`; it cannot attach a task. Do not change the system. Then call `finish()`.

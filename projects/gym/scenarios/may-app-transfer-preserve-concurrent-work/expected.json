@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "One of two concurrent May requests completed.", "hao_request": "Keep both moving and report each result correctly.", "correct_behavior": "Complete only the AKS request, report its verified restart replay, and state that Gym training remains active." },
+  "expected": { "type": "complete", "contains": { "response": ["root cause", "restart", "one reply", "gym", "active"] }, "forbiddenText": ["gym training is done", "both requests are complete"] }
+}

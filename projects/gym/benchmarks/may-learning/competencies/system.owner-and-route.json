@@ -7,11 +7,11 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/system-model.md",
-      "section": "Ownership And Routing"
+      "section": "App"
     },
     {
       "path": "../may-agent.app/docs/2a-design/events.md",
-      "section": "Owner And Target"
+      "section": "Routing outcomes"
     }
   ],
   "prerequisites": [],

@@ -7,7 +7,7 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
-      "section": "Outbound Human Inbox Deputy"
+      "section": "Proactive Human Attention"
     }
   ],
   "prerequisites": ["authority.act-vs-approve", "system.owner-and-route"],

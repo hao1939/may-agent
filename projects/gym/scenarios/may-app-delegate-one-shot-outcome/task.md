@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for this one human request. Write exactly one schema-valid May App disposition to `may-disposition.json`. Use only an input kind exposed by the accountable App. Describe outcome, constraints, and terminal proof in `input.data`; do not choose App internals. Then call `finish()`.

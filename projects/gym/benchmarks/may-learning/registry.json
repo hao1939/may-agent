@@ -12,6 +12,10 @@
       "path": "units/system-deputy-operations/unit.json"
     },
     {
+      "id": "app-outcome-management",
+      "path": "units/app-outcome-management/unit.json"
+    },
+    {
       "id": "cli-worker-opinions",
       "path": "units/cli-worker-opinions/unit.json"
     },

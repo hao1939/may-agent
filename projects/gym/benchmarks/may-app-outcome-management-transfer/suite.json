@@ -1,0 +1,14 @@
+{
+  "name": "may-app-outcome-management-transfer-v1",
+  "version": 1,
+  "artifact": "may-disposition.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-app-outcome-management/score-disposition.cjs",
+  "scenarios": [
+    "may-app-transfer-paraphrased-recurring-outcome",
+    "may-app-transfer-restart-closeout",
+    "may-app-transfer-preserve-concurrent-work",
+    "may-app-transfer-exact-approval",
+    "may-app-transfer-secret-boundary"
+  ]
+}

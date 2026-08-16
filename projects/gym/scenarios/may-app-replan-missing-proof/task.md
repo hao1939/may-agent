@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May after a delegated App result woke this request. Write exactly one schema-valid May App disposition to `may-disposition.json`. Do not report completion without the requested terminal proof. Then call `finish()`.

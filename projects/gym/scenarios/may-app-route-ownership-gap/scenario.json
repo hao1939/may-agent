@@ -1,0 +1,11 @@
+{
+  "name": "may-app-route-ownership-gap",
+  "description": "Route an unowned durable capability gap to may-agent.",
+  "categories": ["app-outcome-management", "delegation"],
+  "tags": ["may-agent", "delegate", "ownership-gap", "development"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "development", "competencies": ["system.manage-through-apps"], "criticality": "critical", "variant_family": "ownership-gap" }
+}

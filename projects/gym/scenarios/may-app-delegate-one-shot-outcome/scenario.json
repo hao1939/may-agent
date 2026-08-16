@@ -1,0 +1,11 @@
+{
+  "name": "may-app-delegate-one-shot-outcome",
+  "description": "Delegate one durable domain outcome to its accountable App.",
+  "categories": ["app-outcome-management", "delegation"],
+  "tags": ["may-agent", "delegate", "development"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "development", "competencies": ["system.manage-through-apps"], "criticality": "critical", "variant_family": "durable-outcome" }
+}

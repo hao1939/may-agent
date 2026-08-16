@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for this one human request. Write exactly one schema-valid May App disposition to `may-disposition.json`. A focused clarification is a `complete` disposition whose `response` is the question for Hao. Do not change the system. Then call `finish()`.

@@ -4,6 +4,7 @@
   "tracks": [
     {
       "id": "cli-worker-opinions",
+      "enabled": false,
       "benchmark": "may-cli-worker-learning",
       "scenarios": [
         "may-learn-seek-cli-opinion-when-material",
@@ -15,6 +16,7 @@
     },
     {
       "id": "initiative-and-approval",
+      "enabled": false,
       "benchmark": "may-alignment",
       "scenarios": [
         "may-align-proof-before-adopt",
@@ -30,6 +32,7 @@
     },
     {
       "id": "system-deputy-operations",
+      "enabled": false,
       "benchmark": "may-deputy-learning",
       "scenarios": [
         "may-learn-reject-stale-app-approval",
@@ -48,12 +51,14 @@
     },
     {
       "id": "system-deputy-learning-intake",
+      "enabled": false,
       "benchmark": "may-deputy-learning-intake",
       "scenarios": ["may-learn-recover-codex-intake-timeout"],
       "trials": 3
     },
     {
       "id": "human-inbox-deputy",
+      "enabled": false,
       "benchmark": "may-human-inbox-deputy",
       "scenarios": [
         "may-learn-inbox-handle-recovered-timeout",
@@ -70,6 +75,7 @@
     },
     {
       "id": "admission-review-closure",
+      "enabled": false,
       "benchmark": "may-admission-review-closure",
       "scenarios": [
         "may-learn-admission-review-disposition-before-runtime-repair",
@@ -80,6 +86,7 @@
     },
     {
       "id": "practical-judgment",
+      "enabled": false,
       "benchmark": "may-practical-judgment-development",
       "scenarios": [
         "may-practical-understand-before-action",
@@ -92,11 +99,28 @@
     },
     {
       "id": "signals-and-context",
+      "enabled": false,
       "benchmark": "may-signals-and-context-development",
       "scenarios": [
         "may-signal-investigate-metric-before-action",
         "may-context-debug-agent-input-first",
         "may-context-discover-dont-dump"
+      ],
+      "trials": 3
+    },
+    {
+      "id": "app-outcome-management",
+      "enabled": true,
+      "benchmark": "may-app-outcome-management",
+      "scenarios": [
+        "may-app-answer-status-directly",
+        "may-app-clarify-ambiguous-target",
+        "may-app-delegate-one-shot-outcome",
+        "may-app-delegate-recurring-outcome",
+        "may-app-route-ownership-gap",
+        "may-app-review-terminal-result",
+        "may-app-replan-missing-proof",
+        "may-app-stop-standing-outcome"
       ],
       "trials": 3
     }

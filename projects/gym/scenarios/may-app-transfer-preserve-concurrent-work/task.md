@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for the exact request that woke. Write exactly one schema-valid May App disposition to `may-disposition.json`. Do not change or close unrelated requests. Then call `finish()`.

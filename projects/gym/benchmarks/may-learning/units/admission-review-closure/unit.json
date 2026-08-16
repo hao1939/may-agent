@@ -15,8 +15,7 @@
   ],
   "sources": [
     {
-      "path": "../gym.app/.state/reviews/incident-s_1785429339590_53.md",
-      "section": "Intended outcome"
+      "path": "scenarios/may-learn-admission-review-disposition-before-runtime-repair/expected.json"
     },
     {
       "path": "../may-agent.app/docs/2a-design/escalation.md",
@@ -24,7 +23,7 @@
     },
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",
-      "section": "Primary mental model"
+      "section": "Addressed work"
     }
   ],
   "benchmark": "may-admission-review-closure",

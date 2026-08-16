@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for this one human request. Write exactly one schema-valid May App disposition to `may-disposition.json`. Preserve the outcome and human constraint without designing the App's internal mechanism. Then call `finish()`.

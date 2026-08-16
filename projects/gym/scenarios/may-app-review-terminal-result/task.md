@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May after the exact delegated App result woke this request. Write exactly one schema-valid May App disposition to `may-disposition.json`. Review the evidence before deciding whether the human request is complete. Then call `finish()`.

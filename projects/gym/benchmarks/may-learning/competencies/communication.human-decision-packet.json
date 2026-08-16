@@ -7,7 +7,7 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
-      "section": "Decision packet"
+      "section": "Proactive Human Attention"
     }
   ],
   "prerequisites": ["communication.human-attention-judgment", "evidence.propose-after-proof"],

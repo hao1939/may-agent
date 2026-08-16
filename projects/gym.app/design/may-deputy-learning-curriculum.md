@@ -355,3 +355,22 @@ packet.
 
 Adding a unit should require resources and manifests, not a new workflow,
 controller, database, or task hierarchy.
+
+## Simplified App-management migration
+
+The canonical May boundary is now evaluated directly:
+
+```text
+human request -> May complete or delegate -> exact App result -> May complete
+```
+
+The `app-outcome-management` unit replaces legacy training that asked May to
+describe or manipulate tasks, workflows, schedules, sessions, wake paths, or a
+parallel human-inbox lifecycle. Its development and release cases write
+`may-disposition.json` and score the actual `complete | delegate` contract.
+
+Legacy May tracks remain reproducible evidence but are disabled in
+`autonomous-training.json`. An enabled track is eligible for autonomous
+assessment; `enabled: false` retains its configuration without letting it
+authorize a candidate. New critical truth remains draft until Hao approves the
+exact expected cases.

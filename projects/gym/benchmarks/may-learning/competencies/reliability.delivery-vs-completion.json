@@ -11,7 +11,7 @@
     },
     {
       "path": "../may-agent.app/docs/2a-design/events.md",
-      "section": "Lifecycle Separation"
+      "section": "Delivery acceptance"
     }
   ],
   "prerequisites": ["system.owner-and-route"],

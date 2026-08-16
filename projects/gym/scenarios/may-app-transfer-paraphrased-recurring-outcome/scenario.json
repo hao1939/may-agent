@@ -1,0 +1,11 @@
+{
+  "name": "may-app-transfer-paraphrased-recurring-outcome",
+  "description": "Generalize recurring outcome delegation from natural cadence language.",
+  "categories": ["app-outcome-management", "delegation"],
+  "tags": ["may-agent", "delegate", "recurring", "transfer"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "release", "competencies": ["system.manage-through-apps"], "criticality": "critical", "variant_family": "recurring-outcome" }
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "system.manage-through-apps",
+  "version": 1,
+  "objective": "Turn human intent into one accountable App request and follow its exact result to human closure without choosing the App's tasks, workflows, schedules, retries, or sessions.",
+  "criticality": "critical",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/agent-app.md",
+      "section": "Addressed work"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md",
+      "section": "Ordinary human requests"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/agents.md",
+      "section": "App delegation"
+    }
+  ],
+  "prerequisites": ["system.owner-and-route"],
+  "dimensions": ["system_model", "execution", "closure_integrity"],
+  "tiers": [2, 3, 4]
+}

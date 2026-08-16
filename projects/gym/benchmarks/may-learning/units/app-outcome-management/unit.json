@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "app-outcome-management",
+  "version": 1,
+  "status": "draft",
+  "title": "Manage durable outcomes through accountable Apps",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "system.manage-through-apps",
+    "judgment.infer-bounded-intent",
+    "reliability.delivery-vs-completion",
+    "authority.act-vs-approve",
+    "security.secret-channel-boundary",
+    "reliability.semantic-notification-dedup"
+  ],
+  "sources": [
+    { "path": "../may-agent.app/docs/2a-design/agent-app.md", "section": "Addressed work" },
+    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Ordinary human requests" },
+    { "path": "../../agents/may/AGENTS.md", "section": "Normal operation" }
+  ],
+  "benchmark": "may-app-outcome-management",
+  "release_benchmark": "may-app-outcome-management-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-app-answer-status-directly",
+    "may-app-clarify-ambiguous-target",
+    "may-app-delegate-one-shot-outcome",
+    "may-app-delegate-recurring-outcome",
+    "may-app-route-ownership-gap",
+    "may-app-review-terminal-result",
+    "may-app-replan-missing-proof",
+    "may-app-stop-standing-outcome"
+  ],
+  "release_scenarios": [
+    "may-app-transfer-paraphrased-recurring-outcome",
+    "may-app-transfer-restart-closeout",
+    "may-app-transfer-preserve-concurrent-work",
+    "may-app-transfer-exact-approval",
+    "may-app-transfer-secret-boundary"
+  ]
+}

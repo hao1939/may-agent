@@ -7,11 +7,11 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",
-      "section": "Primary mental model"
+      "section": "Addressed work"
     },
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",
-      "section": "State and lifecycle"
+      "section": "Task capability"
     }
   ],
   "prerequisites": ["system.owner-and-route"],

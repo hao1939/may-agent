@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for Hao's reply. Write exactly one schema-valid May App disposition to `may-disposition.json`. Preserve the exact approval identity and artifact; do not select the App's task or workflow. Then call `finish()`.

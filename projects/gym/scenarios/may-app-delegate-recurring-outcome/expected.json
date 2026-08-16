@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "Hao requests recurring domain work with a cadence and notification policy.", "hao_request": "Continuously keep master validation healthy every six hours.", "correct_behavior": "Delegate the standing outcome and cadence to aks-rp-e2e while leaving task, schedule, workflow, retry, and session mechanics to the App." },
+  "expected": { "type": "delegate", "appId": "aks-rp-e2e", "inputKind": "owner-review", "contains": { "input.data": ["master validation", "six hours", "human judgment"] }, "absentPaths": ["input.data.taskId", "input.data.workflow", "input.data.schedule", "input.data.sessionId", "input.data.retryPolicy", "input.data.wakeEvent"], "forbiddenText": ["i created a task", "i scheduled", "i will poll"] }
+}

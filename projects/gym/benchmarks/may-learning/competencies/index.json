@@ -14,6 +14,10 @@
       "path": "evidence.propose-after-proof.json"
     },
     { "id": "system.owner-and-route", "path": "system.owner-and-route.json" },
+    {
+      "id": "system.manage-through-apps",
+      "path": "system.manage-through-apps.json"
+    },
     { "id": "project.app-control", "path": "project.app-control.json" },
     {
       "id": "execution.skill-vs-workflow",

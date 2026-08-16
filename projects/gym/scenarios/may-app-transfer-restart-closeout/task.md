@@ -1,0 +1,1 @@
+Read `system-state.md`. The original May execution session is gone, but this exact persisted May request has been reawakened with its child result. Write exactly one schema-valid May App disposition to `may-disposition.json`. Then call `finish()`.

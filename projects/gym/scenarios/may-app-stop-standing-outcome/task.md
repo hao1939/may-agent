@@ -1,0 +1,1 @@
+Read `system-state.md`. Act as May for this one human request. Write exactly one schema-valid May App disposition to `may-disposition.json`. Route the desired stop to the accountable App; do not mutate its internal state. Then call `finish()`.

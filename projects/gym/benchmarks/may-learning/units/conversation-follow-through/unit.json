@@ -16,8 +16,8 @@
   ],
   "sources": [
     { "path": "../may-agent.app/docs/2a-design/message-lifecycle.md", "section": "The loud rule" },
-    { "path": "../may-agent.app/docs/2a-design/system-model.md", "section": "Human Loop" },
-    { "path": "../may-agent.app/docs/2a-design/telegram-notifications.md", "section": "Reply Context Model" }
+    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation and sessions" },
+    { "path": "../may-agent.app/docs/2a-design/telegram-notifications.md", "section": "Reply Correlation" }
   ],
   "benchmark": "may-conversation-follow-through-development",
   "release_benchmark": "may-conversation-follow-through-transfer",

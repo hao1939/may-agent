@@ -358,7 +358,9 @@ export function loadCurriculumTargets(gymRoot: string): {
   if (config.schema_version !== 1 || config.agent !== "may") {
     throw new Error("Autonomous May training config is invalid");
   }
-  const rows = Array.isArray(config.tracks) ? config.tracks : [];
+  const rows = (Array.isArray(config.tracks) ? config.tracks : []).filter(
+    (value) => record(value).enabled !== false,
+  );
   const targets = rows.map((value) => {
     const row = record(value);
     const id = safeName(row.id, "");

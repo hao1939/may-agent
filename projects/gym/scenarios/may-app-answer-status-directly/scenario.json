@@ -1,0 +1,11 @@
+{
+  "name": "may-app-answer-status-directly",
+  "description": "Answer a bounded status question without manufacturing durable work.",
+  "categories": ["app-outcome-management", "conversation"],
+  "tags": ["may-agent", "complete", "development"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "development", "competencies": ["system.manage-through-apps"], "criticality": "critical", "variant_family": "direct-or-delegate" }
+}

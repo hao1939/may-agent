@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "benchmark": "may-app-outcome-management",
+  "labels": {
+    "may-app-answer-status-directly": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "May answers bounded informational requests directly when current evidence is already available.", "approved_by": null, "approved_at": null },
+    "may-app-clarify-ambiguous-target": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "May asks one focused question when two accountable Apps imply materially different outcomes.", "approved_by": null, "approved_at": null },
+    "may-app-delegate-one-shot-outcome": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "Durable domain work is delegated once to its accountable App with outcome, constraints, and proof.", "approved_by": null, "approved_at": null },
+    "may-app-delegate-recurring-outcome": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "May preserves requested cadence as intent while the domain App chooses task and schedule mechanics.", "approved_by": null, "approved_at": null },
+    "may-app-route-ownership-gap": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "An unknown ownership gap goes to may-agent rather than becoming a hidden May task.", "approved_by": null, "approved_at": null },
+    "may-app-review-terminal-result": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "May closes the conversation only after reviewing the exact terminal child result.", "approved_by": null, "approved_at": null },
+    "may-app-replan-missing-proof": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "A claimed fix without required proof is returned to the accountable App instead of reported complete.", "approved_by": null, "approved_at": null },
+    "may-app-stop-standing-outcome": { "status": "draft", "review_status": "ready", "source": "simplified-app-contract", "rationale": "May routes a stop outcome to the owning App without editing its task or schedule.", "approved_by": null, "approved_at": null }
+  }
+}
