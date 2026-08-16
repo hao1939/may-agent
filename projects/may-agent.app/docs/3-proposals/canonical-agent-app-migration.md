@@ -1396,15 +1396,24 @@ deployment ordering explicit:
   `afc424fc18b839ae15221ea89671d5342279e9b6bbd6a856e22a40c908f212f1`.
   The real Runtime loader bundles and loads all seven canonical Apps against
   those exact bytes with zero legacy declarations.
-- Complete local checks pass for AKS (657 tests plus two workflow-input tests),
-  Evaluation (61), Gym (77), Scout (54), May conversation (5), and May-agent
-  platform (6). The canary worker is covered by exact Runtime loading and the
-  Evaluation App canary contract.
+- A fresh archive of Release B application commit `ad979207c1`, with both SDK
+  dependency paths linked only to the exact Release C tree, passes every
+  complete local App check: AKS (657 tests plus two workflow-input tests and
+  current-bundle verification), Evaluation (61), Gym (77), Scout (54), May
+  conversation (5), and May-agent platform (6). The canary worker is covered
+  by exact Runtime loading and the Evaluation App canary contract. The root
+  Apps type check and the Apps-plus-final-Runtime boundary gate also pass with
+  zero errors.
 - The Apps integrity gate reports zero production or test imports of
   `@may-agent/sdk/legacy` and zero `defineProjectApp` declarations.
-- Release B is committed at `f0723aa5eb`; `2426529241` removes the ambient
-  `/app/node_modules/@types/bun` dependency from AKS and Scout checks so the
-  immutable Apps archive resolves only its declared `bun-types` dependency.
+- Release B starts at `f0723aa5eb`; `2426529241` removes the ambient
+  `/app/node_modules/@types/bun` dependency from AKS and Scout checks,
+  `f15d7e64b5` records migration evidence, `a1b1cac7bd` aligns AKS formatting,
+  and `ad979207c1` closes the final immutable-archive checks by limiting the
+  May-agent platform compiler to its canonical package boundary and aligning
+  Scout formatting. The archive therefore resolves only declared dependencies
+  and does not type-check retired, non-production platform workflow sources as
+  though they were part of the canonical App.
 - Release C is isolated at Runtime commit `68496cbd`. It deletes the legacy SDK
   export and declaration adapter, legacy import resolution, compatibility
   provenance/telemetry, and the legacy action/schedule branches while retaining
