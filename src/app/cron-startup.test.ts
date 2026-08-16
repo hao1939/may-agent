@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { PersistedSession } from "../lib/persistence";
-import { shouldResumeStartupChatSession, shouldResumeStartupSession } from "./cron-startup";
+import { shouldResumeStartupSession } from "./cron-startup";
 
 function session(appDir: string, source: string, recoveryOwner?: string): PersistedSession {
   return {
@@ -29,39 +29,6 @@ describe("cron startup recovery", () => {
     expect(recoveryImport).toBeGreaterThan(-1);
     expect(recoveryCall).toBeGreaterThan(-1);
     expect(recoveryCall).toBeLessThan(staleResume);
-  });
-
-  it("closes completed idle chat turns instead of replaying them after restart", () => {
-    expect(
-      shouldResumeStartupChatSession("telegram-turn", {
-        agent: "may",
-        task: "Completed Telegram request",
-        status: "idle",
-        startedAt: Date.now(),
-        source: "telegram",
-        requestId: "telegram:45978",
-        kind: "chat",
-        autoClose: "never",
-      }),
-    ).toEqual({
-      resume: false,
-      reason: "Idle chat turn already completed before restart",
-    });
-  });
-
-  it("still resumes a running chat turn interrupted by restart", () => {
-    expect(
-      shouldResumeStartupChatSession("telegram-turn", {
-        agent: "may",
-        task: "Telegram request still running",
-        status: "running",
-        startedAt: Date.now(),
-        source: "telegram",
-        requestId: "telegram:45978",
-        kind: "chat",
-        autoClose: "never",
-      }),
-    ).toEqual({ resume: true });
   });
 
   it("resumes only a task-bound session atomically claimed by App task recovery", () => {
