@@ -313,7 +313,6 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
     bus,
     manager,
-    getSessionId: () => taskSessionId ?? "",
     admitAppInput,
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,

@@ -29,6 +29,7 @@ describe("app runtime startup order", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).not.toContain("ChatSession");
     expect(source).not.toContain("chatSession");
+    expect(source).not.toContain("getSessionId: () => taskSessionId");
     expect(source).toContain("startInitialTask");
   });
 
