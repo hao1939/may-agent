@@ -35,6 +35,7 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
+  terminalOwnerSessionAppTaskClaim,
   releaseHandlerExecutionFailedAppTask,
   releaseHandlerUnavailableAppTask,
   releaseWorkspacePreparationFailedAppTask,
@@ -2177,6 +2178,54 @@ describe("App task reconciler state", () => {
       ).toBe(false);
       expect(readTaskState(config).attempts?.[claim.attemptId]).toEqual(before.attempts?.[claim.attemptId]);
     }
+  });
+
+  it("consumes a terminal direct-owner result exactly once even while its lease is fresh", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskAttemptSession(config, claim, "terminal-owner-session");
+
+    const before = readTaskState(config);
+    expect(Date.parse(before.attempts![claim.attemptId].lease!.expiresAt)).toBeGreaterThan(Date.now());
+    const recovered = terminalOwnerSessionAppTaskClaim(config, claim.taskId, "terminal-owner-session");
+    expect(recovered).toMatchObject({
+      kind: "claimed",
+      taskId: claim.taskId,
+      attemptId: claim.attemptId,
+      handler: "owner:branch-owner",
+    });
+    if (!recovered) throw new Error("expected terminal owner claim");
+
+    expect(
+      deferAppTask(config, recovered, {
+        disposition: "waiting",
+        summary: "terminal result requires one bounded child",
+        evidence: ["session:terminal-owner-session"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "terminal-result-child",
+            parentId: claim.taskId,
+            outcome: "Finish terminal result follow-up",
+            acceptance: ["Follow-up converges"],
+            mode: "achieve",
+            outputs: [],
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied", actionsApplied: ["created terminal-result-child"] });
+    expect(terminalOwnerSessionAppTaskClaim(config, claim.taskId, "terminal-owner-session")).toBeNull();
+    expect(readTaskState(config)).toMatchObject({
+      resources: { [claim.taskId]: { status: { phase: "waiting" } } },
+      attempts: { [claim.attemptId]: { state: "completed", sessionId: "terminal-owner-session" } },
+      tasks: { "terminal-result-child": { parent_id: claim.taskId } },
+    });
+    expect(Object.keys(readTaskState(config).tasks).filter((id) => id === "terminal-result-child")).toHaveLength(1);
   });
 
   it("releases only the exact expired owner attempt after its session is terminal", () => {
