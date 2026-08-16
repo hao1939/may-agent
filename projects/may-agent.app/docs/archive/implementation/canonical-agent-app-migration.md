@@ -1474,7 +1474,34 @@ mechanisms: task-action validation remains pure; Evaluation does not fall back
 to host-private identities; and the workspace observer does not read a removed
 preflight ledger or host-private task state.
 
-The rollout is complete. Release C is the deployed canonical Runtime, Release B
-is the deployed canonical Apps artifact, and the retained Release A artifact is
-the unit rollback boundary. Compatibility branches must not be restored into
-current source piecemeal.
+### Post-rollout workflow compatibility repair
+
+A post-rollout design-versus-code audit found that Release C loaded all App
+manifests but did not compile every discoverable workflow against the exact
+deployed SDK. The live `runtime/platform-owner-review` task therefore reached
+`HandlerUnavailable`: its module still imported removed task-tree helpers and
+used the host-private workflow context. Eight other failures were disabled
+heartbeat modules whose agent manifests already declared `heartbeat: false`.
+
+Apps commit `c71552f0e3cc6d7736db801df73de0de1e6060cc` repaired the active workflow
+to use only `reconciliation`, bounded reads, scoped workspace paths, and
+`agents.call`; deleted the eight disabled heartbeat modules; and extended the
+final-Runtime gate to bundle every discoverable App workflow against the exact
+paired SDK. The immutable artifact at
+`/app/.state/releases/apps/c71552f0e3cc6d7736db801df73de0de1e6060cc`
+loaded all seven Apps and bundled all 50 remaining workflows with zero errors.
+
+The Apps-only recreate retained the Release C Runtime image and SDK. After
+restart recovery, task generation 149 ran workflow
+`platform-owner-review` through workflow run `wr_1786890910520_awge` and owner
+session `s_1786890911368_4`; the attempt completed without a handler failure,
+the task entered `waiting` with its generation observed, and the reconciler
+admitted the proposed direct child
+`correct-unhandled-signal-metric-taxonomy-20260816`. The container returned
+healthy and the active `may-agent.app` mount resolved to the new immutable
+artifact.
+
+The rollout is complete. Release C remains the deployed canonical Runtime, the
+post-rollout Apps repair is the deployed canonical Apps artifact, and the
+retained Release A artifact is the unit Runtime rollback boundary. Compatibility
+branches must not be restored into current source piecemeal.
