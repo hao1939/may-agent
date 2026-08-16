@@ -1,9 +1,9 @@
 # System Operations Convergence
 
 **Status:** Completed.
-**Design authority:** [Work model](../1-principles/work-model.md),
-[Metrics](../2a-design/metrics.md), [Events](../2a-design/events.md), and
-[Agent App Contract](../2a-design/agent-app.md).
+**Design authority:** [Work model](../../1-principles/work-model.md),
+[Metrics](../../2a-design/metrics.md), [Events](../../2a-design/events.md), and
+[Agent App Contract](../../2a-design/agent-app.md).
 
 ## Result
 

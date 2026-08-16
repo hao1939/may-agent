@@ -17,6 +17,8 @@ contracts; Tier-2 design governs when wording conflicts.
 | [implementation-simplification.md](decisions/implementation-simplification.md)                       | [Agent App Contract](../2a-design/agent-app.md) and [Runtime](../2a-design/runtime.md)           |
 | [stigmergic-coordination.md](decisions/stigmergic-coordination.md)                                   | [Projects](../2a-design/projects.md) and [Events](../2a-design/events.md)                        |
 | [retired-design-alternatives.md](decisions/retired-design-alternatives.md)                           | Current Tier-2 subsystem designs.                                                                |
+| [inbox-scope-reduction.md](decisions/inbox-scope-reduction.md)                                       | [Agent App Contract](../2a-design/agent-app.md) and [Work Model](../1-principles/work-model.md)   |
+| [work-admission-and-mechanism-selection.md](decisions/work-admission-and-mechanism-selection.md)     | [Work Model](../1-principles/work-model.md) and [Workflows](../2a-design/workflows.md)            |
 
 ## Reviews
 
@@ -34,6 +36,7 @@ contracts; Tier-2 design governs when wording conflicts.
 - [App root cleanup — 2026-06-13](implementation/2026-06-13-app-root-cleanup.md)
 - [Task reconciliation WebUI cutover](implementation/task-reconciliation-webui-reviewability.md)
 - [Canonical Agent App migration](implementation/canonical-agent-app-migration.md)
+- [System operations convergence](implementation/system-operations-model.md)
 
 ## V2
 

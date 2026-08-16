@@ -1,9 +1,9 @@
 # Workflow Discovery And Execution
 
 **Design status:** Accepted.
-**Implementation status:** Bounded TypeScript workflows and canonical scoped
-context are implemented; legacy handler/SDK execution contexts are being
-removed.
+**Implementation status:** Implemented. Bounded TypeScript workflows use the
+canonical scoped context as their public authoring contract; additional host
+internals are not App capabilities and must not be consumed by new workflows.
 
 ## Purpose
 

@@ -1,9 +1,8 @@
 # Guards As Signals
 
 **Design status:** Accepted.
-**Implementation status:** Partial; the runtime recognizes observe, warn,
-repair/run-step, and block, while the public SDK authoring type still exposes
-only warn, run-step, and block.
+**Implementation status:** Implemented; the runtime and public SDK recognize
+observe, warn, repair/run-step, and block.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -73,9 +72,9 @@ Escalation is not a guard demand. After a guard exposes a blocker, the owning
 runtime/agent may create an explicit escalation only when the next required
 action crosses an ownership boundary.
 
-Until the public `@may-agent/sdk` demand type includes `observe` and `repair`,
-app-authored guards must use its supported `warn`, `run_step`, and `block`
-vocabulary. Do not bypass the type contract with casts.
+App-authored guards use the canonical `@may-agent/sdk` demand vocabulary.
+Do not bypass the type contract with casts or introduce a second guard-action
+model.
 
 ## Default Observation Path
 

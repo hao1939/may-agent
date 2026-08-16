@@ -8,7 +8,7 @@
 > Key completed items: project-app loader, app-local agent registration,
 > centralized cron lifecycle, legacy project handler disabled, evaluation/scout
 > migrated to apps. The remaining work is tracked in
-> [system-operations-model.md](../../3-proposals/system-operations-model.md)
+> [system-operations-model.md](system-operations-model.md)
 > (current operations-ownership convergence).
 >
 > This file is preserved as historical context for the phases that shipped.

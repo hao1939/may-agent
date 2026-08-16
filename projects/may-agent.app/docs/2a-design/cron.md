@@ -1,9 +1,9 @@
 # Scheduling And Observation
 
 **Design status:** Accepted.
-**Implementation status:** Shared scheduler implemented; canonical App
-input/event schedules are implemented while legacy cron handlers are being
-removed from App-owned work.
+**Implementation status:** Implemented. Canonical App input/event schedules and
+observers use the shared scheduler; the historical Cron name remains a
+host-private runtime detail, not an App authoring surface.
 
 ## Purpose
 

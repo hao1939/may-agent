@@ -378,9 +378,9 @@ selector counts alone are not evidence of actual delivery volume.
 ## Relationship to the canonical migration
 
 This proposal makes the event-routing table in
-[canonical-agent-app-migration.md](../archive/implementation/canonical-agent-app-migration.md) explicit.
+[canonical-agent-app-migration.md](../implementation/canonical-agent-app-migration.md) explicit.
 It preserves that proposal's rule that events are facts and wake signals, not a
 third work authority. It also sharpens the statement in
-[app-owned-runtime-simplification.md](../archive/decisions/app-owned-runtime-simplification.md): an
+[app-owned-runtime-simplification.md](app-owned-runtime-simplification.md): an
 explicit App subscription creates addressed inbox work, while a task
 subscription or exact target creates task work directly.

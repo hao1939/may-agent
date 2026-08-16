@@ -2,7 +2,7 @@
 
 **Status:** Historical completed audit.
 **Current authority:** [Handler authoring](../../2b-manual/handler-authoring.md)
-and [System operations tracker](../../3-proposals/system-operations-model.md).
+and [System operations convergence](system-operations-model.md).
 
 The Agent App migration established this rule:
 
