@@ -2655,9 +2655,6 @@ function mutableActionResource(
   tree: TaskTree,
   action: Exclude<AppTaskAction, { kind: "create-task" }>,
 ): { task: TaskNode; resource: AppTaskResource } {
-  if (action.taskId.startsWith("runtime/")) {
-    throw new Error(`Handler actions cannot mutate reconciler-owned task ${action.taskId}`);
-  }
   const task = tree.tasks[action.taskId];
   if (!task) throw new Error(`Handler action task not found: ${action.taskId}`);
   const resource = tree.resources?.[action.taskId];
@@ -2727,9 +2724,6 @@ function validateTaskActions(
           !action.dependsOn.every((entry) => typeof entry === "string" && entry.trim()))
       ) {
         throw new Error(`Handler create action ${action.id} dependsOn must contain non-empty strings`);
-      }
-      if (action.id.startsWith("runtime/")) {
-        throw new Error("Handler actions cannot create reconciler-owned runtime tasks");
       }
       if (tree.receipts?.[action.id]) {
         throw new Error(`Handler action task already exists or completed: ${action.id}`);

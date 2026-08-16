@@ -3610,6 +3610,69 @@ describe("App task reconciler state", () => {
     });
   });
 
+  it("applies the same fenced action rules to runtime-prefixed task identities", () => {
+    const { config } = fixture();
+    const parentClaim = declareAndClaimTask(config, {
+      intent: { ...intent("maintain"), id: "runtime/owner-review" },
+      appOwner: "app-owner",
+      handler: "owner:app-owner",
+    });
+    if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
+
+    expect(
+      completeAppTask(config, parentClaim, {
+        summary: "Owner review revised its desired execution",
+        evidence: ["review:current"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: parentClaim.taskId,
+            expectedGeneration: parentClaim.generation,
+            outcome: "Keep the platform reviewed from current evidence",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: ["updated runtime/owner-review"],
+      taskContinues: true,
+    });
+
+    const revised = readTaskState(config).resources?.["runtime/owner-review"];
+    expect(revised?.spec.outcome).toBe(
+      "Keep the platform reviewed from current evidence",
+    );
+    expect(revised?.metadata.generation).toBe(parentClaim.generation + 1);
+
+    const nextClaim = claimObservedAppTask(config, {
+      taskId: "runtime/owner-review",
+      appOwner: "app-owner",
+      handler: "owner:app-owner",
+    });
+    if (nextClaim.kind !== "claimed") throw new Error("expected revised claim");
+    expect(
+      completeAppTask(config, nextClaim, {
+        summary: "Created one bounded follow-up",
+        evidence: ["review:follow-up"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "runtime/owner-review/follow-up",
+            parentId: "runtime/owner-review",
+            outcome: "Complete the bounded follow-up",
+            mode: "achieve",
+            outputs: [],
+            acceptance: ["The follow-up is complete"],
+            priority: "P2",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: ["created runtime/owner-review/follow-up"],
+    });
+  });
+
   it("lets a controller retry a known transient attention task without changing its generation", () => {
     const { config } = fixture();
     const retryIntent = {
