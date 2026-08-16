@@ -41,7 +41,7 @@ describe("app runtime startup order", () => {
     expect(source).toContain("runOwner: appTasks.runOwner");
   });
 
-  it("publishes inbox and compatibility task routes in one registry transaction", () => {
+  it("publishes inbox and canonical task routes in one registry transaction", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).toContain("appTasks.publishGeneration({ snapshot, publish: commit })");
     expect(source).toContain("appTasks.watchGenerations(() => handleReload({ throwOnError: true }))");
@@ -105,7 +105,6 @@ describe("canonical project actions", () => {
   it("admits a canonical action as App input and rejects unknown Apps", () => {
     const admitted: unknown[] = [];
     const access = createProjectActionAccess({
-      bus: { emit: (() => null) as never },
       getRuntime: () =>
         ({
           host: {
@@ -138,68 +137,5 @@ describe("canonical project actions", () => {
     expect(() => access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toThrow(
       "App legacy is not loaded",
     );
-  });
-
-  it("emits a staged legacy action's declared semantic event without an App inbox wrapper", () => {
-    const events: Array<Record<string, unknown>> = [];
-    const admitted: unknown[] = [];
-    const access = createProjectActionAccess({
-      bus: {
-        emit: ((event: Record<string, unknown>) => {
-          events.push(event);
-          Object.defineProperty(event, EVENT_ROW_ID, { value: 73 });
-          return event;
-        }) as never,
-      },
-      getRuntime: () =>
-        ({
-          host: {
-            hasApp: () => true,
-            appOwner: () => "evaluator",
-            describeActions: () => [],
-            actionInput: () => ({
-              kind: "legacy-action",
-              data: {
-                actionId: "review-project-app",
-                event: {
-                  type: "evaluation.project.review.requested",
-                  project: "evaluation",
-                  params: { targetProject: "alpha-project.app", reason: "routing-repair" },
-                  data: {},
-                },
-              },
-            }),
-          },
-        }) as never,
-      admit: (input) => {
-        admitted.push(input);
-        return { eventId: 99, eventType: "app.input.requested" };
-      },
-    });
-
-    expect(
-      access.invoke({
-        projectId: "evaluation.app",
-        actionId: "review-project-app",
-        params: { targetProject: "alpha-project.app" },
-        idempotencyKey: "review-project-app:73",
-      }),
-    ).toEqual({ eventId: 73, eventType: "evaluation.project.review.requested" });
-    expect(admitted).toEqual([]);
-    expect(events).toEqual([
-      {
-        type: "evaluation.project.review.requested",
-        project: "evaluation",
-        params: { targetProject: "alpha-project.app", reason: "routing-repair" },
-        source: "project-app:evaluation:action:review-project-app",
-        owner: "agent:evaluator",
-        data: {
-          project: "evaluation",
-          targetProject: "alpha-project.app",
-          reason: "routing-repair",
-          idempotencyKey: "review-project-app:73",
-        },
-      },
-    ]);
   });
 });
