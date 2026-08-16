@@ -1402,6 +1402,21 @@ deployment ordering explicit:
   Evaluation App canary contract.
 - The Apps integrity gate reports zero production or test imports of
   `@may-agent/sdk/legacy` and zero `defineProjectApp` declarations.
+- Release B is committed at `f0723aa5eb`; `2426529241` removes the ambient
+  `/app/node_modules/@types/bun` dependency from AKS and Scout checks so the
+  immutable Apps archive resolves only its declared `bun-types` dependency.
+- Release C is isolated at Runtime commit `68496cbd`. It deletes the legacy SDK
+  export and declaration adapter, legacy import resolution, compatibility
+  provenance/telemetry, and the legacy action/schedule branches while retaining
+  the host-private task-state migration types and the permanent recovery fixes.
+- Release C passes both TypeScript gates and all 2,324 Runtime tests with
+  `MAY_AGENT_APP_ROOT` bound to the Release B worktree. The paired canonical
+  boundary gate reports zero errors across Runtime and Apps.
+- The real Runtime loader bundles and loads all seven Apps against the exact
+  Release C SDK tree. That tree has SHA-256
+  `df3aed63ca86fcce14543e188fdb317a5de0917b5d110e87b0807c9c7d222018`, reports
+  `authoringBoundary: canonical`, and exposes no legacy App authoring entry
+  point.
 
 Operational reconciliation intentionally does not copy three obsolete legacy
 mechanisms:
@@ -1419,7 +1434,8 @@ mechanisms:
 Current rollout readiness is therefore:
 
 - Release A: source-complete and reviewable, deployment pending;
-- Release B: semantically reconciled and source-verified, final merge commit
-  and post-Release-A deployment canary pending;
-- Release C: intentionally pending until Release B reports zero legacy use in
-  production for the agreed canary window.
+- Release B: source-complete, semantically reconciled, and merge-ready after
+  Release A; deployment and the post-cutover canary remain pending;
+- Release C: source-complete and merge-ready, but must remain unmerged and
+  undeployed until Release B reports zero legacy use for the agreed production
+  canary window.
