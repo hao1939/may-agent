@@ -1,6 +1,6 @@
 # Canonical Agent App Migration
 
-**Status:** Implemented and verified; ready to merge
+**Status:** Accepted; implementation reconciliation and staged cutover in progress
 **Decision owner:** Hao
 **Last reviewed:** 2026-08-16
 **Supersedes:** the ownership, routing, and App-hosting parts of the legacy
@@ -34,7 +34,7 @@ consumers migrate.
 
 This is a deletion migration, not a task-engine rewrite.
 
-## Implementation outcome
+## Target implementation outcome
 
 - Every App has one `defineApp(...)` declaration and one registry/host path.
 - App Inbox is the only authority for addressed work.
@@ -44,6 +44,31 @@ This is a deletion migration, not a task-engine rewrite.
   live owner-inbox/event-pair work authority are removed.
 - Applications use typed App inputs, subscriptions, schedules, observers,
   actions, task policy, and capability-scoped workflows.
+
+## Current reconciliation state
+
+The source migration and the production rollout temporarily diverged on
+2026-08-16. The canonical Runtime commit removed the legacy SDK before the
+canonical Apps branch was merged. The deployed Apps still imported
+`@may-agent/sdk/legacy`, so an automated `app-ops` recovery task correctly
+restored a staged compatibility boundary to recover service operation. That
+repair was operationally valid, but it does not change the accepted target.
+
+The compatibility restoration is therefore a rollout bridge, not completed
+architecture. Migration completion requires three independently reviewable
+releases in this order:
+
+1. a transition Runtime that supports both already-canonical Apps and the
+   remaining deployed legacy declarations;
+2. the canonical Apps cutover, after every App passes against the exact
+   transition Runtime artifact;
+3. a Runtime deletion release that removes the bridge after deployed canaries
+   prove that production has no legacy consumers.
+
+Permanent restart recovery, task routing, and attempt-recovery fixes discovered
+during the staged rollout remain part of the canonical Runtime. Compatibility
+exports, declaration adapters, and legacy action/schedule branches are removed
+in the third release.
 
 ## Why this migration is necessary
 
@@ -783,6 +808,147 @@ workflow run, delivery operation, and external receipt carries stable parent
 identity. Traces help explain causality but are not required to reconstruct
 current ownership.
 
+## Executable rollout plan
+
+The rollout is one migration with three release PRs. The PRs are ordered by
+artifact compatibility, not by which branch was authored first.
+
+### Release A — Transition Runtime
+
+Purpose: publish the complete canonical host while retaining the smallest
+temporary boundary needed to load the currently deployed Apps.
+
+The release keeps these rollout-discovered fixes permanently:
+
+| Commit     | Disposition | Reason                                                             |
+| ---------- | ----------- | ------------------------------------------------------------------ |
+| `78c04869` | keep        | Requeues late workflow results after restart.                      |
+| `9ff2f6ac` | keep        | Routes an unbound App task owner to the App root.                  |
+| `0ffb8fa6` | keep        | Recovers expired attempts whose owner session is already terminal. |
+
+The following work is explicitly temporary:
+
+| Commit or hunk                                | Disposition after Release B | Reason                                                                        |
+| --------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------- |
+| `6c52c8f3`                                    | delete                      | Restores `@may-agent/sdk/legacy` and retired public SDK modules.              |
+| `9c17ac0b`                                    | delete                      | Adapts `ProjectApp` declarations at the canonical loader boundary.            |
+| legacy portions of `ce175615`                 | delete                      | Resolves legacy SDK imports and retains legacy schedule projection.           |
+| generic import-option support from `ce175615` | keep                        | Enables exact-artifact App loading in verification.                           |
+| `9fa73355` and `bb0cb08a`                     | delete                      | Emit events for adapted legacy actions; canonical actions admit typed inputs. |
+
+Entry gate:
+
+- the Runtime branch is clean and based on current Runtime `main`;
+- all compatibility code is labeled as a transition boundary in source and
+  has a deletion test/issue tied to Release C;
+- no compatibility change weakens validation for canonical declarations.
+
+Exit gate:
+
+- Runtime and SDK type checks and complete tests pass;
+- every currently deployed App loads through the real loader from the exact
+  staged SDK artifact;
+- restart, reload, task recovery, and action/schedule compatibility tests pass;
+- one correlated deployment loads the requested artifact, remains healthy,
+  and preserves current App/task state.
+
+Rollback: redeploy the preceding Runtime artifact. App route ownership is not
+changed in this release.
+
+### Release B — Canonical Apps
+
+Purpose: move all production consumers to `defineApp(...)` and the root,
+capability-scoped SDK while the transition Runtime can still load the preceding
+Apps artifact during rollback.
+
+Before integration, current operational App changes are committed and reviewed
+on their own branch. The migration is reconciled with those commits in a clean
+worktree; the dirty live checkout is never rebased, reset, or used as an
+integration surface.
+
+Entry gate:
+
+- Release A is deployed and healthy;
+- the canonical Apps branch contains all accepted operational fixes made since
+  its merge base, without silently dropping current dirty work;
+- every previous event route has a reviewed canonical owner.
+
+Exit gate:
+
+- repository-wide production and test search finds no
+  `@may-agent/sdk/legacy` or `defineProjectApp` consumer;
+- all Apps load through canonical validation against the exact deployed
+  Release A SDK bytes;
+- each App's local type check and complete test suite passes;
+- route-ownership, task-state compatibility, restart/reload, direct answer,
+  delegation, task convergence, and safe-delivery canaries pass;
+- deployed observations prove one authority per actionable route and no
+  duplicate schedules, observers, inbox items, or task workers.
+
+Rollback: restore the preceding Apps artifact as one unit while Release A still
+provides compatibility. Do not enable legacy and canonical route consumption
+simultaneously.
+
+### Release C — Runtime deletion
+
+Purpose: make the accepted architecture true in source after the canonical Apps
+have completed their canary window.
+
+Deliverables:
+
+- remove the `./legacy` SDK export and all modules restored only for it;
+- remove the legacy declaration adapter and loader branch;
+- remove legacy schedule projection and runtime import resolution;
+- remove the legacy action emission branch and compatibility-only host APIs;
+- retain exact-artifact canonical App loading as a release gate;
+- add a cross-repository guard that fails if a legacy import, export, adapter,
+  or `defineProjectApp` declaration returns.
+
+Entry gate:
+
+- Release B is deployed and has passed restart and reload canaries using live
+  retained state;
+- runtime telemetry reports zero legacy declarations loaded and zero legacy
+  action/schedule invocations for the agreed canary window;
+- the Release A artifact remains available for rollback.
+
+Exit gate:
+
+- full Runtime, SDK, Apps, integration, and fault-injection suites pass against
+  exact Release C bytes;
+- source and built artifacts contain no legacy App authoring boundary;
+- accepted design documents describe the code that is actually deployed.
+
+Rollback: redeploy the retained Release A transition artifact. Never restore
+individual compatibility branches into Release C source during an incident;
+diagnose against the known transition release and prepare a bounded repair.
+
+### Ownership and branch discipline
+
+- the migration coordinator owns release ordering and the integration branches;
+- the `may-agent` platform owner owns Runtime compatibility, Runtime deployment,
+  and Release C deletion;
+- each App owner owns its canonical declaration, routes, and canary evidence;
+- project-local `app-ops` may diagnose a Runtime compatibility failure and
+  create a platform repair request, but does not commit to the Runtime migration
+  branch or broaden its own project task into a sibling-repository migration;
+- every implementation task uses a dedicated clean worktree and branch;
+- deployment consumes an immutable reviewed commit, never whatever branch is
+  currently checked out in a shared operational workspace;
+- a temporary bridge must name its deletion release and measurable removal
+  condition when introduced.
+
+### Stop conditions
+
+The migration pauses rather than improvising another compatibility layer when:
+
+- an App cannot express required behavior through the accepted canonical
+  contracts;
+- route ownership is ambiguous or a test observes dual consumption;
+- current operational changes have not been reconciled into Release B;
+- the exact staged artifact differs from the reviewed commit;
+- state compatibility, restart recovery, or rollback cannot be proven.
+
 ## Migration strategy
 
 The migration is incremental by App and route, but the destination is not
@@ -1194,7 +1360,14 @@ answer, delegation, task convergence, restart recovery, reload, and safe
 delivery against retained live state. This is a deployment gate, not a reason
 to retain a second App model in source.
 
-## Merge-readiness evidence (2026-08-16)
+## Pre-reconciliation evidence (2026-08-16)
+
+The following evidence established functional parity before staged deployment,
+but it is not current merge-readiness evidence. Later operational recovery
+restored the legacy SDK, loader adapter, and legacy action/schedule branches on
+the Runtime migration branch, while current operational App fixes diverged from
+the canonical Apps branch. Releases A, B, and C must regenerate their own
+artifact-specific evidence.
 
 - The paired runtime worktree passes both TypeScript gates and 2,196 tests with
   `MAY_AGENT_APP_ROOT` bound to this Apps worktree.
@@ -1206,3 +1379,11 @@ to retain a second App model in source.
   `inbox.ts`, retired App loader, or task-tree CLI authoring guidance.
 - Both migration branches contain their current integration bases and pass
   `git diff --check`.
+
+Current merge readiness is therefore **not ready** until:
+
+- Release A is isolated, reviewed, tested, and deployed as the explicit
+  transition Runtime;
+- Release B reconciles current App operational changes and passes against the
+  deployed Release A artifact;
+- Release C removes the compatibility bridge and passes the post-cutover gate.
