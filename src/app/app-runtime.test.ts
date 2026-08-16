@@ -195,7 +195,8 @@ describe("canonical project actions", () => {
         owner: "agent:evaluator",
         data: {
           project: "evaluation",
-          params: { targetProject: "alpha-project.app", reason: "routing-repair" },
+          targetProject: "alpha-project.app",
+          reason: "routing-repair",
           idempotencyKey: "review-project-app:73",
         },
       },
