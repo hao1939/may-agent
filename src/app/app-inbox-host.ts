@@ -233,6 +233,13 @@ export class AppInboxHost {
     return this.#apps.has(appId.trim().replace(/\.app$/, ""));
   }
 
+  appOwner(appId: string): string {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const app = this.#apps.get(normalized);
+    if (!app) throw new Error(`App ${appId} is not loaded`);
+    return app.owner;
+  }
+
   describeActions(appId: string): AppActionDescription[] {
     const normalized = appId.trim().replace(/\.app$/, "");
     const app = this.#apps.get(normalized);
