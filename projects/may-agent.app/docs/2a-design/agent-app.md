@@ -25,7 +25,7 @@ See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for task reconciliation, and
 [Workflows](workflows.md) for reusable process ownership. The migration and
 deletion sequence is recorded in
-[Canonical Agent App Migration](../3-proposals/canonical-agent-app-migration.md).
+[Canonical Agent App Migration](../archive/implementation/canonical-agent-app-migration.md).
 
 ## Primary mental model
 

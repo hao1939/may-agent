@@ -1,6 +1,6 @@
 # Canonical Agent App Migration
 
-**Status:** Accepted; implementation reconciliation and staged cutover in progress
+**Status:** Implemented; staged rollout completed 2026-08-16
 **Decision owner:** Hao
 **Last reviewed:** 2026-08-16
 **Supersedes:** the ownership, routing, and App-hosting parts of the legacy
@@ -45,7 +45,7 @@ This is a deletion migration, not a task-engine rewrite.
 - Applications use typed App inputs, subscriptions, schedules, observers,
   actions, task policy, and capability-scoped workflows.
 
-## Current reconciliation state
+## Rollout outcome
 
 The source migration and the production rollout temporarily diverged on
 2026-08-16. The canonical Runtime commit removed the legacy SDK before the
@@ -54,21 +54,21 @@ canonical Apps branch was merged. The deployed Apps still imported
 restored a staged compatibility boundary to recover service operation. That
 repair was operationally valid, but it does not change the accepted target.
 
-The compatibility restoration is therefore a rollout bridge, not completed
-architecture. Migration completion requires three independently reviewable
-releases in this order:
+The compatibility restoration was a rollout bridge, not completed architecture.
+The migration completed through three independently reviewed releases in this
+order:
 
 1. a transition Runtime that supports both already-canonical Apps and the
    remaining deployed legacy declarations;
 2. the canonical Apps cutover, after every App passes against the exact
    transition Runtime artifact;
-3. a Runtime deletion release that removes the bridge after deployed canaries
-   prove that production has no legacy consumers.
+3. a Runtime deletion release that removed the bridge after deployed canaries
+   proved that production had no legacy consumers.
 
 Permanent restart recovery, task routing, and attempt-recovery fixes discovered
 during the staged rollout remain part of the canonical Runtime. Compatibility
-exports, declaration adapters, and legacy action/schedule branches are removed
-in the third release.
+exports, declaration adapters, and legacy action/schedule branches were removed
+in Release C.
 
 ## Why this migration is necessary
 
@@ -1380,71 +1380,101 @@ artifact-specific evidence.
 - Both migration branches contain their current integration bases and pass
   `git diff --check`.
 
-## Reconciliation evidence (2026-08-16)
+## Completed rollout evidence (2026-08-16)
 
-The staged branches now provide current source-readiness evidence while keeping
-deployment ordering explicit:
+All source, artifact, deployment, and live-canary gates completed in release
+order. The hashes below identify the immutable evidence; no shared dirty
+checkout was used as a build or integration source.
 
-- Release A is isolated at Runtime commit `ca172fcc`; complete Runtime CI
-  passes, the branch is clean, and exact-artifact verification is a required
-  gate. It has not yet been deployed.
-- The operational App recovery source is preserved by commits `ff43b06053` and
-  `ebdb976d7a` on a separate snapshot branch. Release B semantically ports the
-  valid behavior instead of restoring the legacy declaration or SDK boundary.
-- The deployed transition SDK artifact
-  `sdk-bb0cb08a4900ea8cb1c2af94ac76d1486adb8b9a` has tree SHA-256
+### Release A — transition Runtime
+
+- Runtime PR 48 merged the transition host at merge commit `13d0225a`; the
+  reviewed transition source ended at `ca172fcc`.
+- Runtime PR 49 then merged the permanent typed-action admission fix at
+  `96c299b9`; its reviewed source commit was `5eb507ef`.
+- The retained immutable Runtime source is
+  `/app/.state/releases/runtime/5eb507efedff9709e35a8d3386964ae275763703`.
+  Its deployed image was `localhost/may-agent:runtime-5eb507ef`, image ID
+  `sha256:886ac2aabff3c5bb922cbe4c4e39d70f0de4234d924547dea5bd2c551aecfdc8`.
+- The transition SDK tree SHA-256 was
   `afc424fc18b839ae15221ea89671d5342279e9b6bbd6a856e22a40c908f212f1`.
-  The real Runtime loader bundles and loads all seven canonical Apps against
-  those exact bytes with zero legacy declarations.
-- A fresh archive of Release B application commit `ad979207c1`, with both SDK
-  dependency paths linked only to the exact Release C tree, passes every
-  complete local App check: AKS (657 tests plus two workflow-input tests and
-  current-bundle verification), Evaluation (61), Gym (77), Scout (54), May
-  conversation (5), and May-agent platform (6). The canary worker is covered
-  by exact Runtime loading and the Evaluation App canary contract. The root
-  Apps type check and the Apps-plus-final-Runtime boundary gate also pass with
-  zero errors.
-- The Apps integrity gate reports zero production or test imports of
-  `@may-agent/sdk/legacy` and zero `defineProjectApp` declarations.
-- Release B starts at `f0723aa5eb`; `2426529241` removes the ambient
-  `/app/node_modules/@types/bun` dependency from AKS and Scout checks,
-  `f15d7e64b5` records migration evidence, `a1b1cac7bd` aligns AKS formatting,
-  and `ad979207c1` closes the final immutable-archive checks by limiting the
-  May-agent platform compiler to its canonical package boundary and aligning
-  Scout formatting. The archive therefore resolves only declared dependencies
-  and does not type-check retired, non-production platform workflow sources as
-  though they were part of the canonical App.
-- Release C is isolated at Runtime commit `68496cbd`. It deletes the legacy SDK
-  export and declaration adapter, legacy import resolution, compatibility
-  provenance/telemetry, and the legacy action/schedule branches while retaining
-  the host-private task-state migration types and the permanent recovery fixes.
-- Release C passes both TypeScript gates and all 2,324 Runtime tests with
-  `MAY_AGENT_APP_ROOT` bound to the Release B worktree. The paired canonical
-  boundary gate reports zero errors across Runtime and Apps.
-- The real Runtime loader bundles and loads all seven Apps against the exact
-  Release C SDK tree. That tree has SHA-256
-  `df3aed63ca86fcce14543e188fdb317a5de0917b5d110e87b0807c9c7d222018`, reports
-  `authoringBoundary: canonical`, and exposes no legacy App authoring entry
-  point.
+  The exact-artifact loader accepted all seven canonical Apps.
 
-Operational reconciliation intentionally does not copy three obsolete legacy
-mechanisms:
+### Release B — canonical Apps
 
-- task-action validation remains pure; it does not append a preflight ledger
-  while deciding whether an action is valid;
-- approval verification does not fall back to host-private App/project paths,
-  and Evaluation requires exact public event or artifact identities for every
-  non-ok finding;
-- the workspace-integrity observer does not read host-private task state or a
-  removed preflight ledger. A more precise active-workspace classification must
-  wait for a bounded host-provided claim snapshot; until then the existing
-  conservative `task/*` classification remains unchanged.
+- Canonical Apps merged at
+  `0d311f9f27718ac431b51caabf53d77e1caabb16`. The immutable Apps source is
+  `/app/.state/releases/apps/0d311f9f27718ac431b51caabf53d77e1caabb16`.
+- The deployment mounted these seven App definitions read-only, with nested
+  writable state mounts: `aks-rp-e2e`, `evaluation`,
+  `evaluation-canary-worker`, `gym`, `may`, `may-agent`, and
+  `scout-knowledge-lib`. The sibling Gym catalog was also mounted read-only.
+- The exact SDK path was pinned with `MAY_AGENT_SDK_ROOT`; it was never resolved
+  from a mutable checkout. Shared App/task concurrency was set to four because
+  two long AKS attempts at the default of two prevented the independent May and
+  Evaluation canaries from making progress.
+- Reload and multiple recreate/restart checks retained authoritative inbox and
+  task state and returned healthy.
+- Direct May item `app_82d46d95-2720-41f3-8860-8b5722d0f04a` returned
+  `RELEASE_B_MAY_DIRECT_OK`.
+- Delegation parent `app_54942b03-5830-4558-b51f-f8903366404a` created child
+  `app_e10870b4-3cbe-4c96-8591-ddbcb43123af`; the child result woke the parent,
+  which returned `RELEASE_B_DELEGATION_OK`.
+- Safe-delivery item `app_fb1add31-9087-4c32-a543-159808202561` returned
+  `RELEASE_B_SAFE_DELIVERY_OK`; delivery acknowledgment was persisted as event
+  `5704665`.
+- Task event `5704890` reconciled
+  `ops/repair-review-project-app-typed-action-routing-20260816` to `converged`.
+- Repeated canary observations reported zero loaded legacy declarations and no
+  legacy-action inbox inputs. Event `5704577` remains as truthful evidence that
+  malformed delivery metadata was rejected; the successful retry used a new
+  idempotency key rather than editing history.
 
-Current rollout readiness is therefore:
+### Release C — deletion Runtime
 
-- Release A: source-complete and reviewable, deployment pending;
-- Release B: source-complete, semantically reconciled, and merge-ready after
-  Release A; deployment and the post-cutover canary remain pending;
-- Release C: source-complete and merge-ready, but must remain unmerged and
-  undeployed until Release B reports zero legacy use for the agreed production
-  canary window.
+- Runtime PR 50 merged the deletion release at
+  `ac469750fb7eb91155c3115290256db302520638`; reviewed source commit
+  `d0f0171a` removed the legacy SDK entry point, declaration adapter, loader
+  provenance, action/schedule branch, import resolver, and transition metric.
+- Runtime and SDK TypeScript checks passed. Complete Runtime CI passed 2,324
+  tests in 235 files with zero failures while bound to the exact Release B Apps
+  artifact. The cross-repository canonical boundary gate reported zero errors.
+- The immutable Runtime source is
+  `/app/.state/releases/runtime/ac469750fb7eb91155c3115290256db302520638`.
+  The deployed image is `localhost/may-agent:runtime-ac469750`, image ID
+  `sha256:669bef16381771bcfe331d25b2d1e757fb4886299e0a01be7b325a2cb35a995d`.
+  The deployment override is
+  `/app/.state/releases/deploy/canonical-agent-app-release-c-ac469750/compose.release-c.yml`.
+- Exact post-merge loading reports `authoringBoundary: canonical`, seven Apps,
+  and SDK tree SHA-256
+  `df3aed63ca86fcce14543e188fdb317a5de0917b5d110e87b0807c9c7d222018`.
+  The SDK has no `./legacy` export or `legacy.ts`, and the Runtime has no legacy
+  declaration adapter.
+- Reload request event `5705459` preserved the completed canary item. An
+  explicit container restart preserved the same item and all seven App action
+  routes. Under the active four-worker recovery burst, five-second readiness
+  probes briefly timed out and Docker marked the container unhealthy; the
+  daemon then answered control traffic and returned healthy without data loss,
+  rollback, or operator repair.
+- Direct May item `app_b1230722-fdf5-4f19-8ebb-c8d6580bf63e` returned exactly
+  `RELEASE_C_MAY_DIRECT_OK`.
+- Delegation parent `app_9d770ef5-25dc-4cce-866c-b01e51c9e732` created child
+  `app_96818215-e63e-4da0-a116-d4fafe9fa282`; the child result woke the parent,
+  which returned exactly `RELEASE_C_DELEGATION_OK`.
+- Safe-delivery item `app_944b9f18-e5dd-4636-9ac5-3d8fbe920ee5` remained
+  incomplete until its exact Web delivery was acknowledged. It then completed
+  with `RELEASE_C_SAFE_DELIVERY_OK`; acknowledgment event `5705709` is linked to
+  operation `app-delivery:app_944b9f18-e5dd-4636-9ac5-3d8fbe920ee5:1`.
+- Natural task event `5705561` reconciled AKS task
+  `domain/reconcile-direct-scenario-quality-app-routing-tests-app-routing-custom-domain-ingress-d2730241`
+  to `converged` after the Release C cutover.
+
+Operational reconciliation intentionally did not copy three obsolete legacy
+mechanisms: task-action validation remains pure; Evaluation does not fall back
+to host-private identities; and the workspace observer does not read a removed
+preflight ledger or host-private task state.
+
+The rollout is complete. Release C is the deployed canonical Runtime, Release B
+is the deployed canonical Apps artifact, and the retained Release A artifact is
+the unit rollback boundary. Compatibility branches must not be restored into
+current source piecemeal.

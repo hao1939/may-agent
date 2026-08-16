@@ -10,7 +10,7 @@ contracts; Tier-2 design governs when wording conflicts.
 | [agent-app-boundary-refinement.md](decisions/agent-app-boundary-refinement.md)                       | [Agent App Contract](../2a-design/agent-app.md)                                                  |
 | [agent-app-runtime-model.md](decisions/agent-app-runtime-model.md)                                   | [Agent App Contract](../2a-design/agent-app.md)                                                  |
 | [agent-app-external-interaction-contract.md](decisions/agent-app-external-interaction-contract.md)   | [System Model](../2a-design/system-model.md) and [Agent App Contract](../2a-design/agent-app.md) |
-| [app-owned-runtime-simplification.md](decisions/app-owned-runtime-simplification.md)                 | [Canonical Agent App Migration](../3-proposals/canonical-agent-app-migration.md)                 |
+| [app-owned-runtime-simplification.md](decisions/app-owned-runtime-simplification.md)                 | [Canonical Agent App Migration](implementation/canonical-agent-app-migration.md)                 |
 | [app-task-reconciliation-model.md](decisions/app-task-reconciliation-model.md)                       | [Task Resource Engine](../2a-design/task-resource-engine.md)                                     |
 | [event-ingress-and-socket-reliability.md](decisions/event-ingress-and-socket-reliability.md)         | [Events](../2a-design/events.md) and [HTTP Boundary](../2a-design/http-boundary.md)              |
 | [task-reconciliation-integrity-refinement.md](decisions/task-reconciliation-integrity-refinement.md) | [Task Resource Engine](../2a-design/task-resource-engine.md)                                     |
@@ -33,6 +33,7 @@ contracts; Tier-2 design governs when wording conflicts.
 - [Handler boundary audit](implementation/handler-boundary-audit.md)
 - [App root cleanup — 2026-06-13](implementation/2026-06-13-app-root-cleanup.md)
 - [Task reconciliation WebUI cutover](implementation/task-reconciliation-webui-reviewability.md)
+- [Canonical Agent App migration](implementation/canonical-agent-app-migration.md)
 
 ## V2
 

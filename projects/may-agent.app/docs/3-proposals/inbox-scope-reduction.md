@@ -378,7 +378,7 @@ selector counts alone are not evidence of actual delivery volume.
 ## Relationship to the canonical migration
 
 This proposal makes the event-routing table in
-[canonical-agent-app-migration.md](canonical-agent-app-migration.md) explicit.
+[canonical-agent-app-migration.md](../archive/implementation/canonical-agent-app-migration.md) explicit.
 It preserves that proposal's rule that events are facts and wake signals, not a
 third work authority. It also sharpens the statement in
 [app-owned-runtime-simplification.md](../archive/decisions/app-owned-runtime-simplification.md): an

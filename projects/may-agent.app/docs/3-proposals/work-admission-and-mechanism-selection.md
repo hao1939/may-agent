@@ -188,6 +188,6 @@ does not require a blind conversion sweep.
 
 [Inbox Scope Reduction](inbox-scope-reduction.md) applies Rule 1 to event
 admission and removes dual inbox/task ownership. [Canonical Agent App
-Migration](canonical-agent-app-migration.md) supplies the single App loader and
+Migration](../archive/implementation/canonical-agent-app-migration.md) supplies the single App loader and
 host boundary in which all three rules operate. The rejected service-composition
 proposal does not change mechanism selection or add another work authority.
