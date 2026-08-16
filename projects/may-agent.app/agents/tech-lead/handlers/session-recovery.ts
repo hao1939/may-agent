@@ -6,9 +6,8 @@
  *   Tier 1: Digest classifier (structured understanding of what happened)
  *   Tier 2: classifyError fallback (string matching)
  *
- * Actions: resume/requeue/escalate are dispatched to the session-recovery
- * workflow so the recovery attempt has a workflow trace. kill/nothing are
- * recorded as skipped.
+ * Actions: resume/requeue/escalate publish one App-owned recovery fact.
+ * kill/nothing are recorded as skipped.
  *
  * Replaces inline bus.subscribe() recovery logic that was in may.ts.
  */
@@ -63,7 +62,7 @@ function sessionPayload(event: EventEnvelope): Record<string, unknown> {
   return {};
 }
 
-function workflowTask(input: {
+function requestAppRecovery(ctx: HandlerContext, input: {
   sessionId: string;
   agent: string;
   error: string;
@@ -73,18 +72,10 @@ function workflowTask(input: {
   attempt?: number;
   maxAttempts?: number;
   event?: EventEnvelope;
-}): string {
-  return [
-    `[session-recovery] Handle failed session ${input.sessionId}.`,
-    "",
-    "Use the classified recovery action below. Keep the recovery simple:",
-    "- resume/requeue: rerun the original task for the failed agent and report the new session id.",
-    "- escalate: notify the responsible owner/human with the concrete reason.",
-    "- do not mutate DB tables directly.",
-    "",
-    "## Recovery Decision",
-    "```json",
-    JSON.stringify({
+}): void {
+  ctx.sdk.emit(
+    "session.recovery.requested",
+    {
       sessionId: input.sessionId,
       agent: input.agent,
       action: input.action,
@@ -93,14 +84,15 @@ function workflowTask(input: {
       maxAttempts: input.maxAttempts,
       error: input.error,
       task: input.task ?? "",
-    }, null, 2),
-    "```",
-    "",
-    "## Trigger Event",
-    "```json",
-    JSON.stringify(input.event ?? null, null, 2),
-    "```",
-  ].join("\n");
+      triggerType: input.event?.type ?? null,
+      triggerTimestamp: input.event?.timestamp ?? null,
+    },
+    {
+      owner: "app:may-agent",
+      target: { appId: APP_PROJECT_ID, project: APP_PROJECT_ID },
+      idempotencyKey: `session-recovery:${input.sessionId}:${input.action}:${input.attempt ?? 0}`,
+    },
+  );
 }
 
 function parseMeta(persistDir: string, sessionId: string): Record<string, unknown> | null {
@@ -510,7 +502,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (attempts < MAX_RECOVERY_ATTEMPTS) {
         try {
           recoveryAttempts.set(rKey, attempts + 1);
-          const result = await ctx.sdk.runWorkflow("session-recovery", workflowTask({
+          requestAppRecovery(ctx, {
             sessionId,
             agent,
             error,
@@ -520,15 +512,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             attempt: attempts + 1,
             maxAttempts: MAX_RECOVERY_ATTEMPTS,
             event,
-          }), {
-            projectId: APP_PROJECT_ID,
           });
-          ctx.sdk.emit("handler.workflow_dispatched", {
+          ctx.sdk.emit("handler.routed", {
             handler: "session-recovery",
-            workflow: "session-recovery",
             source: ctx.agentName,
-            workflowRunId: result.runId ?? null,
-            status: result.status,
+            route: "app:may-agent",
             sessionId,
             agent,
             action,
@@ -539,9 +527,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             agent,
             trigger: "recovery_requeue",
             what_happened: `Recovery requeue attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS} (${source}): ${(error ?? "unknown error").slice(0, 200)}`,
-            details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, workflowRunId: result.runId ?? null, error: (error ?? "").slice(0, 300), decisionSource: source },
+            details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, error: (error ?? "").slice(0, 300), decisionSource: source },
           }).catch(() => { /* best-effort */ });
-          ctx.sdk.log("info", `[recovery] Dispatched ${agent} recovery for ${sessionId} via workflow ${result.runId ?? "unknown"} (${source}, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`);
+          ctx.sdk.log("info", `[recovery] Routed ${agent} recovery for ${sessionId} to the May-agent App (${source}, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`);
         } catch (requeueErr) {
           const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
           ctx.sdk.log("info", `[recovery] Failed to requeue ${agent}: ${msg}`);
@@ -554,16 +542,20 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
       } else {
         ctx.sdk.log("info", `[recovery] ${agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`);
-        ctx.sdk.escalate(`Exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries for ${agent}`, {
-          owner: `agent:${agent}`,
-          requestedAction: "Review the failed task and choose a different recovery path.",
-          evidence: { sessionId, agent, attempts, error },
-          sourceSessionId: sessionId,
-          dedupKey: `session-recovery-exhausted:${sessionId}`,
+        requestAppRecovery(ctx, {
+          sessionId,
+          agent,
+          error,
+          task,
+          action: "escalate",
+          source: "retries-exhausted",
+          attempt: attempts,
+          maxAttempts: MAX_RECOVERY_ATTEMPTS,
+          event,
         });
       }
     } else if (action === "escalate") {
-      const result = await ctx.sdk.runWorkflow("session-recovery", workflowTask({
+      requestAppRecovery(ctx, {
         sessionId,
         agent,
         error,
@@ -571,15 +563,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         action,
         source,
         event,
-      }), {
-        projectId: APP_PROJECT_ID,
       });
-      ctx.sdk.emit("handler.workflow_dispatched", {
+      ctx.sdk.emit("handler.routed", {
         handler: "session-recovery",
-        workflow: "session-recovery",
         source: ctx.agentName,
-        workflowRunId: result.runId ?? null,
-        status: result.status,
+        route: "app:may-agent",
         sessionId,
         agent,
         action,

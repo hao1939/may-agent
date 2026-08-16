@@ -1,398 +1,174 @@
-# Infrastructure, Runtime, And App Boundary
+# Host And App Boundary
 
-**Design status:** Accepted.
-**Implementation status:** Implemented. The canonical App host and scoped SDK
-replace Project App declarations, the legacy SDK, and owner-inbox work
-authority; remaining internal handlers are runtime adapters, not App hosts.
+**Status:** Accepted and implemented.
 
-This document defines the stable split:
+There is one architectural split:
 
 ```text
-Infrastructure preserves obligations and moves facts.
-Runtime hosts bounded execution and reconciliation.
-Apps own meaning, policy, and desired outcomes.
+Host = persist, schedule, run, recover, deliver
+App  = define meaning, policy, desired outcomes, acceptance
 ```
 
-The split keeps infrastructure small and stable while Apps evolve without
-copying delivery, scheduling, storage, retry, or recovery mechanics.
+Infrastructure and runtime are both part of the Host. Infrastructure is what
+the Host uses—storage, timers, model providers, processes, and transports.
+Runtime is the code that connects and operates those things. Neither is a
+third owner or something an App composes.
 
-## Core model
+## The boundary in one flow
 
 ```text
-addressed input -> App inbox -> direct result, delegation, or task attachment
-changed fact    -> event     -> App request, TaskIntent, exact wake, or observation
-durable outcome -> App task  -> repeated bounded reconciliation
-bounded action  -> session/workflow -> evidence
+input or fact
+  -> Host stores it
+  -> App decides what it means
+  -> Host runs bounded work when the App asks
+  -> App decides whether the result is enough
+  -> Host stores, recovers, and delivers the result
 ```
 
-An App inbox item is the authority for one addressed result. A task is the
-authority for one durable desired outcome. An event is a fact/wake. A session or
-workflow is one execution attempt. No other record may become a parallel work
-lifecycle.
+The Host does not invent domain work. The App does not implement storage,
+queues, retries, recovery, or delivery.
 
-## Responsibility split
+## Plain names
 
-### Infrastructure
+Only Host and App are architectural concepts. These record names are useful:
 
-Infrastructure owns stable, mechanically enforceable primitives:
+- **request** — an input that still needs one result;
+- **task** — an outcome that may need several tries;
+- **fact** — something observed or reported; and
+- **attempt** — one bounded agent or workflow run.
 
-| Primitive | Responsibility |
+Inbox item, event, session, workflow run, queue entry, claim, lease, condition,
+trace, and projection are code or storage details. They do not own work.
+
+## Host
+
+The Host has five jobs:
+
+| Job | What it does |
 | --- | --- |
-| App registry | Validate and atomically publish one generation of App definitions |
-| Inbox runtime | Admission, idempotency, claims, fencing, dependencies, results, and restart recovery |
-| Event runtime | Persist facts, match declared consumers, record delivery, and retain causal evidence |
-| Scheduler | Timer cadence, jitter, restart policy, event publication, and observer cadence |
-| Task runtime | Desired-state persistence, generations, queues, attempts, Conditions, result admission, and recovery |
-| Execution runtime | Prepare agents/workflows, enforce timeout/concurrency/tool policy, persist results and lineage |
-| Delivery | Correlate App results with App/human/channel delivery and handle uncertainty safely |
-| Metrics | Record samples and generic threshold/dedup/hysteresis/runtime health mechanics |
-| Workspace runtime | Allocate bounded workspaces, record lineage, and recover/clean them |
-| Control/adapters | Normalize ingress, expose bounded status, and translate external transports |
+| Persist | Store requests, tasks, facts, attempts, results, and delivery proof |
+| Schedule | Wake declared work at the right time and limit concurrency |
+| Run | Execute one bounded agent or workflow attempt |
+| Recover | Continue the same unfinished request or task after failure or restart |
+| Deliver | Return the accepted result to its caller or channel |
 
-Infrastructure does not decide domain strategy, task decomposition, whether a
-domain outcome is good enough, which workflow represents project experience,
-or whether a human preference should change.
+The Host also validates and loads complete App definitions. Reload either
+publishes a complete replacement or keeps the previous definition active.
 
-### Runtime SDK
+Host maintenance may inspect and repair Host-owned state. If it discovers a
+domain decision, it publishes a fact to an App. A maintenance file cannot
+launch an App agent, workflow, task, or escalation directly.
 
-The runtime SDK is the narrow semantic membrane between Apps and
-infrastructure. It exposes:
+## App
 
-- `defineApp` and typed App policy;
-- typed input, request, disposition, result, fact, and task contracts;
-- bounded workflow execution and exact read projections;
-- scoped fact publication, metric recording, workspace paths, and logging; and
-- validated task reconciliation/verification results.
+An App defines:
 
-It hides SQL, task files/locks, scheduler and event-bus handles, queue/lease
-state, global paths, delivery internals, process recovery, and session-manager
-control.
+- its address and input schema;
+- how inputs and facts become requests or tasks;
+- which simple requests can finish immediately;
+- which owner or workflow handles bounded work;
+- the desired outcome and acceptance evidence for a task; and
+- domain reads, actions, observations, and metrics.
 
-The SDK is stable when Apps extend because App growth normally adds schemas,
-pure policy, observers, workflows, and domain projections—not new runtime
-mechanics.
+An App is source code and domain files. It has no daemon, database, event loop,
+scheduler, queue, retry worker, or recovery worker of its own.
 
-### Apps
+## Request or task
 
-Each App owns:
-
-- one durable address and accountable owner;
-- typed input meaning and pure request routing;
-- explicit fact-to-request subscriptions;
-- explicit fact-to-TaskIntent policy;
-- input/event schedule meaning;
-- observer interpretation of external state;
-- actions, workflows, task validation, and terminal domain evidence;
-- domain workspace and project posture; and
-- domain metric definitions and interpretation.
-
-Apps do not implement their own inbox lifecycle, retry daemon, scheduler,
-event queue, task store, recovery pass, delivery mechanism, or process-wide
-registry.
-
-## App runtime shape
+Use a request when one input needs one answer:
 
 ```text
-Adapters
-CLI / Web UI / Telegram / App delegation / provider callbacks
-        |
-        v
-Typed ingress
-App admission / deterministic control / fact publication
-        |
-        v
-Canonical App host
-registry + inbox + subscriptions + schedules + observers + task capability
-        |
-        v
-Bounded execution
-owner agent / agent-owned workflow / deterministic helper
-        |
-        v
-Validated result admission + facts + metrics + delivery
+request -> pure App decision or one owner run -> accepted result
 ```
 
-There is no generic bridge from an event directly to an agent. A fact first
-reaches an explicitly declared App subscription, task subscription, or exact
-target. Only a durable App request or task reconciliation may start judgment.
-
-## Request boundary
-
-Addressed work enters an App as typed `AppInput`. The host persists it before
-waking the App owner. A pure `route(request)` policy may complete, delegate, or
-attach it to a task without model judgment; returning `null` asks the owner for
-one bounded disposition.
-
-The owner sees only:
-
-- request identity, source, parent, and typed input; and
-- an exact bounded observation of the dependency it previously established.
-
-The owner never sees or mutates inbox rows, claims, leases, retries, channel
-operations, or task storage. The host applies the disposition with fencing and
-idempotency.
-
-The `may` App owns ordinary human input and final response delivery. Domain
-Apps own project meaning. May delegates and reviews; it does not become a
-fallback project controller.
-
-## Fact boundary
-
-Events cross boundaries as facts:
+Use a task only when an outcome must survive several tries:
 
 ```text
-fact -> App subscription  -> toInput -> correlated App request
-     -> task subscription -> resolve -> persisted TaskIntent/trigger
-     -> exact task target -> exact wake
-     -> no route          -> observation/unhandled evidence
+task -> check current state -> run one bounded attempt
+     -> done, wait for an exact fact, ask the owner, or try again
 ```
 
-App/task selectors and translators are pure. They cannot execute a workflow,
-write state, emit another fact, or access runtime services.
+The request or task remains the durable identity. Sessions and workflow runs
+are attempt evidence and may be replaced after a restart.
 
-The runtime never turns an unhandled fact into generic owner work. Unknown
-addressed Apps fail admission visibly; unknown unaddressed facts remain
-observable. The same fact reaches multiple actionable paths only when each path
-is an explicitly distinct, tested obligation.
+## Facts and time
 
-## Task boundary
-
-The existing reconciler remains a valuable internal App capability:
+A fact never starts model work by itself. An App must declare how that fact is
+used:
 
 ```text
-TaskIntent persisted
-  -> stable task ID coalesced in queue
-  -> fenced attempt receives bounded reconciliation context
-  -> owner/workflow returns structured result
-  -> runtime validates generation/actions/Conditions/evidence
-  -> atomically apply result
-  -> later exact fact or resync repeats until converged
+fact -> request
+fact -> task or exact task wake
+fact -> observation only
 ```
 
-Queue entries are scheduling pressure, never desired state. The newest intent
-and trigger are durable before coalescing. Conditions name exact facts; resync
-is a safety net, not a second planner.
+If no route matches, the fact remains a fact. The Host does not guess an owner.
 
-App workflows receive bounded task facts and child views through
-`ctx.reconciliation`. The host additionally supplies a capped live-task
-snapshot only for App-wide frontier-health workflows; it omits the reviewing
-task and reports truncation. Workflows cannot parse prompt packets, issue
-arbitrary global task queries, read task persistence, or mutate task resources
-directly.
+A schedule has one destination: create an App input or publish a fact. An
+observer reads external state and returns facts. A metric records what
+happened; it does not become work state.
 
-## Schedule and observer boundary
+## Execution
 
-A schedule declares exactly one destination:
+The Host has one bounded execution implementation for direct, Gym, App-owner,
+and workflow runs. It owns provider calls, tool permissions, timeouts,
+cancellation, transcripts, and the common execution result.
 
-- `{ input }` creates a correlated App inbox obligation; or
-- `{ event }` publishes a fact that may wake task work.
+A workflow receives typed App input and narrow capabilities. It does not
+receive the database, event bus, scheduler, queues, manager, global paths, or
+recovery state. A workflow finishes its attempt; it does not stay alive as a
+background controller.
 
-An observer performs one bounded external read and returns facts. It cannot run
-an agent, mutate durable work, read App inbox/task persistence, or infer work
-ownership from runtime projections. A fact that needs task context wakes the
-declared task route, whose workflow receives bounded reconciliation facts.
-Internal runtime maintenance may use the same scheduler mechanics but is not
-App-authored policy.
+## Recovery
 
-No timer, metric breach, provider completion, or lifecycle event may directly
-dispatch an owner session.
-
-## Execution boundary
-
-One prepared execution kernel serves direct, Gym, App-owner, and workflow
-execution:
+Recovery repeats mechanics, not meaning:
 
 ```text
-prepared agent + typed task/context + scoped tools
-  -> bounded model loop
-  -> ExecutionResult + transcript/evidence
+unfinished stored request or task
+  -> fence stale attempt
+  -> repair known Host state
+  -> run the same obligation again when allowed
 ```
 
-The kernel has no App inbox, task, event-bus, scheduler, database, or recovery
-authority. The caller supplies the bounded context and decides how to admit the
-result.
+Recovery cannot invent a new task, owner, strategy, or completion claim.
+Paused Apps continue to store new work but do not start task attempts.
 
-Canonical workflow capabilities are:
+## Public boundary
 
-```ts
-ctx.input
-ctx.reconciliation?
-ctx.read.appResult/task/execution/metric
-ctx.agents.call(...)
-ctx.workflows.run(...)
-ctx.events.emit(...)
-ctx.metrics.record(...)
-ctx.workspace
-ctx.log
-ctx.done(...) / ctx.blocked(...)
-```
+Apps use `@may-agent/sdk` to describe input, policy, desired work, facts, and
+bounded workflows. The SDK does not expose SQL, files and locks, queues,
+leases, scheduler handles, event-bus handles, process recovery, delivery
+internals, or global paths.
 
-Workflows are bounded synchronous controllers even when their TypeScript uses
-`await`. Durable waits end the run and continue later through App dependencies
-or task Conditions.
-
-## Metrics and guards
-
-Metrics observe runtime or domain state. Infrastructure owns storage,
-thresholds, deduplication, hysteresis, and generic health. Apps own domain
-metric meaning and samples.
-
-A breach/recovery is a fact. It may wake a task subscription or, when a distinct
-disposition is truly required, an App subscription. It never becomes desired
-state or launches judgment directly.
-
-Guards are mechanical detectors around tools/execution. They record durable
-risk evidence and may warn, repair, or block only under explicit policy. A
-guard event follows normal fact routing. Guards do not decide project strategy
-or become retry planners.
-
-## External control boundary
-
-CLI, Web UI, Telegram, and other adapters share one small control protocol:
+External interfaces have only four kinds of write:
 
 ```text
 admit App input
 publish fact
-invoke typed App action
-apply deterministic runtime control
-subscribe/read bounded projections
+control an exact task or session
+control Host lifecycle
 ```
 
-Adapters do not run agents/workflows, mutate internal tables, select task
-storage, or implement project policy. They normalize transport identity,
-authenticate where required, and preserve correlation to the canonical App or
-control operation.
+They do not call App owners or the model runner directly.
 
-The browser and Telegram may present different experiences, but they cannot
-create separate routing or lifecycle semantics.
+## Extension rule
 
-## Agent tools
+When adding a feature, ask two questions:
 
-Model-facing tools are task-oriented capability grants, not the runtime SDK.
-Examples include bounded file/shell/edit, exact query, agent call, workflow
-run, fact publication, and finish/result tools.
+1. Is this stable mechanics? Put it in the Host.
+2. Is this meaning, policy, desired outcome, or acceptance? Put it in the App.
 
-An agent tool may share implementation with a workflow capability, but its
-permission and interaction contract are explicit. Agents must not open runtime
-SQLite or mutate task/inbox files through shell. Durable cross-owner work uses
-App delegation; agent messages remain notifications only.
+Add an SDK capability only when an App responsibility cannot be expressed with
+the current typed boundary. Add the narrowest operation needed; do not expose a
+generic query, command, service locator, database, path bag, or runtime context.
 
-## Loading and reload
+## Review checklist
 
-The loader pipeline is mechanical:
-
-```text
-discover -> import -> validate -> prepare complete generation
-         -> atomically publish registry/routes/schedules/controllers
-```
-
-One `defineApp` export owns each App. A failed candidate leaves the previous
-generation unchanged. Active executions retain their prepared definition and
-source lineage; subsequent dispatch uses the new generation.
-
-There is no second `services/` discovery graph or cross-App service registry.
-Runtime subsystems may use host-private typed ports and explicit factory wiring,
-but Apps receive only the bounded capabilities declared by the canonical SDK.
-Long-lived route, schedule, observer, and controller registrations are owned
-and torn down by the complete registry generation, never independently
-hot-swapped as a dependency subgraph.
-
-Agent definitions, prompts, tools, workflows, App definitions, schedules,
-observers, and task routes each declare their reload boundary. Reload never
-silently mutates an active session or duplicates schedule/subscription/task
-controller ownership.
-
-Only the long-running host attaches autonomous runtime capabilities. Direct,
-Gym, status, and read-only processes may prepare agents and workflows but
-cannot claim App work.
-
-## Recovery boundary
-
-Infrastructure may recover mechanically:
-
-```text
-stale claim/attempt/delivery
-  -> fence old owner
-  -> repair known mechanical state
-  -> requeue the same persisted obligation
-  -> attention when judgment is required
-```
-
-It cannot invent a new request, desired task, owner strategy, retry meaning, or
-completion claim. App/task IDs, generation, input, intent, dependencies, and
-evidence survive recovery unchanged unless admitted semantic policy revises
-them.
-
-Uncertain human delivery is never retried blindly. Recovery first observes the
-delivery operation and preserves the originating May request.
-
-## Failure model
-
-| Failure | Owner |
-| --- | --- |
-| Invalid App definition or route | Registry/loader rejects candidate generation |
-| Inbox claim/session interruption | Inbox runtime fences and retries same request |
-| Invalid owner disposition | Host rejects result; request remains unfinished |
-| Invalid TaskIntent/action/Condition/result | Task runtime rejects admission |
-| Workflow/agent timeout or crash | Execution runtime records failure; owning App/task decides semantics |
-| Observer/provider failure | Observer/runtime health; no automatic owner work |
-| Event publication/delivery failure | Event runtime retries/surfaces without inventing work |
-| Human delivery uncertainty | Delivery runtime preserves uncertainty and request correlation |
-| Reload failure | Previous complete generation remains active |
-
-Failures remain in their owning layer. A session failure does not imply task
-failure; task attention does not imply project blocked; event acceptance does
-not imply semantic completion.
-
-## Public surfaces
-
-There are three stable public boundaries:
-
-1. **`@may-agent/sdk`** for App declarations and bounded App-owned workflows.
-2. **Agent tools** for explicitly granted model capabilities.
-3. **Control client/protocol** for external adapters and bounded read/steering.
-
-Legacy handler contexts, `defineProjectApp`, `@may-agent/sdk/legacy`, raw
-`AgentSDK`, `getDb`, global path bags, generic query/command facades, and direct
-event-to-agent handlers are not stable public surfaces.
-
-## What to avoid
-
-- Do not add socket commands for domain actions that belong in App schemas.
-- Do not turn events, queues, metrics, traces, or projections into work state.
-- Do not create per-App schedulers, retry loops, recovery daemons, or delivery
-  systems.
-- Do not expose raw database/task/inbox mutation to Apps or agents.
-- Do not run agents directly from event, timer, observer, or metric handlers.
-- Do not create transport-specific ownership paths for Telegram, Web UI, or
-  CLI.
-- Do not add generic SDK escape hatches to make one migration easier.
-- Do not preserve legacy and canonical actionable routes in parallel.
-
-## Adopted migration
-
-1. One `defineApp` declaration and atomic registry generation own each App.
-2. Addressed input uses App Inbox admission; facts use explicit App/task
-   subscriptions, exact wakes, or observation only.
-3. Task reconciliation is an optional capability behind the canonical host.
-4. Workflows receive typed input, narrow reads, and scoped workspace/metric
-   capabilities.
-5. Timers and external reads are App schedules/observers; shared maintenance
-   remains internal runtime work or explicit offline tooling.
-6. Owner-inbox/event-pair work authority, duplicate loaders/routes,
-   `defineProjectApp`, and `@may-agent/sdk/legacy` are deleted.
-7. Restart, reload, delivery, task recovery, and route uniqueness are covered by
-   runtime and App verification.
-
-## Integrity checklist
-
-- One App model, one registry generation, and one host own all App capabilities.
-- Every addressed request has one App inbox authority and correlated result.
-- Every durable desired outcome has one App task authority.
-- Every fact-to-work path is explicit, pure, and idempotent.
-- No infrastructure callback directly runs project judgment.
-- Apps receive semantic contracts and scoped capabilities only.
-- Execution is bounded and has no durable ownership mechanics.
-- Recovery preserves identity and cannot invent domain meaning.
-- External adapters cannot bypass App/control admission.
-- Legacy and canonical actionable routes never run together.
+- Can the design be explained using Host and App without a third owner?
+- Is work stored before it runs?
+- Does every result belong to one request and every durable outcome to one task?
+- Does the App decide meaning and completion?
+- Does the Host own execution, concurrency, restart, and delivery?
+- Can a fact start work only through an explicit App route?
+- Are sessions and workflows bounded attempts rather than hidden controllers?
+- Is any new public capability smaller than exposing Host internals?

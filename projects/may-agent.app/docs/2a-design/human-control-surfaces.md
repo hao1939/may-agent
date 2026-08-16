@@ -171,7 +171,7 @@ request result may complete directly, delegate, or attach a task.
 
 ## Delivery contract
 
-Human delivery is an infrastructure operation linked to the originating May
+Human delivery is a Host operation linked to the originating May
 request:
 
 ```text

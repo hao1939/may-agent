@@ -34,7 +34,7 @@ authority for the original outcome.
 | Human approval or private judgment is required | Delegate to May/human attention and wait on its exact result/Condition |
 | Agent attempt was incomplete | Honest execution result; not escalation by itself |
 
-The current owner, not infrastructure, decides that a blocker crosses an
+The current owner, not the Host, decides that a blocker crosses an
 ownership boundary.
 
 ## App-to-App escalation

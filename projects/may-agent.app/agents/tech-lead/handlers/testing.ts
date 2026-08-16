@@ -39,12 +39,6 @@ export function createHostTestRuntime(options: {
     }),
     log: () => undefined,
     message: () => undefined,
-    escalate: () => undefined,
-    runWorkflow: async (name: string) => ({
-      status: "done",
-      summary: "ok",
-      runId: `wr_test_${name}`,
-    }),
     paths: {
       root: options.root,
       persist,

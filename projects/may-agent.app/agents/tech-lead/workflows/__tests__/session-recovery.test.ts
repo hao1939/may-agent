@@ -11,30 +11,24 @@ describe("session-recovery workflow", () => {
       summary: "ok",
     }));
     const ctx = {
-      input: [
-        "[session-recovery] Handle failed session s_failed.",
-        "",
-        "## Recovery Decision",
-        "```json",
-        JSON.stringify({
-          sessionId: "s_failed",
-          agent: "dev",
-          action: "requeue",
-          source: "digest",
-          attempt: 1,
-          maxAttempts: 2,
-          error: "provider transient",
-          task: "fix the bug",
-        }),
-        "```",
-      ].join("\n"),
+      input: {
+        sessionId: "s_failed",
+        agent: "dev",
+        action: "requeue",
+        source: "digest",
+        attempt: 1,
+        maxAttempts: 2,
+        error: "provider transient",
+        task: "fix the bug",
+      },
       agents: { call: callAgent },
       events: { emit },
-      done: (summary: string) => ({
+      done: (summary: string, output?: unknown) => ({
         id: "wf_test",
         kind: "workflow",
         status: "done",
         summary,
+        output,
       }),
       blocked: (summary: string, evidence?: unknown) => ({
         id: "wf_test",
@@ -47,7 +41,10 @@ describe("session-recovery workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result).toMatchObject({ status: "done" });
+    expect(result).toMatchObject({
+      status: "done",
+      output: { state: "converged" },
+    });
     expect(callAgent).toHaveBeenCalledWith(
       "dev",
       expect.stringContaining("## Original Task\nfix the bug"),

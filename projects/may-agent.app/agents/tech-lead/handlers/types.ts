@@ -25,12 +25,6 @@ export type CronEntry = {
   handlerConfig?: Record<string, unknown>;
 };
 
-type WorkflowResult = {
-  status: string;
-  summary: string;
-  runId?: string;
-};
-
 type HostMetricService = {
   defineMany(definitions: unknown[]): void;
   record(
@@ -74,12 +68,6 @@ type HostSdk = {
   };
   log(level: "info" | "warn" | "error", message: string): void;
   message(target: string, content: string): void;
-  escalate(reason: string, options?: Record<string, unknown>): unknown;
-  runWorkflow(
-    name: string,
-    task: string,
-    options?: Record<string, unknown>,
-  ): Promise<WorkflowResult>;
   query: HostQuery;
   metrics: HostMetricService;
   paths: {

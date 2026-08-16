@@ -28,7 +28,7 @@ that no Agent App owns.
 | -------------------------- | ------------------------------------------------------------------------- |
 | Standalone global agent    | `agents/<name>/workflows/<name>-heartbeat.ts`                             |
 | Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts`       |
-| Runtime infrastructure     | Host-private mechanical schedule/handler; facts route any domain judgment |
+| Host mechanics             | Host-private schedule/handler; facts route any domain judgment |
 
 Do not run both a standalone heartbeat and an Agent App cadence for the same
 responsibility. App-local agents set `"heartbeat": false`. A workflow whose

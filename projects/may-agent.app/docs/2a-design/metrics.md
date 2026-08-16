@@ -125,7 +125,7 @@ Useful metric classes include:
 
 | Class | Examples of questions |
 | --- | --- |
-| Infrastructure | Are handlers, delivery, persistence, schedules, and the daemon operating? |
+| Host | Are handlers, delivery, persistence, schedules, and the daemon operating? |
 | Execution | Are sessions starting, finishing, and recovering honestly? |
 | Evaluation | Is quality review live, substantive, delivered, and closed? |
 | Project/domain | Is an owned domain fact outside its expected operating range? |
@@ -167,7 +167,7 @@ project facts, and recent events before deciding whether to return task actions,
 calibrate the metric, record an exception, or escalate.
 
 Waiting tasks depend on typed Conditions whose truth comes from a watcher or
-semantic event. Metrics may alert on stale observation infrastructure, but task
+semantic event. Metrics may alert when Host observation is stale, but task
 resync never treats metric age as Condition truth. Historical notes and weak
 signals do not make a project active by themselves.
 
@@ -242,7 +242,7 @@ sdk.metrics.record("scout.source-check-failures", failures, {
 });
 ```
 
-Deterministic infrastructure handlers may define `sourceQuery` or
+Deterministic Host handlers may define `sourceQuery` or
 `sourceCommand` metrics. Agent reasoning should use supplied tools/SDK
 capabilities rather than embedding database access into the agent runtime core.
 

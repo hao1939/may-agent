@@ -4,14 +4,14 @@
 **Implementation status:** Implemented. The package contains only stable App,
 task, bounded workflow/guard, and testing authoring contracts.
 
-`@may-agent/sdk` is the narrow public boundary between App-owned code and the
-shared runtime. It describes semantic inputs, results, facts, and desired work;
-it does not expose runtime storage or orchestration mechanics.
+`@may-agent/sdk` is the narrow boundary between an App and the Host. It
+describes meaning, inputs, results, facts, and desired work; it does not expose
+Host storage or execution mechanics.
 
 ```text
 App definition -> pure policy and capability declarations
 workflow       -> bounded input + scoped capabilities -> ExecutionResult
-runtime        -> admission, storage, delivery, execution, and recovery
+Host           -> admission, storage, delivery, execution, and recovery
 ```
 
 See [Agent App Contract](agent-app.md) and
@@ -74,7 +74,7 @@ A top-level subscription combines a stable ID, selector, and pure
 `toInput(event)` translator. It explicitly creates a correlated App request.
 
 `tasks.subscriptions` combines selectors with pure `resolve(event)` policy. It
-returns the latest `TaskIntent` or `null`; the runtime persists it before waking
+returns the latest `TaskIntent` or `null`; the Host persists it before waking
 the task reconciler.
 
 No SDK callback receives a generic mutable event context. App policy cannot
@@ -85,7 +85,7 @@ launch an agent or workflow while deciding how a fact routes.
 An App schedule contains exactly one of:
 
 - `input`, for a correlated inbox obligation with optional catch-up; or
-- `event`, for a fact published by the shared scheduler.
+- `event`, for a fact published by the Host scheduler.
 
 An observer receives only `ObserverContext` and returns facts for the host to
 publish after a successful run. An action validates parameters and translates
@@ -119,7 +119,7 @@ type WorkflowContext<TInput> = {
 };
 ```
 
-The workflow input is App-owned. The runtime carries it across the execution
+The workflow input is App-owned. The Host carries it across the execution
 boundary without parsing prompts or reconstructing it from global task state.
 
 When a task owns the attempt, `reconciliation` supplies bounded current facts:
@@ -218,7 +218,7 @@ actionable, the destination App must declare a subscription, task subscription,
 or exact target.
 
 `ctx.metrics.record` records a domain sample. Thresholding, hysteresis,
-deduplication, storage, and runtime health metrics belong to infrastructure. A
+deduplication, storage, and Host health metrics belong to the Host. A
 metric event remains a fact/wake, never desired state.
 
 ## Workspace and paths

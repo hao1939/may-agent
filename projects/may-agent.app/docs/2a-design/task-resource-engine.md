@@ -561,7 +561,7 @@ idempotent reconciliation.
 
 When an owner agent needs human approval, advice, or action, it creates one
 deduplicated escalation and returns `waiting` with an exact Condition for that
-escalation's resolved disposition. Infrastructure delivers the request and
+escalation's resolved disposition. The Host delivers the request and
 correlates the human reply. The resulting semantic event updates the Condition
 and enqueues the same task key; no workflow or session remains suspended.
 
@@ -584,22 +584,22 @@ recorded in task state, the pending intent can be removed. Changed dependent
 task keys may be enqueued after the state commit because delivery resync can
 reconstruct those in-memory hints.
 
-Pending events are derived by infrastructure from the admitted transition; they
+Pending events are derived by the Host from the accepted transition; they
 are not a second workflow result language. Workflows still return the one
 result contract above and must not emit their own task-completion claims. Tool
 side effects remain subject to ordinary idempotency and verification.
 
 ## Paths and output admission
 
-Infrastructure resolves `appDir`, `projectDir`, and `workspaceDir` before
+The Host resolves `appDir`, `projectDir`, and `workspaceDir` before
 invoking a handler. Declared outputs are resolved once and admitted only inside
 the app and domain roots.
 
 `workspaceDir` normally equals `projectDir`. When the selected workflow exports
-`workspace = "task"`, infrastructure prepares and reuses a task-generation Git
+`workspace = "task"`, the Host prepares and reuses a task-generation Git
 worktree from the app workspace branch before handler execution. A workflow
 that intentionally integrates elsewhere may instead export
-`workspace = { kind: "task", baseBranch: "main" }`; the runtime uses that exact
+`workspace = { kind: "task", baseBranch: "main" }`; the Host uses that exact
 branch as the worktree base. Workspace lineage is observed attempt and receipt
 metadata; it is not desired task spec or a second scheduling record.
 The workflow runtime supplies the same directory to nested agent tools as their
@@ -739,7 +739,7 @@ silence recovery to interrupt.
 
 Every bounded agent session started directly by an attempt or from inside its
 workflow is correlated to `(appId, taskId, generation)` when the neutral
-`session.start` notification reaches infrastructure. If desired state advances,
+`session.start` notification reaches the Host. If desired state advances,
 the controller ends the old attempt and interrupts its attached session
 immediately. A session that starts late for a missing task, obsolete generation,
 or non-current attempt is rejected and interrupted instead of consuming

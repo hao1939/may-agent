@@ -45,6 +45,10 @@ describe("may-agent task reconciliation manifest", () => {
     expect(app.owner).toBe("may");
     expect(app.tasks?.subscriptions).toEqual([
       {
+        type: "session.recovery.requested",
+        project: "may-agent",
+      },
+      {
         type: "may-agent.resource-migration.requested",
         project: "may-agent",
       },

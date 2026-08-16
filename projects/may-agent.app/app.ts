@@ -17,7 +17,7 @@ export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
 const platformInputSchema = Type.Union(
-  ["owner-review", "resource-migration"].map((kind) =>
+  ["owner-review", "resource-migration", "session-recovery"].map((kind) =>
     Type.Object(
       { kind: Type.Literal(kind), data: detailsSchema },
       { additionalProperties: false },
@@ -66,6 +66,24 @@ function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
 
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   switch (input.kind) {
+    case "session-recovery": {
+      const data = record(input.data);
+      const sessionId = stringValue(data.sessionId);
+      if (!sessionId) return null;
+      const taskId = sessionId.replace(/[^a-zA-Z0-9._-]+/g, "-");
+      return {
+        id: `runtime/session-recovery/${taskId}`,
+        parentId: "platform-system-review-feedback-loop",
+        outcome: `Resolve failed session ${sessionId} through the owning App.`,
+        acceptance: [
+          "The classified recovery is attempted once and records either terminal evidence or an explicit owner decision.",
+        ],
+        mode: "achieve",
+        workflow: "session-recovery",
+        input: data,
+        priority: "P1",
+      };
+    }
     case "resource-migration":
       return {
         id: "runtime/unified-resource-migration-v1",
@@ -105,6 +123,8 @@ export function taskInputForEvent(
 ): AppInput | null {
   const data = eventData(event);
   switch (event.type) {
+    case "session.recovery.requested":
+      return { kind: "session-recovery", data };
     case "may-agent.resource-migration.requested":
       return { kind: "resource-migration", data };
     case "project.tick":
@@ -241,6 +261,7 @@ const app = defineApp({
   tasks: {
     attach: true,
     subscriptions: [
+      { type: "session.recovery.requested", project: projectId },
       { type: "may-agent.resource-migration.requested", project: projectId },
       { type: "project.tick", project: projectId },
       { type: "project.tasks.ready", project: projectId },

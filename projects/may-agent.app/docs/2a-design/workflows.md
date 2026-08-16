@@ -279,7 +279,7 @@ must be declared by the destination App as a subscription, task subscription,
 or exact target.
 
 Where a domain mutation and its resulting fact must be atomic, use an explicit
-domain adapter/outbox capability owned by infrastructure. Do not emulate
+domain adapter/outbox capability owned by the Host. Do not emulate
 atomicity by writing runtime SQL or emitting before the mutation is durable.
 
 `ctx.metrics.record` records one domain measurement. Metrics and emitted facts

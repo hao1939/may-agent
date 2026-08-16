@@ -66,7 +66,7 @@ Every state-changing request enters exactly one path:
 2. **fact publication** for a changed observation;
 3. **declared App action** translated to App input;
 4. **exact task/approval control** owned by the task runtime; or
-5. **deterministic runtime control** owned by infrastructure.
+5. **deterministic Host control** owned by the Host.
 
 Examples:
 

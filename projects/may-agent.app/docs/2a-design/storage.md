@@ -125,7 +125,7 @@ in current state are integrity errors, not an alternate storage mode.
 
 ## Agent Boundary
 
-Storage is infrastructure context outside agent generation. The agent uses its
+Storage is Host context outside agent generation. The agent uses its
 normal generate and tool APIs; it does not call a private infra-context API.
 Infra resolves artifacts and prepares context before `agent.run`, then persists
 results and emits events after the run. This keeps every agent usable without

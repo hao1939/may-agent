@@ -4,22 +4,17 @@
 **Implementation status:** Implemented. The canonical host owns App Inbox and
 the optional host-private App task runtime through this contract.
 
-An Agent App is one durable address with one accountable owner. It packages
-typed input, optional supporting agents, domain policy, and optional durable
-task reconciliation without implementing another runtime.
+An Agent App is one durable address with one accountable owner. Keep the mental
+model to two concepts:
 
 ```text
-Agent      = independently runnable capability and judgment
-Workflow   = reusable bounded process owned by one agent
-Agent App  = durable address + inbox + owner + domain policy
-Task       = optional durable desired outcome reconciled inside an App
-Event      = persisted fact and wake signal, never work ownership
-Host       = generic admission, delivery, scheduling, execution, and recovery
+Host = persist, schedule, run, recover, deliver
+App  = define meaning, policy, desired outcomes, acceptance
 ```
 
-The public unit is the App. The bounded execution unit remains an agent or
-workflow. The App inbox and optional task resource are the only durable work
-authorities.
+Agents and workflows are bounded code an App may ask the Host to run. Requests,
+tasks, and facts are durable records the Host stores. They are useful names,
+but they do not add more owners or layers to the model.
 
 See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for task reconciliation, and
@@ -27,21 +22,23 @@ See [Projects](projects.md) for durable project posture,
 deletion sequence is recorded in
 [Canonical Agent App Migration](../archive/implementation/canonical-agent-app-migration.md).
 
-## Primary mental model
+## Choosing the stored record
 
-Every input or fact is classified by the durable obligation it creates:
+Use this plain rule:
 
 ```text
-addressed input requiring a distinct result -> App inbox
-changed fact with deterministic desired work -> task resolver
-fact with no actionable obligation          -> event only
+someone expects one answer               -> request
+an outcome may need several tries         -> task
+something happened but creates no work    -> fact
 ```
 
-This is not a classification by transport or by whether somebody is waiting
-synchronously. Human input, App delegation, an action, a schedule, or a fact
-translated by an App subscription may all create an independently correlated
-inbox obligation. A metric, provider observation, lifecycle fact, or scheduled
-wake normally remains a fact and may resolve directly to desired task work.
+The Host stores all three. The App decides which one an input or fact creates.
+In code, a request is stored in the App inbox, and task policy is exposed as a
+`TaskIntent` resolver. Those are implementation names, not more layers.
+
+Human input, App delegation, an action, a schedule, or a subscribed fact may
+create a request. A metric, provider observation, lifecycle fact, or scheduled
+wake normally remains a fact unless the App explicitly turns it into work.
 
 One fact may intentionally be observed or acted on by several Apps, but within
 one App it never matches both an App subscription and a task subscription. If
@@ -299,12 +296,12 @@ known transient failure
   -> explicit escalation only across a real ownership boundary
 ```
 
-Infrastructure preserves the same inbox or task identity. It never invents
+The Host preserves the same request or task identity. It never invents
 project strategy. Repeated equivalent facts may coalesce scheduler pressure,
 but they do not erase the latest persisted intent, correlated request, or
 evidence.
 
-Metrics observe the loop. Runtime metrics describe host health; App metrics
+Metrics observe the loop. Host metrics describe Host health; App metrics
 describe domain outcomes. A metric breach is a fact that may wake a task or,
 when an independent disposition is genuinely required, create a subscribed App
 request. It is never an alternate work authority.

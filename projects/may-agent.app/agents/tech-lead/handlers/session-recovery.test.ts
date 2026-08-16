@@ -5,15 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import { create } from "./session-recovery.js";
 
 function makeCtx(action?: string | null) {
-  const runWorkflow = vi.fn(async () => ({ status: "done" as const, summary: "ok", runId: "wr_recovery" }));
   return {
     agentName: "tech-lead",
     sdk: {
       runAgent: vi.fn(() => { throw new Error("session-recovery handler should dispatch a workflow, not run agents directly"); }),
-      runWorkflow,
       emit: vi.fn(),
       log: vi.fn(),
-      escalate: vi.fn(),
     },
     getLastDigest: vi.fn(() => action ? { action } : null),
     classifyError: vi.fn(() => "infra"),
@@ -22,7 +19,7 @@ function makeCtx(action?: string | null) {
 }
 
 describe("session-recovery handler", () => {
-  it("dispatches recoverable failures through the session-recovery workflow", async () => {
+  it("routes recoverable failures to the May-agent App", async () => {
     const ctx = makeCtx("requeue");
     const handler = create(ctx, {} as any);
 
@@ -42,16 +39,23 @@ describe("session-recovery handler", () => {
     });
 
     expect(ctx.sdk.runAgent).not.toHaveBeenCalled();
-    expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
-      "session-recovery",
-      expect.stringContaining('"action": "requeue"'),
-      { projectId: "may-agent" },
+    expect(ctx.sdk.emit).toHaveBeenCalledWith(
+      "session.recovery.requested",
+      expect.objectContaining({
+        sessionId: "s_failed",
+        agent: "dev",
+        action: "requeue",
+        task: "fix the bug",
+      }),
+      expect.objectContaining({
+        owner: "app:may-agent",
+        target: { appId: "may-agent", project: "may-agent" },
+      }),
     );
-    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.workflow_dispatched", expect.objectContaining({
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.routed", expect.objectContaining({
       handler: "session-recovery",
-      workflow: "session-recovery",
       source: "tech-lead",
-      workflowRunId: "wr_recovery",
+      route: "app:may-agent",
       sessionId: "s_failed",
       agent: "dev",
       action: "requeue",
@@ -77,7 +81,7 @@ describe("session-recovery handler", () => {
       },
     });
 
-    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("session.recovery.requested", expect.anything(), expect.anything());
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       handler: "session-recovery",
       sessionId: "s_failed",
@@ -106,16 +110,13 @@ describe("session-recovery handler", () => {
       ].join("\n"),
     }), "utf8");
 
-    const runWorkflow = vi.fn(async () => ({ status: "done" as const, summary: "ok", runId: "wr_recovery" }));
     const emit = vi.fn();
     const ctx = {
       agentName: "may",
       sdk: {
         runAgent: vi.fn(() => { throw new Error("session-recovery handler should dispatch a workflow, not run agents directly"); }),
-        runWorkflow,
         emit,
         log: vi.fn(),
-        escalate: vi.fn(),
         paths: { root: persist, persist },
         getDb: vi.fn(() => ({
           prepare: vi.fn(() => ({
@@ -144,7 +145,7 @@ describe("session-recovery handler", () => {
       },
     });
 
-    expect(runWorkflow).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalledWith("session.recovery.requested", expect.anything(), expect.anything());
     expect(emit).toHaveBeenCalledWith("human.attention.reviewed", expect.objectContaining({
       sourceEventId: 5085126,
       status: "completed",
@@ -190,15 +191,15 @@ describe("session-recovery handler", () => {
       },
     });
 
-    expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
-      "session-recovery",
-      expect.stringContaining('"action": "escalate"'),
-      { projectId: "may-agent" },
+    expect(ctx.sdk.emit).toHaveBeenCalledWith(
+      "session.recovery.requested",
+      expect.objectContaining({ action: "escalate" }),
+      expect.anything(),
     );
-    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalledWith(
-      "session-recovery",
-      expect.stringContaining('"action": "requeue"'),
-      { projectId: "may-agent" },
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith(
+      "session.recovery.requested",
+      expect.objectContaining({ action: "requeue" }),
+      expect.anything(),
     );
   });
 
@@ -222,7 +223,7 @@ describe("session-recovery handler", () => {
     });
 
     expect(ctx.sdk.getDb).toHaveBeenCalled();
-    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("session.recovery.requested", expect.anything(), expect.anything());
   });
 
   it("reaps an extremely stale orphan when session metadata is missing", async () => {
@@ -327,7 +328,7 @@ describe("session-recovery handler", () => {
       },
     });
 
-    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("session.recovery.requested", expect.anything(), expect.anything());
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       handler: "session-recovery",
       reason: "session.end is missing terminal status",
@@ -357,7 +358,7 @@ describe("session-recovery handler", () => {
       },
     });
 
-    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("session.recovery.requested", expect.anything(), expect.anything());
     expect(ctx.sdk.emit).not.toHaveBeenCalled();
   });
 });

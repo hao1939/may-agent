@@ -87,6 +87,25 @@ describe("may-agent task routing", () => {
     expect(resolveMayAgentTask(event("project.ops_digest.tick"))).toBeNull();
   });
 
+  it("turns a Host recovery fact into one App-owned task", () => {
+    expect(
+      resolveMayAgentTask(
+        event("session.recovery.requested", {
+          sessionId: "s_failed/17",
+          agent: "dev",
+          action: "requeue",
+          task: "fix the bug",
+        }),
+      ),
+    ).toMatchObject({
+      id: "runtime/session-recovery/s_failed-17",
+      parentId: "platform-system-review-feedback-loop",
+      mode: "achieve",
+      workflow: "session-recovery",
+      input: { sessionId: "s_failed/17", action: "requeue" },
+    });
+  });
+
   it("filters recovered, deferred, and foreign metric observations", () => {
     expect(
       taskInputForEvent(

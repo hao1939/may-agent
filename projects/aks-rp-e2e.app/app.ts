@@ -818,7 +818,6 @@ const app = defineApp({
   route: routeCanonicalAksRequest,
   workspace: {
     kind: "git",
-    repo: "https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-e2e-spec-runner",
     localPath: "../aks-rp-e2e",
     branch: "dev",
   },
