@@ -188,8 +188,11 @@ A schedule declares exactly one destination:
 - `{ event }` publishes a fact that may wake task work.
 
 An observer performs one bounded external read and returns facts. It cannot run
-an agent or mutate durable work. Internal runtime maintenance may use the same
-scheduler mechanics but is not App-authored policy.
+an agent, mutate durable work, read App inbox/task persistence, or infer work
+ownership from runtime projections. A fact that needs task context wakes the
+declared task route, whose workflow receives bounded reconciliation facts.
+Internal runtime maintenance may use the same scheduler mechanics but is not
+App-authored policy.
 
 No timer, metric breach, provider completion, or lifecycle event may directly
 dispatch an owner session.

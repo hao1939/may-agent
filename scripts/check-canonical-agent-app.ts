@@ -48,6 +48,14 @@ function checkApp(appDir: string): void {
       errors.push(`${display}: uses retired defineProjectApp`);
     if (/\bProjectApp(?:Action|Context)?\b/.test(text))
       errors.push(`${display}: uses a retired Project App authoring type`);
+    if (
+      display.includes("/watchers/") &&
+      /\.state\/tasks\//.test(text)
+    ) {
+      errors.push(
+        `${display}: App observer reads runtime-owned task persistence`,
+      );
+    }
   }
 }
 

@@ -83,55 +83,15 @@ function normalizePath(path: string): string {
   return resolve(path).replace(/\/+$/, "");
 }
 
-const LIVE_TASK_PHASES = new Set([
-  "pending",
-  "running",
-  "waiting",
-  "attention",
-]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function liveWorkspaceClaims(taskProjectionPath?: string): Set<string> {
-  if (!taskProjectionPath || !existsSync(taskProjectionPath)) return new Set();
-  try {
-    const projection: unknown = JSON.parse(
-      readFileSync(taskProjectionPath, "utf8"),
-    );
-    if (!isRecord(projection) || !isRecord(projection.tasks)) return new Set();
-    const claims = new Set<string>();
-    for (const task of Object.values(projection.tasks)) {
-      if (!isRecord(task) || !LIVE_TASK_PHASES.has(String(task.phase)))
-        continue;
-      const input = isRecord(task.input) ? task.input : undefined;
-      if (
-        typeof input?.workspacePath !== "string" ||
-        !input.workspacePath.trim()
-      )
-        continue;
-      claims.add(normalizePath(input.workspacePath));
-    }
-    return claims;
-  } catch {
-    // The projection is atomically replaced, but fail open to anomaly reporting
-    // if a missing, stale, or malformed read is ever observed.
-    return new Set();
-  }
-}
-
 export async function observeWorkspaceIntegrity(
   repoDir: string,
-  taskProjectionPath?: string,
 ): Promise<WorkspaceIntegrityObservation> {
   const entries = await worktrees(repoDir);
-  const taskPaths = new Set([
-    ...liveWorkspaceClaims(taskProjectionPath),
-    ...entries
+  const taskPaths = new Set(
+    entries
       .filter(({ branch }) => branch?.startsWith("refs/heads/task/"))
       .map(({ path }) => normalizePath(path)),
-  ]);
+  );
   const anomalies: WorkspaceIntegrityObservation["anomalies"] = [];
   let dirty = 0;
   let prunable = 0;
@@ -233,7 +193,6 @@ export async function observeWorkspaceIntegrityChanges(
     : {};
   const observation = await observeWorkspaceIntegrity(
     ctx.appPath("../aks-rp-e2e"),
-    ctx.appPath(".state/tasks/tree.json"),
   );
   mkdirSync(dirname(statePath), { recursive: true });
   writeFileSync(statePath, `${JSON.stringify(observation, null, 2)}\n`);
