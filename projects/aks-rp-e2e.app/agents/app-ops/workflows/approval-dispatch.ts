@@ -382,6 +382,7 @@ function approvalDispatchVerificationInput(
   waitId: string;
   correlationKey: string;
   requiresHumanDecision: boolean;
+  appDir: string;
 } | null {
   const taskInput = recordValue(context.intent.input);
   const pathId = stringValue(taskInput?.pathId) || stringValue(taskInput?.path_id);
@@ -389,16 +390,25 @@ function approvalDispatchVerificationInput(
     stringValue(taskInput?.packetPath) || stringValue(taskInput?.packet_path);
   if (!pathId || !packetPath) return null;
 
+  // Older task-verifier callers omit appDir/projectDir even though the SDK type
+  // marks them required. Keep verification deterministic instead of passing
+  // undefined into node:path helpers.
+  const appDir =
+    stringValue(context.appDir) ||
+    stringValue(context.workspaceDir) ||
+    "/app/projects/aks-rp-e2e.app";
+  const projectDir =
+    stringValue(context.projectDir) || "/app/projects/aks-rp-e2e";
   const absolutePacketPath = packetAbsolutePath({
-    appDir: context.appDir,
-    projectDir: context.projectDir,
+    appDir,
+    projectDir,
     packetPath,
   });
   if (!absolutePacketPath) return null;
 
   const repoPacketPath = packetRepoPath({
-    appDir: context.appDir,
-    projectDir: context.projectDir,
+    appDir,
+    projectDir,
     absolutePath: absolutePacketPath,
   });
   const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(repoPacketPath)}`;
@@ -426,6 +436,7 @@ function approvalDispatchVerificationInput(
     waitId,
     correlationKey,
     requiresHumanDecision,
+    appDir,
   };
 }
 
@@ -472,7 +483,7 @@ export async function verify(
   }
 
   const trustedLedger = latestTrustedDispatchLedgerRow({
-    appDir: context.appDir,
+    appDir: verification.appDir,
     correlationKey: verification.correlationKey,
   });
   if (trustedLedger) {

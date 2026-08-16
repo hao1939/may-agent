@@ -30,6 +30,17 @@ type WorkspaceIntegrityObservation = {
     workspaceBytes: number;
   };
   anomalies: Array<{ path: string; kind: string }>;
+  attemptedWriters: Array<{
+    observedAt: string;
+    taskId: string;
+    attemptId: string | null;
+    sessionId: string | null;
+    workflowRunId: string | null;
+    workflow: string | null;
+    canonicalPreflightHead: string;
+    canonicalPreflightStatus: string;
+    decision: string;
+  }>;
 };
 
 function command(
@@ -191,6 +202,49 @@ function claimedDirtyWorktreePaths(
   }
 }
 
+function recentAttemptedWriters(
+  appDir: string,
+): WorkspaceIntegrityObservation["attemptedWriters"] {
+  const path = resolve(appDir, ".state/audit/domain-write-preflight.jsonl");
+  if (!existsSync(path)) return [];
+  try {
+    return readFileSync(path, "utf8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .slice(-20)
+      .flatMap((line) => {
+        const value = JSON.parse(line);
+        if (
+          !isRecord(value) ||
+          typeof value.observedAt !== "string" ||
+          typeof value.taskId !== "string" ||
+          typeof value.canonicalPreflightHead !== "string" ||
+          typeof value.canonicalPreflightStatus !== "string" ||
+          typeof value.decision !== "string"
+        )
+          return [];
+        const nullableString = (field: string): string | null =>
+          typeof value[field] === "string" ? value[field] : null;
+        return [
+          {
+            observedAt: value.observedAt,
+            taskId: value.taskId,
+            attemptId: nullableString("attemptId"),
+            sessionId: nullableString("sessionId"),
+            workflowRunId: nullableString("workflowRunId"),
+            workflow: nullableString("workflow"),
+            canonicalPreflightHead: value.canonicalPreflightHead,
+            canonicalPreflightStatus: value.canonicalPreflightStatus,
+            decision: value.decision,
+          },
+        ];
+      });
+  } catch {
+    return [];
+  }
+}
+
 export async function observeWorkspaceIntegrity(
   appDir: string,
   repoDir: string,
@@ -211,6 +265,7 @@ export async function observeWorkspaceIntegrity(
     }),
   );
   const claimedPaths = claimedDirtyWorktreePaths(appDir, repoDir);
+  const attemptedWriters = recentAttemptedWriters(appDir);
   const entries = await worktrees(repoDir);
   const anomalies: WorkspaceIntegrityObservation["anomalies"] = [];
   let dirty = 0;
@@ -284,6 +339,7 @@ export async function observeWorkspaceIntegrity(
         canonical,
         counts: { ...counts, workspaceBytes: undefined },
         anomalies,
+        attemptedWriters,
       }),
     )
     .digest("hex");
@@ -293,6 +349,7 @@ export async function observeWorkspaceIntegrity(
     canonical,
     counts,
     anomalies,
+    attemptedWriters,
   };
 }
 

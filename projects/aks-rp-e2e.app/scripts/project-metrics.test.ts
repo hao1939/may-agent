@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   activeTaskAssignments,
+  activeTaskSessionId,
   assignmentStillLooksUnconsumed,
   liveTaskMetricFrontier,
   normalizeWorkflowTaskLivenessRow,
@@ -9,10 +10,76 @@ import {
   ownerTaskSessionMatchesTaskId,
   representedWaitCoveredFrontierDisposition,
   specLoopRepresentationAuthority,
+  terminalOwnerAttemptHasExpiredLease,
   terminalSessionCompletionGapLooksHealthy,
   workflowDispatchRecentStartLooksHealthy,
   workflowRunRecentSessionGapLooksHealthy,
 } from "./project-metrics.ts";
+
+describe("activeTaskSessionId", () => {
+  it("reads the current canonical attempt session when the task projection omits legacy session fields", () => {
+    expect(
+      activeTaskSessionId(
+        { id: "ops/recovery" },
+        {
+          resources: {
+            "ops/recovery": { status: { currentAttemptId: "attempt-2" } },
+          },
+          attempts: {
+            "attempt-2": {
+              metadata: { id: "attempt-2" },
+              taskId: "ops/recovery",
+              state: "running",
+              sessionId: "terminal-owner-session",
+            },
+          },
+        },
+      ),
+    ).toBe("terminal-owner-session");
+  });
+
+  it("prefers the task's explicit live session over attempt fallback", () => {
+    expect(
+      activeTaskSessionId(
+        { id: "ops/recovery", session_id: "healthy-live-session" },
+        {
+          resources: {
+            "ops/recovery": { status: { currentAttemptId: "attempt-2" } },
+          },
+          attempts: {
+            "attempt-2": {
+              metadata: { id: "attempt-2" },
+              taskId: "ops/recovery",
+              state: "running",
+              sessionId: "old-session",
+            },
+          },
+        },
+      ),
+    ).toBe("healthy-live-session");
+  });
+});
+
+describe("terminalOwnerAttemptHasExpiredLease", () => {
+  const attempt = {
+    state: "running",
+    handler: "owner:app-ops",
+    sessionId: "owner-session",
+    lease: {
+      sessionId: "owner-session",
+      expiresAt: "2026-08-15T23:57:29.078Z",
+    },
+  };
+
+  it("exposes a terminal owner session whose exact lease expired", () => {
+    expect(terminalOwnerAttemptHasExpiredLease(attempt, "done", Date.parse("2026-08-16T01:00:00Z"))).toBe(true);
+  });
+
+  it("never marks a healthy live owner session or fresh lease stale", () => {
+    expect(terminalOwnerAttemptHasExpiredLease(attempt, "running", Date.parse("2026-08-16T01:00:00Z"))).toBe(false);
+    expect(terminalOwnerAttemptHasExpiredLease(attempt, "done", Date.parse("2026-08-15T23:40:00Z"))).toBe(false);
+  });
+});
 
 describe("activeTaskAssignments", () => {
   it("returns only complete running attempts and preserves an optional session", () => {

@@ -800,6 +800,84 @@ describe("domain task execution", () => {
     }
   });
 
+  it("adds watchdog-safe batching checkpoints only for bulk deterministic regeneration tasks", async () => {
+    const dispatchedPrompts: string[] = [];
+    const capturePrompt = (task: Record<string, unknown>) =>
+      execute(
+        context({
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(task)}\n\`\`\``,
+          runAgent: (async (_agent: string, prompt: string) => {
+            dispatchedPrompts.push(prompt);
+            return {
+              status: "done",
+              sessionId: `session-${dispatchedPrompts.length}`,
+              lastAssistantText: "waiting",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "waiting" },
+              structuredResult: {
+                state: "waiting",
+                summary: "fixture stops after prompt inspection",
+                evidence: ["prompt-inspected"],
+                actions: [],
+                conditions: [
+                  {
+                    id: `pipeline-run-prompt-${dispatchedPrompts.length}-completed`,
+                    type: "pipeline-run.state",
+                    subject: `pipeline-run:prompt-${dispatchedPrompts.length}`,
+                    expected: { field: "state", equals: "completed" },
+                  },
+                ],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+    await capturePrompt({
+      taskId:
+        "domain/repair-scenario-normalization-repository-check-freshness-audit",
+      outcome:
+        "Deterministically regenerate all 94 stale compact packages repository-wide.",
+      acceptance: [
+        "Regenerate every stale package and retain only exact allowed generated diffs.",
+        "Pass freshness, strict inventory, and the full repository check.",
+      ],
+      input: {},
+    });
+    await capturePrompt({
+      taskId: "domain/repair-one-bounded-source-file",
+      outcome: "Repair one bounded source file and run its scoped test.",
+      acceptance: ["Commit the accepted source change cleanly."],
+      input: {},
+    });
+
+    const [bulkPrompt, ordinaryPrompt] = dispatchedPrompts;
+    expect(bulkPrompt).toContain(
+      "Bulk deterministic regeneration watchdog contract",
+    );
+    expect(bulkPrompt).toContain("timeout of at most 240000ms");
+    expect(bulkPrompt).toContain(
+      "After every completed batch, call checkpoint()",
+    );
+    expect(bulkPrompt).toContain("same task-owned worktree");
+    expect(bulkPrompt).toContain("exact allowed diff");
+    expect(bulkPrompt).toContain("compact-plan freshness");
+    expect(bulkPrompt).toContain("strict scenario inventory");
+    expect(bulkPrompt).toContain("full repository check");
+    expect(bulkPrompt).toContain("direct dev integration");
+    expect(bulkPrompt).toContain("fresh-origin reachability verification");
+
+    expect(ordinaryPrompt).toContain(
+      "Inspect current source and task evidence, make only the smallest accepted domain change",
+    );
+    expect(ordinaryPrompt).not.toContain(
+      "Bulk deterministic regeneration watchdog contract",
+    );
+    expect(ordinaryPrompt).not.toContain("call checkpoint()");
+  });
+
   it("rejects accepted source that exists only in a sibling worktree", async () => {
     const fixture = repositoryFixture();
     try {
@@ -1519,6 +1597,103 @@ exit 0
     });
   });
 
+  it("corrects waiting that closes its sole live child without an exact Condition", async () => {
+    const prompts: string[] = [];
+    const result = await execute(
+      context({
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+          taskId: "domain/review-skill-maintenance",
+          children: {
+            live: ["domain/review-skill-maintenance-proof"],
+            completed: [],
+          },
+          input: {},
+        })}\n\`\`\``,
+        runAgent: (async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "done",
+            sessionId: "session-1",
+            lastAssistantText: "close child and keep waiting",
+            messages: [],
+            duration: "1s",
+            outputDir: "/tmp",
+            finishResult: { status: "success", summary: "waiting" },
+            structuredResult: {
+              state: "waiting",
+              summary: "the sole proof child is complete",
+              evidence: ["proof reviewed"],
+              actions: [
+                {
+                  kind: "close-task",
+                  taskId: "domain/review-skill-maintenance-proof",
+                  expectedGeneration: 5,
+                  summary: "Proof accepted.",
+                },
+              ],
+              conditions: [],
+            },
+          };
+        }) as WorkflowContext["runAgent"],
+        runAgentSession: (async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "done",
+            sessionId: "session-1",
+            lastAssistantText: "waiting on exact review fact",
+            messages: [],
+            duration: "1s",
+            outputDir: "/tmp",
+            finishResult: { status: "success", summary: "corrected" },
+            structuredResult: {
+              state: "waiting",
+              summary:
+                "the proof child is complete; an exact review fact remains",
+              evidence: ["proof reviewed"],
+              actions: [
+                {
+                  kind: "close-task",
+                  taskId: "domain/review-skill-maintenance-proof",
+                  expectedGeneration: 5,
+                  summary: "Proof accepted.",
+                },
+              ],
+              conditions: [
+                {
+                  id: "review-skill-maintenance-approved",
+                  type: "review.state",
+                  subject: "project:aks-rp-e2e",
+                  expected: { field: "approved", equals: true },
+                },
+              ],
+            },
+          };
+        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+      }),
+    );
+
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("after its actions are applied");
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "waiting",
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "domain/review-skill-maintenance-proof",
+          },
+        ],
+        conditions: [
+          {
+            id: "review-skill-maintenance-approved",
+            subject: "project:aks-rp-e2e",
+          },
+        ],
+      },
+    });
+  });
+
   it("accepts a waiting result when the reconciliation payload already has a live direct child", async () => {
     const result = await execute(
       context({
@@ -1527,6 +1702,7 @@ exit 0
           children: {
             live: [
               "wait-compact-serverless-package-partial-origin-dev-advance-a954836b-20260724",
+              "domain/retired-serverless-proof",
             ],
             completed: [],
           },
@@ -1545,7 +1721,14 @@ exit 0
             summary:
               "the existing repo-ref wait child still truthfully carries the frontier",
             evidence: ["existing holder already captures the same frontier"],
-            actions: [],
+            actions: [
+              {
+                kind: "close-task",
+                taskId: "domain/retired-serverless-proof",
+                expectedGeneration: 2,
+                summary: "Retired proof is complete.",
+              },
+            ],
             conditions: [],
           },
         })) as WorkflowContext["runAgent"],
@@ -1561,7 +1744,12 @@ exit 0
           "recovery-owner-evidence:existing holder already captures the same frontier",
           "material-success-candidate:none",
         ]),
-        actions: [],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "domain/retired-serverless-proof",
+          },
+        ],
         conditions: [],
       },
     });
@@ -1698,6 +1886,120 @@ exit 0
             "task-source-commits:none",
             "task-changed-files:none",
             "material-success-candidate:none",
+          ]),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts and verifies an evidence-rich unchanged disposition before the material patch gate", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => ({
+            status: "done",
+            sessionId: "session-unchanged-disposition",
+            lastAssistantText: "unchanged",
+            messages: [],
+            duration: "1s",
+            outputDir: "/tmp",
+            finishResult: { status: "success", summary: "unchanged" },
+            structuredResult: {
+              state: "converged",
+              summary: "current authority and inventory still agree",
+              evidence: [
+                "disposition:unchanged",
+                "hot-evidence:scoped checks passed against the current task head",
+              ],
+              actions: [],
+            },
+          })) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      const output = (result as any).output;
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/unchanged-disposition",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        output,
+      );
+
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "converged",
+          summary: expect.stringContaining("Validated as an unchanged disposition"),
+          evidence: expect.arrayContaining([
+            "disposition:unchanged",
+            "task-branch:task/example",
+            "task-status:clean",
+            "integration:validated-unchanged-disposition",
+          ]),
+        },
+      });
+      expect(verification).toMatchObject({
+        accepted: true,
+        summary: expect.stringContaining("Accepted validated unchanged disposition"),
+        evidence: expect.arrayContaining([
+          "verification-status:clean",
+          "verification-unchanged-disposition:accepted",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not let an unchanged marker bypass the material gate for a source-changing tree", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => {
+            writeFileSync(join(fixture.workspaceDir, "later-change.txt"), "material\n");
+            git(fixture.workspaceDir, "add", "later-change.txt");
+            git(fixture.workspaceDir, "commit", "-m", "material source change");
+            return {
+              status: "done",
+              sessionId: "session-false-unchanged",
+              lastAssistantText: "unchanged",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "unchanged" },
+              structuredResult: {
+                state: "converged",
+                summary: "incorrectly claimed unchanged",
+                evidence: [
+                  "disposition:unchanged",
+                  "hot-evidence:review completed",
+                ],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "needs-owner",
+          summary: "Unchanged disposition contains a source-changing tree",
+          evidence: expect.arrayContaining([
+            "material-success-candidate:requires-source-gate",
           ]),
         },
       });

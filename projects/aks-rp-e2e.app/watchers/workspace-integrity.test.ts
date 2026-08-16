@@ -27,6 +27,21 @@ describe("workspace integrity watcher", () => {
       join(appDir, ".state/tasks/state.json"),
       JSON.stringify({ attempts: {} }),
     );
+    mkdirSync(join(appDir, ".state/audit"), { recursive: true });
+    writeFileSync(
+      join(appDir, ".state/audit/domain-write-preflight.jsonl"),
+      `${JSON.stringify({
+        observedAt: "2026-08-15T06:05:00.000Z",
+        taskId: "domain/example",
+        attemptId: "attempt-example",
+        sessionId: "session-example",
+        workflowRunId: "workflow-example",
+        workflow: "domain-task-execution",
+        canonicalPreflightHead: "abc123",
+        canonicalPreflightStatus: "",
+        decision: "route-task-workspace",
+      })}\n`,
+    );
     execFileSync("git", ["init", "-b", "dev", repoDir]);
     git(repoDir, "config", "user.email", "test@example.com");
     git(repoDir, "config", "user.name", "Test");
@@ -52,6 +67,17 @@ describe("workspace integrity watcher", () => {
     expect(observation.anomalies).toContainEqual({
       path: recovery,
       kind: "unowned-dirty",
+    });
+    expect(observation.attemptedWriters).toContainEqual({
+      observedAt: "2026-08-15T06:05:00.000Z",
+      taskId: "domain/example",
+      attemptId: "attempt-example",
+      sessionId: "session-example",
+      workflowRunId: "workflow-example",
+      workflow: "domain-task-execution",
+      canonicalPreflightHead: "abc123",
+      canonicalPreflightStatus: "",
+      decision: "route-task-workspace",
     });
   });
 

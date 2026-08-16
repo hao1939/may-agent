@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type { TaskTree } from "@may-agent/sdk/legacy";
-import { applyProjectAppConditionEvent } from "../../../../may-agent/src/app/project-app-condition-tracker.ts";
+import { applyAppTaskConditionEvent } from "../../../../may-agent/src/app/app-task-condition-tracker.ts";
 import app, {
   masterValidationCapacityPulseEventType,
   masterValidationCapacityPulseIdempotencyKey,
@@ -2139,7 +2139,7 @@ describe("app event contract", () => {
     };
 
     expect(
-      applyProjectAppConditionEvent(tree, {
+      applyAppTaskConditionEvent(tree, {
         type: "aks.node-image-publication.state",
         project: projectId,
         targetName: "staging",
@@ -2151,7 +2151,7 @@ describe("app event contract", () => {
       }),
     ).toEqual([]);
     expect(
-      applyProjectAppConditionEvent(tree, {
+      applyAppTaskConditionEvent(tree, {
         type: "aks.node-image-publication.state",
         project: projectId,
         targetName: "staging",
@@ -3500,9 +3500,16 @@ describe("app event contract", () => {
         selectorCount: 82,
         orderedSelectorSha256:
           "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
-        physicalBaselineClusterBirths: 92,
-        physicalClusterBirthsNeeded: 46,
+        sourceCommit: "104a7c49cc852a3a427f149f2aa892117e560a4e",
+        physicalBaselineClusterBirths: 93,
+        physicalClusterBirthsNeeded: 47,
         physicalClusterBirthsSaved: 46,
+        physicalClusterBirthSavingsRate: 0.4946236559139785,
+        safeguardGetCount: 50,
+        terminalRouteCount: 9,
+        semanticLowerBoundBirths: 21,
+        semanticCliqueSpecCount: 12,
+        semanticCliqueEdgeCount: 66,
         materialization: "ready",
         historicalDisprovedAspiration: {
           maximumPhysicalClusterBirths: 16,

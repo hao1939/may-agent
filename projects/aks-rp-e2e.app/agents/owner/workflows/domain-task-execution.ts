@@ -113,6 +113,8 @@ function matchingJsonObject(text: string, start: number): string | null {
 
 type ReconciliationTaskPayload = {
   taskId?: unknown;
+  outcome?: unknown;
+  acceptance?: unknown;
   input?: unknown;
   children?: {
     live?: unknown;
@@ -140,9 +142,13 @@ export function reconciliationTaskId(raw: string): string | null {
   return typeof taskId === "string" && taskId.trim() ? taskId.trim() : null;
 }
 
-function reconciliationTaskHasLiveChildren(raw: string): boolean {
+function reconciliationTaskLiveChildren(raw: string): unknown[] {
   const liveChildren = reconciliationTaskPayload(raw)?.children?.live;
-  return Array.isArray(liveChildren) && liveChildren.length > 0;
+  return Array.isArray(liveChildren) ? liveChildren : [];
+}
+
+function reconciliationTaskHasLiveChildren(raw: string): boolean {
+  return reconciliationTaskLiveChildren(raw).length > 0;
 }
 
 function stringValue(value: unknown): string | null {
@@ -177,6 +183,41 @@ function taskInput(raw: string): Record<string, unknown> | null {
   return input && typeof input === "object"
     ? (input as Record<string, unknown>)
     : null;
+}
+
+function requiresWatchdogSafeBulkRegeneration(raw: string): boolean {
+  const payload = reconciliationTaskPayload(raw);
+  if (!payload) return false;
+  const input = taskInput(raw);
+  if (
+    input?.bulkRegeneration === true ||
+    input?.watchdogSafeBulkRegeneration === true
+  ) {
+    return true;
+  }
+
+  const acceptance = Array.isArray(payload.acceptance)
+    ? payload.acceptance.filter(
+        (item): item is string => typeof item === "string",
+      )
+    : [];
+  const corpus = [
+    stringValue(payload.taskId),
+    stringValue(payload.outcome),
+    ...acceptance,
+  ]
+    .filter((item): item is string => Boolean(item))
+    .join("\n")
+    .toLowerCase();
+  const requestsRegeneration =
+    /\bregenerat(?:e|es|ed|ing|ion)\b|\bdeterministic artifacts?\b/.test(
+      corpus,
+    );
+  const requestsBulkScope =
+    /\bbulk\b|\brepository-wide\b|\ball\s+\d+\b|\bevery\s+(?:stale\s+)?(?:package|artifact|plan)\b|\b\d+\/\d+\s+fresh\b/.test(
+      corpus,
+    );
+  return requestsRegeneration && requestsBulkScope;
 }
 
 function requestedWorkspaceDir(raw: string): string | null {
@@ -296,6 +337,98 @@ function recoveryOnlyResult(
 type TaskBranchGate =
   | { ok: true; evidence: string[] }
   | { ok: false; summary: string; evidence: string[] };
+
+function requestsUnchangedDisposition(
+  result: ProjectAppTaskHandlerResult,
+): boolean {
+  return result.evidence.includes("disposition:unchanged");
+}
+
+function unchangedDispositionGate(input: {
+  result: ProjectAppTaskHandlerResult;
+  workspaceDir: string;
+  expectedWorkspace: string;
+  expectedBranch: string;
+  baselineCommit: string;
+}): TaskBranchGate {
+  const workspace = realpathSync(input.workspaceDir);
+  const repositoryRoot = realpathSync(
+    gitValue(input.workspaceDir, "rev-parse", "--show-toplevel"),
+  );
+  const branch = gitValue(
+    input.workspaceDir,
+    "symbolic-ref",
+    "--quiet",
+    "--short",
+    "HEAD",
+  );
+  const head = gitValue(input.workspaceDir, "rev-parse", "HEAD");
+  const status = workspaceChanges(input.workspaceDir);
+  const baselineTree = gitValue(
+    input.workspaceDir,
+    "rev-parse",
+    `${input.baselineCommit}^{tree}`,
+  );
+  const headTree = gitValue(input.workspaceDir, "rev-parse", `${head}^{tree}`);
+  const hotEvidence = input.result.evidence.filter(
+    (item) =>
+      item.startsWith("hot-evidence:") &&
+      item.slice("hot-evidence:".length).trim().length > 0,
+  );
+  const evidence = [
+    `task-worktree:${workspace}`,
+    `task-branch:${branch}`,
+    `task-head:${head}`,
+    `task-status:${status ? "dirty" : "clean"}`,
+    `unchanged-base-commit:${input.baselineCommit}`,
+    `unchanged-base-tree:${baselineTree}`,
+    `unchanged-head-tree:${headTree}`,
+  ];
+
+  if (workspace !== input.expectedWorkspace || repositoryRoot !== workspace) {
+    return {
+      ok: false,
+      summary: "Unchanged disposition was proven outside the supplied task worktree",
+      evidence: [
+        ...evidence,
+        `expected-task-worktree:${input.expectedWorkspace}`,
+        `repository-root:${repositoryRoot}`,
+      ],
+    };
+  }
+  if (branch !== input.expectedBranch) {
+    return {
+      ok: false,
+      summary: "Unchanged disposition was proven from the wrong task branch",
+      evidence: [...evidence, `expected-task-branch:${input.expectedBranch}`],
+    };
+  }
+  if (status) {
+    return {
+      ok: false,
+      summary: "Unchanged disposition left the task worktree dirty",
+      evidence,
+    };
+  }
+  if (baselineTree !== headTree) {
+    return {
+      ok: false,
+      summary: "Unchanged disposition contains a source-changing tree",
+      evidence: [...evidence, "material-success-candidate:requires-source-gate"],
+    };
+  }
+  if (hotEvidence.length === 0) {
+    return {
+      ok: false,
+      summary: "Unchanged disposition is missing current review evidence",
+      evidence: [...evidence, "required-evidence-prefix:hot-evidence:"],
+    };
+  }
+  return {
+    ok: true,
+    evidence: [...evidence, "integration:validated-unchanged-disposition"],
+  };
+}
 
 function patchId(cwd: string, commit: string): string | null {
   const shown = spawnSync(
@@ -683,22 +816,45 @@ async function correctConvergedWithLiveChild(input: {
   };
 }
 
+function liveChildId(child: unknown): string | null {
+  if (typeof child === "string" && child.trim()) return child.trim();
+  if (!child || typeof child !== "object") return null;
+  const record = child as Record<string, unknown>;
+  return stringValue(record.taskId ?? record.id);
+}
+
+function hasProjectedExistingLiveChild(
+  result: ProjectAppTaskHandlerResult,
+  existingLiveChildren: unknown[],
+): boolean {
+  const closedTaskIds = new Set(
+    (result.actions ?? [])
+      .filter((action) => action.kind === "close-task")
+      .map((action) => action.taskId),
+  );
+  return existingLiveChildren.some((child) => {
+    const id = liveChildId(child);
+    // Preserve conservative coverage when an older payload does not expose an ID.
+    return !id || !closedTaskIds.has(id);
+  });
+}
+
 function waitingCoverageProblem(
   result: ProjectAppTaskHandlerResult,
   taskId: string | null,
-  hasExistingLiveChild: boolean,
+  existingLiveChildren: unknown[],
 ): string | null {
   if (result.state !== "waiting") return null;
   if ((result.conditions?.length ?? 0) > 0) return null;
   if (waitsOnDirectChild(result, taskId)) return null;
-  if (hasExistingLiveChild) return null;
-  return `Waiting result for ${taskId ?? "the current task"} requires one exact Condition or a direct child task created with parentId ${taskId ?? "<current-task-id>"}`;
+  if (hasProjectedExistingLiveChild(result, existingLiveChildren)) return null;
+  return `Waiting result for ${taskId ?? "the current task"} requires one exact Condition or a direct child task created with parentId ${taskId ?? "<current-task-id>"} that remains live after its actions are applied`;
 }
 
 async function correctWaitingCoverage(input: {
   ctx: WorkflowContext;
   currentTaskId: string | null;
-  hasExistingLiveChild: boolean;
+  existingLiveChildren: unknown[];
   phase: string;
   sessionId: string;
   result: ProjectAppTaskHandlerResult;
@@ -710,7 +866,7 @@ async function correctWaitingCoverage(input: {
     const problem = waitingCoverageProblem(
       ownerResult,
       input.currentTaskId,
-      input.hasExistingLiveChild,
+      input.existingLiveChildren,
     );
     if (!problem) return ownerResult;
 
@@ -764,7 +920,7 @@ async function correctWaitingCoverage(input: {
   const problem = waitingCoverageProblem(
     ownerResult,
     input.currentTaskId,
-    input.hasExistingLiveChild,
+    input.existingLiveChildren,
   );
   if (!problem) return ownerResult;
   return {
@@ -965,6 +1121,70 @@ export async function verify(
       "dirty-task-worktree",
       [`verification-status-porcelain:${status}`],
     );
+  }
+
+  if (result.evidence.includes("integration:validated-unchanged-disposition")) {
+    const claimedBranch = exactEvidenceValue(result, "task-branch:");
+    const claimedHead = exactEvidenceValue(result, "task-head:");
+    const claimedBase = exactEvidenceValue(result, "unchanged-base-commit:");
+    const claimedBaseTree = exactEvidenceValue(result, "unchanged-base-tree:");
+    const claimedHeadTree = exactEvidenceValue(result, "unchanged-head-tree:");
+    const branch = optionalGitValue(
+      workspace,
+      "symbolic-ref",
+      "--quiet",
+      "--short",
+      "HEAD",
+    );
+    const head = optionalGitValue(workspace, "rev-parse", "HEAD");
+    const baseTree = claimedBase
+      ? optionalGitValue(workspace, "rev-parse", `${claimedBase}^{tree}`)
+      : null;
+    const headTree = head
+      ? optionalGitValue(workspace, "rev-parse", `${head}^{tree}`)
+      : null;
+    const hasHotEvidence = result.evidence.some((item) =>
+      item.startsWith("hot-evidence:"),
+    );
+    if (
+      !hasHotEvidence ||
+      !claimedBranch ||
+      claimedBranch !== branch ||
+      !claimedHead ||
+      claimedHead !== head ||
+      !claimedBase ||
+      !/^[0-9a-f]{40}$/i.test(claimedBase) ||
+      !claimedBaseTree ||
+      claimedBaseTree !== baseTree ||
+      !claimedHeadTree ||
+      claimedHeadTree !== headTree ||
+      baseTree !== headTree
+    ) {
+      return verificationRejected(
+        result,
+        "the unchanged disposition no longer matches its exact clean branch and tree proof",
+        "invalid-unchanged-disposition-proof",
+        [
+          `verification-branch:${branch ?? "unresolved"}`,
+          `verification-head:${head ?? "unresolved"}`,
+          `verification-base-tree:${baseTree ?? "unresolved"}`,
+          `verification-head-tree:${headTree ?? "unresolved"}`,
+          `verification-hot-evidence:${hasHotEvidence ? "present" : "missing"}`,
+        ],
+      );
+    }
+    return {
+      accepted: true,
+      summary: `Accepted validated unchanged disposition at ${head}.`,
+      evidence: [
+        ...result.evidence,
+        `verification-worktree:${workspace}`,
+        `verification-branch:${branch}`,
+        `verification-head:${head}`,
+        "verification-status:clean",
+        "verification-unchanged-disposition:accepted",
+      ],
+    };
   }
 
   const acceptedCommit = exactEvidenceValue(result, "source-commit:");
@@ -1381,6 +1601,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const taskPayload = reconciliationTaskPayload(ctx.task);
+  const existingLiveChildren = reconciliationTaskLiveChildren(ctx.task);
   const hasExistingLiveChild = reconciliationTaskHasLiveChildren(ctx.task);
   const normalizationInput = taskPayload?.input;
   if (isRunnableScenarioNormalization(normalizationInput)) {
@@ -1405,15 +1626,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "--short",
     "HEAD",
   );
+  const watchdogSafeBulkRegeneration = requiresWatchdogSafeBulkRegeneration(
+    ctx.task,
+  );
   const prompt = [
     "Execute the bounded AKS reconciliation task below.",
     "",
     `Your task-owned Git worktree is ${ctx.workspaceDir}.`,
     "All relative filesystem tools already run there. Do not create another branch or worktree and do not switch the shared canonical checkout.",
     "Inspect current source and task evidence, make only the smallest accepted domain change, run scoped verification, and commit every accepted file change on the supplied task branch.",
-    "This workflow publishes real domain source patches. For a disposition recheck, repo-ref wake, or unchanged wait, return hot evidence in the structured result and leave the branch unchanged; never commit an evidence-only memo merely to record the review.",
+    'This workflow publishes real domain source patches. For a disposition recheck, repo-ref wake, or unchanged wait that truthfully converges without a source change, leave the branch unchanged and include exact evidence entries "disposition:unchanged" plus at least one nonempty "hot-evidence:<current fact>"; never commit an evidence-only memo merely to record the review. The workflow independently validates the supplied worktree, task branch, clean status, and baseline/head tree equivalence before accepting that disposition.',
     "Do not push or create a pull request. After your converged judgment, this workflow integrates the clean accepted branch directly into dev; a dev conflict returns to you on the same task for repair.",
     "Before any push, the workflow independently checks whitespace, runtime-data policy, private-source policy, scenario migration, schema, and live admission on the replayed candidate. Raw evidence/archive output is never a publishable deliverable.",
+    ...(watchdogSafeBulkRegeneration
+      ? [
+          "Bulk deterministic regeneration watchdog contract:",
+          "- Never run the repository-wide regeneration as one silent command. Partition the deterministic targets into bounded batches and use a timeout of at most 240000ms for every individual tool call, safely below the 300-second no-observation watchdog.",
+          "- After every completed batch, call checkpoint() before starting the next batch. Record the completed target range/count, command result, task worktree, current Git status, and exact next batch so interruption can resume in this same task-owned worktree.",
+          "- Keep the regeneration on this task and branch. Do not create successor carriers, another worktree, or a second scheduling queue merely to process later batches.",
+          "- After all batches, review the exact allowed diff and semantic generated changes, then run compact-plan freshness, strict scenario inventory, and the full repository check as separately observable bounded calls. Commit only accepted deterministic outputs, leave the worktree clean, and let this workflow perform direct dev integration plus fresh-origin reachability verification.",
+        ]
+      : []),
     "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
     `If the truthful next step is carried by another task, create or update that holder as a direct child of ${currentTaskId ?? "the current task"} and return waiting only after the child exists or the current task has its own exact Condition.`,
     'If you already have an exact queued Azure DevOps run id, preserve that wait on this same task with condition type "pipeline-run.state", subject "pipeline-run:<runId>", and expected { field: "state", anyOf: ["completed"] } instead of prose-only waiting.',
@@ -1463,7 +1696,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ownerResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
-    hasExistingLiveChild,
+    existingLiveChildren,
     phase: "domain execution",
     sessionId: result.sessionId,
     result: ownerResult,
@@ -1486,7 +1719,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ownerResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
-    hasExistingLiveChild,
+    existingLiveChildren,
     phase: "domain execution",
     sessionId: result.sessionId,
     result: ownerResult,
@@ -1522,6 +1755,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state: "needs-owner",
       summary: "Domain task left uncommitted workspace changes",
       evidence: [`workspace:${workspaceDir}`],
+    });
+  }
+
+  if (requestsUnchangedDisposition(ownerResult)) {
+    const unchangedGate = unchangedDispositionGate({
+      result: ownerResult,
+      workspaceDir,
+      expectedWorkspace,
+      expectedBranch,
+      baselineCommit: attemptBaseCommit,
+    });
+    if (!unchangedGate.ok) {
+      return ctx.done(unchangedGate.summary, {
+        state: "needs-owner",
+        summary: unchangedGate.summary,
+        evidence: [...(ownerResult.evidence ?? []), ...unchangedGate.evidence],
+      });
+    }
+    const summary = `${ownerResult.summary} Validated as an unchanged disposition; no source integration was required.`;
+    return ctx.done(summary, {
+      ...ownerResult,
+      state: "converged",
+      summary,
+      evidence: [...(ownerResult.evidence ?? []), ...unchangedGate.evidence],
     });
   }
 
@@ -1681,7 +1938,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     conflictOwnerResult = await correctWaitingCoverage({
       ctx,
       currentTaskId,
-      hasExistingLiveChild,
+      existingLiveChildren,
       phase: "integration conflict repair",
       sessionId: conflictResult.sessionId,
       result: conflictOwnerResult,

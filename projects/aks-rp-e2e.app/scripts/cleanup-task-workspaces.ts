@@ -1,6 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import {
+  acquireCanonicalMutationLease,
+  requiredMutationHolder,
+} from "./lib/canonical-mutation-lease.ts";
 
 type InventoryRow = {
   path: string;
@@ -68,6 +72,21 @@ if (process.argv[2] === "--compact-receipt") {
 
 const appDir = resolve(import.meta.dir, "..");
 const repoDir = resolve(appDir, "../aks-rp-e2e");
+const lease = acquireCanonicalMutationLease({
+  projectId: "aks-rp-e2e",
+  canonicalPath: repoDir,
+  holder: requiredMutationHolder(),
+  checkpointPath: join(appDir, ".state/checkpoints/canonical-mutations.jsonl"),
+  fingerprint: () => ({
+    head: git(repoDir, ["rev-parse", "HEAD"], true).stdout,
+    status: git(
+      repoDir,
+      ["status", "--porcelain=v1", "--untracked-files=all"],
+      true,
+    ).stdout,
+  }),
+});
+process.on("exit", () => lease.release());
 const inventoryPath = resolve(
   process.argv[2] ||
     join(
@@ -149,9 +168,14 @@ for (const row of candidates) {
           ["show-ref", "--verify", "--quiet", `refs/heads/${rescueBranch}`],
           true,
         ).status === 0;
-      if (!exists) git(repoDir, ["branch", rescueBranch, row.head]);
+      if (!exists)
+        lease.mutate(`create rescue branch for ${row.path}`, () =>
+          git(repoDir, ["branch", rescueBranch!, row.head]),
+        );
     }
-    git(repoDir, ["worktree", "remove", row.path]);
+    lease.mutate(`remove worktree ${row.path}`, () =>
+      git(repoDir, ["worktree", "remove", row.path]),
+    );
     results.push({
       path: row.path,
       status: "removed",
@@ -170,7 +194,9 @@ for (const row of candidates) {
   }
 }
 
-git(repoDir, ["worktree", "prune"]);
+lease.mutate("prune shared worktree metadata", () =>
+  git(repoDir, ["worktree", "prune"]),
+);
 writeFileSync(
   outputPath,
   `${JSON.stringify(

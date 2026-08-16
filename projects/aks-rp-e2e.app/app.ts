@@ -34,6 +34,10 @@ import {
   readCampaignReceipt,
   type CampaignReceipt,
 } from "./agents/app-ops/workflows/lib/master-validation-campaign.js";
+import {
+  decideDomainWriteRouting,
+  recordDomainWritePreflight,
+} from "./domain-write-routing.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
@@ -53,6 +57,15 @@ const scenarioTestFrontierMinLeaves = 3;
 export function validateAksTaskAction(
   action: ProjectAppTaskAction,
 ): string | null {
+  const writeRouting = decideDomainWriteRouting(action);
+  recordDomainWritePreflight(
+    action,
+    writeRouting,
+    "/app/projects/aks-rp-e2e.app",
+    "/app/projects/aks-rp-e2e",
+  );
+  if (writeRouting.reason) return writeRouting.reason;
+
   if (
     (action.kind !== "create-task" && action.kind !== "update-task") ||
     action.workflow !== "spec-live-reconciliation"
@@ -1807,6 +1820,43 @@ export function resolveAksTask(
   }
 }
 
+export function resolveAksTaskWithWriteRouting(
+  event: Record<string, unknown>,
+): ProjectAppTaskIntent | null {
+  const intent = resolveAksTask(event);
+  if (!intent) return null;
+  const action: ProjectAppTaskAction = {
+    kind: "create-task",
+    id: intent.id,
+    parentId: intent.parentId,
+    outcome: intent.outcome,
+    acceptance: intent.acceptance,
+    mode: intent.mode,
+    outputs: intent.outputs ?? [],
+    priority: intent.priority ?? "P2",
+    ...(intent.owner ? { owner: intent.owner } : {}),
+    ...(intent.workflow ? { workflow: intent.workflow } : {}),
+    ...(intent.input ? { input: intent.input } : {}),
+    ...(intent.dependsOn ? { dependsOn: intent.dependsOn } : {}),
+    ...(intent.category ? { category: intent.category } : {}),
+  };
+  const decision = decideDomainWriteRouting(action);
+  if (decision.decision !== "reject-unbound-writer") return intent;
+
+  const routed = { ...intent, workflow: "domain-task-execution" };
+  const routedAction: ProjectAppTaskAction = {
+    ...action,
+    workflow: routed.workflow,
+  };
+  recordDomainWritePreflight(
+    routedAction,
+    decideDomainWriteRouting(routedAction),
+    "/app/projects/aks-rp-e2e.app",
+    "/app/projects/aks-rp-e2e",
+  );
+  return routed;
+}
+
 export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
@@ -2887,7 +2937,7 @@ export default defineProjectApp({
 
   tasks: {
     accepts: aksTaskSelectors,
-    resolve: resolveAksTask,
+    resolve: resolveAksTaskWithWriteRouting,
     validateAction: validateAksTaskAction,
   },
 

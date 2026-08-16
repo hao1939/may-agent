@@ -16,8 +16,10 @@ type TaskAttempt = {
   metadata?: { id?: string };
   taskId?: string;
   state?: string;
+  handler?: string;
   startedAt?: string;
   sessionId?: string;
+  lease?: { expiresAt?: string; sessionId?: string };
 };
 type TaskTree = {
   root_task_id?: string;
@@ -2492,6 +2494,21 @@ function sessionFinishedWithinTerminalCompletionGrace(
   });
 }
 
+function persistedSessionStatus(sessionId: string): string | null {
+  if (!existsSync(stateDbPath)) return null;
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    const row = db.query("select status from sessions where sessionId = ? limit 1").get(sessionId) as
+      | { status?: unknown }
+      | null;
+    return typeof row?.status === "string" ? row.status : null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
 function sessionRestartReason(sessionId: string): string | null {
   if (!existsSync(stateDbPath)) return "session-not-running";
   const db = new Database(stateDbPath, { readonly: true });
@@ -2933,7 +2950,26 @@ function activeTaskAttemptId(task: TaskNode): string {
   return "";
 }
 
-function activeTaskSessionId(task: TaskNode): string {
+export function terminalOwnerAttemptHasExpiredLease(
+  attempt: TaskAttempt | null | undefined,
+  sessionStatus: string | null | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (
+    attempt?.state !== "running" ||
+    !attempt.handler?.startsWith("owner:") ||
+    !attempt.sessionId ||
+    attempt.lease?.sessionId !== attempt.sessionId ||
+    sessionStatus === "running" ||
+    sessionStatus === "idle"
+  ) {
+    return false;
+  }
+  const expiresAt = Date.parse(attempt.lease?.expiresAt ?? "");
+  return Number.isFinite(expiresAt) && expiresAt <= nowMs;
+}
+
+export function activeTaskSessionId(task: TaskNode, tree = loadTaskTree()): string {
   if (typeof task.session_id === "string" && task.session_id.trim()) {
     return task.session_id.trim();
   }
@@ -2944,6 +2980,17 @@ function activeTaskSessionId(task: TaskNode): string {
   for (const key of ["sessionId", "session_id"]) {
     const value = triggerData?.[key];
     if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  const resource = taskId ? recordValue(tree.resources?.[taskId]) : null;
+  const status = recordValue(resource?.status);
+  const attemptId =
+    typeof status?.currentAttemptId === "string"
+      ? status.currentAttemptId.trim()
+      : "";
+  const attempt = attemptId ? recordValue(tree.attempts?.[attemptId]) : null;
+  if (typeof attempt?.sessionId === "string" && attempt.sessionId.trim()) {
+    return attempt.sessionId.trim();
   }
   return "";
 }
@@ -3594,6 +3641,16 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     ? featureCompactByTaskId.get(taskId)
     : undefined;
   const currentAttemptId = activeTaskAttemptId(task) || null;
+  const canonicalTree = loadTaskTree();
+  const currentAttempt = currentAttemptId ? canonicalTree.attempts?.[currentAttemptId] : null;
+  if (
+    terminalOwnerAttemptHasExpiredLease(
+      currentAttempt,
+      currentAttempt?.sessionId ? persistedSessionStatus(currentAttempt.sessionId) : null,
+    )
+  ) {
+    return "terminal-owner-session-expired-lease";
+  }
 
   if (
     task.workflow === "single-spec-verifier" &&

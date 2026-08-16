@@ -6,6 +6,10 @@ import {
   preserveDirtyWorkspace,
   requireExactPreservation,
 } from "./lib/dirty-workspace-preservation.ts";
+import {
+  acquireCanonicalMutationLease,
+  requiredMutationHolder,
+} from "./lib/canonical-mutation-lease.ts";
 
 type InventoryRow = {
   path: string;
@@ -48,6 +52,21 @@ function safePart(value: string): string {
 
 const appDir = resolve(import.meta.dir, "..");
 const repoDir = resolve(appDir, "../aks-rp-e2e");
+const lease = acquireCanonicalMutationLease({
+  projectId: "aks-rp-e2e",
+  canonicalPath: repoDir,
+  holder: requiredMutationHolder(),
+  checkpointPath: join(appDir, ".state/checkpoints/canonical-mutations.jsonl"),
+  fingerprint: () => ({
+    head: git(repoDir, ["rev-parse", "HEAD"], true).stdout,
+    status: git(
+      repoDir,
+      ["status", "--porcelain=v1", "--untracked-files=all"],
+      true,
+    ).stdout,
+  }),
+});
+process.on("exit", () => lease.release());
 const inventoryPath = resolve(
   process.argv[2] ||
     join(
@@ -108,7 +127,9 @@ for (const row of candidates) {
       snapshotId: `${safePart(basename(row.path))}-${hash}-${head.slice(0, 12)}-${Date.now()}`,
     });
     const preservationReceipt = requireExactPreservation(snapshot.snapshotDir);
-    git(repoDir, ["worktree", "move", row.path, destination]);
+    lease.mutate(`relocate dirty worktree ${row.path}`, () =>
+      git(repoDir, ["worktree", "move", row.path, destination]),
+    );
     results.push({
       oldPath: row.path,
       newPath: destination,

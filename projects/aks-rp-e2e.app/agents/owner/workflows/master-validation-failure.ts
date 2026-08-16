@@ -106,11 +106,20 @@ type StandaloneVerification = {
   evidence: string[];
 };
 
-type Decision = {
+export type Decision = {
   classification: "test_issue" | "prod_issue" | "inconclusive";
   summary: string;
   evidence: string[];
   changedFiles: string[];
+  repairNecessity?: "required" | "already_repaired";
+  fixProvenance?: string[];
+  currentEquivalentSourceEvidence?: string[];
+  exactCurrentSourcePassingProof?: {
+    pipelineRunId: string;
+    sourceBranch: string;
+    sourceCommit: string;
+    status: string;
+  };
 };
 
 type InvestigationOutcome =
@@ -133,6 +142,21 @@ const decisionSchema = Type.Object({
   summary: Type.String({ minLength: 1 }),
   evidence: Type.Array(Type.String({ minLength: 1 })),
   changedFiles: Type.Array(Type.String({ minLength: 1 })),
+  repairNecessity: Type.Optional(
+    Type.Union([Type.Literal("required"), Type.Literal("already_repaired")]),
+  ),
+  fixProvenance: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
+  currentEquivalentSourceEvidence: Type.Optional(
+    Type.Array(Type.String({ minLength: 1 })),
+  ),
+  exactCurrentSourcePassingProof: Type.Optional(
+    Type.Object({
+      pipelineRunId: Type.String({ minLength: 1 }),
+      sourceBranch: Type.String({ minLength: 1 }),
+      sourceCommit: Type.String({ minLength: 1 }),
+      status: Type.String({ minLength: 1 }),
+    }),
+  ),
 });
 
 function record(value: unknown): Record<string, unknown> {
@@ -1321,6 +1345,62 @@ export function hasPreparedRepair(input: FailureInput): boolean {
   return Boolean(input.carrierCommit);
 }
 
+export function currentObservationShowsNoRepairNeeded(
+  input: Pick<FailureInput, "status" | "category">,
+): boolean {
+  return (
+    input.status.toLowerCase() === "pass" &&
+    ["", "none", "pass"].includes(input.category.toLowerCase())
+  );
+}
+
+export function alreadyRepairedTestIssueProblem(
+  decision: Decision,
+  currentMainCommit: string,
+): string | null {
+  if (
+    decision.classification !== "test_issue" ||
+    decision.repairNecessity !== "already_repaired"
+  ) {
+    return "decision does not explicitly classify repair necessity as already_repaired";
+  }
+  if (!decision.fixProvenance?.length) {
+    return "already-repaired decision lacks fix provenance";
+  }
+  if (!decision.currentEquivalentSourceEvidence?.length) {
+    return "already-repaired decision lacks current equivalent-source evidence";
+  }
+  const proof = decision.exactCurrentSourcePassingProof;
+  if (
+    !proof ||
+    proof.status.toLowerCase() !== "pass" ||
+    proof.sourceBranch !== "refs/heads/main" ||
+    proof.sourceCommit !== currentMainCommit ||
+    !proof.pipelineRunId
+  ) {
+    return "already-repaired decision lacks an exact-current-main passing proof";
+  }
+  if (decision.changedFiles.length) {
+    return "already-repaired decision reports changed files";
+  }
+  return null;
+}
+
+export function alreadyRepairedTestIssueEvidence(decision: Decision): string[] {
+  const proof = decision.exactCurrentSourcePassingProof!;
+  return [
+    "classification:test_issue",
+    "repair-necessity:already_repaired",
+    ...decision.fixProvenance!.map((value) => `fix-provenance:${value}`),
+    ...decision.currentEquivalentSourceEvidence!.map(
+      (value) => `current-equivalent-source:${value}`,
+    ),
+    `exact-current-source-pass:pipeline-run=${proof.pipelineRunId};sourceBranch=${proof.sourceBranch};sourceCommit=${proof.sourceCommit};status=${proof.status}`,
+    "source-change-file-count:0",
+    "publication-disposition:not_applicable:already_repaired",
+  ];
+}
+
 function doneWithEvidence(
   ctx: WorkflowContext,
   state: "converged" | "needs-owner",
@@ -1441,22 +1521,47 @@ export async function runFailureInvestigation(
       return { kind: "decision", decision, nextCommit };
     }
 
+    const alreadyRepairedProblem = alreadyRepairedTestIssueProblem(
+      decision,
+      values.headCommit,
+    );
+    if (!alreadyRepairedProblem) {
+      return { kind: "decision", decision, nextCommit };
+    }
+
     if (attempt === 1) {
-      feedback = [
-        "Your classification says this is a test_issue, but the worktree HEAD did not change.",
-        "Classification alone does not resolve a test issue.",
-        "Re-open the cited failure evidence, implement the smallest root-cause fix, run scoped verification, commit the fix, and leave the worktree clean.",
-        "If the evidence does not support a safe source fix, change the classification to inconclusive and explain the exact missing fact instead of claiming the test issue is resolved.",
-      ].join(" ");
+      feedback =
+        decision.repairNecessity === "already_repaired"
+          ? [
+              "The unchanged-HEAD already_repaired claim is insufficient:",
+              alreadyRepairedProblem + ".",
+              "Re-open the historical failure and current repository evidence. Preserve test_issue as the historical root cause only if you can provide fixProvenance, currentEquivalentSourceEvidence, and exactCurrentSourcePassingProof for refs/heads/main at the exact current HEAD with status pass and zero changed files.",
+              "Otherwise classify the result as inconclusive. Do not create a duplicate fix merely because the historical failure was a test issue.",
+            ].join(" ")
+          : [
+              "Your classification says this is a test_issue, but the worktree HEAD did not change.",
+              "Classification alone does not resolve a test issue; unresolved test issues still require a committed repair.",
+              "Re-open the cited failure evidence, implement the smallest root-cause fix, run scoped verification, commit the fix, and leave the worktree clean.",
+              "If the evidence does not support a safe source fix, change the classification to inconclusive and explain the exact missing fact instead of claiming the test issue is resolved.",
+            ].join(" ");
       continue;
     }
 
-    const summary = `The failure was classified as a test issue twice, but no fix commit was produced for ${input.specId}.`;
+    const summary =
+      decision.repairNecessity === "already_repaired"
+        ? `The failure was classified as an already-repaired test issue twice, but the unchanged-HEAD proof remained insufficient for ${input.specId}.`
+        : `The failure was classified as a test issue twice, but no fix commit was produced for ${input.specId}.`;
     return {
       kind: "blocked",
       result: investigationBlocked(ctx, input, summary, [
         ...decision.evidence,
         "classification:test_issue",
+        ...(decision.repairNecessity === "already_repaired"
+          ? [
+              "repair-necessity:already_repaired",
+              `already-repaired-proof-rejected:${alreadyRepairedProblem}`,
+            ]
+          : []),
         "investigation-attempts:2",
         `unchanged-head:${values.headCommit}`,
         `workspace:${values.workspaceDir}`,
@@ -2399,7 +2504,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         absorbLegacyRecoveryActions(ctx.task),
       );
     }
-    const existingPr = pullRequests(repoDir, sourceBranch)[0];
+    const noRepairCurrentObservation =
+      currentObservationShowsNoRepairNeeded(input);
+    // A current pass/none observation is classification evidence, not a source
+    // repair trigger. Avoid even entering PR discovery before root cause and
+    // present repair necessity have been judged independently.
+    const existingPr = noRepairCurrentObservation
+      ? undefined
+      : pullRequests(repoDir, sourceBranch)[0];
     const existingPrId = text(existingPr?.pullRequestId);
     const reviewTrigger = pullRequestReviewTrigger(ctx.task, existingPrId);
     const sourceIsInTarget =
@@ -2472,7 +2584,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? `Work only in ${workspaceDir}, based on current ${targetRef}@${baseCommit}. Keep the PR mergeable to main; the campaign controller will replay only the focused patch onto frozen base ${frozenBaseCommit}.`
         : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
       failureInvestigationClassificationGuidance,
-      "For test_issue, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
+      noRepairCurrentObservation
+        ? "The exact current observation is pass/none. Treat that as evidence that no repair is presently necessary, not by itself as proof of historical root cause. Do not manufacture a duplicate source change. If the historical failure was a repository-owned test issue already repaired on current main, return classification=test_issue, repairNecessity=already_repaired, zero changedFiles, nonempty fixProvenance, nonempty currentEquivalentSourceEvidence, and exactCurrentSourcePassingProof naming a passing run on refs/heads/main at the exact current HEAD. If any of that proof is unavailable, return inconclusive."
+        : "For an unresolved test_issue, set repairNecessity=required, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
       "For prod_issue or inconclusive, do not modify source. Cite exact artifact/log evidence.",
       "Do not stop or wait for the aggregate pipeline; investigate this completed slice now.",
     ].join("\n\n");
@@ -2526,6 +2640,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         summary,
         decision.evidence,
         absorbLegacyRecoveryActions(ctx.task),
+      );
+    }
+
+    if (
+      nextCommit === headCommit &&
+      !alreadyRepairedTestIssueProblem(decision, headCommit)
+    ) {
+      const proof = decision.exactCurrentSourcePassingProof!;
+      const summary = `Classified the historical ${input.specId} failure as an already-repaired test issue; exact current main ${proof.sourceCommit} passes, so no duplicate repair or publication is necessary.`;
+      return doneWithEvidence(
+        ctx,
+        "converged",
+        summary,
+        [
+          ...decision.evidence,
+          ...alreadyRepairedTestIssueEvidence(decision),
+          `historical-failure-pipeline-run:${input.pipelineRunId}`,
+        ],
+        { actions: absorbLegacyRecoveryActions(ctx.task) },
       );
     }
 

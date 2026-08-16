@@ -1087,7 +1087,8 @@ export function artifactRunCandidates(input: {
     return (
       (run.progressive ||
         selectedTaskIds.has(run.runId) ||
-        historicalSpecRunIds.has(run.runId)) &&
+        historicalSpecRunIds.has(run.runId) ||
+        input.pendingTerminalArtifactRunIds?.has(run.runId)) &&
       shouldScanProgressiveArtifacts({
         run,
         wasTracked: input.previouslyTrackedRunIds.has(run.runId),
@@ -2593,6 +2594,8 @@ export async function observeAksPipelines(
       .filter((name) => /^slice-\d+-test-results$/.test(name))
       .sort()
       .reverse();
+    let attemptedResultArtifactDownload = false;
+    let materializedResultArtifact = false;
     for (const artifactName of names) {
       const key = artifactKey(observed.runId, artifactName);
       const root = ctx.appPath(
@@ -2602,6 +2605,7 @@ export async function observeAksPipelines(
       if (recordedRoot && artifactDirectoryReady(recordedRoot)) continue;
       if (!artifactDirectoryReady(root)) {
         if (downloadedArtifacts >= MAX_PROGRESS_ARTIFACTS_PER_SCAN) continue;
+        attemptedResultArtifactDownload = true;
         if (
           !(await (dependencies.downloadArtifact ?? downloadAdoArtifact)(
             observed.runId,
@@ -2611,6 +2615,7 @@ export async function observeAksPipelines(
         )
           continue;
         downloadedArtifacts += 1;
+        materializedResultArtifact = true;
       }
       observedArtifacts[key] = root;
       ctx.emit(materializedArtifactEvent(observed, artifactName, root));
@@ -2686,7 +2691,7 @@ export async function observeAksPipelines(
       status: observed.status,
       result: observed.result,
       progressive: observed.progressive,
-      artifactsReady: readyRoots.length === names.length,
+      artifactsReady: names.length > 0 && readyRoots.length === names.length,
       observedVerdictCount: artifactObservations.length,
       observedFailureCount: admissionFailures.length + artifactFailures.length,
     });
@@ -2704,12 +2709,26 @@ export async function observeAksPipelines(
     ];
     const terminalArtifactsMissing =
       ["completed", "canceled"].includes(observed.status) &&
-      expectedResultArtifactNames.some((artifactName) => {
-        const root =
-          observedArtifacts[artifactKey(observed.runId, artifactName)];
-        return !root || !artifactDirectoryReady(root);
-      });
+      ((expectedResultArtifactNames.length === 0 &&
+        pendingTerminalArtifactRunIds.has(observed.runId)) ||
+        expectedResultArtifactNames.some((artifactName) => {
+          const root =
+            observedArtifacts[artifactKey(observed.runId, artifactName)];
+          return !root || !artifactDirectoryReady(root);
+        }));
     if (terminalArtifactsMissing) {
+      const countFailedAttempt =
+        expectedResultArtifactNames.length === 0 ||
+        attemptedResultArtifactDownload;
+      if (materializedResultArtifact) {
+        delete terminalArtifactAttempts[observed.runId];
+        pendingTerminalArtifactRunIds.add(observed.runId);
+        continue;
+      }
+      if (!countFailedAttempt) {
+        pendingTerminalArtifactRunIds.add(observed.runId);
+        continue;
+      }
       const attempts = (terminalArtifactAttempts[observed.runId] ?? 0) + 1;
       terminalArtifactAttempts[observed.runId] = attempts;
       if (attempts >= MAX_TERMINAL_ARTIFACT_ATTEMPTS) {

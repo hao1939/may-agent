@@ -64,6 +64,7 @@ import {
   terminalLineageReplayDecisionProblem,
   existingRecoveryProblem,
   integrationMode,
+  historyOnlyAncestryInput,
   invalidatedRunRequiresSourceChange,
   isNonFastForwardPushFailure,
   liveDispatchTargetRefreshRequired,
@@ -6443,6 +6444,53 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(integrationMode("dev")).toBe("direct");
     expect(integrationMode("main")).toBe("pull-request");
     expect(() => resolveIntegrationTarget("bad branch")).toThrow();
+  });
+
+  test("requires the explicit history-only ancestry contract and routes it before Azure dispatch", () => {
+    const testedSourceCommit = "c48d7c16248b2f95bc6643b7bd07f863165baafe";
+    expect(
+      historyOnlyAncestryInput({
+        ownerJudgment: "please preserve ancestry without changing content",
+        testedSourceCommit,
+        sourceBranch: "refs/heads/task/network-cni",
+      }),
+    ).toEqual({ contract: null, problem: null });
+    expect(
+      historyOnlyAncestryInput({
+        integrationStrategy: "ordinary-merge",
+        testedSourceCommit,
+        sourceBranch: "refs/heads/task/network-cni",
+      }).problem,
+    ).toContain("integrationStrategy must equal history-only-ancestry");
+    expect(
+      historyOnlyAncestryInput({
+        integrationStrategy: "history-only-ancestry",
+        testedSourceCommit,
+        sourceBranch: "refs/heads/task/network-cni",
+      }),
+    ).toEqual({
+      contract: {
+        strategy: "history-only-ancestry",
+        testedSourceCommit,
+        sourceBranch: "task/network-cni",
+      },
+      problem: null,
+    });
+
+    const workflowSource = readFileSync(
+      join(import.meta.dir, "spec-live-reconciliation.ts"),
+      "utf8",
+    );
+    const strategyRoute = workflowSource.indexOf("if (historyOnly.contract)");
+    const ordinaryProviderFlow = workflowSource.indexOf(
+      "const contextDir = taskContextDir",
+      strategyRoute,
+    );
+    expect(strategyRoute).toBeGreaterThan(0);
+    expect(strategyRoute).toBeLessThan(ordinaryProviderFlow);
+    expect(workflowSource.slice(strategyRoute, ordinaryProviderFlow)).toContain(
+      "azure-dispatch:not-attempted",
+    );
   });
 
   test("preserves an integrated source commit when an exact run already exists", () => {

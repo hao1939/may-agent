@@ -29,15 +29,15 @@ describe("AKS standing-loop convention", () => {
       selectorCount: 82,
       orderedSelectorSha256:
         "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
-      sourceCommit: "bcfcd9496fe0399bb63c69d430e6612de4a32342",
+      sourceCommit: "104a7c49cc852a3a427f149f2aa892117e560a4e",
       planPath:
-        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-plan-20260815.json",
+        "evidence/pipelines/master-validation-current-origin-ce4a17a8-feature-journey-plan-20260815.json",
       planSha256:
-        "637c33a46c632797be110098b5b564de79aac362bb3ed40b8ec3e6249e1cc1d6",
+        "a507d6621bb5750c87406e003ea3d7216b91894c6ee1f11a181a5e160e45b8bd",
       proofMatrixPath:
-        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-proof-matrix-20260815.md",
+        "evidence/pipelines/master-validation-current-origin-ce4a17a8-feature-journey-proof-matrix-20260815.md",
       proofMatrixSha256:
-        "2b551cf6842127862a2b26eb43a45a65e9a6db2321661fd83c4cf77feef092cc",
+        "007e0d1bc01598f20c865b7f48235cc78de87c0d2facc721fd37156b6b5d2a73",
       physicalBaselineClusterBirths: 93,
       physicalClusterBirthsNeeded: 47,
       physicalClusterBirthsSaved: 46,
@@ -97,7 +97,19 @@ describe("AKS standing-loop convention", () => {
     expect(acceptance).toContain("one natural cross-feature journey");
     expect(acceptance).toContain("immutable-property conflict");
     expect(acceptance).toContain(
-      "origin/dev@bcfcd9496fe0399bb63c69d430e6612de4a32342",
+      "origin/dev@104a7c49cc852a3a427f149f2aa892117e560a4e",
+    );
+    expect(acceptance).toContain(
+      "master-validation-current-origin-ce4a17a8-feature-journey-plan-20260815.json",
+    );
+    expect(acceptance).toContain(
+      "a507d6621bb5750c87406e003ea3d7216b91894c6ee1f11a181a5e160e45b8bd",
+    );
+    expect(acceptance).toContain(
+      "master-validation-current-origin-ce4a17a8-feature-journey-proof-matrix-20260815.md",
+    );
+    expect(acceptance).toContain(
+      "007e0d1bc01598f20c865b7f48235cc78de87c0d2facc721fd37156b6b5d2a73",
     );
     expect(acceptance).toContain("exactly 59.132466667 projected minutes");
     expect(acceptance).toContain("50 safeguard GETs");

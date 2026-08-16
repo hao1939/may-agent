@@ -42,6 +42,7 @@ import {
 } from "./lib/scenario-quality-invariant.js";
 import {
   AKS_DIRECT_DEV_VALIDATION_COMMANDS,
+  historyOnlyAncestryStrategy,
   integrateDirectlyIntoDev,
 } from "./lib/direct-dev-integration.js";
 import { assertIsolatedWriteDispatch } from "./lib/write-dispatch-guard.js";
@@ -139,6 +140,8 @@ export const workflowContract: WorkflowIoContract = {
       "input.boundedChangedFiles",
       "input.baselineCommit",
       "input.priorRetainedWorkspace",
+      "input.integrationStrategy",
+      "input.testedSourceCommit",
     ],
     description:
       "Use only for a finite spec verification/change lifecycle that may require source changes, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build. allowTerminalDisposition defaults to true; set it to false when task acceptance requires an exact pass.",
@@ -369,6 +372,51 @@ export function integrationMode(
   targetBranch: string,
 ): "direct" | "pull-request" {
   return targetBranch === defaultTargetBranch ? "direct" : "pull-request";
+}
+
+export type HistoryOnlyAncestryInput = {
+  strategy: typeof historyOnlyAncestryStrategy;
+  testedSourceCommit: string;
+  sourceBranch: string;
+};
+
+export function historyOnlyAncestryInput(
+  input: Record<string, unknown> | undefined,
+): { contract: HistoryOnlyAncestryInput | null; problem: string | null } {
+  const rawStrategy = input?.integrationStrategy;
+  if (rawStrategy === undefined) return { contract: null, problem: null };
+  if (rawStrategy !== historyOnlyAncestryStrategy) {
+    return {
+      contract: null,
+      problem: `integrationStrategy must equal ${historyOnlyAncestryStrategy}`,
+    };
+  }
+  const testedSourceCommit = nonEmptyString(input?.testedSourceCommit);
+  const sourceBranch = nonEmptyString(input?.sourceBranch).replace(
+    /^refs\/heads\//,
+    "",
+  );
+  if (!/^[0-9a-f]{40}$/i.test(testedSourceCommit)) {
+    return {
+      contract: null,
+      problem:
+        "history-only-ancestry requires an exact 40-character testedSourceCommit",
+    };
+  }
+  if (!sourceBranch) {
+    return {
+      contract: null,
+      problem: "history-only-ancestry requires an exact sourceBranch",
+    };
+  }
+  return {
+    contract: {
+      strategy: historyOnlyAncestryStrategy,
+      testedSourceCommit,
+      sourceBranch,
+    },
+    problem: null,
+  };
 }
 
 export function shouldFastForwardIntegratedSource(input: {
@@ -6120,6 +6168,92 @@ export async function reconcileSpecLive(
       workspaceDir,
       target: liveTarget,
       standaloneBuildId,
+    });
+  }
+
+  const historyOnly = historyOnlyAncestryInput(payload?.input);
+  if (historyOnly.problem) {
+    return ownerResult(ctx, historyOnly.problem, [
+      `task:${taskId}`,
+      "integration-strategy:rejected",
+    ]);
+  }
+  if (historyOnly.contract) {
+    if (integrationMode(targetBranch) !== "direct") {
+      return ownerResult(
+        ctx,
+        "history-only-ancestry is restricted to direct dev integration.",
+        [`task:${taskId}`, `target-ref:${targetRef}`],
+      );
+    }
+    const focusedValidationCommands = [
+      ...AKS_DIRECT_DEV_VALIDATION_COMMANDS,
+      ...(livePlanPath
+        ? [
+            {
+              name: `focused plan freshness (${livePlanPath})`,
+              command: "bun",
+              args: ["./runner/check-compact-plan-freshness.ts"],
+            },
+          ]
+        : []),
+    ];
+    const integration = await integrateDirectlyIntoDev({
+      repoDir,
+      workspaceDir,
+      sourceBranch: historyOnly.contract.sourceBranch,
+      sourceCommit: historyOnly.contract.testedSourceCommit,
+      taskBaseCommit: historyOnly.contract.testedSourceCommit,
+      validationCommands: focusedValidationCommands,
+      integrationStrategy: historyOnly.contract.strategy,
+    });
+    if (integration.state !== "integrated") {
+      const detail =
+        integration.state === "unchanged" ||
+        integration.state === "requires-replay"
+          ? integration.state
+          : integration.error;
+      return ownerResult(
+        ctx,
+        "History-only ancestry integration did not publish a proven direct-dev result.",
+        [
+          `task:${taskId}`,
+          `tested-source:${historyOnly.contract.testedSourceCommit}`,
+          `target-ref:${targetRef}`,
+          `integration-error:${detail}`,
+          "azure-dispatch:not-attempted",
+        ],
+      );
+    }
+    const proof = integration.historyOnlyProof;
+    const summary = proof
+      ? `Published history-only ancestry integration ${proof.integrationCommit} to ${targetRef} without changing the fetched dev tree or dispatching Azure.`
+      : `The exact tested source ${historyOnly.contract.testedSourceCommit} is already reachable from freshly fetched ${targetRef}.`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [
+        `task:${taskId}@${generation}`,
+        `integration-strategy:${historyOnly.contract.strategy}`,
+        `tested-source:${historyOnly.contract.testedSourceCommit}`,
+        `target-ref:${targetRef}@${integration.targetCommit}`,
+        ...(proof
+          ? [
+              `integration-commit:${proof.integrationCommit}`,
+              `first-parent:${proof.firstParentCommit}`,
+              `first-parent-tree:${proof.firstParentTree}`,
+              `integration-tree:${proof.integrationTree}`,
+              `history-only-diff:${proof.historyOnlyDiff ? "pass" : "fail"}`,
+            ]
+          : ["tested-source-already-reachable:true"]),
+        ...focusedValidationCommands.map(
+          (validation) => `repository-validation:${validation.name}:pass`,
+        ),
+        "fresh-fetch-ancestry-proof:pass",
+        "fresh-fetch-tree-proof:pass",
+        "azure-dispatch:not-attempted",
+      ],
+      actions: [],
     });
   }
 

@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import type { ProjectAppContext } from "@may-agent/sdk/legacy";
 import {
   observeAksPipelines,
+  appendTrackedPipelineRunId,
   artifactRunCandidates,
   artifactDirectoryReady,
   boundedTrackedRunIds,
@@ -806,7 +807,7 @@ describe("AKS pipeline watcher", () => {
       sourceVersion: "old-commit",
       finishTime: "2026-08-15T06:00:00Z",
       queueTime: "2026-08-15T05:00:00Z",
-      artifacts: ["slice-01-test-results"],
+      artifacts: [],
       progressive: true,
       artifactObservable: true,
     };
@@ -824,16 +825,21 @@ describe("AKS pipeline watcher", () => {
       statePath,
       JSON.stringify({
         schemaVersion: "10",
-        adoFingerprints: { [oldRun.runId]: "previous-live" },
-        trackedRunIds: [oldRun.runId],
+        adoFingerprints: { [oldRun.runId]: oldRun.fingerprint },
+        trackedRunIds: [],
       }),
     );
+    appendTrackedPipelineRunId(ctx.appPath("."), oldRun.runId);
+    let artifactListings = 0;
     let downloads = 0;
     const dependencies = {
       scanAdoRuns: async () => [oldRun, newerRun],
       getTimeline: async () => [],
-      listArtifactNames: async (runId: string) =>
-        runId === oldRun.runId ? ["slice-01-test-results"] : [],
+      listArtifactNames: async (runId: string) => {
+        if (runId !== oldRun.runId) return [];
+        artifactListings += 1;
+        return artifactListings === 1 ? [] : ["slice-01-test-results"];
+      },
       downloadArtifact: async (
         runId: string,
         artifactName: string,
@@ -842,7 +848,6 @@ describe("AKS pipeline watcher", () => {
         if (runId !== oldRun.runId || artifactName !== "slice-01-test-results")
           return false;
         downloads += 1;
-        if (downloads === 1) return false;
         mkdirSync(destination, { recursive: true });
         writeFileSync(
           join(destination, "result.json"),
@@ -890,7 +895,8 @@ describe("AKS pipeline watcher", () => {
     ).toHaveLength(1);
 
     await observeAksPipelines(ctx, dependencies);
-    expect(downloads).toBe(2);
+    expect(artifactListings).toBe(2);
+    expect(downloads).toBe(1);
     expect(
       emitted.filter(
         (event) =>

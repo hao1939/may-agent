@@ -137,15 +137,15 @@ export const standingLoopDefinitions: Record<
       selectorCount: 82,
       orderedSelectorSha256:
         "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
-      sourceCommit: "bcfcd9496fe0399bb63c69d430e6612de4a32342",
+      sourceCommit: "104a7c49cc852a3a427f149f2aa892117e560a4e",
       planPath:
-        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-plan-20260815.json",
+        "evidence/pipelines/master-validation-current-origin-ce4a17a8-feature-journey-plan-20260815.json",
       planSha256:
-        "637c33a46c632797be110098b5b564de79aac362bb3ed40b8ec3e6249e1cc1d6",
+        "a507d6621bb5750c87406e003ea3d7216b91894c6ee1f11a181a5e160e45b8bd",
       proofMatrixPath:
-        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-proof-matrix-20260815.md",
+        "evidence/pipelines/master-validation-current-origin-ce4a17a8-feature-journey-proof-matrix-20260815.md",
       proofMatrixSha256:
-        "2b551cf6842127862a2b26eb43a45a65e9a6db2321661fd83c4cf77feef092cc",
+        "007e0d1bc01598f20c865b7f48235cc78de87c0d2facc721fd37156b6b5d2a73",
       physicalBaselineClusterBirths: 93,
       physicalClusterBirthsNeeded: 47,
       physicalClusterBirthsSaved: 46,
@@ -168,7 +168,7 @@ export const standingLoopDefinitions: Record<
       "Maintain the exact current 82-selector staging master-validation safe-Pareto authority at 93 baseline physical cluster births and 47 planned births, saving 46 (49.46236559139785%), while preserving every semantic boundary and replanning whenever authoritative inputs drift.",
     acceptance: [
       "Treat ci/feature-sets/master-validation.txt as the exact campaign scope: current authority is 82 ordered unique selectors with ordered-selector SHA-256 fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649.",
-      "Accept the integrated origin/dev@bcfcd9496fe0399bb63c69d430e6612de4a32342 authority only while plan evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-plan-20260815.json SHA-256 637c33a46c632797be110098b5b564de79aac362bb3ed40b8ec3e6249e1cc1d6 and proof matrix evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-proof-matrix-20260815.md SHA-256 2b551cf6842127862a2b26eb43a45a65e9a6db2321661fd83c4cf77feef092cc remain current and prove 93 baseline physical births, 47 planned births, 46 saved (savings rate 0.4946236559139785), 50 safeguard GETs, nine terminal routes, ready materialization, and exactly 59.132466667 projected minutes.",
+      "Accept the integrated origin/dev@104a7c49cc852a3a427f149f2aa892117e560a4e authority only while plan evidence/pipelines/master-validation-current-origin-ce4a17a8-feature-journey-plan-20260815.json SHA-256 a507d6621bb5750c87406e003ea3d7216b91894c6ee1f11a181a5e160e45b8bd and proof matrix evidence/pipelines/master-validation-current-origin-ce4a17a8-feature-journey-proof-matrix-20260815.md SHA-256 007e0d1bc01598f20c865b7f48235cc78de87c0d2facc721fd37156b6b5d2a73 remain current and prove 93 baseline physical births, 47 planned births, 46 saved (savings rate 0.4946236559139785), 50 safeguard GETs, nine terminal routes, ready materialization, and exactly 59.132466667 projected minutes.",
       "Retain at most 16 physical births, at least 64 saved, and 80% savings only as the historically disproved aspiration: the independently verified current 12-spec/66-edge semantic clique establishes a semantics-preserving lower bound of 21 physical births.",
       "The integrated 47-birth safe-Pareto fallback satisfies this maintenance wave while the independently verifiable 21-birth lower-bound proof remains valid and no semantics-preserving improvement is demonstrated.",
       "Replan from clean current origin/dev on selector identity or order drift, knowledge-model drift, semantic-edge drift, runtime-profile drift, authority-artifact drift, planner or runner drift, or integrated-source drift; do not reuse stale authority hashes after drift.",

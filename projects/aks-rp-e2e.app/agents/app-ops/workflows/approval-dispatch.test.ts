@@ -817,6 +817,67 @@ describe("approval-dispatch workflow", () => {
     });
   });
 
+  test("verifies from workspace/fixed roots when an older verifier caller omits appDir and projectDir", async () => {
+    const { appDir } = await makeWorkspace();
+    const packetPath = "evidence/archive/legacy-verifier-context-packet.md";
+    const pathId = "path.legacy-verifier-context";
+    const lineage = approvalLineage(pathId, packetPath);
+    await mkdir(join(appDir, "evidence", "archive"), { recursive: true });
+    await writeFile(
+      join(appDir, packetPath),
+      "# exact packet\n\nVerify without a projectDir context field.\n",
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      `${JSON.stringify({
+        ts: new Date().toISOString(),
+        workflow: "approval-dispatch",
+        result: "message.created",
+        correlationKey: lineage.correlationKey,
+        packetAbsolutePath: join(appDir, packetPath),
+        approvalId: lineage.approvalId,
+        waitId: lineage.waitId,
+        pathId,
+      })}\n`,
+      "utf8",
+    );
+
+    const verified = await verify(
+      {
+        appId: "aks-rp-e2e",
+        taskId: pathId,
+        generation: 1,
+        workspaceDir: appDir,
+        intent: {
+          id: pathId,
+          parentId: "group/app-operations",
+          outcome: "Dispatch one exact approval packet.",
+          acceptance: [],
+          mode: "achieve",
+          owner: "app-ops",
+          workflow: "approval-dispatch",
+          input: {
+            approvalId: lineage.approvalId,
+            waitId: lineage.waitId,
+            pathId,
+            packetPath,
+            authority: "human",
+          },
+        },
+      } as any,
+      {
+        state: "converged",
+        summary: "Approval dispatch emitted message.created.",
+        evidence: [`approval-dispatch:${lineage.correlationKey}`],
+        actions: [],
+      },
+    );
+
+    expect(verified.accepted).toBe(true);
+    expect(verified.evidence).toContain("ledger-result:message.created");
+  });
+
   test("verifies converged dispatch work from exact project.approval.requested/message.created proof", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const packetPath =
