@@ -217,7 +217,7 @@ describe("Telegram outbound turn ownership", () => {
     });
     const unsubscribe = bus.subscribe((event: any) => {
       if (event.type === "human.attention.reviewed") reviewed.push(event.data);
-      if (event.type === "project.owner.requested") ownerRequests.push(event.data);
+      if (event.type === "app.input.requested") ownerRequests.push(event.data.input?.data);
     });
 
     bus.emit({
@@ -322,7 +322,7 @@ describe("Telegram outbound turn ownership", () => {
     });
     const unsubscribe = bus.subscribe((event: any) => {
       if (event.type === "human.attention.reviewed") reviewed.push(event.data);
-      if (event.type === "project.owner.requested") ownerRequests.push(event.data);
+      if (event.type === "app.input.requested") ownerRequests.push(event.data.input?.data);
     });
 
     bus.emit({
@@ -381,7 +381,7 @@ describe("Telegram outbound turn ownership", () => {
     });
     const unsubscribe = bus.subscribe((event: any) => {
       if (event.type === "human.attention.reviewed") reviewed.push(event.data);
-      if (event.type === "project.owner.requested") ownerRequests.push(event.data);
+      if (event.type === "app.input.requested") ownerRequests.push(event.data.input?.data);
     });
     const candidateEvent = {
       type: "message.created",

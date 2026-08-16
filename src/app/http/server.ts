@@ -28,34 +28,24 @@ import {
   type SocketEndpoint,
   type SocketResponse,
 } from "../../../packages/control/src/client.js";
-import {
-  buildCanonicalEventEnvelope,
-  normalizeEventOwner,
-} from "../../../packages/control/src/event-envelope.js";
-import {
-  loadProjectReadModel,
-  projectRuntimePaths,
-  type ProjectTaskIntegrityFinding,
-  type ProjectTaskPhase,
-  type ProjectTaskProjectionItem,
-  type ProjectTaskTreeProjection,
-} from "@may-agent/sdk/legacy";
+import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
+import { loadProjectReadModel, projectRuntimePaths } from "../app-task-runtime-state.js";
+import type {
+  AppTaskIntegrityFinding,
+  AppTaskPhase,
+  AppTaskProjectionItem,
+  AppTaskTreeProjection,
+} from "../app-task-store.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
-import {
-  getAppInboxItem,
-  listAppInboxHealth,
-  listAppInboxItems,
-  type AppInboxQuery,
-} from "../app-inbox-store.js";
+import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../app-inbox-store.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
 const LIVE_VITAL_METRIC_IDS = [
   "runtime.daemon-heartbeat-stale",
-  "runtime.project-app-schedule-orphan-count-1h",
   "agent.heartbeat-dark-count-2h",
   "agent.config-invalid-count-1h",
   "handler.success-rate",
@@ -92,10 +82,7 @@ export function appInboxQueryFromUrl(url: URL): AppInboxQuery {
 
 type DaemonFrameResult = { ok: boolean; error?: string; eventId?: number };
 
-export function buildEventIngressFrame(
-  body: Record<string, unknown>,
-  owner: string,
-): Record<string, unknown> {
+export function buildEventIngressFrame(body: Record<string, unknown>, owner: string): Record<string, unknown> {
   return buildCanonicalEventEnvelope(String(body.type ?? "").trim(), {
     ...body,
     source: "web-ui",
@@ -103,7 +90,7 @@ export function buildEventIngressFrame(
   });
 }
 
-export function buildProjectAppAdmissionCommand(input: {
+export function buildAppAdmissionCommand(input: {
   projectPath: string;
   projectId: string;
   comment: string;
@@ -315,7 +302,13 @@ function servePlatformUiFile(req: Request, path: string): Response {
     "Cache-Control": "public, no-cache",
     ETag: etag,
   };
-  if (req.headers.get("if-none-match")?.split(",").map((value) => value.trim()).includes(etag)) {
+  if (
+    req.headers
+      .get("if-none-match")
+      ?.split(",")
+      .map((value) => value.trim())
+      .includes(etag)
+  ) {
     return new Response(null, { status: 304, headers });
   }
   return new Response(readFileSync(path), {
@@ -424,15 +417,15 @@ export function projectPathsMatch(left: string | null | undefined, right: string
   return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
 }
 
-const PROJECT_TASK_PHASES = new Set<ProjectTaskPhase>(["pending", "running", "waiting", "attention", "converged"]);
+const PROJECT_TASK_PHASES = new Set<AppTaskPhase>(["pending", "running", "waiting", "attention", "converged"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export function normalizeProjectTaskPhase(task: { phase?: unknown }): ProjectTaskPhase | "unknown" {
+export function normalizeAppTaskPhase(task: { phase?: unknown }): AppTaskPhase | "unknown" {
   const phase = String(task.phase ?? "");
-  return PROJECT_TASK_PHASES.has(phase as ProjectTaskPhase) ? (phase as ProjectTaskPhase) : "unknown";
+  return PROJECT_TASK_PHASES.has(phase as AppTaskPhase) ? (phase as AppTaskPhase) : "unknown";
 }
 
 export type ProjectTasksReadModelOptions = {
@@ -458,7 +451,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     };
   }
 
-  const tree = rawTree as unknown as ProjectTaskTreeProjection;
+  const tree = rawTree as unknown as AppTaskTreeProjection;
   if (tree.schema_version !== 2) errors.push("schema_version: expected 2");
   if (tree.tasks !== undefined && !isRecord(tree.tasks)) {
     errors.push("tasks: expected object keyed by task id");
@@ -466,13 +459,13 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
   const rawTasks = isRecord(tree.tasks) ? tree.tasks : {};
   if (tree.tasks === undefined) errors.push("tasks: missing task map");
 
-  const tasks: Record<string, ProjectTaskProjectionItem> = {};
+  const tasks: Record<string, AppTaskProjectionItem> = {};
   for (const [taskId, value] of Object.entries(rawTasks)) {
     if (!isRecord(value)) {
       errors.push(`tasks.${taskId}: expected object`);
       continue;
     }
-    const task = value as unknown as ProjectTaskProjectionItem;
+    const task = value as unknown as AppTaskProjectionItem;
     const id = typeof task.id === "string" && task.id ? task.id : taskId;
     if (task.id !== undefined && task.id !== taskId) {
       errors.push(`tasks.${taskId}.id: expected "${taskId}", got "${String(task.id)}"`);
@@ -489,7 +482,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     if (!["group", "task"].includes(String(task.item_type))) {
       errors.push(`tasks.${taskId}.item_type: expected group or task`);
     }
-    if (task.item_type === "task" && normalizeProjectTaskPhase(task) === "unknown") {
+    if (task.item_type === "task" && normalizeAppTaskPhase(task) === "unknown") {
       errors.push(`tasks.${taskId}.phase: expected canonical task phase`);
     }
     if (task.item_type === "task" && !["achieve", "maintain"].includes(String(task.mode))) {
@@ -525,7 +518,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
   }
 
   const resources = Object.values(tasks).filter((task) => task.item_type === "task");
-  const count = (predicate: (task: ProjectTaskProjectionItem) => boolean): number => resources.filter(predicate).length;
+  const count = (predicate: (task: AppTaskProjectionItem) => boolean): number => resources.filter(predicate).length;
   const stats = {
     groups: Object.values(tasks).filter((task) => task.item_type === "group").length,
     resources: resources.length,
@@ -540,7 +533,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
   };
 
   const integrity = Array.isArray(tree.integrity)
-    ? tree.integrity.filter((finding): finding is ProjectTaskIntegrityFinding => isRecord(finding))
+    ? tree.integrity.filter((finding): finding is AppTaskIntegrityFinding => isRecord(finding))
     : [];
 
   return {
@@ -749,14 +742,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return candidates.find((candidate) => existsSync(candidate)) ?? candidates[0];
   }
 
-  function projectAppDirForName(name: string): string | null {
+  function appDirForName(name: string): string | null {
     if (!name) return null;
     const appDir = resolve(PROJECTS_ROOT, `${name.replace(/\.app$/, "")}.app`);
     return existsSync(appDir) ? appDir : null;
   }
 
-  function projectAppDirForPath(path: string): string | null {
-    return projectAppDirForName(projectNameFromPath(path));
+  function appDirForPath(path: string): string | null {
+    return appDirForName(projectNameFromPath(path));
   }
 
   function projectTaskIdentity(path: string, appDir: string): { id: string; owner?: string; posture?: string } {
@@ -780,7 +773,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const dir = resolveProjectDir(path.replace(/\/project\.md$/, ""));
       const projectFile = resolve(dir, "project.md");
       if (existsSync(projectFile)) return projectFile;
-      const appDir = projectAppDirForPath(path);
+      const appDir = appDirForPath(path);
       if (appDir) {
         const appProjectFile = resolve(appDir, "project.md");
         if (existsSync(appProjectFile)) return appProjectFile;
@@ -793,7 +786,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (existsSync(projectFile)) return projectFile;
     const projectJson = resolve(projectDir, "project.json");
     if (existsSync(projectJson)) return projectJson;
-    const appDir = projectAppDirForPath(path);
+    const appDir = appDirForPath(path);
     if (appDir) {
       const appProjectFile = resolve(appDir, "project.md");
       if (existsSync(appProjectFile)) return appProjectFile;
@@ -866,11 +859,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
          WHERE recency = 1`,
       )
       .all(since) as Array<{
-        agent: string;
-        status: string;
-        lastHeartbeat: number;
-        heartbeatCount: number;
-      }>;
+      agent: string;
+      status: string;
+      lastHeartbeat: number;
+      heartbeatCount: number;
+    }>;
     const heartbeatSummaryByAgent = new Map(latestHeartbeatRows.map((row) => [row.agent, row]));
     const heartbeatTotal = latestHeartbeatRows.reduce((total, row) => total + Number(row.heartbeatCount || 0), 0);
 
@@ -2348,7 +2341,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!existsSync(absPath)) {
       const parts = relPath.split("/").filter(Boolean);
       const [name, area, ...rest] = parts;
-      const appDir = projectAppDirForName(name);
+      const appDir = appDirForName(name);
       if (appDir && area === "ui") {
         absPath = resolve(appDir, "ui", ...rest);
       } else if (appDir && area === "kanban") {
@@ -2574,7 +2567,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!path) return json({ error: "path required" }, 400);
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
-    const appDir = projectAppDirForPath(path);
+    const appDir = appDirForPath(path);
     if (!appDir) {
       return json({
         available: false,
@@ -2721,7 +2714,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!taskId) return json({ error: "taskId required" }, 400);
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
-    const appDir = projectAppDirForPath(path);
+    const appDir = appDirForPath(path);
     if (!appDir) return json({ error: "Project has no Agent App task attachment." }, 404);
     const identity = projectTaskIdentity(path, appDir);
     const treePath = projectRuntimePaths(appDir).taskTreePath;
@@ -2833,7 +2826,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           }
         })()
       : null;
-    const appDirForDetail = projectAppDirForPath(path);
+    const appDirForDetail = appDirForPath(path);
     if (appDirForDetail && jsonProject) {
       jsonProject = loadProjectReadModel(appDirForDetail) as Record<string, any>;
     }
@@ -2964,7 +2957,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       mentionCount,
       recentSessions,
       app: (() => {
-        const appDir = projectAppDirForPath(path);
+        const appDir = appDirForPath(path);
         if (!appDir) return null;
         return {
           appDirName: appDir.split("/").pop(),
@@ -3240,7 +3233,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       try {
         const admitted = await sendAppInputWithRetry(
           conventionSocketPath(),
-          buildProjectAppAdmissionCommand({
+          buildAppAdmissionCommand({
             projectPath: path,
             projectId,
             comment,
@@ -3319,7 +3312,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   async function handleProjectActions(projectIdText: string): Promise<Response> {
-    const projectId = decodeURIComponent(projectIdText).trim().replace(/\.app$/, "");
+    const projectId = decodeURIComponent(projectIdText)
+      .trim()
+      .replace(/\.app$/, "");
     if (!projectId) return json({ error: "projectId required" }, 400);
     try {
       const response = await sendSocketCommand(
@@ -3364,7 +3359,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     projectIdText: string,
     actionIdText: string,
   ): Promise<Response> {
-    const projectId = decodeURIComponent(projectIdText).trim().replace(/\.app$/, "");
+    const projectId = decodeURIComponent(projectIdText)
+      .trim()
+      .replace(/\.app$/, "");
     const actionId = decodeURIComponent(actionIdText).trim();
     if (!projectId || !actionId) return json({ error: "projectId and actionId required" }, 400);
     try {
@@ -3475,7 +3472,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           lookbackMs,
           schemaReady: false,
           note: "event delivery schema is not migrated in this state database yet",
-          ownerInboxOpenCount: 0,
           unhandledEvents: [],
           overduePendingEvents: [],
           orphanPairs: [],
@@ -3527,21 +3523,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
          LIMIT ?`,
         )
         .all(since, now, limit);
-      const ownerInbox = db
-        .prepare(
-          `SELECT COUNT(*) as count
-         FROM event_pair_runs
-         WHERE pair_name = 'owner_inbox'
-           AND status = 'open'`,
-        )
-        .get() as { count?: number } | null;
-
       return json({
         now,
         since,
         lookbackMs,
         schemaReady: true,
-        ownerInboxOpenCount: Number(ownerInbox?.count ?? 0),
         unhandledEvents,
         overduePendingEvents,
         orphanPairs,
@@ -3553,7 +3539,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         since,
         lookbackMs,
         schemaReady: false,
-        ownerInboxOpenCount: 0,
         unhandledEvents: [],
         overduePendingEvents: [],
         orphanPairs: [],

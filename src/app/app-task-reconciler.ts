@@ -2,37 +2,41 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import {
-  ensureTaskState,
-  isTypedProjectAppConditionSubject,
-  MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS,
+  isTypedConditionSubject as isTypedAppTaskConditionSubject,
+  MIN_CONDITION_REVIEW_AFTER_MS as MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS,
+  type Condition as AppTaskConditionSpec,
+  type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
+  type TaskAction as AppTaskAction,
+  type TaskIntent as AppTaskIntent,
+} from "@may-agent/sdk";
+import {
+  buildAppTaskTreeProjection,
   isLeaf,
   normalizeStringArray,
-  projectRuntimePaths,
   readTaskState,
-  resolveProjectAppOutputPaths,
   saveTaskState,
   taskState,
   withTaskStateLock,
-  type ProjectAppTaskIntent,
-  type ProjectAppTaskAction,
-  type ProjectAppTaskAcceptanceBasis,
-  type ProjectAppCondition,
-  type ProjectAppConditionSpec,
-  type ProjectAppTaskAttempt,
-  type ProjectAppTaskResource,
-  type ProjectAppTaskWorkspace,
   type TaskNode,
   type TaskTree,
   type TaskStateConfig,
-} from "@may-agent/sdk/legacy";
+} from "./app-task-store.js";
+import { ensureTaskState, projectRuntimePaths } from "./app-task-runtime-state.js";
+import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
+import type {
+  AppTaskCondition as AppTaskCondition,
+  AppTaskAttempt as AppTaskAttempt,
+  AppTaskResource as AppTaskResource,
+  AppTaskWorkspace as AppTaskWorkspace,
+} from "./app-task-state.js";
 import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
 import { readLatestCheckpoint, type CheckpointEntry } from "../lib/tools/checkpoint.js";
-import { applyProjectAppConditionEvent } from "./project-app-condition-tracker.js";
+import { applyAppTaskConditionEvent } from "./app-task-condition-tracker.js";
 
-export const PROJECT_APP_TASK_RECOVERY_OWNER = "project-app-task-reconciler";
+export const APP_TASK_RECOVERY_OWNER = "app-task-reconciler";
 const MAX_UNCHANGED_CONDITION_REVIEWS = 3;
 
-export type ProjectAppTaskClaim = {
+export type AppTaskClaim = {
   kind: "claimed";
   taskId: string;
   generation: number;
@@ -42,7 +46,7 @@ export type ProjectAppTaskClaim = {
   owner: string;
   handler: string;
   mode: "achieve" | "maintain";
-  intent: ProjectAppTaskIntent;
+  intent: AppTaskIntent;
   trigger?: Record<string, unknown>;
   declaredOutputPaths: string[];
   supersededSessionIds?: string[];
@@ -53,8 +57,8 @@ export type ProjectAppTaskClaim = {
   };
 };
 
-export type ProjectAppTaskClaimResult =
-  | ProjectAppTaskClaim
+export type AppTaskClaimResult =
+  | AppTaskClaim
   | { kind: "busy"; taskId: string; attemptId: string | null }
   | {
       kind: "waiting";
@@ -66,7 +70,7 @@ export type ProjectAppTaskClaimResult =
   | { kind: "attention"; taskId: string; generation: number; summary: string }
   | { kind: "completed"; taskId: string; generation: number };
 
-export type ProjectAppTaskObservationResult =
+export type AppTaskObservationResult =
   | {
       kind: "observed";
       taskId: string;
@@ -76,29 +80,31 @@ export type ProjectAppTaskObservationResult =
     }
   | { kind: "completed"; taskId: string; generation: number; supersededSessionIds?: string[] };
 
-export type ProjectAppTaskSessionAssociation = {
+const MAX_APP_TASK_ADMISSIONS = 4_096;
+
+export type AppTaskSessionAssociation = {
   status: "recorded" | "superseded" | "missing";
   taskId: string;
 };
 
-export class ProjectAppTaskActionStaleError extends Error {
+export class AppTaskActionStaleError extends Error {
   readonly taskId: string;
   readonly expectedGeneration: number;
   readonly currentGeneration: number;
-  readonly currentPhase?: ProjectAppTaskResource["status"]["phase"];
+  readonly currentPhase?: AppTaskResource["status"]["phase"];
 
   constructor(input: {
     taskId: string;
     expectedGeneration: number;
     currentGeneration: number;
-    currentPhase?: ProjectAppTaskResource["status"]["phase"];
+    currentPhase?: AppTaskResource["status"]["phase"];
   }) {
     super(
       input.currentPhase
         ? `Handler action for ${input.taskId} is stale: target phase is now ${input.currentPhase}`
         : `Handler action for ${input.taskId} is stale: expected generation ${input.expectedGeneration}, current ${input.currentGeneration}`,
     );
-    this.name = "ProjectAppTaskActionStaleError";
+    this.name = "AppTaskActionStaleError";
     this.taskId = input.taskId;
     this.expectedGeneration = input.expectedGeneration;
     this.currentGeneration = input.currentGeneration;
@@ -106,13 +112,13 @@ export class ProjectAppTaskActionStaleError extends Error {
   }
 }
 
-export function isProjectAppTaskActionStaleError(error: unknown): error is ProjectAppTaskActionStaleError {
-  return error instanceof ProjectAppTaskActionStaleError;
+export function isAppTaskActionStaleError(error: unknown): error is AppTaskActionStaleError {
+  return error instanceof AppTaskActionStaleError;
 }
 
-export type ProjectAppTaskAttemptRecovery = {
+export type AppTaskAttemptRecovery = {
   taskId: string;
-  intent: ProjectAppTaskIntent;
+  intent: AppTaskIntent;
   trigger?: Record<string, unknown>;
   sessionId?: string;
   taskGeneration: number;
@@ -125,12 +131,17 @@ export type ProjectAppTaskAttemptRecovery = {
   legacyLeaseLess: boolean;
 };
 
-export type ProjectAppTaskRecoveryAttention = {
+export type AppTaskTerminalSessionRecovery = AppTaskAttemptRecovery & {
+  sessionId: string;
+  terminalStatus: "done" | "error" | "interrupted";
+};
+
+export type AppTaskRecoveryAttention = {
   taskId: string;
   summary: string;
 };
 
-export type ProjectAppTaskRecoveryRepair = {
+export type AppTaskRecoveryRepair = {
   taskId: string;
   disposition: "requeued" | "retired";
   summary: string;
@@ -138,17 +149,17 @@ export type ProjectAppTaskRecoveryRepair = {
 };
 
 const reconcilerRuntimeId = randomUUID();
-export const PROJECT_APP_ATTEMPT_LEASE_DURATION_MS = 15 * 60_000;
+export const APP_TASK_ATTEMPT_LEASE_DURATION_MS = 15 * 60_000;
 
 function boundedLeaseTimes(nowMs = Date.now()): { lastActivityAt: string; expiresAt: string } {
   const activityMs = Number.isFinite(nowMs) ? Math.max(0, Math.min(nowMs, Date.now() + 1_000)) : Date.now();
   return {
     lastActivityAt: new Date(activityMs).toISOString(),
-    expiresAt: new Date(activityMs + PROJECT_APP_ATTEMPT_LEASE_DURATION_MS).toISOString(),
+    expiresAt: new Date(activityMs + APP_TASK_ATTEMPT_LEASE_DURATION_MS).toISOString(),
   };
 }
 
-function leaseIsFresh(attempt: ProjectAppTaskAttempt, nowMs: number): boolean {
+function leaseIsFresh(attempt: AppTaskAttempt, nowMs: number): boolean {
   const lease = attempt.lease;
   if (!lease || lease.runtimeId !== attempt.runtimeId || lease.sessionId !== attempt.sessionId) return false;
   const expiry = Date.parse(lease.expiresAt);
@@ -167,7 +178,6 @@ function taskTriggerPriority(event: Record<string, unknown>, taskOwner: string):
   const reason = String(event.reason ?? data.reason ?? params.reason ?? "");
   if (triggerHasDirectProjectComment(event)) return 4;
   if (
-    triggerCarriesOwnerIntent(event) ||
     type === "project.approval.submitted" ||
     source === "human" ||
     source === "web-ui" ||
@@ -197,12 +207,7 @@ function preferredTaskTrigger(
 
 function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
   if (!trigger) return false;
-  if (
-    trigger.type === "project.comment.created" ||
-    trigger.type === "project.owner.requested" ||
-    trigger.type === "message.created"
-  )
-    return true;
+  if (trigger.type === "project.comment.created" || trigger.type === "message.created") return true;
   const data = isRecord(trigger.data) ? trigger.data : {};
   return trigger.overrideWait === true || data.overrideWait === true;
 }
@@ -227,11 +232,11 @@ function syntheticAttemptTrigger(
   taskId: string,
   reason: string | undefined,
 ): Record<string, unknown> {
-  const project = projectIdFromAppDir(config.appDir) || "project-app";
+  const project = projectIdFromAppDir(config.appDir) || "unknown-app";
   const normalizedReason = typeof reason === "string" && reason.trim() ? reason.trim() : "task-controller";
   return {
     type: "project.task.tick",
-    source: `project-app:${project}:task-controller`,
+    source: `app-task:${project}:task-controller`,
     target: { project, taskId },
     reason: normalizedReason,
     data: {
@@ -244,7 +249,7 @@ function syntheticAttemptTrigger(
   };
 }
 
-export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent, effectiveOwner?: string): string {
+export function appTaskSpecHash(intent: AppTaskIntent, effectiveOwner?: string): string {
   return createHash("sha256")
     .update(
       JSON.stringify(
@@ -263,7 +268,7 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent, effectiveOw
     .digest("hex");
 }
 
-function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spec"] {
+function resourceSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
   return {
     parentId: intent.parentId,
     outcome: intent.outcome,
@@ -279,7 +284,7 @@ function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spe
   };
 }
 
-function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent {
+function resourceIntent(resource: AppTaskResource): AppTaskIntent {
   return {
     id: resource.metadata.id,
     parentId: resource.spec.parentId,
@@ -296,9 +301,9 @@ function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent 
   };
 }
 
-type CreateTaskAction = Extract<ProjectAppTaskAction, { kind: "create-task" }>;
+type CreateTaskAction = Extract<AppTaskAction, { kind: "create-task" }>;
 
-function createActionIntent(action: CreateTaskAction): ProjectAppTaskIntent {
+function createActionIntent(action: CreateTaskAction): AppTaskIntent {
   return {
     id: action.id,
     parentId: action.parentId,
@@ -324,14 +329,14 @@ function createActionMatchesLiveTask(tree: TaskTree, action: CreateTaskAction): 
   );
 }
 
-function currentResourceAttempt(tree: TaskTree, resource: ProjectAppTaskResource): ProjectAppTaskAttempt | null {
+function currentResourceAttempt(tree: TaskTree, resource: AppTaskResource): AppTaskAttempt | null {
   const attemptId = resource.status.currentAttemptId;
   if (!attemptId) return null;
   const attempt = tree.attempts?.[attemptId];
   return attempt?.state === "running" ? attempt : null;
 }
 
-function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number): ProjectAppTaskAttempt | undefined {
+function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number): AppTaskAttempt | undefined {
   return Object.values(tree.attempts ?? {})
     .filter(
       (attempt) => attempt.taskId === taskId && (generation === undefined || attempt.taskGeneration === generation),
@@ -413,8 +418,8 @@ function checkpointRecoveryEvidence(
 
 function buildRecoveredSessionHandoff(
   config: TaskStateConfig,
-  attempt: ProjectAppTaskAttempt | undefined,
-): ProjectAppTaskClaim["handoff"] | undefined {
+  attempt: AppTaskAttempt | undefined,
+): AppTaskClaim["handoff"] | undefined {
   if (!attempt?.sessionId || attempt.failureReason !== "previous-runtime-attempt-requeued") {
     return undefined;
   }
@@ -453,13 +458,13 @@ function buildRecoveredSessionHandoff(
   };
 }
 
-function needsOwnerHandoff(tree: TaskTree, resource: ProjectAppTaskResource): boolean {
+function needsOwnerHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
   if (resource.status.phase !== "attention") return false;
   const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
   return Boolean(attempt?.handler.startsWith("workflow:") && attempt.failureReason === "needs-owner");
 }
 
-function touchResource(resource: ProjectAppTaskResource, status: Partial<ProjectAppTaskResource["status"]>): void {
+function touchResource(resource: AppTaskResource, status: Partial<AppTaskResource["status"]>): void {
   resource.metadata.resourceVersion += 1;
   resource.status = {
     ...resource.status,
@@ -470,7 +475,7 @@ function touchResource(resource: ProjectAppTaskResource, status: Partial<Project
 
 function finishAttempt(
   tree: TaskTree,
-  resource: ProjectAppTaskResource,
+  resource: AppTaskResource,
   state: "completed" | "failed" | "interrupted",
   summary: string,
   now: string,
@@ -486,7 +491,7 @@ function finishAttempt(
   resource.status.currentAttemptId = undefined;
 }
 
-function matchingCompletionReceipt(tree: TaskTree, resource: ProjectAppTaskResource, appOwner: string) {
+function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, appOwner: string) {
   const receipt = tree.receipts?.[resource.metadata.id];
   if (
     !receipt ||
@@ -498,10 +503,10 @@ function matchingCompletionReceipt(tree: TaskTree, resource: ProjectAppTaskResou
   const intent = resourceIntent(resource);
   if (intent.mode !== "achieve") return undefined;
   const owner = resolvedOwner(tree, intent, appOwner);
-  return receipt.specHash === projectAppTaskSpecHash(intent, owner) ? receipt : undefined;
+  return receipt.specHash === appTaskSpecHash(intent, owner) ? receipt : undefined;
 }
 
-function retireCompletedTaskDuplicate(tree: TaskTree, resource: ProjectAppTaskResource, summary: string): string[] {
+function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource, summary: string): string[] {
   const taskId = resource.metadata.id;
   const task = tree.tasks[taskId];
   const liveChildren = (task?.children ?? []).filter((childId) => tree.tasks[childId]);
@@ -588,7 +593,7 @@ function refreshActiveTaskProjection(tree: TaskTree): void {
   tree.active_task_id = tree.active_task_ids[0] ?? null;
 }
 
-function resolvedOwner(tree: TaskTree, intent: ProjectAppTaskIntent, appOwner: string): string {
+function resolvedOwner(tree: TaskTree, intent: AppTaskIntent, appOwner: string): string {
   if (intent.owner?.trim()) return intent.owner.trim();
   let parentId: string | null | undefined = intent.parentId;
   const seen = new Set<string>();
@@ -602,7 +607,7 @@ function resolvedOwner(tree: TaskTree, intent: ProjectAppTaskIntent, appOwner: s
   return appOwner;
 }
 
-function isProjectAppCondition(value: unknown): value is ProjectAppCondition {
+function isAppTaskCondition(value: unknown): value is AppTaskCondition {
   if (!isRecord(value) || !isRecord(value.metadata) || !isRecord(value.spec) || !isRecord(value.status)) {
     return false;
   }
@@ -616,11 +621,11 @@ function isProjectAppCondition(value: unknown): value is ProjectAppCondition {
   );
 }
 
-function isOpenCondition(value: unknown): value is ProjectAppCondition {
-  return isProjectAppCondition(value) && value.status.state !== "true";
+function isOpenCondition(value: unknown): value is AppTaskCondition {
+  return isAppTaskCondition(value) && value.status.state !== "true";
 }
 
-function conditionRegistry(tree: TaskTree): Record<string, ProjectAppCondition> {
+function conditionRegistry(tree: TaskTree): Record<string, AppTaskCondition> {
   tree.conditions = tree.conditions ?? {};
   return tree.conditions;
 }
@@ -654,7 +659,7 @@ function missedTaskConditionCheckpointIds(tree: TaskTree, taskId: string, nowMs 
     const observedAtMs = Date.parse(String(condition.status.observedAt ?? ""));
     if (
       !Number.isInteger(reviewAfterMs) ||
-      Number(reviewAfterMs) < MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS ||
+      Number(reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS ||
       !Number.isFinite(observedAtMs)
     ) {
       return [];
@@ -694,9 +699,9 @@ function completedConditionReviewCount(tree: TaskTree, taskId: string, condition
 }
 
 function boundedReviewConditions(
-  claim: ProjectAppTaskClaim,
-  conditions: ProjectAppConditionSpec[] | undefined,
-): ProjectAppConditionSpec[] | undefined {
+  claim: AppTaskClaim,
+  conditions: AppTaskConditionSpec[] | undefined,
+): AppTaskConditionSpec[] | undefined {
   if (!conditions?.length || claim.trigger?.type !== "project.task.condition-review.missed") {
     return conditions;
   }
@@ -718,7 +723,7 @@ function boundedReviewConditions(
 
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
   return taskConditionEntries(tree, taskId).some(
-    ([, condition]) => isProjectAppCondition(condition) && condition.status.state === "true",
+    ([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true",
   );
 }
 
@@ -728,7 +733,7 @@ function pruneUnlinkedConditions(tree: TaskTree): void {
     for (const id of resource.status.conditionIds ?? []) linked.add(id);
   }
   for (const [id, value] of Object.entries(tree.conditions ?? {})) {
-    if (isProjectAppCondition(value) && !linked.has(id)) delete tree.conditions![id];
+    if (isAppTaskCondition(value) && !linked.has(id)) delete tree.conditions![id];
   }
 }
 
@@ -741,7 +746,7 @@ function unlinkTaskConditions(tree: TaskTree, task: TaskNode): void {
 function materializeWaitingConditions(
   tree: TaskTree,
   task: TaskNode,
-  conditions: ProjectAppConditionSpec[],
+  conditions: AppTaskConditionSpec[],
   now: string,
 ): void {
   const registry = conditionRegistry(tree);
@@ -795,7 +800,7 @@ function materializeWaitingConditions(
   pruneUnlinkedConditions(tree);
 }
 
-function syncTaskProjection(task: TaskNode, resource: ProjectAppTaskResource, owner: string): void {
+function syncTaskProjection(task: TaskNode, resource: AppTaskResource, owner: string): void {
   const intent = resourceIntent(resource);
   task.revision = resource.metadata.generation;
   task.parent_id = intent.parentId;
@@ -819,11 +824,11 @@ function syncTaskProjection(task: TaskNode, resource: ProjectAppTaskResource, ow
           : "backlog";
 }
 
-export function recoverableProjectAppTaskAttempts(
+export function recoverableAppTaskAttempts(
   config: TaskStateConfig,
   nowMs = Date.now(),
   includeFreshLeases = false,
-): ProjectAppTaskAttemptRecovery[] {
+): AppTaskAttemptRecovery[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     let changed = false;
@@ -843,7 +848,8 @@ export function recoverableProjectAppTaskAttempts(
         !attempt ||
         attempt.runtimeId === reconcilerRuntimeId ||
         (!includeFreshLeases && leaseIsFresh(attempt, nowMs))
-      ) return [];
+      )
+        return [];
       return [
         {
           taskId: resource.metadata.id,
@@ -864,9 +870,46 @@ export function recoverableProjectAppTaskAttempts(
   });
 }
 
-export function releaseInterruptedProjectAppTaskAttempt(
+export function expiredOwnerSessionAppTaskAttempt(
   config: TaskStateConfig,
-  recovery: ProjectAppTaskAttemptRecovery | string,
+  taskId: string,
+  nowMs = Date.now(),
+): AppTaskAttemptRecovery | null {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    if (!resource || resource.status.phase !== "running") return null;
+    const attempt = currentResourceAttempt(tree, resource);
+    if (
+      !attempt ||
+      !attempt.handler.startsWith("owner:") ||
+      !attempt.sessionId ||
+      !attempt.lease ||
+      attempt.lease.sessionId !== attempt.sessionId ||
+      attempt.lease.runtimeId !== attempt.runtimeId ||
+      leaseIsFresh(attempt, nowMs)
+    ) {
+      return null;
+    }
+    return {
+      taskId,
+      intent: resourceIntent(resource),
+      ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
+      sessionId: attempt.sessionId,
+      taskGeneration: resource.metadata.generation,
+      taskResourceVersion: resource.metadata.resourceVersion,
+      attemptId: attempt.metadata.id,
+      attemptResourceVersion: attempt.metadata.resourceVersion,
+      leaseId: attempt.lease.id,
+      leaseVersion: attempt.lease.version,
+      legacyLeaseLess: false,
+    };
+  });
+}
+
+export function releaseInterruptedAppTaskAttempt(
+  config: TaskStateConfig,
+  recovery: AppTaskAttemptRecovery | string,
   summary: string,
 ): { released: boolean; sessionIds: string[] } {
   return withTaskStateLock(config, () => {
@@ -923,10 +966,137 @@ export function releaseInterruptedProjectAppTaskAttempt(
   });
 }
 
-export function repairPreviousRuntimeRecoveryAttention(config: TaskStateConfig): ProjectAppTaskRecoveryRepair[] {
+/**
+ * Reject a late terminal session result whose owning workflow execution stack was
+ * lost during restart. Workflow post-processing (verification, actions, and
+ * workspace finalization) did not run, so the only safe generic disposition is
+ * to interrupt the exact attempt and requeue the same task generation.
+ */
+export function releaseTerminalSessionExpiredAppTaskAttempt(
+  config: TaskStateConfig,
+  recovery: AppTaskTerminalSessionRecovery,
+  summary: string,
+  nowMs = Date.now(),
+): { released: boolean; sessionIds: string[] } {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
-    const repairs: ProjectAppTaskRecoveryRepair[] = [];
+    const task = tree.tasks[recovery.taskId];
+    const resource = tree.resources?.[recovery.taskId];
+    if (!task || !resource || resource.status.phase !== "running") {
+      return { released: false, sessionIds: [] };
+    }
+    const attempt = currentResourceAttempt(tree, resource);
+    if (
+      !attempt ||
+      !attempt.handler.startsWith("owner:") ||
+      attempt.state !== "running" ||
+      resource.metadata.generation !== recovery.taskGeneration ||
+      resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
+      resource.status.currentAttemptId !== recovery.attemptId ||
+      attempt.metadata.id !== recovery.attemptId ||
+      attempt.metadata.resourceVersion !== recovery.attemptResourceVersion ||
+      attempt.sessionId !== recovery.sessionId ||
+      !attempt.lease ||
+      attempt.lease.id !== recovery.leaseId ||
+      attempt.lease.version !== recovery.leaseVersion ||
+      attempt.lease.sessionId !== recovery.sessionId ||
+      attempt.lease.runtimeId !== attempt.runtimeId ||
+      leaseIsFresh(attempt, nowMs)
+    ) {
+      return { released: false, sessionIds: [] };
+    }
+
+    const now = new Date(nowMs).toISOString();
+    const recoveredSummary = `${summary}; terminal owner session ${recovery.sessionId} (${recovery.terminalStatus}) cannot return this expired attempt; retrying from current task evidence`;
+    if (attempt.trigger && !tree.taskTriggers?.[recovery.taskId]) {
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [recovery.taskId]: {
+          taskId: recovery.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event: structuredClone(attempt.trigger),
+          observedAt: now,
+        },
+      };
+    }
+    finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
+    attempt.metadata.resourceVersion += 1;
+    attempt.failureReason = "terminal-owner-session-expired-lease-requeued";
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary: recoveredSummary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    pruneTaskAttempts(tree);
+    saveTaskState(config, tree);
+    return { released: true, sessionIds: [recovery.sessionId] };
+  });
+}
+
+export function releaseLateTerminalWorkflowAppTaskAttempt(
+  config: TaskStateConfig,
+  binding: { taskId: string; generation: number },
+  sessionId: string,
+  summary: string,
+): { released: boolean; taskId: string } {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const task = tree.tasks[binding.taskId];
+    const resource = tree.resources?.[binding.taskId];
+    if (
+      !task ||
+      !resource ||
+      resource.metadata.generation !== binding.generation ||
+      resource.status.phase !== "running"
+    ) {
+      return { released: false, taskId: binding.taskId };
+    }
+    const attempt = currentResourceAttempt(tree, resource);
+    if (!attempt || attempt.state !== "running" || attempt.sessionId !== sessionId) {
+      return { released: false, taskId: binding.taskId };
+    }
+
+    const now = new Date().toISOString();
+    const recoveredSummary = `${summary}; retrying the same task from current evidence`;
+    if (attempt.trigger && !tree.taskTriggers?.[binding.taskId]) {
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [binding.taskId]: {
+          taskId: binding.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event: structuredClone(attempt.trigger),
+          observedAt: now,
+        },
+      };
+    }
+    finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
+    attempt.metadata.resourceVersion += 1;
+    attempt.failureReason = "late-terminal-workflow-result-requeued";
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary: recoveredSummary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    pruneTaskAttempts(tree);
+    saveTaskState(config, tree);
+    return { released: true, taskId: binding.taskId };
+  });
+}
+
+export function repairPreviousRuntimeRecoveryAttention(config: TaskStateConfig): AppTaskRecoveryRepair[] {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const repairs: AppTaskRecoveryRepair[] = [];
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "attention") continue;
       const task = tree.tasks[resource.metadata.id];
@@ -965,10 +1135,10 @@ export function repairPreviousRuntimeRecoveryAttention(config: TaskStateConfig):
   });
 }
 
-export function repairRunningProjectAppTasksWithoutAttempt(config: TaskStateConfig): ProjectAppTaskRecoveryRepair[] {
+export function repairRunningAppTasksWithoutAttempt(config: TaskStateConfig): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
-    const repairs: ProjectAppTaskRecoveryRepair[] = [];
+    const repairs: AppTaskRecoveryRepair[] = [];
     const now = new Date().toISOString();
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "running") continue;
@@ -1011,7 +1181,7 @@ export function repairRunningProjectAppTasksWithoutAttempt(config: TaskStateConf
   });
 }
 
-export function pendingProjectAppTaskRecoveryAttention(config: TaskStateConfig): ProjectAppTaskRecoveryAttention[] {
+export function pendingAppTaskRecoveryAttention(config: TaskStateConfig): AppTaskRecoveryAttention[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     return Object.values(tree.resources ?? {}).flatMap((resource) => {
@@ -1038,7 +1208,7 @@ export function pendingProjectAppTaskRecoveryAttention(config: TaskStateConfig):
   });
 }
 
-export function acknowledgeProjectAppTaskRecoveryAttention(config: TaskStateConfig, taskId: string): boolean {
+export function acknowledgeAppTaskRecoveryAttention(config: TaskStateConfig, taskId: string): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const attempt = Object.values(tree.attempts ?? {})
@@ -1053,7 +1223,7 @@ export function acknowledgeProjectAppTaskRecoveryAttention(config: TaskStateConf
   });
 }
 
-function validateIntent(intent: ProjectAppTaskIntent): void {
+function validateIntent(intent: AppTaskIntent): void {
   if (!intent.id.trim()) throw new Error("Task reconciliation requires a non-empty task id");
   if (!intent.parentId.trim()) throw new Error(`Task ${intent.id} requires a parentId`);
   if (!intent.outcome.trim()) throw new Error(`Task ${intent.id} requires an outcome`);
@@ -1085,7 +1255,7 @@ function validateParentReference(tree: TaskTree, taskId: string, parentId: strin
   if (cursor) throw new Error(`Task ${taskId} parent chain already contains a containment cycle at ${cursor}`);
 }
 
-function upsertTask(tree: TaskTree, resource: ProjectAppTaskResource, owner: string): TaskNode {
+function upsertTask(tree: TaskTree, resource: AppTaskResource, owner: string): TaskNode {
   const intent = resourceIntent(resource);
   const parent = tree.tasks[intent.parentId];
   if (!parent) {
@@ -1121,21 +1291,70 @@ function upsertTask(tree: TaskTree, resource: ProjectAppTaskResource, owner: str
   return task;
 }
 
-export function observeProjectAppTaskIntent(
+export function observeAppTaskIntent(
   config: TaskStateConfig,
   input: {
-    intent: ProjectAppTaskIntent;
+    intent: AppTaskIntent;
     appOwner: string;
     trigger?: Record<string, unknown>;
+    admissionKey?: string;
   },
-): ProjectAppTaskObservationResult {
+): AppTaskObservationResult {
   validateIntent(input.intent);
+  const admissionKey = input.admissionKey?.trim();
+  if (input.admissionKey !== undefined && !admissionKey) {
+    throw new Error("Task admission key must be non-empty when provided");
+  }
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const supersededSessionIds = new Set<string>();
     validateParentReference(tree, input.intent.id, input.intent.parentId);
     const owner = resolvedOwner(tree, input.intent, input.appOwner);
-    const specHash = projectAppTaskSpecHash(input.intent, owner);
+    const specHash = appTaskSpecHash(input.intent, owner);
+    const previousAdmission = admissionKey ? tree.appTaskAdmissions?.[admissionKey] : undefined;
+    if (previousAdmission) {
+      if (previousAdmission.taskId !== input.intent.id || previousAdmission.specHash !== specHash) {
+        throw new Error(`Task admission key ${admissionKey} was already used for different desired work`);
+      }
+      const current = tree.resources?.[previousAdmission.taskId];
+      if (current) {
+        return {
+          kind: "observed",
+          taskId: current.metadata.id,
+          generation: current.metadata.generation,
+          changed: false,
+        };
+      }
+      const completed = tree.receipts?.[previousAdmission.taskId];
+      if (completed) {
+        return {
+          kind: "completed",
+          taskId: completed.metadata.id,
+          generation: completed.metadata.generation,
+        };
+      }
+      delete tree.appTaskAdmissions?.[admissionKey!];
+    }
+
+    const recordAdmission = (taskId: string, taskGeneration: number): void => {
+      if (!admissionKey) return;
+      tree.appTaskAdmissions = {
+        ...(tree.appTaskAdmissions ?? {}),
+        [admissionKey]: {
+          taskId,
+          taskGeneration,
+          specHash,
+          admittedAt: new Date().toISOString(),
+        },
+      };
+      const admissions = Object.entries(tree.appTaskAdmissions);
+      if (admissions.length <= MAX_APP_TASK_ADMISSIONS) return;
+      for (const [key] of admissions
+        .sort((left, right) => left[1].admittedAt.localeCompare(right[1].admittedAt))
+        .slice(0, admissions.length - MAX_APP_TASK_ADMISSIONS)) {
+        delete tree.appTaskAdmissions[key];
+      }
+    };
     const receipt = tree.receipts?.[input.intent.id];
     const existingResource = tree.resources?.[input.intent.id];
     const receiptMatchesDesiredIdentity =
@@ -1144,6 +1363,7 @@ export function observeProjectAppTaskIntent(
       input.intent.mode === "achieve" &&
       (!existingResource || receipt.metadata.generation === existingResource.metadata.generation);
     if (receiptMatchesDesiredIdentity) {
+      recordAdmission(input.intent.id, receipt.metadata.generation);
       if (existingResource) {
         for (const sessionId of retireCompletedTaskDuplicate(
           tree,
@@ -1152,8 +1372,8 @@ export function observeProjectAppTaskIntent(
         )) {
           supersededSessionIds.add(sessionId);
         }
-        saveTaskState(config, tree);
       }
+      if (existingResource || admissionKey) saveTaskState(config, tree);
       return {
         kind: "completed",
         taskId: input.intent.id,
@@ -1169,16 +1389,14 @@ export function observeProjectAppTaskIntent(
         : 0;
     const existingIntent = existingResource ? resourceIntent(existingResource) : null;
     const existingOwner = existingIntent ? resolvedOwner(tree, existingIntent, input.appOwner) : null;
-    const sameSpec = existingIntent
-      ? projectAppTaskSpecHash(existingIntent, existingOwner ?? undefined) === specHash
-      : false;
+    const sameSpec = existingIntent ? appTaskSpecHash(existingIntent, existingOwner ?? undefined) === specHash : false;
     const generation = sameSpec ? previousGeneration : Math.max(1, previousGeneration + 1);
     const nextSpec = resourceSpec(input.intent);
     const desiredStateChanged =
       !existingResource || JSON.stringify(stableValue(existingResource.spec)) !== JSON.stringify(stableValue(nextSpec));
     const changed = !existingResource || generation !== previousGeneration || desiredStateChanged;
     const now = new Date().toISOString();
-    let resource: ProjectAppTaskResource;
+    let resource: AppTaskResource;
     if (existingResource && sameSpec) {
       resource = desiredStateChanged
         ? {
@@ -1243,6 +1461,7 @@ export function observeProjectAppTaskIntent(
         },
       };
     }
+    recordAdmission(task.id, generation);
     syncTaskProjection(task, resource, owner);
     pruneTaskAttempts(tree);
     refreshActiveTaskProjection(tree);
@@ -1257,7 +1476,7 @@ export function observeProjectAppTaskIntent(
   });
 }
 
-export function readProjectAppTaskIntent(config: TaskStateConfig, taskId: string): ProjectAppTaskIntent | null {
+export function readAppTaskIntent(config: TaskStateConfig, taskId: string): AppTaskIntent | null {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const resource = tree.resources?.[taskId];
@@ -1270,7 +1489,7 @@ export function readProjectAppTaskIntent(config: TaskStateConfig, taskId: string
  * A live resource takes precedence over an older immutable receipt with the
  * same task id, so a newly revised generation cannot look complete by accident.
  */
-export function isProjectAppTaskConverged(config: TaskStateConfig, taskId: string, generation?: number): boolean {
+export function isAppTaskConverged(config: TaskStateConfig, taskId: string, generation?: number): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const resource = tree.resources?.[taskId];
@@ -1286,22 +1505,49 @@ export function isProjectAppTaskConverged(config: TaskStateConfig, taskId: strin
   });
 }
 
-export type ProjectAppTaskChildContext = {
+export type AppTaskChildContext = {
   live: Array<{
     taskId: string;
+    parentId: string;
     generation: number;
-    phase: ProjectAppTaskResource["status"]["phase"];
+    phase: AppTaskResource["status"]["phase"];
     outcome: string;
     owner?: string;
     workflow?: string;
+    input: Record<string, unknown>;
+    priority?: "P0" | "P1" | "P2" | "P3";
+    category?: string;
+    dependsOn?: string[];
+    conditions: AppTaskConditionSpec[];
+    readiness?: {
+      state:
+        | "ready"
+        | "dependency-blocked"
+        | "condition-blocked"
+        | "child-blocked"
+        | "capacity-blocked"
+        | "paused"
+        | "not-applicable";
+      reason: string;
+      relatedTaskIds: string[];
+    };
+    latestAttempt?: { handler: string; failureReason?: string };
+    hasLiveChildren: boolean;
+    updatedAt?: string;
     summary?: string;
     evidence: string[];
   }>;
   completed: Array<{
     taskId: string;
+    parentId: string;
     generation: number;
     outcome: string;
     owner: string;
+    workflow?: string;
+    input: Record<string, unknown>;
+    priority?: "P0" | "P1" | "P2" | "P3";
+    conditions: AppTaskConditionSpec[];
+    hasLiveChildren: false;
     summary: string;
     evidence: string[];
     completedAt: string;
@@ -1310,6 +1556,7 @@ export type ProjectAppTaskChildContext = {
 
 const MAX_LIVE_CHILD_CONTEXT = 16;
 const MAX_COMPLETED_CHILD_CONTEXT = 8;
+const MAX_APP_TASK_LIVE_SNAPSHOT = 64;
 const MAX_CHILD_EVIDENCE = 4;
 const MAX_CHILD_CONTEXT_TEXT = 512;
 
@@ -1321,34 +1568,80 @@ function boundedChildEvidence(evidence: string[]): string[] {
   return evidence.slice(0, MAX_CHILD_EVIDENCE).map(boundedChildContextText);
 }
 
+function liveTaskContext(
+  tree: TaskTree,
+  resource: AppTaskResource,
+  readiness: ReturnType<typeof buildAppTaskTreeProjection>["tasks"][string]["readiness"],
+): AppTaskChildContext["live"][number] {
+  const attempt = currentResourceAttempt(tree, resource);
+  return {
+    taskId: resource.metadata.id,
+    parentId: resource.spec.parentId,
+    generation: resource.metadata.generation,
+    phase: resource.status.phase,
+    outcome: boundedChildContextText(resource.spec.outcome),
+    ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
+    ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
+    input: structuredClone(resource.spec.input ?? {}),
+    ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
+    ...(resource.spec.category ? { category: resource.spec.category } : {}),
+    ...(resource.spec.dependsOn?.length ? { dependsOn: [...resource.spec.dependsOn] } : {}),
+    conditions: (resource.status.conditionIds ?? []).flatMap((conditionId) => {
+      const condition = tree.conditions?.[conditionId];
+      return condition ? [{ id: condition.metadata.id, ...structuredClone(condition.spec) }] : [];
+    }),
+    ...(readiness
+      ? {
+          readiness: {
+            state: readiness.state,
+            reason: boundedChildContextText(readiness.reason),
+            relatedTaskIds: readiness.related_ids.slice(0, MAX_LIVE_CHILD_CONTEXT),
+          },
+        }
+      : {}),
+    ...(attempt
+      ? {
+          latestAttempt: {
+            handler: attempt.handler,
+            ...(attempt.failureReason ? { failureReason: attempt.failureReason } : {}),
+          },
+        }
+      : {}),
+    hasLiveChildren: (tree.tasks[resource.metadata.id]?.children ?? []).some((childId) =>
+      Boolean(tree.resources?.[childId]),
+    ),
+    updatedAt: resource.status.updatedAt,
+    ...(resource.status.summary ? { summary: boundedChildContextText(resource.status.summary) } : {}),
+    evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
+  };
+}
+
 /** Bounded current child state supplied to an executable parent reconciliation. */
-export function readProjectAppTaskChildContext(config: TaskStateConfig, taskId: string): ProjectAppTaskChildContext {
+export function readAppTaskChildContext(config: TaskStateConfig, taskId: string): AppTaskChildContext {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
+    const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
     const live = (tree.tasks[taskId]?.children ?? [])
       .map((childId) => tree.resources?.[childId])
-      .filter((resource): resource is ProjectAppTaskResource => Boolean(resource))
+      .filter((resource): resource is AppTaskResource => Boolean(resource))
       .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
       .slice(0, MAX_LIVE_CHILD_CONTEXT)
-      .map((resource) => ({
-        taskId: resource.metadata.id,
-        generation: resource.metadata.generation,
-        phase: resource.status.phase,
-        outcome: boundedChildContextText(resource.spec.outcome),
-        ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
-        ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
-        ...(resource.status.summary ? { summary: boundedChildContextText(resource.status.summary) } : {}),
-        evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
-      }));
+      .map((resource) => liveTaskContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness));
     const completed = Object.values(tree.receipts ?? {})
       .filter((receipt) => receipt.parentId === taskId)
       .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
       .slice(0, MAX_COMPLETED_CHILD_CONTEXT)
       .map((receipt) => ({
         taskId: receipt.metadata.id,
+        parentId: receipt.parentId,
         generation: receipt.metadata.generation,
         outcome: boundedChildContextText(receipt.outcome),
         owner: receipt.owner,
+        ...(receipt.workflow ? { workflow: receipt.workflow } : {}),
+        input: structuredClone(receipt.input ?? {}),
+        ...(receipt.priority ? { priority: receipt.priority } : {}),
+        conditions: [],
+        hasLiveChildren: false as const,
         summary: boundedChildContextText(receipt.summary),
         evidence: boundedChildEvidence([...receipt.evidence]),
         completedAt: receipt.completedAt,
@@ -1357,10 +1650,29 @@ export function readProjectAppTaskChildContext(config: TaskStateConfig, taskId: 
   });
 }
 
-export function readProjectAppTaskTrigger(
-  config: TaskStateConfig,
-  taskId: string,
-): Record<string, unknown> | undefined {
+export type AppTaskLiveSnapshot = {
+  live: AppTaskChildContext["live"];
+  truncated: boolean;
+};
+
+/** Bounded App-wide live-task facts, excluding the task performing the review. */
+export function readAppTaskLiveSnapshot(config: TaskStateConfig, currentTaskId: string): AppTaskLiveSnapshot {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
+    const candidates = Object.values(tree.resources ?? {})
+      .filter((resource) => resource.metadata.id !== currentTaskId && resource.status.phase !== "converged")
+      .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id));
+    return {
+      live: candidates
+        .slice(0, MAX_APP_TASK_LIVE_SNAPSHOT)
+        .map((resource) => liveTaskContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness)),
+      truncated: candidates.length > MAX_APP_TASK_LIVE_SNAPSHOT,
+    };
+  });
+}
+
+export function readAppTaskTrigger(config: TaskStateConfig, taskId: string): Record<string, unknown> | undefined {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const pending = tree.taskTriggers?.[taskId];
@@ -1371,64 +1683,16 @@ export function readProjectAppTaskTrigger(
   });
 }
 
-/** Latest unresolved owner input for a stable task, including a parent waiting on children. */
-export function readProjectAppTaskOwnerTrigger(
+/** Return only a wake that is still pending beyond the active attempt. */
+export function readPendingAppTaskTrigger(
   config: TaskStateConfig,
   taskId: string,
 ): Record<string, unknown> | undefined {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    const pending = tree.taskTriggers?.[taskId]?.event;
-    if (triggerCarriesOwnerIntent(pending)) return pending;
-    const resource = tree.resources?.[taskId];
-    if (!resource) return undefined;
-    const current = currentResourceAttempt(tree, resource)?.trigger;
-    if (triggerCarriesOwnerIntent(current)) return current;
-    if (resource.status.phase !== "waiting" && resource.status.phase !== "attention") return undefined;
-    const latest = latestTaskAttempt(tree, taskId, resource.metadata.generation)?.trigger;
-    return triggerCarriesOwnerIntent(latest) ? latest : undefined;
-  });
-}
-
-function withoutOwnerIntent(event: Record<string, unknown>, eventId: number): Record<string, unknown> | undefined {
-  const declared = Array.isArray(event.ownerIntentRefs) ? event.ownerIntentRefs : [];
-  if (declared.length > 0) {
-    const remaining = declared.filter((value) => !isRecord(value) || Number(value.eventId) !== eventId);
-    if (remaining.length === 0) return undefined;
-    const first = remaining.find(isRecord);
-    const data = first && isRecord(first.data) ? first.data : undefined;
-    return {
-      ...event,
-      ...(data ?? {}),
-      ...(data ? { data } : {}),
-      ownerIntentRefs: remaining,
-    };
-  }
-  const inputEventId = Number(event.inputEventId);
-  const directEventId = Number(event.eventId);
-  if (inputEventId === eventId || (isOwnerIntentEventType(event.type) && directEventId === eventId)) {
-    return undefined;
-  }
-  return event;
-}
-
-/** Remove a terminal owner input from a wake queued while its prior attempt was finishing. */
-export function discardProjectAppTaskOwnerIntent(config: TaskStateConfig, taskId: string, eventId: number): boolean {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    const pending = tree.taskTriggers?.[taskId];
-    if (!pending) return false;
-    const next = withoutOwnerIntent(pending.event, eventId);
-    if (next === pending.event) return false;
-    if (next) pending.event = next;
-    else delete tree.taskTriggers?.[taskId];
-    saveTaskState(config, tree);
-    return true;
-  });
+  return withTaskStateLock(config, () => readTaskState(config).taskTriggers?.[taskId]?.event);
 }
 
 /** Persist a wake observation for an existing task without resubmitting desired state. */
-export function recordProjectAppTaskTrigger(
+export function recordAppTaskTrigger(
   config: TaskStateConfig,
   taskId: string,
   event: Record<string, unknown>,
@@ -1463,14 +1727,14 @@ export function recordProjectAppTaskTrigger(
   });
 }
 
-export function listProjectAppTaskIntents(config: TaskStateConfig): ProjectAppTaskIntent[] {
+export function listAppTaskIntents(config: TaskStateConfig): AppTaskIntent[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     return Object.values(tree.resources ?? {}).map(resourceIntent);
   });
 }
 
-function dependenciesSatisfied(tree: TaskTree, intent: ProjectAppTaskIntent): boolean {
+function dependenciesSatisfied(tree: TaskTree, intent: AppTaskIntent): boolean {
   return [...(intent.dependsOn ?? [])].every((id) => {
     if (tree.receipts?.[id]) return true;
     const dependency = tree.resources?.[id];
@@ -1481,7 +1745,7 @@ function dependenciesSatisfied(tree: TaskTree, intent: ProjectAppTaskIntent): bo
   });
 }
 
-function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResource): boolean {
+function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): boolean {
   const task = tree.tasks[resource.metadata.id];
   if (!task) return false;
   const intent = resourceIntent(resource);
@@ -1502,20 +1766,14 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
 }
 
 function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {
-  if (event?.type === "project.comment.created" || event?.type === "message.created") return true;
-  return Array.isArray(event?.ownerIntentRefs)
-    ? event.ownerIntentRefs.some(
-        (value) =>
-          isRecord(value) && (value.eventType === "project.comment.created" || value.eventType === "message.created"),
-      )
-    : false;
+  return event?.type === "project.comment.created" || event?.type === "message.created";
 }
 
-function hasSatisfiedConditionReconciliation(tree: TaskTree, resource: ProjectAppTaskResource): boolean {
+function hasSatisfiedConditionReconciliation(tree: TaskTree, resource: AppTaskResource): boolean {
   return resource.status.phase === "waiting" && hasSatisfiedTaskCondition(tree, resource.metadata.id);
 }
 
-export type ProjectAppTaskQueueEntry = {
+export type AppTaskQueueEntry = {
   taskId: string;
   options: {
     front: boolean;
@@ -1523,40 +1781,37 @@ export type ProjectAppTaskQueueEntry = {
   };
 };
 
-const projectAppTaskPriorityOrder = ["P0", "P1", "P2", "P3"] as const;
-const projectAppTaskPriorityAgingIntervalMs = 5 * 60 * 1_000;
+const appTaskPriorityOrder = ["P0", "P1", "P2", "P3"] as const;
+const appTaskPriorityAgingIntervalMs = 5 * 60 * 1_000;
 
-function effectiveProjectAppTaskPriority(
-  resource: ProjectAppTaskResource,
+function effectiveAppTaskPriority(
+  resource: AppTaskResource,
   nowMs: number,
   readyAt = resource.status.updatedAt,
-): (typeof projectAppTaskPriorityOrder)[number] {
+): (typeof appTaskPriorityOrder)[number] {
   const declaredPriority = resource.spec.priority ?? "P2";
-  const declaredRank = projectAppTaskPriorityOrder.indexOf(declaredPriority);
+  const declaredRank = appTaskPriorityOrder.indexOf(declaredPriority);
   const readyAtMs = Date.parse(readyAt ?? "");
   if (!Number.isFinite(readyAtMs)) return declaredPriority;
   const ageMs = Math.max(0, nowMs - readyAtMs);
   const highestAgedRank = declaredRank === 0 ? 0 : 1;
-  const promotedRank = Math.max(
-    highestAgedRank,
-    declaredRank - Math.floor(ageMs / projectAppTaskPriorityAgingIntervalMs),
-  );
-  return projectAppTaskPriorityOrder[promotedRank] ?? declaredPriority;
+  const promotedRank = Math.max(highestAgedRank, declaredRank - Math.floor(ageMs / appTaskPriorityAgingIntervalMs));
+  return appTaskPriorityOrder[promotedRank] ?? declaredPriority;
 }
 
-export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig): ProjectAppTaskQueueEntry[] {
+export function listRunnableAppTaskQueueEntries(config: TaskStateConfig): AppTaskQueueEntry[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const nowMs = Date.now();
     const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
-    const hasDirectProjectComment = (resource: ProjectAppTaskResource): boolean =>
+    const hasDirectProjectComment = (resource: AppTaskResource): boolean =>
       triggerHasDirectProjectComment(tree.taskTriggers?.[resource.metadata.id]?.event);
-    const hasPersistedTrigger = (resource: ProjectAppTaskResource): boolean =>
+    const hasPersistedTrigger = (resource: AppTaskResource): boolean =>
       Boolean(tree.taskTriggers?.[resource.metadata.id]?.event);
-    const effectivePriority = (resource: ProjectAppTaskResource) =>
+    const effectivePriority = (resource: AppTaskResource) =>
       hasDirectProjectComment(resource) || hasSatisfiedConditionReconciliation(tree, resource)
         ? "P0"
-        : effectiveProjectAppTaskPriority(resource, nowMs, tree.taskTriggers?.[resource.metadata.id]?.observedAt);
+        : effectiveAppTaskPriority(resource, nowMs, tree.taskTriggers?.[resource.metadata.id]?.observedAt);
     return Object.values(tree.resources ?? {})
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
       .sort((left, right) => {
@@ -1584,14 +1839,11 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
   });
 }
 
-export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[] {
-  return listRunnableProjectAppTaskQueueEntries(config).map((entry) => entry.taskId);
+export function listRunnableAppTaskIds(config: TaskStateConfig): string[] {
+  return listRunnableAppTaskQueueEntries(config).map((entry) => entry.taskId);
 }
 
-export function projectAppTaskQueueEntries(
-  config: TaskStateConfig,
-  taskIds: Iterable<string>,
-): ProjectAppTaskQueueEntry[] {
+export function appTaskQueueEntries(config: TaskStateConfig, taskIds: Iterable<string>): AppTaskQueueEntry[] {
   const requested = new Set(taskIds);
   if (requested.size === 0) return [];
   return withTaskStateLock(config, () => {
@@ -1609,7 +1861,7 @@ export function projectAppTaskQueueEntries(
             priority:
               triggerHasDirectProjectComment(trigger?.event) || hasSatisfiedConditionReconciliation(tree, resource)
                 ? "P0"
-                : effectiveProjectAppTaskPriority(resource, nowMs, trigger?.observedAt),
+                : effectiveAppTaskPriority(resource, nowMs, trigger?.observedAt),
           },
         },
       ];
@@ -1617,13 +1869,13 @@ export function projectAppTaskQueueEntries(
   });
 }
 
-export type ProjectAppTaskHandlerRepairCandidate = {
+export type AppTaskHandlerRepairCandidate = {
   taskId: string;
   owner: string;
   workflow: string;
 };
 
-export type ProjectAppTaskExecutionRepairCandidate = {
+export type AppTaskExecutionRepairCandidate = {
   taskId: string;
   owner: string;
   failedAt: string;
@@ -1631,23 +1883,23 @@ export type ProjectAppTaskExecutionRepairCandidate = {
   sessionId?: string;
 };
 
-export type ProjectAppTaskWorkspaceRepairCandidate = {
+export type AppTaskWorkspaceRepairCandidate = {
   taskId: string;
   generation: number;
   owner: string;
   workflow: string;
-  previous?: ProjectAppTaskWorkspace;
+  previous?: AppTaskWorkspace;
 };
 
 /** Workspace failures to re-check mechanically when the app/runtime reloads. */
-export function listWorkspacePreparationFailedProjectAppTasks(
+export function listWorkspacePreparationFailedAppTasks(
   config: TaskStateConfig,
   appOwner: string,
-): ProjectAppTaskWorkspaceRepairCandidate[] {
+): AppTaskWorkspaceRepairCandidate[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     return Object.values(tree.resources ?? {})
-      .flatMap((resource): ProjectAppTaskWorkspaceRepairCandidate[] => {
+      .flatMap((resource): AppTaskWorkspaceRepairCandidate[] => {
         if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return [];
         const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
         if (attempt?.failureReason !== "WorkspacePreparationFailed") return [];
@@ -1675,7 +1927,7 @@ export function listWorkspacePreparationFailedProjectAppTasks(
 }
 
 /** Release attention after workspace preparation succeeds for this generation. */
-export function releaseWorkspacePreparationFailedProjectAppTask(
+export function releaseWorkspacePreparationFailedAppTask(
   config: TaskStateConfig,
   taskId: string,
   generation: number,
@@ -1704,10 +1956,10 @@ export function releaseWorkspacePreparationFailedProjectAppTask(
 }
 
 /** Bindings to retry once their owning app reload proves the workflow now resolves. */
-export function listHandlerUnavailableProjectAppTasks(
+export function listHandlerUnavailableAppTasks(
   config: TaskStateConfig,
   appOwner: string,
-): ProjectAppTaskHandlerRepairCandidate[] {
+): AppTaskHandlerRepairCandidate[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     return Object.values(tree.resources ?? {})
@@ -1729,7 +1981,7 @@ export function listHandlerUnavailableProjectAppTasks(
 }
 
 /** Release attention only after the host has proved the named workflow resolves again. */
-export function releaseHandlerUnavailableProjectAppTask(config: TaskStateConfig, taskId: string): boolean {
+export function releaseHandlerUnavailableAppTask(config: TaskStateConfig, taskId: string): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const resource = tree.resources?.[taskId];
@@ -1753,13 +2005,11 @@ export function releaseHandlerUnavailableProjectAppTask(config: TaskStateConfig,
 }
 
 /** Executions to retry only after a later successful session proves their owner is runnable again. */
-export function listHandlerExecutionFailedProjectAppTasks(
-  config: TaskStateConfig,
-): ProjectAppTaskExecutionRepairCandidate[] {
+export function listHandlerExecutionFailedAppTasks(config: TaskStateConfig): AppTaskExecutionRepairCandidate[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     return Object.values(tree.resources ?? {})
-      .flatMap((resource): ProjectAppTaskExecutionRepairCandidate[] => {
+      .flatMap((resource): AppTaskExecutionRepairCandidate[] => {
         if (resource.status.phase !== "attention") return [];
         const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
         if (!attempt?.finishedAt) return [];
@@ -1799,7 +2049,7 @@ export function listHandlerExecutionFailedProjectAppTasks(
 }
 
 /** Release one execution failure after structured evidence from a newer successful owner session. */
-export function releaseHandlerExecutionFailedProjectAppTask(
+export function releaseHandlerExecutionFailedAppTask(
   config: TaskStateConfig,
   taskId: string,
   evidence: {
@@ -1875,7 +2125,7 @@ export function releaseHandlerExecutionFailedProjectAppTask(
   });
 }
 
-export function claimObservedProjectAppTask(
+export function claimObservedAppTask(
   config: TaskStateConfig,
   input: {
     taskId: string;
@@ -1884,7 +2134,7 @@ export function claimObservedProjectAppTask(
     reason?: string;
     isOwnerRunnable?: (owner: string) => boolean;
   },
-): ProjectAppTaskClaimResult {
+): AppTaskClaimResult {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const task = tree.tasks[input.taskId];
@@ -1915,7 +2165,7 @@ export function claimObservedProjectAppTask(
     let declaredOutputPaths: string[] = [];
     let outputAdmissionError: string | undefined;
     try {
-      declaredOutputPaths = resolveProjectAppOutputPaths(intent.outputs ?? [], config);
+      declaredOutputPaths = resolveAppTaskOutputPaths(intent.outputs ?? [], config);
     } catch (error) {
       outputAdmissionError = `Task output admission failed: ${error instanceof Error ? error.message : String(error)}`;
     }
@@ -2108,7 +2358,7 @@ export function claimObservedProjectAppTask(
             ...syntheticAttemptTrigger(config, task.id, "condition-review-checkpoint-missed"),
             type: "project.task.condition-review.missed",
             data: {
-              project: projectIdFromAppDir(config.appDir) || "project-app",
+              project: projectIdFromAppDir(config.appDir) || "unknown-app",
               taskId: task.id,
               task_id: task.id,
               reason: "condition-review-checkpoint-missed",
@@ -2119,8 +2369,8 @@ export function claimObservedProjectAppTask(
             },
           }
         : syntheticAttemptTrigger(config, task.id, input.reason));
-    const specHash = projectAppTaskSpecHash(intent, owner);
-    const attempt: ProjectAppTaskAttempt = {
+    const specHash = appTaskSpecHash(intent, owner);
+    const attempt: AppTaskAttempt = {
       metadata: { id: attemptId, resourceVersion: 1 },
       taskId: task.id,
       taskGeneration: generation,
@@ -2176,8 +2426,8 @@ export function claimObservedProjectAppTask(
 
 function matchingTask(
   tree: TaskTree,
-  claim: ProjectAppTaskClaim,
-): { task: TaskNode; resource: ProjectAppTaskResource; attempt: ProjectAppTaskAttempt } | null {
+  claim: AppTaskClaim,
+): { task: TaskNode; resource: AppTaskResource; attempt: AppTaskAttempt } | null {
   const task = tree.tasks[claim.taskId];
   if (!task) return null;
   const resource = tree.resources?.[claim.taskId];
@@ -2196,9 +2446,9 @@ function matchingTask(
   return { task, resource, attempt };
 }
 
-export function releaseStaleProjectAppTaskResult(
+export function releaseStaleAppTaskResult(
   config: TaskStateConfig,
-  claim: ProjectAppTaskClaim,
+  claim: AppTaskClaim,
   summary = "Stale reconciliation result was rejected; retrying from current task evidence",
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
   return withTaskStateLock(config, () => {
@@ -2234,10 +2484,10 @@ export function releaseStaleProjectAppTaskResult(
 }
 
 /** Attach observed workspace lineage to the current attempt without changing desired task state. */
-export function recordProjectAppTaskAttemptWorkspace(
+export function recordAppTaskAttemptWorkspace(
   config: TaskStateConfig,
-  claim: ProjectAppTaskClaim,
-  workspace: ProjectAppTaskWorkspace,
+  claim: AppTaskClaim,
+  workspace: AppTaskWorkspace,
 ): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
@@ -2250,7 +2500,7 @@ export function recordProjectAppTaskAttemptWorkspace(
   });
 }
 
-function refreshAttemptLease(attempt: ProjectAppTaskAttempt, sessionId: string, nowMs = Date.now()): void {
+function refreshAttemptLease(attempt: AppTaskAttempt, sessionId: string, nowMs = Date.now()): void {
   const times = boundedLeaseTimes(nowMs);
   const existing = attempt.lease;
   attempt.lease = {
@@ -2266,7 +2516,7 @@ function refreshAttemptLease(attempt: ProjectAppTaskAttempt, sessionId: string, 
  * Refresh a session-owned attempt lease from an observable model/tool progress event.
  * Exact session matching prevents activity from extending another attempt's lease.
  */
-export function refreshProjectAppTaskAttemptLeaseBySession(
+export function refreshAppTaskAttemptLeaseBySession(
   config: TaskStateConfig,
   sessionId: string,
   nowMs = Date.now(),
@@ -2288,7 +2538,7 @@ export function refreshProjectAppTaskAttemptLeaseBySession(
  * Atomically transfer a fresh previous-runtime attempt lease to this runtime
  * before the generic session manager resumes that exact persisted session.
  */
-export function claimFreshProjectAppTaskSessionForStartup(
+export function claimFreshAppTaskSessionForStartup(
   config: TaskStateConfig,
   binding: { taskId: string; generation: number },
   sessionId: string,
@@ -2317,11 +2567,7 @@ export function claimFreshProjectAppTaskSessionForStartup(
 }
 
 /** Attach the launched owner-session id and initial lease to the current attempt. */
-export function recordProjectAppTaskAttemptSession(
-  config: TaskStateConfig,
-  claim: ProjectAppTaskClaim,
-  sessionId: string,
-): boolean {
+export function recordAppTaskAttemptSession(config: TaskStateConfig, claim: AppTaskClaim, sessionId: string): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const match = matchingTask(tree, claim);
@@ -2340,11 +2586,11 @@ export function recordProjectAppTaskAttemptSession(
  * task revision, so stale bindings are rejected instead of reviving obsolete
  * work.
  */
-export function associateProjectAppTaskSession(
+export function associateAppTaskSession(
   config: TaskStateConfig,
   binding: { taskId: string; generation: number },
   sessionId: string,
-): ProjectAppTaskSessionAssociation {
+): AppTaskSessionAssociation {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const task = tree.tasks[binding.taskId];
@@ -2407,8 +2653,8 @@ function requireExpectedGeneration(value: unknown, label: string): void {
 
 function mutableActionResource(
   tree: TaskTree,
-  action: Exclude<ProjectAppTaskAction, { kind: "create-task" }>,
-): { task: TaskNode; resource: ProjectAppTaskResource } {
+  action: Exclude<AppTaskAction, { kind: "create-task" }>,
+): { task: TaskNode; resource: AppTaskResource } {
   if (action.taskId.startsWith("runtime/")) {
     throw new Error(`Handler actions cannot mutate reconciler-owned task ${action.taskId}`);
   }
@@ -2417,7 +2663,7 @@ function mutableActionResource(
   const resource = tree.resources?.[action.taskId];
   if (!resource) throw new Error(`Handler action resource not found: ${action.taskId}`);
   if (resource.metadata.generation !== action.expectedGeneration) {
-    throw new ProjectAppTaskActionStaleError({
+    throw new AppTaskActionStaleError({
       taskId: action.taskId,
       expectedGeneration: action.expectedGeneration,
       currentGeneration: resource.metadata.generation,
@@ -2428,14 +2674,14 @@ function mutableActionResource(
 
 function actionTargetAlreadyReceipted(
   tree: TaskTree,
-  action: Exclude<ProjectAppTaskAction, { kind: "create-task" }>,
+  action: Exclude<AppTaskAction, { kind: "create-task" }>,
 ): boolean {
   return Boolean(!tree.tasks[action.taskId] && !tree.resources?.[action.taskId] && tree.receipts?.[action.taskId]);
 }
 
 function validateTaskActions(
   tree: TaskTree,
-  actions: ProjectAppTaskAction[],
+  actions: AppTaskAction[],
   paths: { appDir: string; projectDir: string },
 ): void {
   if (actions.length > 16) throw new Error(`Handler result exceeds the 16-action reconciliation budget`);
@@ -2448,7 +2694,7 @@ function validateTaskActions(
       throw new Error(`Handler result contains an unsupported action kind: ${String(kind)}`);
     }
 
-    const action = rawAction as unknown as ProjectAppTaskAction;
+    const action = rawAction as unknown as AppTaskAction;
     const identity = requireNonEmptyString(
       action.kind === "create-task" ? action.id : action.taskId,
       `Handler ${action.kind} action identity`,
@@ -2463,7 +2709,7 @@ function validateTaskActions(
         throw new Error(`Handler create action ${action.id} requires mode achieve or maintain`);
       }
       requireStringList(action.outputs, `Handler create action ${action.id} outputs`, true);
-      resolveProjectAppOutputPaths(action.outputs, paths);
+      resolveAppTaskOutputPaths(action.outputs, paths);
       requireStringList(action.acceptance, `Handler create action ${action.id} acceptance`);
       if (action.priority !== undefined && !["P0", "P1", "P2", "P3"].includes(action.priority)) {
         throw new Error(`Handler create action ${action.id} has an invalid priority`);
@@ -2538,7 +2784,7 @@ function validateTaskActions(
     }
     if (action.kind === "update-task" && action.outputs !== undefined) {
       requireStringList(action.outputs, `Handler update for ${action.taskId} outputs`, true);
-      resolveProjectAppOutputPaths(action.outputs, paths);
+      resolveAppTaskOutputPaths(action.outputs, paths);
     }
     if (action.kind === "update-task" && action.acceptance !== undefined) {
       requireStringList(action.acceptance, `Handler update for ${action.taskId} acceptance`);
@@ -2606,7 +2852,7 @@ function validateTaskActions(
     }
     if (action.kind === "unblock-task") {
       if (resource.status.phase !== "waiting" && resource.status.phase !== "attention") {
-        throw new ProjectAppTaskActionStaleError({
+        throw new AppTaskActionStaleError({
           taskId: action.taskId,
           expectedGeneration: action.expectedGeneration,
           currentGeneration: resource.metadata.generation,
@@ -2632,7 +2878,7 @@ function validateTaskActions(
 }
 
 function validateConditions(
-  conditions: ProjectAppConditionSpec[] | undefined,
+  conditions: AppTaskConditionSpec[] | undefined,
   input: { required: boolean; taskId: string },
 ): void {
   if (input.required && !conditions?.length) {
@@ -2645,7 +2891,7 @@ function validateConditions(
     const identity = requireNonEmptyString(condition.id, `Handler result Condition for ${input.taskId} identity`);
     requireNonEmptyString(condition.type, `Handler result Condition ${identity} type`);
     const subject = requireNonEmptyString(condition.subject, `Handler result Condition ${identity} subject`);
-    if (!isTypedProjectAppConditionSubject(subject)) {
+    if (!isTypedAppTaskConditionSubject(subject)) {
       throw new Error(`Handler result Condition ${identity} has an invalid subject`);
     }
     if (!("expected" in condition)) {
@@ -2654,10 +2900,10 @@ function validateConditions(
     if (
       condition.reviewAfterMs !== undefined &&
       (!Number.isInteger(condition.reviewAfterMs) ||
-        Number(condition.reviewAfterMs) < MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS)
+        Number(condition.reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS)
     ) {
       throw new Error(
-        `Handler result Condition ${identity} reviewAfterMs must be an integer of at least ${MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS}`,
+        `Handler result Condition ${identity} reviewAfterMs must be an integer of at least ${MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS}`,
       );
     }
   }
@@ -2669,7 +2915,7 @@ function validateActionEvidence(taskId: string, evidence: string[] | undefined, 
   }
 }
 
-function defaultTaskAcceptance(claim: ProjectAppTaskClaim, evidence: string[]): ProjectAppTaskAcceptanceBasis {
+function defaultTaskAcceptance(claim: AppTaskClaim, evidence: string[]): AppTaskAcceptanceBasis {
   return {
     method: claim.handler.startsWith("workflow:") ? "workflow-contract" : "owner-judgment",
     evidence: [...evidence],
@@ -2678,11 +2924,11 @@ function defaultTaskAcceptance(claim: ProjectAppTaskClaim, evidence: string[]): 
 
 function applyTaskActions(
   tree: TaskTree,
-  claim: ProjectAppTaskClaim,
-  actions: ProjectAppTaskAction[],
+  claim: AppTaskClaim,
+  actions: AppTaskAction[],
   evidence: string[],
   config: TaskStateConfig,
-  acceptanceBasis: ProjectAppTaskAcceptanceBasis,
+  acceptanceBasis: AppTaskAcceptanceBasis,
 ): { actionsApplied: string[]; supersededSessionIds: string[] } {
   validateTaskActions(tree, actions, config);
   const now = new Date().toISOString();
@@ -2706,7 +2952,7 @@ function applyTaskActions(
         }
         const parent = tree.tasks[action.parentId];
         const intent = createActionIntent(action);
-        const resource: ProjectAppTaskResource = {
+        const resource: AppTaskResource = {
           metadata: { id: action.id, generation: 1, resourceVersion: 1 },
           spec: resourceSpec(intent),
           status: {
@@ -2731,7 +2977,7 @@ function applyTaskActions(
       case "update-task": {
         const { task, resource } = mutableActionResource(tree, action);
         const current = resourceIntent(resource);
-        const nextIntent: ProjectAppTaskIntent = {
+        const nextIntent: AppTaskIntent = {
           ...current,
           parentId: action.parentId ?? current.parentId,
           outcome: action.outcome?.trim() ?? current.outcome,
@@ -2756,8 +3002,7 @@ function applyTaskActions(
         }
         const currentOwner = resolvedOwner(tree, current, config.worker);
         const nextOwner = resolvedOwner(tree, nextIntent, config.worker);
-        const executionChanged =
-          projectAppTaskSpecHash(current, currentOwner) !== projectAppTaskSpecHash(nextIntent, nextOwner);
+        const executionChanged = appTaskSpecHash(current, currentOwner) !== appTaskSpecHash(nextIntent, nextOwner);
         const generation = executionChanged ? resource.metadata.generation + 1 : resource.metadata.generation;
         if (executionChanged) {
           if (resource.status.currentAttemptId) {
@@ -2778,7 +3023,7 @@ function applyTaskActions(
           unlinkTaskConditions(tree, task);
         }
         const previousParentId = task.parent_id;
-        const nextResource: ProjectAppTaskResource = {
+        const nextResource: AppTaskResource = {
           metadata: {
             id: resource.metadata.id,
             generation,
@@ -2829,12 +3074,14 @@ function applyTaskActions(
               generation: resource.metadata.generation,
               resourceVersion: 1,
             },
-            specHash: projectAppTaskSpecHash(intent, intent.owner ?? task.owner ?? claim.owner),
+            specHash: appTaskSpecHash(intent, intent.owner ?? task.owner ?? claim.owner),
             parentId: intent.parentId,
             outcome: intent.outcome,
             acceptance: [...intent.acceptance],
             owner: intent.owner ?? task.owner ?? claim.owner,
             ...(intent.workflow ? { workflow: intent.workflow } : {}),
+            input: structuredClone(intent.input ?? {}),
+            ...(intent.priority ? { priority: intent.priority } : {}),
             handler: claim.handler,
             summary: action.summary.trim(),
             evidence: [...evidence],
@@ -2881,18 +3128,6 @@ function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
   return (task.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
 }
 
-function isOwnerIntentEventType(value: unknown): boolean {
-  return value === "project.comment.created" || value === "project.owner.requested" || value === "message.created";
-}
-
-function triggerCarriesOwnerIntent(event: Record<string, unknown> | undefined): boolean {
-  if (!event) return false;
-  if (isOwnerIntentEventType(event.type)) return true;
-  return Array.isArray(event.ownerIntentRefs)
-    ? event.ownerIntentRefs.some((value) => isRecord(value) && isOwnerIntentEventType(value.eventType))
-    : false;
-}
-
 function recordExecutableParentTrigger(
   tree: TaskTree,
   child: TaskNode,
@@ -2906,25 +3141,19 @@ function recordExecutableParentTrigger(
   const parent = tree.resources?.[parentTaskId];
   if (!parent) return undefined;
   const previous = tree.taskTriggers?.[parentTaskId];
-  // A queued owner intent is a durable commitment. The parent is already
-  // runnable, so a child transition must not replace that unresolved input.
-  if (triggerCarriesOwnerIntent(previous?.event)) return parentTaskId;
-  const latestOwnerTrigger =
-    parent.status.phase === "waiting" || parent.status.phase === "attention"
-      ? latestTaskAttempt(tree, parentTaskId, parent.metadata.generation)?.trigger
-      : undefined;
-  const event: Record<string, unknown> = triggerCarriesOwnerIntent(latestOwnerTrigger)
-    ? structuredClone(latestOwnerTrigger ?? {})
-    : {
-        type: "project.task.child-transitioned",
-        source: PROJECT_APP_TASK_RECOVERY_OWNER,
-        target: { taskId: parentTaskId },
-        taskId: parentTaskId,
-        childTaskId: child.id,
-        disposition,
-        summary,
-        evidence: [...(evidence ?? [])],
-      };
+  // The parent is already runnable; never overwrite an independently admitted
+  // trigger merely because one of its children also changed state.
+  if (previous?.event) return parentTaskId;
+  const event: Record<string, unknown> = {
+    type: "project.task.child-transitioned",
+    source: APP_TASK_RECOVERY_OWNER,
+    target: { taskId: parentTaskId },
+    taskId: parentTaskId,
+    childTaskId: child.id,
+    disposition,
+    summary,
+    evidence: [...(evidence ?? [])],
+  };
   tree.taskTriggers = {
     ...(tree.taskTriggers ?? {}),
     [parentTaskId]: {
@@ -2938,14 +3167,14 @@ function recordExecutableParentTrigger(
   return parentTaskId;
 }
 
-export function completeProjectAppTask(
+export function completeAppTask(
   config: TaskStateConfig,
-  claim: ProjectAppTaskClaim,
+  claim: AppTaskClaim,
   input: {
     summary: string;
     evidence?: string[];
-    actions?: ProjectAppTaskAction[];
-    acceptanceBasis?: ProjectAppTaskAcceptanceBasis;
+    actions?: AppTaskAction[];
+    acceptanceBasis?: AppTaskAcceptanceBasis;
   },
 ): {
   status: "applied" | "stale";
@@ -2969,7 +3198,7 @@ export function completeProjectAppTask(
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
     const selfUpdates = actions.filter(
-      (action): action is Extract<ProjectAppTaskAction, { kind: "update-task" }> =>
+      (action): action is Extract<AppTaskAction, { kind: "update-task" }> =>
         action.kind === "update-task" && action.taskId === claim.taskId,
     );
     if (selfUpdates.length > 0 && actions.length !== 1) {
@@ -3067,6 +3296,8 @@ export function completeProjectAppTask(
           acceptance: [...intent.acceptance],
           owner: claim.owner,
           ...(intent.workflow ? { workflow: intent.workflow } : {}),
+          input: structuredClone(intent.input ?? {}),
+          ...(intent.priority ? { priority: intent.priority } : {}),
           handler: claim.handler,
           summary: input.summary,
           evidence: [...(input.evidence ?? [])],
@@ -3095,15 +3326,15 @@ export function completeProjectAppTask(
   });
 }
 
-export function deferProjectAppTask(
+export function deferAppTask(
   config: TaskStateConfig,
-  claim: ProjectAppTaskClaim,
+  claim: AppTaskClaim,
   input: {
     disposition: "waiting";
     summary: string;
     evidence?: string[];
-    actions?: ProjectAppTaskAction[];
-    conditions?: ProjectAppConditionSpec[];
+    actions?: AppTaskAction[];
+    conditions?: AppTaskConditionSpec[];
   },
 ): {
   status: "applied" | "stale";
@@ -3128,7 +3359,7 @@ export function deferProjectAppTask(
       !waitsForChildren &&
       pendingTrigger?.type === "project.task.child-transitioned"
     ) {
-      throw new ProjectAppTaskActionStaleError({
+      throw new AppTaskActionStaleError({
         taskId: claim.taskId,
         expectedGeneration: claim.generation,
         currentGeneration: resource.metadata.generation,
@@ -3174,7 +3405,7 @@ export function deferProjectAppTask(
     // pulse is consumed. Explicit human/override triggers still bypass the wait.
     if (pendingTrigger && !triggerOverridesWait(pendingTrigger)) {
       delete tree.taskTriggers![task.id];
-      applyProjectAppConditionEvent(tree, pendingTrigger);
+      applyAppTaskConditionEvent(tree, pendingTrigger);
     }
     syncTaskProjection(task, resource, claim.owner);
     refreshActiveTaskProjection(tree);
@@ -3199,9 +3430,9 @@ export function deferProjectAppTask(
   });
 }
 
-export function markProjectAppTaskAttention(
+export function markAppTaskAttention(
   config: TaskStateConfig,
-  claim: ProjectAppTaskClaim,
+  claim: AppTaskClaim,
   input: { summary: string; reason: string; evidence?: string[]; wakeParent?: boolean },
 ): { status: "applied" | "stale"; parentTaskId?: string } {
   return withTaskStateLock(config, () => {

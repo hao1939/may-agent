@@ -15,7 +15,7 @@ describe("agent runner infrastructure boundary", () => {
       "bun:sqlite",
       "requests.js",
       "persistence.js",
-      "project-app",
+      "app-task",
       "metrics",
       "cron",
     ]) {

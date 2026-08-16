@@ -15,15 +15,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import type { SubagentManager } from "../../lib/index.js";
-import type { CronEntry } from "../../lib/cron-tool.js";
-import type { EventEnvelope } from "../../lib/handler-context.js";
-import { Check, Errors } from "typebox/value";
-import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import { importRuntimeModule } from "../../lib/runtime-import.js";
-import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
-import { getDb, updateSessionDb } from "../../lib/requests.js";
-import { createQueryService } from "../../lib/query-service.js";
+import type { SubagentManager } from "../lib/index.js";
+import type { EventEnvelope } from "../lib/handler-context.js";
+import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
+import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../lib/workflow-tool.js";
+import { getDb, updateSessionDb } from "../lib/requests.js";
 import {
   appendSessionMessage,
   markSessionInactive,
@@ -31,95 +27,86 @@ import {
   readSessionMeta,
   readSessionMessages,
   writeSessionMeta,
-} from "../../lib/persistence.js";
-import { extractFinishParams } from "../../lib/agent-result.js";
-import { readLatestCheckpoint } from "../../lib/tools/checkpoint.js";
-import { drainPersistedSessionBashProcessGroups } from "../../lib/tools/bash.js";
-import { STATE_CHANGING_TOOLS } from "../../lib/manager-utils.js";
-import { writeSessionResult } from "../../lib/artifacts.js";
+} from "../lib/persistence.js";
+import { extractFinishParams } from "../lib/agent-result.js";
+import { readLatestCheckpoint } from "../lib/tools/checkpoint.js";
+import { drainPersistedSessionBashProcessGroups } from "../lib/tools/bash.js";
+import { STATE_CHANGING_TOOLS } from "../lib/manager-utils.js";
+import { writeSessionResult } from "../lib/artifacts.js";
 import {
-  admitProjectAppTaskHandlerResult,
-  admitProjectAppTaskVerificationResult,
-  loadProjectReadModel,
-  matchesEventSelector,
-  projectAppExecutionPaths,
-  projectAppTaskOwnerResultSchema,
-  projectRuntimePaths,
-  readTaskState,
-  refreshProjectTaskTreeProjection,
-  type ProjectApp,
-  type ProjectAppContext,
-  type ProjectAppConditionSpec,
-  type ProjectAppEvent as AppEvent,
-  type ProjectAppEventTarget as EventTarget,
-  type ProjectAppTaskAction,
-  type ProjectAppTaskAcceptanceBasis,
-  type ProjectAppTaskHandlerResult,
-  type ProjectAppTaskIntent,
-  type ProjectAppTaskVerifier,
-  type ProjectAppExecutionPaths,
-} from "@may-agent/sdk/legacy";
-import type { AppTaskAttachment } from "@may-agent/sdk";
+  admitTaskReconcileResult as admitAppTaskHandlerResult,
+  admitTaskVerificationResult as admitAppTaskVerificationResult,
+  taskOwnerResultSchema as appTaskOwnerResultSchema,
+  type AppDefinition,
+  type AppRequest,
+  type AppTaskAttachment,
+  type Condition as AppTaskConditionSpec,
+  type TaskAction as AppTaskAction,
+  type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
+  type TaskIntent as AppTaskIntent,
+  type TaskReconcileResult as AppTaskHandlerResult,
+  type TaskVerifier as AppTaskVerifier,
+} from "@may-agent/sdk";
+import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
+import { readTaskState, refreshAppTaskTreeProjection } from "./app-task-store.js";
+import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskView } from "@may-agent/sdk/app";
-import { readRuntimeTaskView } from "../app-read.js";
-import { Cron } from "../cron.js";
-import type { AppRegistry } from "../app-registry.js";
-import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
-import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
-import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
+import { readRuntimeTaskView } from "./app-read.js";
+import { appOwnerReviewEvent } from "./app-input-event.js";
+import { canonicalAppEvent } from "./canonical-app-event.js";
+import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import { AppTaskCapacity, AppTaskController } from "./app-task-controller.js";
+import type { AppTaskQueueOptions } from "./app-task-queue.js";
 import {
-  childEventTrace,
-  EVENT_INGRESS_SOURCE,
-  EVENT_ROW_ID,
-  type AgentEvent,
-  type DeliveryResult,
-  type EventBus,
-} from "../event-bus.js";
+  matchingAppTaskConditionTaskIds,
+  trackAppTaskConditionEventForTasks,
+  trackAppTaskConditionEvents,
+} from "./app-task-condition-tracker.js";
+import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import {
-  acknowledgeProjectAppTaskRecoveryAttention,
-  associateProjectAppTaskSession,
-  claimObservedProjectAppTask,
-  completeProjectAppTask,
-  discardProjectAppTaskOwnerIntent,
-  deferProjectAppTask,
-  listHandlerExecutionFailedProjectAppTasks,
-  listHandlerUnavailableProjectAppTasks,
-  listWorkspacePreparationFailedProjectAppTasks,
-  markProjectAppTaskAttention,
-  listProjectAppTaskIntents,
-  listRunnableProjectAppTaskQueueEntries,
-  isProjectAppTaskActionStaleError,
-  isProjectAppTaskConverged,
-  observeProjectAppTaskIntent,
-  pendingProjectAppTaskRecoveryAttention,
-  projectAppTaskQueueEntries,
-  readProjectAppTaskChildContext,
-  readProjectAppTaskIntent,
-  readProjectAppTaskOwnerTrigger,
-  readProjectAppTaskTrigger,
-  recordProjectAppTaskTrigger,
-  releaseHandlerExecutionFailedProjectAppTask,
-  releaseHandlerUnavailableProjectAppTask,
-  releaseWorkspacePreparationFailedProjectAppTask,
+  acknowledgeAppTaskRecoveryAttention,
+  associateAppTaskSession,
+  claimObservedAppTask,
+  completeAppTask,
+  deferAppTask,
+  listHandlerExecutionFailedAppTasks,
+  listHandlerUnavailableAppTasks,
+  listWorkspacePreparationFailedAppTasks,
+  markAppTaskAttention,
+  pendingAppTaskRecoveryAttention,
+  listAppTaskIntents,
+  listRunnableAppTaskQueueEntries,
+  isAppTaskActionStaleError,
+  isAppTaskConverged,
+  observeAppTaskIntent,
+  appTaskQueueEntries,
+  readAppTaskChildContext,
+  readAppTaskLiveSnapshot,
+  readAppTaskIntent,
+  readAppTaskTrigger,
+  readPendingAppTaskTrigger,
+  recordAppTaskTrigger,
+  releaseHandlerExecutionFailedAppTask,
+  releaseHandlerUnavailableAppTask,
+  releaseWorkspacePreparationFailedAppTask,
   repairPreviousRuntimeRecoveryAttention,
-  repairRunningProjectAppTasksWithoutAttempt,
-  recoverableProjectAppTaskAttempts,
-  releaseInterruptedProjectAppTaskAttempt,
-  releaseStaleProjectAppTaskResult,
-  recordProjectAppTaskAttemptSession,
-  recordProjectAppTaskAttemptWorkspace,
-  refreshProjectAppTaskAttemptLeaseBySession,
-  claimFreshProjectAppTaskSessionForStartup,
+  repairRunningAppTasksWithoutAttempt,
+  recoverableAppTaskAttempts,
+  expiredOwnerSessionAppTaskAttempt,
+  releaseInterruptedAppTaskAttempt,
+  releaseLateTerminalWorkflowAppTaskAttempt,
+  releaseTerminalSessionExpiredAppTaskAttempt,
+  releaseStaleAppTaskResult,
+  recordAppTaskAttemptSession,
+  recordAppTaskAttemptWorkspace,
+  refreshAppTaskAttemptLeaseBySession,
+  claimFreshAppTaskSessionForStartup,
   taskReconciliationConfig,
-  PROJECT_APP_TASK_RECOVERY_OWNER,
-  type ProjectAppTaskChildContext,
-  type ProjectAppTaskClaim,
-} from "../project-app-task-reconciler.js";
-import {
-  finalizeProjectTaskWorkspace,
-  prepareProjectTaskWorkspace,
-  type PreparedTaskWorkspace,
-} from "../project-task-workspace.js";
+  APP_TASK_RECOVERY_OWNER,
+  type AppTaskChildContext,
+  type AppTaskClaim,
+} from "./app-task-reconciler.js";
+import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace, type PreparedTaskWorkspace } from "./app-task-workspace.js";
 
 type ProjectReadModel = {
   id: string;
@@ -131,20 +118,19 @@ type ProjectReadModel = {
   priority: string | null;
 };
 
-const PROJECT_APP_TASK_OWNER_TIMEOUT_MS = 15 * 60_000;
-const PROJECT_APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
+const APP_TASK_OWNER_TIMEOUT_MS = 15 * 60_000;
+const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
-export interface ProjectAppDescriptor {
+export interface AppTaskRuntimeDescriptor {
   id: string;
   appDir: string;
   projectDir: string;
   owner: string;
-  app: ProjectApp;
-  ownsDirectInbox: boolean;
+  app: AppDefinition;
   reconciliationPaused: boolean;
 }
 
-export interface ProjectAppLoaderOptions {
+export interface AppTaskRuntimeOptions {
   projectsRoot: string;
   projectRoot: string;
   persistDir?: string;
@@ -152,8 +138,11 @@ export interface ProjectAppLoaderOptions {
   sharedRoot?: string;
   manager: SubagentManager;
   bus: EventBus;
-  agentCrons: Map<string, Cron>;
   appRegistry?: AppRegistry;
+  /** Prospective canonical generation used during one coordinated reload. */
+  appRegistrySnapshot?: AppRegistrySnapshot;
+  /** Final synchronous publication step inside the atomic generation boundary. */
+  afterCommit?: (result: { installed: AppTaskRuntimeDescriptor[] }) => void;
   /**
    * Called when an app-local agent used by the app is not yet registered.
    * The app brings its own agents; this callback registers one from its
@@ -162,7 +151,7 @@ export interface ProjectAppLoaderOptions {
   registerLocalAgent?: (agentName: string, appDir: string, agentDir?: string) => Promise<boolean>;
 }
 
-export interface ProjectAppWatcher {
+export interface AppTaskRuntimeWatcher {
   close(): void;
   scanNow(): Promise<boolean>;
 }
@@ -171,7 +160,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function parseProjectAppTaskSessionBinding(
+export function parseAppTaskSessionBinding(
   task: unknown,
 ): { appId: string; taskId: string; generation: number } | null {
   if (typeof task !== "string" || !task.includes("## Reconciliation Task")) return null;
@@ -200,12 +189,12 @@ function firstNonEmptyString(...values: unknown[]): string | null {
   return null;
 }
 
-type ProjectAppTaskSessionScope = {
+type AppTaskSessionScope = {
   binding: { appId: string; taskId: string; generation: number } | null;
   workflowRunId: string | null;
 };
 
-function readProjectAppTaskSessionScope(persistDir: string | undefined, sessionId: string): ProjectAppTaskSessionScope {
+function readAppTaskSessionScope(persistDir: string | undefined, sessionId: string): AppTaskSessionScope {
   if (!persistDir) {
     return {
       binding: null,
@@ -220,19 +209,27 @@ function readProjectAppTaskSessionScope(persistDir: string | undefined, sessionI
     };
   }
   return {
-    binding: parseProjectAppTaskSessionBinding(meta.task),
+    binding: parseAppTaskSessionBinding(meta.task),
     workflowRunId: firstNonEmptyString(meta.workflowRunId),
   };
+}
+
+function workflowWasInterruptedByRestart(persistDir: string | undefined, workflowRunId: string | null): boolean {
+  if (!persistDir || !workflowRunId) return false;
+  const row = getDb(persistDir)
+    .prepare("SELECT status, result_reason FROM workflow_runs WHERE runId = ?")
+    .get(workflowRunId) as { status?: unknown; result_reason?: unknown } | undefined;
+  return row?.status === "interrupted" && row.result_reason === "Process restarted";
 }
 
 function taskRecoverySessionScopesMatch(
   appId: string,
   persistDir: string | undefined,
   failedSessionId: string | undefined,
-  successfulSession: ProjectAppTaskSessionScope,
+  successfulSession: AppTaskSessionScope,
 ): boolean {
   if (!failedSessionId) return false;
-  const failed = readProjectAppTaskSessionScope(persistDir, failedSessionId);
+  const failed = readAppTaskSessionScope(persistDir, failedSessionId);
   if (failed.binding && successfulSession.binding) {
     return (
       failed.binding.appId === appId &&
@@ -256,7 +253,7 @@ function isProcessAlive(pid: number | undefined): boolean {
   }
 }
 
-function hasLiveProjectTaskSession(opts: ProjectAppLoaderOptions, sessionId: string): boolean {
+function hasLiveAppTaskSession(opts: AppTaskRuntimeOptions, sessionId: string): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return false;
   if (opts.manager.hasActiveSession(cleanSessionId)) return true;
@@ -302,10 +299,10 @@ function localAgentDir(appDir: string, agentName: string): string | undefined {
   return match ? join(appDir, "agents", match.dirName) : undefined;
 }
 
-export function inferProjectAppOwner(appDir: string): string {
+export function inferAppOwner(appDir: string): string {
   const agents = localAgents(appDir);
   if (agents.length === 0) {
-    throw new Error(`Project app ${appDir} has no local agents; cannot infer project owner`);
+    throw new Error(`App ${appDir} has no local agents; cannot infer its owner`);
   }
   if (agents.length === 1) return agents[0]!.name;
 
@@ -315,11 +312,11 @@ export function inferProjectAppOwner(appDir: string): string {
   }
 
   throw new Error(
-    `Project app ${appDir} has multiple local agents (${agents.map((agent) => agent.dirName).join(", ")}) and no agents/owner or agents/project-owner directory`,
+    `App ${appDir} has multiple local agents (${agents.map((agent) => agent.dirName).join(", ")}) and no agents/owner or agents/project-owner directory`,
   );
 }
 
-export function listProjectAppDirs(projectsRoot: string): string[] {
+export function listAppDirs(projectsRoot: string): string[] {
   if (!existsSync(projectsRoot)) return [];
   const dirs: string[] = [];
   for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
@@ -332,26 +329,13 @@ export function listProjectAppDirs(projectsRoot: string): string[] {
   return dirs.sort();
 }
 
-function appIdFromDir(appDir: string): string {
-  const name = basename(appDir);
-  return name.endsWith(".app") ? name.slice(0, -".app".length) : name;
-}
-
-function configuredProjectAppOwner(app: ProjectApp, appDir: string): string {
+function configuredAppOwner(app: AppDefinition, appDir: string): string {
   const owner = typeof app.owner === "string" ? app.owner.trim() : "";
   if (owner) return owner.replace(/^agent:/, "");
-  return inferProjectAppOwner(appDir);
+  return inferAppOwner(appDir);
 }
 
-async function loadProjectApp(appDir: string): Promise<ProjectApp> {
-  const tsPath = join(appDir, "app.ts");
-  const jsPath = join(appDir, "app.js");
-  const modulePath = existsSync(tsPath) ? tsPath : jsPath;
-  const mod = await importRuntimeModule<{ default?: ProjectApp } & ProjectApp>(modulePath);
-  return mod.default ?? mod;
-}
-
-function domainProjectDir(projectsRoot: string, appDir: string, appId: string, app: ProjectApp): string {
+function domainProjectDir(projectsRoot: string, appDir: string, appId: string, app: AppDefinition): string {
   const localPath = typeof app.workspace?.localPath === "string" ? app.workspace.localPath.trim() : "";
   if (localPath) return resolve(appDir, localPath);
   const sibling = resolve(projectsRoot, appId);
@@ -368,7 +352,7 @@ function readJsonObject(path: string): Record<string, unknown> {
   }
 }
 
-function projectReadModel(projectRoot: string, descriptor: ProjectAppDescriptor): ProjectReadModel {
+function projectReadModel(projectRoot: string, descriptor: AppTaskRuntimeDescriptor): ProjectReadModel {
   const projectJson = loadProjectReadModel(descriptor.appDir);
   const id = typeof projectJson.id === "string" && projectJson.id.trim() ? projectJson.id.trim() : descriptor.id;
   const owner =
@@ -377,8 +361,7 @@ function projectReadModel(projectRoot: string, descriptor: ProjectAppDescriptor)
       : descriptor.owner;
   const status =
     typeof projectJson.status === "string" && projectJson.status.trim() ? projectJson.status.trim() : "active";
-  const type =
-    typeof projectJson.type === "string" && projectJson.type.trim() ? projectJson.type.trim() : "project-app";
+  const type = typeof projectJson.type === "string" && projectJson.type.trim() ? projectJson.type.trim() : "agent-app";
   const priority =
     typeof projectJson.priority === "string" && projectJson.priority.trim() ? projectJson.priority.trim() : null;
   const relativePath = relative(projectRoot, descriptor.appDir).replace(/\\/g, "/");
@@ -393,7 +376,7 @@ function projectReadModel(projectRoot: string, descriptor: ProjectAppDescriptor)
   };
 }
 
-function syncProjectReadModel(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): void {
+function syncProjectReadModel(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): void {
   if (!opts.persistDir) return;
   const model = projectReadModel(opts.projectRoot, descriptor);
   const db = getDb(opts.persistDir);
@@ -413,96 +396,13 @@ function syncProjectReadModel(opts: ProjectAppLoaderOptions, descriptor: Project
   );
 }
 
-const envelopeFieldNames = new Set([
-  "type",
-  "source",
-  "owner",
-  "timestamp",
-  "visibility",
-  "trace",
-  "urgency",
-  "ttlMs",
-  "ttl_ms",
-  "target",
-  "action",
-  "data",
-]);
-
-function normalizeEvent(event: AppEvent, defaults: { source: string; owner: string }): EventEnvelope {
-  const type = typeof event.type === "string" ? event.type : "project.event";
-  const source = typeof event.source === "string" ? event.source : defaults.source;
-  const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now();
-  const urgency = typeof event.urgency === "string" ? event.urgency : undefined;
-  const action = typeof event.action === "string" && event.action.trim() ? event.action.trim() : undefined;
-  const ttlMs =
-    typeof event.ttl_ms === "number" ? event.ttl_ms : typeof event.ttlMs === "number" ? event.ttlMs : undefined;
-  const target = isRecord(event.target) ? (event.target as EventTarget) : undefined;
-  const visibility = event.visibility === "detail" ? "detail" : event.visibility === "default" ? "default" : undefined;
-  const trace = isRecord(event.trace) ? (event.trace as EventEnvelope["trace"]) : undefined;
-  const flatPayload = Object.fromEntries(Object.entries(event).filter(([key]) => !envelopeFieldNames.has(key)));
-  const data = {
-    ...(isRecord(event.data) ? event.data : {}),
-    ...flatPayload,
-  };
-  if (target?.project && typeof data.project !== "string") data.project = target.project;
-  if (target?.taskId && typeof data.taskId !== "string") data.taskId = target.taskId;
-  if (target?.taskId && typeof data.task_id !== "string") data.task_id = target.taskId;
-  if (target && !isRecord(data.target)) data.target = target;
-  const owner = inferEventOwner(event.owner, target, defaults.owner);
-  return {
-    type,
-    source,
-    owner,
-    timestamp,
-    ...(urgency ? { urgency: urgency as EventEnvelope["urgency"] } : {}),
-    ...(action ? { action } : {}),
-    ...(typeof ttlMs === "number" ? { ttl_ms: ttlMs } : {}),
-    ...(target ? { target } : {}),
-    ...(visibility ? { visibility } : {}),
-    ...(trace ? { trace } : {}),
-    data,
-  };
-}
-
-function normalizeOwnerIdentity(owner: unknown, fallback: unknown = "may"): string {
-  const value =
-    typeof owner === "string" && owner.trim()
-      ? owner.trim()
-      : typeof fallback === "string" && fallback.trim()
-        ? fallback.trim()
-        : "may";
-  if (
-    value.startsWith("agent:") ||
-    value.startsWith("human:") ||
-    value.startsWith("project:") ||
-    value.startsWith("task:")
-  ) {
-    return value;
-  }
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
-}
-
-function ownerFromTarget(target: EventTarget | undefined): string | undefined {
-  if (target?.human === true) return "human:operator";
-  if (target?.project && typeof target.project === "string" && target.project.trim()) {
-    return `project:${target.project.trim()}`;
-  }
-  return undefined;
-}
-
-function inferEventOwner(owner: unknown, target: EventTarget | undefined, fallback: unknown): string {
-  if (typeof owner === "string" && owner.trim()) return normalizeOwnerIdentity(owner);
-  return ownerFromTarget(target) ?? normalizeOwnerIdentity(fallback);
-}
-
-function requireWorkflowRuntimeOptions(opts: ProjectAppLoaderOptions): {
+function requireWorkflowRuntimeOptions(opts: AppTaskRuntimeOptions): {
   persistDir: string;
   agentsRoot: string;
   sharedRoot: string;
 } {
   if (!opts.persistDir || !opts.agentsRoot || !opts.sharedRoot) {
-    throw new Error("Project app task workflows require persistDir, agentsRoot, and sharedRoot");
+    throw new Error("App task workflows require persistDir, agentsRoot, and sharedRoot");
   }
   return {
     persistDir: opts.persistDir,
@@ -512,8 +412,8 @@ function requireWorkflowRuntimeOptions(opts: ProjectAppLoaderOptions): {
 }
 
 function appWorkflowRuntimePaths(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
   agentName: string,
 ): {
   agentsRoot: string;
@@ -547,131 +447,13 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
   };
 }
 
-function projectValue(event: Record<string, unknown>): string {
-  const direct = event.project ?? event.projectId;
-  if (typeof direct === "string") return direct;
-  if (isRecord(event.target)) {
-    const targetedProject = event.target.project;
-    if (typeof targetedProject === "string") return targetedProject;
-  }
-  const path = event.projectPath;
-  if (typeof path === "string") {
-    const normalized = path.replace(/\\/g, "/");
-    const tail = normalized.split("/").filter(Boolean).pop() ?? "";
-    return tail.endsWith(".app") ? tail.slice(0, -".app".length) : tail;
-  }
-  return "";
-}
-
-function isProjectScopedForApp(event: Record<string, unknown>, appId: string): boolean {
-  const project = projectValue(event);
-  return project === appId || project === `${appId}.app`;
-}
-
-function ownerValue(event: Record<string, unknown>): string {
-  const owner = typeof event.owner === "string" ? event.owner.trim() : "";
-  return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
-}
-
-function closedOwnerInputEventId(persistDir: string | undefined, event: Record<string, unknown>): number | null {
-  if (!persistDir || event.type !== "project.owner.requested") return null;
-  const inputEventId = Number(event.inputEventId);
-  if (!Number.isInteger(inputEventId) || inputEventId <= 0) return null;
-  const inputEventType = typeof event.inputEventType === "string" ? event.inputEventType : "project.comment.created";
-  const terminalType = inputEventType === "message.created" ? "message.resolved" : "project.owner.reviewed";
-  const existing = getDb(persistDir)
-    .prepare(
-      `SELECT id
-       FROM events
-       WHERE event_type = ?
-         AND json_extract(data, '$.openEventId') = ?
-       LIMIT 1`,
-    )
-    .get(terminalType, inputEventId) as { id?: unknown } | undefined;
-  return Number(existing?.id) > 0 ? inputEventId : null;
-}
-
-function isMetricFeedbackEvent(event: Record<string, unknown>): boolean {
-  return event.type === "metric.breach" || event.type === "metric.recovered" || event.type === "metric.stalled";
-}
-
-function metricEventId(event: Record<string, unknown>): string {
-  const metricId = event.metricId ?? event.metric_id;
-  return typeof metricId === "string" ? metricId : "";
-}
-
-function metricAlertId(event: Record<string, unknown>): number | string | null {
-  const alertId = event.alertId ?? event.alert_id;
-  return typeof alertId === "number" || typeof alertId === "string" ? alertId : null;
-}
-
-function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>): boolean {
-  if ((app.events ?? []).some((selector) => matchesEventSelector(selector, event))) return true;
-  if (app.tasks?.accepts.some((selector) => matchesEventSelector(selector, event))) return true;
-  return false;
-}
-
-function makeContext(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
-  parentEvent?: AgentEvent,
-): ProjectAppContext {
-  return {
-    appPath: (path: string) => resolve(descriptor.appDir, path),
-    emit: (event) => {
-      const envelope = normalizeEvent(event, {
-        source: `project-app:${descriptor.id}`,
-        owner: `agent:${descriptor.owner}`,
-      });
-      if (envelope.type === "project.owner.requested" && parentEvent?.type === "project.comment.created") {
-        const inputEventId = Number((parentEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-        if (Number.isInteger(inputEventId) && inputEventId > 0) {
-          if (envelope.data.inputEventId === undefined) envelope.data.inputEventId = inputEventId;
-          if (envelope.data.inputEventType === undefined) envelope.data.inputEventType = parentEvent.type;
-        }
-      }
-      if (!envelope.trace && parentEvent) {
-        const trace = childEventTrace(parentEvent);
-        if (trace) envelope.trace = trace;
-      }
-      return opts.bus.emit(envelope as unknown as AgentEvent) as unknown as AppEvent;
-    },
-    noop: (reason: string) => ({ type: "noop", reason }),
-    ...(opts.persistDir ? { query: createQueryService({ getDb: () => getDb(opts.persistDir!) }) } : {}),
-  };
-}
-
-function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): Cron {
-  const existing = opts.agentCrons.get(descriptor.owner);
-  if (existing) return existing;
-
-  const stateDir = join(descriptor.appDir, ".state");
-  mkdirSync(stateDir, { recursive: true });
-  const cron = new Cron(
-    join(stateDir, "project-app.cron.json"),
-    opts.manager,
-    () => {
-      throw new Error(`No active ${descriptor.owner} session`);
-    },
-    (msg) => opts.bus.emit({ type: "info", message: `[cron:${descriptor.owner}] ${msg}` }),
-    opts.projectRoot,
-    undefined,
-    (event) => opts.bus.emit(event as AgentEvent),
-  );
-  cron.load();
-  // Do NOT subscribeToBus or start here — cron-startup.ts owns activation
-  // for all crons (agent-level and app-level) in one centralized loop.
-  opts.agentCrons.set(descriptor.owner, cron);
-  return cron;
-}
-
-function requiredAppAgentNames(descriptor: ProjectAppDescriptor): string[] {
+function requiredAppAgentNames(descriptor: AppTaskRuntimeDescriptor): string[] {
   return [descriptor.owner];
 }
 
 async function ensureAppAgentRegistered(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
   agentName: string,
 ): Promise<boolean> {
   if (opts.manager.hasAgent(agentName)) return true;
@@ -684,51 +466,10 @@ async function ensureAppAgentRegistered(
   return registered || opts.manager.hasAgent(agentName);
 }
 
-const projectAppScheduleSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
-
-function rememberProjectAppNames(
-  tracker: WeakMap<Cron, Map<string, Set<string>>>,
-  cron: Cron,
-  appId: string,
-  currentNames: Set<string>,
-): void {
-  let byApp = tracker.get(cron);
-  if (!byApp) {
-    byApp = new Map();
-    tracker.set(cron, byApp);
-  }
-  const previousNames = byApp.get(appId) ?? new Set<string>();
-  for (const previousName of previousNames) {
-    if (!currentNames.has(previousName)) {
-      cron.removeSyntheticEntry(previousName);
-    }
-  }
-  byApp.set(appId, currentNames);
-}
-
-function pruneProjectAppNames(
-  tracker: WeakMap<Cron, Map<string, Set<string>>>,
-  agentCrons: Map<string, Cron>,
-  activeCronAppIds: Map<Cron, Set<string>>,
-): void {
-  for (const cron of agentCrons.values()) {
-    const byApp = tracker.get(cron);
-    if (!byApp) continue;
-    const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
-    for (const [appId, names] of byApp) {
-      if (activeAppIds.has(appId)) continue;
-      for (const name of names) {
-        cron.removeSyntheticEntry(name);
-      }
-      byApp.delete(appId);
-    }
-  }
-}
-
 type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
   runId: string | null;
-  verifier?: { name: string; sourcePath: string; verify: ProjectAppTaskVerifier };
+  verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
   workspacePreparationFailed?: boolean;
@@ -745,8 +486,8 @@ type NormalizedTaskHandlerResult = {
   state: "converged" | "waiting" | "needs-owner" | "error";
   summary: string;
   evidence: string[];
-  actions: ProjectAppTaskAction[];
-  conditions?: ProjectAppConditionSpec[];
+  actions: AppTaskAction[];
+  conditions?: AppTaskConditionSpec[];
 };
 
 export function normalizeTaskHandlerResult(
@@ -756,7 +497,7 @@ export function normalizeTaskHandlerResult(
     allowNeedsOwner?: boolean;
     defaultParentId?: string;
     rootParentAliases?: string[];
-    validateAction?: (action: ProjectAppTaskAction) => string | null;
+    validateAction?: (action: AppTaskAction) => string | null;
   } = {},
 ): NormalizedTaskHandlerResult {
   if (output === undefined && fallback.type === "blocked") {
@@ -767,7 +508,7 @@ export function normalizeTaskHandlerResult(
       actions: [],
     };
   }
-  const admission = admitProjectAppTaskHandlerResult(output, {
+  const admission = admitAppTaskHandlerResult(output, {
     allowNeedsOwner: options.allowNeedsOwner ?? true,
     defaultParentId: options.defaultParentId ?? "project",
     rootParentAliases: options.rootParentAliases,
@@ -801,15 +542,16 @@ export function normalizeTaskHandlerResult(
 }
 
 async function runTaskCapability(input: {
-  opts: ProjectAppLoaderOptions;
-  descriptor: ProjectAppDescriptor;
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
   capability: WorkflowCapability;
-  intent: ProjectAppTaskIntent;
-  claim: ProjectAppTaskClaim;
+  intent: AppTaskIntent;
+  claim: AppTaskClaim;
   defaultParentId: string;
-  executionPaths: ProjectAppExecutionPaths;
+  executionPaths: AppTaskExecutionPaths;
   declaredOutputPaths: string[];
-  childContext: ProjectAppTaskChildContext;
+  childContext: AppTaskChildContext;
+  taskSnapshot: ReturnType<typeof readAppTaskLiveSnapshot>;
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -853,13 +595,13 @@ async function runTaskCapability(input: {
     type: "handler.workflow_dispatched",
     source: `agent:${agentName}`,
     owner: `agent:${claim.owner}`,
-    target: { project: descriptor.id, taskId: claim.taskId },
+    target: { appId: descriptor.id },
     data: {
       handler: claim.handler,
       workflow: capability.workflow,
       source: agentName,
       projectId: descriptor.id,
-      recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
+      recoveryOwner: APP_TASK_RECOVERY_OWNER,
       taskId: claim.taskId,
       taskGeneration: claim.generation,
       workflowRunId: null,
@@ -893,11 +635,40 @@ async function runTaskCapability(input: {
         taskId: claim.taskId,
         generation: claim.generation,
       },
-      recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
+      recoveryOwner: APP_TASK_RECOVERY_OWNER,
       trace,
       executionPaths: input.executionPaths,
       workflowInput: intent.input ?? {},
-      executionTimeoutMs: PROJECT_APP_TASK_WORKFLOW_TIMEOUT_MS,
+      reconciliation: {
+        appId: descriptor.id,
+        taskId: claim.taskId,
+        generation: claim.generation,
+        resourceVersion: claim.resourceVersion,
+        owner: claim.owner,
+        mode: claim.mode,
+        outcome: intent.outcome,
+        acceptance: intent.acceptance,
+        input: intent.input ?? {},
+        children: {
+          live: input.childContext.live.map(({ phase, ...child }) => ({
+            ...child,
+            status: phase === "converged" ? "done" : phase,
+          })),
+          completed: input.childContext.completed.map((child) => ({
+            ...child,
+            status: "done" as const,
+          })),
+        },
+        taskSnapshot: {
+          live: input.taskSnapshot.live.map(({ phase, ...task }) => ({
+            ...task,
+            status: phase === "converged" ? "done" : phase,
+          })),
+          truncated: input.taskSnapshot.truncated,
+        },
+        ...(event ? { trigger: canonicalAppEvent(event as AgentEvent) } : {}),
+      },
+      executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
@@ -919,7 +690,7 @@ async function runTaskCapability(input: {
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
       owner: `agent:${claim.owner}`,
-      target: { project: descriptor.id, taskId: claim.taskId },
+      target: { appId: descriptor.id },
       data: {
         handler: claim.handler,
         workflow: capability.workflow,
@@ -942,7 +713,7 @@ async function runTaskCapability(input: {
         ? {
             verifier: {
               ...verifier,
-              verify: verifier.verify as ProjectAppTaskVerifier,
+              verify: verifier.verify as AppTaskVerifier,
             },
           }
         : {}),
@@ -954,7 +725,7 @@ async function runTaskCapability(input: {
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
       owner: `agent:${claim.owner}`,
-      target: { project: descriptor.id, taskId: claim.taskId },
+      target: { appId: descriptor.id },
       data: {
         handler: claim.handler,
         workflow: capability.workflow,
@@ -1030,7 +801,7 @@ function summarizeInterruptedOwnerRecovery(input: {
 }): { summary: string; taskId: string | null; evidence: string[] } {
   const taskId = input.taskId?.trim()
     ? input.taskId.trim()
-    : input.meta.source === "project-app-task-owner"
+    : input.meta.source === "app-task-owner" || input.meta.source === "project-app-task-owner"
       ? extractReconciliationTaskId(input.meta.task)
       : null;
   const summary = taskId
@@ -1054,7 +825,7 @@ function summarizeInterruptedOwnerRecovery(input: {
 }
 
 function interruptSupersededOwnerSession(
-  opts: ProjectAppLoaderOptions,
+  opts: AppTaskRuntimeOptions,
   sessionId: string,
   reason: string,
   taskId?: string,
@@ -1065,7 +836,7 @@ function interruptSupersededOwnerSession(
     opts.manager.cancel(cleanSessionId);
     return;
   }
-  if (hasLiveProjectTaskSession(opts, cleanSessionId)) return;
+  if (hasLiveAppTaskSession(opts, cleanSessionId)) return;
 
   const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
   if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
@@ -1133,7 +904,7 @@ function interruptSupersededOwnerSession(
   markSessionInactive(opts.persistDir!, cleanSessionId);
   opts.bus.emit({
     type: "session.end",
-    source: meta.source ?? "project-app-task-reconciler",
+    source: meta.source ?? "app-task-reconciler",
     owner: `agent:${meta.agent}`,
     timestamp: endedAt,
     data: {
@@ -1159,7 +930,7 @@ function interruptSupersededOwnerSession(
 }
 
 function interruptSupersededObservationSessions(
-  opts: ProjectAppLoaderOptions,
+  opts: AppTaskRuntimeOptions,
   observation: { taskId: string; generation: number; supersededSessionIds?: string[] },
 ): void {
   for (const sessionId of observation.supersededSessionIds ?? []) {
@@ -1172,7 +943,7 @@ function interruptSupersededObservationSessions(
   }
 }
 
-function interruptSupersededActionSessions(opts: ProjectAppLoaderOptions, taskId: string, sessionIds: string[]): void {
+function interruptSupersededActionSessions(opts: AppTaskRuntimeOptions, taskId: string, sessionIds: string[]): void {
   for (const sessionId of sessionIds) {
     interruptSupersededOwnerSession(
       opts,
@@ -1284,9 +1055,7 @@ function canonicalResidueIdentity(projectDir: string, indexPath: string): string
  * disturbing dirt that predated the attempt. Workflow task worktrees have a
  * distinct workspaceDir and bypass this guard.
  */
-export function beginCanonicalOwnerResidueGuard(
-  paths: ProjectAppExecutionPaths,
-): CanonicalUntrackedResidueGuard | null {
+export function beginCanonicalOwnerResidueGuard(paths: AppTaskExecutionPaths): CanonicalUntrackedResidueGuard | null {
   if (paths.workspaceDir !== paths.projectDir) return null;
   try {
     const topLevel = resolve(
@@ -1441,14 +1210,14 @@ export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidu
 }
 
 async function runTaskOwner(input: {
-  opts: ProjectAppLoaderOptions;
-  descriptor: ProjectAppDescriptor;
-  intent: ProjectAppTaskIntent;
-  claim: ProjectAppTaskClaim;
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  intent: AppTaskIntent;
+  claim: AppTaskClaim;
   defaultParentId: string;
-  executionPaths: ProjectAppExecutionPaths;
+  executionPaths: AppTaskExecutionPaths;
   declaredOutputPaths: string[];
-  childContext: ProjectAppTaskChildContext;
+  childContext: AppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -1569,14 +1338,15 @@ async function runTaskOwner(input: {
   ].join("\n");
 
   const ownerOptions = {
-    source: "project-app-task-owner",
+    source: "app-task-owner",
     projectId: descriptor.id,
-    recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
+    recoveryOwner: APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
-    outputSchema: projectAppTaskOwnerResultSchema,
+    outputSchema: appTaskOwnerResultSchema,
     toolPolicy: "full" as const,
-    timeout: PROJECT_APP_TASK_OWNER_TIMEOUT_MS,
+    timeout: APP_TASK_OWNER_TIMEOUT_MS,
+    executionRoot: input.executionPaths.workspaceDir,
   };
   const dispatchOwner = async () =>
     typeof opts.manager.run === "function" &&
@@ -1593,13 +1363,14 @@ async function runTaskOwner(input: {
             outputSchema: ownerOptions.outputSchema,
             toolPolicy: ownerOptions.toolPolicy,
             timeoutMs: ownerOptions.timeout,
+            executionRoot: ownerOptions.executionRoot,
           });
-          recordProjectAppTaskAttemptSession(
+          recordAppTaskAttemptSession(
             taskReconciliationConfig({
               appDir: descriptor.appDir,
               projectDir: descriptor.projectDir,
               owner: descriptor.owner,
-              maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+              maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
             }),
             claim,
             sessionId,
@@ -1643,8 +1414,8 @@ async function runTaskOwner(input: {
 }
 
 function emitTaskReconciliationEvent(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
   event: EventEnvelope | undefined,
   type: string,
   taskId: string,
@@ -1663,168 +1434,19 @@ function emitTaskReconciliationEvent(
       : childEventTrace(event);
   opts.bus.emit({
     type,
-    source: `project-app:${descriptor.id}:task-reconciler`,
+    source: `app-task:${descriptor.id}:task-reconciler`,
     owner: `agent:${descriptor.owner}`,
-    target: { project: descriptor.id, taskId },
+    target: { appId: descriptor.id },
     data: { project: descriptor.id, taskId, ...data },
     ...(trace ? { trace } : {}),
   } as unknown as AgentEvent);
 }
 
-function emitOwnerResultForTask(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
-  trigger: EventEnvelope | undefined,
-  taskId: string,
-  summary: string,
-  taskDisposition: string,
-  actions: ProjectAppTaskAction[],
-): void {
-  if (trigger?.type !== "project.owner.requested" && trigger?.type !== "project.comment.created") return;
-  const triggerRecord = trigger as unknown as Record<string, unknown>;
-  const config = taskReconciliationConfig({
-    appDir: descriptor.appDir,
-    projectDir: descriptor.projectDir,
-    owner: descriptor.owner,
-    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-  });
-  const liveChildIds = readProjectAppTaskChildContext(config, taskId).live.map((child) => child.taskId);
-  const actionTaskIds = actions.flatMap((action) =>
-    action.kind === "create-task" ? [action.id] : action.kind === "close-task" ? [] : [action.taskId],
-  );
-  const taskRefs = [
-    ...new Set([
-      ...actionTaskIds,
-      ...liveChildIds,
-      ...(taskDisposition === "converged" && liveChildIds.length === 0 ? [] : [taskId]),
-    ]),
-  ].map((referencedTaskId) => ({ projectId: descriptor.id, taskId: referencedTaskId }));
-  const disposition =
-    taskRefs.length === 0
-      ? "answered"
-      : actions.some((action) => action.kind === "create-task")
-        ? "task-created"
-        : "task-updated";
-  const terminal = taskDisposition === "converged" && taskRefs.length === 0;
-  for (const intent of ownerIntentRefs(triggerRecord)) {
-    if (opts.persistDir) {
-      const terminalType = intent.eventType === "message.created" ? "message.resolved" : "project.owner.reviewed";
-      const existing = getDb(opts.persistDir)
-        .prepare(
-          `SELECT id
-           FROM events
-           WHERE event_type = ?
-             AND json_extract(data, '$.openEventId') = ?
-           LIMIT 1`,
-        )
-        .get(terminalType, intent.eventId) as { id?: unknown } | undefined;
-      if (Number(existing?.id) > 0) continue;
-    }
-    const resultType = terminal
-      ? intent.eventType === "message.created"
-        ? "message.resolved"
-        : "project.owner.reviewed"
-      : intent.eventType === "message.created"
-        ? "message.progressed"
-        : "project.owner.progressed";
-    opts.bus.emit({
-      type: resultType,
-      source: `project-app:${descriptor.id}:task-reconciler`,
-      owner: `agent:${descriptor.owner}`,
-      target: { project: descriptor.id, taskId },
-      data: {
-        ...(terminal
-          ? { openEventId: intent.eventId, openEventType: intent.eventType }
-          : { sourceEventId: intent.eventId, sourceEventType: intent.eventType }),
-        project: descriptor.id,
-        projectId: descriptor.id,
-        disposition,
-        taskDisposition,
-        ...(terminal && intent.eventType === "message.created" ? { outcome: "fulfilled" } : {}),
-        summary,
-        taskRefs,
-      },
-      trace: {
-        traceId:
-          trigger.trace && typeof trigger.trace === "object" && typeof trigger.trace.traceId === "string"
-            ? trigger.trace.traceId
-            : `event:${intent.eventId}`,
-        parentEventId: Number(triggerRecord.eventId) || intent.eventId,
-        links: [
-          {
-            eventId: intent.eventId,
-            type: terminal ? "closure" : "reference",
-            label: resultType,
-          },
-        ],
-      },
-    } as unknown as AgentEvent);
-    if (terminal) {
-      discardProjectAppTaskOwnerIntent(config, taskId, intent.eventId);
-    }
-  }
-}
-
-type OwnerIntentRef = {
-  eventId: number;
-  eventType: string;
-  data?: Record<string, unknown>;
-};
-
-function isOwnerIntentType(
-  value: unknown,
-): value is "project.owner.requested" | "project.comment.created" | "message.created" {
-  return value === "project.owner.requested" || value === "project.comment.created" || value === "message.created";
-}
-
-function ownerIntentRefs(event: Record<string, unknown>): OwnerIntentRef[] {
-  const declared = Array.isArray(event.ownerIntentRefs) ? event.ownerIntentRefs : [];
-  const refs: OwnerIntentRef[] = declared.flatMap((value) => {
-    if (!isRecord(value)) return [];
-    const eventId = Number(value.eventId);
-    return Number.isInteger(eventId) && eventId > 0 && isOwnerIntentType(value.eventType)
-      ? [{ eventId, eventType: value.eventType, ...(isRecord(value.data) ? { data: value.data } : {}) }]
-      : [];
-  });
-  const inputEventId = Number(event.inputEventId);
-  if (Number.isInteger(inputEventId) && inputEventId > 0) {
-    const inputEventType = typeof event.inputEventType === "string" ? event.inputEventType : "project.comment.created";
-    if (!isOwnerIntentType(inputEventType)) return [...new Map(refs.map((ref) => [ref.eventId, ref])).values()];
-    refs.push({
-      eventId: inputEventId,
-      eventType: inputEventType,
-      ...(isRecord(event.data) ? { data: event.data } : {}),
-    });
-  } else {
-    const eventId = Number(event.eventId);
-    if (Number.isInteger(eventId) && eventId > 0 && isOwnerIntentType(event.type)) {
-      refs.push({ eventId, eventType: event.type, ...(isRecord(event.data) ? { data: event.data } : {}) });
-    }
-  }
-  return [...new Map(refs.map((ref) => [ref.eventId, ref])).values()];
-}
-
-function taskTriggerWithOwnerIntents(
-  config: ReturnType<typeof taskReconciliationConfig>,
-  taskId: string,
-  event: Record<string, unknown>,
-): Record<string, unknown> {
-  const previous = readProjectAppTaskOwnerTrigger(config, taskId);
-  const isOwnerIntent = isOwnerIntentType(event.type);
-  const previousIsOwnerIntent = isOwnerIntentType(previous?.type);
-  if (!isOwnerIntent) return previousIsOwnerIntent ? previous : event;
-  const refs = [...(previous ? ownerIntentRefs(previous) : []), ...ownerIntentRefs(event)];
-  return {
-    ...event,
-    ownerIntentRefs: [...new Map(refs.map((ref) => [ref.eventId, ref])).values()],
-  };
-}
-
 function recoverStaleTaskResult(
   config: ReturnType<typeof taskReconciliationConfig>,
-  claim: ProjectAppTaskClaim,
+  claim: AppTaskClaim,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } {
-  const recovery = releaseStaleProjectAppTaskResult(
+  const recovery = releaseStaleAppTaskResult(
     config,
     claim,
     `Stale reconciliation result for ${claim.taskId} was rejected; retrying from current task evidence`,
@@ -1837,11 +1459,11 @@ function recoverStaleTaskResult(
 
 function recoverStaleTaskActionResult(
   config: ReturnType<typeof taskReconciliationConfig>,
-  claim: ProjectAppTaskClaim,
+  claim: AppTaskClaim,
   error: unknown,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
-  if (!isProjectAppTaskActionStaleError(error)) return null;
-  const recovery = releaseStaleProjectAppTaskResult(
+  if (!isAppTaskActionStaleError(error)) return null;
+  const recovery = releaseStaleAppTaskResult(
     config,
     claim,
     `Stale handler action for ${error.taskId} was rejected; retrying ${claim.taskId} from current task evidence`,
@@ -1853,13 +1475,13 @@ function recoverStaleTaskActionResult(
 }
 
 async function establishTaskAcceptance(input: {
-  descriptor: ProjectAppDescriptor;
-  intent: ProjectAppTaskIntent;
-  claim: ProjectAppTaskClaim;
+  descriptor: AppTaskRuntimeDescriptor;
+  intent: AppTaskIntent;
+  claim: AppTaskClaim;
   capability: TaskCapabilityRun;
-  executionPaths: ProjectAppExecutionPaths;
+  executionPaths: AppTaskExecutionPaths;
 }): Promise<
-  { ok: true; acceptanceBasis: ProjectAppTaskAcceptanceBasis } | { ok: false; summary: string; evidence: string[] }
+  { ok: true; acceptanceBasis: AppTaskAcceptanceBasis } | { ok: false; summary: string; evidence: string[] }
 > {
   const { descriptor, intent, claim, capability } = input;
   const workflow = claim.handler.startsWith("workflow:");
@@ -1886,19 +1508,31 @@ async function establishTaskAcceptance(input: {
   }
 
   try {
+    const verificationConfig = taskReconciliationConfig({
+      appDir: descriptor.appDir,
+      projectDir: descriptor.projectDir,
+      owner: descriptor.owner,
+      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
+    });
+    const pendingTrigger = readPendingAppTaskTrigger(verificationConfig, claim.taskId);
     const raw = await capability.verifier.verify(
       {
         appId: descriptor.id,
         taskId: claim.taskId,
         generation: claim.generation,
-        appDir: descriptor.appDir,
-        projectDir: descriptor.projectDir,
+        appRoot: descriptor.appDir,
+        projectRoot: descriptor.projectDir,
         workspaceDir: input.executionPaths.workspaceDir,
         intent: structuredClone(intent),
+        ...(pendingTrigger
+          ? {
+              pendingTrigger: canonicalAppEvent(pendingTrigger as AgentEvent),
+            }
+          : {}),
       },
-      capability.handlerResult as ProjectAppTaskHandlerResult,
+      capability.handlerResult as AppTaskHandlerResult,
     );
-    const admitted = admitProjectAppTaskVerificationResult(raw);
+    const admitted = admitAppTaskVerificationResult(raw);
     if (!admitted.ok) {
       return {
         ok: false,
@@ -1931,8 +1565,8 @@ async function establishTaskAcceptance(input: {
 }
 
 async function reconcileTask(input: {
-  opts: ProjectAppLoaderOptions;
-  descriptor: ProjectAppDescriptor;
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
   reason?: string;
 }): Promise<string[]> {
@@ -1942,13 +1576,13 @@ async function reconcileTask(input: {
     appDir: descriptor.appDir,
     projectDir: descriptor.projectDir,
     owner: descriptor.owner,
-    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+    maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
   });
   const defaultParentId = readTaskState(config).root_task_id;
   if (!defaultParentId) {
-    throw new Error(`Project app ${descriptor.id} has no root task group for convention defaults`);
+    throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
   }
-  const primary = claimObservedProjectAppTask(config, {
+  const primary = claimObservedAppTask(config, {
     taskId: input.taskId,
     appOwner: descriptor.owner,
     handler: "auto",
@@ -1956,6 +1590,39 @@ async function reconcileTask(input: {
     isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
   });
   if (primary.kind !== "claimed") {
+    if (primary.kind === "busy") {
+      const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId);
+      const sessionId = expired?.sessionId;
+      const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
+      const terminalStatus =
+        session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
+          ? session.status
+          : null;
+      if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+        const released = releaseTerminalSessionExpiredAppTaskAttempt(
+          config,
+          { ...expired, sessionId, terminalStatus },
+          `Expired reconciliation ${input.taskId} lost its synchronous caller after owner session completion`,
+        );
+        if (released.released) {
+          emitTaskReconciliationEvent(
+            opts,
+            descriptor,
+            undefined,
+            "project.task.recovery.requeued",
+            input.taskId,
+            {
+              route: "task-controller",
+              reason: "terminal-owner-session-expired-lease",
+              attemptId: expired.attemptId,
+              evidenceSessionId: sessionId,
+              terminalStatus,
+            },
+          );
+          return [input.taskId];
+        }
+      }
+    }
     const skip =
       primary.kind === "busy"
         ? { reason: "attempt-active", attemptId: primary.attemptId }
@@ -1984,8 +1651,9 @@ async function reconcileTask(input: {
   }
   const intent = primary.intent;
   const event = primary.trigger as EventEnvelope | undefined;
-  const childContext = readProjectAppTaskChildContext(config, primary.taskId);
-  let executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
+  const childContext = readAppTaskChildContext(config, primary.taskId);
+  const taskSnapshot = readAppTaskLiveSnapshot(config, primary.taskId);
+  let executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
   const declaredOutputPaths = primary.declaredOutputPaths;
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
     route: "task-controller",
@@ -2001,14 +1669,14 @@ async function reconcileTask(input: {
   const finalizeWorkspace = (outcome: "accepted" | "waiting" | "failed") => {
     if (!taskWorkspace || workspaceFinalized) return { ok: true as const };
     try {
-      const finalized = finalizeProjectTaskWorkspace(taskWorkspace, outcome);
+      const finalized = finalizeAppTaskWorkspace(taskWorkspace, outcome);
       workspaceFinalized = true;
-      recordProjectAppTaskAttemptWorkspace(config, primary, finalized.metadata);
+      recordAppTaskAttemptWorkspace(config, primary, finalized.metadata);
       return finalized;
     } catch (error) {
       workspaceFinalized = true;
       taskWorkspace.metadata.disposition = "retained-for-recovery";
-      recordProjectAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata);
+      recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata);
       return {
         ok: false as const,
         metadata: taskWorkspace.metadata,
@@ -2038,7 +1706,7 @@ async function reconcileTask(input: {
               attempt.workspace?.kind === "task-worktree",
           )
           .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
-        taskWorkspace = prepareProjectTaskWorkspace({
+        taskWorkspace = prepareAppTaskWorkspace({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
           taskId: primary.taskId,
@@ -2049,8 +1717,8 @@ async function reconcileTask(input: {
               : (descriptor.app.workspace.branch ?? "dev"),
           previous,
         });
-        executionPaths = { ...executionPaths, workspaceDir: taskWorkspace.metadata.path };
-        if (!recordProjectAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
+        executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+        if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
           throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
         }
       } catch (error) {
@@ -2080,6 +1748,7 @@ async function reconcileTask(input: {
       executionPaths,
       declaredOutputPaths,
       childContext,
+      taskSnapshot,
       event,
       ...(primary.handoff
         ? {
@@ -2118,7 +1787,7 @@ async function reconcileTask(input: {
       if (definition.verifier) {
         primaryResult.verifier = {
           ...definition.verifier,
-          verify: definition.verifier.verify as ProjectAppTaskVerifier,
+          verify: definition.verifier.verify as AppTaskVerifier,
         };
       }
     }
@@ -2175,7 +1844,7 @@ async function reconcileTask(input: {
     }
     if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
       try {
-        const apply = completeProjectAppTask(config, primary, {
+        const apply = completeAppTask(config, primary, {
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           actions: primaryHandlerResult.actions,
@@ -2190,15 +1859,6 @@ async function reconcileTask(input: {
           : "converged";
         interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
-        emitOwnerResultForTask(
-          opts,
-          descriptor,
-          event,
-          intent.id,
-          primaryHandlerResult.summary,
-          apply.status === "applied" ? appliedDisposition : "stale",
-          primaryHandlerResult.actions,
-        );
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
@@ -2225,7 +1885,6 @@ async function reconcileTask(input: {
         const stale = recoverStaleTaskActionResult(config, primary, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
-          emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale", primaryHandlerResult.actions);
           emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
             generation: primary.generation,
             attemptId: primary.attemptId,
@@ -2260,7 +1919,7 @@ async function reconcileTask(input: {
 
   if (primaryHandlerResult.state === "waiting") {
     try {
-      const apply = deferProjectAppTask(config, primary, {
+      const apply = deferAppTask(config, primary, {
         disposition: primaryHandlerResult.state,
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,
@@ -2269,15 +1928,6 @@ async function reconcileTask(input: {
       });
       interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
       const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
-      emitOwnerResultForTask(
-        opts,
-        descriptor,
-        event,
-        intent.id,
-        primaryHandlerResult.summary,
-        apply.status === "applied" ? primaryHandlerResult.state : "stale",
-        primaryHandlerResult.actions,
-      );
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
@@ -2304,7 +1954,6 @@ async function reconcileTask(input: {
       const stale = recoverStaleTaskActionResult(config, primary, error);
       if (stale) {
         const summary = error instanceof Error ? error.message : String(error);
-        emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale", primaryHandlerResult.actions);
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
@@ -2326,7 +1975,7 @@ async function reconcileTask(input: {
   finalizeWorkspace("failed");
 
   const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
-  const attention = markProjectAppTaskAttention(config, primary, {
+  const attention = markAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
     evidence: primaryHandlerResult.evidence,
     reason: primaryResult.unavailable
@@ -2341,15 +1990,6 @@ async function reconcileTask(input: {
     wakeParent: !ownerHandoff,
   });
   if (!ownerHandoff) {
-    emitOwnerResultForTask(
-      opts,
-      descriptor,
-      event,
-      intent.id,
-      primaryHandlerResult.summary,
-      "attention",
-      primaryHandlerResult.actions,
-    );
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
       attemptId: primary.attemptId,
@@ -2371,53 +2011,23 @@ async function reconcileTask(input: {
   return [intent.id];
 }
 
-function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
-  let count = 0;
-  const currentNames = new Set<string>();
-  for (const schedule of descriptor.app.schedules ?? []) {
-    const entryName = `${descriptor.id}-schedule-${schedule.id}`;
-    currentNames.add(entryName);
-    const entry: CronEntry = {
-      name: entryName,
-      enabled: schedule.enabled !== false,
-      intervalMs: schedule.intervalMs,
-      description: `Project app schedule ${descriptor.id}/${schedule.id}`,
-      agent: descriptor.owner,
-      handler: "__project_app_schedule__",
-    };
-    cron.registerHandler(entryName, async () => {
-      for (const event of schedule.emits) {
-        const envelope = normalizeEvent(event, {
-          source: `project-app:${descriptor.id}:schedule:${schedule.id}`,
-          owner: `agent:${descriptor.owner}`,
-        });
-        opts.bus.emit(envelope as unknown as AgentEvent);
-      }
-    });
-    cron.addSyntheticEntry(entry);
-    count++;
-  }
-  rememberProjectAppNames(projectAppScheduleSyntheticNamesByCron, cron, descriptor.id, currentNames);
-  return count;
-}
-
-const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
-const appRouterOptionsByBus = new WeakMap<EventBus, ProjectAppLoaderOptions>();
-export const PROJECT_APP_TASK_PROGRESS_REFRESH_INTERVAL_MS = 60_000;
-export type ProjectAppTaskProgressRoute = { appId: string; refreshedAt: number };
-const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskProgressRoute>>();
+const appRouterDescriptorsByBus = new WeakMap<EventBus, AppTaskRuntimeDescriptor[]>();
+const appRouterOptionsByBus = new WeakMap<EventBus, AppTaskRuntimeOptions>();
+export const APP_TASK_PROGRESS_REFRESH_INTERVAL_MS = 60_000;
+export type AppTaskProgressRoute = { appId: string; refreshedAt: number };
+const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, AppTaskProgressRoute>>();
 
 /**
  * Keep high-volume session progress on its exact App after the first durable
  * match. A miss scans current descriptors so the index remains disposable and
  * can always be rebuilt from authoritative task state.
  */
-export function refreshProjectAppTaskProgressRoute(
-  descriptors: readonly ProjectAppDescriptor[],
-  routes: Map<string, ProjectAppTaskProgressRoute>,
+export function refreshAppTaskProgressRoute(
+  descriptors: readonly AppTaskRuntimeDescriptor[],
+  routes: Map<string, AppTaskProgressRoute>,
   sessionId: string,
   observedAt: number,
-  refresh: (descriptor: ProjectAppDescriptor) => boolean,
+  refresh: (descriptor: AppTaskRuntimeDescriptor) => boolean,
 ): boolean {
   const normalizedSessionId = sessionId.trim();
   if (!normalizedSessionId) return false;
@@ -2428,7 +2038,7 @@ export function refreshProjectAppTaskProgressRoute(
     if (
       cached &&
       now >= cachedRoute.refreshedAt &&
-      now - cachedRoute.refreshedAt < PROJECT_APP_TASK_PROGRESS_REFRESH_INTERVAL_MS
+      now - cachedRoute.refreshedAt < APP_TASK_PROGRESS_REFRESH_INTERVAL_MS
     ) {
       return true;
     }
@@ -2447,94 +2057,38 @@ export function refreshProjectAppTaskProgressRoute(
   return false;
 }
 
-export type ProjectAppActionDescription = {
-  id: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-};
-
-function loadedProjectAppDescriptor(bus: EventBus, projectId: string): ProjectAppDescriptor | undefined {
+function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTaskRuntimeDescriptor | undefined {
   const normalized = projectId.trim().replace(/\.app$/, "");
   return (appRouterDescriptorsByBus.get(bus) ?? []).find((descriptor) => descriptor.id === normalized);
 }
 
-export function describeLoadedProjectAppActions(bus: EventBus, projectId: string): ProjectAppActionDescription[] {
-  const descriptor = loadedProjectAppDescriptor(bus, projectId);
-  if (!descriptor) throw new Error(`Project app ${projectId} is not loaded`);
-  return Object.entries(descriptor.app.actions ?? {}).map(([id, action]) => ({
-    id,
-    description: action.description,
-    inputSchema: structuredClone(action.inputSchema) as Record<string, unknown>,
-  }));
-}
-
-export function invokeLoadedProjectAppAction(input: {
-  bus: EventBus;
-  projectId: string;
-  actionId: string;
-  params: unknown;
-  idempotencyKey?: string;
-  ingressSource?: string;
-}): { eventId: number; eventType: string } {
-  const descriptor = loadedProjectAppDescriptor(input.bus, input.projectId);
-  if (!descriptor) throw new Error(`Project app ${input.projectId} is not loaded`);
-  const action = descriptor.app.actions?.[input.actionId];
-  if (!action) throw new Error(`Project app ${descriptor.id} has no action ${input.actionId}`);
-  if (!Check(action.inputSchema, input.params)) {
-    const first = [...Errors(action.inputSchema, input.params)][0];
-    throw new Error(`Invalid input for ${descriptor.id}.${input.actionId}: ${first?.message ?? "schema mismatch"}`);
-  }
-  const semantic = normalizeEvent(action.event(input.params), {
-    source: `project-app:${descriptor.id}:action:${input.actionId}`,
-    owner: `agent:${descriptor.owner}`,
-  }) as AgentEvent;
-  const semanticRecord = semantic as unknown as Record<string, unknown>;
-  const data = isRecord(semanticRecord.data) ? semanticRecord.data : {};
-  semanticRecord.data = {
-    ...data,
-    project: projectValue(flattenEvent(semantic)) || descriptor.id,
-    ...(input.idempotencyKey?.trim() ? { idempotencyKey: input.idempotencyKey.trim() } : {}),
-  };
-  if (input.ingressSource) {
-    Object.defineProperty(semanticRecord, EVENT_INGRESS_SOURCE, {
-      value: input.ingressSource,
-      configurable: true,
-    });
-  }
-  const emitted = input.bus.emit(semantic);
-  const eventId = Number(emitted[EVENT_ROW_ID]);
-  if (!Number.isInteger(eventId) || eventId <= 0) {
-    throw new Error(`Action ${descriptor.id}.${input.actionId} did not produce a persisted semantic event`);
-  }
-  return { eventId, eventType: semantic.type };
-}
-const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
-const appTaskCapacityByBus = new WeakMap<EventBus, ProjectAppTaskCapacity>();
-const appTaskCapacityByAppByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskCapacity>>();
+const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
+const appTaskCapacityByBus = new WeakMap<EventBus, AppTaskCapacity>();
+const appTaskCapacityByAppByBus = new WeakMap<EventBus, Map<string, AppTaskCapacity>>();
 // This is mechanical host backpressure, not an app scheduler. Every resource
 // remains independently reconciled, but a recovery burst must leave enough CPU
 // and memory for event ingress, persistence, and human control.
-const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 2;
+const DEFAULT_GLOBAL_APP_TASK_CONCURRENCY = 2;
 
-export function projectAppGlobalConcurrency(value: unknown = process.env.MAY_PROJECT_APP_GLOBAL_CONCURRENCY): number {
-  const configured = Number(value ?? DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY);
-  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY;
+export function appTaskGlobalConcurrency(value: unknown = process.env.MAY_APP_TASK_GLOBAL_CONCURRENCY): number {
+  const configured = Number(value ?? DEFAULT_GLOBAL_APP_TASK_CONCURRENCY);
+  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_GLOBAL_APP_TASK_CONCURRENCY;
 }
 
-function taskCapacityForBus(bus: EventBus): ProjectAppTaskCapacity {
+function taskCapacityForBus(bus: EventBus): AppTaskCapacity {
   const existing = appTaskCapacityByBus.get(bus);
   if (existing) return existing;
-  const capacity = new ProjectAppTaskCapacity(projectAppGlobalConcurrency());
+  const capacity = new AppTaskCapacity(appTaskGlobalConcurrency());
   appTaskCapacityByBus.set(bus, capacity);
   return capacity;
 }
 
 /** Transitional shared execution budget for task and App-owner reconciles. */
-export function runWithProjectAppRuntimeCapacity<T>(bus: EventBus, work: () => Promise<T>): Promise<T> {
+export function runWithAppTaskRuntimeCapacity<T>(bus: EventBus, work: () => Promise<T>): Promise<T> {
   return taskCapacityForBus(bus).run(work);
 }
 
-function taskCapacityForApp(bus: EventBus, appId: string, maxConcurrent: number): ProjectAppTaskCapacity {
+function taskCapacityForApp(bus: EventBus, appId: string, maxConcurrent: number): AppTaskCapacity {
   let capacities = appTaskCapacityByAppByBus.get(bus);
   if (!capacities) {
     capacities = new Map();
@@ -2545,47 +2099,122 @@ function taskCapacityForApp(bus: EventBus, appId: string, maxConcurrent: number)
     existing.resize(maxConcurrent);
     return existing;
   }
-  const capacity = new ProjectAppTaskCapacity(maxConcurrent, taskCapacityForBus(bus));
+  const capacity = new AppTaskCapacity(maxConcurrent, taskCapacityForBus(bus));
   capacities.set(appId, capacity);
   return capacity;
 }
 
-function taskIdFromEvent(event: Record<string, unknown>): string {
-  const direct = event.taskId ?? event.task_id;
-  if (typeof direct === "string" && direct.trim()) return direct.trim();
-  const target = isRecord(event.target) ? event.target : {};
-  return typeof target.taskId === "string" ? target.taskId.trim() : "";
-}
-
-function isTaskWakeEvent(event: Record<string, unknown>): boolean {
-  const type = typeof event.type === "string" ? event.type : "";
-  return ![
-    "handler.workflow_dispatched",
-    "project.task.handler.recovered",
-    "project.task.handler.unavailable",
-    "project.task.reconcile.started",
-    "project.task.reconcile.skipped",
-    "project.task.reconciled",
-    "project.task.verification.failed",
-  ].includes(type);
-}
-
-function projectAppTaskDelivery(descriptor: ProjectAppDescriptor, taskId: string, note: string): DeliveryResult {
+function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, note: string): DeliveryResult {
   return {
     accepted: true,
-    by: `project-app:${descriptor.id}:task-reconciler`,
+    by: `app-task:${descriptor.id}:task-reconciler`,
     route: "direct",
     note: `${note}: ${taskId}`,
   };
 }
 
-function projectAppEventDelivery(descriptor: ProjectAppDescriptor): DeliveryResult {
-  return {
-    accepted: true,
-    by: `project-app:${descriptor.id}:event-router`,
-    route: "direct",
-    note: "matching app event accepted",
-  };
+function admitResolvedAppTaskEvent(input: {
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  controller: AppTaskController;
+  event: Record<string, unknown>;
+  intent: AppTaskIntent | null;
+  targetedTaskId?: string;
+  conditionTaskIds?: string[];
+}): DeliveryResult | undefined {
+  const { opts, descriptor, controller, event, intent } = input;
+  const targetedTaskId = input.targetedTaskId?.trim() ?? "";
+  const config = appTaskConfig(descriptor);
+  const conditionWakes = trackAppTaskConditionEventForTasks(config, event, input.conditionTaskIds ?? []);
+  for (const wake of conditionWakes) {
+    enqueueAppTask(controller, config, wake.taskId, { front: true });
+  }
+  const conditionDelivery = conditionWakes.length
+    ? appTaskDelivery(descriptor, conditionWakes.map((wake) => wake.taskId).join(","), "task Condition event accepted")
+    : undefined;
+  if (targetedTaskId) {
+    const existingIntent = readAppTaskIntent(config, targetedTaskId);
+    if (existingIntent && intent?.id === targetedTaskId) {
+      const observation = observeAppTaskIntent(config, {
+        intent,
+        appOwner: descriptor.owner,
+        trigger: event,
+      });
+      interruptSupersededObservationSessions(opts, observation);
+    }
+    const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
+    if (triggerResult.kind === "recorded") {
+      enqueueAppTask(controller, config, targetedTaskId, { front: true });
+      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
+    }
+    if (triggerResult.kind === "waiting") {
+      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task remains asleep on open Conditions");
+    }
+    if (readAppTaskIntent(config, targetedTaskId)) {
+      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task remains asleep on open Conditions");
+    }
+    // An exact target is a reference to existing durable work, never creation
+    // authority. Desired task creation is admitted only through App policy.
+    return conditionDelivery;
+  }
+  if (!intent) return conditionDelivery;
+  const observation = observeAppTaskIntent(config, {
+    intent,
+    appOwner: descriptor.owner,
+    trigger: event,
+  });
+  interruptSupersededObservationSessions(opts, observation);
+  if (observation.kind === "observed") {
+    enqueueAppTask(controller, config, observation.taskId, {
+      front: event.type === "project.comment.created",
+    });
+  }
+  return appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
+}
+
+/**
+ * Host-private bridge from canonical event admission into the retained task
+ * engine. Policy has already selected the App and resolved any desired intent.
+ */
+export function admitLoadedCanonicalAppTaskEvent(input: {
+  bus: EventBus;
+  appId: string;
+  event: AgentEvent;
+  intent: AppTaskIntent | null;
+  targetedTaskId?: string;
+  conditionTaskIds?: string[];
+}): DeliveryResult | undefined {
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === input.appId);
+  if (!descriptor?.app.tasks) {
+    throw new Error(`Canonical App ${input.appId} task capability is not loaded`);
+  }
+  const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  if (!controller || !opts) {
+    throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
+  }
+  return admitResolvedAppTaskEvent({
+    opts,
+    descriptor,
+    controller,
+    event: flattenEvent(input.event),
+    intent: input.intent,
+    targetedTaskId: input.targetedTaskId,
+    conditionTaskIds: input.conditionTaskIds,
+  });
+}
+
+/** Pure task-Condition route preflight for the canonical App coordinator. */
+export function previewLoadedCanonicalAppTaskEvent(input: {
+  bus: EventBus;
+  appId: string;
+  event: AgentEvent;
+  targetedTaskId?: string;
+}): string[] {
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === input.appId);
+  if (!descriptor?.app.tasks) return [];
+  const allowed = input.targetedTaskId ? [input.targetedTaskId] : undefined;
+  return matchingAppTaskConditionTaskIds(appTaskConfig(descriptor), flattenEvent(input.event), allowed);
 }
 
 function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {
@@ -2594,8 +2223,8 @@ function isOpenProjectCondition(value: unknown): value is { spec: { type: string
 }
 
 function replayPersistedConditionEvents(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
   config: ReturnType<typeof taskReconciliationConfig>,
   input: { conditionIds?: string[] } = {},
 ): string[] {
@@ -2657,18 +2286,21 @@ function replayPersistedConditionEvents(
     }
   }
 
-  return trackProjectAppConditionEvents(config, events).map((wake) => wake.taskId);
+  return trackAppTaskConditionEvents(config, events).map((wake) => wake.taskId);
 }
 
 function installConventionTaskControllers(
-  opts: ProjectAppLoaderOptions,
-  descriptors: ProjectAppDescriptor[],
-): Map<string, ProjectAppTaskController> {
+  opts: AppTaskRuntimeOptions,
+  descriptors: AppTaskRuntimeDescriptor[],
+): Map<string, AppTaskController> {
   const previousControllers = appTaskControllersByBus.get(opts.bus);
   for (const controller of previousControllers?.values() ?? []) {
     controller.close();
   }
-  const controllers = new Map<string, ProjectAppTaskController>();
+  const previousControllersDrained = previousControllers?.size
+    ? Promise.all([...previousControllers.values()].map((controller) => controller.whenDrained())).then(() => undefined)
+    : undefined;
+  const controllers = new Map<string, AppTaskController>();
 
   for (const descriptor of descriptors) {
     const tasks = descriptor.app.tasks;
@@ -2677,23 +2309,27 @@ function installConventionTaskControllers(
       appDir: descriptor.appDir,
       projectDir: descriptor.projectDir,
       owner: descriptor.owner,
-      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
     try {
-      refreshProjectTaskTreeProjection(config);
+      refreshAppTaskTreeProjection(config);
     } catch (error) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app:${descriptor.id}] Could not refresh task read projection: ${error instanceof Error ? error.message : String(error)}`,
+        message: `[app-task:${descriptor.id}] Could not refresh task read projection: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
-    const controller = new ProjectAppTaskController({
-      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-      capacity: taskCapacityForApp(opts.bus, descriptor.id, descriptor.app.budget?.maxConcurrent ?? 1),
+    const controller = new AppTaskController({
+      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
+      capacity: taskCapacityForApp(opts.bus, descriptor.id, descriptor.app.tasks?.maxConcurrent ?? 1),
+      // A superseded generation may still be finishing a reconcile that owns
+      // the task-state lock. Queue the replacement immediately, but do not let
+      // it claim work until every previous controller has drained.
+      startAfter: previousControllersDrained,
       maxRetries: 3,
       resync: {
         intervalMs: tasks.resyncIntervalMs ?? 60_000,
-        tasks: () => listRunnableProjectAppTaskQueueEntries(config),
+        tasks: () => listRunnableAppTaskQueueEntries(config),
       },
       reconcile: async (taskId) => {
         const dependentTaskIds = await reconcileTask({
@@ -2703,7 +2339,7 @@ function installConventionTaskControllers(
           reason: "task-controller",
         });
         const dependentEntries = new Map(
-          projectAppTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
+          appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
         );
         for (const dependentTaskId of dependentTaskIds) {
           const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
@@ -2722,7 +2358,7 @@ function installConventionTaskControllers(
           source: "cron",
           owner: `agent:${descriptor.owner}`,
           data: {
-            handler: `project-app-task-controller:${taskId}`,
+            handler: `app-task-controller:${taskId}`,
             agent: descriptor.owner,
             error: `${error instanceof Error ? error.message : String(error)}; willRetry=${willRetry}`,
             durationMs: 0,
@@ -2737,109 +2373,134 @@ function installConventionTaskControllers(
   return controllers;
 }
 
-function enqueueProjectAppTask(
-  controller: ProjectAppTaskController,
+/**
+ * Stop the task-controller generation currently attached to one process bus.
+ * Closing is synchronous; the returned promise additionally waits for work
+ * already inside a reconcile to release its resources.
+ */
+export async function closeInstalledAppTaskRuntimes(bus: EventBus): Promise<void> {
+  const controllers = appTaskControllersByBus.get(bus);
+  if (!controllers) return;
+
+  appTaskControllersByBus.delete(bus);
+  for (const controller of controllers.values()) controller.close();
+  await Promise.all([...controllers.values()].map((controller) => controller.whenDrained()));
+
+  // The event subscriber is process-scoped and intentionally remains attached
+  // to the bus. Once in-flight reconciliation has drained, empty its selected
+  // generation unless a newer controller generation was installed meanwhile.
+  if (!appTaskControllersByBus.has(bus)) {
+    appRouterDescriptorsByBus.get(bus)?.splice(0);
+    appRouterOptionsByBus.delete(bus);
+    appTaskProgressRoutesByBus.get(bus)?.clear();
+  }
+}
+
+function enqueueAppTask(
+  controller: AppTaskController,
   config: ReturnType<typeof taskReconciliationConfig>,
   taskId: string,
-  overrides: ProjectAppTaskQueueOptions = {},
+  overrides: AppTaskQueueOptions = {},
 ): boolean {
-  const current = projectAppTaskQueueEntries(config, [taskId])[0]?.options;
+  const current = appTaskQueueEntries(config, [taskId])[0]?.options;
   return controller.enqueue(taskId, {
     ...current,
     ...overrides,
   });
 }
 
-function projectAppTaskConfig(descriptor: ProjectAppDescriptor) {
+function appTaskConfig(descriptor: AppTaskRuntimeDescriptor) {
   return taskReconciliationConfig({
     appDir: descriptor.appDir,
     projectDir: descriptor.projectDir,
     owner: descriptor.owner,
-    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+    maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
   });
 }
 
 /**
- * Attach App-owned work to the one Project App that shares its .app directory.
+ * Attach App-owned work to the canonical App that shares its .app directory.
  * The existing reconciler remains the sole owner of task validation, state,
  * concurrency, session fencing, and execution.
  */
-export function attachLoadedProjectAppTask(input: {
+export function attachLoadedAppTask(input: {
   bus: EventBus;
   appDir: string;
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
+  request: Readonly<AppRequest>;
 }): { taskId: string; isComplete: () => Promise<boolean> } {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => resolve(candidate.appDir) === normalizedAppDir,
   );
   if (!descriptor) {
-    throw new Error(`App ${input.appId} has no loaded Project App in ${normalizedAppDir}`);
+    throw new Error(`App ${input.appId} has no loaded task runtime in ${normalizedAppDir}`);
   }
   if (!descriptor.app.tasks) {
-    throw new Error(`Project App ${descriptor.id} does not declare task reconciliation`);
+    throw new Error(`App ${descriptor.id} does not declare task reconciliation`);
   }
   const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
   if (!controller) {
-    throw new Error(`Project App ${descriptor.id} task reconciliation is not active`);
+    throw new Error(`App ${descriptor.id} task reconciliation is not active`);
   }
   const loaderOptions = appRouterOptionsByBus.get(input.bus);
-  if (!loaderOptions) throw new Error(`Project App ${descriptor.id} runtime is not attached`);
+  if (!loaderOptions) throw new Error(`App ${descriptor.id} task runtime is not attached`);
 
   const idempotencyKey = input.idempotencyKey.trim();
   if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");
-  const config = projectAppTaskConfig(descriptor);
+  const config = appTaskConfig(descriptor);
 
+  let intent: AppTaskIntent;
   if (input.attachment.kind === "existing") {
     const taskId = input.attachment.taskId.trim();
     if (!taskId) throw new Error("Existing task id must be non-empty");
-    const live = readProjectAppTaskIntent(config, taskId);
-    if (!live && !isProjectAppTaskConverged(config, taskId)) {
-      throw new Error(`Task ${taskId} does not exist in Project App ${descriptor.id}`);
+    const existingIntent = readAppTaskIntent(config, taskId);
+    if (!existingIntent) {
+      if (isAppTaskConverged(config, taskId)) {
+        return { taskId, isComplete: async () => true };
+      }
+      throw new Error(`Task ${taskId} does not exist in App ${descriptor.id}`);
     }
-    if (live) enqueueProjectAppTask(controller, config, taskId);
-    return {
-      taskId,
-      isComplete: async () => isProjectAppTaskConverged(config, taskId),
-    };
+    intent = existingIntent;
+  } else {
+    intent = input.attachment.intent;
   }
 
-  const observation = observeProjectAppTaskIntent(config, {
-    intent: input.attachment.intent,
+  const observation = observeAppTaskIntent(config, {
+    intent,
     appOwner: descriptor.owner,
+    admissionKey: idempotencyKey,
+    trigger: {
+      type: "app.task.requested",
+      source: input.request.source.kind === "human" ? "human" : `app-inbox:${input.appId}`,
+      owner: `agent:${descriptor.owner}`,
+      target: { project: descriptor.id, taskId: intent.id },
+      idempotencyKey,
+      data: {
+        project: descriptor.id,
+        taskId: intent.id,
+        appId: input.appId,
+        idempotencyKey,
+        request: input.request,
+      },
+    },
   });
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (observation.kind === "observed") {
-    if (observation.changed) {
-      recordProjectAppTaskTrigger(config, observation.taskId, {
-        type: "app.task.requested",
-        source: `app-inbox:${input.appId}`,
-        owner: `agent:${descriptor.owner}`,
-        target: { project: descriptor.id, taskId: observation.taskId },
-        data: {
-          project: descriptor.id,
-          taskId: observation.taskId,
-          appId: input.appId,
-          idempotencyKey,
-        },
-      });
-    }
-    enqueueProjectAppTask(controller, config, observation.taskId);
+    enqueueAppTask(controller, config, observation.taskId);
   }
   return {
     taskId: observation.taskId,
-    isComplete: async () => isProjectAppTaskConverged(config, observation.taskId, observation.generation),
+    isComplete: async () =>
+      isAppTaskConverged(config, observation.taskId, observation.generation) &&
+      !readAppTaskTrigger(config, observation.taskId),
   };
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
-export function readLoadedProjectAppTaskView(input: {
-  bus: EventBus;
-  appDir: string;
-  taskId: string;
-}): TaskView | null {
+export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskView | null {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => resolve(candidate.appDir) === normalizedAppDir,
@@ -2852,26 +2513,26 @@ export function readLoadedProjectAppTaskView(input: {
 }
 
 function emitAppTaskDependencyCompleted(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
   taskId: string,
 ): void {
   opts.bus.emit({
     type: "app.dependency.completed",
-    source: `project-app:${descriptor.id}:task-reconciler`,
+    source: `app-task:${descriptor.id}:task-reconciler`,
     owner: `agent:${descriptor.owner}`,
     data: { kind: "task", id: taskId },
   });
 }
 
-export function persistedProjectTaskSessionCanResume(meta: { status?: string } | null): boolean {
+export function persistedAppTaskSessionCanResume(meta: { status?: string } | null): boolean {
   return meta?.status === "running" || meta?.status === "idle";
 }
 
-function recoverInterruptedProjectAppTasks(
-  opts: ProjectAppLoaderOptions,
-  descriptors: ProjectAppDescriptor[],
-  controllers: Map<string, ProjectAppTaskController>,
+function recoverInterruptedAppTasks(
+  opts: AppTaskRuntimeOptions,
+  descriptors: AppTaskRuntimeDescriptor[],
+  controllers: Map<string, AppTaskController>,
   includeFreshLeases = false,
 ): Set<string> {
   const claimedSessionIds = new Set<string>();
@@ -2882,18 +2543,18 @@ function recoverInterruptedProjectAppTasks(
       appDir: descriptor.appDir,
       projectDir: descriptor.projectDir,
       owner: descriptor.owner,
-      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
-    for (const recovery of recoverableProjectAppTaskAttempts(config, Date.now(), includeFreshLeases)) {
-      if (recovery.sessionId && hasLiveProjectTaskSession(opts, recovery.sessionId)) {
+    for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases)) {
+      if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
       }
       if (
         includeFreshLeases &&
         recovery.sessionId &&
         opts.persistDir &&
-        persistedProjectTaskSessionCanResume(readSessionMeta(opts.persistDir, recovery.sessionId)) &&
-        claimFreshProjectAppTaskSessionForStartup(
+        persistedAppTaskSessionCanResume(readSessionMeta(opts.persistDir, recovery.sessionId)) &&
+        claimFreshAppTaskSessionForStartup(
           config,
           { taskId: recovery.taskId, generation: recovery.taskGeneration },
           recovery.sessionId,
@@ -2902,7 +2563,7 @@ function recoverInterruptedProjectAppTasks(
         claimedSessionIds.add(recovery.sessionId);
         continue;
       }
-      const released = releaseInterruptedProjectAppTaskAttempt(
+      const released = releaseInterruptedAppTaskAttempt(
         config,
         recovery,
         `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
@@ -2916,20 +2577,20 @@ function recoverInterruptedProjectAppTasks(
         );
       }
       if (released.released && controller && !descriptor.reconciliationPaused) {
-        enqueueProjectAppTask(controller, config, recovery.taskId);
+        enqueueAppTask(controller, config, recovery.taskId);
       }
     }
-    const missingAttemptRepairs = repairRunningProjectAppTasksWithoutAttempt(config);
+    const missingAttemptRepairs = repairRunningAppTasksWithoutAttempt(config);
     for (const repair of missingAttemptRepairs) {
       if (controller && !descriptor.reconciliationPaused) {
-        enqueueProjectAppTask(controller, config, repair.taskId);
+        enqueueAppTask(controller, config, repair.taskId);
       }
     }
     const repairs = repairPreviousRuntimeRecoveryAttention(config);
     if (repairs.length > 0) {
       opts.bus.emit({
         type: "project.task.recovery.repaired",
-        source: `project-app:${descriptor.id}:task-recovery`,
+        source: `app-task:${descriptor.id}:task-recovery`,
         owner: `agent:${descriptor.owner}`,
         target: { project: descriptor.id },
         data: {
@@ -2942,47 +2603,50 @@ function recoverInterruptedProjectAppTasks(
       } as unknown as AgentEvent);
       for (const repair of repairs) {
         if (repair.disposition === "requeued" && controller && !descriptor.reconciliationPaused) {
-          enqueueProjectAppTask(controller, config, repair.taskId);
+          enqueueAppTask(controller, config, repair.taskId);
         }
       }
     }
     for (const taskId of replayPersistedConditionEvents(opts, descriptor, config)) {
       if (controller && !descriptor.reconciliationPaused) {
-        enqueueProjectAppTask(controller, config, taskId, { front: true });
+        enqueueAppTask(controller, config, taskId, { front: true });
       }
     }
-    const attentions = pendingProjectAppTaskRecoveryAttention(config);
+    const attentions = pendingAppTaskRecoveryAttention(config);
     if (attentions.length === 0) continue;
     if (!descriptor.reconciliationPaused) {
-      opts.bus.emit({
-        type: "project.owner.requested",
-        source: `project-app:${descriptor.id}:task-recovery`,
-        owner: `agent:${descriptor.owner}`,
-        target: { project: descriptor.id },
-        urgency: "high",
-        data: {
-          project: descriptor.id,
-          reason: "project-app-task-recovery-attention",
-          taskIds: attentions.map((attention) => attention.taskId),
-          summaries: Object.fromEntries(attentions.map((attention) => [attention.taskId, attention.summary])),
-          instruction:
-            "Some task attempts were active in a previous runtime but cannot be resumed because no trigger packet was persisted. Reconcile these review/attention tasks from fresh evidence, release stale capacity, and assign only bounded runnable follow-up work.",
-        },
-      } as unknown as AgentEvent);
-      for (const attention of attentions) acknowledgeProjectAppTaskRecoveryAttention(config, attention.taskId);
+      opts.bus.emit(
+        appOwnerReviewEvent({
+          appId: descriptor.id,
+          source: `app-task:${descriptor.id}:task-recovery`,
+          sourceId: `task-recovery:${descriptor.id}:${attentions
+            .map((attention) => attention.taskId)
+            .sort()
+            .join(",")}`,
+          data: {
+            project: descriptor.id,
+            reason: "app-task-recovery-attention",
+            taskIds: attentions.map((attention) => attention.taskId),
+            summaries: Object.fromEntries(attentions.map((attention) => [attention.taskId, attention.summary])),
+            instruction:
+              "Some task attempts were active in a previous runtime but cannot be resumed because no trigger packet was persisted. Reconcile these review/attention tasks from fresh evidence, release stale capacity, and assign only bounded runnable follow-up work.",
+          },
+        }),
+      );
+      for (const attention of attentions) acknowledgeAppTaskRecoveryAttention(config, attention.taskId);
     }
   }
   return claimedSessionIds;
 }
 
 /**
- * Run the canonical project-app recovery path for the descriptors and task
+ * Run the canonical App task recovery path for the descriptors and task
  * controllers already installed on this event bus. Startup calls this before
  * generic stale-session resumption so task-owned sessions are reconciled by
  * their durable task state first.
  */
-export function recoverInstalledProjectAppTasks(opts: ProjectAppLoaderOptions): Set<string> {
-  return recoverInterruptedProjectAppTasks(
+export function recoverInstalledAppTasks(opts: AppTaskRuntimeOptions): Set<string> {
+  return recoverInterruptedAppTasks(
     opts,
     appRouterDescriptorsByBus.get(opts.bus) ?? [],
     appTaskControllersByBus.get(opts.bus) ?? new Map(),
@@ -2990,10 +2654,10 @@ export function recoverInstalledProjectAppTasks(opts: ProjectAppLoaderOptions): 
   );
 }
 
-async function requeueRepairedProjectAppTaskHandlers(
-  opts: ProjectAppLoaderOptions,
-  descriptors: ProjectAppDescriptor[],
-  controllers: Map<string, ProjectAppTaskController>,
+async function requeueRepairedAppTaskHandlers(
+  opts: AppTaskRuntimeOptions,
+  descriptors: AppTaskRuntimeDescriptor[],
+  controllers: Map<string, AppTaskController>,
 ): Promise<void> {
   const availability = new Map<string, boolean>();
   for (const descriptor of descriptors) {
@@ -3003,9 +2667,9 @@ async function requeueRepairedProjectAppTaskHandlers(
       appDir: descriptor.appDir,
       projectDir: descriptor.projectDir,
       owner: descriptor.owner,
-      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
-    for (const candidate of listWorkspacePreparationFailedProjectAppTasks(config, descriptor.owner)) {
+    for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.owner)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
       if (
@@ -3017,7 +2681,7 @@ async function requeueRepairedProjectAppTaskHandlers(
         continue;
       }
       try {
-        prepareProjectTaskWorkspace({
+        prepareAppTaskWorkspace({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
           taskId: candidate.taskId,
@@ -3031,13 +2695,13 @@ async function requeueRepairedProjectAppTaskHandlers(
       } catch {
         continue;
       }
-      if (!releaseWorkspacePreparationFailedProjectAppTask(config, candidate.taskId, candidate.generation)) continue;
-      enqueueProjectAppTask(controller, config, candidate.taskId);
+      if (!releaseWorkspacePreparationFailedAppTask(config, candidate.taskId, candidate.generation)) continue;
+      enqueueAppTask(controller, config, candidate.taskId);
       opts.bus.emit({
         type: "project.task.handler.recovered",
-        source: `project-app:${descriptor.id}:task-recovery`,
+        source: `app-task:${descriptor.id}:task-recovery`,
         owner: `agent:${candidate.owner}`,
-        target: { project: descriptor.id, taskId: candidate.taskId },
+        target: { appId: descriptor.id },
         data: {
           project: descriptor.id,
           taskId: candidate.taskId,
@@ -3046,7 +2710,7 @@ async function requeueRepairedProjectAppTaskHandlers(
         },
       } as unknown as AgentEvent);
     }
-    for (const candidate of listHandlerUnavailableProjectAppTasks(config, descriptor.owner)) {
+    for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.owner)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const key = `${paths.workflowDir}\0${candidate.workflow}`;
       let available = availability.get(key);
@@ -3055,13 +2719,13 @@ async function requeueRepairedProjectAppTaskHandlers(
         availability.set(key, available);
       }
       if (!available) continue;
-      if (!releaseHandlerUnavailableProjectAppTask(config, candidate.taskId)) continue;
-      enqueueProjectAppTask(controller, config, candidate.taskId);
+      if (!releaseHandlerUnavailableAppTask(config, candidate.taskId)) continue;
+      enqueueAppTask(controller, config, candidate.taskId);
       opts.bus.emit({
         type: "project.task.handler.recovered",
-        source: `project-app:${descriptor.id}:task-recovery`,
+        source: `app-task:${descriptor.id}:task-recovery`,
         owner: `agent:${candidate.owner}`,
-        target: { project: descriptor.id, taskId: candidate.taskId },
+        target: { appId: descriptor.id },
         data: {
           project: descriptor.id,
           taskId: candidate.taskId,
@@ -3073,7 +2737,7 @@ async function requeueRepairedProjectAppTaskHandlers(
   }
 }
 
-function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
+function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskRuntimeDescriptor[]): void {
   appRouterOptionsByBus.set(opts.bus, opts);
   let progressRoutes = appTaskProgressRoutesByBus.get(opts.bus);
   if (!progressRoutes) {
@@ -3098,7 +2762,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         : "";
     if (progressSessionId) {
       const observedAt = typeof event.timestamp === "number" ? event.timestamp : Date.now();
-      refreshProjectAppTaskProgressRoute(
+      refreshAppTaskProgressRoute(
         appRouterDescriptorsByBus.get(opts.bus) ?? [],
         progressRoutes,
         progressSessionId,
@@ -3106,12 +2770,12 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         (descriptor) =>
           Boolean(
             descriptor.app.tasks &&
-            refreshProjectAppTaskAttemptLeaseBySession(
+            refreshAppTaskAttemptLeaseBySession(
               taskReconciliationConfig({
                 appDir: descriptor.appDir,
                 projectDir: descriptor.projectDir,
                 owner: descriptor.owner,
-                maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+                maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
               }),
               progressSessionId,
               observedAt,
@@ -3121,18 +2785,18 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     }
     const startedSessionId =
       event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
-    const sessionBinding = startedSessionId ? parseProjectAppTaskSessionBinding(event.task) : null;
+    const sessionBinding = startedSessionId ? parseAppTaskSessionBinding(event.task) : null;
     if (sessionBinding) {
       const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
         (candidate) => candidate.id === sessionBinding.appId,
       );
       if (descriptor?.app.tasks) {
-        const association = associateProjectAppTaskSession(
+        const association = associateAppTaskSession(
           taskReconciliationConfig({
             appDir: descriptor.appDir,
             projectDir: descriptor.projectDir,
             owner: descriptor.owner,
-            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+            maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
           }),
           sessionBinding,
           startedSessionId,
@@ -3164,7 +2828,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       event.sessionId.trim()
         ? (() => {
             const sessionId = event.sessionId.trim();
-            const scope = readProjectAppTaskSessionScope(opts.persistDir, sessionId);
+            const scope = readAppTaskSessionScope(opts.persistDir, sessionId);
             return {
               owner: event.agent.trim(),
               sessionId,
@@ -3181,28 +2845,44 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     if (event.type === "session.end" && typeof event.sessionId === "string") {
       progressRoutes.delete(event.sessionId.trim());
     }
-    let eventDelivery: DeliveryResult | undefined;
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
-      const closedOwnerInput = isProjectScopedForApp(event, descriptor.id)
-        ? closedOwnerInputEventId(opts.persistDir, event)
-        : null;
-      if (closedOwnerInput) {
-        return projectAppTaskDelivery(
-          descriptor,
-          "owner-message",
-          `owner input ${closedOwnerInput} is already resolved`,
-        );
-      }
       if (successfulOwner && taskController && descriptor.app.tasks) {
         const config = taskReconciliationConfig({
           appDir: descriptor.appDir,
           projectDir: descriptor.projectDir,
           owner: descriptor.owner,
-          maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+          maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
         });
-        for (const candidate of listHandlerExecutionFailedProjectAppTasks(config)) {
+        if (
+          successfulOwner.binding?.appId === descriptor.id &&
+          workflowWasInterruptedByRestart(opts.persistDir, successfulOwner.workflowRunId)
+        ) {
+          const released = releaseLateTerminalWorkflowAppTaskAttempt(
+            config,
+            successfulOwner.binding,
+            successfulOwner.sessionId,
+            `Late terminal session ${successfulOwner.sessionId} cannot reattach to restart-interrupted workflow ${successfulOwner.workflowRunId}`,
+          );
+          if (released.released) {
+            enqueueAppTask(taskController, config, released.taskId, { front: true });
+            opts.bus.emit({
+              type: "project.task.recovery.requeued",
+              source: `app-task:${descriptor.id}:task-recovery`,
+              owner: `agent:${successfulOwner.owner}`,
+              target: { appId: descriptor.id },
+              data: {
+                project: descriptor.id,
+                taskId: released.taskId,
+                reason: "late-terminal-session-after-workflow-restart",
+                evidenceSessionId: successfulOwner.sessionId,
+                evidenceWorkflowRunId: successfulOwner.workflowRunId,
+              },
+            } as unknown as AgentEvent);
+          }
+        }
+        for (const candidate of listHandlerExecutionFailedAppTasks(config)) {
           if (candidate.owner !== successfulOwner.owner) continue;
           if (
             !taskRecoverySessionScopesMatch(descriptor.id, opts.persistDir, candidate.sessionId, {
@@ -3217,7 +2897,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             legacySession && opts.persistDir && readSessionMeta(opts.persistDir, legacySession)?.status === "error",
           );
           if (
-            !releaseHandlerExecutionFailedProjectAppTask(config, candidate.taskId, {
+            !releaseHandlerExecutionFailedAppTask(config, candidate.taskId, {
               owner: successfulOwner.owner,
               sessionId: successfulOwner.sessionId,
               observedAt: successfulOwner.observedAt,
@@ -3226,12 +2906,12 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           ) {
             continue;
           }
-          enqueueProjectAppTask(taskController, config, candidate.taskId);
+          enqueueAppTask(taskController, config, candidate.taskId);
           opts.bus.emit({
             type: "project.task.handler.recovered",
-            source: `project-app:${descriptor.id}:task-recovery`,
+            source: `app-task:${descriptor.id}:task-recovery`,
             owner: `agent:${candidate.owner}`,
-            target: { project: descriptor.id, taskId: candidate.taskId },
+            target: { appId: descriptor.id },
             data: {
               project: descriptor.id,
               taskId: candidate.taskId,
@@ -3243,285 +2923,54 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           } as unknown as AgentEvent);
         }
       }
-      if (
-        descriptor.app.tasks &&
-        (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner)
-      ) {
-        const config = taskReconciliationConfig({
-          appDir: descriptor.appDir,
-          projectDir: descriptor.projectDir,
-          owner: descriptor.owner,
-          maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-        });
-        const conditionWakes = trackProjectAppConditionEvent(config, event);
-        for (const wake of conditionWakes) {
-          if (taskController) {
-            enqueueProjectAppTask(taskController, config, wake.taskId, {
-              front: true,
-            });
-          }
-        }
-      }
-      if (taskController && descriptor.app.tasks) {
-        const appAcceptsTaskEvent = descriptor.app.tasks.accepts.some((selector) =>
-          matchesEventSelector(selector, event),
-        );
-        const isRuntimeTaskWake = event.type === "project.task.tick";
-        const targetedTaskId =
-          (appAcceptsTaskEvent || isRuntimeTaskWake) &&
-          isProjectScopedForApp(event, descriptor.id) &&
-          isTaskWakeEvent(event)
-            ? taskIdFromEvent(event)
-            : "";
-        if (targetedTaskId) {
-          const config = taskReconciliationConfig({
-            appDir: descriptor.appDir,
-            projectDir: descriptor.projectDir,
-            owner: descriptor.owner,
-            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-          });
-          const existingIntent = readProjectAppTaskIntent(config, targetedTaskId);
-          if (existingIntent && appAcceptsTaskEvent) {
-            const resolved = descriptor.app.tasks.resolve(event);
-            if (resolved?.id === targetedTaskId) {
-              const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
-              const observation = observeProjectAppTaskIntent(config, {
-                intent: resolved,
-                appOwner: descriptor.owner,
-                trigger,
-              });
-              interruptSupersededObservationSessions(opts, observation);
-            }
-          }
-          const triggerResult = recordProjectAppTaskTrigger(
-            config,
-            targetedTaskId,
-            taskTriggerWithOwnerIntents(config, targetedTaskId, event),
-          );
-          if (triggerResult.kind === "recorded") {
-            enqueueProjectAppTask(taskController, config, targetedTaskId, {
-              front: true,
-            });
-            return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
-          }
-          if (triggerResult.kind === "waiting") {
-            return projectAppTaskDelivery(
-              descriptor,
-              targetedTaskId,
-              "existing targeted task remains asleep on open Conditions",
-            );
-          }
-          if (readProjectAppTaskIntent(config, targetedTaskId)) {
-            return projectAppTaskDelivery(
-              descriptor,
-              targetedTaskId,
-              "existing targeted task remains asleep on open Conditions",
-            );
-          }
-          if (appAcceptsTaskEvent) {
-            const resolved = descriptor.app.tasks.resolve(event);
-            if (resolved?.id === targetedTaskId) {
-              const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
-              const observation = observeProjectAppTaskIntent(config, {
-                intent: resolved,
-                appOwner: descriptor.owner,
-                trigger,
-              });
-              interruptSupersededObservationSessions(opts, observation);
-              if (observation.kind === "observed") {
-                enqueueProjectAppTask(taskController, config, observation.taskId, {
-                  front: true,
-                });
-              }
-              return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
-            }
-          }
-          // An explicit task target is the complete routing decision. The app
-          // resolver may materialize exactly that target, but must not turn a
-          // targeted wake into unrelated broad work.
-          continue;
-        }
-        if (appAcceptsTaskEvent) {
-          const intent = descriptor.app.tasks.resolve(event);
-          if (intent) {
-            const config = taskReconciliationConfig({
-              appDir: descriptor.appDir,
-              projectDir: descriptor.projectDir,
-              owner: descriptor.owner,
-              maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-            });
-            const observation = observeProjectAppTaskIntent(config, {
-              intent,
-              appOwner: descriptor.owner,
-              trigger: taskTriggerWithOwnerIntents(config, intent.id, event),
-            });
-            interruptSupersededObservationSessions(opts, observation);
-            if (observation.kind === "observed") {
-              enqueueProjectAppTask(taskController, config, observation.taskId, {
-                front: event.type === "project.comment.created",
-              });
-            }
-            return projectAppTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
-          }
-          continue;
-        }
-      }
-      const projectCommentForApp =
-        event.type === "project.comment.created" && isProjectScopedForApp(event, descriptor.id);
-      if (!projectCommentForApp && !shouldOfferToApp(descriptor.app, event)) continue;
-      eventDelivery ??= projectAppEventDelivery(descriptor);
-      if (isMetricFeedbackEvent(event)) {
-        const eventOwner = ownerValue(event);
-        opts.bus.emit({
-          type: "metric.feedback.routed",
-          source: "project-app-loader",
-          owner: `agent:${eventOwner || descriptor.owner}`,
-          data: {
-            metricId: metricEventId(event),
-            alertId: metricAlertId(event),
-            project: projectValue(event) || null,
-            appId: descriptor.id,
-            appPath: descriptor.appDir,
-            route: "owner-app",
-            eventType: event.type,
-          },
-        } as AgentEvent);
-      }
-      void Promise.resolve()
-        .then(async () => {
-          const ctx = makeContext(opts, descriptor, rawEvent);
-          const result =
-            typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
-          if (projectCommentForApp) {
-            const resultEvent = isRecord(result) && typeof result.type === "string" ? result : null;
-            if (!resultEvent) {
-              ctx.emit({
-                type: "project.owner.requested",
-                target: { project: descriptor.id },
-                data: {
-                  project: descriptor.id,
-                  projectId: descriptor.id,
-                  reason: "project-comment",
-                  comment: typeof event.comment === "string" ? event.comment : "",
-                  inputEventId: event.eventId ?? null,
-                },
-              });
-            } else if (resultEvent.type !== "project.owner.requested") {
-              const openEventId = Number((rawEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-              if (Number.isInteger(openEventId) && openEventId > 0) {
-                const resultTarget = isRecord(resultEvent.target) ? resultEvent.target : {};
-                const taskId = typeof resultTarget.taskId === "string" ? resultTarget.taskId : "";
-                opts.bus.emit({
-                  type: "project.owner.reviewed",
-                  source: `project-app:${descriptor.id}`,
-                  owner: `agent:${descriptor.owner}`,
-                  target: { project: descriptor.id, ...(taskId ? { taskId } : {}) },
-                  data: {
-                    openEventId,
-                    openEventType: "project.comment.created",
-                    project: descriptor.id,
-                    projectId: descriptor.id,
-                    disposition: taskId ? "task-updated" : resultEvent.type === "noop" ? "no-op" : "answered",
-                    summary:
-                      typeof resultEvent.reason === "string"
-                        ? resultEvent.reason
-                        : `App handled project intent through ${resultEvent.type}`,
-                    taskRefs: taskId ? [{ projectId: descriptor.id, taskId }] : [],
-                  },
-                  trace: {
-                    traceId: rawEvent.trace?.traceId ?? `event:${openEventId}`,
-                    parentEventId: openEventId,
-                    links: [{ eventId: openEventId, type: "closure", label: "project.owner.reviewed" }],
-                  },
-                } as unknown as AgentEvent);
-              }
-            }
-          }
-          // A matching app event selector is a direct consumer, not an owner
-          // inbox fallback. Successful direct handling must not synthesize an
-          // owner-inbox review: that review can itself satisfy task Conditions
-          // and feed lifecycle facts back into reconciliation.
-        })
-        .catch((err) => {
-          opts.bus.emit({
-            type: "handler.failed",
-            source: "cron",
-            owner: `agent:${descriptor.owner}`,
-            data: {
-              handler: "project-app-event-router",
-              agent: descriptor.owner,
-              error: err instanceof Error ? err.message : String(err),
-              durationMs: 0,
-            },
-          });
-        });
     }
-    return eventDelivery;
+    return undefined;
   });
 }
 
-function validatePreparedProjectApp(descriptor: ProjectAppDescriptor): void {
+function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
   const { app, id } = descriptor;
-  const concurrency = app.budget?.maxConcurrent ?? 1;
+  const concurrency = app.tasks?.maxConcurrent ?? 1;
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
-    throw new Error(`Project app ${id} maxConcurrent must be a positive integer`);
+    throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
   }
   if (app.tasks) {
     const resyncIntervalMs = app.tasks.resyncIntervalMs ?? 60_000;
     if (!Number.isFinite(resyncIntervalMs) || resyncIntervalMs <= 0) {
-      throw new Error(`Project app ${id} task resyncIntervalMs must be positive`);
-    }
-  }
-  const scheduleIds = new Set<string>();
-  for (const schedule of app.schedules ?? []) {
-    if (!schedule.id?.trim()) throw new Error(`Project app ${id} has a schedule without an id`);
-    if (scheduleIds.has(schedule.id)) throw new Error(`Project app ${id} has duplicate schedule ${schedule.id}`);
-    scheduleIds.add(schedule.id);
-    if (typeof schedule.intervalMs !== "number" || !Number.isFinite(schedule.intervalMs) || schedule.intervalMs <= 0) {
-      throw new Error(`Project app ${id} schedule ${schedule.id} intervalMs must be positive`);
-    }
-    if (!Array.isArray(schedule.emits) || schedule.emits.length === 0) {
-      throw new Error(`Project app ${id} schedule ${schedule.id} must emit at least one event`);
+      throw new Error(`App ${id} task resyncIntervalMs must be positive`);
     }
   }
 }
 
-async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Promise<ProjectAppDescriptor[]> {
-  const descriptors: ProjectAppDescriptor[] = [];
+async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Promise<AppTaskRuntimeDescriptor[]> {
+  const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
-  const inboxAppIdByDir = new Map(
-    (opts.appRegistry?.entries() ?? []).map(({ appDir, definition }) => [appDir, definition.id]),
-  );
-  for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
-    const app = await loadProjectApp(appDir);
-    const id = typeof app.id === "string" && app.id.trim() ? app.id.trim() : appIdFromDir(appDir);
-    if (ids.has(id)) throw new Error(`Duplicate project app id: ${id}`);
+  const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
+  for (const { appDir, definition: app } of entries) {
+    if (!app.tasks) continue;
+    const id = app.id;
+    if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
-    const descriptor: ProjectAppDescriptor = {
+    const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
-      owner: configuredProjectAppOwner(app, appDir),
+      owner: configuredAppOwner(app, appDir),
       app,
-      ownsDirectInbox: inboxAppIdByDir.get(appDir) === id,
       reconciliationPaused: false,
     };
-    descriptor.reconciliationPaused = descriptor.app.tasks
-      ? projectAppLifecycle(descriptor.appDir) === "paused"
-      : false;
-    validatePreparedProjectApp(descriptor);
+    descriptor.reconciliationPaused = descriptor.app.tasks ? appLifecycle(descriptor.appDir) === "paused" : false;
+    validatePreparedAppTaskRuntime(descriptor);
     descriptors.push(descriptor);
   }
   return descriptors;
 }
 
-async function commitProjectAppDescriptors(
-  opts: ProjectAppLoaderOptions,
-  prepared: ProjectAppDescriptor[],
-): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
-  const installed: ProjectAppDescriptor[] = [];
-  let entries = 0;
-  const activeCronAppIds = new Map<Cron, Set<string>>();
+async function commitAppTaskRuntimeDescriptors(
+  opts: AppTaskRuntimeOptions,
+  prepared: AppTaskRuntimeDescriptor[],
+): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
+  const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
     const { id } = descriptor;
     let missingAgent = "";
@@ -3534,53 +2983,42 @@ async function commitProjectAppDescriptors(
     if (missingAgent) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] Skipping ${id}: required app agent "${missingAgent}" not registered and local registration failed`,
+        message: `[app-task] Skipping ${id}: required app agent "${missingAgent}" not registered and local registration failed`,
       });
       continue;
     }
     syncProjectReadModel(opts, descriptor);
-    const cron = ensureOwnerCron(opts, descriptor);
-    const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
-    activeAppIds.add(descriptor.id);
-    activeCronAppIds.set(cron, activeAppIds);
-    if (descriptor.reconciliationPaused) {
-      rememberProjectAppNames(projectAppScheduleSyntheticNamesByCron, cron, descriptor.id, new Set());
-      installed.push(descriptor);
-      continue;
-    }
-    entries += installSchedules(opts, cron, descriptor);
     installed.push(descriptor);
   }
 
-  pruneProjectAppNames(projectAppScheduleSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
   const controllers = installConventionTaskControllers(opts, installed);
 
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
   }
-  recoverInterruptedProjectAppTasks(opts, installed, controllers);
-  await requeueRepairedProjectAppTaskHandlers(opts, installed, controllers);
+  recoverInterruptedAppTasks(opts, installed, controllers);
+  await requeueRepairedAppTaskHandlers(opts, installed, controllers);
 
-  return { installed, entries };
+  return { installed };
 }
 
-export async function installProjectApps(
-  opts: ProjectAppLoaderOptions,
-): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
-  const prepared = await prepareProjectAppDescriptors(opts);
+export async function installAppTaskRuntimes(
+  opts: AppTaskRuntimeOptions,
+): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
+  const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
   try {
-    return await commitProjectAppDescriptors(opts, prepared);
+    const result = await commitAppTaskRuntimeDescriptors(opts, prepared);
+    opts.afterCommit?.(result);
+    return result;
   } catch (error) {
-    if (previous.length > 0) {
-      try {
-        await commitProjectAppDescriptors(opts, previous);
-      } catch (rollbackError) {
-        throw new AggregateError(
-          [error, rollbackError],
-          "Project app reload failed and the previous app set could not be restored",
-        );
-      }
+    try {
+      await commitAppTaskRuntimeDescriptors(opts, previous);
+    } catch (rollbackError) {
+      throw new AggregateError(
+        [error, rollbackError],
+        "App task runtime reload failed and the previous App set could not be restored",
+      );
     }
     throw error;
   }
@@ -3616,7 +3054,7 @@ function hashRuntimeTsFiles(runtimeDir: string): string[] {
   return files.sort();
 }
 
-function projectAppLifecycle(appDir: string): string {
+function appLifecycle(appDir: string): string {
   try {
     const paths = projectRuntimePaths(appDir);
     const tree = JSON.parse(readFileSync(paths.taskStatePath, "utf8")) as {
@@ -3628,14 +3066,14 @@ function projectAppLifecycle(appDir: string): string {
   }
 }
 
-export function projectAppHostFingerprint(projectsRoot: string): string {
+export function appTaskHostFingerprint(projectsRoot: string): string {
   const parts: string[] = [];
-  for (const appDir of listProjectAppDirs(projectsRoot)) {
+  for (const appDir of listAppDirs(projectsRoot)) {
     const tsPath = join(appDir, "app.ts");
     const jsPath = join(appDir, "app.js");
     const manifestPath = existsSync(tsPath) ? tsPath : jsPath;
     parts.push(`${appDir}\t${manifestPath}\t${hashFile(manifestPath)}`);
-    parts.push(`${appDir}\tproject_lifecycle\t${projectAppLifecycle(appDir)}`);
+    parts.push(`${appDir}\tproject_lifecycle\t${appLifecycle(appDir)}`);
     parts.push(...hashRuntimeTsFiles(join(appDir, "watchers")));
     for (const agent of localAgents(appDir)) {
       const agentDir = join(appDir, "agents", agent.dirName);
@@ -3647,32 +3085,35 @@ export function projectAppHostFingerprint(projectsRoot: string): string {
   return createHash("sha256").update(parts.join("\n")).digest("hex");
 }
 
-export function startProjectAppWatcher(
-  opts: ProjectAppLoaderOptions,
-  watcherOpts: { intervalMs?: number } = {},
-): ProjectAppWatcher {
+export function startAppTaskRuntimeWatcher(
+  opts: AppTaskRuntimeOptions,
+  watcherOpts: { intervalMs?: number; reload?: () => Promise<void> } = {},
+): AppTaskRuntimeWatcher {
   const intervalMs = Math.max(1_000, watcherOpts.intervalMs ?? 5_000);
   let closed = false;
   let inFlight = false;
-  let lastFingerprint = projectAppHostFingerprint(opts.projectsRoot);
+  let lastFingerprint = appTaskHostFingerprint(opts.projectsRoot);
 
   const scanNow = async (): Promise<boolean> => {
     if (closed || inFlight) return false;
-    const nextFingerprint = projectAppHostFingerprint(opts.projectsRoot);
+    const nextFingerprint = appTaskHostFingerprint(opts.projectsRoot);
     if (nextFingerprint === lastFingerprint) return false;
     inFlight = true;
     try {
-      const result = await installProjectApps(opts);
+      if (watcherOpts.reload) await watcherOpts.reload();
+      else {
+        const result = await installAppTaskRuntimes(opts);
+        opts.bus.emit({
+          type: "info",
+          message: `[app-task] Auto-reloaded ${result.installed.length} task-enabled App(s)`,
+        });
+      }
       lastFingerprint = nextFingerprint;
-      opts.bus.emit({
-        type: "info",
-        message: `[project-app] Auto-reloaded ${result.installed.length} app(s), ${result.entries} trigger(s)`,
-      });
       return true;
     } catch (err) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] Auto-reload failed: ${err instanceof Error ? err.message : String(err)}`,
+        message: `[app-task] Auto-reload failed: ${err instanceof Error ? err.message : String(err)}`,
       });
       return false;
     } finally {

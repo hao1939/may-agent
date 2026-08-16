@@ -675,7 +675,6 @@ function lifecyclePriority(kind: string): number {
   if (kind === "workflow") return 1;
   if (kind === "session") return 2;
   if (kind === "escalation") return 3;
-  if (kind === "owner_inbox") return 4;
   return 5;
 }
 
@@ -766,12 +765,6 @@ function hasFailedSession(rows: Row[]): boolean {
 function buildVerdict(focusEventId: number, lifecycles: EventReviewLifecycle[], rows: Row[]): EventReview["verdict"] {
   const orphan = lifecycles.find((lifecycle) => lifecycle.status === "orphan");
   if (orphan) {
-    if (orphan.kind === "owner_inbox") {
-      return {
-        status: "orphaned",
-        text: `Owner inbox item for ${eventTitle(orphan.openType ?? "event")} is orphaned; ${orphan.owner ?? "the owner"} has not acknowledged it.`,
-      };
-    }
     return {
       status: "orphaned",
       text: `${eventTitle(orphan.openType ?? orphan.kind)} is orphaned; no ${orphan.closeType ?? "close event"} was recorded.`,
@@ -790,12 +783,6 @@ function buildVerdict(focusEventId: number, lifecycles: EventReviewLifecycle[], 
   const open = lifecycles.find((lifecycle) => lifecycle.status === "open");
   if (open) {
     if (open.kind === "escalation") return { status: "warning", text: "Escalation is still open." };
-    if (open.kind === "owner_inbox") {
-      return {
-        status: "warning",
-        text: `Owner inbox item for ${eventTitle(open.openType ?? "event")} is still open.`,
-      };
-    }
     return {
       status: "warning",
       text: `${eventTitle(open.openType ?? open.kind)} is still open.`,

@@ -1,12 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -21,7 +14,7 @@ describe("importRuntimeModule", () => {
     }
   });
 
-  it("bundles external runtime modules that import the legacy SDK boundary", async () => {
+  it("bundles external runtime modules through the canonical SDK boundary", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-"));
     roots.push(root);
 
@@ -29,7 +22,7 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { workflowResultVersion } from "@may-agent/sdk/legacy";
+        import { workflowResultVersion } from "@may-agent/sdk";
 
         export function sdkVersion(): string {
           return workflowResultVersion;
@@ -49,11 +42,11 @@ describe("importRuntimeModule", () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-app-import-"));
     roots.push(root);
 
-    const modulePath = join(root, "inbox.ts");
+    const modulePath = join(root, "app.ts");
     writeFileSync(
       modulePath,
       `
-        import { Type, defineApp } from "@may-agent/sdk/app";
+        import { Type, defineApp } from "@may-agent/sdk";
 
         export default defineApp({
           id: "standalone-canary",
@@ -73,6 +66,36 @@ describe("importRuntimeModule", () => {
     });
 
     expect(mod.default.id).toBe("standalone-canary");
+  });
+
+  it("pins the staged legacy SDK entry point for external App declarations", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-legacy-import-"));
+    roots.push(root);
+
+    const modulePath = join(root, "legacy-handler.ts");
+    writeFileSync(
+      modulePath,
+      `
+        import { defineProjectApp, workflowResultVersion } from "@may-agent/sdk/legacy";
+        export const app = defineProjectApp({
+          id: "legacy", version: 1, owner: "owner", description: "fixture",
+          schedules: [{ id: "pulse", enabled: true, intervalMs: 60000,
+            emits: [{ type: "legacy.pulse" }]
+          }]
+        });
+        export const sdkVersion = workflowResultVersion;
+      `,
+    );
+
+    const mod = await importRuntimeModule<{
+      app: { schedules?: Array<{ emits?: unknown[] }> };
+      sdkVersion: string;
+    }>(modulePath, {
+      forceBundle: true,
+      cacheDir: join(root, ".cache"),
+    });
+    expect(mod.sdkVersion).toBe("workflow-result-v1");
+    expect(mod.app.schedules?.[0]?.emits).toHaveLength(1);
   });
 
   it("preserves dynamic relative imports from the original module directory", async () => {

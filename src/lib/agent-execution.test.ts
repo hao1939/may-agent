@@ -162,7 +162,7 @@ describe("shared agent execution preparation", () => {
       "bun:sqlite",
       "requests.js",
       "persistence.js",
-      "project-app",
+      "app-task",
       "metrics",
       "cron",
       "manager.js",
@@ -342,12 +342,7 @@ describe("shared agent execution preparation", () => {
       "workflow",
       "write",
     ]);
-    expect(deputy.tools.map((candidate) => candidate.name)).toEqual([
-      "agents",
-      "finish",
-      "query_db",
-      "read",
-    ]);
+    expect(deputy.tools.map((candidate) => candidate.name)).toEqual(["agents", "finish", "query_db", "read"]);
   });
 
   test("leaves compatibility deputy sessions unchanged during migration", () => {

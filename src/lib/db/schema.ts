@@ -334,6 +334,41 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_conversation_sequence
   ON app_inbox_items(app_id, conversation_id, conversation_seq)
   WHERE conversation_id IS NOT NULL AND conversation_seq IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS app_event_admission_plans (
+  event_id              INTEGER PRIMARY KEY,
+  registry_snapshot_id  TEXT NOT NULL,
+  registry_generation   INTEGER NOT NULL,
+  status                TEXT NOT NULL DEFAULT 'pending',
+  last_error            TEXT,
+  created_at            INTEGER NOT NULL,
+  updated_at            INTEGER NOT NULL,
+  completed_at          INTEGER,
+  CHECK (registry_generation > 0),
+  CHECK (status IN ('pending', 'completed', 'superseded')),
+  FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_app_event_admission_plan_status
+  ON app_event_admission_plans(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS app_event_admission_commands (
+  event_id              INTEGER NOT NULL,
+  app_id                TEXT NOT NULL,
+  route_kind            TEXT NOT NULL,
+  route_id              TEXT NOT NULL,
+  payload_version       INTEGER NOT NULL DEFAULT 2,
+  payload               TEXT NOT NULL,
+  status                TEXT NOT NULL DEFAULT 'pending',
+  last_error            TEXT,
+  admitted_at           INTEGER,
+  updated_at            INTEGER NOT NULL,
+  PRIMARY KEY(event_id, app_id),
+  CHECK (route_kind IN ('inbox', 'task', 'exact-task')),
+  CHECK (status IN ('pending', 'admitted', 'superseded')),
+  FOREIGN KEY(event_id) REFERENCES app_event_admission_plans(event_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_app_event_admission_command_status
+  ON app_event_admission_commands(app_id, status, updated_at);
+
 CREATE TABLE IF NOT EXISTS app_inbox_deliveries (
   item_id              TEXT PRIMARY KEY,
   operation_id         TEXT NOT NULL UNIQUE,
@@ -371,6 +406,10 @@ WHEN
   OR EXISTS (
     SELECT 1 FROM sessions s
     WHERE s.status IN ('running', 'idle') AND OLD.session_id = s.sessionId
+  )
+  OR EXISTS (
+    SELECT 1 FROM app_event_admission_plans p
+    WHERE p.event_id = OLD.id AND p.status = 'pending'
   )
 BEGIN
   SELECT RAISE(IGNORE);
@@ -483,9 +522,14 @@ CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, s
 
 export function applyDbSchema(db: SqliteDb): void {
   ensureExistingEventsTableColumns(db);
+  // Trigger definitions are not replaced by CREATE TRIGGER IF NOT EXISTS.
+  // Recreate this retention fence so existing databases gain every new durable
+  // reference added to the canonical schema.
+  db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
   db.exec(SCHEMA);
   ensureExistingEventsTableColumns(db);
   ensureExistingAppInboxTableColumns(db);
+  ensureExistingAppEventAdmissionColumns(db);
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
     ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
@@ -503,6 +547,15 @@ function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
   if (!tableExists(db, "app_inbox_items")) return;
   for (const [column, definition] of APP_INBOX_COLUMNS) {
     ensureColumn(db, "app_inbox_items", column, definition);
+  }
+}
+
+function ensureExistingAppEventAdmissionColumns(db: SqliteDb): void {
+  if (tableExists(db, "app_event_admission_plans")) {
+    ensureColumn(db, "app_event_admission_plans", "registry_snapshot_id", "TEXT NOT NULL DEFAULT 'legacy:unknown'");
+  }
+  if (tableExists(db, "app_event_admission_commands")) {
+    ensureColumn(db, "app_event_admission_commands", "payload_version", "INTEGER NOT NULL DEFAULT 1");
   }
 }
 

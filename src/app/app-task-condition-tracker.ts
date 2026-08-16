@@ -2,12 +2,12 @@ import {
   readTaskState,
   saveTaskState,
   withTaskStateLock,
-  type ProjectAppCondition,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk/legacy";
+} from "./app-task-store.js";
+import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
 
-export type ProjectAppConditionWake = {
+export type AppTaskConditionWake = {
   conditionId: string;
   taskId: string;
 };
@@ -26,7 +26,7 @@ function stableValue(value: unknown): unknown {
   );
 }
 
-function isCondition(value: unknown): value is ProjectAppCondition {
+function isCondition(value: unknown): value is AppTaskCondition {
   if (!isRecord(value) || !isRecord(value.metadata) || !isRecord(value.spec) || !isRecord(value.status)) {
     return false;
   }
@@ -138,7 +138,7 @@ function timestampMillis(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function isFreshLevelObservation(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
+function isFreshLevelObservation(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   const levelObservation =
     condition.spec.type === "aks.repo-ref.observed" ||
     condition.spec.type.endsWith(".state") ||
@@ -193,7 +193,7 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
   });
 }
 
-function matches(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
+function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
   // Level observations are not immutable historical facts. A newly declared
   // wait must not be satisfied by an older state, check, or pulse replayed from
@@ -233,15 +233,23 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
 function applyConditionEvent(
   tree: TaskTree,
   event: Record<string, unknown>,
-  wakes: Map<string, ProjectAppConditionWake>,
+  wakes: Map<string, AppTaskConditionWake>,
+  allowedTaskIds?: ReadonlySet<string>,
 ): boolean {
   const now = new Date().toISOString();
   let changed = false;
-  const eventWakes = new Map<string, ProjectAppConditionWake>();
+  const eventWakes = new Map<string, AppTaskConditionWake>();
 
   for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
     if (!isCondition(condition)) continue;
     if (!matches(condition, event)) continue;
+    const waitingResources = Object.values(tree.resources ?? {}).filter(
+      (resource) =>
+        resource.status.phase === "waiting" &&
+        resource.status.conditionIds?.includes(id) &&
+        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
+    );
+    if (allowedTaskIds && waitingResources.length === 0) continue;
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;
       condition.status = {
@@ -253,8 +261,7 @@ function applyConditionEvent(
       };
       changed = true;
     }
-    for (const resource of Object.values(tree.resources ?? {})) {
-      if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
+    for (const resource of waitingResources) {
       const taskId = resource.metadata.id;
       if (eventWakes.has(taskId)) continue;
       eventWakes.set(taskId, {
@@ -291,23 +298,20 @@ function applyConditionEvent(
  * The task reconciler uses this when an event arrived while a task was running
  * and the task only declared its next wait at the end of that attempt.
  */
-export function applyProjectAppConditionEvent(
-  tree: TaskTree,
-  event: Record<string, unknown>,
-): ProjectAppConditionWake[] {
-  const wakes = new Map<string, ProjectAppConditionWake>();
+export function applyAppTaskConditionEvent(tree: TaskTree, event: Record<string, unknown>): AppTaskConditionWake[] {
+  const wakes = new Map<string, AppTaskConditionWake>();
   applyConditionEvent(tree, event, wakes);
   return [...wakes.values()];
 }
 
 /** Correlate semantic observations with durable Conditions in one state transaction. */
-export function trackProjectAppConditionEvents(
+export function trackAppTaskConditionEvents(
   config: TaskStateConfig,
   events: Iterable<Record<string, unknown>>,
-): ProjectAppConditionWake[] {
+): AppTaskConditionWake[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
-    const wakes = new Map<string, ProjectAppConditionWake>();
+    const wakes = new Map<string, AppTaskConditionWake>();
     let changed = false;
     for (const event of events) {
       changed = applyConditionEvent(tree, event, wakes) || changed;
@@ -319,9 +323,45 @@ export function trackProjectAppConditionEvents(
 }
 
 /** Correlate one semantic observation with durable Conditions; never observes the domain source itself. */
-export function trackProjectAppConditionEvent(
+export function trackAppTaskConditionEvent(
   config: TaskStateConfig,
   event: Record<string, unknown>,
-): ProjectAppConditionWake[] {
-  return trackProjectAppConditionEvents(config, [event]);
+): AppTaskConditionWake[] {
+  return trackAppTaskConditionEvents(config, [event]);
+}
+
+/** Pure preflight used by the canonical App router before it chooses a route. */
+export function matchingAppTaskConditionTaskIds(
+  config: TaskStateConfig,
+  event: Record<string, unknown>,
+  allowedTaskIds?: Iterable<string>,
+): string[] {
+  const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
+  const tree = readTaskState(config);
+  const matched = new Set<string>();
+  for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
+    if (!isCondition(condition) || !matches(condition, event)) continue;
+    for (const resource of Object.values(tree.resources ?? {})) {
+      if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
+      if (allowed && !allowed.has(resource.metadata.id)) continue;
+      matched.add(resource.metadata.id);
+    }
+  }
+  return [...matched].sort();
+}
+
+/** Persist one fact only for the exact task Conditions selected in preflight. */
+export function trackAppTaskConditionEventForTasks(
+  config: TaskStateConfig,
+  event: Record<string, unknown>,
+  taskIds: Iterable<string>,
+): AppTaskConditionWake[] {
+  const allowed = new Set(taskIds);
+  if (allowed.size === 0) return [];
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const wakes = new Map<string, AppTaskConditionWake>();
+    if (applyConditionEvent(tree, event, wakes, allowed)) saveTaskState(config, tree);
+    return [...wakes.values()];
+  });
 }

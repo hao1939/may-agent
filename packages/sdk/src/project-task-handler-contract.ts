@@ -1,13 +1,15 @@
-import { Type } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type {
-  ProjectAppConditionSpec,
-  ProjectAppTaskAction,
-  ProjectAppTaskHandlerResult,
-  ProjectAppTaskMode,
-  ProjectAppTaskVerificationResult,
-} from "./project-app.js";
-import { MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS } from "./project-app.js";
+  Condition as ProjectAppConditionSpec,
+  TaskAction as ProjectAppTaskAction,
+  TaskMode as ProjectAppTaskMode,
+  TaskReconcileResult as ProjectAppTaskHandlerResult,
+  TaskVerificationResult as ProjectAppTaskVerificationResult,
+} from "./task.js";
+
+export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
+const MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS = MIN_CONDITION_REVIEW_AFTER_MS;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
@@ -482,3 +484,16 @@ export function admitProjectAppTaskVerificationResult(
   }
   return { ok: true, result: { accepted: output.accepted, summary, evidence } };
 }
+
+export const taskActionSchema = projectAppTaskActionSchema;
+export const conditionSchema = projectAppConditionSchema;
+export const taskOwnerResultSchema = projectAppTaskOwnerResultSchema;
+export const taskReconcileResultSchema = projectAppTaskHandlerResultSchema;
+export const taskVerificationResultSchema = projectAppTaskVerificationResultSchema;
+
+export type TaskReconcileAdmission = ProjectAppTaskHandlerAdmission;
+export type TaskReconcileAdmissionOptions = ProjectAppTaskHandlerAdmissionOptions;
+
+export const admitTaskReconcileResult = admitProjectAppTaskHandlerResult;
+export const admitTaskVerificationResult = admitProjectAppTaskVerificationResult;
+export const isTypedConditionSubject = isTypedProjectAppConditionSubject;

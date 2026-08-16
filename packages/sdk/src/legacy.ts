@@ -20,8 +20,8 @@ export type {
   AppRequest,
   AppResult,
   AppTaskAttachment,
-  TaskIntent,
 } from "./app.js";
+export type { TaskIntent } from "./task.js";
 
 // ── SQLite-like DB surface ────────────────────────────────────────────
 

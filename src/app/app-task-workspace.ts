@@ -2,18 +2,18 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import type { ProjectAppTaskWorkspace } from "@may-agent/sdk/legacy";
+import type { AppTaskWorkspace as AppTaskWorkspace } from "./app-task-state.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };
 
 export type PreparedTaskWorkspace = {
   repoDir: string;
-  metadata: ProjectAppTaskWorkspace;
+  metadata: AppTaskWorkspace;
 };
 
 export type FinalizedTaskWorkspace = {
   ok: boolean;
-  metadata: ProjectAppTaskWorkspace;
+  metadata: AppTaskWorkspace;
   reason?: string;
 };
 
@@ -87,7 +87,7 @@ function interruptedOperationBranch(path: string): string | undefined {
   return undefined;
 }
 
-function isIntegrated(repoDir: string, metadata: ProjectAppTaskWorkspace): boolean {
+function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): boolean {
   return (
     metadata.headCommit === metadata.baseCommit ||
     git(repoDir, ["diff", "--quiet", metadata.baseCommit, metadata.headCommit], true).status === 0 ||
@@ -95,7 +95,7 @@ function isIntegrated(repoDir: string, metadata: ProjectAppTaskWorkspace): boole
   );
 }
 
-function unintegratedResult(metadata: ProjectAppTaskWorkspace): FinalizedTaskWorkspace {
+function unintegratedResult(metadata: AppTaskWorkspace): FinalizedTaskWorkspace {
   return {
     ok: false,
     metadata,
@@ -103,14 +103,14 @@ function unintegratedResult(metadata: ProjectAppTaskWorkspace): FinalizedTaskWor
   };
 }
 
-export function prepareProjectTaskWorkspace(input: {
+export function prepareAppTaskWorkspace(input: {
   repoDir: string;
   workspaceRoot: string;
   taskId: string;
   generation: number;
   baseBranch: string;
   refreshRemote?: boolean;
-  previous?: ProjectAppTaskWorkspace;
+  previous?: AppTaskWorkspace;
 }): PreparedTaskWorkspace {
   const repoDir = realpathSync(input.repoDir);
   if (git(repoDir, ["rev-parse", "--is-inside-work-tree"]).stdout !== "true") {
@@ -197,7 +197,7 @@ export function prepareProjectTaskWorkspace(input: {
   };
 }
 
-export function finalizeProjectTaskWorkspace(
+export function finalizeAppTaskWorkspace(
   prepared: PreparedTaskWorkspace,
   outcome: "accepted" | "waiting" | "failed",
 ): FinalizedTaskWorkspace {

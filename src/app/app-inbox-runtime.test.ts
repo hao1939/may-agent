@@ -33,7 +33,7 @@ describe("App inbox runtime", () => {
     const appDir = join(root, "evaluation.app");
     mkdirSync(appDir, { recursive: true });
     writeFileSync(
-      join(appDir, "inbox.js"),
+      join(appDir, "app.js"),
       `export default {
         id: "evaluation-canary",
         version: 1,
@@ -51,7 +51,13 @@ describe("App inbox runtime", () => {
               properties: { value: { type: "string" } }
             }
           }
-        }
+        },
+        subscriptions: [{
+          id: "provider-change",
+          event: { type: "provider.changed", project: "evaluation" },
+          toInput(event) { return { kind: "probe", data: { value: event.data.value } }; }
+        }],
+        observations: ["project.task.reconciled"]
       };\n`,
     );
     db = openDatabase(":memory:");
@@ -145,8 +151,880 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("translates a subscribed fact into one idempotent durable App input", async () => {
+    const calls: string[] = [];
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 42, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+
+    const fact = () => ({
+      type: "provider.changed",
+      source: "provider-observer",
+      owner: "app:evaluation-canary",
+      data: { project: "evaluation", value: "current" },
+    });
+    bus.emit(fact());
+    await waitUntil(() => calls.length === 1);
+    const row = db.prepare("SELECT id, source_id, input_data FROM app_inbox_items").get() as {
+      id: string;
+      source_id: string;
+      input_data: string;
+    };
+    await waitUntil(() => runtime?.host.get(row.id)?.status === "done");
+    expect(row.source_id).toBe("event:42");
+    expect(JSON.parse(row.input_data)).toEqual({ value: "current" });
+
+    bus.emit(fact());
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+  });
+
+  it("replays deterministic task admission through the durable canonical route", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } },
+        tasks: {
+          subscriptions: ["task.requested"],
+          resolve(event) {
+            return {
+              id: "work/" + event.data.itemId, parentId: "project",
+              outcome: "Handle " + event.data.itemId, acceptance: ["handled"], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const deliveries: Array<{ event: AgentEvent; result: { by?: string } }> = [];
+    const admissions: Array<{ appId: string; taskId: string; eventId: number }> = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 77, configurable: true });
+      Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        admissions.push({
+          appId: input.appId,
+          taskId: input.intent?.id ?? "",
+          eventId: Number(input.event[EVENT_ROW_ID]),
+        });
+        return { accepted: true, by: `task:${input.intent?.id}`, route: "direct" };
+      },
+    });
+
+    bus.emit({
+      type: "task.requested",
+      source: "test",
+      data: { itemId: "one" },
+    } as AgentEvent);
+
+    expect(admissions).toEqual([{ appId: "task-app", taskId: "work/one", eventId: 77 }]);
+    expect(deliveries.find(({ event }) => event.type === "task.requested")?.result.by).toBe(
+      "app-runtime:events:task:task-app/work/one",
+    );
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("treats an explicit null task resolution as observation-only", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {
+          subscriptions: ["evaluation.owner_reviewed"],
+          resolve() { return null; }
+        },
+        observations: ["evaluation.owner_reviewed"]
+      };\n`,
+    );
+    const bus = new EventBus();
+    const delivered: Array<{ type: string; by?: string }> = [];
+    let taskAdmissions = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 79, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => delivered.push({ type: event.type, by: result.by }));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected", route: "direct" };
+      },
+    });
+
+    bus.emit({ type: "evaluation.owner_reviewed", source: "test", data: {} } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+    expect(delivered).toContainEqual({
+      type: "evaluation.owner_reviewed",
+      by: "app-runtime:observations:task-app",
+    });
+  });
+
+  it("does not globally acknowledge a null task resolution for an unaudited event type", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {
+          subscriptions: ["evaluation.new_actionable_fact"],
+          resolve() { return null; }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 81, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent: () => ({ accepted: true, by: "unexpected", route: "direct" }),
+    });
+
+    bus.emit({ type: "evaluation.new_actionable_fact", source: "test", data: {} } as AgentEvent);
+
+    expect(delivered).not.toContain("evaluation.new_actionable_fact");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("keeps a resolver failure pending instead of treating it as null resolution", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {
+          subscriptions: ["broken.fact"],
+          resolve() { throw new Error("resolver rejected malformed input"); }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const failed: AgentEvent[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 80, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "broken.fact") return { accepted: true, by: "ordinary" };
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent: () => ({ accepted: true, by: "unexpected", route: "direct" }),
+    });
+
+    bus.emit({ type: "broken.fact", source: "test", data: {} } as AgentEvent);
+
+    expect(delivered).not.toContain("broken.fact");
+    expect(failed.some((event) => JSON.stringify(event).includes("resolver rejected malformed input"))).toBe(true);
+  });
+
+  it("durably admits task Condition matches without a manifest subscription", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "condition-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } },
+        tasks: { attach: true }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const admissions: string[][] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 78, configurable: true });
+      Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      previewTaskEvent: () => ["work/waiting"],
+      admitTaskEvent(input) {
+        admissions.push(input.conditionTaskIds ?? []);
+        return { accepted: true, by: "condition", route: "direct" };
+      },
+    });
+
+    bus.emit({ type: "provider.state", source: "test", data: { state: "ready" } } as AgentEvent);
+
+    expect(admissions).toEqual([["work/waiting"]]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("admits additive Condition wakes with an independently addressed inbox obligation", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "condition-app", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        subscriptions: [{
+          id: "provider-review", event: "provider.state",
+          toInput(event) { return { kind: "probe", data: event.data }; }
+        }],
+        tasks: { attach: true }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const admissions: string[][] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 79, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      previewTaskEvent: () => ["work/waiting"],
+      admitTaskEvent(input) {
+        admissions.push(input.conditionTaskIds ?? []);
+        expect(input.intent).toBeNull();
+        return { accepted: true, by: "condition", route: "direct" };
+      },
+    });
+
+    bus.emit({ type: "provider.state", source: "test", data: { state: "ready" } } as AgentEvent);
+
+    expect(admissions).toEqual([["work/waiting"]]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+    expect(
+      db
+        .prepare(
+          `SELECT route_kind, payload_version, status
+         FROM app_event_admission_commands WHERE event_id = 79`,
+        )
+        .get(),
+    ).toEqual({ route_kind: "inbox", payload_version: 2, status: "admitted" });
+  });
+
+  it("rejects one App claiming the same fact through inbox and task routes", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "ambiguous-app", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        subscriptions: [{
+          id: "ambiguous-inbox", event: "ambiguous.fact",
+          toInput() { return { kind: "probe", data: {} }; }
+        }],
+        tasks: {
+          subscriptions: ["ambiguous.fact"],
+          resolve() {
+            return {
+              id: "work/ambiguous", parentId: "project", outcome: "Handle ambiguity",
+              acceptance: ["handled"], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const failed: AgentEvent[] = [];
+    const deliveries: Array<{ event: AgentEvent }> = [];
+    let taskAdmissions = 0;
+    let rowId = 90;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: rowId++, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => deliveries.push({ event }));
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected", route: "direct" };
+      },
+    });
+
+    bus.emit({ type: "ambiguous.fact", source: "test", data: {} } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+    expect(deliveries.some(({ event }) => event.type === "ambiguous.fact")).toBe(false);
+    expect(failed.some((event) => JSON.stringify(event).includes("both inbox and task-intent routes"))).toBe(true);
+  });
+
+  it("lets an exact task target bypass broad and inbox routing", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "target-app", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        subscriptions: [{
+          id: "broad-inbox", event: "target.fact",
+          toInput() { return { kind: "probe", data: {} }; }
+        }],
+        tasks: {
+          subscriptions: ["target.fact"],
+          resolve() {
+            throw new Error("broad resolver must not run for an exact task address");
+          }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const admissions: Array<{ targetedTaskId?: string; intentId?: string }> = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 101, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        admissions.push({ targetedTaskId: input.targetedTaskId, intentId: input.intent?.id });
+        return { accepted: true, by: "exact", route: "direct" };
+      },
+    });
+
+    bus.emit({
+      type: "target.fact",
+      source: "test",
+      target: { project: "target-app", taskId: "work/exact" },
+      data: {},
+    } as AgentEvent);
+
+    expect(admissions).toEqual([{ targetedTaskId: "work/exact", intentId: undefined }]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("keeps a missing exact target pending even when an ordinary subscriber accepts the fact", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "target-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: { attach: true }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const failed: AgentEvent[] = [];
+    let ordinaryCalls = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 102, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "target.fact") {
+        ordinaryCalls += 1;
+        return { accepted: true, by: "ordinary" };
+      }
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent: () => undefined,
+    });
+
+    bus.emit({
+      type: "target.fact",
+      source: "test",
+      target: { appId: "target-app", taskId: "work/missing" },
+      data: {},
+    } as AgentEvent);
+
+    expect(ordinaryCalls).toBe(1);
+    expect(delivered).not.toContain("target.fact");
+    expect(failed.some((event) => JSON.stringify(event).includes("did not durably admit frozen work/missing"))).toBe(
+      true,
+    );
+  });
+
+  it("rejects an exact task target without canonical App identity instead of falling through", async () => {
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const failed: AgentEvent[] = [];
+    let taskAdmissions = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 104, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected" };
+      },
+    });
+
+    bus.emit({
+      type: "target.fact",
+      source: "test",
+      target: { taskId: "work/malformed" },
+      data: {},
+    } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(delivered).not.toContain("target.fact");
+    expect(failed.some((event) => JSON.stringify(event).includes("has no canonical App identity"))).toBe(true);
+  });
+
+  it("keeps a lifecycle subject identity in event data instead of treating it as a wake address", async () => {
+    const bus = new EventBus();
+    const delivered: Array<{ type: string; by?: string }> = [];
+    let taskAdmissions = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 105, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => delivered.push({ type: event.type, by: result.by }));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected" };
+      },
+    });
+
+    bus.emit({
+      type: "project.task.reconciled",
+      source: "task-reconciler",
+      target: { appId: "evaluation-canary" },
+      data: { taskId: "work/described", disposition: "converged" },
+    } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(delivered).toContainEqual({
+      type: "project.task.reconciled",
+      by: "app-runtime:observations:evaluation-canary",
+    });
+  });
+
+  it("attempts every selected App route and acknowledges only after all durable admissions succeed", async () => {
+    for (const appId of ["a-task", "z-task"]) {
+      const appDir = join(root, `${appId}.app`);
+      mkdirSync(appDir, { recursive: true });
+      writeFileSync(
+        join(appDir, "app.js"),
+        `export default {
+          id: "${appId}", version: 1, owner: "evaluator",
+          inputSchema: { type: "object", properties: {} },
+          tasks: {
+            subscriptions: [{ type: "provider.changed", actions: ["refresh"] }],
+            resolve() {
+              return {
+                id: "work/${appId}", parentId: "project", outcome: "Handle ${appId}",
+                acceptance: ["handled"], mode: "achieve"
+              };
+            }
+          }
+        };\n`,
+      );
+    }
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const attempts: string[] = [];
+    let failA = true;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 103, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "provider.changed") return { accepted: true, by: "ordinary" };
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        attempts.push(input.appId);
+        if (input.appId === "a-task" && failA) throw new Error("a-task storage unavailable");
+        return { accepted: true, by: `task:${input.appId}`, route: "direct" };
+      },
+    });
+    const fact = () =>
+      ({
+        type: "provider.changed",
+        source: "test",
+        action: "refresh",
+        data: { project: "evaluation", value: "current" },
+      }) as AgentEvent;
+
+    bus.emit(fact());
+
+    expect(new Set(attempts)).toEqual(new Set(["a-task", "z-task"]));
+    expect(delivered).not.toContain("provider.changed");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+
+    failA = false;
+    attempts.length = 0;
+    bus.emit(fact());
+
+    expect(attempts).toEqual(["a-task"]);
+    expect(delivered).toContain("provider.changed");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+    expect(
+      db.prepare(`SELECT status, registry_generation FROM app_event_admission_plans WHERE event_id = 103`).get(),
+    ).toEqual({ status: "completed", registry_generation: 1 });
+  });
+
+  it("replays the frozen route kind after partial admission and registry reload", async () => {
+    const inboxAppPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      inboxAppPath,
+      `export default {
+        id: "a-inbox", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: {
+            kind: { const: "review" },
+            data: { type: "object" }
+          }
+        },
+        subscriptions: [{
+          id: "review-provider", event: "provider.changed",
+          toInput(event) { return { kind: "review", data: event.data }; }
+        }]
+      };\n`,
+    );
+    const taskAppDir = join(root, "z-task.app");
+    mkdirSync(taskAppDir, { recursive: true });
+    writeFileSync(
+      join(taskAppDir, "app.js"),
+      `export default {
+        id: "z-task", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {
+          subscriptions: ["provider.changed"],
+          resolve() {
+            return {
+              id: "work/provider", outcome: "Refresh provider state",
+              acceptance: ["Provider state is current."], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const registry = await loadedRegistry(root);
+    const selectedSnapshotId = registry.snapshot().id;
+    const selectedGeneration = registry.snapshot().generation;
+    const bus = new EventBus();
+    const deliveries: Array<{ type: string; note?: string }> = [];
+    const attempts: string[] = [];
+    let failTask = true;
+    let diagnosticEventId = 1_060;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, {
+        value: event.type === "provider.changed" ? 106 : diagnosticEventId++,
+        configurable: true,
+      });
+    });
+    bus.setDeliveryRecorder((event, result) => deliveries.push({ type: event.type, note: result.note }));
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        attempts.push(input.appId);
+        if (failTask) throw new Error("task store unavailable");
+        return { accepted: true, by: `task:${input.appId}`, route: "direct" };
+      },
+    });
+    const fact = () =>
+      ({
+        type: "provider.changed",
+        source: "provider",
+        data: { value: "current" },
+      }) as AgentEvent;
+
+    bus.emit(fact());
+    expect(attempts).toEqual(["z-task"]);
+    expect(deliveries).not.toContainEqual(expect.objectContaining({ type: "provider.changed" }));
+    expect(
+      db
+        .prepare(
+          `SELECT app_id, route_kind, route_id, status
+           FROM app_event_admission_commands
+           WHERE event_id = 106
+           ORDER BY app_id`,
+        )
+        .all(),
+    ).toEqual([
+      {
+        app_id: "a-inbox",
+        route_kind: "inbox",
+        route_id: "review-provider",
+        status: "admitted",
+      },
+      {
+        app_id: "z-task",
+        route_kind: "task",
+        route_id: "work/provider",
+        status: "pending",
+      },
+    ]);
+
+    writeFileSync(
+      inboxAppPath,
+      `export default {
+        id: "a-inbox", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: {
+            kind: { const: "review" },
+            data: { type: "object" }
+          }
+        },
+        tasks: {
+          subscriptions: ["provider.changed"],
+          resolve() { throw new Error("new policy must not reclassify the pending event"); }
+        }
+      };\n`,
+    );
+    await runtime.reload();
+    expect(registry.snapshot().generation).toBe(selectedGeneration + 1);
+
+    failTask = false;
+    attempts.length = 0;
+    bus.emit(fact());
+
+    expect(attempts).toEqual(["z-task"]);
+    expect(deliveries.at(-1)).toMatchObject({
+      type: "provider.changed",
+      note: `registry-snapshot:${selectedSnapshotId}; generation:${selectedGeneration}; 2 frozen App admission command(s) admitted durably`,
+    });
+    expect(
+      db
+        .prepare(
+          `SELECT status, registry_snapshot_id, registry_generation
+           FROM app_event_admission_plans WHERE event_id = 106`,
+        )
+        .get(),
+    ).toEqual({
+      status: "completed",
+      registry_snapshot_id: selectedSnapshotId,
+      registry_generation: selectedGeneration,
+    });
+    expect(
+      db
+        .prepare(
+          `SELECT COUNT(*) AS count FROM app_inbox_items
+           WHERE app_id = 'a-inbox' AND idempotency_key = 'subscription:a-inbox:review-provider:event:106'`,
+        )
+        .get(),
+    ).toEqual({ count: 1 });
+  });
+
+  it("replays a frozen admission after process-style restart without reusing the numeric generation", async () => {
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {
+          subscriptions: ["provider.changed"],
+          resolve() {
+            return {
+              id: "work/original", outcome: "Apply the original frozen policy",
+              acceptance: ["Original work is admitted."], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const originalRegistry = await loadedRegistry(root);
+    const originalSnapshot = originalRegistry.snapshot();
+    const firstBus = new EventBus();
+    let diagnosticEventId = 1_070;
+    firstBus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, {
+        value: event.type === "provider.changed" ? 107 : diagnosticEventId++,
+        configurable: true,
+      });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: originalRegistry,
+      db,
+      manager: manager([]),
+      bus: firstBus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        throw new Error("task store unavailable before restart");
+      },
+    });
+    const fact = () => ({ type: "provider.changed", source: "provider", data: {} }) as AgentEvent;
+
+    firstBus.emit(fact());
+    expect(
+      db
+        .prepare(
+          `SELECT registry_snapshot_id, registry_generation, status
+         FROM app_event_admission_plans WHERE event_id = 107`,
+        )
+        .get(),
+    ).toEqual({
+      registry_snapshot_id: originalSnapshot.id,
+      registry_generation: 1,
+      status: "pending",
+    });
+    runtime.close();
+    runtime = null;
+
+    writeFileSync(
+      appPath,
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {
+          subscriptions: ["provider.changed"],
+          resolve() { throw new Error("replacement policy must not classify retained delivery"); }
+        }
+      };\n`,
+    );
+    const restartedRegistry = await loadedRegistry(root);
+    expect(restartedRegistry.snapshot().generation).toBe(1);
+    expect(restartedRegistry.snapshot().id).not.toBe(originalSnapshot.id);
+    const restartedBus = new EventBus();
+    const deliveries: Array<{ type: string; note?: string }> = [];
+    restartedBus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, {
+        value: event.type === "provider.changed" ? 107 : diagnosticEventId++,
+        configurable: true,
+      });
+    });
+    restartedBus.setDeliveryRecorder((event, result) => deliveries.push({ type: event.type, note: result.note }));
+    const admittedIntentIds: Array<string | undefined> = [];
+    runtime = await startAppInboxRuntime({
+      registry: restartedRegistry,
+      db,
+      manager: manager([]),
+      bus: restartedBus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        admittedIntentIds.push(input.intent?.id);
+        return { accepted: true, by: "task-store", route: "direct" };
+      },
+    });
+
+    restartedBus.emit(fact());
+
+    expect(admittedIntentIds).toEqual(["work/original"]);
+    expect(deliveries.at(-1)).toMatchObject({
+      type: "provider.changed",
+      note: `registry-snapshot:${originalSnapshot.id}; generation:1; 1 frozen App admission command(s) admitted durably`,
+    });
+  });
+
+  it("admits one durable input per schedule slot without replaying pre-start slots", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "scheduled",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        schedules: [{
+          id: "review", intervalMs: 60000, catchUp: "none",
+          input: { kind: "probe", data: { value: "scheduled" } }
+        }]
+      };\n`,
+    );
+    let currentTime = 1;
+    const calls: string[] = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager(calls),
+      bus: new EventBus(),
+      scanIntervalMs: 10_000,
+      now: () => currentTime,
+    });
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(0);
+
+    currentTime = 60_001;
+    runtime.scanNow();
+    await waitUntil(() => calls.length === 1);
+    runtime.scanNow();
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'scheduled'").get()).toEqual({
+      count: 1,
+    });
+  });
+
   it("starts without registered Apps and adopts definitions on reload", async () => {
-    rmSync(join(root, "evaluation.app", "inbox.js"));
+    rmSync(join(root, "evaluation.app", "app.js"));
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
       db,
@@ -157,7 +1035,7 @@ describe("App inbox runtime", () => {
     expect(runtime.host.appIds()).toEqual([]);
 
     writeFileSync(
-      join(root, "evaluation.app", "inbox.js"),
+      join(root, "evaluation.app", "app.js"),
       `export default {
         id: "reloaded",
         version: 1,
@@ -170,11 +1048,106 @@ describe("App inbox runtime", () => {
     expect(runtime.host.acceptsInput("reloaded", { kind: "probe", data: null })).toBe(true);
   });
 
+  it("publishes one prepared generation only after every consumer commits", async () => {
+    const registry = await loadedRegistry(root);
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      manager: manager([]),
+      bus: new EventBus(),
+      scanIntervalMs: 10_000,
+    });
+    const previousGeneration = registry.snapshot().generation;
+
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "replacement", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } }
+      };\n`,
+    );
+
+    await expect(
+      runtime.reload(async ({ snapshot, commit }) => {
+        expect(snapshot.generation).toBe(previousGeneration + 1);
+        expect(snapshot.entries.map((entry) => entry.definition.id)).toEqual(["replacement"]);
+        expect(registry.snapshot().generation).toBe(previousGeneration);
+        expect(runtime?.host.appIds()).toEqual(["evaluation-canary"]);
+        commit();
+        expect(runtime?.host.appIds()).toEqual(["replacement"]);
+        throw new Error("compatibility consumer rejected generation");
+      }),
+    ).rejects.toThrow("compatibility consumer rejected generation");
+
+    expect(registry.snapshot().generation).toBe(previousGeneration);
+    expect(runtime.host.appIds()).toEqual(["evaluation-canary"]);
+
+    expect(
+      await runtime.reload(async ({ snapshot, commit }) => {
+        expect(registry.snapshot().generation).toBe(previousGeneration);
+        expect(snapshot.generation).toBe(previousGeneration + 1);
+        commit();
+      }),
+    ).toEqual(["replacement"]);
+    expect(registry.snapshot().generation).toBe(previousGeneration + 1);
+  });
+
+  it("records the installed registry snapshot that selected each durable event route", async () => {
+    const registry = await loadedRegistry(root);
+    const bus = new EventBus();
+    const deliveries: Array<{ type: string; note?: string }> = [];
+    let eventId = 200;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: eventId++, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => deliveries.push({ type: event.type, note: result.note }));
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+    const processScopedListenerCount = bus.listenerCount;
+
+    const providerFact = (value: string) =>
+      ({
+        type: "provider.changed",
+        source: "provider",
+        data: { project: "evaluation", value },
+      }) as AgentEvent;
+    bus.emit(providerFact("before-reload"));
+    const beforeReload = registry.snapshot();
+    expect(deliveries.at(-1)).toMatchObject({
+      type: "provider.changed",
+      note: `registry-snapshot:${beforeReload.id}; generation:${beforeReload.generation}; 1 frozen App admission command(s) admitted durably`,
+    });
+
+    const previousGeneration = registry.snapshot().generation;
+    await runtime.reload();
+    expect(registry.snapshot().generation).toBe(previousGeneration + 1);
+    expect(bus.listenerCount).toBe(processScopedListenerCount);
+    bus.emit(providerFact("after-reload"));
+    const afterReload = registry.snapshot();
+    expect(deliveries.at(-1)).toMatchObject({
+      type: "provider.changed",
+      note: `registry-snapshot:${afterReload.id}; generation:${previousGeneration + 1}; 1 frozen App admission command(s) admitted durably`,
+    });
+
+    await expect(
+      runtime.reload(() => {
+        throw new Error("candidate rejected");
+      }),
+    ).rejects.toThrow("candidate rejected");
+    expect(bus.listenerCount).toBe(processScopedListenerCount);
+    expect(registry.snapshot()).toBe(afterReload);
+  });
+
   it("admits one uniquely addressed agent message and durably returns its result", async () => {
     const mayDir = join(root, "may.app");
     mkdirSync(mayDir, { recursive: true });
     writeFileSync(
-      join(mayDir, "inbox.js"),
+      join(mayDir, "app.js"),
       `export default {
         id: "may",
         version: 1,
@@ -307,7 +1280,7 @@ describe("App inbox runtime", () => {
       const appDir = join(root, `${id}.app`);
       mkdirSync(appDir, { recursive: true });
       writeFileSync(
-        join(appDir, "inbox.js"),
+        join(appDir, "app.js"),
         `export default {
           id: "${id}", version: 1, owner: "may",
           inputSchema: {
@@ -700,7 +1673,7 @@ describe("App inbox runtime", () => {
     const workerDir = join(root, "worker.app");
     mkdirSync(workerDir, { recursive: true });
     writeFileSync(
-      join(workerDir, "inbox.js"),
+      join(workerDir, "app.js"),
       `export default {
         id: "worker-canary",
         version: 1,

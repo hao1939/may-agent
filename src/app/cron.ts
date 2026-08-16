@@ -397,9 +397,9 @@ export class Cron {
       this.stopEntryScheduling(entry.name);
 
       // For handler-based entries not yet registered, try handlerResolver first.
-      // Synthetic project-app schedules register their in-memory handler before
+      // Synthetic App schedules register their in-memory handler before
       // adding the entry, so they must start directly instead of resolving a
-      // fake handler file such as "__project_app_schedule__".
+      // fake handler file such as "__app_schedule__".
       if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
         const entrySnapshot = { ...entry };
         this.handlerResolver(entry.name, entrySnapshot)
@@ -447,7 +447,7 @@ export class Cron {
    * ensure the subscription map matches the final entry list.
    *
    * Root-cause context (evaluation-aftermath-session-dispatch-fix):
-   * Intermittent startup-ordering bug — if installProjectApps adds synthetic
+   * Intermittent startup-ordering bug — if installAppTaskRuntimes adds synthetic
    * entries (which call buildEventSubscriptions) but a concurrent reload()
    * or load() resets the map before subscribeToBus runs, the bus subscriber
    * finds no subscribers for the event type. Calling this once after
@@ -936,7 +936,7 @@ export class Cron {
 
   /** Get the last fire time for a job (epoch ms).
    *  Falls back to workflow_runs DB if no in-memory record (e.g. after restart).
-   *  For synthetic project-app schedule entries (handler = "__project_app_schedule__"),
+   *  For synthetic App schedule entries (handler = "__app_schedule__"),
    *  workflow_runs won't have a matching row because the workflow name differs from
    *  the entry name. In that case, fall back to the events table where
    *  handler.started records always use the entry name. */
@@ -960,8 +960,8 @@ export class Cron {
       }
 
       // Handler events project the entry name into the typed handler column.
-      // This covers synthetic project-app schedule entries whose
-      // handler string ("__project_app_schedule__") doesn't map to a workflow name.
+      // This covers synthetic App schedule entries whose
+      // handler string ("__app_schedule__") doesn't map to a workflow name.
       const evtRow = db
         .prepare(
           `SELECT timestamp FROM events
@@ -994,7 +994,7 @@ export class Cron {
       }
 
       // Cooldown guard: prevent timer-based over-firing when startEntry is
-      // called multiple times (e.g. project-app watcher reinstalls after
+      // called multiple times (e.g. App task watcher reinstalls after
       // app.ts changes). Each call creates a new setTimeout→setInterval
       // chain; without this guard, multiple chains fire concurrently at
       // short intervals. Uses 75% of intervalMs as minimum gap, matching

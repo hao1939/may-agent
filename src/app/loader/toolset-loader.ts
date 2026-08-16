@@ -96,7 +96,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         // project-scoped agents can message system agents like "may".
         const messageAgentsRoot = opts.globalAgentsRoot ?? opts.agentsRoot;
         // Lazy evaluation: agents loaded after this tool is created are still
-        // visible. Prevents stale allowedTargets when project-app agents are
+        // visible. Prevents stale allowedTargets when App-local agents are
         // registered before global agents finish loading.
         const lazyAllowedTargets = () => listConfiguredAgentNames(messageAgentsRoot, opts.projectsRoot);
         tools.push(
