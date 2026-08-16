@@ -9,7 +9,7 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node", "bun"],
+    "types": ["node", "bun-types"],
     "allowImportingTsExtensions": true,
     "paths": {
       "@may-agent/sdk": ["../may-agent/bundle/sdk-current/src/index.ts"],
