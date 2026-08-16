@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { createWorkflowHandler } from "./legacy.js";
-import type { CronEntry, HandlerContext, EventEnvelope } from "./legacy.js";
+import { createWorkflowHandler } from "../../../src/lib/workflow-handler.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, EventEnvelope } from "../../../src/lib/handler-context.js";
 
 describe("createWorkflowHandler", () => {
   function context() {

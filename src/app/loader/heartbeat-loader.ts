@@ -10,10 +10,10 @@ import type { CronEntry } from "../../lib/cron-tool.js";
  * Opt-out: "heartbeat": false in agent.json.
  *
  * @param agentsRoot  The agents/ directory to scan
- * @param projectId   Optional project-app ID. When the agentsRoot belongs to a
- *   project-app (e.g. projects/scout-knowledge-lib.app/agents), pass the
- *   project-app ID so the heartbeat handler includes `projectId` and the SDK's
- *   `agentWorkflowDirForProjectApp` can locate the workflow.
+ * @param projectId   Optional App ID. When the agentsRoot belongs to a
+ *   App (e.g. projects/scout-knowledge-lib.app/agents), pass the
+ *   App ID so the heartbeat handler includes `projectId` and the SDK's
+ *   `agentWorkflowDirForApp` can locate the workflow.
  */
 export function generateAutoHeartbeats(agentsRoot: string, projectId?: string): CronEntry[] {
   const generated: CronEntry[] = [];

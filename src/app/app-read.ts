@@ -1,5 +1,6 @@
 import type { AppRead, ExecutionView, MetricView, TaskView } from "@may-agent/sdk/app";
-import { projectRuntimePaths, readTaskState, type TaskStateConfig } from "@may-agent/sdk/legacy";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { readTaskState, type TaskStateConfig } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";

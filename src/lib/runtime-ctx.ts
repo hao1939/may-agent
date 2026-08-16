@@ -83,10 +83,7 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     query: createQueryService({
       getDb: () => getDb(opts.persistDir),
     }),
-    commands: createCommandService({
-      getDb: () => getDb(opts.persistDir),
-      emit: (event) => opts.bus.emit(event as any),
-    }),
+    commands: createCommandService(),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {
       opts.bus.emit({

@@ -1,7 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import { defineProjectApp } from "./legacy.js";
+import {
+  defineProjectApp,
+  eventDetails,
+  projectAppTaskHandlerResultSchema,
+  projectRuntimePaths,
+  workflowResultVersion,
+} from "@may-agent/sdk/legacy";
 
 describe("legacy ProjectApp compatibility", () => {
+  test("loads the staged package subpath with the AKS app runtime values", () => {
+    expect(typeof defineProjectApp).toBe("function");
+    expect(typeof eventDetails).toBe("function");
+    expect(typeof projectRuntimePaths).toBe("function");
+    expect(projectAppTaskHandlerResultSchema).toBeDefined();
+    expect(workflowResultVersion).toBe("workflow-result-v1");
+  });
+
   test("requires only the concurrency budget used by the runtime", () => {
     const app = defineProjectApp({
       id: "legacy-app",

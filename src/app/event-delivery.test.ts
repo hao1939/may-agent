@@ -1304,7 +1304,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("accepts skill and guard diagnostics as evidence without creating owner work", () => {
+  it("keeps skill and guard facts unclassified until the App registry reviews them", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1350,15 +1350,15 @@ describe("event delivery metadata", () => {
       expect(rows).toEqual([
         expect.objectContaining({
           event_type: "skill.loaded",
-          delivery_status: "accepted",
-          accepted_by: "event-store:evidence-projection",
-          delivery_route: "direct",
+          delivery_status: "pending",
+          accepted_by: null,
+          delivery_route: null,
         }),
         expect.objectContaining({
           event_type: "guard.triggered",
-          delivery_status: "accepted",
-          accepted_by: "event-store:evidence-projection",
-          delivery_route: "direct",
+          delivery_status: "pending",
+          accepted_by: null,
+          delivery_route: null,
         }),
       ]);
       expect(
@@ -1376,7 +1376,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("accepts observation events through the evidence projection without opening inbox work", () => {
+  it("does not classify application observations inside the core event bus", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1390,7 +1390,7 @@ describe("event delivery metadata", () => {
       } as any);
       bus.emit({
         type: "metric.feedback.routed",
-        source: "project-app-loader",
+        source: "app-task-runtime",
         owner: "agent:may",
         data: {
           metricId: "runtime.example",
@@ -1405,7 +1405,7 @@ describe("event delivery metadata", () => {
         data: { handler: "evaluator-aftermath", workflowRunId: "wr_1" },
       } as any);
       bus.emit({
-        type: "evaluation.routed",
+        type: "evaluation.owner_reviewed",
         source: "evaluation.app",
         owner: "agent:evaluator",
         data: { sessionId: "s_1", lane: "routine_ok" },
@@ -1416,7 +1416,7 @@ describe("event delivery metadata", () => {
         "runtime.daemon.heartbeat",
         "metric.feedback.routed",
         "handler.workflow_dispatched",
-        "evaluation.routed",
+        "evaluation.owner_reviewed",
       ]) {
         const event = db
           .prepare(
@@ -1426,9 +1426,9 @@ describe("event delivery metadata", () => {
           )
           .get(eventType) as Record<string, unknown>;
         expect(event).toMatchObject({
-          delivery_status: "accepted",
-          accepted_by: "event-store:evidence-projection",
-          delivery_route: "direct",
+          delivery_status: "pending",
+          accepted_by: null,
+          delivery_route: null,
         });
       }
       expect(
@@ -1446,7 +1446,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("dispatches App delivery requests without duplicating them in the owner inbox", () => {
+  it("does not treat an ordinary App delivery listener as durable admission", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1481,9 +1481,9 @@ describe("event delivery metadata", () => {
           )
           .get(),
       ).toMatchObject({
-        delivery_status: "accepted",
-        accepted_by: "event-store:evidence-projection",
-        delivery_route: "direct",
+        delivery_status: "pending",
+        accepted_by: null,
+        delivery_route: null,
       });
       expect(
         getDb(root)
@@ -1636,182 +1636,6 @@ describe("event delivery metadata", () => {
       expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'example.created'").get()).toEqual({
         delivery_status: "pending",
       });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes the canonical project owner review lifecycle by project identity", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      bus.emit({
-        type: "project.owner.requested",
-        source: "test",
-        owner: "project:sample",
-        data: { project: "sample", reason: "review" },
-      } as any);
-      bus.emit({
-        type: "project.owner.reviewed",
-        source: "test",
-        owner: "project:sample",
-        data: { project: "sample", summary: "reviewed" },
-      } as any);
-
-      const db = getDb(root);
-      const pair = db
-        .prepare(
-          `SELECT p.status, p.open_event_id, p.close_event_id, l.type AS link_type
-           FROM event_pair_runs p
-           LEFT JOIN event_trace_links l
-             ON l.from_event_id = p.close_event_id
-            AND l.to_event_id = p.open_event_id
-            AND l.type = 'closure'
-           WHERE p.pair_name = 'project.owner'`,
-        )
-        .get() as Record<string, unknown>;
-      expect(pair).toMatchObject({ status: "closed", link_type: "closure" });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes a project intent with the correlated owner result", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      const comment = bus.emit({
-        type: "project.comment.created",
-        source: "test",
-        owner: "agent:sample-owner",
-        data: { project: "sample", comment: "advance" },
-      } as any);
-      const openEventId = Number(comment[EVENT_ROW_ID]);
-      bus.emit({
-        type: "project.owner.reviewed",
-        source: "project-app:sample:task-reconciler",
-        owner: "agent:sample-owner",
-        data: {
-          project: "sample",
-          openEventId,
-          summary: "owner reviewed current state",
-          taskRefs: [{ projectId: "sample", taskId: "runtime/owner-review" }],
-        },
-      } as any);
-
-      expect(
-        getDb(root)
-          .prepare(
-            `SELECT status, open_event_id, close_event_id
-             FROM event_pair_runs
-             WHERE pair_name = 'project.intent'`,
-          )
-          .get(),
-      ).toMatchObject({ status: "closed", open_event_id: openEventId });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not close new project work with an older owner result", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      bus.emit({
-        type: "project.owner.reviewed",
-        source: "project-app:sample:task-reconciler",
-        owner: "agent:sample-owner",
-        data: { project: "sample", summary: "reviewed earlier work" },
-      } as any);
-
-      const comment = bus.emit({
-        type: "project.comment.created",
-        source: "test",
-        owner: "agent:sample-owner",
-        data: { project: "sample", comment: "new instruction" },
-      } as any);
-      const ownerRequest = bus.emit({
-        type: "project.owner.requested",
-        source: "test",
-        owner: "agent:sample-owner",
-        data: { project: "sample", reason: "new review" },
-      } as any);
-
-      const db = getDb(root);
-      for (const [pairName, openEventId] of [
-        ["project.intent", Number(comment[EVENT_ROW_ID])],
-        ["project.owner", Number(ownerRequest[EVENT_ROW_ID])],
-      ] as const) {
-        expect(
-          db
-            .prepare(
-              `SELECT status, close_event_id
-               FROM event_pair_runs
-               WHERE pair_name = ? AND open_event_id = ?`,
-            )
-            .get(pairName, openEventId),
-        ).toMatchObject({ status: "open", close_event_id: null });
-      }
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes only the project intent named by a correlated owner result", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      const first = bus.emit({
-        type: "project.comment.created",
-        source: "test",
-        owner: "agent:sample-owner",
-        data: { project: "sample", comment: "first instruction" },
-      } as any);
-      const second = bus.emit({
-        type: "project.comment.created",
-        source: "test",
-        owner: "agent:sample-owner",
-        data: { project: "sample", comment: "second instruction" },
-      } as any);
-      const firstId = Number(first[EVENT_ROW_ID]);
-      const secondId = Number(second[EVENT_ROW_ID]);
-
-      bus.emit({
-        type: "project.owner.reviewed",
-        source: "project-app:sample:task-reconciler",
-        owner: "agent:sample-owner",
-        data: {
-          project: "sample",
-          openEventId: firstId,
-          summary: "reviewed only the first instruction",
-        },
-      } as any);
-
-      const db = getDb(root);
-      expect(
-        db
-          .prepare(
-            `SELECT status FROM event_pair_runs
-             WHERE pair_name = 'project.intent' AND open_event_id = ?`,
-          )
-          .get(firstId),
-      ).toMatchObject({ status: "closed" });
-      expect(
-        db
-          .prepare(
-            `SELECT status, close_event_id FROM event_pair_runs
-             WHERE pair_name = 'project.intent' AND open_event_id = ?`,
-          )
-          .get(secondId),
-      ).toMatchObject({ status: "open", close_event_id: null });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -2051,7 +1875,7 @@ describe("event delivery metadata", () => {
 
       bus.emit({
         type: "project.task.reconciled",
-        source: "project-app:sample",
+        source: "app-task:sample",
         owner: "project:sample",
         data: {
           taskId: "sample-task",
@@ -2062,7 +1886,7 @@ describe("event delivery metadata", () => {
 
       bus.emit({
         type: "project.task.reconciled",
-        source: "project-app:sample",
+        source: "app-task:sample",
         owner: "project:sample",
         data: {
           taskId: "sample-task",

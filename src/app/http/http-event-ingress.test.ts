@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   buildEventIngressFrame,
-  buildProjectAppAdmissionCommand,
+  buildAppAdmissionCommand,
   sendAppInputWithRetry,
   sendDaemonFrameWithRetry,
   sendProjectActionWithRetry,
@@ -110,7 +110,7 @@ describe("HTTP event ingress acknowledgement recovery", () => {
 });
 
 describe("HTTP project comment App ingress", () => {
-  const command = buildProjectAppAdmissionCommand({
+  const command = buildAppAdmissionCommand({
     projectPath: "projects/aks-rp-e2e.app",
     projectId: "aks-rp-e2e",
     comment: "Review the current normalization gap.",

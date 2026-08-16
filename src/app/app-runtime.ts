@@ -1,11 +1,15 @@
+import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
 import type { AppInput } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
+import { createMetricService } from "../lib/metrics.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
-import { readRuntimeExecutionView } from "./app-read.js";
+import { createRuntimeAppRead } from "./app-read.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
 import {
@@ -18,13 +22,8 @@ import {
   startRequestedSession,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import {
-  attachLoadedProjectAppTask,
-  readLoadedProjectAppTaskView,
-  runWithProjectAppRuntimeCapacity,
-} from "./loader/project-app-loader.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -71,6 +70,78 @@ export function createAppInputAdmission(options: {
       throw new Error(`App input for ${input.appId} was not durably persisted`);
     }
     return { eventId, eventType: "app.input.requested" };
+  };
+}
+
+export function createProjectActionAccess(options: {
+  bus: Pick<EventBus, "emit">;
+  getRuntime: () => AppInboxRuntime | null;
+  admit: NonNullable<AttachControlSocketOptions["admitAppInput"]>;
+}): {
+  describe: NonNullable<AttachControlSocketOptions["describeProjectActions"]>;
+  invoke: NonNullable<AttachControlSocketOptions["invokeProjectAction"]>;
+} {
+  return {
+    describe(projectId) {
+      const runtime = options.getRuntime();
+      if (!runtime?.host.hasApp(projectId)) throw new Error(`App ${projectId} is not loaded`);
+      return runtime.host.describeActions(projectId);
+    },
+    invoke(input) {
+      const runtime = options.getRuntime();
+      if (!runtime?.host.hasApp(input.projectId)) throw new Error(`App ${input.projectId} is not loaded`);
+      const appId = input.projectId.trim().replace(/\.app$/, "");
+      const appInput = runtime.host.actionInput(appId, input.actionId, input.params);
+      const idempotencyKey = input.idempotencyKey?.trim() || `action:${appId}:${input.actionId}:${randomUUID()}`;
+
+      // A staged legacy ProjectApp action already declares its semantic event.
+      // Preserve that declaration at the typed-action boundary instead of
+      // turning it into an owner-facing App inbox narrative.
+      if (appInput.kind === "legacy-action") {
+        const payload = appInput.data as Record<string, unknown>;
+        const declared = payload.event;
+        if (!declared || typeof declared !== "object" || Array.isArray(declared)) {
+          throw new Error(`Legacy action ${appId}.${input.actionId} did not declare an event`);
+        }
+        const semanticRecord = { ...(declared as Record<string, unknown>) };
+        const eventType = semanticRecord.type;
+        if (typeof eventType !== "string" || !eventType.trim()) {
+          throw new Error(`Legacy action ${appId}.${input.actionId} declared an event without a type`);
+        }
+        semanticRecord.source = `project-app:${appId}:action:${input.actionId}`;
+        semanticRecord.owner = `agent:${runtime.host.appOwner(appId)}`;
+        const data =
+          semanticRecord.data && typeof semanticRecord.data === "object" && !Array.isArray(semanticRecord.data)
+            ? (semanticRecord.data as Record<string, unknown>)
+            : {};
+        const declaredDetails = Object.fromEntries(
+          Object.entries(semanticRecord).filter(([key]) => !["type", "source", "owner", "data"].includes(key)),
+        );
+        semanticRecord.data = {
+          ...declaredDetails,
+          ...data,
+          project: typeof semanticRecord.project === "string" ? semanticRecord.project : appId,
+          idempotencyKey,
+        };
+        Object.defineProperty(semanticRecord, EVENT_INGRESS_SOURCE, {
+          value: "control-socket",
+          configurable: true,
+        });
+        const emitted = options.bus.emit(semanticRecord as AgentEvent);
+        const eventId = Number(emitted[EVENT_ROW_ID]);
+        if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+          throw new Error(`Action ${appId}.${input.actionId} did not produce a persisted semantic event`);
+        }
+        return { eventId, eventType };
+      }
+
+      return options.admit({
+        appId,
+        input: appInput as Record<string, unknown>,
+        source: { kind: "human", id: "control-socket:project-action" },
+        idempotencyKey,
+      });
+    },
   };
 }
 
@@ -142,7 +213,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
   });
 
-  const { loaderOpts } = await prepareDaemonAgents({
+  const { loaderOpts, appTaskOptions } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     projectsRoot: opts.projectsRoot,
@@ -155,35 +226,63 @@ export async function runAppRuntime(opts: {
     appRegistry,
   });
 
+  const appTasks = createAppTaskCapability({
+    bus,
+    getDb: () => getDb(opts.persistDir),
+    runtime: appTaskOptions,
+  });
+  const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
+  const legacyAppMetricId = "may-agent.migration.legacy-app-count";
+  observerMetrics.define({
+    id: legacyAppMetricId,
+    name: "Loaded legacy Agent App declarations",
+    owner: "may-agent",
+    project: "may-agent",
+    type: "gauge",
+    target: 0,
+    unit: "apps",
+    priority: "P1",
+    source: "AppRegistry compatibility provenance",
+    description: "Transition-only count; Release C requires zero across the canonical Apps canary window.",
+  });
+  const recordLegacyAppCount = () =>
+    observerMetrics.record(
+      legacyAppMetricId,
+      appRegistry.snapshot().entries.filter((entry) => entry.compatibility === "legacy-project-app").length,
+      { measuredBy: "app-registry" },
+    );
+  recordLegacyAppCount();
+
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
     db: getDb(opts.persistDir),
     manager,
     bus,
-    runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work),
-    attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
-    readDependency: async ({ appDir, dependency }) => {
-      if (dependency.kind === "task") {
-        const task = readLoadedProjectAppTaskView({ bus, appDir, taskId: dependency.id });
-        return task
-          ? {
-              kind: "task",
-              id: task.id,
-              status: task.status,
-              summary: task.summary,
-              evidence: task.evidence,
-            }
-          : null;
-      }
-      const execution = readRuntimeExecutionView({ getDb: () => getDb(opts.persistDir) }, dependency.id);
-      return execution
-        ? {
-            kind: "session",
-            id: execution.id,
-            status: execution.status === "blocked" ? "waiting" : execution.status,
-            summary: execution.summary,
-          }
-        : null;
+    runOwner: appTasks.runOwner,
+    attachTask: appTasks.attach,
+    admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
+      appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
+    previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
+    readDependency: appTasks.readDependency,
+    observerContext: (appId, appDir) => {
+      const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;
+      const projectDir = definition?.workspace?.localPath ? resolve(appDir, definition.workspace.localPath) : appDir;
+      const log = (level: string, message: string) =>
+        bus.emit({ type: "info", message: `[app:${appId}:observer:${level}] ${message}` });
+      return {
+        read: createRuntimeAppRead({
+          getDb: () => getDb(opts.persistDir),
+          metrics: observerMetrics,
+          executionPaths: { appDir, projectDir },
+        }),
+        workspace: { appRoot: appDir, projectRoot: projectDir },
+        log: {
+          debug: (message) => log("debug", message),
+          info: (message) => log("info", message),
+          warn: (message) => log("warn", message),
+          error: (message) => log("error", message),
+        },
+      };
     },
   });
   if (appInboxRuntime.host.appIds().length > 0) {
@@ -194,6 +293,7 @@ export async function runAppRuntime(opts: {
   }
 
   let activeRL: { close: () => void } | null = null;
+  let appWatcher: { close(): void } | null = null;
   let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
   let cancelledOnce = false;
 
@@ -210,10 +310,24 @@ export async function runAppRuntime(opts: {
     clearActiveReadline: () => {
       activeRL = null;
     },
-    beforeShutdown: () => appInboxRuntime?.close(),
-    reloadApps: () => appInboxRuntime!.reload(),
-    appRegistry,
+    beforeShutdown: () => {
+      appWatcher?.close();
+      void appTasks.close();
+      appInboxRuntime?.close();
+    },
+    reloadApps: async () => {
+      let taskApps = 0;
+      const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
+        const result = await appTasks.publishGeneration({ snapshot, publish: commit });
+        taskApps = result.apps;
+      });
+      recordLegacyAppCount();
+      return { appIds, taskApps };
+    },
   });
+  if (appTaskOptions) {
+    appWatcher = appTasks.watchGenerations(() => handleReload({ throwOnError: true }));
+  }
   installProcessHandlers();
 
   const commandRouter = attachCommandRouter({
@@ -250,6 +364,12 @@ export async function runAppRuntime(opts: {
       })
     : { close: () => {}, sendAlert: () => {} };
 
+  const admitAppInput = createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime });
+  const projectActions = createProjectActionAccess({
+    bus,
+    getRuntime: () => appInboxRuntime,
+    admit: admitAppInput,
+  });
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
@@ -258,7 +378,9 @@ export async function runAppRuntime(opts: {
     bus,
     manager,
     getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
-    admitAppInput: createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime }),
+    admitAppInput,
+    describeProjectActions: projectActions.describe,
+    invokeProjectAction: projectActions.invoke,
   });
   // The inbox starts before ingress, but its outbox waits until every enabled
   // human transport is attached. This prevents a restart-time response from

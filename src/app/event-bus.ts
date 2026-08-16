@@ -381,12 +381,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "project.owner.reviewed";
-      source?: string;
-      owner: string;
-      data: { project?: string; projectId?: string; projectPath?: string; summary?: string };
-    }
-  | {
       type: "project.nudge";
       source: string;
       owner: string;
@@ -535,18 +529,6 @@ export type SystemEvent =
         appResponseFor?: string;
         appDeliveryOperationId?: string;
         idempotencyKey?: string;
-      };
-    }
-  | {
-      type: "owner.inbox.accepted";
-      source: "event-bus" | "handler:event-pair-orphan-gc";
-      owner: string;
-      data: {
-        sourceEventId: number;
-        sourceEventType: string;
-        reason: "delivery" | "periodic-resync";
-        project?: string;
-        input?: Record<string, unknown>;
       };
     }
   | {
@@ -867,6 +849,36 @@ export type SystemEvent =
       task?: string;
     }
   | {
+      type: "evaluation.recorded";
+      source?: string;
+      owner: string;
+      timestamp?: number;
+      data: {
+        source?: string;
+        idempotencyKey?: string;
+        evaluation: {
+          sessionId: string;
+          agent: string;
+          quality: number;
+          efficiency: number;
+          verdict: string;
+          issues: string[];
+          productiveCalls?: number;
+          wastedCalls?: number;
+          lane?: string;
+          reason?: string;
+          signals?: string[];
+          overall?: Record<string, unknown>;
+          createdAt?: number;
+        };
+      };
+      target?: {
+        appId?: string;
+        project?: string;
+        sessionId?: string;
+      };
+    }
+  | {
       type: "subscriber.failed";
       source: "event-bus";
       owner: "agent:may";
@@ -1019,6 +1031,7 @@ export class EventBus {
     const event = Object.isExtensible(tracedEvent) ? tracedEvent : ({ ...tracedEvent } as AgentEvent);
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
+    let durableRouteFailed = false;
     try {
       // Required durability is deliberately outside subscriber error
       // isolation. If persistence fails, no side-effect handler may run.
@@ -1039,6 +1052,7 @@ export class EventBus {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery ??= result;
         } catch (err) {
+          durableRouteFailed = true;
           this.reportSubscriberFailure(event, "first", err);
         }
       }
@@ -1064,9 +1078,10 @@ export class EventBus {
           }
         }
       }
-      delivery ??= pairTrackerFallback(event);
-      delivery ??= evidenceProjectionFallback(event);
-      if (delivery) this.deliveryRecorder?.(event, delivery);
+      if (!durableRouteFailed) {
+        delivery ??= pairTrackerFallback(event);
+        if (delivery) this.deliveryRecorder?.(event, delivery);
+      }
     } finally {
       this.emitDepth--;
       if (this.emitDepth === 0) this.flushFailureEvents();
@@ -1153,40 +1168,6 @@ function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
   };
 }
 
-const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
-  // The durable App outbox is authoritative for retries and completion. This
-  // event is its transport command/evidence record, not new owner work.
-  "app.response.delivery.requested",
-  "runtime.daemon.heartbeat",
-  "handler.workflow_dispatched",
-  "handler.skipped",
-  "metric.feedback.routed",
-  "metric.alert_judged",
-  "project.knowledge.maintained",
-  "owner.inbox.accepted",
-  "project.owner.progressed",
-  "message.progressed",
-  "message.resolved",
-]);
-
-function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
-  const isEvidence =
-    event.type.startsWith("evaluation.") ||
-    event.type.startsWith("event-pair.") ||
-    EVIDENCE_PROJECTION_EVENT_TYPES.has(event.type) ||
-    event.type.startsWith("channel.delivery.") ||
-    event.type === "project.owner.reviewed" ||
-    event.type === "guard.triggered" ||
-    event.type === "skill.loaded";
-  if (!isEvidence) return undefined;
-  return {
-    accepted: true,
-    by: "event-store:evidence-projection",
-    route: "direct",
-    note: "terminal evidence persisted for trace projection",
-  };
-}
-
 function isPairTrackedEvent(eventType: string): boolean {
   return new Set([
     "session.start",
@@ -1205,35 +1186,16 @@ function isPairTrackedEvent(eventType: string): boolean {
     "cli.task.completed",
     "cli.task.failed",
     "cli.task.orphaned",
-    "message.reviewed",
-    "message.resolved",
-    "message.expired",
-    "project.feedback.reviewed",
-    "owner.inbox.reviewed",
-    "owner.inbox.expired",
   ]).has(eventType);
 }
 
 function hasPairCorrelationKey(event: AgentEvent): boolean {
   const data = eventData(event);
-  const eventType = String(event.type);
   if (event.type.startsWith("session.")) return hasKey(data.sessionId);
   if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
   if (event.type.startsWith("handler."))
     return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
-  if (event.type.startsWith("escalation.")) return hasKey(data.openEventId) || hasKey(data.escalationId);
   if (event.type.startsWith("cli.task.")) return hasKey(data.taskId);
-  if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
-  if (
-    eventType === "message.reviewed" ||
-    eventType === "message.resolved" ||
-    eventType === "message.expired" ||
-    eventType === "project.feedback.reviewed" ||
-    eventType === "project.owner.reviewed" ||
-    eventType === "owner.inbox.reviewed" ||
-    eventType === "owner.inbox.expired"
-  )
-    return hasKey(data.openEventId);
   return false;
 }
 

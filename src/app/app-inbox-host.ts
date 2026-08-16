@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import {
+  matchesEventSelector,
   type AppDependencyObservation,
   type AppDefinition,
   type AppDisposition,
+  type AppEvent,
   type AppInput,
   type AppInputSource,
   type AppRequest,
@@ -10,6 +12,7 @@ import {
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
+import { assertValidAppDefinition } from "./app-definition-validation.js";
 import {
   associateAppInboxClaimSession,
   claimNextAppInboxItem,
@@ -65,6 +68,7 @@ export type AppTaskAttacher = (input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
+  request: Readonly<AppRequest>;
 }) => Promise<{
   taskId: string;
   /**
@@ -73,6 +77,12 @@ export type AppTaskAttacher = (input: {
    */
   isComplete?: () => Promise<boolean>;
 }>;
+
+export type AppActionDescription = {
+  id: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+};
 
 export type AdmitAppInput = {
   id?: string;
@@ -135,23 +145,7 @@ function requiredText(value: unknown, field: string): string {
 }
 
 function validateAppDefinition(app: AppDefinition): RegisteredApp {
-  requiredText(app.id, "App id");
-  requiredText(app.owner, `App ${app.id} owner`);
-  if (app.version !== 1) throw new Error(`App ${app.id} has unsupported version ${String(app.version)}`);
-  if (app.inbox?.batch && app.inbox.batch !== "single" && app.inbox.batch !== "coalesce-compatible") {
-    throw new Error(`App ${app.id} has unsupported inbox batch mode ${String(app.inbox.batch)}`);
-  }
-  const tasks = app.tasks as unknown;
-  if (
-    tasks !== undefined &&
-    (!tasks ||
-      typeof tasks !== "object" ||
-      Array.isArray(tasks) ||
-      (tasks as { attach?: unknown }).attach !== true ||
-      Object.keys(tasks).some((key) => key !== "attach"))
-  ) {
-    throw new Error(`App ${app.id} has invalid task attachment capability`);
-  }
+  assertValidAppDefinition(app);
   return app;
 }
 
@@ -189,6 +183,12 @@ function withTransaction<T>(db: SqliteDb, operation: () => T): T {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function deepFreeze<T>(value: T): T {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const nested of Object.values(value)) deepFreeze(nested);
+  return Object.freeze(value);
 }
 
 export class AppInboxHost {
@@ -229,6 +229,43 @@ export class AppInboxHost {
     return [...this.#apps.keys()].sort();
   }
 
+  hasApp(appId: string): boolean {
+    return this.#apps.has(appId.trim().replace(/\.app$/, ""));
+  }
+
+  appOwner(appId: string): string {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const app = this.#apps.get(normalized);
+    if (!app) throw new Error(`App ${appId} is not loaded`);
+    return app.owner;
+  }
+
+  describeActions(appId: string): AppActionDescription[] {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const app = this.#apps.get(normalized);
+    if (!app) throw new Error(`App ${appId} is not loaded`);
+    return Object.entries(app.actions ?? {}).map(([id, action]) => ({
+      id,
+      description: action.description,
+      inputSchema: structuredClone(action.inputSchema) as Record<string, unknown>,
+    }));
+  }
+
+  actionInput(appId: string, actionId: string, params: unknown): AppInput {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const app = this.#apps.get(normalized);
+    if (!app) throw new Error(`App ${appId} is not loaded`);
+    const action = app.actions?.[actionId];
+    if (!action) throw new Error(`App ${normalized} has no action ${actionId}`);
+    if (!Check(action.inputSchema, params)) {
+      const first = [...Errors(action.inputSchema, params)][0];
+      throw new Error(`Invalid input for ${normalized}.${actionId}: ${first?.message ?? "schema mismatch"}`);
+    }
+    const input = action.toInput(params as never);
+    validateInput(app, input);
+    return input;
+  }
+
   /** Atomically replace the live App definitions after a validated reload. */
   replaceApps(definitions: AppDefinition[]): void {
     const next = new Map<string, RegisteredApp>();
@@ -236,6 +273,51 @@ export class AppInboxHost {
       const app = validateAppDefinition(definition);
       if (next.has(app.id)) throw new Error(`Duplicate App id: ${app.id}`);
       next.set(app.id, app);
+    }
+    const pendingAdmissions = this.#db
+      .prepare(
+        `SELECT app_id, route_kind, payload
+         FROM app_event_admission_commands
+         WHERE status = 'pending'
+         ORDER BY event_id, app_id`,
+      )
+      .all();
+    for (const command of pendingAdmissions) {
+      const appId = requiredText(command.app_id, "Pending App event admission app id");
+      const routeKind = requiredText(command.route_kind, "Pending App event admission route kind");
+      const app = next.get(appId);
+      if (!app) {
+        throw new Error(`Cannot remove App ${appId} while it owns pending event admission commands`);
+      }
+      if ((routeKind === "task" || routeKind === "exact-task") && !app.tasks) {
+        throw new Error(
+          `Cannot remove task capability from App ${appId} while it owns pending event admission commands`,
+        );
+      }
+      if (routeKind === "inbox") {
+        let input: unknown;
+        let conditionTaskIds: unknown;
+        try {
+          const payload = JSON.parse(String(command.payload)) as {
+            input?: unknown;
+            conditionTaskIds?: unknown;
+          };
+          input = payload.input;
+          conditionTaskIds = payload.conditionTaskIds;
+        } catch {
+          throw new Error(`Pending App event admission for ${appId} has invalid inbox payload JSON`);
+        }
+        if (!Check(app.inputSchema, input)) {
+          throw new Error(
+            `Cannot install an input schema incompatible with pending event admission commands for App ${appId}`,
+          );
+        }
+        if (Array.isArray(conditionTaskIds) && conditionTaskIds.length > 0 && !app.tasks) {
+          throw new Error(
+            `Cannot remove task capability from App ${appId} while its pending inbox admission includes Condition wakes`,
+          );
+        }
+      }
     }
     for (const id of this.#apps.keys()) {
       if (next.has(id)) continue;
@@ -259,6 +341,24 @@ export class AppInboxHost {
       .filter((app) => app.owner.trim().replace(/^agent:/, "") === normalizedOwner && Check(app.inputSchema, input))
       .map((app) => app.id)
       .sort();
+  }
+
+  subscriptionInputs(event: AppEvent<Record<string, unknown>>): Array<{
+    appId: string;
+    subscriptionId: string;
+    input: AppInput;
+  }> {
+    const matches: Array<{ appId: string; subscriptionId: string; input: AppInput }> = [];
+    for (const app of this.#apps.values()) {
+      for (const subscription of app.subscriptions ?? []) {
+        if (!matchesEventSelector(subscription.event, event)) continue;
+        const input = subscription.toInput(event);
+        if (input === null) continue;
+        validateInput(app, input);
+        matches.push({ appId: app.id, subscriptionId: subscription.id, input });
+      }
+    }
+    return matches;
   }
 
   isOwnedApp(appId: string, owner: string): boolean {
@@ -381,38 +481,73 @@ export class AppInboxHost {
     if (claims.length === 0) return { claimed: 0, admitted: 0, released: 0, errors: [] };
 
     const stopRenewing = this.#renewClaims(claims);
-    let results: AppOwnerDispositionResult[];
+    const routed: AppOwnerDispositionResult[] = [];
+    const unresolvedClaims: AppInboxClaim[] = [];
+    const unresolvedRequests: AppRequest[] = [];
+    const requestsById = new Map<string, Readonly<AppRequest>>();
     try {
       const requests = await Promise.all(claims.map((claim) => this.#authorRequest(claim.item)));
-      results = await this.#invokeOwner({
-        app,
-        requests,
-        ...(claims.length === 1 && claims[0]!.item.source.kind === "human" && claims[0]!.item.channel
-          ? {
-              transport: {
-                channel: claims[0]!.item.channel,
-                channelThreadId: claims[0]!.item.channelThreadId,
-                channelMessageId: claims[0]!.item.channelMessageId,
-                conversationId: claims[0]!.item.conversationId,
+      for (const [index, request] of requests.entries()) {
+        requestsById.set(request.id, request);
+        const disposition = app.route ? app.route(request) : null;
+        if (disposition === null) {
+          unresolvedClaims.push(claims[index]!);
+          unresolvedRequests.push(request);
+          continue;
+        }
+        if (!disposition || typeof disposition !== "object") {
+          throw new Error(`App ${app.id} route must return a disposition or null`);
+        }
+        routed.push({ requestId: request.id, disposition });
+      }
+    } catch (error) {
+      stopRenewing();
+      return this.#releaseBatch(claims, `App routing failed: ${errorMessage(error)}`);
+    }
+
+    let ownerResults: AppOwnerDispositionResult[];
+    try {
+      ownerResults =
+        unresolvedClaims.length === 0
+          ? []
+          : await this.#invokeOwner({
+              app,
+              requests: unresolvedRequests,
+              ...(unresolvedClaims.length === 1 &&
+              unresolvedClaims[0]!.item.source.kind === "human" &&
+              unresolvedClaims[0]!.item.channel
+                ? {
+                    transport: {
+                      channel: unresolvedClaims[0]!.item.channel,
+                      channelThreadId: unresolvedClaims[0]!.item.channelThreadId,
+                      channelMessageId: unresolvedClaims[0]!.item.channelMessageId,
+                      conversationId: unresolvedClaims[0]!.item.conversationId,
+                    },
+                  }
+                : {}),
+              onSessionStarted: (sessionId) => {
+                const normalized = requiredText(sessionId, "App owner session id");
+                withTransaction(this.#db, () => {
+                  for (const claim of unresolvedClaims) {
+                    if (!associateAppInboxClaimSession(this.#db, claim, normalized, this.#now())) {
+                      throw new Error(`Cannot associate stale request ${claim.item.id} with session ${normalized}`);
+                    }
+                  }
+                });
               },
-            }
-          : {}),
-        onSessionStarted: (sessionId) => {
-          const normalized = requiredText(sessionId, "App owner session id");
-          withTransaction(this.#db, () => {
-            for (const claim of claims) {
-              if (!associateAppInboxClaimSession(this.#db, claim, normalized, this.#now())) {
-                throw new Error(`Cannot associate stale request ${claim.item.id} with session ${normalized}`);
-              }
-            }
-          });
-        },
-      });
+            });
     } catch (error) {
       stopRenewing();
       return this.#releaseBatch(claims, `Owner invocation failed: ${errorMessage(error)}`);
     }
 
+    const ownerError = this.#validateBatchResult(unresolvedClaims, ownerResults);
+    if (ownerError) {
+      stopRenewing();
+      return this.#releaseBatch(claims, ownerError);
+    }
+
+    const results = [...routed, ...ownerResults];
     const batchError = this.#validateBatchResult(claims, results);
     if (batchError) {
       stopRenewing();
@@ -424,7 +559,7 @@ export class AppInboxHost {
     try {
       for (const claim of claims) {
         try {
-          await this.#admitDisposition(app, claim, byRequest.get(claim.item.id)!);
+          await this.#admitDisposition(app, claim, requestsById.get(claim.item.id)!, byRequest.get(claim.item.id)!);
           outcome.admitted += 1;
         } catch (error) {
           const message = `Request ${claim.item.id}: ${errorMessage(error)}`;
@@ -460,7 +595,7 @@ export class AppInboxHost {
       input: item.input,
     };
     const waitingOn = item.waitingOn;
-    if (!waitingOn) return request;
+    if (!waitingOn) return deepFreeze(request);
 
     if (waitingOn.kind === "app") {
       const child = getAppInboxItem(this.#db, waitingOn.id);
@@ -481,15 +616,15 @@ export class AppInboxHost {
             evidence: child.result?.evidence,
           }
         : { kind: "app", id: waitingOn.id, status: "unknown" };
-      return request;
+      return deepFreeze(request);
     }
 
-    if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return request;
+    if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return deepFreeze(request);
     const dependency = { kind: waitingOn.kind, id: waitingOn.id } as const;
 
     const observed = await this.#observeDependency(item.appId, dependency);
     request.dependency = observed ?? { ...dependency, status: "unknown" };
-    return request;
+    return deepFreeze(request);
   }
 
   async #observeDependency(
@@ -560,7 +695,12 @@ export class AppInboxHost {
     return { claimed: claims.length, admitted: 0, released, errors: [message] };
   }
 
-  async #admitDisposition(app: RegisteredApp, claim: AppInboxClaim, disposition: AppDisposition): Promise<void> {
+  async #admitDisposition(
+    app: RegisteredApp,
+    claim: AppInboxClaim,
+    request: Readonly<AppRequest>,
+    disposition: AppDisposition,
+  ): Promise<void> {
     switch (disposition.type) {
       case "complete": {
         validateCompleteDisposition(disposition);
@@ -637,6 +777,7 @@ export class AppInboxHost {
           appId: app.id,
           attachment: disposition.task,
           idempotencyKey: `task:${claim.item.id}:${attachmentIdentity}`,
+          request,
         });
         const taskId = requiredText(attached.taskId, "Attached task id");
         const waiting = waitAppInboxClaim(this.#db, claim, { kind: "task", id: taskId }, { now: this.#now() });

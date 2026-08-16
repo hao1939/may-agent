@@ -112,28 +112,10 @@ export interface EventDeliveryHealthQuery {
 export interface EventDeliveryHealth {
   now: number;
   since: number;
-  ownerInboxOpenCount: number;
   unhandledEvents: Record<string, unknown>[];
   overduePendingEvents: Record<string, unknown>[];
   orphanPairs: Record<string, unknown>[];
   overdueOpenPairs: Record<string, unknown>[];
-}
-
-export interface HeartbeatContextQuery {
-  agent: string;
-  now?: number;
-  inboxLookbackMs?: number;
-  metricLimit?: number;
-  metricSnapshotLimit?: number;
-  alertLimit?: number;
-  inboxLimit?: number;
-}
-
-export interface HeartbeatContext {
-  now: number;
-  metrics: Record<string, unknown>[];
-  alerts: Record<string, unknown>[];
-  inbox: Record<string, unknown>[];
 }
 
 export interface EvaluatorDeepEvalScanQuery {
@@ -169,7 +151,6 @@ export interface QueryAPI {
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
   eventDeliveryHealth(filter?: EventDeliveryHealthQuery): EventDeliveryHealth;
-  heartbeatContext(filter: HeartbeatContextQuery): HeartbeatContext;
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
@@ -262,11 +243,6 @@ function addEquals(where: string[], params: unknown[], column: string, value: un
   params.push(value);
 }
 
-function ownerForAgent(agent: string): string {
-  const value = agent.trim();
-  return value.startsWith("agent:") || value.startsWith("human:") ? value : `agent:${value}`;
-}
-
 function addSinceUntil(where: string[], params: unknown[], column: string, filter: TimeFilter): void {
   if (filter.since !== undefined) {
     where.push(`${column} >= ?`);
@@ -294,11 +270,6 @@ function select(
 const EVENT_DELIVERY_DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
 const EVENT_DELIVERY_DEFAULT_LIMIT = 25;
 const EVENT_DELIVERY_DEFAULT_PENDING_TTL_MS = 2 * 60_000;
-const HEARTBEAT_DEFAULT_INBOX_LOOKBACK_MS = 2 * 60 * 60_000;
-const HEARTBEAT_DEFAULT_METRIC_LIMIT = 200;
-const HEARTBEAT_DEFAULT_METRIC_SNAPSHOT_LIMIT = 10;
-const HEARTBEAT_DEFAULT_ALERT_LIMIT = 100;
-const HEARTBEAT_DEFAULT_INBOX_LIMIT = 12;
 const EVALUATOR_DEEP_EVAL_WORKFLOW = "evaluator-deep-eval";
 const EVALUATOR_DEEP_EVAL_DEFAULT_BACKFILL_HOURS = 24;
 const EVALUATOR_DEEP_EVAL_DEFAULT_FALLBACK_DELAY_MS = 15 * 60_000;
@@ -417,99 +388,6 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         "startedAt DESC",
         clampLimit(filter.limit, defaultLimit, maxLimit),
       );
-    },
-
-    heartbeatContext(filter) {
-      if (!filter.agent) throw new Error("heartbeatContext requires agent");
-      const db = opts.getDb();
-      const now = typeof filter.now === "number" ? filter.now : Date.now();
-      const metricLimit = clampLimit(filter.metricLimit, HEARTBEAT_DEFAULT_METRIC_LIMIT, maxLimit);
-      const snapshotLimit = clampLimit(filter.metricSnapshotLimit, HEARTBEAT_DEFAULT_METRIC_SNAPSHOT_LIMIT, maxLimit);
-      const alertLimit = clampLimit(filter.alertLimit, HEARTBEAT_DEFAULT_ALERT_LIMIT, maxLimit);
-      const inboxLimit = clampLimit(filter.inboxLimit, HEARTBEAT_DEFAULT_INBOX_LIMIT, maxLimit);
-      const inboxLookbackMs =
-        typeof filter.inboxLookbackMs === "number"
-          ? Math.max(1, filter.inboxLookbackMs)
-          : HEARTBEAT_DEFAULT_INBOX_LOOKBACK_MS;
-
-      const metricRows = normalizeRows(
-        db
-          .prepare(
-            `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
-                m.current, m.target, m.threshold, COALESCE(m.priority, 'P2') as priority,
-                m.project, m.status, m.updated_at as updatedAt,
-                m.alert_op as alertOp,
-                m.source_query as sourceQuery,
-                m.source_command as sourceCommand
-         FROM metrics m
-         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-         WHERE m.status = 'active'
-         ORDER BY m.id ASC
-         LIMIT ?`,
-          )
-          .all(metricLimit + 1) as Record<string, unknown>[],
-      ).slice(0, metricLimit);
-
-      const metrics = metricRows.map((metric) => {
-        const metricId = String(metric.id ?? "");
-        const snapshots = normalizeRows(
-          db
-            .prepare(
-              `SELECT value, sample_size as sampleSize, measured_at as measuredAt,
-                  measured_by as measuredBy, note
-           FROM metric_snapshots
-           WHERE metric_id = ?
-           ORDER BY measured_at DESC
-           LIMIT ?`,
-            )
-            .all(metricId, snapshotLimit + 1) as Record<string, unknown>[],
-        ).slice(0, snapshotLimit);
-        return { ...metric, snapshots };
-      });
-
-      const alerts = normalizeRows(
-        db
-          .prepare(
-            `SELECT a.id, a.metric_id as metricId, a.message, a.created_at as createdAt,
-                m.owner as explicitOwner, p.owner as projectOwner
-         FROM metric_alerts a
-         JOIN metrics m ON m.id = a.metric_id
-         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-         WHERE a.resolved_at IS NULL
-         ORDER BY a.created_at DESC, a.id DESC
-         LIMIT ?`,
-          )
-          .all(alertLimit + 1) as Record<string, unknown>[],
-      ).slice(0, alertLimit);
-
-      const inboxOwner = ownerForAgent(filter.agent);
-      const inbox = normalizeRows(
-        db
-          .prepare(
-            `SELECT e.id, e.event_type as eventType, e.data, e.urgency, e.timestamp
-         FROM events e
-         WHERE e.owner = ?
-           AND e.delivery_status = 'accepted'
-           AND e.delivery_route = 'owner_inbox'
-           AND e.timestamp > ?
-           AND (e.ttl_ms IS NULL OR e.timestamp + e.ttl_ms > ?)
-           AND NOT EXISTS (
-             SELECT 1
-             FROM event_pair_runs p
-             WHERE p.open_event_id = e.id
-               AND p.pair_name = 'owner_inbox'
-               AND p.status IN ('closed', 'orphan')
-           )
-         ORDER BY CASE WHEN e.urgency = 'immediate' THEN 0 ELSE 1 END,
-           e.timestamp DESC, e.id DESC
-         LIMIT ?`,
-          )
-          .all(inboxOwner, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[],
-      ).slice(0, inboxLimit);
-
-      return { now, metrics, alerts, inbox };
     },
 
     evaluatorDeepEvalScan(filter = {}) {
@@ -877,19 +755,9 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         )
         .all(since, now, limit) as Record<string, unknown>[];
 
-      const ownerInboxCount = db
-        .prepare(
-          `SELECT COUNT(*) as count
-         FROM event_pair_runs
-         WHERE pair_name = 'owner_inbox'
-           AND status = 'open'`,
-        )
-        .get() as Record<string, unknown> | null;
-
       return {
         now,
         since,
-        ownerInboxOpenCount: numberValue(ownerInboxCount?.count),
         unhandledEvents: normalizeRows(unhandledEvents),
         overduePendingEvents: normalizeRows(overduePendingEvents),
         orphanPairs: normalizeRows(orphanPairs),
@@ -920,9 +788,6 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const failReactorState = (): MetricAlertReactorState => {
     throw new Error(reason);
   };
-  const failHeartbeatContext = (): HeartbeatContext => {
-    throw new Error(reason);
-  };
   const failEventDeliveryHealth = (): EventDeliveryHealth => {
     throw new Error(reason);
   };
@@ -942,7 +807,6 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     metricAlertContext: failContext,
     metricAlertReactorState: failReactorState,
     eventDeliveryHealth: failEventDeliveryHealth,
-    heartbeatContext: failHeartbeatContext,
     evaluatorDeepEvalScan: failEvaluatorDeepEvalScan,
     evaluatorAftermathContext: failEvaluatorAftermathContext,
     sql: fail,

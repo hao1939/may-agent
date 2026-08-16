@@ -1,16 +1,42 @@
-import type { AppDependencyObservation, AppInput, AppInputSource } from "@may-agent/sdk";
+import {
+  matchesEventSelector,
+  type AppDependencyObservation,
+  type AppEvent,
+  type AppInput,
+  type AppInputSource,
+  type ObserverContext,
+  type TaskIntent,
+} from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
-import type { AppRegistry } from "./app-registry.js";
+import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import {
+  completeAppEventAdmissionPlan,
+  createAppEventAdmissionPlan,
+  getAppEventAdmissionPlan,
+  markAppEventAdmissionCommandAdmitted,
+  recordAppEventAdmissionCommandFailure,
+  type AppEventAdmissionCommand,
+  type AppEventAdmissionPlan,
+  type AppEventAdmissionRoute,
+} from "./app-event-admission-store.js";
+import { createAppObserverRuntime } from "./app-observer-runtime.js";
+import { canonicalAppEvent } from "./canonical-app-event.js";
+
+export type AppRegistryReloadPreparation = (input: {
+  snapshot: AppRegistrySnapshot;
+  /** Must be the final synchronous step after every other consumer commits. */
+  commit: () => void;
+}) => Promise<void>;
 
 export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
   enableDelivery(): void;
-  reload(): Promise<string[]>;
+  reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
 };
 
 export type StartAppInboxRuntimeOptions = {
@@ -19,6 +45,15 @@ export type StartAppInboxRuntimeOptions = {
   manager: AppOwnerManager;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
+  admitTaskEvent?: (input: {
+    appId: string;
+    appDir: string;
+    event: AgentEvent;
+    intent: TaskIntent | null;
+    targetedTaskId?: string;
+    conditionTaskIds?: string[];
+  }) => DeliveryResult | undefined;
+  previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
   readDependency?: (input: {
     appId: string;
     appDir: string;
@@ -30,6 +65,8 @@ export type StartAppInboxRuntimeOptions = {
   leaseMs?: number;
   retryAfterMs?: number;
   maxBatchSize?: number;
+  now?: () => number;
+  observerContext?: (appId: string, appDir: string) => ObserverContext;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -50,9 +87,25 @@ function requestedInput(data: Record<string, unknown>): AppInput {
   return { kind: typeof input.kind === "string" ? input.kind : "", data: input.data };
 }
 
-function eventIdentity(event: AgentEvent): string | undefined {
+function eventRowId(event: AgentEvent): number | undefined {
   const eventId = Number((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-  return Number.isSafeInteger(eventId) && eventId > 0 ? `event:${eventId}` : undefined;
+  return Number.isSafeInteger(eventId) && eventId > 0 ? eventId : undefined;
+}
+
+function eventIdentity(event: AgentEvent): string | undefined {
+  const eventId = eventRowId(event);
+  return eventId ? `event:${eventId}` : undefined;
+}
+
+function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
+  const taskId = typeof event.target?.taskId === "string" ? event.target.taskId.trim() : "";
+  if (!taskId) return null;
+  const data = event.data;
+  const selectedAppId = [event.target?.appId, event.target?.project, data.appId, data.project, data.projectId].find(
+    (value) => typeof value === "string" && value.trim(),
+  );
+  const appId = typeof selectedAppId === "string" ? selectedAppId.trim() : "";
+  return { appId: appId ? appId.replace(/\.app$/, "") : undefined, taskId };
 }
 
 function normalizedAgent(value: unknown): string | undefined {
@@ -108,7 +161,11 @@ function addressedAgentMessage(event: AgentEvent):
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
-  const loaded = options.registry.entries();
+  let registrySnapshot = options.registry.snapshot();
+  let loaded = options.registry.entries();
+  if (loaded.some((entry) => (entry.definition.observers?.length ?? 0) > 0) && !options.observerContext) {
+    throw new Error("Canonical App observers require an observer context factory");
+  }
   for (const { definition } of loaded) {
     if (!options.manager.hasAgent(definition.owner)) {
       throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
@@ -152,6 +209,41 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let closed = false;
   let deliveryEnabled = false;
   let dispatchingDelivery = false;
+  const now = options.now ?? Date.now;
+  const observerRuntime = createAppObserverRuntime({
+    bus: options.bus,
+    now,
+    context: (appId, appDir) => {
+      if (!options.observerContext) throw new Error(`App ${appId} observer context is unavailable`);
+      return options.observerContext(appId, appDir);
+    },
+  });
+  observerRuntime.replace(loaded);
+  const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number }>();
+
+  const refreshScheduleActivations = (): void => {
+    const activeKeys = new Set<string>();
+    for (const { definition } of loaded) {
+      for (const schedule of definition.schedules ?? []) {
+        if (!schedule.input) continue;
+        const key = `${definition.id}/${schedule.id}`;
+        activeKeys.add(key);
+        const fingerprint = JSON.stringify({
+          intervalMs: schedule.intervalMs,
+          input: schedule.input,
+          catchUp: schedule.catchUp ?? "latest",
+          enabled: schedule.enabled !== false,
+        });
+        if (scheduleActivations.get(key)?.fingerprint !== fingerprint) {
+          scheduleActivations.set(key, { fingerprint, activatedAt: now() });
+        }
+      }
+    }
+    for (const key of scheduleActivations.keys()) {
+      if (!activeKeys.has(key)) scheduleActivations.delete(key);
+    }
+  };
+  refreshScheduleActivations();
 
   const pumpDeliveries = (): void => {
     if (closed || !deliveryEnabled || dispatchingDelivery) return;
@@ -272,12 +364,114 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const scanNow = () => {
+    const currentTime = now();
+    for (const { definition } of loaded) {
+      for (const configuredSchedule of definition.schedules ?? []) {
+        if (!configuredSchedule.input) continue;
+        if (configuredSchedule.enabled === false) continue;
+        const activation = scheduleActivations.get(`${definition.id}/${configuredSchedule.id}`);
+        if (!activation) continue;
+        const slot = Math.floor(currentTime / configuredSchedule.intervalMs);
+        const slotStartedAt = slot * configuredSchedule.intervalMs;
+        if ((configuredSchedule.catchUp ?? "latest") === "none" && slotStartedAt < activation.activatedAt) continue;
+        const admitted = host.admit({
+          appId: definition.id,
+          source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
+          input: configuredSchedule.input,
+          idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+        });
+        if (admitted.created) schedule(admitted.item.appId);
+      }
+    }
     for (const appId of host.appIds()) schedule(appId);
+    observerRuntime.scanNow();
     void recoverSessionDependencies();
     pumpDeliveries();
   };
 
+  const admissionRouteLabel = (command: AppEventAdmissionCommand): string =>
+    `${command.kind}:${command.appId}/${command.routeId}`;
+
+  const dispatchAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
+    const identity = `event:${plan.eventId}`;
+    const errors: unknown[] = [];
+    for (const command of plan.commands) {
+      if (command.status !== "pending") continue;
+      try {
+        const entry = loaded.find(({ definition }) => definition.id === command.appId);
+        if (!entry) {
+          throw new Error(
+            `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+          );
+        }
+        if (command.kind === "inbox") {
+          const admitted = host.admit({
+            appId: command.appId,
+            source: { kind: "system", id: identity },
+            input: command.input,
+            idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
+          });
+          schedule(admitted.item.appId);
+        }
+        if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
+          if (!entry.definition.tasks) {
+            throw new Error(
+              `Frozen ${admissionRouteLabel(command)} for ${identity} names an App without its selected task capability`,
+            );
+          }
+          if (!options.admitTaskEvent) {
+            throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
+          }
+          const delivery = options.admitTaskEvent({
+            appId: command.appId,
+            appDir: entry.appDir,
+            event,
+            intent: command.kind === "task" ? command.intent : null,
+            ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
+            conditionTaskIds: command.conditionTaskIds,
+          });
+          if (!delivery) {
+            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+          }
+        }
+        markAppEventAdmissionCommandAdmitted(options.db, {
+          eventId: plan.eventId,
+          appId: command.appId,
+          now: now(),
+        });
+      } catch (error) {
+        recordAppEventAdmissionCommandFailure(options.db, {
+          eventId: plan.eventId,
+          appId: command.appId,
+          error,
+          now: now(),
+        });
+        errors.push(error);
+      }
+    }
+    if (errors.length > 0) {
+      const detail = errors.map((error) => (error instanceof Error ? error.message : String(error))).join("; ");
+      throw new AggregateError(
+        errors,
+        `Canonical event ${identity} failed ${errors.length} of ${plan.commands.length} frozen App admission command(s) from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration}): ${detail}`,
+      );
+    }
+    if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
+      throw new Error(
+        `Canonical event ${identity} still has pending App admission commands from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+      );
+    }
+    return {
+      accepted: true,
+      by: `app-runtime:events:${plan.commands.map(admissionRouteLabel).join(",")}`,
+      route: "direct",
+      note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) admitted durably`,
+    };
+  };
+
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
+    const routeSnapshot = registrySnapshot;
+    const routeGeneration = routeSnapshot.generation;
     const data = eventData(event);
     const message = addressedAgentMessage(event);
     if (message) {
@@ -301,6 +495,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: "addressed agent message admitted to App inbox",
         };
       }
+      throw new Error(
+        candidates.length === 0
+          ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
+          : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`,
+      );
     }
     if (event.type === "app.input.requested") {
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";
@@ -442,6 +641,139 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
       }
     }
+    const identity = eventIdentity(event);
+    if (identity) {
+      const eventId = eventRowId(event)!;
+      const frozenPlan = getAppEventAdmissionPlan(options.db, eventId);
+      if (frozenPlan) return dispatchAdmissionPlan(frozenPlan, event);
+
+      const canonical = canonicalAppEvent(event);
+      const exactTarget = exactTaskTarget(canonical);
+      if (exactTarget) {
+        if (!exactTarget.appId) {
+          throw new Error(
+            `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity in registry generation ${routeGeneration}`,
+          );
+        }
+        const entry = loaded.find(({ definition }) => definition.id === exactTarget.appId);
+        const tasks = entry?.definition.tasks;
+        if (!entry) {
+          throw new Error(
+            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an unknown canonical App in registry generation ${routeGeneration}`,
+          );
+        }
+        if (!tasks) {
+          throw new Error(
+            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability in registry generation ${routeGeneration}`,
+          );
+        }
+        const conditionTaskIds =
+          options.previewTaskEvent?.({
+            appId: entry.definition.id,
+            appDir: entry.appDir,
+            event,
+            targetedTaskId: exactTarget.taskId,
+          }) ?? [];
+        const plan = createAppEventAdmissionPlan(options.db, {
+          eventId,
+          registrySnapshotId: routeSnapshot.id,
+          registryGeneration: routeGeneration,
+          routes: [
+            {
+              appId: entry.definition.id,
+              kind: "exact-task",
+              routeId: exactTarget.taskId,
+              targetedTaskId: exactTarget.taskId,
+              conditionTaskIds,
+            },
+          ],
+          now: now(),
+        });
+        return dispatchAdmissionPlan(plan, event);
+      }
+
+      const inboxMatches = host.subscriptionInputs(canonical);
+      const inboxCountByApp = new Map<string, number>();
+      for (const match of inboxMatches) {
+        inboxCountByApp.set(match.appId, (inboxCountByApp.get(match.appId) ?? 0) + 1);
+      }
+      const duplicateInboxApp = [...inboxCountByApp].find(([, count]) => count > 1)?.[0];
+      if (duplicateInboxApp) {
+        throw new Error(`Canonical App ${duplicateInboxApp} has multiple inbox routes for event ${identity}`);
+      }
+
+      const taskAdmissions = loaded.flatMap(({ definition, appDir }) => {
+        const tasks = definition.tasks;
+        if (!tasks) return [];
+        const subscriptionMatched = Boolean(
+          tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical)),
+        );
+        let intent: TaskIntent | null = null;
+        if (subscriptionMatched) {
+          try {
+            intent = tasks.resolve?.(canonical) ?? null;
+          } catch (error) {
+            throw new Error(
+              `Canonical App ${definition.id} task resolver failed for event ${identity} in registry generation ${routeGeneration}: ${error instanceof Error ? error.message : String(error)}`,
+              { cause: error },
+            );
+          }
+        }
+        const conditionTaskIds = options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
+        return intent || conditionTaskIds.length > 0
+          ? [{ appId: definition.id, appDir, intent, conditionTaskIds }]
+          : [];
+      });
+      const inboxApps = new Set(inboxMatches.map((match) => match.appId));
+      const overlap = taskAdmissions.find((admission) => admission.intent && inboxApps.has(admission.appId));
+      if (overlap) {
+        throw new Error(`Canonical App ${overlap.appId} has both inbox and task-intent routes for event ${identity}`);
+      }
+      const taskAdmissionByApp = new Map(taskAdmissions.map((admission) => [admission.appId, admission]));
+
+      const routes: AppEventAdmissionRoute[] = [
+        ...inboxMatches.map((match) => ({
+          appId: match.appId,
+          kind: "inbox" as const,
+          routeId: match.subscriptionId,
+          input: match.input,
+          conditionTaskIds: taskAdmissionByApp.get(match.appId)?.conditionTaskIds ?? [],
+        })),
+        ...taskAdmissions
+          .filter((admission) => !inboxApps.has(admission.appId))
+          .map((admission) => ({
+            appId: admission.appId,
+            kind: "task" as const,
+            routeId: admission.intent?.id ?? admission.conditionTaskIds.join("+"),
+            intent: admission.intent,
+            conditionTaskIds: admission.conditionTaskIds,
+          })),
+      ];
+      if (routes.length > 0) {
+        const plan = createAppEventAdmissionPlan(options.db, {
+          eventId,
+          registrySnapshotId: routeSnapshot.id,
+          registryGeneration: routeGeneration,
+          routes,
+          now: now(),
+        });
+        return dispatchAdmissionPlan(plan, event);
+      }
+
+      const observationApps = loaded
+        .filter(({ definition }) =>
+          definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
+        )
+        .map(({ definition }) => definition.id);
+      if (observationApps.length > 0) {
+        return {
+          accepted: true,
+          by: `app-runtime:observations:${observationApps.join(",")}`,
+          route: "noop",
+          note: `registry-snapshot:${routeSnapshot.id}; generation:${routeGeneration}; zero work routes selected`,
+        };
+      }
+    }
   });
   const scanIntervalMs = options.scanIntervalMs ?? 5_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
@@ -456,16 +788,40 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
-    async reload() {
-      const next = await options.registry.reload((prospective) => {
-        for (const { definition } of prospective) {
+    async reload(prepare) {
+      const previousDefinitions = loaded.map((entry) => entry.definition);
+      const next = await options.registry.reload(async (snapshot) => {
+        for (const { definition } of snapshot.entries) {
           if (!options.manager.hasAgent(definition.owner)) {
             throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
           }
         }
-        host.replaceApps(prospective.map((entry) => entry.definition));
+        if (
+          snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
+          !options.observerContext
+        ) {
+          throw new Error("Canonical App observers require an observer context factory");
+        }
+        let committed = false;
+        const commit = () => {
+          if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
+          host.replaceApps(snapshot.entries.map((entry) => entry.definition));
+          committed = true;
+        };
+        try {
+          if (prepare) await prepare({ snapshot, commit });
+          else commit();
+          if (!committed) throw new Error(`App registry generation ${snapshot.generation} was not committed`);
+        } catch (error) {
+          if (committed) host.replaceApps(previousDefinitions);
+          throw error;
+        }
       });
+      loaded = next;
+      registrySnapshot = options.registry.snapshot();
+      observerRuntime.replace(next);
       appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
+      refreshScheduleActivations();
       scanNow();
       return host.appIds();
     },
@@ -478,6 +834,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      observerRuntime.close();
       unsubscribe();
       pending.length = 0;
       queued.clear();

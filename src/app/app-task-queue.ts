@@ -5,7 +5,7 @@
  * Repeated wakes collapse while pending; a wake received during reconciliation
  * schedules exactly one fresh pass after the current pass completes.
  */
-export class ProjectAppTaskQueue {
+export class AppTaskQueue {
   private static readonly maxFrontBurst = 3;
   private static readonly maxPrioritySkips = 3;
   private readonly pending: string[] = [];
@@ -14,21 +14,21 @@ export class ProjectAppTaskQueue {
   private readonly running = new Set<string>();
   private readonly dirty = new Set<string>();
   private readonly dirtyFront = new Set<string>();
-  private readonly priorities = new Map<string, ProjectAppTaskPriority>();
-  private readonly dirtyPriorities = new Map<string, ProjectAppTaskPriority>();
+  private readonly priorities = new Map<string, AppTaskPriority>();
+  private readonly dirtyPriorities = new Map<string, AppTaskPriority>();
   private readonly frontPrioritySkips = new Map<string, number>();
   private readonly ordinaryPrioritySkips = new Map<string, number>();
   private consecutiveFrontTakes = 0;
 
   constructor(readonly maxConcurrent: number) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
-      throw new Error("ProjectAppTaskQueue maxConcurrent must be a positive integer");
+      throw new Error("AppTaskQueue maxConcurrent must be a positive integer");
     }
   }
 
-  enqueue(taskId: string, opts: ProjectAppTaskQueueOptions = {}): boolean {
+  enqueue(taskId: string, opts: AppTaskQueueOptions = {}): boolean {
     const key = taskId.trim();
-    if (!key) throw new Error("ProjectAppTaskQueue requires a non-empty task ID");
+    if (!key) throw new Error("AppTaskQueue requires a non-empty task ID");
     const priority = opts.priority ?? this.priorities.get(key) ?? "P2";
     if (this.running.has(key)) {
       const alreadyDirty = this.dirty.has(key);
@@ -65,8 +65,7 @@ export class ProjectAppTaskQueue {
   take(): string | null {
     if (this.running.size >= this.maxConcurrent) return null;
     const frontCount = this.frontQueued.size;
-    const takeOrdinary =
-      frontCount < this.pending.length && this.consecutiveFrontTakes >= ProjectAppTaskQueue.maxFrontBurst;
+    const takeOrdinary = frontCount < this.pending.length && this.consecutiveFrontTakes >= AppTaskQueue.maxFrontBurst;
     const takeIndex =
       takeOrdinary || frontCount === 0 ? this.nextOrdinaryIndex(frontCount) : this.nextFrontIndex(frontCount);
     const [taskId] = this.pending.splice(takeIndex, 1);
@@ -82,7 +81,7 @@ export class ProjectAppTaskQueue {
 
   complete(taskId: string): void {
     if (!this.running.delete(taskId)) {
-      throw new Error(`ProjectAppTaskQueue cannot complete task that is not running: ${taskId}`);
+      throw new Error(`AppTaskQueue cannot complete task that is not running: ${taskId}`);
     }
     if (this.dirty.delete(taskId)) {
       const front = this.dirtyFront.delete(taskId);
@@ -115,11 +114,7 @@ export class ProjectAppTaskQueue {
   }
 
   private nextOrdinaryIndex(frontCount: number): number {
-    const agedIndex = this.nextAgedPriorityIndex(
-      frontCount,
-      this.pending.length,
-      this.ordinaryPrioritySkips,
-    );
+    const agedIndex = this.nextAgedPriorityIndex(frontCount, this.pending.length, this.ordinaryPrioritySkips);
     if (agedIndex >= frontCount) {
       return agedIndex;
     }
@@ -161,7 +156,7 @@ export class ProjectAppTaskQueue {
     let selectedRank = Number.POSITIVE_INFINITY;
     for (let index = start; index < end; index++) {
       const taskId = this.pending[index];
-      if (!taskId || (skips.get(taskId) ?? 0) < ProjectAppTaskQueue.maxPrioritySkips) continue;
+      if (!taskId || (skips.get(taskId) ?? 0) < AppTaskQueue.maxPrioritySkips) continue;
       const rank = priorityRank(this.priorities.get(taskId) ?? "P2");
       if (rank < selectedRank) {
         selected = index;
@@ -172,12 +167,7 @@ export class ProjectAppTaskQueue {
   }
 
   /** Age only the FIFO head of each lower-priority class. */
-  private ageLowerPriorityHeads(
-    start: number,
-    end: number,
-    selectedRank: number,
-    skips: Map<string, number>,
-  ): void {
+  private ageLowerPriorityHeads(start: number, end: number, selectedRank: number, skips: Map<string, number>): void {
     const agedRanks = new Set<number>();
     for (let index = start; index < end; index++) {
       const taskId = this.pending[index];
@@ -190,13 +180,13 @@ export class ProjectAppTaskQueue {
   }
 }
 
-export type ProjectAppTaskPriority = "P0" | "P1" | "P2" | "P3";
+export type AppTaskPriority = "P0" | "P1" | "P2" | "P3";
 
-export type ProjectAppTaskQueueOptions = {
+export type AppTaskQueueOptions = {
   front?: boolean;
-  priority?: ProjectAppTaskPriority;
+  priority?: AppTaskPriority;
 };
 
-function priorityRank(priority: ProjectAppTaskPriority): number {
+function priorityRank(priority: AppTaskPriority): number {
   return { P0: 0, P1: 1, P2: 2, P3: 3 }[priority];
 }

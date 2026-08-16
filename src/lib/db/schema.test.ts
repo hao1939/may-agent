@@ -30,6 +30,12 @@ describe("canonical database schema", () => {
       const inboxIndexes = db.prepare("PRAGMA index_list(app_inbox_items)").all() as Array<{ name: string }>;
       const deliveryColumns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{ name: string }>;
       const deliveryIndexes = db.prepare("PRAGMA index_list(app_inbox_deliveries)").all() as Array<{ name: string }>;
+      const admissionPlanColumns = db.prepare("PRAGMA table_info(app_event_admission_plans)").all() as Array<{
+        name: string;
+      }>;
+      const admissionCommandColumns = db.prepare("PRAGMA table_info(app_event_admission_commands)").all() as Array<{
+        name: string;
+      }>;
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent_started")).toBe(true);
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent")).toBe(false);
       expect(workflowIndexes.some(({ name }) => name === "idx_wfr_project_started")).toBe(true);
@@ -45,6 +51,8 @@ describe("canonical database schema", () => {
         expect.arrayContaining(["operation_id", "session_id", "request_id", "status", "receipt_event_id"]),
       );
       expect(deliveryIndexes.some(({ name }) => name === "idx_app_inbox_delivery_status")).toBe(true);
+      expect(admissionPlanColumns.some(({ name }) => name === "registry_snapshot_id")).toBe(true);
+      expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
       expect(trigger.sql).toContain("OLD.session_id");
       expect(trigger.sql).not.toContain("json_extract");
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'runtime_migrations'").get()).toBeNull();
