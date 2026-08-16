@@ -72,7 +72,6 @@ export function createDaemonLifecycle(opts: {
   closeAllDbs: () => void;
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
   processStartTime: number;
-  getChatSession: () => { cancelAll: () => void } | undefined;
   getTelegramBot: () => { close: () => void } | undefined;
   getActiveReadline: () => { close: () => void } | null;
   clearActiveReadline: () => void;
@@ -105,7 +104,6 @@ export function createDaemonLifecycle(opts: {
     if (shutdownOpts.preserveSessions) {
       opts.bus.emit({ type: "info", message: "[shutdown] Preserving running sessions for restart/resume" });
     } else {
-      opts.getChatSession()?.cancelAll();
       for (const session of opts.manager.status()) {
         if (session.status === "running") {
           opts.manager.cancel(session.sessionId);

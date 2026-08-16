@@ -28,7 +28,7 @@ async function admitProactive(candidate: { eventType: string; content: string })
 }
 
 describe("telegram outbound routing", () => {
-  it("binds Telegram input to an existing canonical chat session and replies to the triggering message", () => {
+  it("binds a Telegram-started direct chat and replies to the triggering message", () => {
     const bus = new EventBus();
     const sent: Array<{ text: string; replyToMessageId?: number }> = [];
     const outbound = attachTelegramOutbound({
@@ -36,7 +36,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "s_existing",
       sendToUser: (text, context) => sent.push({ text, replyToMessageId: context?.replyToMessageId }),
     });
 
@@ -52,9 +51,9 @@ describe("telegram outbound routing", () => {
         channelMessageId: 701,
       },
     } as any);
+    bus.emit(sessionStart({ sessionId: "s_existing", agent: "may", kind: "chat" }, "telegram") as any);
     bus.emit({ type: "text", sessionId: "s_existing", agent: "may", text: "I am checking it." } as any);
 
-    expect(outbound.getRootChatSessionId()).toBe("s_existing");
     expect(sent).toEqual([{ text: "I am checking it.", replyToMessageId: 701 }]);
     outbound.close();
   });
@@ -67,18 +66,14 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "s_root",
       sendToUser: (text) => sent.push(text),
     });
 
     bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
-    expect(outbound.getRootChatSessionId()).toBe("s_root");
-
     bus.emit({ type: "text", sessionId: "s_root", agent: "may", text: "hello" } as any);
     bus.emit(sessionEnd({ sessionId: "s_root", agent: "may", status: "done", summary: "hello" }) as any);
 
     expect(sent).toEqual(["hello"]);
-    expect(outbound.getRootChatSessionId()).toBeNull();
     outbound.close();
   });
 
@@ -90,7 +85,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "s_root",
       sendToUser: (text, context) => sent.push({ text, eventType: context?.eventType }),
     });
 
@@ -100,7 +94,6 @@ describe("telegram outbound routing", () => {
     );
 
     expect(sent).toEqual([{ text: "ready for the next turn", eventType: "session.idle" }]);
-    expect(outbound.getRootChatSessionId()).toBeNull();
     outbound.close();
   });
 
@@ -112,7 +105,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "",
       sendToUser: (text) => sent.push(text),
       reviewProactive: admitProactive,
     });
@@ -142,7 +134,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "",
       sendToUser: (text) => sent.push(text),
       reviewProactive: admitProactive,
     });
@@ -168,7 +159,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "",
       sendToUser: (text, context) => sent.push({ text, context: context as Record<string, unknown> | undefined }),
       reviewProactive: admitProactive,
     });
@@ -252,7 +242,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "",
       sendToUser: (text, context) => sent.push({ text, context: context as Record<string, unknown> | undefined }),
       reviewProactive: admitProactive,
     });
@@ -319,7 +308,6 @@ describe("telegram outbound routing", () => {
       interfaceAgent: "may",
       projectRoot: "/tmp/project",
       pendingChatId: "12345",
-      getSessionId: () => "s_root",
       sendToUser: (text) => sent.push(text),
     });
 

@@ -17,7 +17,7 @@ export async function runRequestedExitMode(opts: {
   manager: SubagentManager;
 }): Promise<void> {
   const {
-    chatMode,
+    consoleEnabled,
     cronEnabled,
     dryRun,
     initialTask,
@@ -39,7 +39,9 @@ export async function runRequestedExitMode(opts: {
   }
 
   if (messageMode) {
-    process.exit(await runMessageMode({ argv: process.argv, persistDir: opts.persistDir, agentsRoot: opts.agentsRoot }));
+    process.exit(
+      await runMessageMode({ argv: process.argv, persistDir: opts.persistDir, agentsRoot: opts.agentsRoot }),
+    );
   }
 
   if (runWorkflow) {
@@ -62,8 +64,18 @@ export async function runRequestedExitMode(opts: {
     }
   }
 
-  if (!chatMode && !initialTask && !cronEnabled && !oneshotMode && !webEnabled && !socketEnabled && !telegramEnabled) {
-    console.error("Error: need --chat, --task, --oneshot, --status, --message, --emit, --web, --socket, --telegram, or --cron.");
+  if (
+    !consoleEnabled &&
+    !initialTask &&
+    !cronEnabled &&
+    !oneshotMode &&
+    !webEnabled &&
+    !socketEnabled &&
+    !telegramEnabled
+  ) {
+    console.error(
+      "Error: need --chat, --task, --oneshot, --status, --message, --emit, --web, --socket, --telegram, or --cron.",
+    );
     process.exit(1);
   }
 

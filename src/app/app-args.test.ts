@@ -29,6 +29,21 @@ describe("app args", () => {
     expect(args.webOnlyMode).toBe(true);
   });
 
+  it("treats --chat as a quiet console alias without creating a chat runtime mode", () => {
+    const args = parseAppArgs(["may-agent", "--chat"], {});
+
+    expect(args.consoleEnabled).toBe(true);
+    expect(args.quietConsole).toBe(true);
+    expect(args).not.toHaveProperty("chatMode");
+  });
+
+  it("does not classify web plus console as web-only", () => {
+    const args = parseAppArgs(["may-agent", "--web", "--console"], {});
+
+    expect(args.consoleEnabled).toBe(true);
+    expect(args.webOnlyMode).toBe(false);
+  });
+
   it("uses DAEMON_AGENT as the interface agent when AGENT is unset", () => {
     const args = parseAppArgs(["may-agent", "--web"], { DAEMON_AGENT: "aks-explorer" });
 
@@ -36,7 +51,8 @@ describe("app args", () => {
   });
 
   it("throws a clear error when task-file is missing", () => {
-    expect(() => parseAppArgs(["may-agent", "--task-file", "/tmp/no-such-task-file"], {}))
-      .toThrow("Task file not found: /tmp/no-such-task-file");
+    expect(() => parseAppArgs(["may-agent", "--task-file", "/tmp/no-such-task-file"], {})).toThrow(
+      "Task file not found: /tmp/no-such-task-file",
+    );
   });
 });

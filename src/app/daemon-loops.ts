@@ -5,12 +5,6 @@ import type { SubagentManager } from "../lib/index.js";
 export async function runInteractiveLoop(opts: {
   bus: EventBus;
   manager: SubagentManager;
-  chatSession:
-    | {
-        isRunning: () => boolean;
-        cancelAll: () => void;
-      }
-    | undefined;
   handleInput: (input: string, source: string) => void;
   gracefulShutdown: () => void;
   socketUI: { close: () => void };
@@ -20,19 +14,17 @@ export async function runInteractiveLoop(opts: {
   latchCancel: () => void;
   emitPrompt: () => void;
 }): Promise<void> {
-  if (opts.chatSession) opts.emitPrompt();
+  opts.emitPrompt();
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   opts.setActiveReadline(rl);
 
   rl.on("SIGINT", () => {
-    if (opts.chatSession && opts.chatSession.isRunning() && !opts.isCancelLatched()) {
+    const running = opts.manager.status().filter((session) => session.status === "running");
+    if (running.length > 0 && !opts.isCancelLatched()) {
       opts.latchCancel();
       opts.bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling active sessions... (press again to force quit)" });
-      opts.chatSession.cancelAll();
-      for (const session of opts.manager.status()) {
-        if (session.status === "running") opts.manager.cancel(session.sessionId);
-      }
+      for (const session of running) opts.manager.cancel(session.sessionId);
       opts.emitPrompt();
     } else {
       opts.gracefulShutdown();
@@ -98,7 +90,7 @@ export async function runDaemonKeepalive(opts: {
 
   opts.bus.emit({
     type: "info",
-    message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${opts.interfaceAgent}.${opts.socketEnabled ? " Use socket for control." : " Socket disabled — no external control available."}`,
+    message: `[daemon] Running with the console disabled. Interface agent: ${opts.interfaceAgent}.${opts.socketEnabled ? " Use socket for control." : " Socket disabled — no external control available."}`,
   });
 
   emitHeartbeat();

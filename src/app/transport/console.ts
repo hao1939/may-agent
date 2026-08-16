@@ -5,7 +5,7 @@
  *   1. EventBus  — domain events (sessions, tools, notifications, info)
  *   2. log.ts    — system log messages (warn, error, info from lib code)
  *
- * Chat mode: show primary session events bright, everything else hidden.
+ * Quiet console: show primary session events bright, everything else hidden.
  * Daemon mode: show everything dimmed.
  */
 
@@ -28,11 +28,16 @@ function isHumanTarget(target: unknown): boolean {
   return normalized === "human" || normalized === "human:operator";
 }
 
-export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null, chatMode?: boolean): void {
+export function attachConsoleUI(
+  bus: EventBus,
+  getPrimarySessionId?: () => string | null,
+  quietConsole?: boolean,
+  onResponseDelivered?: () => void,
+): void {
   // ── Log channel (from log.ts — lib/infra messages) ────────────────────
   addLogSubscriber((level: LogLevel, message: string) => {
-    // In chat mode, only show errors
-    if (chatMode && level !== "error") return;
+    // In quiet console mode, only show errors
+    if (quietConsole && level !== "error") return;
     // In daemon mode, show errors dimmed
     if (level === "error") {
       console.log(`${DIM}[${level}] ${message}${RESET}`);
@@ -60,12 +65,13 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
           appInboxRequestId: delivery.appInboxRequestId,
         },
       } as any);
+      onResponseDelivered?.();
       return;
     }
     const primarySid = getPrimarySessionId?.() ?? null;
 
-    // Chat mode: only show primary session + human-directed messages
-    if (chatMode) {
+    // Quiet console: only show primary session + human-directed messages
+    if (quietConsole) {
       if (event.type === "message.created" && isHumanTarget(messageData(event).to)) {
         const message = messageData(event);
         console.log(`\n📋 ${message.from}: ${message.content}`);
@@ -105,6 +111,7 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
               resultEventType: event.type,
             },
           } as any);
+          onResponseDelivered?.();
           break;
       }
       return;
