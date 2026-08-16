@@ -14,6 +14,7 @@ import {
   findUnhandledToolPresets,
   VALID_TOOL_PRESETS,
 } from "../../src/lib/tool-preset-registry.js";
+import { createModelRegistry } from "../../src/app/model-registry.js";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -53,6 +54,33 @@ describe("validateAgentConfig", () => {
     expect(fields).toContain("description");
     expect(fields).toContain("domain");
     expect(fields).toContain("model");
+  });
+
+  it("accepts the deployed catalog and cli-delegation boundary while rejecting unknown values", () => {
+    const models = createModelRegistry({});
+    for (const model of ["gpt-5.6-sol", "claude-opus-5", "gemini-3.1-pro-preview"]) {
+      const config: AgentConfig = {
+        name: `boundary-${model}`,
+        description: "Catalog and preset boundary regression",
+        domain: "test",
+        model,
+        tools: ["cli-delegation"],
+      };
+      expect(validateAgentConfig(config, models, AGENTS_ROOT)).toEqual([]);
+    }
+
+    const invalid: AgentConfig = {
+      name: "invalid-boundary",
+      description: "Unknown values remain invalid",
+      domain: "test",
+      model: "nonexistent-model",
+      tools: ["nonexistent-preset"],
+    };
+    const errors = validateAgentConfig(invalid, models, AGENTS_ROOT);
+    expect(errors).toEqual([
+      { agent: "invalid-boundary", field: "model", message: 'Unknown model "nonexistent-model"' },
+      { agent: "invalid-boundary", field: "tools", message: 'Unknown tool preset "nonexistent-preset"' },
+    ]);
   });
 
   it("rejects unknown model", () => {
