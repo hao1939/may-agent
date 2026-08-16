@@ -468,14 +468,13 @@ Triggers, timestamps, attempt summaries, Condition observations, and read
 projections never change task generation.
 
 An unresolved explicit owner input (`project.owner.requested`,
-`project.comment.created`, or an app-owner `message.created` carried by the
-owner request) remains the primary persisted trigger until the
-reconciler emits its correlated owner result. Routine watcher, metric, and
-pipeline events may make the same task dirty, but they must not replace that
-owner input payload before the owner has processed it. A later owner input may
-become primary only while retaining every unresolved owner event reference and
-its structured input, so one coalesced owner run can judge every request before
-emitting their correlated results.
+`project.comment.created`, or an owner-addressed `message.created`) remains the
+primary persisted trigger until the owning App request records its correlated
+result. Routine watcher, metric, and pipeline events may make the same task
+dirty, but they must not replace that owner input payload before the owner has
+processed it. A later owner input may become primary only while retaining every
+unresolved source reference and its structured input, so one coalesced owner
+run can judge every admitted request before recording their correlated results.
 
 An explicit owner input also wakes a task that is waiting on an older
 Condition. The owner must be able to answer or redirect new human intent while

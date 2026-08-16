@@ -220,9 +220,10 @@ Human control surfaces may use:
 $verify-change review and verify the current patch
 ```
 
-Transport normalization still creates `human.input.received` followed by one
-semantic intent (`chat.start.requested` or `session.steer.requested`). The
-selected skill is context on that intent, not another intent or request.
+Transport normalization creates `human.input.received`, then admits ordinary
+May input as one `app.input.requested`. Explicit direct-agent input may instead
+start or steer a named execution session. The selected skill is bounded
+owner/execution context; it is never another request or ownership record.
 
 ### Explicit runtime and delegation invocation
 

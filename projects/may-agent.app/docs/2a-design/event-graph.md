@@ -65,31 +65,32 @@ must show the session as disconnected; the UI must not repair it heuristically.
 ## Human-Rooted Trace Contract
 
 `human.input.received` is the transport-neutral boundary fact for free-form
-conversational input. It is the trace root for a new conversation turn, not a
-separate request entity or work queue record. The input router emits exactly
-one semantic child intent from it:
+input. It is the trace root for one human turn. Ordinary input to May creates
+exactly one `app.input.requested`; that event admits one durable May App inbox
+item whose identity, not the trace, owns eventual handling:
 
 ```text
 human.input.received
-  -> chat.start.requested       no chat session is bound
-  -> session.steer.requested    an existing session is targeted
-  -> project.comment.created    project context is targeted
-  -> project.approval.submitted structured approval context is present
-  -> runtime.*.requested        explicit runtime control
+  -> app.input.requested (appId=may)
+    -> May App inbox item
+      -> bounded owner session
+        -> App result
+          -> app.response.delivery.requested
+            -> channel.delivery.completed
 ```
 
-An explicit project-comment API or UI may instead persist
-`project.comment.created` directly as its receipt and trace root. A
-conversation adapter may produce the same event as a child of
-`human.input.received`. Downstream app-owner handling is identical.
+Deterministic controls instead emit one exact `session.steer.requested`,
+`session.cancel.requested`, `project.approval.submitted`, or
+`runtime.*.requested` child. An explicit project-comment API or UI may persist
+`project.comment.created` directly as its receipt and trace root; its declared
+App subscription then admits correlated inbox work.
 
-A persistent chat session is a conversation container, not a trace. Each new
-standalone human turn starts a new trace even when it reuses the same chat
-session. A reply to a prior notification or result stays in the prior trace:
-the new `human.input.received` event uses the referenced notification/result as
-its parent or reference and then emits a new semantic intent beneath it.
+A persistent direct-agent chat session is an execution container, not a trace
+or May request. Each direct-agent turn starts a new trace even when it reuses
+the session. A reply to a prior notification or result references that durable
+fact; it does not recover ownership from the chat session.
 
-New-chat and existing-chat turns have these canonical shapes:
+Direct-agent new-chat and explicit-steer turns have these compatibility shapes:
 
 ```text
 human.input.received

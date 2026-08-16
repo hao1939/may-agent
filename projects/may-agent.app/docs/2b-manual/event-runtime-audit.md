@@ -89,8 +89,8 @@ Interpretation:
 
 - `delivery_status='unhandled'` means no responsible route accepted the event
   within its TTL.
-- `accepted_by='default-owner:<owner>'` means no specialized handler claimed
-  the event, so delivery fell back to owner accountability.
+- A missing specialized App/task/internal acceptance means the event remains
+  pending; there is no generic owner fallback that can turn routing into work.
 - `delivery_route='noop'` is only a legacy baseline marker for old rows.
 
 ## Pair Health
@@ -170,16 +170,15 @@ cold resume.
 Treat these as follow-up tasks:
 
 - A documented canonical event has no emitter.
-- A live event has no direct consumer and repeatedly falls back to
-  `default-owner:<owner>` when a direct handler should own it.
+- A live event has no declared App/task/internal consumer and remains pending.
 - A lifecycle-shaped event has no direct-close contract, compatibility
   correlation key, or explicit exception.
 - A closed pair has no persisted closure link or its opener/closer traces differ.
 - A persistent chat session reuses one trace for unrelated human turns.
 - A human semantic intent has no child work/disposition or its result has no
   channel-delivery projection.
-- A targeted domain event is accepted only by lifecycle bookkeeping or a
-  non-queryable default-owner label.
+- A targeted domain event is accepted only by lifecycle bookkeeping rather
+  than durable admission or a bounded internal handler.
 - A handler subscribes to a legacy or shortcut event when a canonical event
   exists.
 - An ingress path persists flattened data instead of the canonical envelope.

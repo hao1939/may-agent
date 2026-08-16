@@ -315,11 +315,11 @@ Historical `.state/evaluations/` files are not the current authority.
 ## Docker
 
 ```bash
-# Start background instance
-docker compose -f container/compose.yml up -d
+# Build and start the background service
+bun run recreate
 
-# Start local foreground instance from /app/projects/may-agent
-./start.sh
+# Attach the May Console
+docker exec -it may-agent may-console
 
 # Direct status check
 bun src/app/may.ts --status
