@@ -32,12 +32,21 @@ export function adaptLegacyProjectApp(definition: unknown): AppDefinition | null
     ? legacy.schedules.flatMap((value, scheduleIndex) => {
         const schedule = record(value);
         if (!schedule || !Array.isArray(schedule.emits)) return [];
-        return schedule.emits.map((event, eventIndex) => ({
-          id: `${String(schedule.id || `legacy-schedule-${scheduleIndex}`)}:${eventIndex + 1}`,
-          enabled: schedule.enabled !== false,
-          intervalMs: Number(schedule.intervalMs),
-          event: canonicalEvent(event),
-        }));
+        return schedule.emits.map((event, eventIndex) => {
+          const canonical = canonicalEvent(event);
+          return {
+            id: `${String(schedule.id || `legacy-schedule-${scheduleIndex}`)}:${eventIndex + 1}`,
+            enabled: schedule.enabled !== false,
+            intervalMs: Number(schedule.intervalMs),
+            event: canonical,
+            // Keep the legacy projection during staged host transitions. A
+            // previous Runtime may validate the newly prepared App set before
+            // the staged Runtime takes over; dropping `emits` made that strict
+            // validator observe an empty schedule even though source declared
+            // an event. Canonical scheduling continues to use `event`.
+            emits: [canonical],
+          };
+        });
       })
     : [];
 
