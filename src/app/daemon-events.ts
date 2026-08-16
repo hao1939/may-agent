@@ -64,7 +64,7 @@ export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: st
   const db = getDb(opts.persistDir);
   const rows = db
     .prepare(
-      `SELECT p.open_event_id, p.correlation_key, p.owner, e.handler
+      `SELECT p.open_event_id, p.correlation_key, p.owner, p.opened_at, e.handler
        FROM event_pair_runs p
        JOIN events e ON e.id = p.open_event_id
        WHERE p.pair_name = 'handler'
@@ -78,6 +78,7 @@ export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: st
     correlation_key?: unknown;
     owner?: unknown;
     handler?: unknown;
+    opened_at?: unknown;
   }>;
 
   for (const row of rows) {
@@ -90,16 +91,19 @@ export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: st
         : typeof row.handler === "string" && row.handler.trim()
           ? row.handler
           : `event:${openEventId}`;
+    const handler = typeof row.handler === "string" && row.handler.trim() ? row.handler : correlationKey;
+    const ownerAgent = owner.replace(/^agent:/, "") || "may";
+    const openedAt = Number(row.opened_at);
     opts.bus.emit({
-      type: "event-pair.orphan-gc.close",
+      type: "handler.failed",
       source: "runtime:restart-recovery",
       owner,
       data: {
-        openEventId,
-        pairName: "handler",
-        correlationKey,
-        reason: "runtime-restarted",
-        ...(typeof row.handler === "string" && row.handler.trim() ? { handler: row.handler } : {}),
+        handler,
+        handlerRunId: correlationKey,
+        agent: ownerAgent,
+        error: "Process restarted before the handler completed",
+        durationMs: Number.isFinite(openedAt) ? Math.max(0, Date.now() - openedAt) : 0,
       },
     } as any);
   }
@@ -139,16 +143,15 @@ export function closeRestartedWorkflowPairs(opts: { bus: EventBus; persistDir: s
       typeof row.correlation_key === "string" && row.correlation_key.trim()
         ? row.correlation_key
         : `event:${openEventId}`;
+    const workflow = typeof row.workflow === "string" && row.workflow.trim() ? row.workflow : "unknown";
     opts.bus.emit({
-      type: "event-pair.orphan-gc.close",
+      type: "workflow.interrupted",
       source: "runtime:restart-recovery",
       owner,
       data: {
-        openEventId,
-        pairName: "workflow",
-        correlationKey,
+        workflowRunId: correlationKey,
+        workflow,
         reason: "runtime-restarted",
-        ...(typeof row.workflow === "string" && row.workflow.trim() ? { workflow: row.workflow } : {}),
       },
     } as any);
   }

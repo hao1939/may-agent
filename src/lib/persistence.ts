@@ -13,7 +13,7 @@ import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import type { TSchema } from "@earendil-works/pi-ai";
-import { currentProcessInstance, isProcessInstanceAlive } from "@may-agent/sdk/legacy";
+import { currentProcessInstance, isProcessInstanceAlive } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 import type { ToolPolicy } from "./session-policy.js";

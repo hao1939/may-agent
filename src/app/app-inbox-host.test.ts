@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { Type, defineApp, type AppDefinition } from "@may-agent/sdk";
+import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { associateAppInboxClaimSession, claimAppInboxItem } from "./app-inbox-store.js";
+import {
+  completeAppEventAdmissionPlan,
+  createAppEventAdmissionPlan,
+  markAppEventAdmissionCommandAdmitted,
+} from "./app-event-admission-store.js";
 import { AppInboxHost, type AppOwnerInvoker } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -68,7 +73,40 @@ describe("App inbox host", () => {
           apps: [{ ...app("malformed"), tasks: { attach: false } } as unknown as AppDefinition],
           invokeOwner: async () => [],
         }),
-    ).toThrow("App malformed has invalid task attachment capability");
+    ).toThrow("App malformed tasks attach must be true");
+  });
+
+  it("discovers typed actions and translates them into validated App input", () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          ...app("evaluation"),
+          actions: {
+            probe: {
+              description: "Submit a typed probe",
+              inputSchema: Type.Object({ value: Type.String({ minLength: 1 }) }),
+              toInput: ({ value }) => ({ kind: "probe", data: { value } }),
+            },
+          },
+        }),
+      ],
+      invokeOwner: async () => [],
+    });
+
+    expect(host.hasApp("evaluation.app")).toBe(true);
+    expect(host.describeActions("evaluation")).toEqual([
+      {
+        id: "probe",
+        description: "Submit a typed probe",
+        inputSchema: expect.objectContaining({ type: "object" }),
+      },
+    ]);
+    expect(() => host.actionInput("evaluation", "probe", { value: "" })).toThrow("Invalid input for evaluation.probe");
+    expect(host.actionInput("evaluation.app", "probe", { value: "ready" })).toEqual({
+      kind: "probe",
+      data: { value: "ready" },
+    });
   });
 
   it("replaces the live App registry atomically without orphaning unfinished work", () => {
@@ -89,6 +127,72 @@ describe("App inbox host", () => {
 
     host.replaceApps([app("evaluation"), app("next")]);
     expect(host.appIds()).toEqual(["evaluation", "next"]);
+  });
+
+  it("rejects reloads incompatible with frozen event admission commands", () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [app("evaluation", "single", true)],
+      invokeOwner: async () => [],
+    });
+    db.prepare(
+      `INSERT INTO events (id, event_type, data, timestamp)
+       VALUES (41, 'review.requested', '{}', 100),
+              (42, 'task.requested', '{}', 100)`,
+    ).run();
+    createAppEventAdmissionPlan(db, {
+      eventId: 41,
+      registrySnapshotId: "boot-a:1",
+      registryGeneration: 1,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "inbox",
+          routeId: "review",
+          input: { kind: "probe", data: { value: "current" } },
+          conditionTaskIds: ["work/review"],
+        },
+      ],
+    });
+
+    expect(() => host.replaceApps([])).toThrow(
+      "Cannot remove App evaluation while it owns pending event admission commands",
+    );
+    expect(() =>
+      host.replaceApps([
+        defineApp({
+          id: "evaluation",
+          version: 1,
+          owner: "evaluation-owner",
+          inputSchema: Type.Object({
+            kind: Type.Literal("different"),
+            data: Type.Object({}),
+          }),
+        }),
+      ]),
+    ).toThrow("input schema incompatible with pending event admission commands");
+    expect(() => host.replaceApps([app("evaluation")])).toThrow("pending inbox admission includes Condition wakes");
+    markAppEventAdmissionCommandAdmitted(db, { eventId: 41, appId: "evaluation" });
+    expect(completeAppEventAdmissionPlan(db, 41)).toBeTrue();
+
+    createAppEventAdmissionPlan(db, {
+      eventId: 42,
+      registrySnapshotId: "boot-a:1",
+      registryGeneration: 1,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "task",
+          routeId: "work/current",
+          intent: null,
+          conditionTaskIds: ["work/current"],
+        },
+      ],
+    });
+    expect(() => host.replaceApps([app("evaluation")])).toThrow(
+      "Cannot remove task capability from App evaluation while it owns pending event admission commands",
+    );
+    expect(host.appIds()).toEqual(["evaluation"]);
   });
 
   it("completes a bounded request without exposing host lifecycle fields", async () => {
@@ -122,6 +226,176 @@ describe("App inbox host", () => {
       status: "done",
       sessionId: "session-1",
       result: { summary: "Canary passed", evidence: ["probe:ok"] },
+    });
+  });
+
+  it("routes deterministic requests without invoking the owner", async () => {
+    let ownerInvocations = 0;
+    let routedRequest: Readonly<AppRequest> | undefined;
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          ...app("evaluation"),
+          route: (request) => {
+            routedRequest = request;
+            return {
+              type: "complete",
+              summary: `routed ${(request.input.data as { value: string }).value}`,
+              evidence: ["route:deterministic"],
+            };
+          },
+        }),
+      ],
+      invokeOwner: async () => {
+        ownerInvocations += 1;
+        return [];
+      },
+    });
+    admit(host, "evaluation", "probe-routed");
+
+    expect(await host.reconcileOnce("evaluation")).toEqual({ claimed: 1, admitted: 1, released: 0, errors: [] });
+    expect(ownerInvocations).toBe(0);
+    expect(Object.isFrozen(routedRequest)).toBe(true);
+    expect(Object.isFrozen(routedRequest?.input)).toBe(true);
+    expect(Object.isFrozen((routedRequest?.input as { data: unknown }).data)).toBe(true);
+    expect(host.get("probe-routed")).toMatchObject({
+      status: "done",
+      sessionId: undefined,
+      result: { summary: "routed probe-routed", evidence: ["route:deterministic"] },
+    });
+  });
+
+  it("sends only unresolved requests in a routed batch to the owner", async () => {
+    const ownerRequests: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          ...app("evaluation", "coalesce-compatible"),
+          route: (request) =>
+            (request.input.data as { value: string }).value === "automatic"
+              ? { type: "complete", summary: "handled by policy" }
+              : null,
+        }),
+      ],
+      invokeOwner: async ({ requests, onSessionStarted }) => {
+        ownerRequests.push(...requests);
+        onSessionStarted("session-judgment");
+        return requests.map((request) => ({
+          requestId: request.id,
+          disposition: { type: "complete", summary: "handled by owner" },
+        }));
+      },
+    });
+    host.admit({
+      id: "automatic",
+      appId: "evaluation",
+      source: { kind: "system", id: "test" },
+      input: { kind: "probe", data: { value: "automatic" } },
+    });
+    host.admit({
+      id: "judgment",
+      appId: "evaluation",
+      source: { kind: "system", id: "test" },
+      input: { kind: "probe", data: { value: "judgment" } },
+    });
+
+    expect(await host.reconcileOnce("evaluation")).toEqual({ claimed: 2, admitted: 2, released: 0, errors: [] });
+    expect(ownerRequests).toMatchObject([{ id: "judgment" }]);
+    expect(host.get("automatic")).toMatchObject({ status: "done", sessionId: undefined });
+    expect(host.get("judgment")).toMatchObject({ status: "done", sessionId: "session-judgment" });
+  });
+
+  it("routes stable desired work into the task reconciler and reviews its dependency", async () => {
+    let ownerInvocations = 0;
+    let routedRequest: Readonly<AppRequest> | null = null;
+    const attachments: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          ...app("evaluation", "single", true),
+          route: (request) => {
+            routedRequest = request;
+            return request.dependency?.status === "done"
+              ? { type: "complete", summary: "scheduled task converged" }
+              : {
+                  type: "task",
+                  task: {
+                    kind: "desired",
+                    intent: {
+                      id: "scheduled-review",
+                      parentId: "runtime",
+                      outcome: "Keep the scheduled review current",
+                      acceptance: ["The review is current"],
+                      mode: "maintain",
+                    },
+                  },
+                };
+          },
+        }),
+      ],
+      attachTask: async (input) => {
+        expect(input.request).toBe(routedRequest);
+        attachments.push(input);
+        return { taskId: "task-scheduled-review" };
+      },
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "done" }),
+      invokeOwner: async () => {
+        ownerInvocations += 1;
+        return [];
+      },
+    });
+    admit(host, "evaluation", "scheduled-input");
+
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
+    expect(host.get("scheduled-input")?.waitingOn).toEqual({ kind: "task", id: "task-scheduled-review" });
+    expect(attachments).toMatchObject([
+      {
+        appId: "evaluation",
+        idempotencyKey: "task:scheduled-input:desired:scheduled-review",
+        request: {
+          id: "scheduled-input",
+          source: { kind: "system", id: "test" },
+          input: { kind: "probe", data: { value: "scheduled-input" } },
+        },
+      },
+    ]);
+
+    host.wake({ kind: "task", id: "task-scheduled-review" });
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
+    expect(host.get("scheduled-input")).toMatchObject({
+      status: "done",
+      result: { summary: "scheduled task converged" },
+    });
+    expect(ownerInvocations).toBe(0);
+  });
+
+  it("releases a routed batch when deterministic policy throws", async () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          ...app("evaluation", "coalesce-compatible"),
+          route: () => {
+            throw new Error("invalid domain configuration");
+          },
+        }),
+      ],
+      retryAfterMs: 0,
+      invokeOwner: async () => {
+        throw new Error("owner must not run");
+      },
+    });
+    admit(host, "evaluation", "probe-1");
+    admit(host, "evaluation", "probe-2");
+
+    expect(await host.reconcileOnce("evaluation")).toEqual({
+      claimed: 2,
+      admitted: 0,
+      released: 2,
+      errors: ["App routing failed: invalid domain configuration"],
     });
   });
 

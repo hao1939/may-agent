@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { ProjectAppTaskCapacity, ProjectAppTaskController } from "./project-app-task-controller.js";
+import { AppTaskCapacity, AppTaskController } from "././app-task-controller.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const started = Date.now();
@@ -9,11 +9,11 @@ async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<v
   }
 }
 
-describe("ProjectAppTaskController", () => {
+describe("AppTaskController", () => {
   it("runs deduplicated keys through one bounded worker pool", async () => {
     const started: string[] = [];
     const releases = new Map<string, () => void>();
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       reconcile: (taskId) =>
         new Promise<void>((resolve) => {
@@ -38,7 +38,7 @@ describe("ProjectAppTaskController", () => {
   it("runs independent task keys concurrently up to the app limit", async () => {
     const started: string[] = [];
     const releases = new Map<string, () => void>();
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 2,
       reconcile: (taskId) =>
         new Promise<void>((resolve) => {
@@ -67,7 +67,7 @@ describe("ProjectAppTaskController", () => {
   it("yields to the event loop between immediately completed reconciles", async () => {
     const started: string[] = [];
     let releaseFirst: (() => void) | undefined;
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       reconcile: async (taskId) => {
         started.push(taskId);
@@ -93,10 +93,10 @@ describe("ProjectAppTaskController", () => {
   });
 
   it("yields to the event loop between shared-capacity handoffs", async () => {
-    const capacity = new ProjectAppTaskCapacity(1);
+    const capacity = new AppTaskCapacity(1);
     const started: string[] = [];
     let releaseFirst: (() => void) | undefined;
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       capacity,
       reconcile: async (taskId) => {
@@ -123,10 +123,10 @@ describe("ProjectAppTaskController", () => {
   });
 
   it("shares one daemon capacity across independent app controllers", async () => {
-    const capacity = new ProjectAppTaskCapacity(1);
+    const capacity = new AppTaskCapacity(1);
     const started: string[] = [];
     const releases = new Map<string, () => void>();
-    const controllerA = new ProjectAppTaskController({
+    const controllerA = new AppTaskController({
       maxConcurrent: 2,
       capacity,
       reconcile: (taskId) =>
@@ -135,7 +135,7 @@ describe("ProjectAppTaskController", () => {
           releases.set(`a:${taskId}`, resolve);
         }),
     });
-    const controllerB = new ProjectAppTaskController({
+    const controllerB = new AppTaskController({
       maxConcurrent: 2,
       capacity,
       reconcile: (taskId) =>
@@ -160,12 +160,12 @@ describe("ProjectAppTaskController", () => {
   });
 
   it("shares one app limit across replacement controllers without waiting for a full drain", async () => {
-    const daemonCapacity = new ProjectAppTaskCapacity(10);
-    const appCapacity = new ProjectAppTaskCapacity(2, daemonCapacity);
+    const daemonCapacity = new AppTaskCapacity(10);
+    const appCapacity = new AppTaskCapacity(2, daemonCapacity);
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
     let releaseCurrent: (() => void) | undefined;
-    const old = new ProjectAppTaskController({
+    const old = new AppTaskController({
       maxConcurrent: 2,
       capacity: appCapacity,
       reconcile: () =>
@@ -178,7 +178,7 @@ describe("ProjectAppTaskController", () => {
     await waitUntil(() => started.length === 1);
     old.close();
 
-    const current = new ProjectAppTaskController({
+    const current = new AppTaskController({
       maxConcurrent: 2,
       capacity: appCapacity,
       reconcile: (taskId) =>
@@ -201,11 +201,11 @@ describe("ProjectAppTaskController", () => {
   });
 
   it("keeps replacement controllers within their shared app limit", async () => {
-    const appCapacity = new ProjectAppTaskCapacity(1);
+    const appCapacity = new AppTaskCapacity(1);
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
     let releaseCurrent: (() => void) | undefined;
-    const old = new ProjectAppTaskController({
+    const old = new AppTaskController({
       maxConcurrent: 1,
       capacity: appCapacity,
       reconcile: () =>
@@ -218,7 +218,7 @@ describe("ProjectAppTaskController", () => {
     await waitUntil(() => started.length === 1);
     old.close();
 
-    const current = new ProjectAppTaskController({
+    const current = new AppTaskController({
       maxConcurrent: 1,
       capacity: appCapacity,
       reconcile: () =>
@@ -240,11 +240,11 @@ describe("ProjectAppTaskController", () => {
   });
 
   it("chooses the current front task only after shared capacity is available", async () => {
-    const capacity = new ProjectAppTaskCapacity(1);
+    const capacity = new AppTaskCapacity(1);
     const started: string[] = [];
     let releaseBlocker: (() => void) | undefined;
     let releaseGoal: (() => void) | undefined;
-    const blocker = new ProjectAppTaskController({
+    const blocker = new AppTaskController({
       maxConcurrent: 1,
       capacity,
       reconcile: () =>
@@ -253,7 +253,7 @@ describe("ProjectAppTaskController", () => {
           releaseBlocker = resolve;
         }),
     });
-    const goal = new ProjectAppTaskController({
+    const goal = new AppTaskController({
       maxConcurrent: 2,
       capacity,
       reconcile: (taskId) =>
@@ -287,7 +287,7 @@ describe("ProjectAppTaskController", () => {
   it("performs a fresh pass for a wake received during a run", async () => {
     let runs = 0;
     let release: (() => void) | undefined;
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       reconcile: async () => {
         runs++;
@@ -306,7 +306,7 @@ describe("ProjectAppTaskController", () => {
   it("retries controller failures with bounded backoff", async () => {
     let runs = 0;
     const errors: boolean[] = [];
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       maxRetries: 2,
       retryDelayMs: () => 0,
@@ -324,7 +324,7 @@ describe("ProjectAppTaskController", () => {
 
   it("feeds periodic resync through the same deduplicating queue", async () => {
     let runs = 0;
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       resync: {
         intervalMs: 5,
@@ -345,7 +345,7 @@ describe("ProjectAppTaskController", () => {
     const ready = ["first"];
     const started: string[] = [];
     const releases = new Map<string, () => void>();
-    const controller = new ProjectAppTaskController({
+    const controller = new AppTaskController({
       maxConcurrent: 1,
       resync: {
         intervalMs: 60_000,
@@ -373,7 +373,7 @@ describe("ProjectAppTaskController", () => {
   it("resyncs runnable state as soon as a replacement controller becomes active", async () => {
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
-    const old = new ProjectAppTaskController({
+    const old = new AppTaskController({
       maxConcurrent: 1,
       reconcile: () =>
         new Promise<void>((resolve) => {
@@ -385,7 +385,7 @@ describe("ProjectAppTaskController", () => {
     await waitUntil(() => started.length === 1);
     old.close();
 
-    const current = new ProjectAppTaskController({
+    const current = new AppTaskController({
       maxConcurrent: 1,
       startAfter: old.whenDrained(),
       resync: {
@@ -407,13 +407,13 @@ describe("ProjectAppTaskController", () => {
   });
 
   it("cancels stale capacity waits when hot reload replaces controllers", async () => {
-    const globalCapacity = new ProjectAppTaskCapacity(1);
-    const appCapacity = new ProjectAppTaskCapacity(5, globalCapacity);
+    const globalCapacity = new AppTaskCapacity(1);
+    const appCapacity = new AppTaskCapacity(5, globalCapacity);
     const releaseGlobal = await globalCapacity.acquire();
     const started: string[] = [];
 
     for (let index = 0; index < 50; index++) {
-      const stale = new ProjectAppTaskController({
+      const stale = new AppTaskController({
         maxConcurrent: 5,
         capacity: appCapacity,
         reconcile: async (taskId) => {
@@ -425,7 +425,7 @@ describe("ProjectAppTaskController", () => {
       stale.close();
     }
 
-    const current = new ProjectAppTaskController({
+    const current = new AppTaskController({
       maxConcurrent: 5,
       capacity: appCapacity,
       reconcile: async (taskId) => {
@@ -447,7 +447,7 @@ describe("ProjectAppTaskController", () => {
   it("keeps replacement controllers behind the draining predecessor chain", async () => {
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
-    const old = new ProjectAppTaskController({
+    const old = new AppTaskController({
       maxConcurrent: 1,
       reconcile: (taskId) =>
         new Promise<void>((resolve) => {
@@ -459,7 +459,7 @@ describe("ProjectAppTaskController", () => {
     await waitUntil(() => started.length === 1);
     old.close();
 
-    const replacedBeforeStart = new ProjectAppTaskController({
+    const replacedBeforeStart = new AppTaskController({
       maxConcurrent: 1,
       startAfter: old.whenDrained(),
       reconcile: async (taskId) => {
@@ -469,7 +469,7 @@ describe("ProjectAppTaskController", () => {
     replacedBeforeStart.enqueue("discarded-on-reload");
     replacedBeforeStart.close();
 
-    const current = new ProjectAppTaskController({
+    const current = new AppTaskController({
       maxConcurrent: 1,
       startAfter: replacedBeforeStart.whenDrained(),
       reconcile: async (taskId) => {

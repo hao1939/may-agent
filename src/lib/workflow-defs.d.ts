@@ -104,17 +104,12 @@ interface QueryAPI {
   metricAlertContext(filter: Record<string, unknown>): Record<string, unknown>;
   metricAlertReactorState(filter: Record<string, unknown>): Record<string, unknown>;
   eventDeliveryHealth(filter?: Record<string, unknown>): Record<string, unknown>;
-  heartbeatContext(filter: Record<string, unknown>): Record<string, unknown>;
   evaluatorDeepEvalScan(filter?: Record<string, unknown>): Record<string, unknown>;
   evaluatorAftermathContext(filter: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
 }
 
-interface CommandAPI {
-  reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
-  expireStaleMessages(olderThanMs: number): number;
-  expireStaleSignalEvents(olderThanMs: number): number;
-}
+type CommandAPI = Record<never, never>;
 
 /** Context provided to workflow execute() functions. */
 interface WorkflowContext {
@@ -245,52 +240,8 @@ interface SessionHandle {
 
 // ── Guard Types ──────────────────────────────────────────────────────────
 
-/** Completed step info passed to guards. */
-interface CompletedStep {
-  step: string;
-  sessionId: string;
-  result: TaskResult;
-}
-
-/** Demand: what a guard wants the workflow engine to do. */
-interface Demand {
-  type: "block" | "warn" | "run_step";
-  reason: string;
-  /** Name of the guard that issued this demand (set by engine). */
-  guardName?: string;
-  /** For run_step: details of the step to inject. */
-  step?: {
-    agent: string;
-    task: string;
-    label?: string;
-  };
-}
-
-/** Events that guards can subscribe to. */
-type WorkflowGuardEvent =
-  | { type: "workflow_start"; workflow: string; task: string }
-  | {
-      type: "step_done";
-      source: "agent" | "function";
-      step: string;
-      sessionId?: string;
-      result: TaskResult;
-      completedSteps: CompletedStep[];
-      task: string;
-    }
-  | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
-
-/** A guard module that inspects workflow events and returns demands. */
-interface WorkflowGuard {
-  /** Guard name for logging. */
-  name: string;
-  /** Optional: only receive specific event types. */
-  events?: WorkflowGuardEvent["type"][];
-  /** Inspect an event and return zero or more demands. */
-  handle(event: WorkflowGuardEvent): Demand[];
-}
-
-/** Guard module shape — export `guard` from a guard .ts file. */
-interface GuardModule {
-  guard: WorkflowGuard;
-}
+type CompletedStep = import("@may-agent/sdk").WorkflowGuardCompletedStep<TaskResult>;
+type Demand = import("@may-agent/sdk").Demand;
+type WorkflowGuardEvent = import("@may-agent/sdk").WorkflowGuardEvent<TaskResult>;
+type WorkflowGuard = import("@may-agent/sdk").WorkflowGuard<TaskResult>;
+type GuardModule = import("@may-agent/sdk").GuardModule<TaskResult>;

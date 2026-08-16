@@ -1,9 +1,9 @@
-import { ProjectAppTaskQueue, type ProjectAppTaskQueueOptions } from "./project-app-task-queue.js";
+import { AppTaskQueue, type AppTaskQueueOptions } from "././app-task-queue.js";
 
-export type ProjectAppTaskControllerOptions = {
+export type AppTaskControllerOptions = {
   maxConcurrent: number;
   /** Shared daemon capacity. App-local limits still apply independently. */
-  capacity?: ProjectAppTaskCapacity;
+  capacity?: AppTaskCapacity;
   reconcile(taskId: string): Promise<void>;
   onError?(taskId: string, error: unknown, willRetry: boolean): void;
   maxRetries?: number;
@@ -13,7 +13,7 @@ export type ProjectAppTaskControllerOptions = {
   resync?: {
     intervalMs: number;
     taskIds?(): Iterable<string>;
-    tasks?(): Iterable<{ taskId: string; options?: ProjectAppTaskQueueOptions }>;
+    tasks?(): Iterable<{ taskId: string; options?: AppTaskQueueOptions }>;
   };
 };
 
@@ -23,19 +23,19 @@ type CapacityWaiter = {
 };
 
 /** Mechanical backpressure shared by every app task controller in one daemon. */
-export class ProjectAppTaskCapacity {
+export class AppTaskCapacity {
   private limit: number;
   private running = 0;
   private readonly waiters: CapacityWaiter[] = [];
 
   constructor(
     maxConcurrent: number,
-    private readonly parent?: ProjectAppTaskCapacity,
+    private readonly parent?: AppTaskCapacity,
   ) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
-      throw new Error("ProjectAppTaskCapacity maxConcurrent must be a positive integer");
+      throw new Error("AppTaskCapacity maxConcurrent must be a positive integer");
     }
-    if (parent === this) throw new Error("ProjectAppTaskCapacity cannot be its own parent");
+    if (parent === this) throw new Error("AppTaskCapacity cannot be its own parent");
     this.limit = maxConcurrent;
   }
 
@@ -45,7 +45,7 @@ export class ProjectAppTaskCapacity {
 
   resize(maxConcurrent: number): void {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
-      throw new Error("ProjectAppTaskCapacity maxConcurrent must be a positive integer");
+      throw new Error("AppTaskCapacity maxConcurrent must be a positive integer");
     }
     this.limit = maxConcurrent;
     this.drainWaiters();
@@ -216,8 +216,8 @@ export class ProjectAppTaskCapacity {
 }
 
 /** One level-based reconciliation worker pool for one Agent App. */
-export class ProjectAppTaskController {
-  private readonly queue: ProjectAppTaskQueue;
+export class AppTaskController {
+  private readonly queue: AppTaskQueue;
   private readonly failures = new Map<string, number>();
   private scheduled = false;
   private closed = false;
@@ -227,8 +227,8 @@ export class ProjectAppTaskController {
   private readonly drainWaiters = new Set<() => void>();
   private readonly resyncTimer?: ReturnType<typeof setInterval>;
 
-  constructor(private readonly options: ProjectAppTaskControllerOptions) {
-    this.queue = new ProjectAppTaskQueue(options.maxConcurrent);
+  constructor(private readonly options: AppTaskControllerOptions) {
+    this.queue = new AppTaskQueue(options.maxConcurrent);
     this.startReady = !options.startAfter;
     if (options.startAfter) {
       void Promise.resolve(options.startAfter).then(
@@ -238,7 +238,7 @@ export class ProjectAppTaskController {
     }
     if (options.resync) {
       if (!Number.isFinite(options.resync.intervalMs) || options.resync.intervalMs <= 0) {
-        throw new Error("ProjectAppTaskController resync interval must be positive");
+        throw new Error("AppTaskController resync interval must be positive");
       }
       this.resyncTimer = setInterval(() => this.resyncConfiguredTasks(), options.resync.intervalMs);
       this.resyncTimer.unref?.();
@@ -246,7 +246,7 @@ export class ProjectAppTaskController {
     }
   }
 
-  enqueue(taskId: string, opts: ProjectAppTaskQueueOptions = {}): boolean {
+  enqueue(taskId: string, opts: AppTaskQueueOptions = {}): boolean {
     if (this.closed) return false;
     const added = this.queue.enqueue(taskId, opts);
     this.schedulePump();
@@ -274,7 +274,7 @@ export class ProjectAppTaskController {
     return new Promise((resolve) => this.drainWaiters.add(resolve));
   }
 
-  snapshot(): ReturnType<ProjectAppTaskQueue["snapshot"]> {
+  snapshot(): ReturnType<AppTaskQueue["snapshot"]> {
     return this.queue.snapshot();
   }
 

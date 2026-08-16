@@ -40,12 +40,26 @@ export const BASH_PROCESS_GROUP_TERM_GRACE_MS = 250;
 export const BASH_PROCESS_GROUP_KILL_GRACE_MS = 1_000;
 const PROCESS_GROUP_POLL_MS = 20;
 
-function processGroupAlive(pgid: number): boolean {
+function processExists(pid: number): boolean {
 	try {
-		process.kill(-pgid, 0);
+		process.kill(pid, 0);
+		return true;
 	} catch {
 		return false;
 	}
+}
+
+function processGroupExists(pgid: number): boolean {
+	try {
+		process.kill(-pgid, 0);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function processGroupAlive(pgid: number): boolean {
+	if (!processGroupExists(pgid)) return false;
 	// kill(0) includes unreaped zombies. On Linux, regard a zombie-only group as
 	// drained so settlement and recovery do not wait on an unrelated reaper.
 	try {
@@ -59,6 +73,14 @@ function processGroupAlive(pgid: number): boolean {
 	} catch {
 		return true;
 	}
+}
+
+async function waitForProcessGroupFormation(pgid: number, timeoutMs: number): Promise<boolean> {
+	const deadline = Date.now() + timeoutMs;
+	while (!processGroupExists(pgid) && processExists(pgid) && Date.now() < deadline) {
+		await new Promise((resolve) => setTimeout(resolve, PROCESS_GROUP_POLL_MS));
+	}
+	return processGroupExists(pgid);
 }
 
 function signalProcessGroup(pgid: number, signal: "SIGTERM" | "SIGKILL"): void {
@@ -79,6 +101,24 @@ async function waitForProcessGroupExit(pgid: number, timeoutMs: number): Promise
 
 /** Drain one exact setsid group before allowing its bash tool call to settle. */
 export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
+	// spawn() exposes the future setsid leader PID before /usr/bin/setsid has
+	// necessarily created the process group. An immediate abort must wait for
+	// that tiny fork/exec window; otherwise a negative-PID probe can report
+	// ESRCH and let the command start after its tool call has already settled.
+	if (!processGroupExists(pgid) && processExists(pgid)) {
+		const formed = await waitForProcessGroupFormation(pgid, BASH_PROCESS_GROUP_TERM_GRACE_MS);
+		if (!formed) {
+			try {
+				process.kill(pgid, "SIGKILL");
+			} catch {
+				// The pre-setsid leader exited without creating the group.
+			}
+			// Close the last formation race: if setsid won just before the
+			// positive-PID kill, drain the newly created group as well.
+			if (processGroupExists(pgid)) signalProcessGroup(pgid, "SIGKILL");
+			return waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_KILL_GRACE_MS);
+		}
+	}
 	if (!processGroupAlive(pgid)) return true;
 	signalProcessGroup(pgid, "SIGTERM");
 	if (await waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_TERM_GRACE_MS)) return true;

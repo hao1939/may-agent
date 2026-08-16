@@ -186,14 +186,14 @@ describe("Registry persistence", () => {
       requireFinish: true,
       outputSchema,
       toolPolicy: "readonly",
-      recoveryOwner: "project-app-task-reconciler",
+      recoveryOwner: "app-task-reconciler",
     });
     const meta = readSessionMeta(persistDir, sessionId);
 
     expect(meta?.requireFinish).toBe(true);
     expect(meta?.outputSchema).toMatchObject({ type: "object" });
     expect(meta?.toolPolicy).toBe("readonly");
-    expect(meta?.recoveryOwner).toBe("project-app-task-reconciler");
+    expect(meta?.recoveryOwner).toBe("app-task-reconciler");
 
     manager.cancel(sessionId);
     await manager.waitFor(sessionId);

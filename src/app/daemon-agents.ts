@@ -10,8 +10,7 @@ import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
-import { installProjectApps, startProjectAppWatcher } from "./loader/project-app-loader.js";
-import { registerEventPairOrphanGc } from "./handlers/register-orphan-gc.js";
+import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
 
 export async function prepareDaemonAgents(opts: {
@@ -25,7 +24,7 @@ export async function prepareDaemonAgents(opts: {
   bus: EventBus;
   cronEnabled: boolean;
   appRegistry: AppRegistry;
-}): Promise<{ loaderOpts: AgentLoaderOptions }> {
+}): Promise<{ loaderOpts: AgentLoaderOptions; appTaskOptions?: AppTaskRuntimeOptions }> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
@@ -46,8 +45,8 @@ export async function prepareDaemonAgents(opts: {
   });
 
   const agentSources = listRuntimeAgentDirectories(opts.agentsRoot, opts.projectsRoot);
-  // Build a map from agentsRoot -> projectId for project-app agent directories.
-  // Global agents/ has no projectId (undefined), project-app dirs have one.
+  // Build a map from agentsRoot -> projectId for App-local agent directories.
+  // Global agents/ has no projectId (undefined), App-local dirs have one.
   const projectIdByAgentsRoot = new Map<string, string | undefined>();
   for (const agent of agentSources) {
     if (!projectIdByAgentsRoot.has(agent.agentsRoot)) {
@@ -70,18 +69,6 @@ export async function prepareDaemonAgents(opts: {
     }
   }
 
-  // Register the event-pair orphan GC handler on the "may" cron.
-  {
-    const mayCron = getAgentCrons().get("may");
-    if (mayCron) {
-      registerEventPairOrphanGc(mayCron, opts.persistDir, opts.bus);
-      opts.bus.emit({
-        type: "info",
-        message: `[orphan-gc] Registered event-pair orphan GC handler (15m interval)`,
-      });
-    }
-  }
-
   // App brings its own agents — register from local agent.json when not already loaded.
   const registerLocalAgent = async (agentName: string, appDir: string, resolvedAgentDir?: string): Promise<boolean> => {
     const agentDir = resolvedAgentDir ?? resolve(appDir, "agents", agentName);
@@ -89,7 +76,7 @@ export async function prepareDaemonAgents(opts: {
     if (!config) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] No valid agent.json at ${agentDir} for app agent "${agentName}"`,
+        message: `[app-task] No valid agent.json at ${agentDir} for app agent "${agentName}"`,
       });
       return false;
     }
@@ -98,7 +85,7 @@ export async function prepareDaemonAgents(opts: {
     if (errors.length > 0) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] Agent config errors for ${agentName}: ${errors.map((e) => e.message).join(", ")}`,
+        message: `[app-task] Agent config errors for ${agentName}: ${errors.map((e) => e.message).join(", ")}`,
       });
       return false;
     }
@@ -128,19 +115,20 @@ export async function prepareDaemonAgents(opts: {
       appLocal: true,
     });
     for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) {
-      opts.bus.emit({ type: "info", message: `[project-app] ${config.name} skill diagnostic: ${diagnostic}` });
+      opts.bus.emit({ type: "info", message: `[app-task] ${config.name} skill diagnostic: ${diagnostic}` });
     }
     opts.manager.register(definition);
 
     opts.bus.emit({
       type: "info",
-      message: `[project-app] Auto-registered app agent "${agentName}" from ${agentDir}`,
+      message: `[app-task] Auto-registered app agent "${agentName}" from ${agentDir}`,
     });
     return true;
   };
 
+  let appTaskOptions: AppTaskRuntimeOptions | undefined;
   if (opts.cronEnabled) {
-    const projectAppOpts = {
+    appTaskOptions = {
       projectsRoot: opts.projectsRoot,
       projectRoot: opts.projectRoot,
       persistDir: opts.persistDir,
@@ -148,19 +136,17 @@ export async function prepareDaemonAgents(opts: {
       sharedRoot: opts.sharedRoot,
       manager: opts.manager,
       bus: opts.bus,
-      agentCrons: getAgentCrons(),
       registerLocalAgent,
       appRegistry: opts.appRegistry,
     };
 
-    const appResult = await installProjectApps(projectAppOpts);
+    const appResult = await installAppTaskRuntimes(appTaskOptions);
     if (appResult.installed.length > 0) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] Installed ${appResult.installed.length} app(s), ${appResult.entries} trigger(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
+        message: `[app-task] Installed ${appResult.installed.length} task-enabled App(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
       });
     }
-    startProjectAppWatcher(projectAppOpts);
   }
 
   // Cron subscribe + start is handled by cron-startup.ts in one centralized
@@ -195,5 +181,5 @@ export async function prepareDaemonAgents(opts: {
     });
   }
 
-  return { loaderOpts };
+  return { loaderOpts, appTaskOptions };
 }

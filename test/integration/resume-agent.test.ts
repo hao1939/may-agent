@@ -94,7 +94,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "agent-a");
     const sessionId = manager.run("agent-a", "current runtime work", {
-      recoveryOwner: "project-app-task-reconciler",
+      recoveryOwner: "app-task-reconciler",
     });
 
     const { resumed, interrupted } = manager.resumeStaleSessions({

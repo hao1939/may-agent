@@ -1,13 +1,13 @@
 import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
 import { existsSync, readFileSync } from "node:fs";
-import { projectRuntimePaths } from "@may-agent/sdk/legacy";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
-import { PROJECT_APP_TASK_RECOVERY_OWNER } from "./project-app-task-reconciler.js";
-import { recoverInstalledProjectAppTasks } from "./loader/project-app-loader.js";
+import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
+import { recoverInstalledAppTasks } from "./app-task-runtime.js";
 import { APP_INBOX_RECOVERY_OWNER } from "./app-inbox-host.js";
 
 export interface CronRuntimeOptions {
@@ -39,7 +39,7 @@ function currentProjectLifecycle(appDir: string): string | null {
 export function shouldResumeStartupSession(
   sessionId: string,
   session: PersistedSession,
-  claimedProjectTaskSessionIds: ReadonlySet<string> = new Set(),
+  claimedAppTaskSessionIds: ReadonlySet<string> = new Set(),
 ): { resume: true } | { resume: false; reason?: string } {
   if (session.recoveryOwner === APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
@@ -47,11 +47,16 @@ export function shouldResumeStartupSession(
       reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
     };
   }
-  if (session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER || session.source === "project-app-task-owner") {
-    if (claimedProjectTaskSessionIds.has(sessionId)) return { resume: true };
+  if (
+    session.recoveryOwner === APP_TASK_RECOVERY_OWNER ||
+    session.recoveryOwner === "project-app-task-reconciler" ||
+    session.source === "app-task-owner" ||
+    session.source === "project-app-task-owner"
+  ) {
+    if (claimedAppTaskSessionIds.has(sessionId)) return { resume: true };
     return {
       resume: false,
-      reason: "Task-bound project session was not claimed by project-app recovery during startup",
+      reason: "Task-bound project session was not claimed by App task recovery during startup",
     };
   }
   if (!session.projectId) return { resume: true };
@@ -83,14 +88,12 @@ export function shouldResumeStartupChatSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts, chatMode, chatSession } = options;
 
-  const claimedProjectTaskSessionIds = recoverInstalledProjectAppTasks({
+  const claimedAppTaskSessionIds = recoverInstalledAppTasks({
     ...loaderOpts,
-    agentCrons: getAgentCrons(),
   });
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
-    shouldResume: (sessionId, session) =>
-      shouldResumeStartupSession(sessionId, session, claimedProjectTaskSessionIds),
+    shouldResume: (sessionId, session) => shouldResumeStartupSession(sessionId, session, claimedAppTaskSessionIds),
   });
   const orphansCleaned: typeof interrupted = [];
   if (!chatMode) {
@@ -149,7 +152,7 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
   for (const [name, cron] of getAgentCrons()) {
     // Subscribe + start in one place for all crons (agent-level and app-level).
     // Crons are created by toolset-loader (agent "cron" tool) and
-    // ensureOwnerCron (project-app owners). Neither subscribes or starts —
+    // ensureOwnerCron (App owners). Neither subscribes or starts —
     // that responsibility lives here so each cron activates exactly once.
     cron.subscribeToBus(bus);
 

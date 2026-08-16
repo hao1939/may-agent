@@ -80,6 +80,26 @@ describe("EventBus subscriber priority", () => {
     expect(order).toEqual(["first-after-throw", "normal"]);
   });
 
+  it("keeps an event pending when durable admission fails even if an ordinary route accepts it", () => {
+    const bus = new EventBus();
+    const recorded: string[] = [];
+    let ordinaryCalls = 0;
+    bus.subscribeDurableRoute((event) => {
+      if (event.type === "info") throw new Error("durable admission failed");
+    });
+    bus.subscribe((event) => {
+      if (event.type !== "info") return;
+      ordinaryCalls += 1;
+      return { accepted: true, by: "ordinary" };
+    });
+    bus.setDeliveryRecorder((event) => recorded.push(event.type));
+
+    bus.emit({ type: "info", message: "must remain pending" });
+
+    expect(ordinaryCalls).toBe(1);
+    expect(recorded).not.toContain("info");
+  });
+
   it("does not run side-effect subscribers when required persistence fails", () => {
     const bus = new EventBus();
     const order: string[] = [];

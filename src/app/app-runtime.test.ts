@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
-import { createAppInputAdmission } from "./app-runtime.js";
+import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
 import { EVENT_ROW_ID } from "./event-bus.js";
 
 describe("app runtime startup order", () => {
@@ -37,7 +37,14 @@ describe("app runtime startup order", () => {
 
   it("runs App owners through the shared reconciliation capacity", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work)");
+    expect(source).toContain("const appTasks = createAppTaskCapability");
+    expect(source).toContain("runOwner: appTasks.runOwner");
+  });
+
+  it("publishes inbox and compatibility task routes in one registry transaction", () => {
+    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    expect(source).toContain("appTasks.publishGeneration({ snapshot, publish: commit })");
+    expect(source).toContain("appTasks.watchGenerations(() => handleReload({ throwOnError: true }))");
   });
 });
 
@@ -91,5 +98,107 @@ describe("App input control admission", () => {
       getRuntime: () => ({ host: { acceptsInput: () => false } }) as never,
     });
     expect(() => admit(command)).toThrow("does not accept this input");
+  });
+});
+
+describe("canonical project actions", () => {
+  it("admits a canonical action as App input and rejects unknown Apps", () => {
+    const admitted: unknown[] = [];
+    const access = createProjectActionAccess({
+      bus: { emit: (() => null) as never },
+      getRuntime: () =>
+        ({
+          host: {
+            hasApp: (id: string) => id.replace(/\.app$/, "") === "evaluation",
+            describeActions: () => [{ id: "review", description: "Review", inputSchema: { type: "object" } }],
+            actionInput: () => ({ kind: "review", data: { scope: "current" } }),
+          },
+        }) as never,
+      admit: (input) => {
+        admitted.push(input);
+        return { eventId: 1, eventType: "app.input.requested" };
+      },
+    });
+
+    expect(access.describe("evaluation.app")).toEqual([
+      { id: "review", description: "Review", inputSchema: { type: "object" } },
+    ]);
+    expect(
+      access.invoke({ projectId: "evaluation.app", actionId: "review", params: {}, idempotencyKey: "action-1" }),
+    ).toEqual({ eventId: 1, eventType: "app.input.requested" });
+    expect(admitted).toEqual([
+      {
+        appId: "evaluation",
+        input: { kind: "review", data: { scope: "current" } },
+        source: { kind: "human", id: "control-socket:project-action" },
+        idempotencyKey: "action-1",
+      },
+    ]);
+
+    expect(() => access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toThrow(
+      "App legacy is not loaded",
+    );
+  });
+
+  it("emits a staged legacy action's declared semantic event without an App inbox wrapper", () => {
+    const events: Array<Record<string, unknown>> = [];
+    const admitted: unknown[] = [];
+    const access = createProjectActionAccess({
+      bus: {
+        emit: ((event: Record<string, unknown>) => {
+          events.push(event);
+          Object.defineProperty(event, EVENT_ROW_ID, { value: 73 });
+          return event;
+        }) as never,
+      },
+      getRuntime: () =>
+        ({
+          host: {
+            hasApp: () => true,
+            appOwner: () => "evaluator",
+            describeActions: () => [],
+            actionInput: () => ({
+              kind: "legacy-action",
+              data: {
+                actionId: "review-project-app",
+                event: {
+                  type: "evaluation.project.review.requested",
+                  project: "evaluation",
+                  params: { targetProject: "alpha-project.app", reason: "routing-repair" },
+                  data: {},
+                },
+              },
+            }),
+          },
+        }) as never,
+      admit: (input) => {
+        admitted.push(input);
+        return { eventId: 99, eventType: "app.input.requested" };
+      },
+    });
+
+    expect(
+      access.invoke({
+        projectId: "evaluation.app",
+        actionId: "review-project-app",
+        params: { targetProject: "alpha-project.app" },
+        idempotencyKey: "review-project-app:73",
+      }),
+    ).toEqual({ eventId: 73, eventType: "evaluation.project.review.requested" });
+    expect(admitted).toEqual([]);
+    expect(events).toEqual([
+      {
+        type: "evaluation.project.review.requested",
+        project: "evaluation",
+        params: { targetProject: "alpha-project.app", reason: "routing-repair" },
+        source: "project-app:evaluation:action:review-project-app",
+        owner: "agent:evaluator",
+        data: {
+          project: "evaluation",
+          params: { targetProject: "alpha-project.app", reason: "routing-repair" },
+          idempotencyKey: "review-project-app:73",
+        },
+      },
+    ]);
   });
 });

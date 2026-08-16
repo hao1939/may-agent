@@ -20,14 +20,10 @@ function session(appDir: string, source: string, recoveryOwner?: string): Persis
 }
 
 describe("cron startup recovery", () => {
-  it("runs installed project-app recovery before generic stale-session resumption", () => {
+  it("runs installed App task recovery before generic stale-session resumption", () => {
     const source = readFileSync(new URL("./cron-startup.ts", import.meta.url), "utf8");
-    const recoveryImport = source.indexOf(
-      'import { recoverInstalledProjectAppTasks } from "./loader/project-app-loader.js";',
-    );
-    const recoveryCall = source.indexOf(
-      "const claimedProjectTaskSessionIds = recoverInstalledProjectAppTasks({",
-    );
+    const recoveryImport = source.indexOf('import { recoverInstalledAppTasks } from "./app-task-runtime.js";');
+    const recoveryCall = source.indexOf("const claimedAppTaskSessionIds = recoverInstalledAppTasks({");
     const staleResume = source.indexOf("manager.resumeStaleSessions(");
 
     expect(recoveryImport).toBeGreaterThan(-1);
@@ -68,34 +64,31 @@ describe("cron startup recovery", () => {
     ).toEqual({ resume: true });
   });
 
-  it("resumes only a task-bound session atomically claimed by project-app recovery", () => {
+  it("resumes only a task-bound session atomically claimed by App task recovery", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-claimed-task-app-"));
     try {
-      const persisted = session(appDir, "project-app-task-owner");
+      const persisted = session(appDir, "app-task-owner");
       expect(shouldResumeStartupSession("claimed-session", persisted, new Set(["claimed-session"]))).toEqual({
         resume: true,
       });
       expect(shouldResumeStartupSession("different-session", persisted, new Set(["claimed-session"]))).toEqual({
         resume: false,
-        reason: "Task-bound project session was not claimed by project-app recovery during startup",
+        reason: "Task-bound project session was not claimed by App task recovery during startup",
       });
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
   });
 
-  it("leaves the exact stale parent and completing child sessions to project-app recovery", () => {
+  it("leaves the exact stale parent and completing child sessions to App task recovery", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-active-task-app-"));
     try {
       for (const sessionId of ["s_1786376766268_235", "s_1786376881309_240"]) {
         expect(
-          shouldResumeStartupSession(
-            sessionId,
-            session(appDir, "workflow:task-handler", "project-app-task-reconciler"),
-          ),
+          shouldResumeStartupSession(sessionId, session(appDir, "workflow:task-handler", "app-task-reconciler")),
         ).toEqual({
           resume: false,
-          reason: "Task-bound project session was not claimed by project-app recovery during startup",
+          reason: "Task-bound project session was not claimed by App task recovery during startup",
         });
       }
     } finally {
@@ -130,9 +123,9 @@ describe("cron startup recovery", () => {
           reason: expect.stringContaining("Project sample is paused"),
         });
       }
-      expect(shouldResumeStartupSession("session-1", session(appDir, "project-app-task-owner"))).toEqual({
+      expect(shouldResumeStartupSession("session-1", session(appDir, "app-task-owner"))).toEqual({
         resume: false,
-        reason: "Task-bound project session was not claimed by project-app recovery during startup",
+        reason: "Task-bound project session was not claimed by App task recovery during startup",
       });
     } finally {
       rmSync(appDir, { recursive: true, force: true });
@@ -155,7 +148,7 @@ describe("cron startup recovery", () => {
   it("does not create task state while checking an app without a task attachment", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-owner-only-app-"));
     try {
-      expect(shouldResumeStartupSession("session-1", session(appDir, "project-app-owner"))).toEqual({ resume: true });
+      expect(shouldResumeStartupSession("session-1", session(appDir, "app-owner"))).toEqual({ resume: true });
       expect(existsSync(join(appDir, ".state", "tasks"))).toBe(false);
     } finally {
       rmSync(appDir, { recursive: true, force: true });

@@ -237,6 +237,44 @@ export async function execute(ctx) {
     });
   });
 
+  it("exposes only the App, project, and bounded attempt workspace roots", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-workspace-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "workspace.ts"),
+      `
+export const name = "workspace";
+export const description = "App SDK workspace scope test";
+export async function execute(ctx) {
+  return ctx.done("workspace scoped", ctx.workspace);
+}
+`,
+    );
+    const executionPaths = {
+      appDir: join(root, "sample.app"),
+      projectDir: join(root, "sample"),
+      workspaceDir: join(root, "task-workspace"),
+    };
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      agentName: "owner",
+      executionPaths,
+    });
+
+    const result = await runner.run("workspace", "input");
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        appRoot: executionPaths.appDir,
+        projectRoot: executionPaths.projectDir,
+        root: executionPaths.workspaceDir,
+        output: executionPaths.workspaceDir,
+      },
+    });
+  });
+
   it("exposes App-authored input without parsing the legacy task prompt", async () => {
     const root = mkdtempSync(join(tmpdir(), "app-workflow-input-"));
     const workflowDir = join(root, "workflows");
@@ -247,7 +285,10 @@ export async function execute(ctx) {
 export const name = "app-input";
 export const description = "App SDK authored input test";
 export async function execute(ctx) {
-  return ctx.done("input preserved", ctx.input);
+  return ctx.done("input preserved", {
+    input: ctx.input,
+    reconciliation: ctx.reconciliation
+  });
 }
 `,
     );
@@ -256,12 +297,35 @@ export async function execute(ctx) {
       workflowDir,
       agentName: "owner",
       workflowInput: { itemId: "app_123" },
+      reconciliation: {
+        appId: "sample",
+        taskId: "runtime/sample",
+        generation: 2,
+        resourceVersion: 3,
+        owner: "owner",
+        mode: "maintain",
+        outcome: "Keep the sample current",
+        acceptance: ["Sample is current"],
+        input: { itemId: "app_123" },
+        children: { live: [], completed: [] },
+      },
     });
 
     const result = await runner.run("app-input", "legacy reconciliation prompt");
     expect(result).toMatchObject({
       type: "done",
-      output: { itemId: "app_123" },
+      output: {
+        input: { itemId: "app_123" },
+        reconciliation: {
+          appId: "sample",
+          taskId: "runtime/sample",
+          generation: 2,
+          resourceVersion: 3,
+          owner: "owner",
+          mode: "maintain",
+          children: { live: [], completed: [] },
+        },
+      },
     });
   });
 });
