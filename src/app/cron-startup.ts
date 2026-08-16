@@ -1,4 +1,3 @@
-import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
 import { existsSync, readFileSync } from "node:fs";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
@@ -14,8 +13,6 @@ export interface CronRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   loaderOpts: AgentLoaderOptions;
-  chatMode: boolean;
-  chatSession?: ChatSession;
 }
 
 function fieldFromPrompt(prompt: string, name: string): string | null {
@@ -72,21 +69,8 @@ export function shouldResumeStartupSession(
   return { resume: true };
 }
 
-export function shouldResumeStartupChatSession(
-  _sessionId: string,
-  session: PersistedSession,
-): { resume: true } | { resume: false; reason: string } {
-  if (session.status === "idle") {
-    return {
-      resume: false,
-      reason: "Idle chat turn already completed before restart",
-    };
-  }
-  return { resume: true };
-}
-
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
-  const { manager, bus, loaderOpts, chatMode, chatSession } = options;
+  const { manager, bus, loaderOpts } = options;
 
   const claimedAppTaskSessionIds = recoverInstalledAppTasks({
     ...loaderOpts,
@@ -96,18 +80,8 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
     shouldResume: (sessionId, session) => shouldResumeStartupSession(sessionId, session, claimedAppTaskSessionIds),
   });
   const orphansCleaned: typeof interrupted = [];
-  if (!chatMode) {
-    const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
-    orphansCleaned.push(...chatCleaned);
-  } else {
-    const { resumed: chatResumed, interrupted: chatCleaned } = manager.resumeStaleSessions({
-      kinds: ["chat"],
-      shouldResume: shouldResumeStartupChatSession,
-    });
-    resumed.push(...chatResumed);
-    orphansCleaned.push(...chatCleaned);
-    chatSession?.resumeAfterLoad();
-  }
+  const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
+  orphansCleaned.push(...chatCleaned);
 
   if (resumed.length > 0) {
     bus.emit({

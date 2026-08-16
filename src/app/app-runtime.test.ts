@@ -25,6 +25,18 @@ describe("app runtime startup order", () => {
     expect(source).not.toContain("appInboxRuntime = CRON_ENABLED");
   });
 
+  it("does not construct a parallel persistent May chat session", () => {
+    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    expect(source).not.toContain("ChatSession");
+    expect(source).not.toContain("chatSession");
+    expect(source).toContain("startInitialTask");
+  });
+
+  it("enters readline only when the console interface is enabled", () => {
+    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    expect(source).toContain("else if (CONSOLE_ENABLED && process.stdin.isTTY)");
+  });
+
   it("enables App delivery only after human transports are attached", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     const telegram = source.indexOf("telegramBot = TELEGRAM_ENABLED");

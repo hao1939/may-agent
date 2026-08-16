@@ -19,7 +19,7 @@ import {
   prepareDaemonAgents,
   runDaemonKeepalive,
   runInteractiveLoop,
-  startRequestedSession,
+  startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
 import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
@@ -121,7 +121,7 @@ export async function runAppRuntime(opts: {
     consoleEnabled: CONSOLE_ENABLED,
     socketEnabled: SOCKET_ENABLED,
     webEnabled: WEB_ENABLED,
-    chatMode: CHAT_MODE,
+    quietConsole: QUIET_CONSOLE,
     initialTask: INITIAL_TASK,
     interfaceAgent,
     envSessionId: ENV_SESSION_ID,
@@ -132,15 +132,19 @@ export async function runAppRuntime(opts: {
   const bus = new EventBus();
   attachEventPersistence({ bus, persistDir: opts.persistDir });
 
-  // These closures are installed before startRequestedSession assigns both bindings below.
-  // eslint-disable-next-line prefer-const
   let taskSessionId: string | undefined;
-  // eslint-disable-next-line prefer-const
-  let chatSession: Awaited<ReturnType<typeof startRequestedSession>>["chatSession"];
-  const humanChatEnabled = TELEGRAM_ENABLED || WEB_ENABLED || SOCKET_ENABLED;
+  let activeRL: { close: () => void } | null = null;
 
-  if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
-  else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
+  if (CONSOLE_ENABLED) {
+    attachConsoleUI(
+      bus,
+      () => taskSessionId ?? null,
+      QUIET_CONSOLE,
+      () => {
+        if (activeRL) emitPrompt();
+      },
+    );
+  } else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
 
   if (WEB_ENABLED) {
     const { port } = await startWebMode({ stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
@@ -229,7 +233,6 @@ export async function runAppRuntime(opts: {
     });
   }
 
-  let activeRL: { close: () => void } | null = null;
   let appWatcher: { close(): void } | null = null;
   let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
   let cancelledOnce = false;
@@ -241,7 +244,6 @@ export async function runAppRuntime(opts: {
     closeAllDbs,
     writeIdentity: opts.writeIdentity,
     processStartTime: opts.processStartTime,
-    getChatSession: () => chatSession,
     getTelegramBot: () => telegramBot,
     getActiveReadline: () => activeRL,
     clearActiveReadline: () => {
@@ -295,7 +297,6 @@ export async function runAppRuntime(opts: {
         manager,
         persistDir: opts.persistDir,
         projectRoot: opts.projectRoot,
-        getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
         interfaceAgent,
       })
     : { close: () => {}, sendAlert: () => {} };
@@ -312,7 +313,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
     bus,
     manager,
-    getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
+    getSessionId: () => taskSessionId ?? "",
     admitAppInput,
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
@@ -341,22 +342,16 @@ export async function runAppRuntime(opts: {
     manager,
   });
 
-  ({ taskSessionId, chatSession } = await startRequestedSession({
+  taskSessionId = await startInitialTask({
     bus,
     manager,
-    persistDir: opts.persistDir,
     interfaceAgent,
     initialTask: INITIAL_TASK,
-    chatMode: CHAT_MODE,
-    humanChatEnabled,
+    interactiveMode: CONSOLE_ENABLED,
     envSessionId: ENV_SESSION_ID,
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
-    emitPrompt,
-    handleReload,
-    gracefulShutdown,
-    gracefulRestart,
-  }));
+  });
 
   opts.writeIdentity({
     pid: process.pid,
@@ -364,7 +359,7 @@ export async function runAppRuntime(opts: {
     instance: opts.instanceLabel,
     socket: SOCKET_ENABLED ? SOCKET_PATH : "",
     startedAt: new Date().toISOString(),
-    startedBy: CHAT_MODE
+    startedBy: CONSOLE_ENABLED
       ? "human"
       : opts.instance.startsWith("job-")
         ? "cron:" + opts.instance.replace("job-", "")
@@ -379,19 +374,16 @@ export async function runAppRuntime(opts: {
       manager,
       bus,
       loaderOpts,
-      chatMode: Boolean(chatSession),
-      chatSession,
     });
   }
 
-  if (!CHAT_MODE && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
+  if (!CONSOLE_ENABLED && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
     bus.emit({ type: "info", message: "[task] Task completed. Exiting." });
     process.exit(0);
-  } else if (process.stdin.isTTY) {
+  } else if (CONSOLE_ENABLED && process.stdin.isTTY) {
     await runInteractiveLoop({
       bus,
       manager,
-      chatSession,
       handleInput,
       gracefulShutdown,
       socketUI,

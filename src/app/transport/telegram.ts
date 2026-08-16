@@ -47,7 +47,6 @@ export interface TelegramBotOptions {
   projectRoot?: string;
   bus: EventBus;
   manager: SubagentManager;
-  getSessionId: () => string;
   interfaceAgent: string;
 }
 
@@ -60,7 +59,7 @@ export interface TelegramBot {
 const PROACTIVE_DEDUPE_WINDOW_MS = 60 * 60 * 1000;
 
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
-  const { bus, manager: _manager, getSessionId } = opts;
+  const { bus, manager: _manager } = opts;
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const projectRoot = opts.projectRoot ?? process.env.PROJECT_ROOT ?? resolve(opts.persistDir ?? ".state", "..");
@@ -141,7 +140,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const ctx = {
       eventType: context?.eventType || "response",
       agent: context?.agent || opts.interfaceAgent,
-      sessionId: context?.sessionId || getSessionId() || undefined,
+      sessionId: context?.sessionId,
       projectId: context?.projectId,
       data: JSON.stringify({
         ...data,
@@ -594,11 +593,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
           "/status — Show active sessions\n" +
-          "/cancel — Cancel current task\n" +
+          "/cancel <session>|all — Cancel an explicit target\n" +
           "/steer <session> <message> — Explicitly steer one execution session\n" +
           "/reload — Reload agent configs\n" +
-          "/help — Show this message\n\n" +
-          "Prefix with @agent to run directly: @coder fix the bug",
+          "/help — Show this message",
         "Markdown",
       );
       return true;
@@ -610,12 +608,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
 
-      const sessionId = outbound.getRootChatSessionId() || getSessionId();
-      if (sessionId) {
-        emitSessionCancel(sessionId);
-      } else {
-        emitCancelAll();
+      const sessionId = rest[0]?.trim();
+      if (!sessionId) {
+        await sendMessage(chatIdStr, "Use: /cancel <session> or /cancel all", undefined, {
+          eventType: "telegram.reply",
+          agent: opts.interfaceAgent,
+          data: JSON.stringify({ direction: "outbound", conversationId }),
+          replyToMessageId: msg.message_id,
+        });
+        return true;
       }
+      emitSessionCancel(sessionId);
       return true;
     }
 
@@ -683,7 +686,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     interfaceAgent: opts.interfaceAgent,
     projectRoot,
     pendingChatId,
-    getSessionId,
     getSessionReplyContext: (sessionId) => readSessionMeta(persistDir, sessionId),
     hasDeliveredNotificationKey: (key) => hasDeliveredNotificationKey(persistDir, key),
     isApprovalResolved: (identity) => isApprovalNotificationResolved(persistDir, identity),

@@ -132,7 +132,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => activeSessionId,
       interfaceAgent: "may",
     });
 
@@ -206,7 +205,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => activeSessionId,
       interfaceAgent: "may",
     });
 
@@ -263,7 +261,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => "",
       interfaceAgent: "may",
     });
 
@@ -343,7 +340,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => "",
       interfaceAgent: "may",
     });
 
@@ -494,7 +490,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => "",
       interfaceAgent: "may",
     });
     const router = attachCommandRouter({
@@ -643,7 +638,6 @@ describe("telegram reply e2e", () => {
       projectRoot,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => activeChatSessionId,
       interfaceAgent: "may",
     });
     const router = attachCommandRouter({
@@ -824,7 +818,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => "",
       interfaceAgent: "may",
     });
     const router = attachCommandRouter({
@@ -964,7 +957,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => "",
       interfaceAgent: "may",
     });
     const router = attachCommandRouter({
@@ -1033,7 +1025,10 @@ describe("telegram reply e2e", () => {
         getUpdatesCount++;
         if (getUpdatesCount === 1) {
           return jsonResponse([
-            { update_id: 31, message: { message_id: 1001, chat: { id: 12345 }, text: "/cancel" } },
+            {
+              update_id: 31,
+              message: { message_id: 1001, chat: { id: 12345 }, text: "/cancel s_active_telegram" },
+            },
             { update_id: 32, message: { message_id: 1002, chat: { id: 12345 }, text: "/reload" } },
             { update_id: 33, message: { message_id: 1003, chat: { id: 12345 }, text: "/close" } },
           ]);
@@ -1053,7 +1048,6 @@ describe("telegram reply e2e", () => {
       persistDir,
       bus,
       manager: attentionReviewManager(),
-      getSessionId: () => "s_active_telegram",
       interfaceAgent: "may",
     });
 

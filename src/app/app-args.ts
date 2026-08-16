@@ -9,7 +9,7 @@ export interface AppArgs {
   consoleEnabled: boolean;
   socketEnabled: boolean;
   webEnabled: boolean;
-  chatMode: boolean;
+  quietConsole: boolean;
   oneshotMode: boolean;
   statusMode: boolean;
   messageMode: boolean;
@@ -32,7 +32,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const consoleEnabled = argv.includes("--console") || argv.includes("--chat");
   const socketEnabled = argv.includes("--socket");
   const webEnabled = argv.includes("--web");
-  const chatMode = argv.includes("--chat");
+  const quietConsole = argv.includes("--chat");
   const oneshotMode = argv.includes("--oneshot");
   const statusMode = argv.includes("--status");
   const messageMode = argv.includes("--send");
@@ -48,7 +48,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     consoleEnabled,
     socketEnabled,
     webEnabled,
-    chatMode,
+    quietConsole,
     oneshotMode,
     statusMode,
     messageMode,
@@ -57,16 +57,17 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     dryRun,
     initialTask,
     interfaceAgent,
-    webOnlyMode: webEnabled
-      && !chatMode
-      && !cronEnabled
-      && !socketEnabled
-      && !telegramEnabled
-      && !oneshotMode
-      && !statusMode
-      && !messageMode
-      && !runWorkflow
-      && !initialTask,
+    webOnlyMode:
+      webEnabled &&
+      !consoleEnabled &&
+      !cronEnabled &&
+      !socketEnabled &&
+      !telegramEnabled &&
+      !oneshotMode &&
+      !statusMode &&
+      !messageMode &&
+      !runWorkflow &&
+      !initialTask,
     oneshotTimeoutMinutes: parseOneshotTimeoutMinutes(argv),
     notify: argv.includes("--notify"),
     envSessionId: env.SESSION_ID || undefined,

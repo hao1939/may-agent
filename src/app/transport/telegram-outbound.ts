@@ -29,7 +29,6 @@ export interface TelegramOutboundOptions {
   interfaceAgent: string;
   projectRoot: string;
   pendingChatId: string | null;
-  getSessionId: () => string;
   getSessionReplyContext?: (sessionId: string) => TelegramSessionReplyContext | null | undefined;
   sendToUser: (text: string, context?: TelegramOutboundContext) => void;
   reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>;
@@ -47,7 +46,6 @@ export interface TelegramOutboundOptions {
 export interface TelegramOutbound {
   close: () => void;
   drain: () => Promise<void>;
-  getRootChatSessionId: () => string | null;
   sendAlert: (text: string) => void;
 }
 
@@ -149,10 +147,9 @@ function approvalConversationContext(message: Record<string, unknown>): Record<s
 }
 
 export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramOutbound {
-  const { bus, getSessionId, pendingChatId, sendToUser } = opts;
+  const { bus, pendingChatId, sendToUser } = opts;
 
   const rootChatSessions = new Set<string>();
-  let latestRootChatSessionId: string | null = null;
   let pendingTelegramReplyToMessageId: number | undefined;
   let pendingTelegramConversationId: string | undefined;
   const watchedSessions = new Set<string>();
@@ -469,13 +466,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       if (data.forceNew !== true) {
         if (replyToMessageId) pendingTelegramReplyToMessageId = replyToMessageId;
         if (typeof data.conversationId === "string") pendingTelegramConversationId = data.conversationId;
-        bindCurrentChatSession(replyToMessageId);
       }
     }
 
     if (event.type === "session.start" && sessionId && isRootChatSession(event)) {
       rootChatSessions.add(sessionId);
-      latestRootChatSessionId = sessionId;
       watchedSessions.add(sessionId);
       outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
       if (event.trace?.traceId) traceBySession.set(sessionId, event.trace);
@@ -650,9 +645,6 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       }
       if (event.type === "session.end" || event.type === "session.idle") {
         rootChatSessions.delete(sessionId);
-        if (latestRootChatSessionId === sessionId) {
-          latestRootChatSessionId = [...rootChatSessions].at(-1) ?? null;
-        }
         watchedSessions.delete(sessionId);
         replyToMessageIdBySession.delete(sessionId);
         conversationIdBySession.delete(sessionId);
@@ -849,25 +841,6 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     });
   }
 
-  function bindCurrentChatSession(replyToMessageId?: number): string | null {
-    const sessionId = getSessionId();
-    if (!sessionId) return null;
-    rootChatSessions.add(sessionId);
-    latestRootChatSessionId = sessionId;
-    watchedSessions.add(sessionId);
-    sessionState(sessionId);
-    const effectiveReplyToMessageId = replyToMessageId ?? pendingTelegramReplyToMessageId;
-    if (effectiveReplyToMessageId) {
-      replyToMessageIdBySession.set(sessionId, effectiveReplyToMessageId);
-      pendingTelegramReplyToMessageId = undefined;
-    }
-    if (pendingTelegramConversationId) {
-      conversationIdBySession.set(sessionId, pendingTelegramConversationId);
-      pendingTelegramConversationId = undefined;
-    }
-    return sessionId;
-  }
-
   function shouldSendSummary(sessionId: string, summary: string): boolean {
     const sent = normalizeForCompare(sessionState(sessionId).sentText);
     const candidate = normalizeForCompare(summary);
@@ -881,10 +854,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     if (session.parentSessionId) return false;
     if (session.agent !== opts.interfaceAgent) return false;
     if (session.kind && session.kind !== "chat") return false;
-    // A daemon chat session can be reused by Telegram, CLI, Web, and tests.
-    // Route a turn to Telegram only when Telegram started that turn. Treating
-    // the daemon's current chat session as Telegram-owned leaks CLI/Gym smoke
-    // results into the human inbox and keeps leaking on every later idle turn.
+    // A direct-agent chat session can span more than one transport turn.
+    // Route a turn to Telegram only when Telegram started that turn; otherwise
+    // CLI/Web/test output could leak into the human inbox on a later idle turn.
     return event.source === "telegram";
   }
 
@@ -894,7 +866,6 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       unsubBus();
     },
     drain: () => proactiveAdmissionQueue,
-    getRootChatSessionId: () => latestRootChatSessionId,
     sendAlert: (text: string) => {
       const candidate: HumanAttentionCandidate = {
         eventType: "alert",
