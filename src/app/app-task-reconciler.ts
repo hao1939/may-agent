@@ -870,6 +870,46 @@ export function recoverableAppTaskAttempts(
   });
 }
 
+export function terminalOwnerSessionAppTaskClaim(
+  config: TaskStateConfig,
+  taskId: string,
+  sessionId: string,
+): AppTaskClaim | null {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    if (!resource || resource.status.phase !== "running") return null;
+    const task = tree.tasks[taskId];
+    const attempt = currentResourceAttempt(tree, resource);
+    if (
+      !task ||
+      !attempt ||
+      attempt.state !== "running" ||
+      !attempt.handler.startsWith("owner:") ||
+      attempt.sessionId !== sessionId ||
+      attempt.taskGeneration !== resource.metadata.generation ||
+      attempt.specHash !== appTaskSpecHash(resourceIntent(resource), attempt.owner)
+    ) {
+      return null;
+    }
+    const intent = resourceIntent(resource);
+    return {
+      kind: "claimed",
+      taskId,
+      generation: resource.metadata.generation,
+      resourceVersion: resource.metadata.resourceVersion,
+      specHash: attempt.specHash,
+      attemptId: attempt.metadata.id,
+      owner: attempt.owner,
+      handler: attempt.handler,
+      mode: intent.mode,
+      intent,
+      ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
+      declaredOutputPaths: [],
+    };
+  });
+}
+
 export function expiredOwnerSessionAppTaskAttempt(
   config: TaskStateConfig,
   taskId: string,
