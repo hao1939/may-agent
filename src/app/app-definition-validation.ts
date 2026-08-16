@@ -165,7 +165,11 @@ export function validateAppDefinition(definition: unknown): string[] {
         }
         if (!nonEmpty(action.description)) errors.push(`App ${appId} action ${id} requires a description`);
         if (!record(action.inputSchema)) errors.push(`App ${appId} action ${id} requires an input schema`);
-        if (typeof action.toInput !== "function") errors.push(`App ${appId} action ${id} requires toInput`);
+        const hasInput = typeof action.toInput === "function";
+        const hasEvent = typeof action.toEvent === "function";
+        if (hasInput === hasEvent) {
+          errors.push(`App ${appId} action ${id} requires exactly one of toInput or toEvent`);
+        }
       }
     }
   }
