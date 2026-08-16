@@ -1544,7 +1544,45 @@ May App active suite: 102 pass, 0 fail, 389 expect() calls, 18 files
 May App strict typecheck: pass
 ```
 
-This subsection records source and local verification only. It does not claim
-that this follow-up branch, its eventual commit, or a derived artifact has been
-merged or deployed; those require separate immutable-artifact and live rollout
-evidence.
+The verification above was pre-integration evidence. The immutable artifact
+and live rollout evidence follows.
+
+### Post-rollout authoring-boundary closeout deployment
+
+The closeout was integrated on 2026-08-16 as Apps commit
+`64bd497696b9e313d0ee937a3bfd75ffacf28862`. Its immutable Apps source is
+`/app/.state/releases/apps/64bd497696b9e313d0ee937a3bfd75ffacf28862`;
+tracked artifact files match that commit, and the artifact adds only installed
+dependencies and empty nested `.state` mountpoints outside tracked source.
+
+Artifact verification reproduced the pre-integration gates: the paired gate
+checked 48 workflows and five enabled handlers with zero errors, the active May
+suite passed 102 tests in 18 files with zero failures and 389 assertions, and
+strict May and root TypeScript checks passed. The Release C exact-artifact
+loader reported `authoringBoundary: canonical`, all seven Apps, and SDK tree
+SHA-256 `df3aed63ca86fcce14543e188fdb317a5de0917b5d110e87b0807c9c7d222018`.
+Two stale validation-only SDK paths discovered during this check were moved out
+of the Runtime artifact, restoring the reviewed Release C SDK digest before
+the rollout was closed.
+
+The Apps-only deployment retained Runtime image
+`localhost/may-agent:runtime-ac469750`, image ID
+`sha256:669bef16381771bcfe331d25b2d1e757fb4886299e0a01be7b325a2cb35a995d`,
+and the exact Release C SDK. Its compose override is
+`/app/.state/releases/deploy/canonical-authoring-boundary-64bd4976/compose.apps-64bd4976.yml`.
+All seven App definitions and the Gym catalog are mounted from the closeout
+artifact read-only while their existing writable state mounts are retained.
+The first create attempt stopped before process start because a Git archive
+does not preserve ignored empty `.state` mountpoints; adding those empty
+artifact-scaffold directories allowed the same reviewed bytes and compose
+definition to start without changing persistent state.
+
+Reload event `5716734` was accepted by the explicit runtime reload route with
+no post-cutover `handler.load-failed` events. An explicit container restart at
+`2026-08-16T15:40:59Z` retained completed and delivered May item
+`app_944b9f18-e5dd-4636-9ac5-3d8fbe920ee5` and its exact
+`RELEASE_C_SAFE_DELIVERY_OK` result. After restart, the newly host-private daily
+operations digest completed as handler event `5716796`, and session recovery
+completed as events `5716788` and `5716820`. Concurrent four-worker AKS
+recovery again caused intermittent readiness timeouts without process exit,
+state loss, handler load failure, or rollback.
