@@ -109,10 +109,10 @@ describe("App inbox host", () => {
         inputSchema: expect.objectContaining({ type: "object" }),
       },
     ]);
-    expect(() => host.actionInput("evaluation", "probe", { value: "" })).toThrow("Invalid input for evaluation.probe");
-    expect(host.actionInput("evaluation.app", "probe", { value: "ready" })).toEqual({
-      kind: "probe",
-      data: { value: "ready" },
+    expect(() => host.invokeAction("evaluation", "probe", { value: "" })).toThrow("Invalid input for evaluation.probe");
+    expect(host.invokeAction("evaluation.app", "probe", { value: "ready" })).toEqual({
+      kind: "input",
+      input: { kind: "probe", data: { value: "ready" } },
     });
   });
 
