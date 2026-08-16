@@ -1,7 +1,6 @@
 # Convention-Based Service Composition
 
-**Status:** Reviewed; retain host-private composition, do not adopt a second
-App service/plugin model
+**Status:** Accepted and incorporated; archived decision
 **Decision date:** 2026-08-15
 **Scope:** How runtime modules and App-owned capabilities compose after the
 canonical Agent App migration
@@ -140,13 +139,13 @@ Apps extend behavior through the existing `defineApp` contract:
 
 Use the boundary that matches the interaction:
 
-| Need | Mechanism |
-| --- | --- |
-| Another App must decide, act, or return a result | Typed App delegation |
-| Another App observes a changed fact | Event subscription |
-| Code is pure and genuinely shared | Normal shared package/module import |
-| One App needs private domain logic | App-local module import |
-| A workflow needs a new host operation/read | Narrow typed context capability or projection |
+| Need                                             | Mechanism                                     |
+| ------------------------------------------------ | --------------------------------------------- |
+| Another App must decide, act, or return a result | Typed App delegation                          |
+| Another App observes a changed fact              | Event subscription                            |
+| Code is pure and genuinely shared                | Normal shared package/module import           |
+| One App needs private domain logic               | App-local module import                       |
+| A workflow needs a new host operation/read       | Narrow typed context capability or projection |
 
 No App imports another App's implementation or consumes a live object exported
 by another App.

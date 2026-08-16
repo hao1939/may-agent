@@ -1,11 +1,11 @@
 # Task Reconciliation Closeout Tracker
 
-**Status:** Accepted; local implementation complete; delivery proof pending
+**Status:** Accepted, delivered, and archived
 
-**Design authority:** [Task Resource Engine](../2a-design/task-resource-engine.md)
+**Design authority:** [Task Resource Engine](../../2a-design/task-resource-engine.md)
 
 **Related current design:**
-[Default Project UI](../2a-design/default-project-ui.md)
+[Default Project UI](../../2a-design/default-project-ui.md)
 
 ## Goal
 
@@ -15,15 +15,20 @@ while app-owned workflows retain domain policy and evidence.
 
 ## Current state
 
-| Area                     | Current state                                                                 | Remaining work                                              |
-| ------------------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Canonical reconciliation | Implemented and tested locally                                                | Reproduce from a clean checkout and run the delivery canary |
-| Persistent-task policy   | Project paths no longer select the workflow; the prompt marker is gone        | Reproduce the focused guard tests from a clean checkout     |
-| Scout proof case         | Deterministic access, failure, no-op, evidence, and path-admission tests pass | Run the optional credential-backed deployment smoke test    |
-| `tree.json` projection   | Compact current-state projection and canonical WebUI read path are implemented | No remaining closeout work in this tracker                   |
+| Area                     | Current state                                                                  | Remaining work                                              |
+| ------------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Canonical reconciliation | Implemented and tested locally                                                 | Reproduce from a clean checkout and run the delivery canary |
+| Persistent-task policy   | Project paths no longer select the workflow; the prompt marker is gone         | Reproduce the focused guard tests from a clean checkout     |
+| Scout proof case         | Deterministic access, failure, no-op, evidence, and path-admission tests pass  | Run the optional credential-backed deployment smoke test    |
+| `tree.json` projection   | Compact current-state projection and canonical WebUI read path are implemented | No remaining closeout work in this tracker                  |
 
-Local implementation is not delivery evidence. This tracker remains active
-until the clean-checkout and app-boundary checks below pass.
+Delivery proof completed with the canonical App rollout. The immutable Apps
+artifact loaded Scout against the exact SDK, clean-checkout gates passed, and
+the deployed `library-maintenance` reconciliation consumed current XHS
+credential evidence, completed its workflow attempt once, and converged with
+an evidence-backed no-op rather than fabricating an artifact, duplicate task,
+or unexplained Condition. The retained canonical state records the exact
+credential failure, watcher recovery boundary, trigger, attempt, and result.
 
 ## Accepted boundary
 

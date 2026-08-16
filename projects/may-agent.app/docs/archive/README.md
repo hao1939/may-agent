@@ -5,20 +5,25 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Decisions
 
-| Document                                                                                             | Current authority                                                                                |
-| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [agent-app-boundary-refinement.md](decisions/agent-app-boundary-refinement.md)                       | [Agent App Contract](../2a-design/agent-app.md)                                                  |
-| [agent-app-runtime-model.md](decisions/agent-app-runtime-model.md)                                   | [Agent App Contract](../2a-design/agent-app.md)                                                  |
-| [agent-app-external-interaction-contract.md](decisions/agent-app-external-interaction-contract.md)   | [System Model](../2a-design/system-model.md) and [Agent App Contract](../2a-design/agent-app.md) |
-| [app-owned-runtime-simplification.md](decisions/app-owned-runtime-simplification.md)                 | [Canonical Agent App Migration](implementation/canonical-agent-app-migration.md)                 |
-| [app-task-reconciliation-model.md](decisions/app-task-reconciliation-model.md)                       | [Task Resource Engine](../2a-design/task-resource-engine.md)                                     |
-| [event-ingress-and-socket-reliability.md](decisions/event-ingress-and-socket-reliability.md)         | [Events](../2a-design/events.md) and [HTTP Boundary](../2a-design/http-boundary.md)              |
-| [task-reconciliation-integrity-refinement.md](decisions/task-reconciliation-integrity-refinement.md) | [Task Resource Engine](../2a-design/task-resource-engine.md)                                     |
-| [implementation-simplification.md](decisions/implementation-simplification.md)                       | [Agent App Contract](../2a-design/agent-app.md) and [Runtime](../2a-design/runtime.md)           |
-| [stigmergic-coordination.md](decisions/stigmergic-coordination.md)                                   | [Projects](../2a-design/projects.md) and [Events](../2a-design/events.md)                        |
-| [retired-design-alternatives.md](decisions/retired-design-alternatives.md)                           | Current Tier-2 subsystem designs.                                                                |
-| [inbox-scope-reduction.md](decisions/inbox-scope-reduction.md)                                       | [Agent App Contract](../2a-design/agent-app.md) and [Work Model](../1-principles/work-model.md)   |
-| [work-admission-and-mechanism-selection.md](decisions/work-admission-and-mechanism-selection.md)     | [Work Model](../1-principles/work-model.md) and [Workflows](../2a-design/workflows.md)            |
+| Document                                                                                                             | Current authority                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [agent-app-boundary-refinement.md](decisions/agent-app-boundary-refinement.md)                                       | [Agent App Contract](../2a-design/agent-app.md)                                                         |
+| [agent-app-runtime-model.md](decisions/agent-app-runtime-model.md)                                                   | [Agent App Contract](../2a-design/agent-app.md)                                                         |
+| [agent-app-external-interaction-contract.md](decisions/agent-app-external-interaction-contract.md)                   | [System Model](../2a-design/system-model.md) and [Agent App Contract](../2a-design/agent-app.md)        |
+| [app-owned-runtime-simplification.md](decisions/app-owned-runtime-simplification.md)                                 | [Canonical Agent App Migration](implementation/canonical-agent-app-migration.md)                        |
+| [app-task-reconciliation-model.md](decisions/app-task-reconciliation-model.md)                                       | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
+| [event-ingress-and-socket-reliability.md](decisions/event-ingress-and-socket-reliability.md)                         | [Events](../2a-design/events.md) and [HTTP Boundary](../2a-design/http-boundary.md)                     |
+| [task-reconciliation-integrity-refinement.md](decisions/task-reconciliation-integrity-refinement.md)                 | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
+| [implementation-simplification.md](decisions/implementation-simplification.md)                                       | [Agent App Contract](../2a-design/agent-app.md) and [Runtime](../2a-design/runtime.md)                  |
+| [stigmergic-coordination.md](decisions/stigmergic-coordination.md)                                                   | [Projects](../2a-design/projects.md) and [Events](../2a-design/events.md)                               |
+| [retired-design-alternatives.md](decisions/retired-design-alternatives.md)                                           | Current Tier-2 subsystem designs.                                                                       |
+| [inbox-scope-reduction.md](decisions/inbox-scope-reduction.md)                                                       | [Agent App Contract](../2a-design/agent-app.md) and [Work Model](../1-principles/work-model.md)         |
+| [work-admission-and-mechanism-selection.md](decisions/work-admission-and-mechanism-selection.md)                     | [Work Model](../1-principles/work-model.md) and [Workflows](../2a-design/workflows.md)                  |
+| [convention-based-service-composition.md](decisions/convention-based-service-composition.md)                         | [System Boundary](../2a-design/system-boundary.md) and [Agent App Contract](../2a-design/agent-app.md)  |
+| [task-authorship-and-workflow-governance.md](decisions/task-authorship-and-workflow-governance.md)                   | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
+| [task-handler-resolution-refinement.md](decisions/task-handler-resolution-refinement.md)                             | [Task Resource Engine](../2a-design/task-resource-engine.md) and [Workflows](../2a-design/workflows.md) |
+| [task-reconciliation-simplification-and-integrity.md](decisions/task-reconciliation-simplification-and-integrity.md) | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
+| [task-workspace-convention.md](decisions/task-workspace-convention.md)                                               | [Task Resource Engine](../2a-design/task-resource-engine.md) and [Projects](../2a-design/projects.md)   |
 
 ## Reviews
 
@@ -36,6 +41,7 @@ contracts; Tier-2 design governs when wording conflicts.
 - [App root cleanup — 2026-06-13](implementation/2026-06-13-app-root-cleanup.md)
 - [Task reconciliation WebUI cutover](implementation/task-reconciliation-webui-reviewability.md)
 - [Canonical Agent App migration](implementation/canonical-agent-app-migration.md)
+- [Task reconciliation closeout](implementation/task-reconciliation-closeout-and-reviewability.md)
 - [System operations convergence](implementation/system-operations-model.md)
 
 ## V2

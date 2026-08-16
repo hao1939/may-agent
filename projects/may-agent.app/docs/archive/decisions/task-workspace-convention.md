@@ -1,17 +1,17 @@
 # Task Workspace Convention
 
-**Status:** Accepted; AKS pilot implemented 2026-07-21
+**Status:** Accepted and incorporated; archived decision
 **Owner:** May-agent
 **Evaluator:** `evaluation.app`
 **Decision:** Accepted (2026-07-21) — narrower wording per evaluation report
 **Evaluation report:**
 [Task workspace convention evaluation study](../../../evaluation.app/reports/design-studies/task-workspace-convention.md)
 **Related:**
-[Projects](../2a-design/projects.md),
-[App Root Layout](../2a-design/app-root-layout.md),
-[Task Resource Engine](../2a-design/task-resource-engine.md),
-[Workflows](../2a-design/workflows.md), and
-[Practice Learning Loop](../2a-design/practice-learning-loop.md)
+[Projects](../../2a-design/projects.md),
+[App Root Layout](../../2a-design/app-root-layout.md),
+[Task Resource Engine](../../2a-design/task-resource-engine.md),
+[Workflows](../../2a-design/workflows.md), and
+[Practice Learning Loop](../../2a-design/practice-learning-loop.md)
 
 ## Decision
 

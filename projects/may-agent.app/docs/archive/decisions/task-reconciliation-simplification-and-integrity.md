@@ -1,12 +1,12 @@
 # Task Reconciliation Integrity Cleanup
 
-**Status:** Approved direction; initial cleanup applied
+**Status:** Accepted, delivered, and archived
 **Scope:** Remove active compatibility vocabulary and make the existing task
 model easier to explain without changing its capabilities
 **Related:**
-[Task Resource Engine](../2a-design/task-resource-engine.md),
-[Default Project UI](../2a-design/default-project-ui.md), and the separate
-draft [Task Authorship Convention](task-authorship-and-workflow-governance.md)
+[Task Resource Engine](../../2a-design/task-resource-engine.md),
+[Default Project UI](../../2a-design/default-project-ui.md), and the rejected
+[Task Authorship Convention](task-authorship-and-workflow-governance.md)
 
 ## Decision
 
@@ -197,8 +197,11 @@ An ordinary handler performs or inspects its bounded work and returns:
 Only workflows may return `needs-owner`, using the existing single sequential
 handoff contract.
 
-A running handler cannot update, close, unblock, or rebind its own task through
-an action. Its admitted terminal result owns that transition.
+A running handler cannot close or unblock its own task. It may return one
+generation-changing `update-task` for that same task as the sole action when
+current evidence proves the desired execution intent must change. The current
+attempt ends and the same task is queued again; no-op and mixed self-updates
+remain invalid.
 
 Handlers may create bounded child, sibling, or successor work when supported by
 current evidence. Broad reprioritization, duplicate removal, workflow rebinding,
@@ -208,22 +211,12 @@ The reconciler never interprets task prose or invents project decomposition.
 
 ## Authorship
 
-Resolver/action authorship collisions are real, but the proposed persisted
-manager is a separate, still-draft change. This cleanup does not assume that
-field exists. The current runtime continues to protect resolver-owned
-`runtime/` tasks from handler mutation while that proposal is reviewed.
-
-If the companion proposal is accepted, its convention is:
-
-- resolver-created resources are automatically `managedBy: "app"`;
-- action-created and executable seed resources are automatically
-  `managedBy: "owner"`;
-- management is immutable and is not task configuration; and
-- cross-manager mutation or ID collision is rejected atomically.
-
-Do not remove the current prefix guard or claim manager-based enforcement until
-that migration is implemented and verified. This cleanup itself adds no
-authority mechanism.
+Resolver observations and admitted task actions declare desired state through
+the same reconciler. Generation fencing and atomic admission serialize their
+changes; a later resolver observation may intentionally reassert current App
+policy. There is no persisted manager, authority-transfer lifecycle, or task-ID
+prefix with mutation semantics. Apps use `validateAction` when a domain needs a
+narrower policy than the generic task contract.
 
 ## One result and action vocabulary
 
@@ -305,17 +298,17 @@ Current state:
 - canonical result/action vocabulary and strict admission are implemented;
 - containment, dependency, watcher, and progress guidance is current;
 - the default WebUI reads the canonical task projection;
-- persisted-state migration and removal of any remaining compatibility readers
-  are still pending evidence; and
-- specification-manager enforcement belongs only to the separate authorship
-  proposal.
+- no persisted-state migration or compatibility reader was required; and
+- the rejected specification-manager alternative remains historical rationale,
+  not an implementation dependency.
 
 ### Phase 1 — Freeze legacy growth
 
 1. Remove legacy result/action vocabulary from active prompts, workflows,
    fixtures, and documentation.
 2. Keep runtime admission strict around the canonical schema.
-3. Report weak Conditions and current-task self-mutation with exact reasons.
+3. Report weak Conditions and invalid current-task self-mutation with exact
+   reasons.
 
 ### Phase 2 — Repair active producers
 
@@ -354,7 +347,7 @@ Required focused coverage:
 - achieve convergence writes one receipt and removes live work;
 - converged maintain work is omitted from passive runnable IDs;
 - targeted triggers wake the same maintain ID;
-- current-task self-mutation is rejected;
+- current-task close/unblock, no-op update, and mixed self-update are rejected;
 - active schemas and fixtures contain no legacy vocabulary; and
 - read projections never become mutation authority.
 
@@ -393,3 +386,11 @@ Apply the cleanup in bounded steps. First stop active legacy vocabulary and
 repair weak Conditions. Then remove compatibility readers after all producers
 and persisted live state are canonical. Preserve the current graph and
 lifecycle throughout.
+
+## Completion
+
+The canonical App rollout and its authoring-boundary closeout completed the
+four phases. Runtime commit `804b8a7a` removed the final task-ID-prefix
+authority exception and added uniform generation-fenced action coverage; it
+was integrated on Runtime `main` in `d537af6b`. No persisted-state migration,
+compatibility reader, manager field, phase, queue, or controller was added.

@@ -20,7 +20,9 @@ export default defineApp({
   workspace: { kind: "local", localPath: "../example" },
   tasks: {
     attach: true,
-    subscriptions: [{ type: "example.requested", target: { project: "example" } }],
+    subscriptions: [
+      { type: "example.requested", target: { project: "example" } },
+    ],
     maxConcurrent: 2,
     resolve(event) {
       const requestId = String(event.data.requestId ?? "");
@@ -117,10 +119,18 @@ exact Conditions for facts outside the task graph, and a structural group when
 a node has no independently reconcilable outcome. An achieve task cannot close
 while it still contains live child tasks.
 
-A running handler must not include an update, close, unblock, or rebind action
-for its own task. Its admitted `converged` or `waiting` result owns that
-transition. Broad reprioritization, duplicate cleanup, and unrelated-branch
-changes belong to a bounded owner-review pass.
+A running handler must not close or unblock its own task. It may return one
+`update-task` action for that task only when current evidence proves the
+desired execution intent itself must change; that action must be the sole
+action, advance the generation, finish the current attempt, and queue the same
+task again. A no-op or mixed self-update is rejected. Broad reprioritization,
+duplicate cleanup, and unrelated-branch changes belong to a bounded
+owner-review pass.
+
+Resolver observations and admitted task actions use the same fenced mutation
+path. Task ID prefixes carry no authority semantics; add a pure App
+`validateAction` rule only when the domain requires a stricter mutation
+boundary.
 
 App UI actions declare an input schema and a pure `toInput` translation in
 `app.actions`. Infrastructure validates the action and durably admits the

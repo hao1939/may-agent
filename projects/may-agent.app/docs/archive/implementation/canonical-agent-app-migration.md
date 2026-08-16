@@ -1640,3 +1640,28 @@ clarified the accepted observer boundary, and added an integrity failure for
 raw task-persistence reads from App watchers. The post-correction AKS suite is
 the 661-test result above; production therefore already runs the corrected
 behavior from artifact `8aaf03b514`.
+
+### Post-rollout task-authoring simplification
+
+The final design-versus-code audit found one remaining authority convention in
+the Runtime rather than another durable store: handler actions could not create
+or mutate IDs beginning with `runtime/`, although resolver- and action-authored
+specifications otherwise use the same state lock, generation fence, and atomic
+admission path. The separate proposal to persist an immutable task
+specification manager would have added a second lifecycle distinction and an
+ambiguous migration without removing a controller or storage authority.
+
+Runtime commit `804b8a7a` removed the prefix exception and proved that
+runtime-prefixed identities use the same self-update and child-creation rules
+as every other task. The selected change, terminal direct-owner result
+recovery, and human-recipient routing repair were integrated on Runtime `main`
+at `d537af6b`. Runtime typecheck, the focused reconciler suite, the broader
+Runtime/SDK tests, Apps design and root typechecks, and the exact paired gate
+for 48 workflows and five enabled host handlers passed.
+
+During integration review, unpublished commit `8a020aab` was deliberately
+excluded. It translated a `metric.definition_changed` fact carrying arbitrary
+`sourceQuery` text into a database mutation, recreating a generic query/control
+escape hatch with no current caller. Metric definition changes remain explicit
+host-owned configuration or bounded maintenance, not an App-emitted raw SQL
+surface.

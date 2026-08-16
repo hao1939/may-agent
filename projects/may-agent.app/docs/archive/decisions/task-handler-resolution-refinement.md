@@ -1,12 +1,12 @@
 # Task Handler Resolution Refinement
 
-**Status:** Accepted
+**Status:** Accepted and incorporated; archived decision
 
-**Implementation:** Implemented and verified locally; deployment canary pending
+**Implementation:** Implemented, deployed, and canary-verified
 
 **Scope:** Change unavailable-workflow fallback and clarify owner handoff in the accepted Task Resource Engine
 
-**Does not replace:** [Task Resource Engine](../2a-design/task-resource-engine.md)
+**Does not replace:** [Task Resource Engine](../../2a-design/task-resource-engine.md)
 
 ## Summary
 
@@ -322,9 +322,12 @@ Local verification completed on 2026-07-20:
 - 17 unique workflow bindings used by current live task resources resolve; and
 - no task-state schema migration is required.
 
-The remaining rollout check is one deployed canary reconciliation confirming
-that an unavailable binding stays in attention and a repaired binding resumes
-after app reload.
+The deployment canary completed during the canonical Agent App rollout. The
+live `runtime/platform-owner-review` task first surfaced
+`HandlerUnavailable`; after the workflow was repaired and the App reloaded,
+generation 149 resumed through workflow run `wr_1786890910520_awge` and reached
+an admitted waiting result without owner substitution. See the
+[Canonical Agent App migration record](../implementation/canonical-agent-app-migration.md#post-rollout-workflow-compatibility-repair).
 
 ## Decisions
 

@@ -93,15 +93,9 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
-| Document                                                                                                               | Status                             | Purpose                                                                                              |
-| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [chat-agent-separation.md](3-proposals/chat-agent-separation.md)                                                       | Active tracker                     | Close remaining chat restart, trace, and delegation gaps.                                            |
-| [convention-based-service-composition.md](3-proposals/convention-based-service-composition.md)                         | Reviewed; limited decision adopted | Keep runtime composition host-private; reject a second App service/plugin loader.                    |
-| [task-authorship-and-workflow-governance.md](3-proposals/task-authorship-and-workflow-governance.md)                   | Draft                              | Assign task specification management by creation path without per-task authority config.             |
-| [task-handler-resolution-refinement.md](3-proposals/task-handler-resolution-refinement.md)                             | Accepted; canary pending           | Make explicit workflow binding authoritative and surface unavailable workflows as attention.         |
-| [task-reconciliation-closeout-and-reviewability.md](3-proposals/task-reconciliation-closeout-and-reviewability.md)     | Accepted; delivery proof pending   | Close persistent-task policy, Scout evidence, and delivery gaps.                                     |
-| [task-reconciliation-simplification-and-integrity.md](3-proposals/task-reconciliation-simplification-and-integrity.md) | Approved; cleanup in progress      | Remove active compatibility vocabulary without changing the task model.                              |
-| [task-workspace-convention.md](3-proposals/task-workspace-convention.md)                                               | Accepted; AKS pilot implemented    | Use shared domain workspaces by default and isolate independent mutations when evidence warrants it. |
+| Document                                                         | Status         | Purpose                                                   |
+| ---------------------------------------------------------------- | -------------- | --------------------------------------------------------- |
+| [chat-agent-separation.md](3-proposals/chat-agent-separation.md) | Active tracker | Close remaining chat restart, trace, and delegation gaps. |
 
 Completed proposals do not remain in the active proposal folder.
 

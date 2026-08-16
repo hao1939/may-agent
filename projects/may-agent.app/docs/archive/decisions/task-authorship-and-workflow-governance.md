@@ -1,13 +1,27 @@
 # Task Authorship Convention
 
-**Status:** Draft for review
+**Status:** Not adopted; superseded by the uniform fenced-authoring rule
 **Scope:** Who may create or change executable task specifications
-**Aligns with:** [Task Resource Engine](../2a-design/task-resource-engine.md),
-[Agent App](../2a-design/agent-app.md),
-[Projects](../2a-design/projects.md), and
-[Workflows](../2a-design/workflows.md)
+**Aligns with:** [Task Resource Engine](../../2a-design/task-resource-engine.md),
+[Agent App](../../2a-design/agent-app.md),
+[Projects](../../2a-design/projects.md), and
+[Workflows](../../2a-design/workflows.md)
 
 ## Summary
+
+> Historical alternative. The persisted `managedBy` field and task-retirement
+> lifecycle proposed below were not adopted. The current contract keeps one
+> task specification and one reconciler: pure resolver observations and fenced
+> owner actions may both revise it, and Apps use `validateAction` only for
+> narrower domain policy. See
+> [Task Resource Engine](../../2a-design/task-resource-engine.md).
+
+The alternative was rejected because it adds a second lifecycle distinction,
+requires ambiguous persisted-state migration, conflicts with the accepted
+single-action self-update rule, and does not remove a storage or controller
+authority. Removing the old `runtime/` prefix guard gives every task identity
+the same generation-fenced admission semantics without a compatibility reader
+or manager-transfer mechanism.
 
 The task engine already has one storage writer: the generic reconciler. What is
 not consistently represented is who manages a task's desired specification.
@@ -30,12 +44,12 @@ one immutable provenance fact, not another workflow or control plane.
 
 Four concepts must remain separate:
 
-| Concept | Meaning |
-| --- | --- |
-| Specification manager | Which layer may declare or revise task meaning |
-| Execution owner | The agent accountable for handling the task |
-| Handler | The direct owner or explicitly bound owner-owned workflow used for this generation |
-| Storage writer | The reconciler that validates and atomically applies every transition |
+| Concept               | Meaning                                                                            |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| Specification manager | Which layer may declare or revise task meaning                                     |
+| Execution owner       | The agent accountable for handling the task                                        |
+| Handler               | The direct owner or explicitly bound owner-owned workflow used for this generation |
+| Storage writer        | The reconciler that validates and atomically applies every transition              |
 
 The compact rule remains:
 
@@ -70,12 +84,12 @@ type ProjectAppTaskResource = {
 
 The defaults are complete:
 
-| Creation path | Runtime assignment |
-| --- | --- |
-| `tasks.resolve(event)` materializes a task | `managedBy: "app"` |
-| Handler `create-task` action creates a task | `managedBy: "owner"` |
-| Executable task is copied from `tasks/seed.json` | `managedBy: "owner"` |
-| Structural seed group | No manager; it is not executable |
+| Creation path                                    | Runtime assignment               |
+| ------------------------------------------------ | -------------------------------- |
+| `tasks.resolve(event)` materializes a task       | `managedBy: "app"`               |
+| Handler `create-task` action creates a task      | `managedBy: "owner"`             |
+| Executable task is copied from `tasks/seed.json` | `managedBy: "owner"`             |
+| Structural seed group                            | No manager; it is not executable |
 
 An app-managed responsibility should normally be materialized by the resolver,
 not individually configured in the seed. The seed remains boot-only
@@ -202,7 +216,7 @@ Only the minimum governance rule belongs here:
 - repeated work is a promotion signal, never automatic workflow creation.
 
 Workflow discovery, execution, provenance, validation, and retirement remain
-owned by [Workflows](../2a-design/workflows.md). This proposal does not create a
+owned by [Workflows](../../2a-design/workflows.md). This proposal does not create a
 second workflow lifecycle or registry.
 
 ## `needs-owner`

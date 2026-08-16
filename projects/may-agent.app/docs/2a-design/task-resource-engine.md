@@ -175,6 +175,18 @@ Each executable task has:
 - `status`: observed generation, phase, summary, evidence, current attempt,
   and linked Condition IDs.
 
+Task identity does not encode a second specification authority. Both a pure
+App resolver observation and an admitted owner action may declare or revise
+the same task through the reconciler. The state lock, `expectedGeneration`,
+current-attempt fence, and atomic action admission serialize those changes. A
+later resolver observation may deliberately reassert current App policy; it
+does not restore state from a parallel store.
+
+There is no `managedBy` field, manager-transfer lifecycle, or authority meaning
+attached to an ID prefix such as `runtime/`. Apps that need a narrower domain
+mutation rule enforce it through their pure `validateAction` policy. The
+generic reconciler applies the same admission rules to every task identity.
+
 Attempts, triggers, Conditions, receipts, and pending event intents are
 separate durable records.
 Event IDs, timestamps, handler summaries, and current observations are runtime
