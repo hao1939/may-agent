@@ -442,7 +442,8 @@ function repeatedPrimarySourceReferences(
   let sectionId = 0;
   let parentSectionId = 0;
   let currentSection:
-    { id: number; label: string; level: number; parent: number } | undefined;
+    | { id: number; label: string; level: number; parent: number }
+    | undefined;
 
   for (const line of content.split(/\r?\n/)) {
     const heading = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
