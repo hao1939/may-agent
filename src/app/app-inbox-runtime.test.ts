@@ -188,6 +188,55 @@ describe("App inbox runtime", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("publishes and links a delegated child through the configured event boundary", async () => {
+    const bus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+    const child = runtime.host.admit({
+      appId: "evaluation-canary",
+      parentId: "parent-request",
+      source: { kind: "app", id: "parent-app" },
+      input: { kind: "probe", data: { value: "delegated" } },
+      idempotencyKey: "delegate:parent-request:1",
+    }).item;
+    const published: unknown[] = [];
+
+    runtime.setEventPublisher((input, source) => {
+      published.push({ input, source });
+      runtime!.host.admit({
+        appId: String(input.target?.appId),
+        parentId: String(input.data.parentId),
+        source,
+        input: input.data.input as never,
+        originEventId: 91,
+        idempotencyKey: input.idempotencyKey,
+      });
+      return { eventId: 91, eventType: input.type, delivery: "accepted" };
+    });
+
+    expect(published).toEqual([
+      {
+        input: {
+          type: "app.input.requested",
+          target: { appId: "evaluation-canary" },
+          data: {
+            input: { kind: "probe", data: { value: "delegated" } },
+            parentId: "parent-request",
+          },
+          idempotencyKey: "delegate:parent-request:1",
+        },
+        source: { kind: "app", id: "parent-app" },
+      },
+    ]);
+    expect(runtime.host.get(child.id)?.originEventId).toBe(91);
+    expect(runtime.host.pendingDelegations()).toEqual([]);
+  });
+
   it("replays deterministic task admission through the durable canonical route", async () => {
     writeFileSync(
       join(root, "evaluation.app", "app.js"),
@@ -1857,8 +1906,6 @@ describe("App inbox runtime", () => {
     releases.shift()!();
     await waitUntil(() => started.length === 3);
     for (const release of releases.splice(0)) release();
-    await waitUntil(() =>
-      started.every((id) => runtime?.host.get(id)?.status === "done"),
-    );
+    await waitUntil(() => started.every((id) => runtime?.host.get(id)?.status === "done"));
   });
 });

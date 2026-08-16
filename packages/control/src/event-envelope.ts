@@ -22,6 +22,7 @@ export function normalizeEventOwner(owner: unknown, fallback: unknown = "may"): 
   const value = nonEmptyString(owner) ?? nonEmptyString(fallback) ?? "may";
   if (
     value.startsWith("agent:") ||
+    value.startsWith("app:") ||
     value.startsWith("human:") ||
     value.startsWith("project:") ||
     value.startsWith("task:")
@@ -82,7 +83,20 @@ export function buildCanonicalEventEnvelope(
     };
   }
 
-  const { type: _inputType, source, owner, target, action, urgency, ttl_ms, timestamp, visibility, trace, data, ...payload } = input;
+  const {
+    type: _inputType,
+    source,
+    owner,
+    target,
+    action,
+    urgency,
+    ttl_ms,
+    timestamp,
+    visibility,
+    trace,
+    data,
+    ...payload
+  } = input;
 
   const eventData = isRecord(data) ? { ...data, ...payload } : payload;
   const envelopeTarget = isRecord(target) ? target : isRecord(defaults.target) ? defaults.target : undefined;

@@ -12,6 +12,10 @@ describe("event envelope helpers", () => {
     expect(normalizeEventOwner("human:reviewer")).toBe("human:reviewer");
   });
 
+  it("preserves canonical App owners", () => {
+    expect(normalizeEventOwner("app:may")).toBe("app:may");
+  });
+
   it("wraps payload fields under data and keeps infra metadata on the envelope", () => {
     expect(
       buildCanonicalEventEnvelope("escalation.created", {

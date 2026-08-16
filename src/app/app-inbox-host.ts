@@ -22,6 +22,7 @@ import {
   getAppInboxItem,
   listAppInboxHealth,
   listAppInboxAssociatedSessionClaims,
+  listUnlinkedAppDelegations,
   listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
@@ -96,6 +97,7 @@ export type AdmitAppInput = {
   channelMessageId?: number;
   source: AppInputSource;
   input: AppInput;
+  originEventId?: number;
   idempotencyKey?: string;
 };
 
@@ -111,6 +113,14 @@ export type AppInboxSessionRecoveryResult = {
   woken: number;
   wokenAppIds: string[];
   errors: string[];
+};
+
+export type AppDelegationIntent = {
+  appId: string;
+  parentId: string;
+  source: AppInputSource;
+  input: AppInput;
+  idempotencyKey: string;
 };
 
 export const APP_INBOX_RECOVERY_OWNER = "app-inbox";
@@ -378,6 +388,16 @@ export class AppInboxHost {
   readyCount(appId: string): number {
     const app = this.#requiredApp(appId);
     return listAppInboxHealth(this.#db, { appId: app.id, now: this.#now() })[0]?.ready ?? 0;
+  }
+
+  pendingDelegations(): AppDelegationIntent[] {
+    return listUnlinkedAppDelegations(this.#db).map((item) => ({
+      appId: item.appId,
+      parentId: requiredText(item.parentId, "Delegation parent id"),
+      source: item.source,
+      input: item.input,
+      idempotencyKey: requiredText(item.idempotencyKey, "Delegation idempotency key"),
+    }));
   }
 
   maxConcurrent(appId: string): number {

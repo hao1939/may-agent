@@ -311,6 +311,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   lease_generation    INTEGER NOT NULL DEFAULT 0,
   lease_owner         TEXT,
   lease_expires_at    INTEGER,
+  origin_event_id     INTEGER,
   idempotency_key     TEXT,
   created_at          INTEGER NOT NULL,
   updated_at          INTEGER NOT NULL,
@@ -325,6 +326,8 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_waiting
   ON app_inbox_items(waiting_on_kind, waiting_on_id, status);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_parent
   ON app_inbox_items(parent_id);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
+  ON app_inbox_items(origin_event_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
   ON app_inbox_items(app_id, conversation_id, conversation_seq);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_idempotency
@@ -410,6 +413,10 @@ WHEN
   OR EXISTS (
     SELECT 1 FROM app_event_admission_plans p
     WHERE p.event_id = OLD.id AND p.status = 'pending'
+  )
+  OR EXISTS (
+    SELECT 1 FROM app_inbox_items i
+    WHERE i.origin_event_id = OLD.id AND i.status != 'done'
   )
 BEGIN
   SELECT RAISE(IGNORE);
@@ -522,6 +529,7 @@ CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, s
 
 export function applyDbSchema(db: SqliteDb): void {
   ensureExistingEventsTableColumns(db);
+  ensureExistingAppInboxTableColumns(db);
   // Trigger definitions are not replaced by CREATE TRIGGER IF NOT EXISTS.
   // Recreate this retention fence so existing databases gain every new durable
   // reference added to the canonical schema.
@@ -541,6 +549,7 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["channel", "TEXT"],
   ["channel_thread_id", "TEXT"],
   ["channel_message_id", "INTEGER"],
+  ["origin_event_id", "INTEGER"],
 ];
 
 function ensureExistingAppInboxTableColumns(db: SqliteDb): void {

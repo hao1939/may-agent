@@ -23,7 +23,8 @@ import {
   startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EventBus } from "./event-bus.js";
+import { createEventInterface, type EventInterface } from "./event-interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
@@ -33,14 +34,9 @@ import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 
 export function createAppInputAdmission(options: {
-  bus: Pick<EventBus, "emit">;
-  getRuntime: () => AppInboxRuntime | null;
+  events: Pick<EventInterface, "publish">;
 }): NonNullable<AttachControlSocketOptions["admitAppInput"]> {
   return (input) => {
-    const appInput = input.input as unknown as AppInput;
-    if (!options.getRuntime()?.host.acceptsInput(input.appId, appInput)) {
-      throw new Error(`App ${input.appId} does not accept this input`);
-    }
     const sourceKind = input.source.kind;
     const sourceId = input.source.id;
     if (
@@ -50,27 +46,25 @@ export function createAppInputAdmission(options: {
     ) {
       throw new Error("App input source requires kind human, app, or system and a non-empty id");
     }
-    const emitted = options.bus.emit({
-      type: "app.input.requested",
-      source: "control-socket",
-      owner: `app:${input.appId}`,
-      data: {
-        appId: input.appId,
-        input: appInput,
-        source: { kind: sourceKind, id: sourceId.trim() },
-        conversationId: input.conversationId,
-        conversationSequence: input.conversationSequence,
-        channel: input.channel,
-        channelThreadId: input.channelThreadId,
-        channelMessageId: input.channelMessageId,
+    return options.events.publish(
+      {
+        type: "app.input.requested",
+        target: { appId: input.appId },
         idempotencyKey: input.idempotencyKey,
+        data: {
+          input: input.input as unknown as AppInput,
+          conversationId: input.conversationId,
+          conversationSequence: input.conversationSequence,
+          channel: input.channel,
+          channelThreadId: input.channelThreadId,
+          channelMessageId: input.channelMessageId,
+        },
       },
-    });
-    const eventId = Number(emitted[EVENT_ROW_ID]);
-    if (!Number.isSafeInteger(eventId) || eventId <= 0) {
-      throw new Error(`App input for ${input.appId} was not durably persisted`);
-    }
-    return { eventId, eventType: "app.input.requested" };
+      {
+        source: "control-socket",
+        inputSource: { kind: sourceKind, id: sourceId.trim() },
+      },
+    );
   };
 }
 
@@ -307,7 +301,23 @@ export async function runAppRuntime(opts: {
       })
     : { close: () => {}, sendAlert: () => {} };
 
-  const admitAppInput = createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime });
+  const events = createEventInterface({
+    bus,
+    db: getDb(opts.persistDir),
+    acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
+    hasApp: (appId) => appInboxRuntime?.host.hasApp(appId) ?? false,
+    hasAgent: (agent) => manager.hasAgent(agent),
+    hasSession: (sessionId) =>
+      manager.getSessionSummary(sessionId).status !== "unknown" ||
+      Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
+  });
+  appInboxRuntime.setEventPublisher((input, source) =>
+    events.publish(input, {
+      source: `app:${source.id}`,
+      inputSource: source,
+    }),
+  );
+  const admitAppInput = createAppInputAdmission({ events });
   const projectActions = createProjectActionAccess({
     getRuntime: () => appInboxRuntime,
     admit: admitAppInput,
@@ -317,8 +327,9 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     instanceLabel: opts.instanceLabel,
     interfaceAgent,
-    bus,
-    manager,
+    events,
+    getStatus: () => manager.status(),
+    reportInfo: (message) => bus.emit({ type: "info", message }),
     admitAppInput,
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
