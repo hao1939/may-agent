@@ -11,7 +11,6 @@
     ".": "./src/index.ts",
     "./app": "./src/app.ts",
     "./task": "./src/task.ts",
-    "./legacy": "./src/legacy.ts",
     "./testing": "./src/testing.ts",
     "./workflow-guard": "./src/workflow-guard.ts"
   },
