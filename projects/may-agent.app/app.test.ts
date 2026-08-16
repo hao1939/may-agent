@@ -97,7 +97,7 @@ describe("owner review routing stability", () => {
 
     await app.onEvent?.(ctx, {
       type: "metric.breach",
-      owner: "tech-lead",
+      owner: "may",
       metricId: "runtime.some-platform-metric",
     });
     expect(emitted).toHaveLength(1);
@@ -130,7 +130,7 @@ describe("project-local containment", () => {
         }
       }
       // Every scheduled owner wake is this app's own owner-review lane.
-      expect(app.owner).toBe("tech-lead");
+      expect(app.owner).toBe("may");
     });
   });
 });

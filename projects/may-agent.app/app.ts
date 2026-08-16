@@ -9,7 +9,7 @@ import {
 } from "@may-agent/sdk/legacy";
 
 const projectId = "may-agent";
-const projectOwnerAgent = "tech-lead";
+const projectOwnerAgent = "may";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
 
 const DAY_MS = 86_400_000;
@@ -125,7 +125,7 @@ export async function routePlatformEvent(
     // Project-specific metrics (e.g. aks-rp-e2e.task.*) are owned by their
     // respective project apps and should not trigger a full platform review.
     // Accept legacy May-owned platform metrics during migration, but the wake
-    // still routes to this app owner (tech-lead).
+    // still routes to this app owner (may).
     const metricOwner = eventString(event, "owner");
     const platformMetricOwners = new Set([
       projectOwnerAgent,
@@ -311,7 +311,7 @@ export default defineProjectApp({
     "advance-project": {
       type: "async",
       description:
-        "Ask tech-lead to review and advance the May-agent platform project.",
+        "Ask May to review and advance the May-agent platform project.",
       inputSchema: actionInputSchema,
       event(params) {
         return ownerRequested("manual-advance", params);
