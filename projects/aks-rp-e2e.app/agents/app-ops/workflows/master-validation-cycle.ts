@@ -651,6 +651,30 @@ export function latestCampaignFixes(fixes: CampaignFix[]): CampaignFix[] {
   );
 }
 
+export function scheduledFailureTransition(
+  failedSourceCommit: string,
+  currentMainCommit: string,
+  activeFixes: CampaignFix[],
+):
+  | { kind: "frozen-campaign"; fixes: CampaignFix[] }
+  | { kind: "current-main"; fixes: [] }
+  | { kind: "current-main-successor"; fixes: CampaignFix[] } {
+  const failedCommit = failedSourceCommit.trim();
+  const mainCommit = currentMainCommit.trim();
+  if (!failedCommit || !mainCommit) {
+    throw new Error(
+      "Both failed source commit and current main commit are required",
+    );
+  }
+  const fixes = latestCampaignFixes(activeFixes);
+  if (failedCommit === mainCommit) {
+    return { kind: "frozen-campaign", fixes };
+  }
+  return fixes.length
+    ? { kind: "current-main-successor", fixes }
+    : { kind: "current-main", fixes: [] };
+}
+
 export function currentMainCampaignSuccessorInput(
   campaign: CampaignReceipt,
   currentMainCommit: string,
@@ -1483,22 +1507,69 @@ export async function execute(
       }
 
       const existingCampaign = readCampaignReceipt(appDir);
+      const matchingCampaign =
+        existingCampaign?.baselineRunId === prior.runId
+          ? existingCampaign
+          : null;
+      const transition = scheduledFailureTransition(
+        prior.sourceCommit,
+        currentMainCommit,
+        activeCampaignFixes(repoDir, prior.sourceCommit),
+      );
+      if (transition.kind === "current-main") {
+        return queueCycle(
+          ctx,
+          repoDir,
+          payload,
+          sourceBranch,
+          currentMainCommit,
+          scheduledPurpose,
+          null,
+          prior.runId,
+        );
+      }
+      if (transition.kind === "current-main-successor") {
+        const campaignSeed: CampaignReceipt = matchingCampaign ?? {
+          schemaVersion: "1",
+          baselineRunId: prior.runId,
+          baseCommit: prior.sourceCommit,
+          branch: `validation/master-validation-${prior.runId}`,
+          currentCommit: prior.sourceCommit,
+          integratedFixes: [],
+          updatedAt: prior.queuedAt,
+        };
+        const successor = composeFrozenCampaign({
+          appDir,
+          repoDir,
+          ...currentMainCampaignSuccessorInput(
+            campaignSeed,
+            currentMainCommit,
+            transition.fixes,
+          ),
+          prior: null,
+        }).receipt;
+        return queueCycle(
+          ctx,
+          repoDir,
+          payload,
+          successor.branch,
+          successor.currentCommit,
+          campaignPurpose,
+          successor,
+          prior.runId,
+        );
+      }
       const campaign = composeFrozenCampaign({
         appDir,
         repoDir,
         baselineRunId: prior.runId,
         baseCommit: prior.sourceCommit,
-        fixes: activeCampaignFixes(repoDir, prior.sourceCommit),
+        fixes: transition.fixes,
         replacementFixes: completedCampaignReplacements(
           repoDir,
-          existingCampaign?.baselineRunId === prior.runId
-            ? existingCampaign
-            : null,
+          matchingCampaign,
         ),
-        prior:
-          existingCampaign?.baselineRunId === prior.runId
-            ? existingCampaign
-            : null,
+        prior: matchingCampaign,
       }).receipt;
       if (campaign.currentCommit !== campaign.baseCommit) {
         return queueCycle(

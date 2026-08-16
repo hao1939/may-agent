@@ -18,6 +18,7 @@ import {
   latestCampaignFixes,
   registerMasterValidationRun,
   resolveCurrentMain,
+  scheduledFailureTransition,
   transientMasterValidationAccessFailure,
   verifiedFixNotificationContent,
 } from "./master-validation-cycle.js";
@@ -351,6 +352,26 @@ describe("master-validation cycle", () => {
       fixes: [],
       preferredPullRequestIds: ["31"],
     });
+  });
+
+  test("retries exact current main instead of parking a stale failed run", () => {
+    expect(
+      scheduledFailureTransition("failed-old-main", "current-main", []),
+    ).toEqual({ kind: "current-main", fixes: [] });
+
+    const fix = {
+      pullRequestId: "31",
+      taskId: "domain/master-validation-failure/spec.example",
+      sourceBranch: "task/spec-example",
+      sourceCommit: "fix-head",
+      title: "Example repair",
+    };
+    expect(
+      scheduledFailureTransition("failed-old-main", "current-main", [fix]),
+    ).toEqual({ kind: "current-main-successor", fixes: [fix] });
+    expect(
+      scheduledFailureTransition("current-main", "current-main", [fix]),
+    ).toEqual({ kind: "frozen-campaign", fixes: [fix] });
   });
 
   test("routes a focused patch conflict back to its stable failure task", () => {
