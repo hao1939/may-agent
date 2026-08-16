@@ -68,26 +68,34 @@ describe("importRuntimeModule", () => {
     expect(mod.default.id).toBe("standalone-canary");
   });
 
-  it("rejects the removed legacy SDK entry point", async () => {
+  it("pins the staged legacy SDK entry point for external App declarations", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-legacy-import-"));
     roots.push(root);
 
     const modulePath = join(root, "legacy-handler.ts");
-    const retiredSpecifier = ["@may-agent/sdk", "legacy"].join("/");
     writeFileSync(
       modulePath,
       `
-        import * as legacySdk from "${retiredSpecifier}";
-        export const legacy = legacySdk;
+        import { defineProjectApp, workflowResultVersion } from "@may-agent/sdk/legacy";
+        export const app = defineProjectApp({
+          id: "legacy", version: 1, owner: "owner", description: "fixture",
+          schedules: [{ id: "pulse", enabled: true, intervalMs: 60000,
+            emits: [{ type: "legacy.pulse" }]
+          }]
+        });
+        export const sdkVersion = workflowResultVersion;
       `,
     );
 
-    await expect(
-      importRuntimeModule(modulePath, {
-        forceBundle: true,
-        cacheDir: join(root, ".cache"),
-      }),
-    ).rejects.toThrow();
+    const mod = await importRuntimeModule<{
+      app: { schedules?: Array<{ emits?: unknown[] }> };
+      sdkVersion: string;
+    }>(modulePath, {
+      forceBundle: true,
+      cacheDir: join(root, ".cache"),
+    });
+    expect(mod.sdkVersion).toBe("workflow-result-v1");
+    expect(mod.app.schedules?.[0]?.emits).toHaveLength(1);
   });
 
   it("preserves dynamic relative imports from the original module directory", async () => {

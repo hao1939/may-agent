@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { AppDefinition } from "@may-agent/sdk";
-import { importRuntimeModule } from "../../lib/runtime-import.js";
+import { importRuntimeModule, type RuntimeImportOptions } from "../../lib/runtime-import.js";
 import { assertValidAppDefinition } from "../app-definition-validation.js";
 import { adaptLegacyProjectApp } from "./legacy-project-app-adapter.js";
 
@@ -27,11 +27,14 @@ export function listAppDefinitionFiles(projectsRoot: string): string[] {
   return files.sort();
 }
 
-export async function loadAppDefinitions(projectsRoot: string): Promise<LoadedAppDefinition[]> {
+export async function loadAppDefinitions(
+  projectsRoot: string,
+  importOptions: RuntimeImportOptions = {},
+): Promise<LoadedAppDefinition[]> {
   const loaded: LoadedAppDefinition[] = [];
   const ids = new Set<string>();
   for (const modulePath of listAppDefinitionFiles(projectsRoot)) {
-    const mod = await importRuntimeModule<{ default?: AppDefinition; app?: AppDefinition }>(modulePath);
+    const mod = await importRuntimeModule<{ default?: AppDefinition; app?: AppDefinition }>(modulePath, importOptions);
     const exported = mod.default ?? mod.app;
     if (!exported || typeof exported !== "object")
       throw new Error(`App module ${modulePath} must default-export an App definition`);
