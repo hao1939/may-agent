@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createTestRuntime } from "@may-agent/sdk/testing";
+import { createHostTestRuntime } from "./testing.ts";
 import { create } from "./metrics-snapshot.ts";
 
 describe("metrics-snapshot session health metrics", () => {
@@ -16,7 +16,7 @@ describe("metrics-snapshot session health metrics", () => {
   });
 
   function testRuntime(root: string, emit: (event: any) => void = () => {}) {
-    return createTestRuntime({
+    return createHostTestRuntime({
       root,
       persist: root,
       agents: join(root, "agents"),
@@ -409,18 +409,25 @@ describe("metrics-snapshot session health metrics", () => {
       `metrics-scout-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
     tempDirs.push(root);
-    mkdirSync(join(root, "agents", "scout", "knowledge"), { recursive: true });
-    mkdirSync(join(root, "agents", "scout", "workspace", "digest"), {
-      recursive: true,
-    });
-    mkdirSync(join(root, "shared", "knowledge", "entries"), {
+    mkdirSync(
+      join(root, "projects", "scout-knowledge-lib.app", "agents", "scout"),
+      { recursive: true },
+    );
+    mkdirSync(join(root, "projects", "scout-knowledge-lib", "knowledge"), {
       recursive: true,
     });
     mkdirSync(join(root, "projects", "platform"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
     writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
     writeFileSync(
-      join(root, "agents", "scout", "AGENTS.md"),
+      join(
+        root,
+        "projects",
+        "scout-knowledge-lib.app",
+        "agents",
+        "scout",
+        "AGENTS.md",
+      ),
       [
         "Search existing knowledge before creating a new file.",
         "Update existing notes in place when the topic already exists.",
@@ -428,24 +435,12 @@ describe("metrics-snapshot session health metrics", () => {
       ].join("\n"),
     );
     writeFileSync(
-      join(root, "agents", "scout", "knowledge", "note-a.md"),
+      join(root, "projects", "scout-knowledge-lib", "knowledge", "note-a.md"),
       "<ai_context>\nsummary: sourced\n</ai_context>\n\nSource: https://example.com/a\n",
     );
     writeFileSync(
-      join(root, "agents", "scout", "knowledge", "note-b.md"),
+      join(root, "projects", "scout-knowledge-lib", "knowledge", "note-b.md"),
       "Source: https://example.com/b\n",
-    );
-    writeFileSync(
-      join(root, "shared", "knowledge", "entries", "KE-1-demo.md"),
-      "<ai_context>\nsummary: demo\n</ai_context>\n",
-    );
-    writeFileSync(
-      join(root, "agents", "scout", "workspace", "digest", "today.md"),
-      "**Source**: https://example.com/digest\n",
-    );
-    writeFileSync(
-      join(root, "projects", "platform", "project.md"),
-      "Scout learning reference: scout-second-brain-learning\n",
     );
 
     const db = getDb(root);
@@ -489,22 +484,18 @@ describe("metrics-snapshot session health metrics", () => {
       current: 1,
       owner: "scout",
       status: "active",
-      project: "scout-second-brain-learning",
+      project: "scout-knowledge-lib.app",
       target: 1,
       threshold: 1,
     });
     expect(metric("scout.knowledge-preamble-coverage")).toMatchObject({
-      current: 0.6667,
+      current: 0.5,
       owner: "scout",
       status: "active",
-      project: "scout-second-brain-learning",
+      project: "scout-knowledge-lib.app",
     });
-    expect(
-      metric("scout.sourced-artifacts-24h").current,
-    ).toBeGreaterThanOrEqual(2);
-    expect(
-      metric("scout.downstream-reference-files-7d").current,
-    ).toBeGreaterThanOrEqual(1);
+    expect(metric("scout.sourced-artifacts-24h")).toBeNull();
+    expect(metric("scout.downstream-reference-files-7d")).toBeNull();
   });
 
   it("does not count terminal no-recovery finish-block digests as unresolved dirty exits", async () => {
@@ -1348,8 +1339,8 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     ).toMatchObject({
       current: 1,
       target: 0,
-      threshold: 0,
-      priority: "P1",
+      threshold: 3,
+      priority: "P2",
       type: "health",
     });
   });

@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTestRuntime } from "@may-agent/sdk/testing";
-import type { SqliteDb, WorkflowContext } from "@may-agent/sdk";
+import { createHostTestRuntime } from "./testing.ts";
+import type { HandlerContext } from "./types.ts";
 import { execute } from "./daily-ops-digest.ts";
 
 type EmittedEvent = { type: string; [key: string]: unknown };
@@ -28,7 +28,7 @@ describe("daily-ops-digest", () => {
     tempDirs.push(root);
     mkdirSync(appDir, { recursive: true });
 
-    const runtime = createTestRuntime({
+    const runtime = createHostTestRuntime({
       root,
       persist: root,
       agents: join(root, "agents"),
@@ -37,41 +37,17 @@ describe("daily-ops-digest", () => {
       emit: (type, data) => emitted.push({ type, ...(data ?? {}) }),
     });
 
-    const ctx: WorkflowContext = {
-      task: `app: ${appDir}\nBuild daily ops digest.`,
-      agent: "tech-lead",
-      emit: (event) => emitted.push(event),
-      dispatchEvent: (eventType, data = {}) =>
-        emitted.push({ type: eventType, ...data }),
-      getDb: () => runtime.db,
-      query: runtime.sdk.query,
-      log: () => {},
-      notify: (message) => notifications.push(message),
-      metrics: runtime.sdk.metrics,
-      persistDir: root,
-      projectRoot: root,
-      agentsRoot: runtime.agents,
-      sharedRoot: runtime.shared,
-      projectsRoot: runtime.projects,
-      runAgent: runtime.sdk.runAgent,
-      runWorkflow: runtime.sdk.runWorkflow,
-      runFunction: async (label, fn) => ({
-        ok: true,
-        status: "done",
-        agent: "tech-lead",
-        sessionId: label,
-        result: await fn(),
-      }),
-      summarize: (result) => String(result.result ?? result.status),
-      done: (summary) => ({ type: "done", summary }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-      createSession: async () => ({
-        prompt: async () => {},
-        lastText: () => "",
-        close: () => {},
-      }),
-    };
+    const ctx = {
+      sdk: {
+        ...runtime.sdk,
+        message: (_target: string, message: string) =>
+          notifications.push(message),
+      },
+      agentName: "tech-lead",
+      classifyError: () => "infra",
+      getLastDigest: () => null,
+      upsertDigest: async () => null,
+    } as unknown as HandlerContext;
 
     return {
       appDir,
@@ -84,7 +60,7 @@ describe("daily-ops-digest", () => {
   }
 
   function insertMetric(
-    db: SqliteDb,
+    db: ReturnType<typeof setup>["db"],
     id: string,
     owner: string,
     priority: string,
@@ -151,10 +127,9 @@ describe("daily-ops-digest", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result.type).toBe("done");
-    expect(result.summary).toContain("4 alert(s) reviewed");
-    expect(result.summary).toContain("1 open");
-    expect(result.summary).toContain("1 noisy metric group");
+    expect(result).toContain("4 alert(s) reviewed");
+    expect(result).toContain("1 open");
+    expect(result).toContain("1 noisy metric group");
 
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_digest.created",
@@ -190,11 +165,9 @@ describe("daily-ops-digest", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result).toEqual({
-      type: "done",
-      summary:
-        "Daily ops digest generated: 0 alert(s) reviewed, 0 open, 0 noisy metric group(s), 0 missing owner group(s).",
-    });
+    expect(result).toBe(
+      "Daily ops digest generated: 0 alert(s) reviewed, 0 open, 0 noisy metric group(s), 0 missing owner group(s).",
+    );
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_digest.created",
     ]);

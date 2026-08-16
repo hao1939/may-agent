@@ -1,5 +1,9 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  Type,
+  type ExecutionResult,
+  type WorkflowContext,
+} from "@may-agent/sdk";
 
 /**
  * investigate-and-fix — Analysis that forces action
@@ -40,55 +44,21 @@ export const description: string =
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-/**
- * Extract file paths that were written/edited during a session.
- */
-function extractWrittenFiles(messages: any[]): string[] {
-  const paths = new Set<string>();
+const AgentWorkResult = Type.Object({
+  writtenFiles: Type.Array(Type.String()),
+});
 
-  for (const msg of messages) {
-    if (!Array.isArray(msg.content)) continue;
+function inputText(input: unknown): string {
+  if (typeof input === "string") return input;
+  return input === undefined ? "" : JSON.stringify(input, null, 2);
+}
 
-    if (msg.role === "assistant") {
-      for (const block of msg.content) {
-        if (
-          block.type === "toolCall" &&
-          (block.name === "write" || block.name === "edit")
-        ) {
-          const p = block.arguments?.path;
-          if (typeof p === "string" && p.length > 0) paths.add(p);
-        }
-      }
-    }
-
-    if (msg.role === "toolResult") {
-      for (const block of msg.content ?? []) {
-        if (block.type === "text" && typeof block.text === "string") {
-          const writeMatch = block.text.match(/Wrote \d+ bytes to ([^\s(]+)/);
-          if (writeMatch) paths.add(writeMatch[1]);
-          const editMatch = block.text.match(/Edit applied to ([^\s(]+)/);
-          if (editMatch) paths.add(editMatch[1]);
-        }
-      }
-    }
-
-    if (msg.role === "user") {
-      for (const block of msg.content) {
-        if (block.type === "text" && typeof block.text === "string") {
-          for (const label of ["Files written:", "Files edited:"]) {
-            const match = block.text.match(new RegExp(`${label}\\s*(.+)`));
-            if (match) {
-              for (const p of match[1].split(",").map((s: string) => s.trim())) {
-                if (p.length > 0) paths.add(p);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return [...paths];
+async function emitStep(
+  ctx: WorkflowContext,
+  type: "step_start" | "step_done",
+  step: string,
+): Promise<void> {
+  await ctx.events.emit({ type, data: { step } });
 }
 
 /** Placeholder patterns indicating stub content */
@@ -108,7 +78,12 @@ interface FileCheck {
 }
 
 function checkFile(filePath: string): FileCheck {
-  const result: FileCheck = { path: filePath, exists: false, sizeBytes: 0, issues: [] };
+  const result: FileCheck = {
+    path: filePath,
+    exists: false,
+    sizeBytes: 0,
+    issues: [],
+  };
 
   if (!existsSync(filePath)) {
     result.issues.push("File does not exist");
@@ -162,15 +137,16 @@ function isDispatchReady(text: string): boolean {
 
 // ── Main workflow ──────────────────────────────────────────────────────
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const task = inputText(ctx.input);
   // ═══════════════════════════════════════════════════════════════════
   // PHASE 1: INVESTIGATE — analyze the problem, write finding
   // ═══════════════════════════════════════════════════════════════════
-  ctx.emit({ type: "step_start", step: "phase1-investigate" });
+  await emitStep(ctx, "step_start", "phase1-investigate");
 
   const investigateTask =
     `## Phase 1: INVESTIGATE\n\n` +
-    `${ctx.task}\n\n` +
+    `${task}\n\n` +
     `### Requirements\n` +
     `1. Query data, read files, analyze the problem thoroughly\n` +
     `2. Write your finding to a workspace file (finding-*.md)\n` +
@@ -184,25 +160,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `After this phase, YOU will be asked to execute your top recommendation.\n` +
     `So make R1 something you can actually do right now — not "monitor" or "wait".\n` +
     `If genuinely no action is needed, write "NO_ACTION_NEEDED" with justification.\n` +
-    `If the fix requires a different agent, write "DISPATCH-READY" with the target agent.`;
+    `If the fix requires a different agent, write "DISPATCH-READY" with the target agent.\n\n` +
+    `Finish with result: { "writtenFiles": ["every file written or edited"] }.`;
 
-  const phase1 = await ctx.runAgent(ctx.agent, investigateTask);
-
-  if (phase1.status === "error") {
-    return ctx.blocked("Phase 1 (investigate) failed", { error: phase1.error });
-  }
-
-  const phase1Summary = ctx.summarize(phase1, {
-    includeResponse: true,
-    includeKeyFacts: true,
-    includeErrors: true,
-    maxLength: 6000,
+  const phase1 = await ctx.agents.call("optimizer", investigateTask, {
+    schema: AgentWorkResult,
   });
 
-  const phase1Text = phase1.lastAssistantText ?? "";
-  const phase1Files = extractWrittenFiles(phase1.messages ?? []);
+  if (phase1.status === "error") {
+    return ctx.blocked(
+      "Phase 1 (investigate) failed",
+      phase1.evidence ?? phase1.summary,
+    );
+  }
 
-  ctx.emit({ type: "step_done", step: "phase1-investigate" } as any);
+  const phase1Summary = phase1.summary;
+  const phase1Text = phase1.summary;
+  const phase1Files = phase1.output?.writtenFiles ?? [];
+
+  await emitStep(ctx, "step_done", "phase1-investigate");
 
   // ── Check for NO_ACTION_NEEDED ──────────────────────────────────
   if (isNoActionNeeded(phase1Text)) {
@@ -210,13 +186,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (phase1Files.length === 0) {
       return ctx.blocked(
         "Phase 1 claimed NO_ACTION_NEEDED but didn't write a finding file. " +
-        "Even monitoring-only findings must be documented."
+          "Even monitoring-only findings must be documented.",
       );
     }
     return ctx.done(
       `## Investigation complete — no action needed\n\n` +
-      `Finding written to: ${phase1Files.join(", ")}\n\n` +
-      `Agent assessment: ${phase1Text.slice(0, 500)}`
+        `Finding written to: ${phase1Files.join(", ")}\n\n` +
+        `Agent assessment: ${phase1Text.slice(0, 500)}`,
     );
   }
 
@@ -225,21 +201,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // Verify finding was written
     if (phase1Files.length === 0) {
       return ctx.blocked(
-        "Phase 1 marked DISPATCH-READY but didn't write a finding file."
+        "Phase 1 marked DISPATCH-READY but didn't write a finding file.",
       );
     }
     return ctx.done(
       `## Investigation complete — dispatched to another agent\n\n` +
-      `Finding written to: ${phase1Files.join(", ")}\n\n` +
-      `The fix requires a different agent. Use agents.message() to dispatch.\n\n` +
-      `Agent assessment: ${phase1Text.slice(0, 500)}`
+        `Finding written to: ${phase1Files.join(", ")}\n\n` +
+        `The fix requires a different agent. Use agents.message() to dispatch.\n\n` +
+        `Agent assessment: ${phase1Text.slice(0, 500)}`,
     );
   }
 
   // ═══════════════════════════════════════════════════════════════════
   // PHASE 2: FIX — execute the top recommendation from Phase 1
   // ═══════════════════════════════════════════════════════════════════
-  ctx.emit({ type: "step_start", step: "phase2-fix" });
+  await emitStep(ctx, "step_start", "phase2-fix");
 
   const fixTask =
     `## Phase 2: EXECUTE THE FIX\n\n` +
@@ -257,30 +233,34 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `**Do NOT:**\n` +
     `- Write another finding document\n` +
     `- Create a "plan" or "proposal" instead of making the change\n` +
-    `- Skip the fix because it "needs more investigation"\n`;
+    `- Skip the fix because it "needs more investigation"\n\n` +
+    `Finish with result: { "writtenFiles": ["every file written or edited"] }.`;
 
-  const phase2 = await ctx.runAgent(ctx.agent, fixTask);
+  const phase2 = await ctx.agents.call("optimizer", fixTask, {
+    schema: AgentWorkResult,
+  });
 
   if (phase2.status === "error") {
     return ctx.blocked("Phase 2 (fix) failed", {
-      error: phase2.error,
+      error: phase2.summary,
+      evidence: phase2.evidence,
       phase1Files,
     });
   }
 
-  const phase2Text = phase2.lastAssistantText ?? "";
-  const phase2Files = extractWrittenFiles(phase2.messages ?? []);
+  const phase2Text = phase2.summary;
+  const phase2Files = phase2.output?.writtenFiles ?? [];
 
-  ctx.emit({ type: "step_done", step: "phase2-fix" } as any);
+  await emitStep(ctx, "step_done", "phase2-fix");
 
   // ═══════════════════════════════════════════════════════════════════
   // PHASE 3: VERIFY — JS check that files were actually modified
   // ═══════════════════════════════════════════════════════════════════
-  ctx.emit({ type: "step_start", step: "phase3-verify" });
+  await emitStep(ctx, "step_start", "phase3-verify");
 
   // Combine files from both phases (Phase 1 = finding, Phase 2 = fix)
   const allFiles = [...new Set([...phase1Files, ...phase2Files])];
-  const fixOnlyFiles = phase2Files.filter(f => !phase1Files.includes(f));
+  const fixOnlyFiles = phase2Files.filter((f) => !phase1Files.includes(f));
 
   // The critical check: Phase 2 must have written/edited files BEYOND
   // just the finding document from Phase 1
@@ -288,18 +268,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // Phase 2 didn't produce any new file changes — it just wrote more docs
     return ctx.blocked(
       `Phase 2 did not modify any files beyond the Phase 1 finding. ` +
-      `The fix was not executed — agent likely wrote another document ` +
-      `instead of making the actual change.\n\n` +
-      `Phase 1 files: ${phase1Files.join(", ")}\n` +
-      `Phase 2 files: ${phase2Files.join(", ")}\n\n` +
-      `Phase 2 summary: ${phase2Text.slice(0, 500)}`
+        `The fix was not executed — agent likely wrote another document ` +
+        `instead of making the actual change.\n\n` +
+        `Phase 1 files: ${phase1Files.join(", ")}\n` +
+        `Phase 2 files: ${phase2Files.join(", ")}\n\n` +
+        `Phase 2 summary: ${phase2Text.slice(0, 500)}`,
     );
   }
 
   // Verify fix files exist and are valid
   const checks = fixOnlyFiles.map(checkFile);
-  const failed = checks.filter(c => c.issues.length > 0);
-  const hardFailed = failed.filter(c => !c.exists || c.sizeBytes === 0);
+  const failed = checks.filter((c) => c.issues.length > 0);
+  const hardFailed = failed.filter((c) => !c.exists || c.sizeBytes === 0);
 
   const reportLines: string[] = [];
   for (const c of checks) {
@@ -310,7 +290,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
   }
 
-  ctx.emit({ type: "step_done", step: "phase3-verify" } as any);
+  await emitStep(ctx, "step_done", "phase3-verify");
 
   if (hardFailed.length > 0) {
     return ctx.blocked(
@@ -318,20 +298,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       {
         fixFiles: fixOnlyFiles,
         verificationReport: reportLines.join("\n"),
-        failedFiles: hardFailed.map(c => ({ path: c.path, issues: c.issues })),
-      }
+        failedFiles: hardFailed.map((c) => ({
+          path: c.path,
+          issues: c.issues,
+        })),
+      },
     );
   }
 
   return ctx.done(
     `## Investigation + Fix complete (3 phases)\n\n` +
-    `### Phase 1: Finding\n` +
-    `Written to: ${phase1Files.join(", ") || "(no finding file)"}\n\n` +
-    `### Phase 2: Fix applied\n` +
-    `Modified: ${fixOnlyFiles.join(", ")}\n\n` +
-    `### Phase 3: Verification\n` +
-    `${reportLines.join("\n")}\n\n` +
-    `### Summary\n` +
-    `${phase2Text.slice(0, 500)}`
+      `### Phase 1: Finding\n` +
+      `Written to: ${phase1Files.join(", ") || "(no finding file)"}\n\n` +
+      `### Phase 2: Fix applied\n` +
+      `Modified: ${fixOnlyFiles.join(", ")}\n\n` +
+      `### Phase 3: Verification\n` +
+      `${reportLines.join("\n")}\n\n` +
+      `### Summary\n` +
+      `${phase2Text.slice(0, 500)}`,
   );
 }

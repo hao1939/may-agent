@@ -24,15 +24,15 @@ import { join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type {
+  CronEntry,
   EventEnvelope,
   HandlerContext,
   HandlerModule,
-} from "@may-agent/sdk";
-import type { CronEntry } from "@may-agent/sdk";
+} from "./types.js";
 import {
   listConfiguredAgents,
   resolveMetricOwner,
-} from "../../../../../shared/lib/metric-ownership.ts";
+} from "./lib/metric-ownership.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -73,6 +73,7 @@ interface MetricDef {
   project?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   config?: Record<string, unknown>;
+  description?: string;
 }
 
 const ALL_METRICS: MetricDef[] = [
@@ -1644,6 +1645,8 @@ export const create: HandlerModule["create"] = (
          FROM sessions s
          WHERE s.status IN ('done', 'error', 'interrupted')
            AND s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?`,
         threeH,
@@ -1655,6 +1658,8 @@ export const create: HandlerModule["create"] = (
          JOIN evaluations e ON e.sessionId = s.sessionId
          WHERE s.status IN ('done', 'error', 'interrupted')
            AND s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?`,
         threeH,

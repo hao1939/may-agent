@@ -61,7 +61,6 @@ export interface Finding {
   summary: string;
   evidence: string[];
 }
-
 export interface Assessment {
   schema_version: 1;
   agent: string;
@@ -4781,7 +4780,7 @@ export async function runImprovement(
       { task_id: taskId, generation },
     );
   }
-  if (approvalPacket) {
+  if (approvalPacket && "resultPath" in approvalPacket) {
     try {
       const plan = planFromApprovalPacket(ctx, approvalPacket.resultPath);
       if (!plan) {
@@ -4830,7 +4829,7 @@ export async function runImprovement(
       { task_id: taskId, generation },
     );
   }
-  if (storedAdjustment) {
+  if (storedAdjustment && "resultPath" in storedAdjustment) {
     try {
       const plan = planFromApprovalPacket(
         ctx,
@@ -4902,7 +4901,9 @@ export async function runImprovement(
         input,
         taskId,
         generation,
-        confirmation?.scope ?? retry?.scope,
+        confirmation && "scope" in confirmation
+          ? confirmation.scope
+          : retry?.scope,
       );
     } catch (error) {
       const summary = error instanceof Error ? error.message : String(error);

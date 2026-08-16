@@ -15,8 +15,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
-import type { CronEntry } from "@may-agent/sdk";
+import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "./types.js";
 
 const APP_PROJECT_ID = "may-agent";
 const MAX_RECOVERY_ATTEMPTS = 2;
@@ -35,7 +34,6 @@ type RunningSessionRow = {
   status: string;
   startedAt: number;
 };
-
 function recoveryKey(agent: string, task: string): string {
   return `${agent}:${task.slice(0, 100)}`;
 }

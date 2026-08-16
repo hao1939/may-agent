@@ -17,12 +17,11 @@ export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
 const platformInputSchema = Type.Union(
-  ["owner-review", "ops-health", "ops-digest", "resource-migration"].map(
-    (kind) =>
-      Type.Object(
-        { kind: Type.Literal(kind), data: detailsSchema },
-        { additionalProperties: false },
-      ),
+  ["owner-review", "resource-migration"].map((kind) =>
+    Type.Object(
+      { kind: Type.Literal(kind), data: detailsSchema },
+      { additionalProperties: false },
+    ),
   ),
 );
 
@@ -67,32 +66,6 @@ function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
 
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   switch (input.kind) {
-    case "ops-digest":
-      return {
-        id: "runtime/daily-ops-digest",
-        parentId: "ops-health",
-        outcome:
-          "Keep a current deterministic daily platform alert digest, notify the human, and request owner judgment only for actionable conditions.",
-        acceptance: [
-          "A current digest is recorded and delivered, with any actionable open, noisy, or ownerless condition routed to the platform owner.",
-        ],
-        mode: "maintain",
-        workflow: "daily-ops-digest",
-        priority: "P1",
-      };
-    case "ops-health":
-      return {
-        id: "runtime/ops-health-observer",
-        parentId: "ops-health",
-        outcome:
-          "Keep a deterministic observation of platform operational health and request owner judgment only for meaningful signals.",
-        acceptance: [
-          "A current ops-health packet is recorded and meaningful signals produce one owner request without making owner judgments in the observer.",
-        ],
-        mode: "maintain",
-        workflow: "ops-health-review",
-        priority: "P1",
-      };
     case "resource-migration":
       return {
         id: "runtime/unified-resource-migration-v1",
@@ -132,10 +105,6 @@ export function taskInputForEvent(
 ): AppInput | null {
   const data = eventData(event);
   switch (event.type) {
-    case "project.ops_digest.tick":
-      return { kind: "ops-digest", data };
-    case "project.ops_health.tick":
-      return { kind: "ops-health", data };
     case "may-agent.resource-migration.requested":
       return { kind: "resource-migration", data };
     case "project.tick":
@@ -259,20 +228,6 @@ const app = defineApp({
         lane: "owner-heartbeat",
       }),
     },
-    {
-      id: "ops-health-review",
-      intervalMs: 3_600_000,
-      event: scheduledEvent("project.ops_health.tick", {
-        lane: "ops-health-review",
-      }),
-    },
-    {
-      id: "daily-ops-digest",
-      intervalMs: 86_400_000,
-      event: scheduledEvent("project.ops_digest.tick", {
-        lane: "daily-ops-digest",
-      }),
-    },
   ],
   actions: {
     "advance-project": {
@@ -286,8 +241,6 @@ const app = defineApp({
   tasks: {
     attach: true,
     subscriptions: [
-      { type: "project.ops_digest.tick", project: projectId },
-      { type: "project.ops_health.tick", project: projectId },
       { type: "may-agent.resource-migration.requested", project: projectId },
       { type: "project.tick", project: projectId },
       { type: "project.tasks.ready", project: projectId },

@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule } from "./types.js";
 
 export const name = "daily-ops-digest";
 export const description =
@@ -31,11 +31,6 @@ type MetricGroup = {
   open: number;
   resolved: number;
 };
-
-function field(task: string, name: string): string | undefined {
-  const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
-  return task.match(pattern)?.[1]?.trim();
-}
 
 function numberValue(value: unknown): number {
   const parsed = Number(value);
@@ -74,15 +69,12 @@ function parseJson(value: unknown): Row {
   }
 }
 
-function queryRows(
-  ctx: WorkflowContext,
-  sql: string,
-  params: unknown[],
-): Row[] {
+function queryRows(ctx: HandlerContext, sql: string, params: unknown[]): Row[] {
   try {
-    return ctx.query.sql(sql, params, { limit: 500 }).rows;
+    return ctx.sdk.query.sql(sql, params, { limit: 500 }).rows;
   } catch (error) {
-    ctx.log(
+    ctx.sdk.log(
+      "warn",
       `daily-ops-digest query failed: ${error instanceof Error ? error.message : String(error)}`,
     );
     return [];
@@ -163,13 +155,15 @@ function latestJudgmentsByMetric(rows: Row[]): Map<string, Row> {
   return result;
 }
 
-function reportFor(ctx: WorkflowContext): {
+function reportFor(ctx: HandlerContext): {
   summary: string;
   reportPath: string;
   signal: Row;
 } {
-  const appDir =
-    ctx.appDir ?? field(ctx.task, "app") ?? "/app/projects/may-agent.app";
+  const appDir = join(
+    ctx.sdk.paths.projects ?? join(ctx.sdk.paths.root, "projects"),
+    "may-agent.app",
+  );
   const now = Date.now();
   const since = now - 24 * 60 * 60_000;
   const day = dateId(new Date(now));
@@ -374,16 +368,16 @@ function reportFor(ctx: WorkflowContext): {
   };
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: HandlerContext): Promise<string> {
   const { summary, reportPath, signal } = reportFor(ctx);
 
-  ctx.emit({
-    type: "project.ops_digest.created",
+  ctx.sdk.emit("project.ops_digest.created", {
     project: "may-agent",
     ...signal,
   });
 
-  ctx.notify(
+  ctx.sdk.message(
+    "human",
     [`Daily ops digest: ${summary}`, `Report: ${reportPath}`].join("\n"),
   );
 
@@ -392,8 +386,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     numberValue(signal.noisyMetricCount) > 0 ||
     numberValue(signal.missingOwnerCount) > 0
   ) {
-    ctx.emit({
-      type: "project.owner.requested",
+    ctx.sdk.emit("project.owner.requested", {
       project: "may-agent",
       reason: "daily-ops-digest",
       params: signal,
@@ -401,10 +394,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const resultSummary = `Daily ops digest generated: ${summary}`;
-  return ctx.done(resultSummary, {
-    state: "converged",
-    summary: resultSummary,
-    evidence: [`report:${reportPath}`],
-    actions: [],
-  });
+  ctx.sdk.log("info", `[daily-ops-digest] ${resultSummary}`);
+  return resultSummary;
 }
+
+export const create: HandlerModule["create"] =
+  (ctx: HandlerContext, _entry: CronEntry) => async () => {
+    await execute(ctx);
+  };

@@ -3,17 +3,15 @@ import { execute } from "../session-recovery.ts";
 
 describe("session-recovery workflow", () => {
   it("reruns the failed agent for recoverable decisions and emits recovery evidence", async () => {
-    const emit = vi.fn();
-    const runAgent = vi.fn(async () => ({
-      sessionId: "s_recovery",
+    const emit = vi.fn(async () => undefined);
+    const callAgent = vi.fn(async () => ({
+      id: "s_recovery",
+      kind: "agent" as const,
       status: "done",
-      lastAssistantText: "ok",
-      messages: [],
-      duration: "1s",
-      outputDir: "/tmp",
+      summary: "ok",
     }));
     const ctx = {
-      task: [
+      input: [
         "[session-recovery] Handle failed session s_failed.",
         "",
         "## Recovery Decision",
@@ -30,29 +28,38 @@ describe("session-recovery workflow", () => {
         }),
         "```",
       ].join("\n"),
-      runAgent,
-      emit,
-      done: (summary: string) => ({ type: "done", summary }),
-      blocked: (reason: string, context?: unknown) => ({
-        type: "blocked",
-        reason,
-        context,
+      agents: { call: callAgent },
+      events: { emit },
+      done: (summary: string) => ({
+        id: "wf_test",
+        kind: "workflow",
+        status: "done",
+        summary,
+      }),
+      blocked: (summary: string, evidence?: unknown) => ({
+        id: "wf_test",
+        kind: "workflow",
+        status: "blocked",
+        summary,
+        evidence,
       }),
     } as any;
 
     const result = await execute(ctx);
 
-    expect(result).toMatchObject({ type: "done" });
-    expect(runAgent).toHaveBeenCalledWith(
+    expect(result).toMatchObject({ status: "done" });
+    expect(callAgent).toHaveBeenCalledWith(
       "dev",
       expect.stringContaining("## Original Task\nfix the bug"),
     );
     expect(emit).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "session.recovery_attempted",
-        sessionId: "s_failed",
-        newSessionId: "s_recovery",
-        status: "done",
+        data: expect.objectContaining({
+          sessionId: "s_failed",
+          newSessionId: "s_recovery",
+          status: "done",
+        }),
       }),
     );
   });

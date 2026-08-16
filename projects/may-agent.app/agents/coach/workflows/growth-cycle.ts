@@ -1,11 +1,7 @@
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import {
-  promoteAgent,
-  discardAgent,
-  type GrowthConfig,
-} from "../../../../../shared/lib/growth.js";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { promoteAgent, discardAgent, type GrowthConfig } from "./growth.js";
 import {
   runGym,
   runGymBatch,
@@ -106,8 +102,26 @@ export const description: string =
   "to learn), fork agent, apply one change, test via gym, record results. " +
   "Pass 'learn:<method>' as the task to run in learning mode (always discards).";
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const isLearning = ctx.task.startsWith("learn:");
+function inputText(input: unknown): string {
+  if (typeof input === "string") return input;
+  return input === undefined ? "" : JSON.stringify(input, null, 2);
+}
+
+function resultText(result: ExecutionResult): string {
+  return result.summary || JSON.stringify(result.output ?? "", null, 2);
+}
+
+async function emitStep(
+  ctx: WorkflowContext,
+  type: "step_start" | "step_done",
+  step: string,
+): Promise<void> {
+  await ctx.events.emit({ type, data: { step } });
+}
+
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const task = inputText(ctx.input);
+  const isLearning = task.startsWith("learn:");
 
   // Environment facts — injected into every LLM step to prevent FM-2.1 path-guessing
   const ENV_FACTS =
@@ -142,7 +156,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
       `Budget 25 tool calls. If you can't finish, call finish({status: "partial"}).\n\n` +
       `Study an improvement method you haven't used before.\n\n` +
-      `## Method to Learn\n${ctx.task.slice(6).trim()}\n\n` +
+      `## Method to Learn\n${task.slice(6).trim()}\n\n` +
       `## Instructions\n` +
       `1. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — find this method's entry.\n` +
       `2. Read documentation and examples related to this method:\n` +
@@ -160,7 +174,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
       `Budget 25 tool calls. If you can't finish, call finish({status: "partial"}).\n\n` +
       `Diagnose an error pattern and select an improvement method.\n\n` +
-      `## Error Pattern\n${ctx.task}\n\n` +
+      `## Error Pattern\n${task}\n\n` +
       `## Instructions\n` +
       `1. Read the error examples from the task description above. Identify the behavioral pattern.\n` +
       `2. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — understand available methods.\n` +
@@ -178,24 +192,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   - Gym scenarios to test against\n` +
       `   - What specifically you'll change`;
 
-  const step1 = await ctx.runAgent("coach", step1Prompt);
+  const step1 = await ctx.agents.call("coach", step1Prompt);
   if (step1.status === "error") {
-    return ctx.blocked("step 1 failed", { error: step1.error });
+    return ctx.blocked("step 1 failed", step1.evidence ?? step1.summary);
   }
   // Interrupted sessions may still have useful partial output — proceed
   // with whatever the agent produced before being cut off.
 
   // Step 1b: Ceiling-effect gate — run baseline BEFORE forking (JS, no LLM)
-  ctx.emit({ type: "step_start", step: "ceiling-gate" });
+  await emitStep(ctx, "step_start", "ceiling-gate");
 
-  const diagnosisText = step1.lastAssistantText ?? "";
-  const gateScenarios = extractScenarios(ctx.task + "\n" + diagnosisText);
-  const gateAgent = extractAgentFromText(ctx.task + "\n" + diagnosisText);
+  const diagnosisText = resultText(step1);
+  const gateScenarios = extractScenarios(task + "\n" + diagnosisText);
+  const gateAgent = extractAgentFromText(task + "\n" + diagnosisText);
 
   if (gateScenarios.length === 0 || !gateAgent) {
     // Can't run gate without scenarios/agent — fall through to fork step
     // (the LLM diagnosis didn't mention recognizable scenarios or agents)
-    ctx.emit({ type: "step_done", step: "ceiling-gate" } as any);
+    await emitStep(ctx, "step_done", "ceiling-gate");
   } else {
     const gateResults: GymResult[] = [];
     let anyFails = false;
@@ -212,7 +226,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       )
       .join("\n");
 
-    ctx.emit({ type: "step_done", step: "ceiling-gate" } as any);
+    await emitStep(ctx, "step_done", "ceiling-gate");
 
     if (!anyFails) {
       // Ceiling effect — all pass, skip the experiment
@@ -229,14 +243,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // Step 2: Fork and apply
-  const patch = await ctx.runAgent(
+  const patch = await ctx.agents.call(
     "coach",
     ENV_FACTS +
       HARD_GATE_RULES +
       `## ⚠️ TURN BUDGET: MAX 20 TOOL CALLS\n` +
       `Budget 20 tool calls. Fork, patch, verify — be efficient.\n\n` +
       `Fork the target agent and apply exactly ONE improvement method.\n\n` +
-      `## ${isLearning ? "Study Results" : "Diagnosis"}\n${ctx.summarize(step1)}\n\n` +
+      `## ${isLearning ? "Study Results" : "Diagnosis"}\n${resultText(step1)}\n\n` +
       `## Instructions\n` +
       `1. Fork the target agent: \`fork_agent({ source: "<agent>", dest: "<agent>-<experiment>" })\`\n` +
       `2. Apply the selected method to the fork. Be specific and minimal:\n` +
@@ -253,15 +267,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `The workflow manages fork lifecycle (promote/discard) automatically after testing.`,
   );
   if (patch.status === "error") {
-    return ctx.blocked("fork/patch failed", { error: patch.error });
+    return ctx.blocked("fork/patch failed", patch.evidence ?? patch.summary);
   }
 
   // Step 3: Gym test (direct script execution — no LLM session needed)
-  ctx.emit({ type: "step_start", step: "gym-test" });
+  await emitStep(ctx, "step_start", "gym-test");
 
   // Discover fork from .lab/ directory (Step 2 should have created one)
   const forks = findLabForks();
-  const patchText = patch.lastAssistantText ?? "";
+  const patchText = resultText(patch);
   // Find the fork that was just created — prefer one mentioned in patch output
   let forkName = forks.find((f) => patchText.includes(f)) ?? forks[0];
   if (!forkName) {
@@ -291,11 +305,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agentName = agentFromFork(forkName);
 
   // Extract scenarios from task description + Step 1 + patch output.
-  // Include ctx.task so the target scenario from the original request is always found —
+  // Include the typed input so the target scenario from the original request is always found —
   // previous bug: LLM outputs sometimes omit the scenario name, causing fallback to
   // alphabetically-first scenarios (which are unrelated to the target).
-  const combinedText =
-    ctx.task + "\n" + (step1.lastAssistantText ?? "") + "\n" + patchText;
+  const combinedText = task + "\n" + resultText(step1) + "\n" + patchText;
   let scenarios = extractScenarios(combinedText);
   if (scenarios.length === 0) {
     // Fallback: use first 3 scenarios to keep runtime reasonable
@@ -315,7 +328,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     forkName,
   );
 
-  ctx.emit({ type: "step_done", step: "gym-test" });
+  await emitStep(ctx, "step_done", "gym-test");
 
   // Step 4: Record and decide (pure JS — no LLM session needed)
   // Compare pass counts to determine promote/discard
@@ -354,7 +367,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // Record to experiments.jsonl
-  const diagText = step1.lastAssistantText ?? "";
+  const diagText = resultText(step1);
   const experimentEntry = isLearning
     ? {
         timestamp: new Date().toISOString(),
@@ -414,7 +427,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   return ctx.done(
     `Growth cycle completed (${isLearning ? "learning" : "fix"} mode).\n\n` +
-      `## ${isLearning ? "Study" : "Diagnosis"}\n${step1.lastAssistantText}\n\n` +
+      `## ${isLearning ? "Study" : "Diagnosis"}\n${resultText(step1)}\n\n` +
       `## Results\n${gymResultsText}\n\n` +
       `## Decision (automated)\n${decisionReport}\n` +
       `Recorded to experiments.jsonl.` +

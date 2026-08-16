@@ -74,7 +74,7 @@ describe("canonical may-agent platform App", () => {
 });
 
 describe("may-agent task routing", () => {
-  it("routes periodic and reactive platform facts to stable tasks", () => {
+  it("routes App-owned platform facts while host maintenance stays separate", () => {
     expect(
       resolveMayAgentTask(event("project.tick", { reason: "scheduled" })),
     ).toMatchObject({
@@ -83,12 +83,8 @@ describe("may-agent task routing", () => {
       workflow: "platform-owner-review",
       input: { scope: "may-agent-platform" },
     });
-    expect(resolveMayAgentTask(event("project.ops_health.tick"))).toMatchObject(
-      {
-        id: "runtime/ops-health-observer",
-        workflow: "ops-health-review",
-      },
-    );
+    expect(resolveMayAgentTask(event("project.ops_health.tick"))).toBeNull();
+    expect(resolveMayAgentTask(event("project.ops_digest.tick"))).toBeNull();
   });
 
   it("filters recovered, deferred, and foreign metric observations", () => {

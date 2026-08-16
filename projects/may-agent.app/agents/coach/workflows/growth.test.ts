@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { forkAgent, promoteAgent, discardAgent, listLabAgents, type GrowthConfig } from "../lib/growth.ts";
+import { forkAgent, promoteAgent, discardAgent, listLabAgents, type GrowthConfig } from "./growth.ts";
 
 describe("growth", () => {
   let agentsRoot: string;

@@ -676,7 +676,7 @@ export async function executeScoutExplore(
           observation: xhsObservation(xhsPacket, now),
         } satisfies SourceObservationAdmission)
       : admitSourceObservation(structured.source, source, Date.now());
-  if (!observationAdmission.ok) {
+  if ("invalidField" in observationAdmission) {
     return ctx.blocked(
       "Scout exploration returned invalid current-source evidence",
       {

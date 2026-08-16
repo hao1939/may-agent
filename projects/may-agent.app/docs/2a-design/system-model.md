@@ -157,6 +157,12 @@ semantic facts. It cannot launch agents or mutate inbox/task state. Metrics are
 projections over runtime or domain observations; a breach may wake an existing
 obligation but is not itself desired state.
 
+An explicit host-private maintenance job is separate from the App schedule
+union. It may inspect Runtime-owned ledgers or perform mechanical repair through
+named host ports, but it cannot own App work. Actionable findings must enter a
+declared App input/subscription/task route as facts. This keeps the public SDK
+narrow without hiding a second domain controller in infrastructure.
+
 The in-process event bus does not provide durable work ownership or implicit
 exactly-once replay. Work that must survive restart is persisted before routing
 as an inbox request or task trigger. Continuation handlers remain idempotent.
@@ -179,6 +185,7 @@ work owner. Then choose the smallest mechanism for one bounded attempt:
 | Timer creates an independent obligation                  | Input schedule                              |
 | Timer wakes deterministic desired work                   | Event schedule and task subscription        |
 | Poll external state                                      | Observer producing facts                    |
+| Inspect Runtime-owned ledgers or repair host mechanics   | Host-private scheduled maintenance handler  |
 | Mechanically detectable tool risk                        | Guard                                       |
 | Agent-callable external capability                       | Tool                                        |
 
@@ -196,6 +203,10 @@ The public App/workflow SDK exposes typed semantic contracts and scoped
 capabilities. It does not expose raw SQL, task files and locks, scheduler
 handles, global runtime paths, recovery APIs, or unrestricted event-driven
 execution.
+
+Host-private scheduled handlers receive only their explicitly wired runtime
+ports. They are not SDK capabilities, cannot be imported by workflows, and
+cannot create a parallel App lifecycle.
 
 Direct, Gym, and read-only processes reuse the same prepared agents and
 workflows without attaching autonomous controllers. Loading an App definition

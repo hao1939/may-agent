@@ -146,6 +146,19 @@ There is no unrestricted list/query surface and no database escape hatch.
 Genuine new read requirements become narrow typed projections with explicit
 scope and tests.
 
+### Host-private maintenance is not an SDK extension
+
+A scheduled system job that must query runtime-owned ledgers, use global host
+paths, or deliver an operational report is not an App workflow and does not
+justify widening `WorkflowContext`. It uses a host-private adapter contract and
+is scheduled by the host. If it discovers actionable domain work, it publishes
+a fact into a declared App route; it does not mutate App inbox/task state or
+become another controller.
+
+Host-handler source may live near the operations agent that owns the diagnosis,
+but it is not exported from `@may-agent/sdk`. A repository-local structural type
+exists only to typecheck that host integration against the paired Runtime.
+
 ## One execution result
 
 Agent calls and nested workflows return the same bounded terminal shape:
@@ -265,4 +278,6 @@ subscriptions. Runtime subsystem composition remains host-private.
 - Execution results are bounded claims admitted by the owning App/task.
 - No App/workflow receives raw SQL, global paths, task storage, scheduler,
   queue, lease, delivery, or recovery access.
+- Host-private maintenance handlers remain outside the public SDK and cannot
+  provide a parallel App work lifecycle.
 - No application or runtime package exposes or imports a legacy SDK entry point.

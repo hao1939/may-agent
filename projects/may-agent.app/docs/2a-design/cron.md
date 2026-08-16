@@ -2,8 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented. Canonical App input/event schedules and
-observers use the shared scheduler; the historical Cron name remains a
-host-private runtime detail, not an App authoring surface.
+observers use the shared scheduler. Explicit standalone and host-maintenance
+jobs use the same scheduler through its historical Cron adapter without
+becoming an App authoring surface.
 
 ## Purpose
 
@@ -14,10 +15,13 @@ mechanics; each App declares what a due slot means.
 due slot -> App input admission
          -> fact publication
          -> bounded observer run -> facts
+         -> host-private maintenance job -> evidence/facts/repair
 ```
 
-Schedules never directly launch an agent or workflow. Model execution begins
-only after an admitted App request or persisted task reconciliation requires it.
+Canonical App schedules never directly launch an agent or workflow. Model
+execution begins only after an admitted App request or persisted task
+reconciliation requires it. A host-private job runs only its explicitly
+configured standalone/system adapter; it is not an alternative App route.
 
 The scheduler implementation retains the historical internal name `Cron`, and
 the long-running CLI flag remains `--cron`. Those names do not expose cron
@@ -118,11 +122,13 @@ const providerObserver: AppObserver = {
   async run(ctx) {
     const state = await readProviderState();
     ctx.log.info(`observed provider revision ${state.revision}`);
-    return [{
-      type: "sample.provider.observed",
-      data: state,
-      target: { appId: "sample", project: "sample" },
-    }];
+    return [
+      {
+        type: "sample.provider.observed",
+        data: state,
+        target: { appId: "sample", project: "sample" },
+      },
+    ];
   },
 };
 ```
@@ -140,15 +146,42 @@ The host publishes returned facts only after a successful bounded run. Provider
 poll retry and rate limits may live inside the bounded adapter; durable work
 recovery remains with App requests/tasks.
 
+## Host-private scheduled maintenance
+
+Some system duties cannot be honest App observers because their inputs are
+Runtime-owned ledgers rather than a bounded external provider. Use an explicit
+host-private scheduled handler only when the job:
+
+- needs Runtime-private query, path, recovery, or operational-delivery ports;
+- is deterministic observation, reporting, or mechanical repair rather than
+  domain judgment;
+- has one named owner, bounded execution, idempotent output, and observable
+  failure; and
+- hands any resulting domain work to a canonical App route by publishing a
+  fact, never by mutating App inbox/task state.
+
+These handlers are configured by `cron.json` and typed against a local
+structural host contract. They are not `WorkflowContext` consumers, are not
+exported through `@may-agent/sdk`, and cannot be invoked as App workflows.
+Enabled handlers are compiled and bundled against the paired Runtime alongside
+the canonical workflow compatibility gate.
+
+The May operations health packet and daily operations digest are current
+examples: both read host-owned operational ledgers; the digest may use the host
+delivery adapter; both emit facts when App-owner judgment is needed. Their
+former App schedules/task routes were removed so there is only one timer and
+one execution authority for each duty.
+
 ## Choosing the route
 
-| Timed responsibility | Canonical declaration |
-| --- | --- |
-| Every due slot requires independent judgment/result | Input schedule |
-| Time wakes one standing desired outcome | Event schedule -> task subscription |
-| Time publishes a diagnostic/lifecycle fact | Event schedule -> observation only |
-| Time must first read an external provider | Observer -> facts |
-| Time repairs generic runtime mechanics | Internal runtime maintenance, not an App schedule |
+| Timed responsibility                                          | Canonical declaration                             |
+| ------------------------------------------------------------- | ------------------------------------------------- |
+| Every due slot requires independent judgment/result           | Input schedule                                    |
+| Time wakes one standing desired outcome                       | Event schedule -> task subscription               |
+| Time publishes a diagnostic/lifecycle fact                    | Event schedule -> observation only                |
+| Time must first read an external provider                     | Observer -> facts                                 |
+| Time inspects Runtime-owned ledgers or repairs host mechanics | Host-private scheduled maintenance handler        |
+| Time repairs generic runtime mechanics                        | Internal runtime maintenance, not an App schedule |
 
 A scheduled “owner request” that deterministically selects the same standing
 task is a task-wake event, not an inbox input. Conversely, a real periodic
@@ -186,12 +219,13 @@ An observer or event-schedule failure may be retried mechanically within a
 bounded host policy. Persistent ambiguity becomes runtime attention; it cannot
 silently start an owner agent.
 
-## Legacy cron compatibility
+## Cron compatibility boundary
 
 Historical `cron.json`, named handlers, workflow-backed handlers, and
-auto-heartbeats remain only for genuinely standalone agent/system duties. App
-schedules, observers, and task resync are hosted directly by the canonical App
-runtime; cron handlers cannot own App requests or task wakes.
+auto-heartbeats remain only for genuinely standalone agent or explicit
+host-internal system duties. App schedules, observers, and task resync are
+hosted directly by the canonical App runtime; cron handlers cannot own App
+requests or task wakes.
 
 Each App migration classifies every legacy entry as:
 
@@ -202,9 +236,11 @@ Each App migration classifies every legacy entry as:
 - explicit offline maintenance CLI; or
 - deletion because another canonical route already owns it.
 
-No legacy handler may run in parallel with its canonical replacement. App code
-must not add new `cron.json`, direct handler-to-agent dispatch, or
-`createWorkflowHandler` routes.
+No legacy handler may run in parallel with its canonical replacement. Domain
+App code must not add `cron.json`, direct handler-to-agent dispatch, or
+`createWorkflowHandler` routes. A new host-maintenance entry is acceptable only
+under the explicit boundary above; co-location beside an App operations agent
+does not make it an App route.
 
 ## Metrics
 
@@ -228,3 +264,5 @@ normal App/task/observation classification; it is not a second scheduler.
 - Reload is atomic and cannot duplicate timers, observers, or subscriptions.
 - Only the long-running host fires schedules.
 - Legacy cron handlers never dual-consume work with canonical routes.
+- Host-private maintenance handlers are separately typed, bounded, and hand
+  domain work to canonical App routes rather than owning it.

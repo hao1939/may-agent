@@ -9,13 +9,13 @@ host own App Inbox, optional task reconciliation, adapters, and recovery.
 One binary exposes several modes, but only the long-running host may own
 autonomous work.
 
-| Mode | May prepare agents/workflows? | May attach App inbox/schedules/tasks? |
-| --- | --- | --- |
-| Long-running `--cron` daemon | Yes | Yes; sole autonomous host |
-| Web/read process | Only as required for bounded control/read adapters | No competing controllers |
-| Direct agent/workflow | Yes | No |
-| Gym/benchmark | Yes, through production preparation | No |
-| Status/read-only CLI | No execution required | No |
+| Mode                         | May prepare agents/workflows?                      | May attach App inbox/schedules/tasks? |
+| ---------------------------- | -------------------------------------------------- | ------------------------------------- |
+| Long-running `--cron` daemon | Yes                                                | Yes; sole autonomous host             |
+| Web/read process             | Only as required for bounded control/read adapters | No competing controllers              |
+| Direct agent/workflow        | Yes                                                | No                                    |
+| Gym/benchmark                | Yes, through production preparation                | No                                    |
+| Status/read-only CLI         | No execution required                              | No                                    |
 
 The long-running host loads one atomic App registry generation, then attaches
 inbox dispatch, subscriptions, schedules, observers, optional task controllers,
@@ -212,12 +212,12 @@ from current working directory or copied global roots.
 
 `agent.json` affects preparation:
 
-| Field | Effect |
-| --- | --- |
-| `model` | Configured model identity |
-| `compaction` | Active-context compaction policy |
-| `tools` | Explicit tool presets/capabilities |
-| `context_files` | Files resolved relative to the agent and explicitly added to invocation context |
+| Field                | Effect                                                                                       |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| `model`              | Configured model identity                                                                    |
+| `compaction`         | Active-context compaction policy                                                             |
+| `tools`              | Explicit tool presets/capabilities                                                           |
+| `context_files`      | Files resolved relative to the agent and explicitly added to invocation context              |
 | compatibility fields | Parsed only at documented migration boundaries; never silently change the canonical contract |
 
 Agent configuration does not attach schedules, App subscriptions, task
@@ -228,8 +228,16 @@ controllers, or project ownership. Those belong to `defineApp`.
 The internal scheduler retains the historical `Cron` name. Canonical Apps
 declare input/event schedules and observers. `cron.json`, named handlers,
 detached jobs, and agent self-scheduling are restricted to standalone global
-agents or host-internal system duties; they are not an Agent App compatibility
-path.
+agents or explicit host-internal system duties; they are not an Agent App
+workflow or compatibility path.
+
+A host-internal duty may be implemented beside the App-local operations agent
+when it needs Runtime-private SQL, global paths, recovery mechanics, or direct
+operational delivery. Source placement does not change authority: the handler
+uses a host-private structural contract, cannot own an App inbox item or task,
+and must publish a fact through a declared route when domain judgment is
+needed. Canonical workflow compatibility checking covers these enabled handler
+entrypoints separately so host integration does not leak into the public SDK.
 
 No canonical App work may depend on a legacy handler, and no handler may run in
 parallel with a canonical subscription/schedule/task route for the same
@@ -280,3 +288,5 @@ route.
 - App-local agents are discovered through the canonical App generation.
 - Compatibility socket/cron/chat/project paths normalize or remain read-only;
   they never form a parallel lifecycle.
+- Host-private scheduled maintenance is explicit, mechanically scoped, and
+  hands domain work back through canonical App routes.

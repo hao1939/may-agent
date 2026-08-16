@@ -1,11 +1,7 @@
 import { writeFileSync, appendFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import {
-  promoteAgent,
-  discardAgent,
-  type GrowthConfig,
-} from "../../../../../shared/lib/growth.js";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { promoteAgent, discardAgent, type GrowthConfig } from "./growth.js";
 import {
   runGym,
   findLabForks,
@@ -27,15 +23,33 @@ export const description: string =
   "then record all results. Use this when Coach has 3+ queued growth targets " +
   "or wants to rapidly learn multiple methods.";
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+function inputText(input: unknown): string {
+  if (typeof input === "string") return input;
+  return input === undefined ? "" : JSON.stringify(input, null, 2);
+}
+
+function resultText(result: ExecutionResult): string {
+  return result.summary || JSON.stringify(result.output ?? "", null, 2);
+}
+
+async function emitStep(
+  ctx: WorkflowContext,
+  type: "step_start" | "step_done",
+  step: string,
+): Promise<void> {
+  await ctx.events.emit({ type, data: { step } });
+}
+
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const task = inputText(ctx.input);
   // Step 1: Batch diagnosis — identify multiple experiments to run
-  const plan = await ctx.runAgent(
+  const plan = await ctx.agents.call(
     "coach",
     `Plan a training sprint — identify multiple experiments to run in batch.\n\n` +
       `## ⚠️ TURN BUDGET: MAX 30 TOOL CALLS\n` +
       `This session has a strict budget of 30 tool calls. Plan efficiently.\n` +
       `If you cannot finish within 30 calls, call finish({status: "partial"}) with what you have.\n\n` +
-      `## Context\n${ctx.task}\n\n` +
+      `## Context\n${task}\n\n` +
       `## Instructions\n` +
       `1. Read \`projects/may-agent.app/agents/coach/workspace/todo.md\` — find all growth cycle candidates.\n` +
       `2. Read \`projects/may-agent.app/agents/*/ERROR_LOG.jsonl\` — find error patterns worth fixing.\n` +
@@ -60,11 +74,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `8. Report the full plan.`,
   );
   if (plan.status === "error") {
-    return ctx.blocked("sprint planning failed", { error: plan.error });
+    return ctx.blocked("sprint planning failed", plan.evidence ?? plan.summary);
   }
 
   // Check if ceiling-effect gate eliminated all experiments
-  const planText = (plan.lastAssistantText || "").toUpperCase();
+  const planText = resultText(plan).toUpperCase();
   if (
     planText.includes("GATE: ALL SKIPPED") ||
     planText.includes("CEILING EFFECT ON ALL")
@@ -87,7 +101,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     return ctx.done(
       `Training sprint SKIPPED (ceiling-effect gate).\n\n` +
-        `## Plan\n${plan.lastAssistantText}\n\n` +
+        `## Plan\n${resultText(plan)}\n\n` +
         `All candidate experiments pass baseline — no room for improvement. ` +
         `Create harder scenarios before the next sprint.`,
     );
@@ -102,18 +116,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.blocked(
       "Sprint plan Phase 1 failed: Coach did not create projects/may-agent.app/agents/coach/workspace/sprint-plan.md. " +
         "Cannot proceed to Phase 2 (fork/patch) without the plan file.",
-      { planOutput: plan.lastAssistantText?.substring(0, 500) },
+      { planOutput: resultText(plan).substring(0, 500) },
     );
   }
 
   // Step 2: Fork and patch all experiments
-  const patch = await ctx.runAgent(
+  const patch = await ctx.agents.call(
     "coach",
     `Execute all forks and patches from the sprint plan.\n\n` +
       `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
       `This session has a strict budget of 25 tool calls. Fork, patch, verify, move on.\n` +
       `If you cannot finish within 25 calls, call finish({status: "partial"}) with what you have.\n\n` +
-      `## Sprint Plan\n${ctx.summarize(plan)}\n\n` +
+      `## Sprint Plan\n${resultText(plan)}\n\n` +
       `## Instructions\n` +
       `Read \`projects/may-agent.app/agents/coach/workspace/sprint-plan.md\` for the full plan.\n\n` +
       `For EACH experiment in the plan:\n` +
@@ -125,16 +139,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `Report: list of forks created with what was changed in each.`,
   );
   if (patch.status === "error") {
-    return ctx.blocked("batch forking failed", { error: patch.error });
+    return ctx.blocked("batch forking failed", patch.evidence ?? patch.summary);
   }
 
   // Step 3: Run all gym tests — direct JS execution (no LLM session needed)
-  ctx.emit({ type: "step_start", step: "sprint-gym-tests" });
+  await emitStep(ctx, "step_start", "sprint-gym-tests");
 
   // Discover forks from .lab/ and match against patch output
   const forks = findLabForks();
-  const patchText = patch.lastAssistantText ?? "";
-  const planText2 = plan.lastAssistantText ?? "";
+  const patchText = resultText(patch);
+  const planText2 = resultText(plan);
   const combinedText = planText2 + "\n" + patchText;
 
   // Build list of experiments: { forkName, agent, scenarios }
@@ -233,7 +247,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     resultsText,
   );
 
-  ctx.emit({ type: "step_done", step: "sprint-gym-tests" } as any);
+  await emitStep(ctx, "step_done", "sprint-gym-tests");
 
   // Step 4: Record results, promote winners, discard losers (pure JS — no LLM session)
   const growthConfig: GrowthConfig = { agentsRoot: AGENTS_ROOT };
@@ -328,7 +342,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   return ctx.done(
     `Training sprint completed: ${promoted} promoted, ${discarded} discarded.\n\n` +
-      `## Plan\n${plan.lastAssistantText}\n\n` +
+      `## Plan\n${resultText(plan)}\n\n` +
       `## Results\n${resultsText}\n\n` +
       `## Decisions\n${decisionsText}`,
   );

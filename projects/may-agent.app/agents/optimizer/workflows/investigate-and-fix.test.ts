@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+  existsSync,
+  mkdtempSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -17,7 +24,10 @@ const execute: (ctx: any) => Promise<any> = executeWorkflowUnderTest;
 let testDir: string;
 
 function freshDir(): string {
-  const dir = join(tmpdir(), `inv-fix-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const dir = join(
+    tmpdir(),
+    `inv-fix-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -43,41 +53,13 @@ function makeTaskResult(
 ): any {
   const { status = "done", writtenFiles = [] } = opts;
 
-  // Build messages that mimic real tool call/result patterns
-  const messages: any[] = [];
-  if (writtenFiles.length > 0) {
-    // Assistant message with tool calls
-    const toolCalls = writtenFiles.map((f) => ({
-      type: "toolCall",
-      name: f.tool,
-      arguments: { path: f.path },
-    }));
-    messages.push({ role: "assistant", content: toolCalls });
-
-    // Tool results
-    const results = writtenFiles.map((f) =>
-      f.tool === "write"
-        ? { type: "text", text: `Wrote 500 bytes to ${f.path} (20 lines)` }
-        : { type: "text", text: `Edit applied to ${f.path} (line 10)` },
-    );
-    messages.push({ role: "toolResult", content: results });
-  }
-
-  // Final assistant message
-  messages.push({
-    role: "assistant",
-    content: [{ type: "text", text }],
-  });
-
   return {
-    sessionId: `s_test_${Date.now()}`,
+    id: `s_test_${Date.now()}`,
+    kind: "agent",
     status,
-    lastAssistantText: text,
-    messages,
-    duration: "5s",
-    outputDir: testDir,
-    turnsUsed: 3,
-    ...(status === "error" ? { error: "agent failed" } : {}),
+    summary: text,
+    output: { writtenFiles: writtenFiles.map(({ path }) => path) },
+    ...(status === "error" ? { evidence: "agent failed" } : {}),
   };
 }
 
@@ -100,41 +82,46 @@ function createMockContext(opts: MockCtxOptions): {
   let callIndex = 0;
 
   const ctx: any = {
-    task: opts.task,
-    agent: "optimizer",
-
-    runAgent: async (agentName: string, task: string): Promise<any> => {
-      agentCalls.push({ name: agentName, task });
-      const response = opts.agentResponses[callIndex] ?? { text: "Default response" };
-      callIndex++;
-      return makeTaskResult(response.text, {
-        status: response.status,
-        writtenFiles: response.writtenFiles,
-      });
+    input: opts.task,
+    agents: {
+      call: async (agentName: string, task: string): Promise<any> => {
+        agentCalls.push({ name: agentName, task });
+        const response = opts.agentResponses[callIndex] ?? {
+          text: "Default response",
+        };
+        callIndex++;
+        return makeTaskResult(response.text, {
+          status: response.status,
+          writtenFiles: response.writtenFiles,
+        });
+      },
     },
-
-    runWorkflow: async (_name: string, _task: string): Promise<any> => {
-      return { type: "done", summary: "sub-workflow done" };
+    workflows: {
+      run: async (): Promise<any> => ({
+        id: "wf_test",
+        kind: "workflow",
+        status: "done",
+        summary: "sub-workflow done",
+      }),
     },
-
-    emit: (event: any) => {
-      events.push(event);
+    events: {
+      emit: async (event: any) => {
+        events.push(event);
+      },
     },
-
     done: (summary: string): any => ({
-      type: "done",
+      id: "wf_test",
+      kind: "workflow",
+      status: "done",
       summary,
     }),
-
     blocked: (reason: string, details?: Record<string, any>): any => ({
-      type: "blocked",
-      reason,
-      ...(details ? { context: details } : {}),
+      id: "wf_test",
+      kind: "workflow",
+      status: "blocked",
+      summary: reason,
+      ...(details ? { evidence: details } : {}),
     }),
-
-    summarize: (result: any, _opts?: any): string => {
-      return result.lastAssistantText ?? "(no text)";
-    },
   };
 
   return { ctx, events, agentCalls };
@@ -156,8 +143,14 @@ describe("investigate-and-fix workflow", () => {
     const fixPath = join(testDir, "heartbeat-fixed.md");
 
     // Create the files that the agent would produce
-    writeFileSync(findingPath, "# Finding: Test issue\n\n## Recommendations\nR1: Fix the thing\n");
-    writeFileSync(fixPath, "# Fixed heartbeat\nThis file was actually changed.\n");
+    writeFileSync(
+      findingPath,
+      "# Finding: Test issue\n\n## Recommendations\nR1: Fix the thing\n",
+    );
+    writeFileSync(
+      fixPath,
+      "# Fixed heartbeat\nThis file was actually changed.\n",
+    );
 
     const { ctx, agentCalls } = createMockContext({
       task: "Investigate test issue",
@@ -175,7 +168,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("done");
+    expect(result.status).toBe("done");
     expect(agentCalls).toHaveLength(2);
     expect(agentCalls[0].name).toBe("optimizer");
     expect(agentCalls[0].task).toContain("Phase 1: INVESTIGATE");
@@ -186,15 +179,13 @@ describe("investigate-and-fix workflow", () => {
   it("blocks when Phase 1 fails", async () => {
     const { ctx, agentCalls } = createMockContext({
       task: "Investigate failing thing",
-      agentResponses: [
-        { text: "Error occurred", status: "error" },
-      ],
+      agentResponses: [{ text: "Error occurred", status: "error" }],
     });
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("blocked");
-    expect(result.reason).toContain("Phase 1");
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("Phase 1");
     expect(agentCalls).toHaveLength(1); // Only Phase 1 was attempted
   });
 
@@ -214,7 +205,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("done");
+    expect(result.status).toBe("done");
     expect(result.summary).toContain("no action needed");
     expect(agentCalls).toHaveLength(1); // Only Phase 1, no Phase 2
   });
@@ -232,8 +223,8 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("blocked");
-    expect(result.reason).toContain("didn't write a finding file");
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("didn't write a finding file");
   });
 
   it("accepts DISPATCH-READY with a finding file", async () => {
@@ -252,7 +243,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("done");
+    expect(result.status).toBe("done");
     expect(result.summary).toContain("dispatched");
     expect(agentCalls).toHaveLength(1);
   });
@@ -274,8 +265,8 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("blocked");
-    expect(result.reason).toContain("Phase 2");
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("Phase 2");
     expect(agentCalls).toHaveLength(2);
   });
 
@@ -299,8 +290,8 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("blocked");
-    expect(result.reason).toContain("did not modify any files beyond");
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("did not modify any files beyond");
   });
 
   it("blocks when fix file doesn't exist on disk", async () => {
@@ -325,8 +316,8 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("blocked");
-    expect(result.reason).toContain("missing or empty");
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("missing or empty");
   });
 
   it("succeeds when fix produces real files", async () => {
@@ -334,8 +325,14 @@ describe("investigate-and-fix workflow", () => {
     const fixPath1 = join(testDir, "heartbeat.md");
     const fixPath2 = join(testDir, "config.json");
 
-    writeFileSync(findingPath, "# Finding: Config issue\n## Recommendations\nR1: Update config\n");
-    writeFileSync(fixPath1, "# Updated heartbeat\nWith real content that proves the fix was applied.\n");
+    writeFileSync(
+      findingPath,
+      "# Finding: Config issue\n## Recommendations\nR1: Update config\n",
+    );
+    writeFileSync(
+      fixPath1,
+      "# Updated heartbeat\nWith real content that proves the fix was applied.\n",
+    );
     writeFileSync(fixPath2, '{"setting": "fixed", "value": 42}\n');
 
     const { ctx } = createMockContext({
@@ -357,7 +354,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("done");
+    expect(result.status).toBe("done");
     expect(result.summary).toContain("Phase 1: Finding");
     expect(result.summary).toContain("Phase 2: Fix applied");
     expect(result.summary).toContain("Phase 3: Verification");
@@ -386,7 +383,9 @@ describe("investigate-and-fix workflow", () => {
 
     await execute(ctx);
 
-    const stepStarts = events.filter((e: any) => e.type === "step_start").map((e: any) => e.step);
+    const stepStarts = events
+      .filter((e: any) => e.type === "step_start")
+      .map((e: any) => e.data.step);
     expect(stepStarts).toContain("phase1-investigate");
     expect(stepStarts).toContain("phase2-fix");
     expect(stepStarts).toContain("phase3-verify");
@@ -408,7 +407,9 @@ describe("investigate-and-fix workflow", () => {
 
     await execute(ctx);
 
-    expect(agentCalls[0].task).toContain("Mode D: Check workflow adoption rates");
+    expect(agentCalls[0].task).toContain(
+      "Mode D: Check workflow adoption rates",
+    );
   });
 
   it("passes Phase 1 summary into Phase 2", async () => {

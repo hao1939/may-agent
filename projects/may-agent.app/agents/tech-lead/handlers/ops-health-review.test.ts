@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTestRuntime } from "@may-agent/sdk/testing";
+import { createHostTestRuntime } from "./testing.ts";
 import { execute } from "./ops-health-review.ts";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { HandlerContext } from "./types.ts";
 
 type EmittedEvent = { type: string; [key: string]: unknown };
 
@@ -27,7 +27,7 @@ describe("ops-health-review", () => {
     tempDirs.push(root);
     mkdirSync(appDir, { recursive: true });
 
-    const runtime = createTestRuntime({
+    const runtime = createHostTestRuntime({
       root,
       persist: root,
       agents: join(root, "agents"),
@@ -36,41 +36,13 @@ describe("ops-health-review", () => {
       emit: (type, data) => emitted.push({ type, ...(data ?? {}) }),
     });
 
-    const ctx: WorkflowContext = {
-      task: `app: ${appDir}\nReview may-agent operational health.`,
-      agent: "tech-lead",
-      emit: (event) => emitted.push(event),
-      dispatchEvent: (eventType, data = {}) =>
-        emitted.push({ type: eventType, ...data }),
-      getDb: () => runtime.db,
-      query: runtime.sdk.query,
-      log: () => {},
-      notify: () => {},
-      metrics: runtime.sdk.metrics,
-      persistDir: root,
-      projectRoot: root,
-      agentsRoot: runtime.agents,
-      sharedRoot: runtime.shared,
-      projectsRoot: runtime.projects,
-      runAgent: runtime.sdk.runAgent,
-      runWorkflow: runtime.sdk.runWorkflow,
-      runFunction: async (label, fn) => ({
-        ok: true,
-        status: "done",
-        agent: "tech-lead",
-        sessionId: label,
-        result: await fn(),
-      }),
-      summarize: (result) => String(result.result ?? result.status),
-      done: (summary) => ({ type: "done", summary }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-      createSession: async () => ({
-        prompt: async () => {},
-        lastText: () => "",
-        close: () => {},
-      }),
-    };
+    const ctx = {
+      sdk: runtime.sdk,
+      agentName: "tech-lead",
+      classifyError: () => "infra",
+      getLastDigest: () => null,
+      upsertDigest: async () => null,
+    } as unknown as HandlerContext;
 
     return { appDir, db: runtime.db, emitted, ctx, close: runtime.close };
   }
@@ -123,10 +95,9 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result).toEqual({
-      type: "done",
-      summary: "Ops health observer recorded packet with no owner wake.",
-    });
+    expect(result).toBe(
+      "Ops health observer recorded packet with no owner wake.",
+    );
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
     ]);
@@ -159,7 +130,7 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result.type).toBe("done");
+    expect(result).toContain("owner wake emitted");
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
       "project.owner.requested",
@@ -199,11 +170,9 @@ describe("ops-health-review", () => {
 
     await execute(ctx);
     const unchanged = await execute(ctx);
-    expect(unchanged).toEqual({
-      type: "done",
-      summary:
-        "Ops health observer recorded 1 unchanged signal(s); no owner wake.",
-    });
+    expect(unchanged).toBe(
+      "Ops health observer recorded 1 unchanged signal(s); no owner wake.",
+    );
     expect(
       emitted.filter((event) => event.type === "project.owner.requested"),
     ).toHaveLength(1);
@@ -215,10 +184,9 @@ describe("ops-health-review", () => {
     const recovered = await execute(ctx);
     close();
 
-    expect(recovered).toEqual({
-      type: "done",
-      summary: "Ops health observer recorded recovery; owner wake emitted.",
-    });
+    expect(recovered).toBe(
+      "Ops health observer recorded recovery; owner wake emitted.",
+    );
     expect(
       emitted.filter((event) => event.type === "project.owner.requested"),
     ).toHaveLength(2);
@@ -272,7 +240,7 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result.type).toBe("done");
+    expect(result).toContain("owner wake emitted");
     expect(emitted[1]).toMatchObject({
       type: "project.owner.requested",
       params: {
@@ -328,7 +296,7 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result.type).toBe("done");
+    expect(result).toContain("owner wake emitted");
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
       "project.owner.requested",
@@ -380,10 +348,9 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result).toEqual({
-      type: "done",
-      summary: "Ops health observer recorded packet with no owner wake.",
-    });
+    expect(result).toBe(
+      "Ops health observer recorded packet with no owner wake.",
+    );
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
     ]);
@@ -435,10 +402,9 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result).toEqual({
-      type: "done",
-      summary: "Ops health observer recorded packet with no owner wake.",
-    });
+    expect(result).toBe(
+      "Ops health observer recorded packet with no owner wake.",
+    );
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
     ]);
@@ -502,10 +468,9 @@ describe("ops-health-review", () => {
     const result = await execute(ctx);
     close();
 
-    expect(result).toEqual({
-      type: "done",
-      summary: "Ops health observer recorded 1 changed signal family/families; owner wake emitted.",
-    });
+    expect(result).toBe(
+      "Ops health observer recorded 1 changed signal family/families; owner wake emitted.",
+    );
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
       "project.owner.requested",
@@ -572,10 +537,9 @@ describe("ops-health-review", () => {
     close();
 
     // No signals should fire — both escalations are from project agents, not platform
-    expect(result).toEqual({
-      type: "done",
-      summary: "Ops health observer recorded packet with no owner wake.",
-    });
+    expect(result).toBe(
+      "Ops health observer recorded packet with no owner wake.",
+    );
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
     ]);

@@ -21,14 +21,14 @@ outcome. A workflow run owns only one bounded execution attempt.
 
 ## Skill and workflow boundary
 
-| Concern | Skill | Workflow |
-| --- | --- | --- |
-| Primary source | `SKILL.md` instructions | TypeScript module |
-| Controller | Model judgment | Workflow code |
-| Unit of use | One model turn | One bounded execution run |
-| Sequencing | Advisory | Enforced and testable |
-| Durable state | None | None beyond attempt evidence |
-| Best fit | Variable judgment-heavy method | Stable repeatable orchestration |
+| Concern        | Skill                          | Workflow                        |
+| -------------- | ------------------------------ | ------------------------------- |
+| Primary source | `SKILL.md` instructions        | TypeScript module               |
+| Controller     | Model judgment                 | Workflow code                   |
+| Unit of use    | One model turn                 | One bounded execution run       |
+| Sequencing     | Advisory                       | Enforced and testable           |
+| Durable state  | None                           | None beyond attempt evidence    |
+| Best fit       | Variable judgment-heavy method | Stable repeatable orchestration |
 
 A workflow may ask an agent to apply a skill. The workflow controls sequence;
 the skill guides judgment inside one step. Neither owns the enclosing App/task.
@@ -129,6 +129,24 @@ The canonical context contains:
 It intentionally contains no raw database, event bus, task store, queue, lease,
 scheduler, recovery handle, global path set, session manager, or arbitrary
 command surface.
+
+### Workflow or host-private maintenance handler
+
+The absence of raw SQL and host paths is an authoring boundary, not a missing
+workflow feature. If a timed job must inspect runtime-owned ledgers, repair
+host mechanics, or produce an operational report from global runtime state, it
+is a host-private maintenance handler rather than an App workflow.
+
+That handler may use an explicitly supplied host query/path/delivery adapter,
+record its mechanical output, and publish a fact such as an owner request. It
+cannot become a second App inbox or task controller, and it cannot duplicate a
+canonical App schedule/subscription for the same obligation. Any judgment or
+durable domain continuation still enters the App through a declared input,
+subscription, task trigger, or exact target.
+
+Placement beside an App-local operations agent does not make a host handler a
+public App capability. Host-handler modules use a local structural contract and
+are checked against the paired Runtime separately from workflow authoring.
 
 ### Task reconciliation input
 
@@ -273,8 +291,8 @@ The host allocates the workflow workspace according to the App/task policy and
 provides only:
 
 ```ts
-ctx.workspace?.root
-ctx.workspace?.output
+ctx.workspace?.root;
+ctx.workspace?.output;
 ```
 
 All file and command work stays beneath that allocation. Workflows do not
@@ -351,5 +369,8 @@ reconciliation when it requires durable waits.
 - Workflows use scoped reads and workspace paths only.
 - No workflow imports raw SQL, task storage, global paths, scheduler, queue,
   lease, delivery, or recovery mechanics.
+- Runtime-ledger observation or repair that needs those capabilities is
+  explicitly classified as a host-private maintenance handler, never disguised
+  as a workflow.
 - Result `done` never implies enclosing task/project completion without owner
   admission and evidence.

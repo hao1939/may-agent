@@ -1489,7 +1489,9 @@ to use only `reconciliation`, bounded reads, scoped workspace paths, and
 final-Runtime gate to bundle every discoverable App workflow against the exact
 paired SDK. The immutable artifact at
 `/app/.state/releases/apps/c71552f0e3cc6d7736db801df73de0de1e6060cc`
-loaded all seven Apps and bundled all 50 remaining workflows with zero errors.
+loaded all seven Apps and, under that artifact's then-current discovery rules,
+bundled 50 workflow entrypoints with zero errors. This is historical deployment
+evidence, not the inventory for the later authoring-boundary closeout below.
 
 The Apps-only recreate retained the Release C Runtime image and SDK. After
 restart recovery, task generation 149 ran workflow
@@ -1505,3 +1507,44 @@ The rollout is complete. Release C remains the deployed canonical Runtime, the
 post-rollout Apps repair is the deployed canonical Apps artifact, and the
 retained Release A artifact is the unit Runtime rollback boundary. Compatibility
 branches must not be restored into current source piecemeal.
+
+### Post-rollout authoring-boundary closeout (source follow-up)
+
+A deeper audit found a second weakness in the compatibility repair: successful
+bundling proves import/export resolution but does not prove TypeScript contract
+compatibility. Several active May workflows still used private context members
+that a transpile-only bundle could accept, and two SQL-heavy operational
+observers had been represented as workflows even though the canonical workflow
+SDK intentionally has no unrestricted query or host-delivery capability.
+
+The source follow-up closes that gap without widening the SDK:
+
+- all active May workflows now use typed `ctx.input`, `ctx.reconciliation`,
+  `ctx.agents.call`, `ctx.events.emit`, scoped workspaces, and
+  `ExecutionResult`;
+- operational health review and the daily operations digest are explicit
+  host-private scheduled maintenance handlers, with their duplicate App
+  schedules and task routes removed;
+- handler source has a local structural host contract and test-only composition
+  of Runtime-private query, metric, and SQLite services; and
+- the completed one-time project-workflow fork generator and its pre-canonical
+  seed are retired so no live script can manufacture workflows using the
+  removed private context; and
+- the final-Runtime gate mirrors Runtime workflow discovery, typechecks every
+  discovered workflow and enabled handler against the exact paired SDK, then
+  bundles every entrypoint.
+
+Current source verification reports:
+
+```text
+Canonical Agent App integrity: 0 error(s); Apps + final Runtime
+(48 workflows and 5 enabled handlers checked)
+
+May App active suite: 102 pass, 0 fail, 389 expect() calls, 18 files
+May App strict typecheck: pass
+```
+
+This subsection records source and local verification only. It does not claim
+that this follow-up branch, its eventual commit, or a derived artifact has been
+merged or deployed; those require separate immutable-artifact and live rollout
+evidence.

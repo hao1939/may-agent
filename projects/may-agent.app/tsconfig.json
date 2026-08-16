@@ -14,6 +14,17 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["app.ts"],
-  "exclude": ["**/*.test.ts", "archive/**", ".state/**", "node_modules/**"]
+  "include": [
+    "app.ts",
+    "agents/*/workflows/*.ts",
+    "agents/*/handlers/*.ts",
+    "agents/*/handlers/lib/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/testing.ts",
+    "archive/**",
+    ".state/**",
+    "node_modules/**"
+  ]
 }

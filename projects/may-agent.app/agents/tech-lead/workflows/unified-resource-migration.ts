@@ -1,7 +1,7 @@
 import type {
-  ProjectAppTaskAction,
+  ExecutionResult,
+  TaskAction,
   WorkflowContext,
-  WorkflowResult,
 } from "@may-agent/sdk";
 
 export const name = "unified-resource-migration";
@@ -51,7 +51,7 @@ const legacyResources: Array<{
   },
 ];
 
-export function legacyMayAgentTaskCloseActions(): ProjectAppTaskAction[] {
+export function legacyMayAgentTaskCloseActions(): TaskAction[] {
   return legacyResources.map(({ taskId, generation, summary }) => ({
     kind: "close-task",
     taskId,
@@ -60,7 +60,7 @@ export function legacyMayAgentTaskCloseActions(): ProjectAppTaskAction[] {
   }));
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const actions = legacyMayAgentTaskCloseActions();
   const summary = `Retired ${actions.length} implemented or superseded pre-contract May Agent resources.`;
   return ctx.done(summary, {

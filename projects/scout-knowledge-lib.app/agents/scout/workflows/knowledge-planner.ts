@@ -157,7 +157,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
   let ownerResult = result.output as unknown as OwnerResult;
   if (experienceReview) {
     const admitted = admitExperienceReviewResult(ownerResult);
-    if (!admitted.ok) {
+    if ("error" in admitted) {
       return ctx.blocked(
         `Scout experience review result was rejected: ${admitted.error}`,
         {

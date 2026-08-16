@@ -1,15 +1,13 @@
 /**
  * growth — Agent forking/promotion utilities.
  *
- * App-only helpers for the coach agent's training-sprint and growth-cycle
+ * App-local helpers for the coach agent's training-sprint and growth-cycle
  * workflows. Not part of @may-agent/sdk because forking, promoting, and
  * discarding agents are operations on the host filesystem layout that
  * belong to the app, not the SDK.
  *
- * Imported directly by:
- *   - agents/coach/workflows/growth-cycle.ts
- *   - agents/coach/workflows/training-sprint.ts
- *   - shared/tests/growth.test.ts
+ * Kept beside the workflows because agent promotion is a May App concern,
+ * not a shared host or public SDK capability.
  */
 
 import { existsSync, mkdirSync, cpSync, rmSync, readdirSync } from "node:fs";
@@ -79,6 +77,10 @@ export function listLabAgents(config: GrowthConfig): string[] {
   if (!existsSync(labDir)) return [];
   return readdirSync(labDir).filter((name) => {
     const p = join(labDir, name);
-    return existsSync(join(p, "SOUL.md")) || existsSync(join(p, "AGENTS.md")) || existsSync(join(p, "heartbeat.md"));
+    return (
+      existsSync(join(p, "SOUL.md")) ||
+      existsSync(join(p, "AGENTS.md")) ||
+      existsSync(join(p, "heartbeat.md"))
+    );
   });
 }

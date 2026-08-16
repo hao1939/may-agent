@@ -4,7 +4,6 @@
  */
 
 export * from './hao-alignment/index.js';
-export * from './growth.js';
 export * from './task-template.js';
 export * from './project-template.js';
 export * from './session-analyzer.js';

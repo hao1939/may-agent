@@ -33,20 +33,21 @@ may remain a skill used by scheduled sessions.
 
 Runtime mechanisms are selected by control need, not maturity level:
 
-| Need                                                        | Mechanism            | Controller                             |
-| ----------------------------------------------------------- | -------------------- | -------------------------------------- |
-| One bounded judgment/action                                 | Agent session        | Model                                  |
-| Situational method for one turn                             | Skill                | Model                                  |
-| Repeatable ordered sequence, branch, retry, or verification | Workflow             | TypeScript workflow runtime            |
-| Mechanically detectable risk around execution               | Guard                | Guard hook/runtime                     |
-| New action or external integration                          | Tool                 | Tool implementation                    |
-| Timer/event bridge or mechanical projection                 | Handler/app schedule | Runtime callback                       |
-| Durable multi-session goal and state                        | Project app          | Project owner through events/workflows |
-| Cross-owner blocker                                         | Escalation           | Receiving owner                        |
+| Need                                                        | Mechanism                             | Controller                             |
+| ----------------------------------------------------------- | ------------------------------------- | -------------------------------------- |
+| One bounded judgment/action                                 | Agent session                         | Model                                  |
+| Situational method for one turn                             | Skill                                 | Model                                  |
+| Repeatable ordered sequence, branch, retry, or verification | Workflow                              | TypeScript workflow runtime            |
+| Mechanically detectable risk around execution               | Guard                                 | Guard hook/runtime                     |
+| New action or external integration                          | Tool                                  | Tool implementation                    |
+| Timer admission, fact publication, or mechanical projection | App schedule/observer or host handler | Shared scheduler/host                  |
+| Durable multi-session goal and state                        | Project app                           | Project owner through events/workflows |
+| Cross-owner blocker                                         | Escalation                            | Receiving owner                        |
 
-These mechanisms compose. They do not supersede one another. A handler may
-start a workflow; a workflow may call an agent with a skill; a guard may observe
-the workflow; a tool may supply a deterministic capability.
+These mechanisms compose. They do not supersede one another. An App schedule
+may admit an inbox request or publish a fact that wakes a task; that durable
+owner may run a workflow. A workflow may call an agent with a skill, a guard may
+observe the workflow, and a tool may supply a deterministic capability.
 
 ## Promotion Tests
 
@@ -92,24 +93,29 @@ handling steps creates meaningful risk and the sequence has explicit inputs,
 outputs, bounds, and terminal conditions.
 
 ```ts
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { verifyChange } from "./lib/verify-change.js";
+
+type Input = { objective: string };
+
 export const name = "implement-and-verify";
 export const description = "Implement one bounded change and verify it.";
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const implementation = await ctx.runAgent("dev", ctx.task);
-  if (implementation.status === "error") {
+export async function execute(
+  ctx: WorkflowContext<Input>,
+): Promise<ExecutionResult> {
+  const implementation = await ctx.agents.call("dev", ctx.input.objective);
+  if (implementation.status !== "done") {
     return ctx.blocked("Implementation failed", {
-      sessionId: implementation.sessionId,
+      executionId: implementation.id,
+      status: implementation.status,
     });
   }
-  const verification = await ctx.runFunction("verify", async () => {
-    const { execSync } = await import("node:child_process");
-    return execSync("bun test", { encoding: "utf8" });
-  });
-  if (verification.status === "error") {
-    return ctx.blocked("Verification failed");
+  const verification = await verifyChange(ctx.workspace?.root);
+  if (!verification.ok) {
+    return ctx.blocked("Verification failed", verification);
   }
-  return ctx.done("Implemented and verified");
+  return ctx.done("Implemented and verified", verification);
 }
 ```
 
@@ -159,17 +165,22 @@ tool appears in the actual runtime tool list.
 Handlers and schedules answer “when should existing behavior run?” They are not
 the highest level of learned knowledge.
 
-Use them for:
+Use App schedules and observers for:
 
-- timer/event-to-workflow bridging;
+- admitting timed App input or publishing timed facts;
 - bounded normalization and preflight;
 - metric snapshots and projections;
-- recovery/reconciliation mechanics;
 - explicit skip/no-op decisions.
 
+Use a host-private scheduled handler only when the job must inspect or repair
+runtime-owned state that the public App SDK intentionally cannot expose. Such a
+handler is a mechanical adapter, not an App workflow: it may record an
+observation or publish a fact, but any resulting domain work must enter the
+owning App through a declared route.
+
 Project-specific triggers belong in `projects/<id>.app/app.ts`. Standalone
-agent triggers belong in the agent's runtime declaration. Keep judgment and
-multi-step orchestration in the owning workflow/agent.
+agent triggers and host-maintenance jobs belong in their runtime declaration.
+Keep judgment and multi-step domain orchestration in the owning workflow/agent.
 
 ## Projects
 
@@ -212,7 +223,8 @@ resume path, and a stable deduplication key.
 | Implement-then-verify ordering repeatedly fails                  | Add a workflow                                  |
 | High-confidence secret pattern appears in writes                 | Add an observable guard, then validate blocking |
 | Required API/action does not exist                               | Add or extend a tool/SDK capability             |
-| Existing workflow should run daily                               | Add an app schedule/handler bridge              |
+| Existing App outcome should be reconsidered daily                | Add an App input or task-wake schedule          |
+| Runtime-owned ledgers need a deterministic hourly health packet  | Add a host-private maintenance handler          |
 | Improvement needs rollout, calibration, and later outcome review | Track it as project work                        |
 
 ## Retirement

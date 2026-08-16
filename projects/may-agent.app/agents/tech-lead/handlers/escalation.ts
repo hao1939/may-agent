@@ -6,8 +6,8 @@ import type {
   EventEnvelope,
   HandlerContext,
   HandlerModule,
-} from "@may-agent/sdk";
-import type { CronEntry } from "@may-agent/sdk";
+  CronEntry,
+} from "./types.js";
 
 function emitSkip(
   ctx: HandlerContext,
@@ -134,9 +134,14 @@ export const create: HandlerModule["create"] = (
       .get(escalationId) as { id?: unknown } | null;
     const openEventId = Number(openingRow?.id);
     if (!Number.isInteger(openEventId) || openEventId <= 0) {
-      emitSkip(ctx, stringField(data, "sourceSessionId") || null, "persisted escalation.created event not found", {
-        escalationId,
-      });
+      emitSkip(
+        ctx,
+        stringField(data, "sourceSessionId") || null,
+        "persisted escalation.created event not found",
+        {
+          escalationId,
+        },
+      );
       return;
     }
     const target = routeTarget(route);

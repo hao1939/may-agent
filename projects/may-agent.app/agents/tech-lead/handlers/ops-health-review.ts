@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule } from "./types.js";
 
 export const name = "ops-health-review";
 export const description =
@@ -35,17 +35,13 @@ type SignalState = {
 
 type DeliveryHealth = {
   error?: unknown;
-  ownerInboxOpenCount?: unknown;
+  now?: unknown;
+  since?: unknown;
   unhandledEvents?: unknown;
   overduePendingEvents?: unknown;
   orphanPairs?: unknown;
   overdueOpenPairs?: unknown;
 };
-
-function field(task: string, name: string): string | undefined {
-  const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
-  return task.match(pattern)?.[1]?.trim();
-}
 
 function numberValue(value: unknown): number {
   const parsed = Number(value);
@@ -88,7 +84,7 @@ function compactRows(rows: Row[], limit = 10): Row[] {
   });
 }
 
-function queryRows(ctx: WorkflowContext, query: () => { rows: Row[] }): Row[] {
+function queryRows(ctx: HandlerContext, query: () => { rows: Row[] }): Row[] {
   try {
     return query().rows;
   } catch (error) {
@@ -101,20 +97,19 @@ function queryRows(ctx: WorkflowContext, query: () => { rows: Row[] }): Row[] {
 }
 
 function queryCount(
-  ctx: WorkflowContext,
+  ctx: HandlerContext,
   sql: string,
   params: unknown[] = [],
 ): number {
-  const rows = queryRows(ctx, () => ctx.query.sql(sql, params, { limit: 1 }));
+  const rows = queryRows(ctx, () =>
+    ctx.sdk.query.sql(sql, params, { limit: 1 }),
+  );
   return numberValue(rows[0]?.count ?? rows[0]?.c);
 }
 
-function queryDeliveryHealth(
-  ctx: WorkflowContext,
-  now: number,
-): DeliveryHealth {
+function queryDeliveryHealth(ctx: HandlerContext, now: number): DeliveryHealth {
   try {
-    return ctx.query.eventDeliveryHealth({
+    return ctx.sdk.query.eventDeliveryHealth({
       now,
       lookbackMs: 60 * 60_000,
       limit: 20,
@@ -126,7 +121,6 @@ function queryDeliveryHealth(
       overduePendingEvents: [],
       orphanPairs: [],
       overdueOpenPairs: [],
-      ownerInboxOpenCount: 0,
     };
   }
 }
@@ -159,7 +153,7 @@ function isTerminalPipelineRunState(row: Row): boolean {
 }
 
 function hasAcceptedEquivalentPipelineRunLineage(
-  ctx: WorkflowContext,
+  ctx: HandlerContext,
   row: Row,
 ): boolean {
   if (!isTerminalPipelineRunState(row)) return false;
@@ -201,7 +195,7 @@ function hasAcceptedEquivalentPipelineRunLineage(
 }
 
 function shouldSuppressEventDeliverySignal(
-  ctx: WorkflowContext,
+  ctx: HandlerContext,
   row: Row,
 ): boolean {
   const eventType = stringValue(row.eventType ?? row.event_type);
@@ -417,7 +411,7 @@ function isExpectedBlockedWorkflowGroup(row: Row): boolean {
 }
 
 function hasLaterSuccessfulWorkflowRun(
-  ctx: WorkflowContext,
+  ctx: HandlerContext,
   workflow: string,
   after: number,
   projectId?: string | null,
@@ -446,7 +440,7 @@ function hasLaterSuccessfulWorkflowRun(
 }
 
 function actionableBlockedWorkflowGroups(
-  ctx: WorkflowContext,
+  ctx: HandlerContext,
   rows: Row[],
 ): Row[] {
   return rows.filter((row) => {
@@ -501,7 +495,7 @@ const DEFERRED_METRIC_IDS = new Set([
   "runtime.stale-running-session-count",
 ]);
 
-function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
+function buildPacket(ctx: HandlerContext): { packet: Row; signals: Signal[] } {
   const now = Date.now();
   const oneHourAgo = now - 60 * 60_000;
   const staleEscalationCutoff = now - 60 * 60_000;
@@ -514,7 +508,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const chronicallyStaleFloor = now - 6 * 60 * 60_000;
 
   const openOwnerAlerts = queryRows(ctx, () =>
-    ctx.query.sql(
+    ctx.sdk.query.sql(
       `SELECT ma.id as alert_id, ma.metric_id, ma.message, ma.created_at,
               m.name, m.owner, m.priority, m.current, m.threshold, m.alert_op
          FROM metric_alerts ma
@@ -529,7 +523,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   );
 
   const recentAbnormalEvents = queryRows(ctx, () =>
-    ctx.query.sql(
+    ctx.sdk.query.sql(
       `SELECT id, event_type, source, owner, timestamp,
               delivery_status, accepted_by, accepted_at, data
          FROM events
@@ -549,7 +543,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   );
 
   const unknownProjectEvents = queryRows(ctx, () =>
-    ctx.query.sql(
+    ctx.sdk.query.sql(
       `SELECT id, event_type, source, owner, timestamp,
               delivery_status, accepted_by, accepted_at, data
          FROM events
@@ -590,7 +584,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   // action (ARM auth, external files, clean git baselines) — and should be
   // captured in the daily ops digest, not trigger hourly platform health wakes.
   const staleEscalations = queryRows(ctx, () =>
-    ctx.query.sql(
+    ctx.sdk.query.sql(
       `SELECT created.id, created.timestamp, created.owner, created.source, created.data
          FROM event_pair_runs pair
          JOIN events created ON created.id = pair.open_event_id
@@ -607,7 +601,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     ),
   );
   const recentEscalationReplies = queryRows(ctx, () =>
-    ctx.query.sql(
+    ctx.sdk.query.sql(
       `SELECT id, event_type, source, owner, timestamp, data
          FROM events
         WHERE timestamp >= ?
@@ -648,7 +642,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const staleBlockedWorkflowRuns = actionableBlockedWorkflowGroups(
     ctx,
     queryRows(ctx, () =>
-      ctx.query.sql(
+      ctx.sdk.query.sql(
         `SELECT workflow,
                 status,
                 COALESCE(result_reason, result_summary, '') AS reason,
@@ -676,7 +670,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   );
 
   const chronicBlockedWorkflowRuns = queryRows(ctx, () =>
-    ctx.query.sql(
+    ctx.sdk.query.sql(
       `SELECT workflow,
               status,
               COALESCE(result_reason, result_summary, '') AS reason,
@@ -873,7 +867,6 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
         10,
       ),
       event_delivery_health: {
-        owner_inbox_open_count: numberValue(deliveryHealth.ownerInboxOpenCount),
         unhandled_events: compactRows(unhandledEvents, 10),
         overdue_pending_events: compactRows(overduePendingEvents, 10),
         orphan_pairs: compactRows(orphanPairs, 10),
@@ -887,9 +880,11 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   return { packet, signals };
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const appDir =
-    ctx.appDir ?? field(ctx.task, "app") ?? "/app/projects/may-agent.app";
+export async function execute(ctx: HandlerContext): Promise<string> {
+  const appDir = join(
+    ctx.sdk.paths.projects ?? join(ctx.sdk.paths.root, "projects"),
+    "may-agent.app",
+  );
   const { packet, signals } = buildPacket(ctx);
   const packetPath = writePacket(appDir, packet);
   const previousSignalState = readSignalState(appDir);
@@ -910,8 +905,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     updatedAt: new Date().toISOString(),
   });
 
-  ctx.emit({
-    type: "project.ops_health.observed",
+  ctx.sdk.emit("project.ops_health.observed", {
     project: "may-agent",
     packetPath,
     signalCount: signals.length,
@@ -919,8 +913,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   if (signalChanged) {
-    ctx.emit({
-      type: "project.owner.requested",
+    ctx.sdk.emit("project.owner.requested", {
       project: "may-agent",
       reason: recovered ? "ops-health-recovered" : "ops-health-signal-changed",
       params: {
@@ -940,10 +933,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     : signals.length > 0
       ? `Ops health observer recorded ${signals.length} unchanged signal(s); no owner wake.`
       : "Ops health observer recorded packet with no owner wake.";
-  return ctx.done(summary, {
-    state: "converged",
-    summary,
-    evidence: [`packet:${packetPath}`],
-    actions: [],
-  });
+  ctx.sdk.log("info", `[ops-health-review] ${summary} packet=${packetPath}`);
+  return summary;
 }
+
+export const create: HandlerModule["create"] =
+  (ctx: HandlerContext, _entry: CronEntry) => async () => {
+    await execute(ctx);
+  };

@@ -24,16 +24,21 @@ or task.
 Use a standalone heartbeat only when an agent has a standing responsibility
 that no Agent App owns.
 
-| Owner type | Recurring review mechanism |
-| --- | --- |
-| Standalone global agent | `agents/<name>/workflows/<name>-heartbeat.ts` |
-| Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts` |
-| Runtime infrastructure | Mechanical handler/schedule and ops-health routing |
+| Owner type                 | Recurring review mechanism                                                |
+| -------------------------- | ------------------------------------------------------------------------- |
+| Standalone global agent    | `agents/<name>/workflows/<name>-heartbeat.ts`                             |
+| Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts`       |
+| Runtime infrastructure     | Host-private mechanical schedule/handler; facts route any domain judgment |
 
 Do not run both a standalone heartbeat and an Agent App cadence for the same
 responsibility. App-local agents set `"heartbeat": false`. A workflow whose
 name contains `heartbeat` may remain as ordinary App-owned workflow code, but
 only a canonical App input/task route may invoke it autonomously.
+
+A host-private operations-health handler is not an App-local agent heartbeat.
+It performs bounded deterministic inspection of Runtime-owned ledgers and
+publishes evidence/facts. If owner judgment is required, the fact enters the
+canonical App route; the handler does not start or resume the owner directly.
 
 ## Work Context
 
@@ -123,4 +128,6 @@ motion, delivery, and evidence—not on standalone heartbeat coverage.
 - Auto-generation: `projects/may-agent/src/app/loader/heartbeat-loader.ts`.
 - Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
 - App owner schedules: `projects/<id>.app/app.ts`.
+- Explicit host-maintenance schedules: owning agent `cron.json` plus a typed
+  host-private handler.
 - Governing Agent App contract: [agent-app.md](agent-app.md).
