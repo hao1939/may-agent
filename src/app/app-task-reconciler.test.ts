@@ -40,6 +40,7 @@ import {
   releaseWorkspacePreparationFailedAppTask,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
+  releaseTerminalSessionExpiredAppTaskAttempt,
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
@@ -2176,6 +2177,100 @@ describe("App task reconciler state", () => {
       ).toBe(false);
       expect(readTaskState(config).attempts?.[claim.attemptId]).toEqual(before.attempts?.[claim.attemptId]);
     }
+  });
+
+  it("releases only the exact expired owner attempt after its session is terminal", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskAttemptSession(config, claim, "terminal-owner-session");
+
+    const stale = readTaskState(config);
+    const resource = stale.resources?.[claim.taskId];
+    const attempt = stale.attempts?.[claim.attemptId];
+    if (!resource || !attempt?.lease) throw new Error("expected leased attempt");
+    attempt.lease.expiresAt = "2026-08-15T23:57:29.078Z";
+    saveTaskState(config, stale);
+    const recovery = {
+      taskId: claim.taskId,
+      intent: claim.intent,
+      taskGeneration: resource.metadata.generation,
+      taskResourceVersion: resource.metadata.resourceVersion,
+      attemptId: attempt.metadata.id,
+      attemptResourceVersion: attempt.metadata.resourceVersion,
+      leaseId: attempt.lease.id,
+      leaseVersion: attempt.lease.version,
+      legacyLeaseLess: false as const,
+      sessionId: "terminal-owner-session",
+      terminalStatus: "done" as const,
+    };
+
+    expect(
+      releaseTerminalSessionExpiredAppTaskAttempt(
+        config,
+        recovery,
+        "Synchronous caller disappeared during rollback",
+        Date.parse("2026-08-16T01:00:00.000Z"),
+      ),
+    ).toEqual({ released: true, sessionIds: ["terminal-owner-session"] });
+    expect(readTaskState(config)).toMatchObject({
+      resources: { [claim.taskId]: { status: { phase: "pending", observedGeneration: 0 } } },
+      attempts: {
+        [claim.attemptId]: {
+          state: "interrupted",
+          sessionId: "terminal-owner-session",
+          failureReason: "terminal-owner-session-expired-lease-requeued",
+        },
+      },
+    });
+  });
+
+  it("never releases a healthy live owner session or a stale fenced observation", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskAttemptSession(config, claim, "live-owner-session");
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[claim.taskId];
+    const attempt = tree.attempts?.[claim.attemptId];
+    if (!resource || !attempt?.lease) throw new Error("expected leased attempt");
+    const recovery = {
+      taskId: claim.taskId,
+      intent: claim.intent,
+      taskGeneration: resource.metadata.generation,
+      taskResourceVersion: resource.metadata.resourceVersion,
+      attemptId: attempt.metadata.id,
+      attemptResourceVersion: attempt.metadata.resourceVersion,
+      leaseId: attempt.lease.id,
+      leaseVersion: attempt.lease.version,
+      legacyLeaseLess: false as const,
+      sessionId: "live-owner-session",
+      terminalStatus: "done" as const,
+    };
+
+    expect(releaseTerminalSessionExpiredAppTaskAttempt(config, recovery, "must remain live", Date.now())).toEqual({
+      released: false,
+      sessionIds: [],
+    });
+    attempt.lease.expiresAt = "2020-01-01T00:00:00.000Z";
+    saveTaskState(config, tree);
+    expect(
+      releaseTerminalSessionExpiredAppTaskAttempt(
+        config,
+        { ...recovery, attemptResourceVersion: recovery.attemptResourceVersion + 1 },
+        "stale fence must fail",
+        Date.now(),
+      ),
+    ).toEqual({ released: false, sessionIds: [] });
+    expect(readTaskState(config).resources?.[claim.taskId].status.phase).toBe("running");
   });
 
   it("requeues the same task when a restart-interrupted workflow session completes after startup resume", () => {

@@ -131,6 +131,11 @@ export type AppTaskAttemptRecovery = {
   legacyLeaseLess: boolean;
 };
 
+export type AppTaskTerminalSessionRecovery = AppTaskAttemptRecovery & {
+  sessionId: string;
+  terminalStatus: "done" | "error" | "interrupted";
+};
+
 export type AppTaskRecoveryAttention = {
   taskId: string;
   summary: string;
@@ -865,6 +870,43 @@ export function recoverableAppTaskAttempts(
   });
 }
 
+export function expiredOwnerSessionAppTaskAttempt(
+  config: TaskStateConfig,
+  taskId: string,
+  nowMs = Date.now(),
+): AppTaskAttemptRecovery | null {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    if (!resource || resource.status.phase !== "running") return null;
+    const attempt = currentResourceAttempt(tree, resource);
+    if (
+      !attempt ||
+      !attempt.handler.startsWith("owner:") ||
+      !attempt.sessionId ||
+      !attempt.lease ||
+      attempt.lease.sessionId !== attempt.sessionId ||
+      attempt.lease.runtimeId !== attempt.runtimeId ||
+      leaseIsFresh(attempt, nowMs)
+    ) {
+      return null;
+    }
+    return {
+      taskId,
+      intent: resourceIntent(resource),
+      ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
+      sessionId: attempt.sessionId,
+      taskGeneration: resource.metadata.generation,
+      taskResourceVersion: resource.metadata.resourceVersion,
+      attemptId: attempt.metadata.id,
+      attemptResourceVersion: attempt.metadata.resourceVersion,
+      leaseId: attempt.lease.id,
+      leaseVersion: attempt.lease.version,
+      legacyLeaseLess: false,
+    };
+  });
+}
+
 export function releaseInterruptedAppTaskAttempt(
   config: TaskStateConfig,
   recovery: AppTaskAttemptRecovery | string,
@@ -930,6 +972,72 @@ export function releaseInterruptedAppTaskAttempt(
  * workspace finalization) did not run, so the only safe generic disposition is
  * to interrupt the exact attempt and requeue the same task generation.
  */
+export function releaseTerminalSessionExpiredAppTaskAttempt(
+  config: TaskStateConfig,
+  recovery: AppTaskTerminalSessionRecovery,
+  summary: string,
+  nowMs = Date.now(),
+): { released: boolean; sessionIds: string[] } {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const task = tree.tasks[recovery.taskId];
+    const resource = tree.resources?.[recovery.taskId];
+    if (!task || !resource || resource.status.phase !== "running") {
+      return { released: false, sessionIds: [] };
+    }
+    const attempt = currentResourceAttempt(tree, resource);
+    if (
+      !attempt ||
+      !attempt.handler.startsWith("owner:") ||
+      attempt.state !== "running" ||
+      resource.metadata.generation !== recovery.taskGeneration ||
+      resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
+      resource.status.currentAttemptId !== recovery.attemptId ||
+      attempt.metadata.id !== recovery.attemptId ||
+      attempt.metadata.resourceVersion !== recovery.attemptResourceVersion ||
+      attempt.sessionId !== recovery.sessionId ||
+      !attempt.lease ||
+      attempt.lease.id !== recovery.leaseId ||
+      attempt.lease.version !== recovery.leaseVersion ||
+      attempt.lease.sessionId !== recovery.sessionId ||
+      attempt.lease.runtimeId !== attempt.runtimeId ||
+      leaseIsFresh(attempt, nowMs)
+    ) {
+      return { released: false, sessionIds: [] };
+    }
+
+    const now = new Date(nowMs).toISOString();
+    const recoveredSummary = `${summary}; terminal owner session ${recovery.sessionId} (${recovery.terminalStatus}) cannot return this expired attempt; retrying from current task evidence`;
+    if (attempt.trigger && !tree.taskTriggers?.[recovery.taskId]) {
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [recovery.taskId]: {
+          taskId: recovery.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event: structuredClone(attempt.trigger),
+          observedAt: now,
+        },
+      };
+    }
+    finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
+    attempt.metadata.resourceVersion += 1;
+    attempt.failureReason = "terminal-owner-session-expired-lease-requeued";
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary: recoveredSummary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    pruneTaskAttempts(tree);
+    saveTaskState(config, tree);
+    return { released: true, sessionIds: [recovery.sessionId] };
+  });
+}
+
 export function releaseLateTerminalWorkflowAppTaskAttempt(
   config: TaskStateConfig,
   binding: { taskId: string; generation: number },
