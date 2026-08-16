@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import evaluationApp from "../../../../evaluation.app/app.ts";
 import gymApp from "../../../../gym.app/app.ts";
 import mayAgentApp from "../../../app.ts";
@@ -32,11 +32,15 @@ const regularReviewCases = [
   },
 ] as const;
 
-const appSources = [
-  "../../../../gym.app/app.ts",
-  "../../../../scout-knowledge-lib.app/app.ts",
-  "../../../../evaluation.app/app.ts",
-  "../../../app.ts",
+const disabledHeartbeatModules = [
+  "../../../agents/bob/workflows/bob-heartbeat.ts",
+  "../../../agents/coach/workflows/coach-heartbeat.ts",
+  "../../../agents/dev/workflows/dev-heartbeat.ts",
+  "../../../agents/optimizer/workflows/optimizer-heartbeat.ts",
+  "../../../agents/qa/workflows/qa-heartbeat.ts",
+  "../../../agents/tech-lead/workflows/tech-lead-heartbeat.ts",
+  "../../../../scout-knowledge-lib.app/agents/amy/workflows/amy-heartbeat.ts",
+  "../../../../scout-knowledge-lib.app/agents/amy-kimi/workflows/amy-kimi-heartbeat.ts",
 ] as const;
 
 describe("independent task resource manifests", () => {
@@ -47,15 +51,16 @@ describe("independent task resource manifests", () => {
       );
 
       expect(schedule).toBeDefined();
-      expect(schedule?.enabled).toBe(true);
+      expect(schedule?.enabled).not.toBe(false);
       expect(schedule?.intervalMs).toBeGreaterThanOrEqual(3_600_000);
 
-      const event = ((schedule as any)?.emits as unknown[])?.[0] as any;
+      const event =
+        schedule && "event" in schedule ? schedule.event : undefined;
       expect(event).toBeDefined();
-      expect(event.project).toBe(id);
+      expect(event?.target?.project).toBe(id);
 
-      const first = app.tasks?.resolve?.({ ...event, eventId: 1 });
-      const second = app.tasks?.resolve?.({ ...event, eventId: 2 });
+      const first = event ? app.tasks?.resolve?.(event) : null;
+      const second = event ? app.tasks?.resolve?.(event) : null;
       expect(first).toMatchObject({ id: taskId, mode: "maintain" });
       expect(second).toEqual(first);
       expect(app).not.toHaveProperty("taskRoutes");
@@ -64,11 +69,9 @@ describe("independent task resource manifests", () => {
     });
   }
 
-  test("non-AKS apps do not install an app-local task scheduling layer", () => {
-    for (const source of appSources) {
-      const text = readFileSync(new URL(source, import.meta.url), "utf8");
-      expect(text).not.toContain("project.task.reconciled");
-      expect(text).not.toContain("project.task.tick");
+  test("heartbeat-disabled agents do not retain discoverable heartbeat modules", () => {
+    for (const source of disabledHeartbeatModules) {
+      expect(existsSync(new URL(source, import.meta.url))).toBe(false);
     }
   });
 });

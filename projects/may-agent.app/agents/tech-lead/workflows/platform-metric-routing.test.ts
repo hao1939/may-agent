@@ -1,96 +1,76 @@
 import { describe, expect, test } from "bun:test";
-import { routePlatformEvent } from "../../../app.ts";
-
-type Recorded =
-  | { kind: "emit"; value: unknown }
-  | { kind: "noop"; reason: string };
-
-function fakeCtx() {
-  const recorded: Recorded[] = [];
-  const ctx = {
-    emit: (value: unknown) => {
-      recorded.push({ kind: "emit", value });
-      return { emitted: value };
-    },
-    noop: (reason: string) => {
-      recorded.push({ kind: "noop", reason });
-      return { noop: reason };
-    },
-  };
-  return { ctx, recorded };
-}
-
-async function route(event: Record<string, unknown>) {
-  const { ctx, recorded } = fakeCtx();
-  // routePlatformEvent only uses emit/noop from the context.
-  await routePlatformEvent(ctx as never, event);
-  return recorded[0];
-}
+import { taskInputForEvent } from "../../../app.ts";
 
 const PLATFORM_OWNED_METRIC = "guard.triggered-count-24h";
 
+function metricEvent(
+  type: "metric.breach" | "metric.stalled" | "metric.recovered",
+  owner: string,
+  metricId: string,
+) {
+  return {
+    type,
+    owner,
+    data: { metricId },
+    target: { metricId },
+  };
+}
+
 describe("may-agent.app metric routing", () => {
-  test("non-platform-owned metric breach does not wake the platform owner", async () => {
-    const result = await route({
-      type: "metric.breach",
-      owner: "aks-explorer",
-      metricId: "aks-rp-e2e.task.stalled-count",
-    });
-    expect(result.kind).toBe("noop");
+  test("foreign metric breaches do not wake the platform owner", () => {
+    expect(
+      taskInputForEvent(
+        metricEvent(
+          "metric.breach",
+          "aks-explorer",
+          "aks-rp-e2e.task.stalled-count",
+        ),
+      ),
+    ).toBeNull();
   });
 
-  test("platform-owned metric breach requests the owner", async () => {
-    for (const owner of ["tech-lead", "agent:tech-lead", "may", "agent:may"]) {
-      const result = await route({
-        type: "metric.breach",
-        owner,
-        metricId: PLATFORM_OWNED_METRIC,
+  test("platform-owned breach and stalled facts request owner review", () => {
+    for (const owner of ["may", "agent:may"]) {
+      expect(
+        taskInputForEvent(
+          metricEvent("metric.breach", owner, PLATFORM_OWNED_METRIC),
+        ),
+      ).toMatchObject({
+        kind: "owner-review",
+        data: { reason: "metric-signal", metricId: PLATFORM_OWNED_METRIC },
       });
-      expect(result.kind).toBe("emit");
-      expect((result as { value: { type: string; reason: string } }).value.type)
-        .toBe("project.owner.requested");
     }
+    expect(
+      taskInputForEvent(
+        metricEvent("metric.stalled", "may", "session.provider-error-count-1h"),
+      ),
+    ).toMatchObject({ kind: "owner-review" });
   });
 
-  test("platform-owned stalled metric requests the owner", async () => {
-    const result = await route({
-      type: "metric.stalled",
-      owner: "tech-lead",
-      metricId: "session.provider-error-count-1h",
-    });
-    expect(result.kind).toBe("emit");
+  test("recovery facts stay informational", () => {
+    expect(
+      taskInputForEvent(
+        metricEvent("metric.recovered", "may", PLATFORM_OWNED_METRIC),
+      ),
+    ).toBeNull();
   });
 
-  test("metric.recovered stays informational", async () => {
-    const result = await route({
-      type: "metric.recovered",
-      owner: "tech-lead",
-      metricId: PLATFORM_OWNED_METRIC,
-    });
-    expect(result.kind).toBe("noop");
-  });
-
-  test("only self-referential platform-local metrics remain deferred", async () => {
-    const deferred = [
+  test("self-referential platform metrics remain deferred", () => {
+    for (const metricId of [
       "project.health.finding-count",
       "project.owner-incomplete-count",
       "project.owner-judgment-needed-count",
       "capability.zombie-session-count",
       "runtime.stale-running-session-count",
-    ];
-    for (const metricId of deferred) {
-      const result = await route({
-        type: "metric.breach",
-        owner: "tech-lead",
-        metricId,
-      });
-      expect(result.kind).toBe("noop");
-      expect((result as { reason: string }).reason).toContain("deferred");
+    ]) {
+      expect(
+        taskInputForEvent(metricEvent("metric.breach", "may", metricId)),
+      ).toBeNull();
     }
   });
 
-  test("previously incident-narrative deferrals now wake the owner", async () => {
-    const restored = [
+  test("actionable platform metrics are not silently deferred", () => {
+    for (const metricId of [
       "guard.triggered-count-24h",
       "guard.warned-count-24h",
       "escalation.pending-count",
@@ -102,14 +82,10 @@ describe("may-agent.app metric routing", () => {
       "session.provider-error-count-1h",
       "event.pair-orphan-count",
       "session.error-rate-6h",
-    ];
-    for (const metricId of restored) {
-      const result = await route({
-        type: "metric.breach",
-        owner: "tech-lead",
-        metricId,
-      });
-      expect(result.kind).toBe("emit");
+    ]) {
+      expect(
+        taskInputForEvent(metricEvent("metric.breach", "may", metricId)),
+      ).toMatchObject({ kind: "owner-review" });
     }
   });
 });

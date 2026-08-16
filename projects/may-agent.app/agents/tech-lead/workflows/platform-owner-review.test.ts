@@ -8,16 +8,22 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTestRuntime } from "@may-agent/sdk/testing";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type {
+  ExecutionResult,
+  TaskReconcileResult,
+  WorkflowContext,
+} from "@may-agent/sdk";
 import { execute, normalizeOwnerResult } from "./platform-owner-review.ts";
+
+type OwnerResult = Omit<TaskReconcileResult, "state"> & {
+  state: "converged" | "waiting";
+};
 
 describe("platform-owner-review", () => {
   const tempDirs: string[] = [];
 
   function makeHarness(
-    status: "done" | "error",
-    errorMessage = "provider failed",
+    agentResult?: ExecutionResult<OwnerResult>,
     duringOwnerRun?: (appDir: string) => void,
   ) {
     const root = join(
@@ -31,170 +37,116 @@ describe("platform-owner-review", () => {
     mkdirSync(projectDir, { recursive: true });
     writeFileSync(
       join(appDir, "project.json"),
-      JSON.stringify({ id: "may-agent.app", owner: "tech-lead" }),
-    );
-    mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
-    writeFileSync(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({
-        updated_at: "2026-08-04T06:09:15.373Z",
-        tasks: {
-          project: {
-            item_type: "group",
-            id: "project",
-            parent_id: null,
-            children: [
-              "runtime/platform-owner-review",
-              "evidence-archive-secret-redaction",
-            ],
-            owner: "tech-lead",
-          },
-          "runtime/platform-owner-review": {
-            item_type: "task",
-            id: "runtime/platform-owner-review",
-            parent_id: "project",
-            children: [],
-            owner: "tech-lead",
-            outcome:
-              "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
-            phase: "running",
-            readiness: {
-              state: "not-applicable",
-              reason: "Task phase is running",
-              related_ids: [],
-            },
-          },
-          "evidence-archive-secret-redaction": {
-            item_type: "task",
-            id: "evidence-archive-secret-redaction",
-            parent_id: "project",
-            children: [],
-            owner: "may",
-            outcome: "Add secret redaction to the evidence archival pipeline.",
-            phase: "attention",
-            readiness: {
-              state: "not-applicable",
-              reason: "Task phase is attention",
-              related_ids: [],
-            },
-          },
-        },
-      }),
+      JSON.stringify({ id: "may-agent", owner: "may" }),
     );
 
-    const runtime = createTestRuntime({
-      root,
-      persist: root,
-      agents: join(root, "agents"),
-      shared: join(root, "shared"),
-      projects: join(root, "projects"),
-    });
-    const emitted: Array<{ type: string; [key: string]: unknown }> = [];
-    const reviewed: Array<{ ids: number[]; owner?: string }> = [];
-    const observed: { prompt: string; schema?: unknown } = { prompt: "" };
-    const ownerResult = {
-      state: "converged" as const,
+    const ownerResult: OwnerResult = {
+      state: "converged",
       summary: "Current platform evidence is covered by existing work.",
       evidence: ["packet:.state/review-packet.json"],
       actions: [],
     };
-    const query = Object.create(runtime.sdk.query) as WorkflowContext["query"];
-    query.heartbeatContext = () => ({
-      metrics: [],
-      projects: [],
-      alerts: [],
-      inbox: [
-        { id: 101, eventType: "message.created" },
-        { id: 102, eventType: "escalation.created" },
-        { id: 103, eventType: "metric.breach" },
-      ],
-    });
-    const commands = Object.create(
-      runtime.sdk.commands,
-    ) as WorkflowContext["commands"];
-    commands.reviewInboxEvents = (ids, owner) => {
-      reviewed.push({ ids: [...ids], owner });
-      return ids.length;
-    };
-
-    const ctx: WorkflowContext = {
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "## Trigger Event",
-        '{"type":"project.owner.requested","eventId":5030987}',
-      ].join("\n"),
-      agent: "tech-lead",
-      emit: (event) => emitted.push(event),
-      dispatchEvent: () => {},
-      getDb: () => runtime.db,
-      query,
-      commands,
-      log: () => {},
-      notify: () => {},
-      metrics: runtime.sdk.metrics,
-      persistDir: root,
-      projectRoot: root,
-      agentsRoot: runtime.agents,
-      sharedRoot: runtime.shared,
-      projectsRoot: runtime.projects,
-      runAgent: (async (_agent: string, prompt: string, opts?: unknown) => {
-        observed.prompt = prompt;
-        observed.schema = (opts as { schema?: unknown } | undefined)?.schema;
-        duringOwnerRun?.(appDir);
-        return status === "done"
-          ? {
-              sessionId: "s_owner_review",
-              status: "done" as const,
-              lastAssistantText: ownerResult.summary,
-              messages: [],
-              duration: "1s",
-              outputDir: root,
-              finishResult: {
-                status: "success",
-                summary: ownerResult.summary,
-              },
-              structuredResult: ownerResult,
-            }
-          : {
-              sessionId: "s_owner_review_failed",
-              status: "error" as const,
-              lastAssistantText: errorMessage,
-              messages: [],
-              duration: "1s",
-              outputDir: root,
-              error: errorMessage,
-            };
-      }) as WorkflowContext["runAgent"],
-      runWorkflow: async () => ({ type: "done", summary: "unused" }),
-      runFunction: async () => ({
-        sessionId: "fn_unused",
-        agent: "function",
+    const observed: { prompt: string; schema?: unknown } = { prompt: "" };
+    const result =
+      agentResult ??
+      ({
+        id: "exec_owner_review",
+        kind: "agent",
         status: "done",
-        lastAssistantText: "",
-        messages: [],
-        duration: "0s",
-        outputDir: root,
-      }),
-      summarize: () => "unused",
-      done: (summary, output) => ({ type: "done", summary, output }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-      createSession: async () => ({
-        prompt: async () => {},
-        lastText: () => "",
-        close: () => {},
-      }),
-    };
+        summary: ownerResult.summary,
+        output: ownerResult,
+      } satisfies ExecutionResult<OwnerResult>);
 
-    return {
-      appDir,
-      ctx,
-      emitted,
-      observed,
-      ownerResult,
-      reviewed,
-      runtime,
-    };
+    const ctx = {
+      input: { scope: "may-agent-platform" },
+      reconciliation: {
+        appId: "may-agent",
+        taskId: "runtime/platform-owner-review",
+        generation: 7,
+        resourceVersion: 19,
+        owner: "tech-lead",
+        mode: "maintain",
+        outcome: "Keep platform state reviewed.",
+        acceptance: ["A bounded owner judgment is preserved."],
+        input: { scope: "may-agent-platform" },
+        children: { live: [], completed: [] },
+        taskSnapshot: {
+          live: [
+            {
+              taskId: "evidence-archive-secret-redaction",
+              parentId: "project",
+              generation: 2,
+              outcome: "Redact archive secrets.",
+              evidence: [],
+              input: {},
+              conditions: [],
+              hasLiveChildren: false,
+              status: "attention",
+            },
+          ],
+          truncated: false,
+        },
+        trigger: {
+          type: "project.owner.requested",
+          data: { eventId: 5030987 },
+          target: { appId: "may-agent", project: "may-agent" },
+        },
+      },
+      read: {
+        appResult: async () => null,
+        task: async () => null,
+        execution: async () => null,
+        metric: async () => null,
+      },
+      agents: {
+        call: async (_agent: string, prompt: string, options?: unknown) => {
+          observed.prompt = prompt;
+          observed.schema = (
+            options as { schema?: unknown } | undefined
+          )?.schema;
+          duringOwnerRun?.(appDir);
+          return result;
+        },
+      },
+      workflows: {
+        run: async () => ({
+          id: "unused",
+          kind: "workflow",
+          status: "done",
+          summary: "unused",
+        }),
+      },
+      events: { emit: async () => {} },
+      metrics: {
+        define: () => {},
+        defineMany: () => {},
+        record: () => {},
+        evaluate: () => [],
+      },
+      workspace: {
+        appRoot: appDir,
+        projectRoot: projectDir,
+        root: projectDir,
+        output: projectDir,
+      },
+      log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+      done: (summary: string, output?: unknown) => ({
+        id: "workflow_owner_review",
+        kind: "workflow" as const,
+        status: "done" as const,
+        summary,
+        output,
+      }),
+      blocked: (reason: string, evidence?: unknown) => ({
+        id: "workflow_owner_review",
+        kind: "workflow" as const,
+        status: "blocked" as const,
+        summary: reason,
+        evidence,
+      }),
+    } as WorkflowContext;
+
+    return { appDir, ctx, observed, ownerResult };
   }
 
   afterEach(() => {
@@ -206,14 +158,16 @@ describe("platform-owner-review", () => {
   it("normalizes contradictory converged child creation to waiting", () => {
     const result = normalizeOwnerResult({
       state: "converged",
-      summary: "Acceptance remains unmet; delegate the required continuation.",
-      evidence: ["session:s_1786402159373_40"],
+      summary: "Acceptance remains unmet; delegate the continuation.",
+      evidence: ["execution:exec_1"],
       actions: [
         {
           kind: "create-task",
           id: "required-continuation",
           parentId: "runtime/platform-owner-review",
           outcome: "Complete and verify the unmet acceptance items.",
+          mode: "achieve",
+          outputs: [],
           acceptance: ["All remaining acceptance items are verified."],
           priority: "P1",
           owner: "dev",
@@ -221,86 +175,53 @@ describe("platform-owner-review", () => {
       ],
     });
 
-    expect(result).toMatchObject({
-      state: "waiting",
-      actions: [
-        {
-          kind: "create-task",
-          id: "required-continuation",
-          parentId: "runtime/platform-owner-review",
-        },
-      ],
-    });
+    expect(result.state).toBe("waiting");
     expect(result.evidence).toContain(
       "owner-result-normalized: create-task actions require waiting until delegated work converges",
     );
   });
 
-  it("returns typed owner proposals without giving the agent mutation authority", async () => {
-    const harness = makeHarness("done");
-    const { appDir, ctx, emitted, observed, ownerResult, reviewed, runtime } =
-      harness;
-    const result = await execute(ctx);
-    runtime.close();
+  it("uses only the bounded canonical context and preserves the owner result", async () => {
+    const harness = makeHarness();
+    const result = await execute(harness.ctx);
 
-    expect(result).toEqual({
-      type: "done",
-      summary: ownerResult.summary,
-      output: ownerResult,
+    expect(result).toMatchObject({
+      status: "done",
+      summary: harness.ownerResult.summary,
+      output: harness.ownerResult,
     });
-    expect(observed.schema).toMatchObject({
+    expect(harness.observed.schema).toMatchObject({
       type: "object",
       required: ["state", "summary", "evidence"],
     });
-    expect(observed.prompt).toContain(
+    expect(harness.observed.prompt).toContain(
       "The generic reconciler is the sole task-tree mutation authority.",
     );
-    expect(observed.prompt).toContain(
-      "Return task-tree changes only as typed actions in finish.",
+    expect(harness.observed.prompt).toContain(
+      "Running: runtime/platform-owner-review",
     );
-    expect(observed.prompt).toContain(
-      "Routing or task creation is progress, not message completion.",
-    );
-    expect(existsSync(join(appDir, ".state", "review-packet.json"))).toBe(true);
-    expect(observed.prompt).toContain(
-      `${appDir}/agents/tech-lead/workflows/platform-owner-review.ts`,
-    );
-    expect(observed.prompt).toContain("Running: runtime/platform-owner-review");
-    expect(observed.prompt).toContain(
+    expect(harness.observed.prompt).toContain(
       "Attention: evidence-archive-secret-redaction",
     );
-    expect(observed.prompt).toContain(
-      "Loss-prevention discipline for this owner review:",
-    );
-    expect(observed.prompt).toContain("immediately call checkpoint()");
+    expect(
+      existsSync(join(harness.appDir, ".state", "review-packet.json")),
+    ).toBe(true);
+
     const artifactPath = join(
-      appDir,
+      harness.appDir,
       ".state",
       "owner-review-artifacts",
       "event-5030987.json",
     );
-    expect(observed.prompt).toContain(artifactPath);
-    expect(existsSync(artifactPath)).toBe(true);
-    expect(
-      JSON.parse(readFileSync(artifactPath, "utf-8")) as Record<
-        string,
-        unknown
-      >,
-    ).toMatchObject({
+    expect(JSON.parse(readFileSync(artifactPath, "utf-8"))).toMatchObject({
       status: "converged",
-      owner_session: {
-        session_id: "s_owner_review",
+      reconciliation_task_id: "runtime/platform-owner-review",
+      owner_execution: {
+        execution_id: "exec_owner_review",
         status: "done",
       },
-      owner_result: ownerResult,
+      owner_result: harness.ownerResult,
     });
-    expect(emitted).not.toContainEqual(
-      expect.objectContaining({ type: "project.owner.reviewed" }),
-    );
-    expect(reviewed).toEqual([
-      { ids: [102], owner: "tech-lead" },
-      { ids: [103], owner: "tech-lead" },
-    ]);
   });
 
   it("preserves owner worklog and interim note during finalization", async () => {
@@ -311,30 +232,25 @@ describe("platform-owner-review", () => {
       next_step: "Wait for an exact recurrence with lifecycle telemetry.",
       updated_at: "2026-08-07T10:55:00.000Z",
     };
-    const harness = makeHarness("done", "provider failed", (appDir) => {
+    const harness = makeHarness(undefined, (appDir) => {
       const artifactPath = join(
         appDir,
         ".state",
         "owner-review-artifacts",
         "event-5030987.json",
       );
-      const artifact = JSON.parse(
-        readFileSync(artifactPath, "utf-8"),
-      ) as Record<string, unknown>;
+      const artifact = JSON.parse(readFileSync(artifactPath, "utf-8"));
       writeFileSync(
         artifactPath,
         `${JSON.stringify({
           ...artifact,
           owner_worklog: worklog,
-          interim_note:
-            "Later accepted deliveries prove non-recurrence, not root cause.",
+          interim_note: "Later evidence supports a bounded no-op.",
         })}\n`,
       );
     });
 
     await execute(harness.ctx);
-    harness.runtime.close();
-
     const artifactPath = join(
       harness.appDir,
       ".state",
@@ -344,129 +260,62 @@ describe("platform-owner-review", () => {
     expect(JSON.parse(readFileSync(artifactPath, "utf-8"))).toMatchObject({
       status: "converged",
       owner_worklog: worklog,
-      interim_note:
-        "Later accepted deliveries prove non-recurrence, not root cause.",
-      owner_result: harness.ownerResult,
+      interim_note: "Later evidence supports a bounded no-op.",
     });
   });
 
-  it("returns a waiting owner result when the owner session fails on auth", async () => {
+  it("returns waiting when the owner execution fails on authentication", async () => {
     const authError =
-      'OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: Github_copilotException - IDE token expired: unauthorized: token expired"}';
-    const { appDir, ctx, emitted, reviewed, runtime } = makeHarness(
-      "error",
-      authError,
-    );
+      "AuthenticationError: Github_copilotException unauthorized: token expired";
+    const harness = makeHarness({
+      id: "exec_owner_failed",
+      kind: "agent",
+      status: "error",
+      summary: authError,
+    });
 
-    const result = await execute(ctx);
-    runtime.close();
-
-    const artifactPath = join(
-      appDir,
-      ".state",
-      "owner-review-artifacts",
-      "event-5030987.json",
-    );
-    expect(result).toEqual({
-      type: "done",
-      summary:
-        "Platform owner review could not complete because the tech-lead session hit a GitHub Copilot authentication failure; refresh the credential and rerun the owner review.",
+    const result = await execute(harness.ctx);
+    expect(result).toMatchObject({
+      status: "done",
       output: {
         state: "waiting",
-        summary:
-          "Platform owner review could not complete because the tech-lead session hit a GitHub Copilot authentication failure; refresh the credential and rerun the owner review.",
-        evidence: [
-          "owner-session:s_owner_review_failed",
-          `provider-auth:${authError}`,
-          `artifact:${artifactPath}`,
-        ],
-        actions: [],
         conditions: [
           {
-            id: "owner-provider-auth-restored",
-            type: "external.fact",
             subject: "credential:github-copilot",
-            expected: { status: "valid", agent: "tech-lead" },
             owner: "human",
-            reviewAfterMs: 300_000,
           },
         ],
       },
     });
-    expect(
-      JSON.parse(readFileSync(artifactPath, "utf-8")) as Record<
-        string,
-        unknown
-      >,
-    ).toMatchObject({
-      status: "waiting",
-      owner_session: {
-        session_id: "s_owner_review_failed",
-        status: "error",
-        summary: authError,
-      },
-      owner_result: {
-        state: "waiting",
-      },
-    });
-    expect(reviewed).toEqual([]);
-    expect(emitted).not.toContainEqual(
-      expect.objectContaining({ type: "project.owner.reviewed" }),
-    );
   });
 
-  it("keeps inbox work open when the owner session fails", async () => {
-    const { appDir, ctx, emitted, reviewed, runtime } = makeHarness("error");
+  it("keeps non-auth execution failures blocked", async () => {
+    const harness = makeHarness({
+      id: "exec_owner_failed",
+      kind: "agent",
+      status: "error",
+      summary: "provider failed",
+    });
 
-    const result = await execute(ctx);
-    runtime.close();
-
-    const artifactPath = join(
-      appDir,
-      ".state",
-      "owner-review-artifacts",
-      "event-5030987.json",
-    );
+    const result = await execute(harness.ctx);
     expect(result).toMatchObject({
-      type: "blocked",
-      reason: "Platform owner review session failed",
-      context: expect.objectContaining({ artifactPath }),
-    });
-    expect(
-      JSON.parse(readFileSync(artifactPath, "utf-8")) as Record<
-        string,
-        unknown
-      >,
-    ).toMatchObject({
       status: "blocked",
-      owner_session: {
-        session_id: "s_owner_review_failed",
-        status: "error",
-        summary: "provider failed",
-      },
+      summary: "Platform owner review execution failed",
+      evidence: { executionId: "exec_owner_failed" },
     });
-    expect(reviewed).toEqual([]);
-    expect(emitted).not.toContainEqual(
-      expect.objectContaining({ type: "project.owner.reviewed" }),
-    );
   });
 
   it("makes an explicit owner instruction the primary review request", async () => {
-    const harness = makeHarness("done");
-    harness.ctx.task = [
-      `app: ${harness.appDir}`,
-      "## Trigger Event",
-      JSON.stringify({
-        type: "project.owner.requested",
-        params: {
-          instruction: "Review the task workspace convention proposal.",
-        },
-      }),
-    ].join("\n");
+    const harness = makeHarness();
+    harness.ctx.reconciliation!.trigger = {
+      type: "project.owner.requested",
+      data: {
+        eventId: 5030988,
+        instruction: "Review the task workspace convention proposal.",
+      },
+    };
 
     await execute(harness.ctx);
-    harness.runtime.close();
-
     expect(harness.observed.prompt).toContain(
       "Review the task workspace convention proposal.",
     );
@@ -474,7 +323,9 @@ describe("platform-owner-review", () => {
       "treat that instruction as the primary bounded owner request",
     );
     expect(harness.observed.prompt.indexOf("Current trigger:")).toBeLessThan(
-      harness.observed.prompt.indexOf("The full system-review packet is at:"),
+      harness.observed.prompt.indexOf(
+        "The bounded reconciliation review packet is at:",
+      ),
     );
   });
 });

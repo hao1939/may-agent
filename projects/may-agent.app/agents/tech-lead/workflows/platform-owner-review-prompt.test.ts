@@ -7,7 +7,6 @@ test("platform owner prompt hardens bounded evidence and typed waiting Condition
     projectDir: "/app/projects/may-agent",
     packetPath: "/app/projects/may-agent.app/.state/review-packet.json",
     packetSummary: "Project: may-agent.app (status=active, owner=tech-lead)",
-    taskTreePath: "/app/projects/may-agent.app/.state/tasks/tree.json",
     trigger: '## Trigger Event\n```json\n{"eventId":5037729}\n```',
     reviewArtifactPath:
       "/app/projects/may-agent.app/.state/owner-review-artifacts/event-5037729.json",
@@ -18,6 +17,7 @@ test("platform owner prompt hardens bounded evidence and typed waiting Condition
     "Do not fall back to repository-wide search unless one exact cited file path still needs inspection",
   );
   expect(prompt).toContain("Every waiting Condition subject must be typed");
+  expect(prompt).toContain("Never write the runtime database directly");
   expect(prompt).toContain("event:5011463");
   expect(prompt).toContain("pull-request:77");
   expect(prompt).toContain(

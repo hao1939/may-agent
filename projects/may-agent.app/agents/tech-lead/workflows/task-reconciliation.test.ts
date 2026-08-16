@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import app, { resolveMayAgentTask } from "../../../app.ts";
+import app, { resolveMayAgentTask, taskIntentForInput } from "../../../app.ts";
 
 describe("may-agent task reconciliation manifest", () => {
   it("maps recurring work to stable maintain tasks", () => {
     expect(
       resolveMayAgentTask({
         type: "project.ops_digest.tick",
-        project: "may-agent",
-        lane: "daily",
+        data: { lane: "daily" },
+        target: { appId: "may-agent", project: "may-agent" },
       }),
     ).toMatchObject({
       id: "runtime/daily-ops-digest",
@@ -19,8 +19,8 @@ describe("may-agent task reconciliation manifest", () => {
     expect(
       resolveMayAgentTask({
         type: "project.ops_health.tick",
-        project: "may-agent",
-        lane: "hourly",
+        data: { lane: "hourly" },
+        target: { appId: "may-agent", project: "may-agent" },
       }),
     ).toMatchObject({
       id: "runtime/ops-health-observer",
@@ -29,40 +29,43 @@ describe("may-agent task reconciliation manifest", () => {
       workflow: "ops-health-review",
     });
     expect(
-      resolveMayAgentTask({ type: "project.ops_digest.tick", eventId: 1 })
-        ?.input,
+      resolveMayAgentTask({ type: "project.ops_digest.tick", data: {} })?.input,
     ).toBeUndefined();
     expect(
-      resolveMayAgentTask({ type: "project.ops_digest.tick", eventId: 2 })
-        ?.input,
+      resolveMayAgentTask({ type: "project.ops_digest.tick", data: {} })?.input,
     ).toBeUndefined();
   });
 
-  it("reuses the learned owner-review workflow with automatic owner fallback", () => {
-    const intent = resolveMayAgentTask({
+  it("attaches addressed owner requests to the stable owner-review task", () => {
+    const subscription = app.subscriptions?.find(
+      (entry) => entry.id === "project-owner-request",
+    );
+    const input = subscription?.toInput({
       type: "project.owner.requested",
-      project: "may-agent",
-      reason: "manual-review",
-      params: { source: "human" },
+      data: { reason: "manual-review", params: { source: "human" } },
+      target: { appId: "may-agent", project: "may-agent" },
     });
+    const intent = input ? taskIntentForInput(input) : null;
 
     expect(intent).toMatchObject({
       id: "runtime/platform-owner-review",
       parentId: "platform-system-review-feedback-loop",
       mode: "maintain",
     });
-    expect(intent?.input).toBeUndefined();
+    expect(intent?.input).toEqual({ scope: "may-agent-platform" });
     expect(intent?.workflow).toBe("platform-owner-review");
-    expect(app.owner).toBe("tech-lead");
-    expect(app.tasks?.accepts).toEqual([
+    expect(app.owner).toBe("may");
+    expect(app.tasks?.subscriptions).toEqual([
       { type: "project.ops_digest.tick", project: "may-agent" },
       { type: "project.ops_health.tick", project: "may-agent" },
       {
         type: "may-agent.resource-migration.requested",
         project: "may-agent",
       },
-      { type: "project.owner.requested", project: "may-agent" },
-      { type: "project.comment.created", project: "may-agent" },
+      { type: "project.tick", project: "may-agent" },
+      { type: "project.tasks.ready", project: "may-agent" },
+      "metric.breach",
+      "metric.stalled",
     ]);
     expect(app.tasks?.resolve).toBe(resolveMayAgentTask);
     expect(app).not.toHaveProperty("ownerEntry");
@@ -72,14 +75,17 @@ describe("may-agent task reconciliation manifest", () => {
   });
 
   it("does not manufacture tasks for unrelated events", () => {
-    expect(resolveMayAgentTask({ type: "unrelated.event" })).toBeNull();
+    expect(
+      resolveMayAgentTask({ type: "unrelated.event", data: {} }),
+    ).toBeNull();
   });
 
   it("maps the bounded legacy cleanup to one finite resource", () => {
     expect(
       resolveMayAgentTask({
         type: "may-agent.resource-migration.requested",
-        project: "may-agent",
+        data: {},
+        target: { appId: "may-agent", project: "may-agent" },
       }),
     ).toMatchObject({
       id: "runtime/unified-resource-migration-v1",
