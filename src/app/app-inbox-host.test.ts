@@ -547,6 +547,26 @@ describe("App inbox host", () => {
       status: "handling",
       waitingOn: { kind: "app", id: childRow.id },
     });
+    expect(host.pendingDelegations()).toEqual([
+      {
+        appId: "child",
+        parentId: "parent-1",
+        source: { kind: "app", id: "parent" },
+        input: { kind: "probe", data: { value: "delegated" } },
+        idempotencyKey: "delegate:parent-1:1",
+      },
+    ]);
+    expect(
+      host.admit({
+        appId: "child",
+        parentId: "parent-1",
+        source: { kind: "app", id: "parent" },
+        input: { kind: "probe", data: { value: "delegated" } },
+        originEventId: 73,
+        idempotencyKey: "delegate:parent-1:1",
+      }),
+    ).toMatchObject({ created: false, item: { id: childRow.id, originEventId: 73 } });
+    expect(host.pendingDelegations()).toEqual([]);
 
     now = 200;
     expect(await host.reconcileOnce("child")).toMatchObject({ admitted: 1 });

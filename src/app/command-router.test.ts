@@ -6,7 +6,7 @@ import type { AppInput } from "@may-agent/sdk";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { attachCommandRouter } from "./command-router.js";
-import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
 
 function fixture(acceptsAppInput: (appId: string, input: AppInput) => boolean = () => false) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
@@ -23,9 +23,15 @@ function fixture(acceptsAppInput: (appId: string, input: AppInput) => boolean = 
     resumeSession: () => undefined,
     run: (agent: string, text: string, opts?: Record<string, unknown>) => {
       runs.push({ agent, text, opts });
-      return `s_new_${runs.length}`;
+      return typeof opts?.sessionId === "string" ? opts.sessionId : `s_new_${runs.length}`;
     },
     cancel: (sessionId: string) => cancelled.push(sessionId),
+    getAgentDefinition: () => ({ sessionIdPrefix: "chat" }),
+    getSessionSummary: (sessionId: string) => ({
+      task: "",
+      summary: "",
+      status: runs.some((run) => run.opts?.sessionId === sessionId) ? "running" : "unknown",
+    }),
   };
   const router = attachCommandRouter({
     bus,
@@ -119,6 +125,9 @@ describe("command router", () => {
         .all()
         .map((row: { data: string }) => JSON.parse(row.data).input.data.message);
       expect(inputs).toEqual(["from console", "from control", "from socket"]);
+      expect(
+        getDb(f.root).prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'human.input.received'").get(),
+      ).toEqual({ count: 0 });
       expect(f.runs).toEqual([]);
     } finally {
       cleanup(f.root, f.router);
@@ -273,6 +282,57 @@ describe("command router", () => {
         opts: { trace: { traceId: expect.any(String), parentEventId: expect.any(Number) } },
       });
       expect(f.cancelled).toEqual(["s_chat"]);
+    } finally {
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("replays required controls through the durable route", () => {
+    const f = fixture((appId) => appId === "may");
+    try {
+      const event = {
+        type: "session.cancel.requested",
+        source: "recovery",
+        owner: "agent:may",
+        data: { sessionId: "s_chat" },
+      } as any;
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true });
+
+      f.bus.emit(event);
+
+      expect(f.cancelled).toEqual(["s_chat"]);
+    } finally {
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("correlates direct chat recovery to one deterministic session", () => {
+    const f = fixture();
+    try {
+      const event = {
+        type: "chat.start.requested",
+        source: "control-socket",
+        owner: "agent:dev",
+        data: {
+          agent: "dev",
+          message: "investigate",
+          idempotencyKey: "direct-chat-1",
+        },
+      } as any;
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true });
+
+      const first = f.bus.emit(event);
+      f.bus.emit(event);
+
+      expect(f.runs).toHaveLength(1);
+      expect(f.runs[0]).toMatchObject({
+        agent: "dev",
+        text: "investigate",
+        opts: {
+          sessionId: `chat_event_${Number(first[EVENT_ROW_ID])}`,
+          requestId: `event:${Number(first[EVENT_ROW_ID])}`,
+        },
+      });
     } finally {
       cleanup(f.root, f.router);
     }

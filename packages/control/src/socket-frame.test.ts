@@ -2,6 +2,19 @@ import { describe, expect, it } from "bun:test";
 import { normalizeSocketFrame } from "./protocol.js";
 
 describe("socket frame normalization", () => {
+  it("keeps the simple event operations on the control plane", () => {
+    expect(normalizeSocketFrame({ type: "publish", event: { type: "custom.event", data: {} } })).toEqual({
+      kind: "control",
+      command: "publish",
+      frame: { type: "publish", event: { type: "custom.event", data: {} } },
+    });
+    expect(normalizeSocketFrame({ type: "event.get", eventId: 42 })).toEqual({
+      kind: "control",
+      command: "event.get",
+      frame: { type: "event.get", eventId: 42 },
+    });
+  });
+
   it("keeps explicit App admission on the control plane", () => {
     const frame = {
       type: "app.input.admit",
@@ -18,12 +31,14 @@ describe("socket frame normalization", () => {
   });
 
   it("accepts unknown dot-named events when they use canonical envelopes", () => {
-    expect(normalizeSocketFrame({
-      type: "custom.event",
-      source: "test",
-      owner: "agent:may",
-      data: { projectId: "p1" },
-    })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "custom.event",
+        source: "test",
+        owner: "agent:may",
+        data: { projectId: "p1" },
+      }),
+    ).toEqual({
       kind: "event",
       command: "custom.event",
       event: {
@@ -36,12 +51,14 @@ describe("socket frame normalization", () => {
   });
 
   it("accepts domain events that already use canonical envelopes", () => {
-    expect(normalizeSocketFrame({
-      type: "message.created",
-      source: "agent:may",
-      owner: "human:operator",
-      data: { from: "may", to: "human", content: "hi" },
-    })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "message.created",
+        source: "agent:may",
+        owner: "human:operator",
+        data: { from: "may", to: "human", content: "hi" },
+      }),
+    ).toEqual({
       kind: "event",
       command: "message.created",
       event: {
@@ -52,12 +69,14 @@ describe("socket frame normalization", () => {
       },
     });
 
-    expect(normalizeSocketFrame({
-      type: "project.nudge",
-      source: "web-ui",
-      owner: "agent:may",
-      data: { projectPath: "projects/x" },
-    })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "project.nudge",
+        source: "web-ui",
+        owner: "agent:may",
+        data: { projectPath: "projects/x" },
+      }),
+    ).toEqual({
       kind: "event",
       command: "project.nudge",
       event: {
@@ -68,12 +87,14 @@ describe("socket frame normalization", () => {
       },
     });
 
-    expect(normalizeSocketFrame({
-      type: "project.comment.created",
-      source: "socket",
-      owner: "agent:may",
-      data: { projectPath: "projects/x", comment: "go", author: "hao" },
-    })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "project.comment.created",
+        source: "socket",
+        owner: "agent:may",
+        data: { projectPath: "projects/x", comment: "go", author: "hao" },
+      }),
+    ).toEqual({
       kind: "event",
       command: "project.comment.created",
       event: {
@@ -84,13 +105,15 @@ describe("socket frame normalization", () => {
       },
     });
 
-    expect(normalizeSocketFrame({
-      type: "metric.breach",
-      source: "metrics-snapshot",
-      owner: "agent:may",
-      urgency: "high",
-      data: { metricId: "system.health", message: "check" },
-    })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "metric.breach",
+        source: "metrics-snapshot",
+        owner: "agent:may",
+        urgency: "high",
+        data: { metricId: "system.health", message: "check" },
+      }),
+    ).toEqual({
       kind: "event",
       command: "metric.breach",
       event: {
@@ -119,12 +142,28 @@ describe("socket frame normalization", () => {
       command: "project.nudge",
       message: "Canonical event 'project.nudge' requires object field 'data'",
     });
-    expect(normalizeSocketFrame({ type: "metric.breach", source: "metrics-snapshot", owner: "agent:may", metricId: "system.health", message: "check" })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "metric.breach",
+        source: "metrics-snapshot",
+        owner: "agent:may",
+        metricId: "system.health",
+        message: "check",
+      }),
+    ).toEqual({
       kind: "error",
       command: "metric.breach",
       message: "Canonical event 'metric.breach' requires object field 'data'",
     });
-    expect(normalizeSocketFrame({ type: "session.end", source: "runtime", owner: "agent:dev", sessionId: "s_1", status: "done" })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "session.end",
+        source: "runtime",
+        owner: "agent:dev",
+        sessionId: "s_1",
+        status: "done",
+      }),
+    ).toEqual({
       kind: "error",
       command: "session.end",
       message: "Canonical event 'session.end' requires object field 'data'",
@@ -165,10 +204,14 @@ describe("socket frame normalization", () => {
       kind: "event",
       command: "input",
       event: {
-        type: "chat.start.requested",
+        type: "app.input.requested",
         source: "socket",
-        owner: "agent:may",
-        data: { agent: "may", message: "hello", channel: "socket" },
+        owner: "app:may",
+        data: {
+          appId: "may",
+          input: { kind: "message", data: { message: "hello" } },
+          channel: "socket",
+        },
       },
     });
     expect(normalizeSocketFrame({ type: "steer", sessionId: "s_1", message: "continue", source: "web-ui" })).toEqual({
@@ -206,7 +249,14 @@ describe("socket frame normalization", () => {
   });
 
   it("keeps non-chat fork compatibility frames flat", () => {
-    expect(normalizeSocketFrame({ type: "fork", agent: "dev", task: "investigate", opts: { kind: "job", source: "web-ui" } })).toEqual({
+    expect(
+      normalizeSocketFrame({
+        type: "fork",
+        agent: "dev",
+        task: "investigate",
+        opts: { kind: "job", source: "web-ui" },
+      }),
+    ).toEqual({
       kind: "event",
       command: "fork",
       event: { type: "fork", agent: "dev", task: "investigate", opts: { kind: "job", source: "web-ui" } },
@@ -218,10 +268,14 @@ describe("socket frame normalization", () => {
       kind: "event",
       command: "input",
       event: {
-        type: "chat.start.requested",
+        type: "app.input.requested",
         source: "socket",
-        owner: "agent:may",
-        data: { agent: "may", message: "hello", channel: "socket" },
+        owner: "app:may",
+        data: {
+          appId: "may",
+          input: { kind: "message", data: { message: "hello" } },
+          channel: "socket",
+        },
       },
     });
     expect(normalizeSocketFrame({ type: "fork", agent: "dev", message: "investigate" })).toEqual({

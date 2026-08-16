@@ -934,6 +934,9 @@ export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
+/** Marks events admitted through the semantic EventInput boundary. */
+export const EVENT_INTERFACE_INPUT = Symbol.for("may-agent.eventInterfaceInput");
+export const EVENT_RECORD_ONLY = Symbol.for("may-agent.eventRecordOnly");
 export const EVENT_SUBSCRIBER_WARN_MS = 25;
 
 const eventContext = new AsyncLocalStorage<AgentEvent>();
@@ -1080,6 +1083,14 @@ export class EventBus {
       }
       if (!durableRouteFailed) {
         delivery ??= pairTrackerFallback(event);
+        if (!delivery && (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]) {
+          delivery = {
+            accepted: true,
+            by: "event-interface:record",
+            route: "noop",
+            note: "record-only event persisted; no responsible consumer required",
+          };
+        }
         if (delivery) this.deliveryRecorder?.(event, delivery);
       }
     } finally {

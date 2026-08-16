@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import {
   EVENT_DEDUPLICATED,
   EVENT_INGRESS_SOURCE,
+  EVENT_INTERFACE_INPUT,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   type AgentEvent,
@@ -86,10 +87,17 @@ function stableEventValue(value: unknown): unknown {
 
 function idempotencyHash(event: AgentEvent, payload: Record<string, unknown>): string {
   const record = event as AgentEvent & Record<string, unknown>;
+  const semanticInput = Boolean((event as AgentEvent & { [EVENT_INTERFACE_INPUT]?: unknown })[EVENT_INTERFACE_INPUT]);
   const canonical = isCanonicalEventEnvelope(record)
     ? {
         ...Object.fromEntries(
-          Object.entries(record).filter(([key]) => key !== "data" && key !== "timestamp" && key !== "trace"),
+          Object.entries(record).filter(
+            ([key]) =>
+              key !== "data" &&
+              key !== "timestamp" &&
+              key !== "trace" &&
+              (!semanticInput || (key !== "source" && key !== "owner")),
+          ),
         ),
         data: payload,
       }
@@ -103,6 +111,9 @@ function idempotencyHash(event: AgentEvent, payload: Record<string, unknown>): s
 }
 
 function ingressSource(event: AgentEvent, fallback: string | null): string {
+  if ((event as AgentEvent & { [EVENT_INTERFACE_INPUT]?: unknown })[EVENT_INTERFACE_INPUT]) {
+    return "event-interface";
+  }
   const trusted = (event as AgentEvent & { [EVENT_INGRESS_SOURCE]?: unknown })[EVENT_INGRESS_SOURCE];
   return typeof trusted === "string" && trusted.trim() ? trusted.trim() : (fallback ?? "internal");
 }

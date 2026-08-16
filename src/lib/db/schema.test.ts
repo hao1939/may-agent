@@ -45,7 +45,9 @@ describe("canonical database schema", () => {
       expect(inboxColumns.some(({ name }) => name === "channel")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel_thread_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel_message_id")).toBe(true);
+      expect(inboxColumns.some(({ name }) => name === "origin_event_id")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_idempotency")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_origin_event")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
       expect(deliveryColumns.map(({ name }) => name)).toEqual(
         expect.arrayContaining(["operation_id", "session_id", "request_id", "status", "receipt_event_id"]),
@@ -54,6 +56,7 @@ describe("canonical database schema", () => {
       expect(admissionPlanColumns.some(({ name }) => name === "registry_snapshot_id")).toBe(true);
       expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
       expect(trigger.sql).toContain("OLD.session_id");
+      expect(trigger.sql).toContain("i.origin_event_id = OLD.id");
       expect(trigger.sql).not.toContain("json_extract");
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'runtime_migrations'").get()).toBeNull();
     } finally {
@@ -126,7 +129,7 @@ describe("canonical database schema", () => {
 
       const columns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name: string }>;
       expect(columns.map(({ name }) => name)).toEqual(
-        expect.arrayContaining(["channel", "channel_thread_id", "channel_message_id"]),
+        expect.arrayContaining(["channel", "channel_thread_id", "channel_message_id", "origin_event_id"]),
       );
     } finally {
       db.close();

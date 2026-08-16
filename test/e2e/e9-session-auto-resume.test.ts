@@ -150,7 +150,7 @@ describe("E9: session resume from cold (interrupted) end via steer", () => {
 
         // Source should reflect that the run came from a resume path, not
         // a brand-new top-level invocation.
-        expect(matched.source ?? "").toMatch(/resume|e2e|human/);
+        expect(matched.source).toBe("control-socket");
       } finally {
         db.close();
       }

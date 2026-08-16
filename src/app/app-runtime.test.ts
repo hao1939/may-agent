@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
-import { EVENT_ROW_ID } from "./event-bus.js";
 
 describe("app runtime startup order", () => {
   it("attaches Telegram admission before external ingress and cron work", () => {
@@ -75,41 +74,46 @@ describe("App input control admission", () => {
   it("validates against the live App registry before emitting one retry-safe App input", () => {
     const events: Array<Record<string, unknown>> = [];
     const admit = createAppInputAdmission({
-      bus: {
-        emit: ((event: Record<string, unknown>) => {
-          events.push(event);
-          Object.defineProperty(event, EVENT_ROW_ID, { value: 91 });
-          return event;
+      events: {
+        publish: ((event: Record<string, unknown>, context: Record<string, unknown>) => {
+          events.push({ event, context });
+          return { eventId: 91, eventType: "app.input.requested", delivery: "accepted" };
         }) as never,
       },
-      getRuntime: () => ({ host: { acceptsInput: () => true } }) as never,
     });
 
-    expect(admit(command)).toEqual({ eventId: 91, eventType: "app.input.requested" });
+    expect(admit(command)).toEqual({
+      eventId: 91,
+      eventType: "app.input.requested",
+      delivery: "accepted",
+    });
     expect(events).toEqual([
       {
-        type: "app.input.requested",
-        source: "control-socket",
-        owner: "app:aks-rp-e2e",
-        data: {
-          appId: "aks-rp-e2e",
-          input: command.input,
-          source: command.source,
-          conversationId: command.conversationId,
-          conversationSequence: undefined,
-          channel: "web-ui",
-          channelThreadId: undefined,
-          channelMessageId: undefined,
+        event: {
+          type: "app.input.requested",
+          target: { appId: "aks-rp-e2e" },
           idempotencyKey: "project-comment-17",
+          data: {
+            input: command.input,
+            conversationId: command.conversationId,
+            conversationSequence: undefined,
+            channel: "web-ui",
+            channelThreadId: undefined,
+            channelMessageId: undefined,
+          },
         },
+        context: { source: "control-socket", inputSource: command.source },
       },
     ]);
   });
 
   it("rejects an input the registered App schema does not accept", () => {
     const admit = createAppInputAdmission({
-      bus: { emit: (() => null) as never },
-      getRuntime: () => ({ host: { acceptsInput: () => false } }) as never,
+      events: {
+        publish: (() => {
+          throw new Error("App aks-rp-e2e does not accept this input");
+        }) as never,
+      },
     });
     expect(() => admit(command)).toThrow("does not accept this input");
   });

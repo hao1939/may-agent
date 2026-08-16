@@ -124,6 +124,53 @@ function createCore(overrides: Partial<Parameters<typeof createControlSocketCore
 }
 
 describe("control socket protocol", () => {
+  it("publishes and reads through the simple event interface", async () => {
+    const published: unknown[] = [];
+    const core = createCore({
+      publishEvent: (event) => {
+        published.push(event);
+        return {
+          eventId: 73,
+          eventType: event.type,
+          delivery: "accepted",
+          links: [{ kind: "request", id: "app_73", state: "pending" }],
+        };
+      },
+      getEvent: (eventId) => ({ event: { id: eventId, type: "app.input.requested" } }),
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "publish",
+        event: {
+          type: "app.input.requested",
+          target: { appId: "sample" },
+          data: { input: { kind: "message", data: { message: "hello" } } },
+          idempotencyKey: "turn-73",
+        },
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      command: "publish",
+      eventId: 73,
+      delivery: "accepted",
+      links: [{ kind: "request", id: "app_73" }],
+    });
+    expect(published).toEqual([
+      {
+        type: "app.input.requested",
+        target: { appId: "sample" },
+        data: { input: { kind: "message", data: { message: "hello" } } },
+        idempotencyKey: "turn-73",
+      },
+    ]);
+    await expect(sendSocketCommand(core.endpoint, { type: "event.get", eventId: 73 })).resolves.toMatchObject({
+      type: "ok",
+      command: "event.get",
+      event: { event: { id: 73, type: "app.input.requested" } },
+    });
+  });
+
   it("returns the persisted semantic event receipt", async () => {
     const core = createCore({
       emitEvent: (event) => {
@@ -178,9 +225,10 @@ describe("control socket protocol", () => {
     });
 
     expect(Number(receipt.eventId)).toBeGreaterThan(0);
-    const row = getDb(persistDir)
-      .prepare("SELECT id, event_type FROM events WHERE id = ?")
-      .get(receipt.eventId) as { id: number; event_type: string };
+    const row = getDb(persistDir).prepare("SELECT id, event_type FROM events WHERE id = ?").get(receipt.eventId) as {
+      id: number;
+      event_type: string;
+    };
     expect(row).toEqual({ id: receipt.eventId, event_type: "trigger.metrics-snapshot" });
   });
 

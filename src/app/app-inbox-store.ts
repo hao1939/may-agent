@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import type { AppInput, AppInputSource, AppResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
@@ -41,6 +42,7 @@ export type AppInboxItem = {
   availableAt?: number;
   reviewAt?: number;
   lease?: { generation: number; owner: string; expiresAt: number };
+  originEventId?: number;
   idempotencyKey?: string;
   createdAt: number;
   updatedAt: number;
@@ -58,6 +60,7 @@ export type CreateAppInboxItem = {
   channelMessageId?: number;
   source: AppInputSource;
   input: AppInput;
+  originEventId?: number;
   idempotencyKey?: string;
   now?: number;
 };
@@ -155,6 +158,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
       leaseOwner && leaseExpiresAt !== undefined
         ? { generation, owner: leaseOwner, expiresAt: leaseExpiresAt }
         : undefined,
+    originEventId: optionalNumber(row.origin_event_id),
     idempotencyKey: optionalText(row.idempotency_key),
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at),
@@ -203,6 +207,9 @@ function validateCreate(input: CreateAppInboxItem): void {
     (!Number.isSafeInteger(input.channelMessageId) || input.channelMessageId <= 0)
   ) {
     throw new Error("App inbox channelMessageId must be a positive safe integer");
+  }
+  if (input.originEventId !== undefined && (!Number.isSafeInteger(input.originEventId) || input.originEventId <= 0)) {
+    throw new Error("App inbox originEventId must be a positive safe integer");
   }
 }
 
@@ -383,8 +390,8 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
        id, app_id, parent_id, conversation_id, conversation_seq,
        channel, channel_thread_id, channel_message_id,
        source_kind, source_id, input_kind, input_data, status,
-       available_at, idempotency_key, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
+       available_at, origin_event_id, idempotency_key, created_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
@@ -399,6 +406,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
       input.input.kind,
       JSON.stringify(input.input.data),
       now,
+      input.originEventId ?? null,
       input.idempotencyKey ?? null,
       now,
       now,
@@ -417,11 +425,52 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
         .get(input.appId, input.idempotencyKey)
     : db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   if (!existing) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
-  const item = rowToItem(existing);
+  let item = rowToItem(existing);
   if (item.appId !== input.appId) {
     throw new Error(`App inbox item ${id} already belongs to App ${item.appId}`);
   }
+  if (
+    item.parentId !== input.parentId ||
+    item.source.kind !== input.source.kind ||
+    item.source.id !== input.source.id ||
+    !isDeepStrictEqual(item.input, input.input)
+  ) {
+    throw new Error(`App inbox idempotency key ${input.idempotencyKey ?? id} was reused with different input`);
+  }
+  if (input.originEventId !== undefined) {
+    if (item.originEventId !== undefined && item.originEventId !== input.originEventId) {
+      throw new Error(`App inbox item ${item.id} already belongs to event ${item.originEventId}`);
+    }
+    if (item.originEventId === undefined) {
+      db.run(
+        `UPDATE app_inbox_items
+         SET origin_event_id = ?, updated_at = ?
+         WHERE id = ? AND origin_event_id IS NULL`,
+        [input.originEventId, now, item.id],
+      );
+      const linked = getAppInboxItem(db, item.id);
+      if (!linked) throw new Error(`Linked App inbox item ${item.id} is missing`);
+      item = linked;
+    }
+  }
   return { item, created: false };
+}
+
+export function listUnlinkedAppDelegations(db: SqliteDb, limit = 100): AppInboxItem[] {
+  if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error("Delegation query limit must be positive");
+  return (
+    db
+      .prepare(
+        `SELECT * FROM app_inbox_items
+         WHERE parent_id IS NOT NULL
+           AND source_kind = 'app'
+           AND origin_event_id IS NULL
+           AND idempotency_key LIKE 'delegate:%'
+         ORDER BY created_at, id
+         LIMIT ?`,
+      )
+      .all(limit) as InboxRow[]
+  ).map(rowToItem);
 }
 
 const CLAIMABLE_SQL = `
