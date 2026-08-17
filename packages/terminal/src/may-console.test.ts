@@ -29,6 +29,7 @@ describe("May Console", () => {
     mkdirSync(socketDir, { recursive: true });
 
     const frames: Array<Record<string, any>> = [];
+    let completedCommitmentId: string | null = null;
     let client: Socket | null = null;
     let inputBuffer = "";
     const server: Server = createServer((socket) => {
@@ -96,13 +97,17 @@ describe("May Console", () => {
                     message: "Review the May design",
                     state: "analyzing",
                     progress: "Codex is reviewing the implementation.",
+                    createdAt: Date.UTC(2026, 7, 17, 8, 0, 0),
+                    updatedAt: Date.UTC(2026, 7, 17, 8, 5, 0),
                   },
                   {
                     requestId: "item-queued",
                     message: "Review AKS tasks",
                     state: "queued",
+                    createdAt: Date.UTC(2026, 7, 17, 8, 10, 0),
+                    updatedAt: Date.UTC(2026, 7, 17, 8, 10, 0),
                   },
-                ],
+                ].filter((item) => item.requestId !== completedCommitmentId),
               })}\n`,
             );
           } else if (frame.type === "app.input.admit") {
@@ -187,6 +192,34 @@ describe("May Console", () => {
 
     child.stdin.write("/work\n");
     await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 2);
+
+    child.stdin.write("/work 1\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 3);
+    expect(frames.filter((frame) => frame.type === "app.commitments.get")[2]).toMatchObject({ limit: 100 });
+    await waitFor(
+      () =>
+        output.includes("Work 1:") &&
+        output.includes("Request: Review the May design") &&
+        output.includes("Status: Analyzing") &&
+        output.includes("Progress: Codex is reviewing the implementation.") &&
+        output.includes("Created: 2026-08-17 08:00:00 UTC") &&
+        output.includes("Updated: 2026-08-17 08:05:00 UTC"),
+    );
+
+    child.stdin.write("/work 2\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 4);
+    await waitFor(
+      () =>
+        output.includes("Work 2:") &&
+        output.includes("Request: Review AKS tasks") &&
+        output.includes("Status: Queued") &&
+        output.includes("Progress: No durable progress update yet."),
+    );
+
+    completedCommitmentId = "item-working";
+    child.stdin.write("/work 1\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 5);
+    await waitFor(() => output.includes("Request: Review the May design") && output.includes("Status: No longer open"));
 
     child.stdin.write("/sessions\n");
     await waitFor(() => output.includes("focused work"));
