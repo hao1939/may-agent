@@ -63,6 +63,8 @@ export type AppCommitmentView = {
   message: string;
   state: "queued" | "working" | "analyzing" | "waiting" | "ready";
   progress?: string;
+  /** Present only when a caller explicitly selects this exact commitment. */
+  result?: AppResult;
   createdAt: number;
   updatedAt: number;
 };

@@ -280,6 +280,23 @@ describe("App inbox store", () => {
       "delegated",
       "queued",
     ]);
+    expect(
+      listOpenAppCommitments(db, "may", {
+        requestId: "ready",
+        includeResultForRequestId: "ready",
+        limit: 1,
+      }),
+    ).toEqual([
+      {
+        requestId: "ready",
+        message: "Prepare a recommendation",
+        state: "ready",
+        progress: "May has a result ready for may-console.",
+        result: { summary: "Recommendation is ready." },
+        createdAt: 145,
+        updatedAt: 148,
+      },
+    ]);
   });
 
   it("does not treat a cross-App id collision as an idempotent create", () => {

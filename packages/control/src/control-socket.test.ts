@@ -415,8 +415,8 @@ describe("control socket protocol", () => {
       },
     ];
     const core = createCore({
-      getAppCommitments: (appId, limit) => {
-        expect({ appId, limit }).toEqual({ appId: "may", limit: 20 });
+      getAppCommitments: (appId, limit, requestId) => {
+        expect({ appId, limit, requestId }).toEqual({ appId: "may", limit: 20, requestId: "app-1" });
         return commitments;
       },
     });
@@ -426,6 +426,7 @@ describe("control socket protocol", () => {
         type: "app.commitments.get",
         appId: "may",
         limit: 20,
+        requestId: "app-1",
       }),
     ).resolves.toMatchObject({
       type: "ok",

@@ -225,6 +225,15 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+function selectedWorkRequestId(input: AppInput): string | undefined {
+  if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return undefined;
+  const context = (input.data as Record<string, unknown>).context;
+  if (!context || typeof context !== "object" || Array.isArray(context)) return undefined;
+  const requestId = (context as Record<string, unknown>).selectedWorkRequestId;
+  if (typeof requestId !== "string") return undefined;
+  return requestId.trim() || undefined;
+}
+
 export class AppInboxHost {
   readonly #db: SqliteDb;
   readonly #apps: Map<string, RegisteredApp>;
@@ -673,13 +682,24 @@ export class AppInboxHost {
       input: item.input,
     };
     if (item.conversationId) {
+      const selectedRequestId = selectedWorkRequestId(item.input);
+      let commitments = listOpenAppCommitments(this.#db, item.appId, {
+        excludeRequestId: item.id,
+      });
+      if (selectedRequestId && selectedRequestId !== item.id) {
+        const selected = listOpenAppCommitments(this.#db, item.appId, {
+          excludeRequestId: item.id,
+          requestId: selectedRequestId,
+          includeResultForRequestId: selectedRequestId,
+          limit: 1,
+        })[0];
+        if (selected) commitments = [selected, ...commitments.filter((entry) => entry.requestId !== selected.requestId)];
+      }
       request.conversation = {
         id: item.conversationId,
         sourceId: item.source.id,
         replyToSourceId: item.replyToSourceId,
-        commitments: listOpenAppCommitments(this.#db, item.appId, {
-          excludeRequestId: item.id,
-        }),
+        commitments,
         prior: listAppConversationTurns(this.#db, item.appId, item.conversationId, 20)
           .filter((turn) => turn.requestId !== item.id)
           .map((turn) => ({

@@ -39,7 +39,7 @@ export interface AttachControlSocketOptions {
     eventType: string;
   };
   getAppConversation?: (appId: string, conversationId: string, limit?: number) => unknown;
-  getAppCommitments?: (appId: string, limit?: number) => unknown;
+  getAppCommitments?: (appId: string, limit?: number, requestId?: string) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -546,6 +546,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         if (normalized.kind === "control" && normalized.command === "app.commitments.get") {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           const limit = frame.limit === undefined ? undefined : Number(frame.limit);
+          const requestId = typeof frame.requestId === "string" ? frame.requestId.trim() : undefined;
           if (!appId || !getAppCommitments) {
             writeFrame(socket, {
               type: "error",
@@ -559,7 +560,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               type: "ok",
               command: normalized.command,
               appId,
-              commitments: getAppCommitments(appId, limit),
+              commitments: getAppCommitments(appId, limit, requestId),
             });
           } catch (error) {
             writeFrame(socket, {

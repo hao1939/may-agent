@@ -349,7 +349,12 @@ export async function runAppRuntime(opts: {
     admitAppInput,
     getAppConversation: (appId, conversationId, limit) =>
       listAppConversationTurns(getDb(opts.persistDir), appId, conversationId, limit),
-    getAppCommitments: (appId, limit) => listOpenAppCommitments(getDb(opts.persistDir), appId, { limit }),
+    getAppCommitments: (appId, limit, requestId) =>
+      listOpenAppCommitments(getDb(opts.persistDir), appId, {
+        limit,
+        requestId,
+        includeResultForRequestId: requestId,
+      }),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });

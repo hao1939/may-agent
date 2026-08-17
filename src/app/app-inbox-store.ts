@@ -380,7 +380,12 @@ function commitmentProgress(
 export function listOpenAppCommitments(
   db: SqliteDb,
   appId: string,
-  options: { excludeRequestId?: string; limit?: number } = {},
+  options: {
+    excludeRequestId?: string;
+    requestId?: string;
+    includeResultForRequestId?: string;
+    limit?: number;
+  } = {},
 ): AppCommitmentView[] {
   requiredText(appId, "appId");
   const limit = options.limit ?? 20;
@@ -388,15 +393,18 @@ export function listOpenAppCommitments(
     throw new Error("Commitment limit must be an integer from 1 to 100");
   }
   const excludeRequestId = options.excludeRequestId?.trim();
+  const requestId = options.requestId?.trim();
+  const includeResultForRequestId = options.includeResultForRequestId?.trim();
   const rows = db
     .prepare(
       `SELECT * FROM app_inbox_items
        WHERE app_id = ? AND source_kind = 'human' AND status IN ('pending', 'handling')
          AND (? = '' OR id != ?)
+         AND (? = '' OR id = ?)
        ORDER BY created_at DESC, id DESC
        LIMIT ?`,
     )
-    .all(appId, excludeRequestId ?? "", excludeRequestId ?? "", limit);
+    .all(appId, excludeRequestId ?? "", excludeRequestId ?? "", requestId ?? "", requestId ?? "", limit);
 
   return rows.map((row) => {
     const item = rowToItem(row);
@@ -410,6 +418,7 @@ export function listOpenAppCommitments(
       message: commitmentMessage(item),
       state,
       ...(progress ? { progress: boundedCommitmentText(progress, 240) } : {}),
+      ...(includeResultForRequestId === item.id && item.result ? { result: item.result } : {}),
       createdAt: item.createdAt,
       updatedAt,
     };
