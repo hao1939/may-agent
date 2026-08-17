@@ -205,4 +205,41 @@ describe("May Console", () => {
     child.stdin.write("/exit\n");
     await once(child, "exit");
   }, 10_000);
+
+  test("exits cleanly when stdin closes", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-eof-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    let client: Socket | null = null;
+    const server: Server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+    });
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
+      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      stdio: "pipe",
+    });
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => client !== null);
+    child.stdin.end();
+    const [code] = (await once(child, "exit")) as [number | null];
+    expect(code).toBe(0);
+    expect(stderr).not.toContain("ERR_USE_AFTER_CLOSE");
+  });
 });
