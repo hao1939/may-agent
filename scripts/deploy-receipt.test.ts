@@ -152,6 +152,9 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('bundle_dir="$deploy_root/bundle"');
     expect(deploy).toContain('install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"');
     expect(deploy).toContain(
+      'install -m 755 "$build_dir/packages/terminal/bin/may-console.cjs" "$bundle_dir/may-console.next"',
+    );
+    expect(deploy).toContain(
       'install -m 755 "$build_dir/container/may-agent-supervisor-restart.sh" "$bundle_dir/may-agent-supervisor-restart.next"',
     );
     expect(deploy).toContain(
@@ -173,5 +176,10 @@ describe("restart-aware deploy receipts", () => {
     expect(restarter).not.toContain('sdk_root="${MAY_AGENT_SDK_ROOT:-');
     expect(restarter).toContain('switch_sdk "$sdk_release"');
     expect(restarter).toContain('switch_sdk "$previous_sdk_release"');
+    expect(restarter).toContain(
+      'console_bundle="${MAY_CONSOLE_BUNDLE_PATH:-/app/projects/may-agent/bundle/may-console}"',
+    );
+    expect(restarter).toContain('install -m 755 "$console_bundle" "$console_install_tmp"');
+    expect(restarter).toContain('install -m 755 "$console_backup" "$console_target"');
   });
 });

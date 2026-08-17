@@ -3,6 +3,8 @@ set -eu
 
 bundle="${MAY_AGENT_BUNDLE_PATH:-/app/projects/may-agent/bundle/may-agent}"
 target="${MAY_AGENT_BIN_PATH:-/usr/local/bin/may-agent}"
+console_bundle="${MAY_CONSOLE_BUNDLE_PATH:-/app/projects/may-agent/bundle/may-console}"
+console_target="${MAY_CONSOLE_BIN_PATH:-/usr/local/bin/may-console}"
 deploy_marker="${MAY_AGENT_DEPLOY_MARKER:-/app/projects/may-agent/bundle/deploy-requested}"
 sdk_marker="${MAY_AGENT_SDK_DEPLOY_MARKER:-/app/projects/may-agent/bundle/sdk-requested}"
 sdk_root="${MAY_AGENT_DEPLOY_SDK_ROOT:-/app/projects/may-agent/bundle}"
@@ -10,6 +12,8 @@ sdk_link="${MAY_AGENT_SDK_LINK:-$sdk_root/sdk-current}"
 receipt_tool="${MAY_AGENT_DEPLOY_RECEIPT_TOOL:-/app/projects/may-agent/bundle/deploy-receipt.ts}"
 install_tmp="${target}.next.$$"
 backup="${target}.prev.$$"
+console_install_tmp="${console_target}.next.$$"
+console_backup="${console_target}.prev.$$"
 sdk_link_tmp="${sdk_link}.next.$$"
 services_stopped=0
 deployed=0
@@ -56,14 +60,14 @@ switch_sdk() {
 
 cleanup() {
   rc=$?
-  rm -f "$install_tmp" "$sdk_link_tmp"
+  rm -f "$install_tmp" "$console_install_tmp" "$sdk_link_tmp"
   if [ "$services_stopped" = "1" ]; then supervisorctl start $runtime_services || true; fi
   if [ "$deployed" = "1" ] && [ "$finalized" = "0" ] && [ -n "$receipt" ]; then
     loaded="$(sha256sum "$target" 2>/dev/null | awk '{print $1}' || echo unknown)"
     settle failed "$loaded" unhealthy false "restarter-exit-$rc" || true
     emit_wake failed || true
   fi
-  rm -f "$backup"
+  rm -f "$backup" "$console_backup"
   exit "$rc"
 }
 trap cleanup EXIT
@@ -74,8 +78,8 @@ sleep "${MAY_AGENT_RESTART_DELAY:-0.2}"
 if [ -e "$deploy_marker" ]; then
   receipt="$(cat "$deploy_marker")"
   case "$receipt" in /app/projects/may-agent/.state/deploy-receipts/*.json) ;; *) echo "Unsafe deploy receipt path: $receipt" >&2; exit 1;; esac
-  if [ ! -f "$receipt" ] || [ ! -x "$bundle" ]; then
-    echo "[may-agent-restarter] receipt or bundle missing: $receipt $bundle" >&2
+  if [ ! -f "$receipt" ] || [ ! -x "$bundle" ] || [ ! -x "$console_bundle" ]; then
+    echo "[may-agent-restarter] receipt or bundle missing: $receipt $bundle $console_bundle" >&2
     exit 1
   fi
   source_commit="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); if (!/^[0-9a-f]{40}$/.test(r.sourceCommit)) throw new Error("invalid sourceCommit"); process.stdout.write(r.sourceCommit)' "$receipt")"
@@ -99,9 +103,12 @@ services_stopped=1
 
 if [ -n "$receipt" ]; then
   cp -f "$target" "$backup"
+  cp -f "$console_target" "$console_backup"
   switch_sdk "$sdk_release"
   install -m 755 -o mayagent -g mayagent "$bundle" "$install_tmp"
   mv -f "$install_tmp" "$target"
+  install -m 755 "$console_bundle" "$console_install_tmp"
+  mv -f "$console_install_tmp" "$console_target"
   rm -f "$deploy_marker" "$sdk_marker"
   deployed=1
 fi
@@ -120,6 +127,7 @@ if [ "$deployed" = "1" ]; then
     supervisorctl stop $runtime_services || true
     services_stopped=1
     install -m 755 -o mayagent -g mayagent "$backup" "$target"
+    install -m 755 "$console_backup" "$console_target"
     if [ -n "$previous_sdk_release" ]; then
       switch_sdk "$previous_sdk_release"
     fi
