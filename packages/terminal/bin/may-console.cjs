@@ -43,8 +43,8 @@ function shortSessionId(sessionId) {
 }
 
 function promptText() {
-  if (!connected) return "may[disconnected]> ";
-  return "may> ";
+  if (!connected) return "you[disconnected]> ";
+  return "you> ";
 }
 
 function refreshPrompt() {
@@ -68,16 +68,24 @@ function printLine(text = "") {
   refreshPrompt();
 }
 
-function printResponseText(text = "") {
+function printConversationText(speaker, text = "") {
   try {
     readline.clearLine(process.stdout, 0);
     readline.cursorTo(process.stdout, 0);
   } catch {
     // Non-TTY output is fine in tests and logs.
   }
-  const value = String(text || "");
-  if (!value) return;
-  writeStdout(value.endsWith("\n") ? value : `${value}\n`);
+  const value = String(text || "").trimEnd();
+  if (!value) {
+    refreshPrompt();
+    return;
+  }
+  writeStdout(`\n${speaker}> ${value}\n\n`);
+  refreshPrompt();
+}
+
+function printResponseText(text = "") {
+  printConversationText("may", text);
 }
 
 function eventPayload(event) {
@@ -116,10 +124,10 @@ function rememberStatusItems(items) {
 
 function watchSessions() {
   if (watchMode === "current" && watchedSessionId) return [watchedSessionId];
-  // Bounded May turns are independent job sessions, so the socket cannot use
-  // its legacy persistent-chat filter. Subscribe broadly and keep the normal
-  // May view quiet in this client.
-  return ["*"];
+  if (watchMode === "all" || debug || raw) return ["*"];
+  // Normal conversation only needs responses addressed to this delivery
+  // channel. Session streams remain available through /watch.
+  return [];
 }
 
 function sendFrame(frame, opts = {}) {
@@ -189,18 +197,20 @@ function renderConversation(turns) {
         ? turn.input.data.message.trim()
         : "";
     if (requestId && message && !renderedConversationRequests.has(requestId)) {
-      printLine(`you: ${message}`);
+      printConversationText("you", message);
       renderedConversationRequests.add(requestId);
     }
     const deliveries = Array.isArray(turn.deliveries) ? turn.deliveries : [];
     for (const delivery of deliveries) {
       const operationId = typeof delivery.operationId === "string" ? delivery.operationId : "";
       if (!operationId || renderedDeliveryOperations.has(operationId) || delivery.status !== "delivered") continue;
-      if (typeof delivery.text === "string" && delivery.text.trim()) printLine(`may: ${delivery.text.trim()}`);
+      if (typeof delivery.text === "string" && delivery.text.trim()) {
+        printConversationText("may", delivery.text.trim());
+      }
       renderedDeliveryOperations.add(operationId);
     }
     if (requestId && turn.state === "working" && deliveries.every((delivery) => delivery.status !== "delivered")) {
-      printLine("may: [working]");
+      printConversationText("may", "[working]");
     }
   }
 }
@@ -595,10 +605,12 @@ function handleCommand(input) {
       return;
     case "raw":
       raw = !raw;
+      subscribe(watchMode);
       printLine(`[raw ${raw ? "on" : "off"}]`);
       return;
     case "debug":
       debug = !debug;
+      subscribe(watchMode);
       printLine(`[debug ${debug ? "on" : "off"}]`);
       return;
     case "shell":
