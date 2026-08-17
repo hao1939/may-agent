@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource, AppResult } from "@may-agent/sdk";
+import type { AppCommitmentView, AppInput, AppInputSource, AppResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
@@ -326,6 +326,91 @@ export function listAppConversationTurns(
       input: item.input,
       state: item.status === "done" ? "done" : "working",
       deliveries: listAppInboxDeliveries(db, item.id),
+    };
+  });
+}
+
+function boundedCommitmentText(value: string, limit: number): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= limit) return normalized;
+  return `${normalized.slice(0, limit - 1).trimEnd()}…`;
+}
+
+function commitmentMessage(item: AppInboxItem): string {
+  const data = item.input.data;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const record = data as Record<string, unknown>;
+    for (const field of ["message", "text"]) {
+      if (typeof record[field] === "string" && record[field].trim()) {
+        return boundedCommitmentText(record[field], 160);
+      }
+    }
+  }
+  return boundedCommitmentText(`${item.input.kind} request`, 160);
+}
+
+function commitmentState(item: AppInboxItem): AppCommitmentView["state"] {
+  if (item.status === "pending") return "queued";
+  if (item.result) return "ready";
+  if (item.waitingOn?.kind === "analysis" || item.waitingOn?.kind === "session") return "analyzing";
+  if (item.waitingOn) return "waiting";
+  return "working";
+}
+
+function commitmentProgress(
+  item: AppInboxItem,
+  deliveries: AppInboxDelivery[],
+  state: AppCommitmentView["state"],
+): string | undefined {
+  if (state === "ready") {
+    const finalDelivery = deliveries.filter((delivery) => delivery.kind === "final").at(-1);
+    if (!finalDelivery) return "May has a result ready to deliver.";
+    if (finalDelivery.status === "uncertain") {
+      return `May has a result; delivery to ${finalDelivery.channel} is unconfirmed.`;
+    }
+    if (finalDelivery.status === "failed") {
+      return `May has a result; delivery to ${finalDelivery.channel} failed.`;
+    }
+    return `May has a result ready for ${finalDelivery.channel}.`;
+  }
+  return deliveries.filter((delivery) => delivery.kind === "progress" && delivery.text?.trim()).at(-1)?.text;
+}
+
+/** Read-only human work view derived from unfinished durable App requests. */
+export function listOpenAppCommitments(
+  db: SqliteDb,
+  appId: string,
+  options: { excludeRequestId?: string; limit?: number } = {},
+): AppCommitmentView[] {
+  requiredText(appId, "appId");
+  const limit = options.limit ?? 20;
+  if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 100) {
+    throw new Error("Commitment limit must be an integer from 1 to 100");
+  }
+  const excludeRequestId = options.excludeRequestId?.trim();
+  const rows = db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       WHERE app_id = ? AND source_kind = 'human' AND status IN ('pending', 'handling')
+         AND (? = '' OR id != ?)
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(appId, excludeRequestId ?? "", excludeRequestId ?? "", limit);
+
+  return rows.map((row) => {
+    const item = rowToItem(row);
+    const deliveries = listAppInboxDeliveries(db, item.id);
+    const state = commitmentState(item);
+    const progress = commitmentProgress(item, deliveries, state);
+    return {
+      requestId: item.id,
+      ...(item.conversationId ? { conversationId: item.conversationId } : {}),
+      message: commitmentMessage(item),
+      state,
+      ...(progress ? { progress: boundedCommitmentText(progress, 240) } : {}),
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
     };
   });
 }

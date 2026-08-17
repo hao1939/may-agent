@@ -6,6 +6,7 @@ const expectedRootExports = [
   "AgentCallOptions",
   "AppAction",
   "AppAnalysisRequest",
+  "AppCommitmentView",
   "AppConversationContext",
   "AppDefinition",
   "AppDependencyObservation",

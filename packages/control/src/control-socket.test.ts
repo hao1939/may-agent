@@ -405,6 +405,36 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("reads unfinished human commitments without emitting an event", async () => {
+    const commitments = [
+      {
+        requestId: "app-1",
+        message: "Review the design",
+        state: "analyzing",
+        progress: "Codex is reviewing it.",
+      },
+    ];
+    const core = createCore({
+      getAppCommitments: (appId, limit) => {
+        expect({ appId, limit }).toEqual({ appId: "may", limit: 20 });
+        return commitments;
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.commitments.get",
+        appId: "may",
+        limit: 20,
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      command: "app.commitments.get",
+      commitments,
+    });
+    expect(core.emitted).toEqual([]);
+  });
+
   it("discovers and invokes project action shortcuts", async () => {
     const core = createCore({
       describeProjectActions: (projectId) => [

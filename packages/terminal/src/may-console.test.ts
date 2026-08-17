@@ -85,6 +85,26 @@ describe("May Console", () => {
                 ],
               })}\n`,
             );
+          } else if (frame.type === "app.commitments.get") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "app.commitments.get",
+                commitments: [
+                  {
+                    requestId: "item-working",
+                    message: "Review the May design",
+                    state: "analyzing",
+                    progress: "Codex is reviewing the implementation.",
+                  },
+                  {
+                    requestId: "item-queued",
+                    message: "Review AKS tasks",
+                    state: "queued",
+                  },
+                ],
+              })}\n`,
+            );
           } else if (frame.type === "app.input.admit") {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
             socket.write(
@@ -152,11 +172,21 @@ describe("May Console", () => {
 
     await waitFor(() => frames.some((frame) => frame.type === "status"));
     await waitFor(() => output.includes("\nyou> Earlier question\n\n") && output.includes("\nmay> Earlier answer\n\n"));
+    await waitFor(
+      () =>
+        output.includes("Working:") &&
+        output.includes("Review the May design — Analyzing") &&
+        output.includes("Codex is reviewing the implementation.") &&
+        output.includes("Review AKS tasks — Queued"),
+    );
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
       deliveryChannel: "may-console",
     });
     expect(output).not.toContain("focused work");
+
+    child.stdin.write("/work\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 2);
 
     child.stdin.write("/sessions\n");
     await waitFor(() => output.includes("focused work"));

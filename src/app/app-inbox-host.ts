@@ -24,6 +24,7 @@ import {
   listAppInboxHealth,
   listAppInboxAssociatedSessionClaims,
   listAppConversationTurns,
+  listOpenAppCommitments,
   listAppInboxDependencyWaits,
   listUnlinkedAppDelegations,
   listAppInboxSessionWaits,
@@ -676,6 +677,9 @@ export class AppInboxHost {
         id: item.conversationId,
         sourceId: item.source.id,
         replyToSourceId: item.replyToSourceId,
+        commitments: listOpenAppCommitments(this.#db, item.appId, {
+          excludeRequestId: item.id,
+        }),
         prior: listAppConversationTurns(this.#db, item.appId, item.conversationId, 20)
           .filter((turn) => turn.requestId !== item.id)
           .map((turn) => ({
