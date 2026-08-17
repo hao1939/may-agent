@@ -29,6 +29,8 @@ const sessionsWithText = new Set();
 const renderedConversationRequests = new Set();
 const renderedDeliveryOperations = new Set();
 let lastConversationSequence = Date.now();
+let lastCommitments = [];
+const pendingCommitmentRenders = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -188,34 +190,33 @@ function requestConversation() {
   );
 }
 
-function requestCommitments() {
-  return sendFrame(
+function requestCommitments(options = {}) {
+  const detailRequestId = typeof options.detailRequestId === "string" ? options.detailRequestId : null;
+  const pending = detailRequestId ? { kind: "detail", requestId: detailRequestId } : { kind: "list" };
+  pendingCommitmentRenders.push(pending);
+  const sent = sendFrame(
     {
       type: "app.commitments.get",
       appId: "may",
-      limit: 20,
+      limit: detailRequestId ? 100 : 20,
     },
     { silent: true },
   );
+  if (!sent) pendingCommitmentRenders.pop();
+  return sent;
 }
 
 function renderCommitments(commitments) {
   if (!Array.isArray(commitments)) return;
+  lastCommitments = commitments;
   if (commitments.length === 0) {
     printLine("\nWorking: nothing.\n");
     return;
   }
-  const stateLabels = {
-    queued: "Queued",
-    working: "Working",
-    analyzing: "Analyzing",
-    waiting: "Waiting",
-    ready: "Ready",
-  };
   const lines = ["", "Working:"];
   commitments.forEach((item, index) => {
     const message = typeof item.message === "string" && item.message.trim() ? item.message.trim() : "Request";
-    const state = stateLabels[item.state] || "Working";
+    const state = commitmentStateLabel(item.state);
     lines.push(`  ${index + 1}. ${message} — ${state}`);
     if (typeof item.progress === "string" && item.progress.trim()) {
       lines.push(`     ${item.progress.trim()}`);
@@ -223,6 +224,63 @@ function renderCommitments(commitments) {
   });
   lines.push("");
   printLine(lines.join("\n"));
+}
+
+function commitmentStateLabel(state) {
+  const labels = {
+    queued: "Queued",
+    working: "Working",
+    analyzing: "Analyzing",
+    waiting: "Waiting",
+    ready: "Ready",
+  };
+  return labels[state] || "Working";
+}
+
+function formatCommitmentTime(value) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp)) return "Unknown";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+  return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+}
+
+function renderCommitmentDetail(commitments, requestId) {
+  if (!Array.isArray(commitments)) return;
+  const index = lastCommitments.findIndex((item) => item && item.requestId === requestId);
+  const selected = lastCommitments.find((item) => item && item.requestId === requestId);
+  const refreshed = commitments.find((item) => item && item.requestId === requestId);
+  if (!refreshed) {
+    const message = selected && typeof selected.message === "string" ? selected.message.trim() : "Selected request";
+    printLine(
+      [
+        "",
+        `Work ${index >= 0 ? index + 1 : "item"}:`,
+        `  Request: ${message}`,
+        "  Status: No longer open",
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  if (index >= 0) lastCommitments[index] = refreshed;
+  const message = typeof refreshed.message === "string" && refreshed.message.trim() ? refreshed.message.trim() : "Request";
+  const progress =
+    typeof refreshed.progress === "string" && refreshed.progress.trim()
+      ? refreshed.progress.trim()
+      : "No durable progress update yet.";
+  printLine(
+    [
+      "",
+      `Work ${index >= 0 ? index + 1 : "item"}:`,
+      `  Request: ${message}`,
+      `  Status: ${commitmentStateLabel(refreshed.state)}`,
+      `  Progress: ${progress}`,
+      `  Created: ${formatCommitmentTime(refreshed.createdAt)}`,
+      `  Updated: ${formatCommitmentTime(refreshed.updatedAt)}`,
+      "",
+    ].join("\n"),
+  );
 }
 
 function renderConversation(turns) {
@@ -396,11 +454,16 @@ function handleEvent(event) {
       return;
     case "ok":
       if (event.command === "app.conversation.get") renderConversation(event.turns);
-      if (event.command === "app.commitments.get") renderCommitments(event.commitments);
+      if (event.command === "app.commitments.get") {
+        const pending = pendingCommitmentRenders.shift();
+        if (pending?.kind === "detail") renderCommitmentDetail(event.commitments, pending.requestId);
+        else renderCommitments(event.commitments);
+      }
       // Admission is transport bookkeeping. May's durable acknowledgement or
       // answer is the human-visible response.
       return;
     case "error":
+      if (event.command === "app.commitments.get") pendingCommitmentRenders.shift();
       printLine(`[error] ${event.message || "unknown error"}`);
       return;
     case "status":
@@ -515,6 +578,7 @@ function connectSocket() {
   socket.on("close", () => {
     connected = false;
     socket = null;
+    pendingCommitmentRenders.length = 0;
     if (closing) return;
     refreshPrompt();
     scheduleReconnect();
@@ -535,7 +599,7 @@ function printHelp() {
   printLine(
     [
       "Commands:",
-      "  /work",
+      "  /work [number]",
       "  /status, /sessions",
       "  /watch may|all|<sessionId>",
       "  /steer <sessionId> <message>",
@@ -571,7 +635,22 @@ function handleCommand(input) {
       requestStatus();
       return;
     case "work":
-      requestCommitments();
+      if (!rest) {
+        requestCommitments();
+        return;
+      }
+      if (!/^[1-9]\d*$/.test(rest)) {
+        printLine("Usage: /work [positive number]");
+        return;
+      }
+      {
+        const selected = lastCommitments[Number(rest) - 1];
+        if (!selected || typeof selected.requestId !== "string") {
+          printLine(`[work] No item ${rest}. Use /work to refresh the list.`);
+          return;
+        }
+        requestCommitments({ detailRequestId: selected.requestId });
+      }
       return;
     case "watch": {
       const mode = rest.toLowerCase();

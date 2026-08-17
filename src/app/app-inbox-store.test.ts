@@ -264,7 +264,7 @@ describe("App inbox store", () => {
         state: "analyzing",
         progress: "Codex is checking the implementation.",
         createdAt: 110,
-        updatedAt: 121,
+        updatedAt: 122,
       },
       {
         requestId: "queued",
