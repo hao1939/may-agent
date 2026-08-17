@@ -97,6 +97,14 @@ describe("May Console", () => {
                     message: "Review the May design",
                     state: "analyzing",
                     progress: "Codex is reviewing the implementation.",
+                    ...(frame.requestId === "item-working"
+                      ? {
+                          result: {
+                            summary: "The review is complete.",
+                            response: "The exact selected review result.",
+                          },
+                        }
+                      : {}),
                     createdAt: Date.UTC(2026, 7, 17, 8, 0, 0),
                     updatedAt: Date.UTC(2026, 7, 17, 8, 5, 0),
                   },
@@ -121,12 +129,14 @@ describe("May Console", () => {
             );
             const turn = frames.filter((item) => item.type === "app.input.admit").length;
             const sessionId = `s_may_turn_${turn}`;
-            socket.write(
-              `${JSON.stringify({
-                type: "session.start",
-                data: { sessionId, agent: "may", status: "running", kind: "job", task: "bounded May turn" },
-              })}\n`,
-            );
+            if (turn > 1) {
+              socket.write(
+                `${JSON.stringify({
+                  type: "session.start",
+                  data: { sessionId, agent: "may", status: "running", kind: "job", task: "bounded May turn" },
+                })}\n`,
+              );
+            }
             socket.write(`${JSON.stringify({ type: "text", sessionId, text: `May response ${turn}\n` })}\n`);
             socket.write(
               `${JSON.stringify({
@@ -195,16 +205,33 @@ describe("May Console", () => {
 
     child.stdin.write("/work 1\n");
     await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 3);
-    expect(frames.filter((frame) => frame.type === "app.commitments.get")[2]).toMatchObject({ limit: 100 });
+    expect(frames.filter((frame) => frame.type === "app.commitments.get")[2]).toMatchObject({
+      limit: 1,
+      requestId: "item-working",
+    });
     await waitFor(
       () =>
         output.includes("Work 1:") &&
         output.includes("Request: Review the May design") &&
         output.includes("Status: Analyzing") &&
         output.includes("Progress: Codex is reviewing the implementation.") &&
+        output.includes("Result:\n    The exact selected review result.") &&
         output.includes("Created: 2026-08-17 08:00:00 UTC") &&
         output.includes("Updated: 2026-08-17 08:05:00 UTC"),
     );
+
+    child.stdin.write("show me the result\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 1);
+    expect(frames.filter((frame) => frame.type === "app.input.admit")[0]).toMatchObject({
+      input: {
+        kind: "message",
+        data: { message: "show me the result", context: { selectedWorkRequestId: "item-working" } },
+      },
+    });
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou> "));
+    expect(frames.filter((frame) => frame.type === "app.input.admit")[0]?.input.data.context).toEqual({
+      selectedWorkRequestId: "item-working",
+    });
 
     child.stdin.write("/work 2\n");
     await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 4);
@@ -225,8 +252,8 @@ describe("May Console", () => {
     await waitFor(() => output.includes("focused work"));
 
     child.stdin.write("review Gym\n");
-    await waitFor(() => frames.some((frame) => frame.type === "app.input.admit"));
-    const input = frames.find((frame) => frame.type === "app.input.admit");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 2);
+    const input = frames.filter((frame) => frame.type === "app.input.admit")[1];
     expect(input).toMatchObject({
       appId: "may",
       input: { kind: "message", data: { message: "review Gym" } },
@@ -235,17 +262,22 @@ describe("May Console", () => {
       channel: "may-console",
       channelThreadId: "local-terminal",
     });
-    await waitFor(() => output.includes("\nmay> May response 1\n\nyou> "));
+    expect(input?.input.data).not.toHaveProperty("context");
+    await waitFor(() => output.includes("\nmay> May response 2\n\nyou> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     await waitFor(() => frames.some((frame) => frame.type === "channel.delivery.completed"));
-    expect(frames.find((frame) => frame.type === "channel.delivery.completed")).toMatchObject({
+    expect(
+      frames.find(
+        (frame) => frame.type === "channel.delivery.completed" && frame.data?.appInboxItemId === "item-2",
+      ),
+    ).toMatchObject({
       source: "may-console",
       owner: "app:may",
       data: {
         channel: "may-console",
-        appInboxItemId: "item-1",
-        appInboxRequestId: "app-inbox-human:item-1",
+        appInboxItemId: "item-2",
+        appInboxRequestId: "app-inbox-human:item-2",
       },
     });
 
@@ -260,10 +292,10 @@ describe("May Console", () => {
     expect(frames.filter((frame) => frame.type === "subscribe")[1]?.sessions).toEqual(["s_worker_123"]);
 
     child.stdin.write("another May request\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 2);
+    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 3);
     expect(frames.filter((frame) => frame.type === "subscribe")[2]?.sessions).toEqual([]);
-    expect(frames.filter((frame) => frame.type === "app.input.admit")[1]?.appId).toBe("may");
-    await waitFor(() => output.includes("\nmay> May response 2\n\nyou> "));
+    expect(frames.filter((frame) => frame.type === "app.input.admit")[2]?.appId).toBe("may");
+    await waitFor(() => output.includes("\nmay> May response 3\n\nyou> "));
 
     child.stdin.write("/debug\n");
     await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 4);

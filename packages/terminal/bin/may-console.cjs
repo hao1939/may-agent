@@ -30,6 +30,7 @@ const renderedConversationRequests = new Set();
 const renderedDeliveryOperations = new Set();
 let lastConversationSequence = Date.now();
 let lastCommitments = [];
+let selectedCommitmentRequestId = null;
 const pendingCommitmentRenders = [];
 
 const rl = readline.createInterface({
@@ -55,8 +56,8 @@ function refreshPrompt() {
   rl.prompt(true);
 }
 
-function writeStdout(text) {
-  process.stdout.write(text);
+function writeStdout(text, callback) {
+  process.stdout.write(text, callback);
 }
 
 function printLine(text = "") {
@@ -70,7 +71,7 @@ function printLine(text = "") {
   refreshPrompt();
 }
 
-function printConversationText(speaker, text = "") {
+function printConversationText(speaker, text = "", onRendered) {
   try {
     readline.clearLine(process.stdout, 0);
     readline.cursorTo(process.stdout, 0);
@@ -80,14 +81,15 @@ function printConversationText(speaker, text = "") {
   const value = String(text || "").trimEnd();
   if (!value) {
     refreshPrompt();
+    if (onRendered) onRendered();
     return;
   }
-  writeStdout(`\n${speaker}> ${value}\n\n`);
+  writeStdout(`\n${speaker}> ${value}\n\n`, onRendered);
   refreshPrompt();
 }
 
-function printResponseText(text = "") {
-  printConversationText("may", text);
+function printResponseText(text = "", onRendered) {
+  printConversationText("may", text, onRendered);
 }
 
 function eventPayload(event) {
@@ -168,7 +170,15 @@ function mayInputFrame(message) {
   return {
     type: "app.input.admit",
     appId: "may",
-    input: { kind: "message", data: { message } },
+    input: {
+      kind: "message",
+      data: {
+        message,
+        ...(selectedCommitmentRequestId
+          ? { context: { selectedWorkRequestId: selectedCommitmentRequestId } }
+          : {}),
+      },
+    },
     source: { kind: "human", id: `${source}:local-terminal:${sequence}` },
     conversationId,
     conversationSequence: sequence,
@@ -198,7 +208,8 @@ function requestCommitments(options = {}) {
     {
       type: "app.commitments.get",
       appId: "may",
-      limit: detailRequestId ? 100 : 20,
+      limit: detailRequestId ? 1 : 20,
+      ...(detailRequestId ? { requestId: detailRequestId } : {}),
     },
     { silent: true },
   );
@@ -261,6 +272,7 @@ function renderCommitmentDetail(commitments, requestId) {
         "",
       ].join("\n"),
     );
+    selectedCommitmentRequestId = null;
     return;
   }
   if (index >= 0) lastCommitments[index] = refreshed;
@@ -269,6 +281,13 @@ function renderCommitmentDetail(commitments, requestId) {
     typeof refreshed.progress === "string" && refreshed.progress.trim()
       ? refreshed.progress.trim()
       : "No durable progress update yet.";
+  const result = refreshed.result && typeof refreshed.result === "object" ? refreshed.result : null;
+  const resultText =
+    result && typeof result.response === "string" && result.response.trim()
+      ? result.response.trim()
+      : result && typeof result.summary === "string" && result.summary.trim()
+        ? result.summary.trim()
+        : "";
   printLine(
     [
       "",
@@ -276,11 +295,14 @@ function renderCommitmentDetail(commitments, requestId) {
       `  Request: ${message}`,
       `  Status: ${commitmentStateLabel(refreshed.state)}`,
       `  Progress: ${progress}`,
+      ...(resultText ? ["  Result:", ...resultText.split("\n").map((line) => `    ${line}`)] : []),
       `  Created: ${formatCommitmentTime(refreshed.createdAt)}`,
       `  Updated: ${formatCommitmentTime(refreshed.updatedAt)}`,
       "",
     ].join("\n"),
   );
+  // The next natural message can now refer to exactly what the console showed.
+  selectedCommitmentRequestId = requestId;
 }
 
 function renderConversation(turns) {
@@ -446,6 +468,34 @@ function handleEvent(event) {
     return;
   }
 
+  // A delivery channel is already an exact routing decision. Session stream
+  // filters must not hide a response and then leave its durable work unresolved.
+  if (event.type === "app.response.delivery.requested") {
+    const data = flatPayload(event);
+    if (data.channel !== source || typeof data.text !== "string") return;
+    if (typeof data.operationId === "string") renderedDeliveryOperations.add(data.operationId);
+    const identity = [data.operationId, data.appInboxItemId, data.appInboxRequestId, data.sessionId];
+    printResponseText(data.text, () => {
+      if (!identity.every((value) => typeof value === "string" && value.length > 0)) return;
+      sendFrame({
+        type: "channel.delivery.completed",
+        source,
+        owner: "app:may",
+        target: { human: true },
+        data: {
+          channel: source,
+          sessionId: data.sessionId,
+          resultEventType: event.type,
+          operationId: data.operationId,
+          appInboxItemId: data.appInboxItemId,
+          appInboxRequestId: data.appInboxRequestId,
+          idempotencyKey: `${source}-delivery:${data.operationId}`,
+        },
+      });
+    });
+    return;
+  }
+
   if (!shouldShowSessionEvent(event)) return;
   const data = flatPayload(event);
   switch (event.type) {
@@ -498,30 +548,6 @@ function handleEvent(event) {
     case "session.end":
       handleSessionEnd(event);
       return;
-    case "app.response.delivery.requested": {
-      if (data.channel !== source || typeof data.text !== "string") return;
-      printResponseText(data.text);
-      if (typeof data.operationId === "string") renderedDeliveryOperations.add(data.operationId);
-      const identity = [data.operationId, data.appInboxItemId, data.appInboxRequestId, data.sessionId];
-      if (identity.every((value) => typeof value === "string" && value.length > 0)) {
-        sendFrame({
-          type: "channel.delivery.completed",
-          source,
-          owner: "app:may",
-          target: { human: true },
-          data: {
-            channel: source,
-            sessionId: data.sessionId,
-            resultEventType: event.type,
-            operationId: data.operationId,
-            appInboxItemId: data.appInboxItemId,
-            appInboxRequestId: data.appInboxRequestId,
-            idempotencyKey: `${source}-delivery:${data.operationId}`,
-          },
-        });
-      }
-      return;
-    }
     case "message.created": {
       const normalizedTarget = typeof data.to === "string" ? data.to.trim().toLowerCase() : "";
       if (normalizedTarget === "human" || normalizedTarget === "human:operator") {
@@ -768,7 +794,7 @@ function handleInput(line) {
     watchedSessionId = null;
     subscribe("may");
   }
-  sendFrame(mayInputFrame(input));
+  if (sendFrame(mayInputFrame(input))) selectedCommitmentRequestId = null;
   refreshPrompt();
 }
 

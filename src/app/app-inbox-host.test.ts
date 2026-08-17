@@ -430,10 +430,24 @@ describe("App inbox host", () => {
     const background = claimAppInboxItem(db, "background-human", "background-worker", 1_000)!;
     expect(waitAppInboxClaim(db, background, { kind: "analysis", id: "analysis-background" })).toBe(true);
     host.admit({
+      id: "selected-human",
+      appId: "may",
+      source: { kind: "human", id: "event:41" },
+      input: { kind: "probe", data: { value: "selected" } },
+      conversationId: "web-ui:human",
+      conversationSequence: 41,
+      channel: "web-ui",
+    });
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    invocations.length = 0;
+    host.admit({
       id: "human-1",
       appId: "may",
       source: { kind: "human", id: "event:42" },
-      input: { kind: "probe", data: { value: "hello" } },
+      input: {
+        kind: "probe",
+        data: { value: "hello", context: { selectedWorkRequestId: "selected-human" } },
+      },
       conversationId: "telegram:123",
       conversationSequence: 42,
       channel: "telegram",
@@ -455,12 +469,20 @@ describe("App inbox host", () => {
           {
             id: "human-1",
             source: { kind: "human", id: "event:42" },
-            input: { kind: "probe", data: { value: "hello" } },
+            input: {
+              kind: "probe",
+              data: { value: "hello", context: { selectedWorkRequestId: "selected-human" } },
+            },
             conversation: {
               id: "telegram:123",
               sourceId: "event:42",
               replyToSourceId: "event:41",
               commitments: [
+                expect.objectContaining({
+                  requestId: "selected-human",
+                  state: "ready",
+                  result: { summary: "done", response: "Hello" },
+                }),
                 expect.objectContaining({
                   requestId: "background-human",
                   message: "probe request",
