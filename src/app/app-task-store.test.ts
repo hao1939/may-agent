@@ -64,6 +64,94 @@ describe("project runtime state paths", () => {
     expect(existsSync(projectRuntimePaths(appDir).taskTreePath)).toBe(false);
   });
 
+  test("activates branch App code against one existing canonical task-state lineage", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-app-state-lineage-"));
+    const canonicalProjectsRoot = join(root, "canonical-projects");
+    const canonicalAppDir = join(canonicalProjectsRoot, "sample.app");
+    const branchAppDir = join(root, "branch-checkout", "projects", "sample.app");
+    const taskId = "domain/stable-wait";
+    const canonicalState = {
+      version: 3,
+      groups: {},
+      resources: {
+        [taskId]: {
+          metadata: { id: taskId, generation: 8, resourceVersion: 42 },
+          spec: { outcome: "Preserve the wait", acceptance: ["wait survives"], mode: "achieve" },
+          status: { observedGeneration: 8, phase: "waiting", conditionIds: ["pipeline-176876683-completed"] },
+        },
+      },
+      conditions: {
+        "pipeline-176876683-completed": {
+          metadata: { id: "pipeline-176876683-completed", resourceVersion: 3 },
+          taskId,
+          taskGeneration: 8,
+          type: "pipeline-run.state",
+          subject: "pipeline-run:176876683",
+          expected: { field: "state", equals: "completed" },
+          state: "waiting",
+        },
+      },
+      receipts: { prior: { metadata: { id: "prior", generation: 7, resourceVersion: 1 } } },
+      attempts: { current: { taskId, taskGeneration: 8, state: "completed" } },
+    };
+    await writeJson(join(canonicalAppDir, ".state", "tasks", "state.json"), canonicalState);
+    await writeJson(join(branchAppDir, "tasks", "seed.json"), {
+      version: 3,
+      groups: {},
+      resources: { [taskId]: { metadata: { id: taskId, generation: 1, resourceVersion: 1 } } },
+    });
+
+    const first = ensureTaskState(branchAppDir, canonicalProjectsRoot);
+    const second = ensureTaskState(branchAppDir, canonicalProjectsRoot);
+    const selected = JSON.parse(await readFile(first.path, "utf8"));
+    const migrationLines = (await readFile(join(canonicalAppDir, ".state", "runtime-state-migrations.jsonl"), "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+
+    expect(first).toEqual({
+      path: join(canonicalAppDir, ".state", "tasks", "state.json"),
+      migrated: false,
+      source: "runtime",
+    });
+    expect(second.path).toBe(first.path);
+    expect(existsSync(join(branchAppDir, ".state", "tasks", "state.json"))).toBe(false);
+    expect(selected).toEqual(canonicalState);
+    expect(selected.resources[taskId].metadata).toEqual({ id: taskId, generation: 8, resourceVersion: 42 });
+    expect(selected.conditions["pipeline-176876683-completed"].state).toBe("waiting");
+    expect(selected.receipts.prior).toBeDefined();
+    expect(selected.attempts.current.taskGeneration).toBe(8);
+    expect(migrationLines).toEqual([
+      expect.objectContaining({
+        kind: "task_state_canonical_lineage_selected",
+        activeAppDir: branchAppDir,
+        canonicalAppDir,
+        taskStatePath: first.path,
+      }),
+    ]);
+  });
+
+  test("still seed-bootstraps a genuinely new branch App with no durable canonical state", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-new-app-state-"));
+    const canonicalProjectsRoot = join(root, "canonical-projects");
+    const branchAppDir = join(root, "branch-checkout", "projects", "new.app");
+    await writeJson(join(branchAppDir, "tasks", "seed.json"), {
+      source: "seed",
+      groups: {},
+      resources: {},
+    });
+
+    const result = ensureTaskState(branchAppDir, canonicalProjectsRoot);
+
+    expect(result).toEqual({
+      path: join(branchAppDir, ".state", "tasks", "state.json"),
+      migrated: true,
+      source: "seed",
+    });
+    expect(JSON.parse(await readFile(result.path, "utf8"))).toMatchObject({ source: "seed" });
+    expect(existsSync(join(canonicalProjectsRoot, "new.app", ".state", "tasks", "state.json"))).toBe(false);
+  });
+
   test("uses existing canonical resource state without consulting the projection", async () => {
     const appDir = await makeApp();
     const paths = projectRuntimePaths(appDir);
