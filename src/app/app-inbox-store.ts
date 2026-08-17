@@ -403,6 +403,7 @@ export function listOpenAppCommitments(
     const deliveries = listAppInboxDeliveries(db, item.id);
     const state = commitmentState(item);
     const progress = commitmentProgress(item, deliveries, state);
+    const updatedAt = deliveries.reduce((latest, delivery) => Math.max(latest, delivery.updatedAt), item.updatedAt);
     return {
       requestId: item.id,
       ...(item.conversationId ? { conversationId: item.conversationId } : {}),
@@ -410,7 +411,7 @@ export function listOpenAppCommitments(
       state,
       ...(progress ? { progress: boundedCommitmentText(progress, 240) } : {}),
       createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      updatedAt,
     };
   });
 }
