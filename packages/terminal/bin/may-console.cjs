@@ -48,6 +48,7 @@ function promptText() {
 }
 
 function refreshPrompt() {
+  if (closing) return;
   rl.setPrompt(promptText());
   rl.prompt(true);
 }
@@ -465,6 +466,7 @@ function connectSocket() {
   socket.on("close", () => {
     connected = false;
     socket = null;
+    if (closing) return;
     refreshPrompt();
     scheduleReconnect();
   });
@@ -651,7 +653,10 @@ process.on("SIGINT", () => {
 
 rl.on("line", handleInput);
 rl.on("close", () => {
-  if (!closing && socket) socket.end();
+  if (closing) return;
+  closing = true;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  if (socket) socket.end();
 });
 
 console.log("May daemon terminal");
