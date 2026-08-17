@@ -225,11 +225,12 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       }
     }
 
-    const line = JSON.stringify(event) + "\n";
+    let line: string | undefined;
     let delivered = 0;
     for (const [sock, client] of clients) {
       if (!shouldForward(client, event)) continue;
       try {
+        line ??= JSON.stringify(event) + "\n";
         if (sock.writableLength + Buffer.byteLength(line) > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
           clients.delete(sock);
           sock.destroy(new Error("Control socket client is too slow"));

@@ -151,9 +151,9 @@ describe("May Console", () => {
     cleanups.push(() => child.kill("SIGKILL"));
 
     await waitFor(() => frames.some((frame) => frame.type === "status"));
-    await waitFor(() => output.includes("you: Earlier question") && output.includes("may: Earlier answer"));
+    await waitFor(() => output.includes("\nyou> Earlier question\n\n") && output.includes("\nmay> Earlier answer\n\n"));
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
-      sessions: ["*"],
+      sessions: [],
       deliveryChannel: "may-console",
     });
     expect(output).not.toContain("focused work");
@@ -172,7 +172,7 @@ describe("May Console", () => {
       channel: "may-console",
       channelThreadId: "local-terminal",
     });
-    await waitFor(() => output.includes("May response 1"));
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     await waitFor(() => frames.some((frame) => frame.type === "channel.delivery.completed"));
@@ -198,9 +198,16 @@ describe("May Console", () => {
 
     child.stdin.write("another May request\n");
     await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 2);
-    expect(frames.filter((frame) => frame.type === "subscribe")[2]?.sessions).toEqual(["*"]);
+    expect(frames.filter((frame) => frame.type === "subscribe")[2]?.sessions).toEqual([]);
     expect(frames.filter((frame) => frame.type === "app.input.admit")[1]?.appId).toBe("may");
-    await waitFor(() => output.includes("May response 2"));
+    await waitFor(() => output.includes("\nmay> May response 2\n\nyou> "));
+
+    child.stdin.write("/debug\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 4);
+    expect(frames.filter((frame) => frame.type === "subscribe")[3]?.sessions).toEqual(["*"]);
+    child.stdin.write("/debug\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 5);
+    expect(frames.filter((frame) => frame.type === "subscribe")[4]?.sessions).toEqual([]);
 
     child.stdin.write("/exit\n");
     await once(child, "exit");
