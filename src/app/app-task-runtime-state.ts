@@ -1,8 +1,11 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 export type ProjectRuntimePaths = {
+  /** Active definition checkout. Code and seeds are read from here. */
   appDir: string;
+  /** Stable app root that owns mutable runtime state. */
+  stateAppDir: string;
   stateDir: string;
   taskStatePath: string;
   /** Generated human/agent read projection. Never a mutation authority. */
@@ -37,8 +40,7 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
-function appendMigrationLog(appDir: string, entry: Record<string, unknown>): void {
-  const logPath = projectRuntimePaths(appDir).migrationLogPath;
+function appendMigrationLog(logPath: string, entry: Record<string, unknown>): void {
   ensureDir(dirname(logPath));
   appendFileSync(
     logPath,
@@ -50,11 +52,41 @@ function appendMigrationLog(appDir: string, entry: Record<string, unknown>): voi
   );
 }
 
-export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
-  const stateDir = join(appDir, ".state");
+function appendMigrationLogOnce(logPath: string, entry: Record<string, unknown>): void {
+  const fingerprint = JSON.stringify(entry);
+  if (existsSync(logPath)) {
+    const alreadyRecorded = readFileSync(logPath, "utf-8")
+      .split("\n")
+      .some((line) => line.includes(fingerprint.slice(1, -1)));
+    if (alreadyRecorded) return;
+  }
+  appendMigrationLog(logPath, entry);
+}
+
+/**
+ * Definition code may be activated from a branch checkout, but mutable App
+ * state keeps one stable address. A branch checkout may adopt the canonical
+ * root only when that root already has durable task state; otherwise this is a
+ * genuinely new App and normal seed bootstrap remains local to the checkout.
+ */
+export function resolveRuntimeStateAppDir(
+  appDir: string,
+  canonicalProjectsRoot = resolve(process.env.APP_ROOT || process.env.PROJECT_ROOT || "/app", "projects"),
+): string {
+  const activeAppDir = resolve(appDir);
+  const canonicalAppDir = resolve(canonicalProjectsRoot, basename(activeAppDir));
+  if (canonicalAppDir === activeAppDir) return activeAppDir;
+  return existsSync(join(canonicalAppDir, ".state", "tasks", "state.json")) ? canonicalAppDir : activeAppDir;
+}
+
+export function projectRuntimePaths(appDir: string, canonicalProjectsRoot?: string): ProjectRuntimePaths {
+  const activeAppDir = resolve(appDir);
+  const stateAppDir = resolveRuntimeStateAppDir(activeAppDir, canonicalProjectsRoot);
+  const stateDir = join(stateAppDir, ".state");
   const taskStateDir = join(stateDir, "tasks");
   return {
-    appDir,
+    appDir: activeAppDir,
+    stateAppDir,
     stateDir,
     taskStatePath: join(taskStateDir, "state.json"),
     taskTreePath: join(taskStateDir, "tree.json"),
@@ -64,9 +96,17 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
   };
 }
 
-export function ensureTaskState(appDir: string): EnsureTaskStateResult {
-  const paths = projectRuntimePaths(appDir);
+export function ensureTaskState(appDir: string, canonicalProjectsRoot?: string): EnsureTaskStateResult {
+  const paths = projectRuntimePaths(appDir, canonicalProjectsRoot);
   if (existsSync(paths.taskStatePath)) {
+    if (paths.stateAppDir !== paths.appDir) {
+      appendMigrationLogOnce(paths.migrationLogPath, {
+        kind: "task_state_canonical_lineage_selected",
+        activeAppDir: paths.appDir,
+        canonicalAppDir: paths.stateAppDir,
+        taskStatePath: paths.taskStatePath,
+      });
+    }
     return { path: paths.taskStatePath, migrated: false, source: "runtime" };
   }
 
@@ -76,7 +116,7 @@ export function ensureTaskState(appDir: string): EnsureTaskStateResult {
   if (existsSync(seedPath)) {
     const seed = readFileSync(seedPath);
     writeFileSync(paths.taskStatePath, seed);
-    appendMigrationLog(appDir, {
+    appendMigrationLog(paths.migrationLogPath, {
       kind: "task_state_runtime_bootstrap",
       source: "seed",
       from: "tasks/seed.json",
@@ -91,7 +131,7 @@ export function ensureTaskState(appDir: string): EnsureTaskStateResult {
     resources: {},
   };
   writeJson(paths.taskStatePath, empty);
-  appendMigrationLog(appDir, {
+  appendMigrationLog(paths.migrationLogPath, {
     kind: "task_state_runtime_bootstrap",
     source: "empty",
     to: ".state/tasks/state.json",
