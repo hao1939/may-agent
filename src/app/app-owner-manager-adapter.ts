@@ -161,6 +161,7 @@ function ownerPrompt(app: AppDefinition, requests: AppRequest[], humanResponse: 
     }.`,
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
     "When conversation evidence is present, use its exact reply links and prior durable deliveries to understand natural follow-up. If more than one unfinished subject remains plausible, ask one focused clarification instead of guessing.",
+    "When input context names selectedWorkRequestId, the console just showed that exact commitment to the human. Treat it as the current shared reference and use its host-provided result when present.",
     ...(humanResponse
       ? [
           "This is one human-origin request. Put the exact concise human-facing progress or final reply in the finish summary as well as in the disposition response when completing.",
