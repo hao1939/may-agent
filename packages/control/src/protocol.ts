@@ -33,6 +33,7 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "publish",
   "event.get",
   "app.input.admit",
+  "app.conversation.get",
   "project.actions.describe",
   "project.action.invoke",
 ]);
@@ -46,6 +47,7 @@ export type SocketFrame =
         | "publish"
         | "event.get"
         | "app.input.admit"
+        | "app.conversation.get"
         | "project.actions.describe"
         | "project.action.invoke";
       frame: Record<string, unknown>;

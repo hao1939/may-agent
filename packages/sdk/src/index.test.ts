@@ -5,6 +5,8 @@ import ts from "typescript";
 const expectedRootExports = [
   "AgentCallOptions",
   "AppAction",
+  "AppAnalysisRequest",
+  "AppConversationContext",
   "AppDefinition",
   "AppDependencyObservation",
   "AppDisposition",

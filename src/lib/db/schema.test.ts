@@ -45,12 +45,26 @@ describe("canonical database schema", () => {
       expect(inboxColumns.some(({ name }) => name === "channel")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel_thread_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel_message_id")).toBe(true);
+      expect(inboxColumns.some(({ name }) => name === "reply_to_source_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "origin_event_id")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_idempotency")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_origin_event")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
+      const inboxSql = db
+        .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'")
+        .get() as { sql: string };
+      expect(inboxSql.sql).toContain("'analysis'");
       expect(deliveryColumns.map(({ name }) => name)).toEqual(
-        expect.arrayContaining(["operation_id", "session_id", "request_id", "status", "receipt_event_id"]),
+        expect.arrayContaining([
+          "operation_id",
+          "item_id",
+          "kind",
+          "text",
+          "session_id",
+          "request_id",
+          "status",
+          "receipt_event_id",
+        ]),
       );
       expect(deliveryIndexes.some(({ name }) => name === "idx_app_inbox_delivery_status")).toBe(true);
       expect(admissionPlanColumns.some(({ name }) => name === "registry_snapshot_id")).toBe(true);
@@ -129,8 +143,72 @@ describe("canonical database schema", () => {
 
       const columns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name: string }>;
       expect(columns.map(({ name }) => name)).toEqual(
-        expect.arrayContaining(["channel", "channel_thread_id", "channel_message_id", "origin_event_id"]),
+        expect.arrayContaining([
+          "channel",
+          "channel_thread_id",
+          "channel_message_id",
+          "reply_to_source_id",
+          "origin_event_id",
+        ]),
       );
+      expect(() =>
+        db.run(
+          `INSERT INTO app_inbox_items (
+             id, app_id, source_kind, source_id, input_kind, input_data, status,
+             waiting_on_kind, waiting_on_id, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ["analysis-wait", "may", "human", "human:1", "message", "{}", "handling", "analysis", "a-1", 1, 1],
+        ),
+      ).not.toThrow();
+    } finally {
+      db.close();
+    }
+  });
+
+  it("upgrades the one-row delivery table to progress and final operations", () => {
+    const db = openDatabase(":memory:");
+    try {
+      db.exec(`
+        CREATE TABLE app_inbox_deliveries (
+          item_id TEXT PRIMARY KEY,
+          operation_id TEXT NOT NULL UNIQUE,
+          session_id TEXT NOT NULL,
+          request_id TEXT NOT NULL,
+          channel TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          external_message_id TEXT,
+          failure_reason TEXT,
+          receipt_event_id INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          attempted_at INTEGER,
+          completed_at INTEGER
+        );
+        INSERT INTO app_inbox_deliveries (
+          item_id, operation_id, session_id, request_id, channel, status, created_at, updated_at
+        ) VALUES ('item-1', 'legacy-operation', 'session-1', 'request-1', 'telegram', 'pending', 1, 1);
+      `);
+
+      expect(() => applyDbSchema(db)).not.toThrow();
+      expect(() => applyDbSchema(db)).not.toThrow();
+      const columns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{
+        name: string;
+        pk: number;
+      }>;
+      expect(columns.find(({ name }) => name === "operation_id")?.pk).toBe(1);
+      expect(columns.map(({ name }) => name)).toEqual(expect.arrayContaining(["kind", "text"]));
+      expect(db.prepare("SELECT operation_id, item_id, kind FROM app_inbox_deliveries").get()).toEqual({
+        operation_id: "legacy-operation",
+        item_id: "item-1",
+        kind: "final",
+      });
+      expect(() =>
+        db.run(
+          `INSERT INTO app_inbox_deliveries (
+             operation_id, item_id, kind, text, session_id, request_id, channel, status, created_at, updated_at
+           ) VALUES ('progress-operation', 'item-1', 'progress', 'Working', 'session-2', 'request-1', 'telegram', 'pending', 2, 2)`,
+        ),
+      ).not.toThrow();
     } finally {
       db.close();
     }

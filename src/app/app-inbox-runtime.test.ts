@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -16,6 +16,7 @@ import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.
 import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import type { AppOwnerManager } from "./app-owner-manager-adapter.js";
 import { AppRegistry } from "./app-registry.js";
+import { telegramMayInputEvent } from "./transport/telegram.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
   const registry = new AppRegistry(projectsRoot);
@@ -148,6 +149,140 @@ describe("App inbox runtime", () => {
       status: "done",
       result: { summary: "canary passed" },
       sessionId: `session:${row.id}`,
+    });
+  });
+
+  it("carries one natural Telegram request through progress, restart, analysis review, and final delivery", async () => {
+    const mayDir = join(root, "may.app");
+    mkdirSync(mayDir, { recursive: true });
+    writeFileSync(
+      join(mayDir, "app.js"),
+      `export default {
+        id: "may",
+        version: 1,
+        owner: "may",
+        inputSchema: {
+          type: "object",
+          required: ["kind", "data"],
+          properties: {
+            kind: { const: "message" },
+            data: {
+              type: "object",
+              required: ["message"],
+              properties: { message: { type: "string" }, context: { type: "object" } }
+            }
+          }
+        },
+        inbox: { batch: "single" }
+      };\n`,
+    );
+    let terminal = false;
+    let ownerAttempts = 0;
+    const owner: AppOwnerManager = {
+      hasAgent: () => true,
+      run(_agent, prompt) {
+        ownerAttempts += 1;
+        const request = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0];
+        writeFileSync(join(root, `owner-request-${ownerAttempts}.json`), JSON.stringify(request));
+        return `session:natural:${ownerAttempts}:${request.id}`;
+      },
+      async waitFor(sessionId) {
+        const requestId = sessionId.split(":").slice(3).join(":");
+        return {
+          status: "done",
+          structuredResult: {
+            dispositions: [
+              {
+                requestId,
+                disposition:
+                  ownerAttempts === 1
+                    ? {
+                        type: "analyze",
+                        analysis: { tool: "codex", question: "Review the evidence", timeoutMs: 10_000 },
+                        acknowledgement: "I’ll inspect this and return with the evidence.",
+                      }
+                    : {
+                        type: "complete",
+                        summary: "The evidence is sound.",
+                        response: "I reviewed it. The evidence is sound.",
+                      },
+              },
+            ],
+          },
+        };
+      },
+      cancel() {},
+    };
+    const bus = new EventBus();
+    const delivered: Array<{ kind?: string; text?: string }> = [];
+    bus.subscribe((event) => {
+      if (event.type !== "app.response.delivery.requested") return;
+      delivered.push({ kind: event.data.deliveryKind, text: event.data.text });
+      bus.emit({
+        type: "channel.delivery.completed",
+        source: "telegram",
+        owner: "agent:may",
+        target: { human: true },
+        data: {
+          channel: event.data.channel,
+          sessionId: event.data.sessionId,
+          operationId: event.data.operationId,
+          appInboxItemId: event.data.appInboxItemId,
+          appInboxRequestId: event.data.appInboxRequestId,
+          externalMessageId: `${delivered.length}`,
+        },
+      });
+    });
+    const start = async () =>
+      startAppInboxRuntime({
+        registry: await loadedRegistry(root),
+        db,
+        manager: owner,
+        bus,
+        attachAnalysis: async () => ({ analysisId: "analysis-natural" }),
+        readDependency: async ({ dependency }) => ({
+          ...dependency,
+          status: terminal ? "done" : "running",
+          summary: terminal ? "Reviewed repository evidence" : "Analysis is running",
+          evidence: terminal ? ["result.md"] : undefined,
+        }),
+        scanIntervalMs: 10_000,
+      });
+
+    runtime = await start();
+    runtime.enableDelivery();
+    bus.emit(
+      telegramMayInputEvent({
+        message: "Please review this design",
+        chatId: "123",
+        messageId: 42,
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+      }),
+    );
+    await waitUntil(() => delivered.length === 1);
+    expect(delivered).toEqual([{ kind: "progress", text: "I’ll inspect this and return with the evidence." }]);
+    const itemId = (db.prepare("SELECT id FROM app_inbox_items WHERE app_id = 'may'").get() as { id: string }).id;
+    expect(runtime.host.get(itemId)).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "analysis", id: "analysis-natural" },
+      replyToSourceId: undefined,
+    });
+
+    runtime.close();
+    runtime = null;
+    terminal = true;
+    runtime = await start();
+    runtime.enableDelivery();
+    await waitUntil(() => delivered.length === 2 && runtime?.host.get(itemId)?.status === "done");
+    expect(delivered[1]).toEqual({ kind: "final", text: "I reviewed it. The evidence is sound." });
+    expect(ownerAttempts).toBe(2);
+    expect(JSON.parse(readFileSync(join(root, "owner-request-2.json"), "utf8"))).toMatchObject({
+      dependency: {
+        kind: "analysis",
+        id: "analysis-natural",
+        status: "done",
+        evidence: ["result.md"],
+      },
     });
   });
 
@@ -1442,6 +1577,7 @@ describe("App inbox runtime", () => {
 
   it("preserves human channel metadata through admission and owner dispatch", async () => {
     const calls: Array<Parameters<AppOwnerManager["run"]>[2]> = [];
+    const ownerContexts: Array<{ appId: string; humanOrigin: boolean }> = [];
     const managerWithMetadata: AppOwnerManager = {
       hasAgent: () => true,
       run(_agent, _prompt, options) {
@@ -1477,6 +1613,10 @@ describe("App inbox runtime", () => {
       manager: managerWithMetadata,
       bus,
       scanIntervalMs: 10_000,
+      runOwner: (work, context) => {
+        ownerContexts.push(context);
+        return work();
+      },
     });
     runtime?.enableDelivery();
 
@@ -1521,6 +1661,7 @@ describe("App inbox runtime", () => {
       recoveryOwner: "app-inbox",
       toolPolicy: "app-owner-deputy",
     });
+    expect(ownerContexts).toEqual([{ appId: "evaluation-canary", humanOrigin: true }]);
     const request = deliveryRequests[0].data;
     bus.emit({
       type: "channel.delivery.completed",

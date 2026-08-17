@@ -10,6 +10,7 @@ type EffectiveSandboxMode = SandboxMode;
 
 type CliTaskRecord = {
   taskId: string;
+  purpose?: "may-analysis";
   tool: CliTool;
   mode: CliMode;
   cwd: string;
@@ -227,17 +228,19 @@ function claudeModelArgs(): string[] {
 }
 
 function claudeArgs(record: CliTaskRecord, prompt: string): string[] {
-  const args = [
-    "-p",
-    prompt,
-    ...claudeModelArgs(),
-    "--output-format",
-    "stream-json",
-    "--verbose",
-    "--permission-mode",
-    "bypassPermissions",
-    "--dangerously-skip-permissions",
-  ];
+  const args = ["-p", prompt, ...claudeModelArgs(), "--output-format", "stream-json", "--verbose"];
+  if (record.purpose === "may-analysis") {
+    args.push(
+      "--permission-mode",
+      "plan",
+      "--allowedTools",
+      "Read,Glob,Grep",
+      "--disallowedTools",
+      "Edit,Write,Bash,NotebookEdit",
+    );
+  } else {
+    args.push("--permission-mode", "bypassPermissions", "--dangerously-skip-permissions");
+  }
   if (record.resumeSessionId) args.push("--resume", record.resumeSessionId);
   return args;
 }
@@ -308,20 +311,21 @@ function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
     args.push("resume", sessionId, "<prompt>");
     return args;
   }
-  return [
-    "claude",
-    "-p",
-    "<prompt>",
-    ...claudeModelArgs(),
-    "--output-format",
-    "stream-json",
-    "--verbose",
-    "--permission-mode",
-    "bypassPermissions",
-    "--dangerously-skip-permissions",
-    "--resume",
-    sessionId,
-  ];
+  const args = ["claude", "-p", "<prompt>", ...claudeModelArgs(), "--output-format", "stream-json", "--verbose"];
+  if (record.purpose === "may-analysis") {
+    args.push(
+      "--permission-mode",
+      "plan",
+      "--allowedTools",
+      "Read,Glob,Grep",
+      "--disallowedTools",
+      "Edit,Write,Bash,NotebookEdit",
+    );
+  } else {
+    args.push("--permission-mode", "bypassPermissions", "--dangerously-skip-permissions");
+  }
+  args.push("--resume", sessionId);
+  return args;
 }
 
 function sandboxMode(value: unknown): SandboxMode {
@@ -330,12 +334,13 @@ function sandboxMode(value: unknown): SandboxMode {
 }
 
 function effectiveSandboxFor(
-  _tool: CliTool,
+  record: CliTaskRecord,
   requested: SandboxMode,
 ): {
   effectiveSandbox: EffectiveSandboxMode;
   sandboxFallbackReason?: string;
 } {
+  if (record.purpose === "may-analysis") return { effectiveSandbox: "read-only" };
   if (requested === "danger-full-access") return { effectiveSandbox: "danger-full-access" };
   return {
     effectiveSandbox: "danger-full-access",
@@ -399,10 +404,9 @@ function classifyCliOutcome(
   expected?: CliTaskRecord["expectedOutput"],
 ): { failureCategory?: CliTaskRecord["failureCategory"]; error?: string } {
   const diagnosticText = `${attempt.stderr}\n${attempt.stdout}\n${attempt.error ?? ""}`;
-  const permissionFailure =
-    /permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(
-      diagnosticText,
-    );
+  const permissionFailure = /permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(
+    diagnosticText,
+  );
   if (attempt.timedOut) {
     return {
       failureCategory: "timeout",
@@ -470,7 +474,7 @@ function writeStructuredResult(record: CliTaskRecord): void {
   writeFileSync(record.structuredResultPath, `${JSON.stringify(result, null, 2)}\n`);
 }
 
-function cliEnv(): NodeJS.ProcessEnv {
+function cliEnv(record?: CliTaskRecord): NodeJS.ProcessEnv {
   const modelApiKey = process.env.MODEL_API_KEY || "not-needed";
   const modelBaseUrl = process.env.MODEL_BASE_URL || "http://localhost:4000";
   const env: NodeJS.ProcessEnv = {
@@ -482,7 +486,61 @@ function cliEnv(): NodeJS.ProcessEnv {
   };
   const codexHome = process.env.CODEX_HOME || process.env.MAY_CODEX_HOME;
   if (codexHome) env.CODEX_HOME = codexHome;
+  if (record?.purpose === "may-analysis") {
+    const analysisHome = join(dirname(record.promptPath), "home");
+    const analysisCodexHome = join(analysisHome, ".codex");
+    mkdirSync(analysisCodexHome, { recursive: true });
+    env.HOME = analysisHome;
+    env.CODEX_HOME = analysisCodexHome;
+    const baseUrl = modelBaseUrl.endsWith("/v1") ? modelBaseUrl : `${modelBaseUrl.replace(/\/$/, "")}/v1`;
+    writeFileSync(
+      join(analysisCodexHome, "config.toml"),
+      [
+        'model_provider = "model_endpoint"',
+        'approval_policy = "never"',
+        'sandbox_mode = "read-only"',
+        "check_for_update_on_startup = false",
+        "",
+        "[model_providers.model_endpoint]",
+        'name = "Configured model endpoint"',
+        `base_url = ${JSON.stringify(baseUrl)}`,
+        'env_key = "MODEL_API_KEY"',
+        'wire_api = "responses"',
+        "",
+      ].join("\n"),
+    );
+  }
   return env;
+}
+
+function sandboxedCommand(record: CliTaskRecord, command: string, args: string[]): { command: string; args: string[] } {
+  if (record.purpose !== "may-analysis") return { command, args };
+  const writableTaskDir = dirname(record.promptPath);
+  return {
+    command: "bwrap",
+    args: [
+      "--die-with-parent",
+      "--ro-bind",
+      "/",
+      "/",
+      "--dev",
+      "/dev",
+      "--proc",
+      "/proc",
+      "--tmpfs",
+      "/tmp",
+      "--tmpfs",
+      "/var/tmp",
+      "--bind",
+      writableTaskDir,
+      writableTaskDir,
+      "--chdir",
+      record.cwd,
+      "--",
+      command,
+      ...args,
+    ],
+  };
 }
 
 async function runCliAttempt(opts: {
@@ -496,10 +554,11 @@ async function runCliAttempt(opts: {
   attempt: number;
 }): Promise<CliAttemptResult> {
   const { bus, spawnCommand, record, recordPath, prompt, now, attempt } = opts;
-  const { command, args } = commandFor(record, prompt);
+  const native = commandFor(record, prompt);
+  const { command, args } = sandboxedCommand(record, native.command, native.args);
   const child = spawnCommand(command, args, {
     cwd: record.worktree ?? record.cwd,
-    env: cliEnv(),
+    env: cliEnv(record),
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -678,7 +737,25 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
   const spawnCommand = opts.spawnCommand ?? spawn;
   const running = new Set<string>();
 
-  return opts.bus.subscribe((event: AgentEvent): SubscriberResult => {
+  const schedule = (record: CliTaskRecord, recordPath: string): void => {
+    if (running.has(record.taskId)) return;
+    running.add(record.taskId);
+    queueMicrotask(() => {
+      void runCliTask({
+        bus: opts.bus,
+        spawnCommand,
+        persistDir: opts.persistDir,
+        record,
+        recordPath,
+        now,
+        sourceSessionAvailable: opts.sourceSessionAvailable,
+      }).finally(() => {
+        running.delete(record.taskId);
+      });
+    });
+  };
+
+  const unsubscribe = opts.bus.subscribe((event: AgentEvent): SubscriberResult => {
     if (event.type !== "cli.task.requested") return;
     const data = eventData(event) as Record<string, unknown>;
     const taskId = safeTaskId(data.taskId, now);
@@ -693,12 +770,21 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
 
     const recordPath = taskRecordPath(opts.persistDir, taskId);
     const existing = readRecord(recordPath);
+    if (existing && ["completed", "failed", "orphaned"].includes(existing.status)) {
+      return {
+        accepted: true,
+        by: "cli-task-runner",
+        route: "direct",
+        note: "duplicate terminal cli task request ignored",
+      };
+    }
     const sourceOwner = typeof data.sourceOwner === "string" ? data.sourceOwner : ((event as any).owner ?? "agent:may");
     const cwd = typeof data.cwd === "string" ? ensureInside(opts.projectRoot, data.cwd) : opts.projectRoot;
     const worktree = safeOptionalPath(dirname(opts.projectRoot), data.worktree);
     const filesRoot = worktree ?? cwd;
     const record: CliTaskRecord = existing ?? {
       taskId,
+      purpose: data.purpose === "may-analysis" ? "may-analysis" : undefined,
       tool: data.tool === "codex" ? "codex" : "claude",
       mode: data.mode === "patch" || data.mode === "review" ? data.mode : "investigate",
       cwd,
@@ -746,20 +832,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
     record.resumeSessionId ??= reusableSessionId(opts.persistDir, record);
     writeRecord(recordPath, record);
 
-    queueMicrotask(() => {
-      running.add(taskId);
-      void runCliTask({
-        bus: opts.bus,
-        spawnCommand,
-        persistDir: opts.persistDir,
-        record,
-        recordPath,
-        now,
-        sourceSessionAvailable: opts.sourceSessionAvailable,
-      }).finally(() => {
-        running.delete(taskId);
-      });
-    });
+    schedule(record, recordPath);
 
     return {
       accepted: true,
@@ -768,6 +841,20 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
       note: "cli task accepted for async execution",
     };
   });
+
+  // A crash can happen after a requested record is durable but before its
+  // queued microtask starts. Requested records are safe to resume because the
+  // task ID is the admission identity and terminal records are never rerun.
+  const root = join(opts.persistDir, "cli-tasks");
+  if (existsSync(root)) {
+    for (const taskId of readdirSync(root)) {
+      const path = taskRecordPath(opts.persistDir, taskId);
+      const record = readRecord(path);
+      if (record?.status === "requested") schedule(record, path);
+    }
+  }
+
+  return unsubscribe;
 }
 
 async function runCliTask(opts: {
@@ -783,7 +870,7 @@ async function runCliTask(opts: {
   try {
     const prompt = promptForRun(record, readFileSync(record.promptPath, "utf8"));
     record.resumeSessionId ??= reusableSessionId(persistDir, record);
-    const sandbox = effectiveSandboxFor(record.tool, record.sandbox ?? "danger-full-access");
+    const sandbox = effectiveSandboxFor(record, record.sandbox ?? "danger-full-access");
     record.effectiveSandbox = sandbox.effectiveSandbox;
     record.sandboxFallbackReason = sandbox.sandboxFallbackReason;
     record.status = "running";

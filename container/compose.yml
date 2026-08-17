@@ -10,6 +10,11 @@ services:
     hostname: may-agent
     restart: unless-stopped
     stop_grace_period: 10s
+    # Bubblewrap needs user-namespace syscalls to install the narrower
+    # read-only filesystem used by May analysis. The container still receives
+    # no SYS_ADMIN capability and the worker runs as the mayagent user.
+    security_opt:
+      - seccomp=unconfined
     healthcheck:
       test: ["CMD", "curl", "-fsS", "--max-time", "6", "http://127.0.0.1:8080/api/readiness"]
       interval: 10s

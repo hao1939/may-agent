@@ -61,6 +61,7 @@ export type AgentCommand =
         channel?: string;
         channelThreadId?: string;
         channelMessageId?: number;
+        replyToSourceId?: string;
         conversationId?: string;
         forceNew?: boolean;
         requestId?: string;
@@ -247,6 +248,7 @@ export type SystemEvent =
         channel?: string;
         channelThreadId?: string;
         channelMessageId?: number;
+        replyToSourceId?: string;
         idempotencyKey?: string;
       };
     }
@@ -266,6 +268,7 @@ export type SystemEvent =
         operationId: string;
         appInboxItemId: string;
         appInboxRequestId: string;
+        deliveryKind?: "progress" | "final";
         sessionId: string;
         channel: string;
         channelThreadId?: string;
@@ -385,21 +388,6 @@ export type SystemEvent =
       source: string;
       owner: string;
       data: { projectPath: string; comment?: boolean; commentText?: string };
-    }
-  | {
-      type: "telegram.reply";
-      source: "telegram";
-      owner: string;
-      data: {
-        enriched: boolean;
-        originalMsgId?: number;
-        projectPath?: string;
-        delivery?: string;
-        hasSessionCtx?: boolean;
-        hasDbCtx?: boolean;
-        fallback?: string;
-        reason?: string;
-      };
     }
   | {
       type: "escalation.created";
@@ -538,6 +526,7 @@ export type SystemEvent =
       urgency?: EventUrgency;
       data: {
         taskId: string;
+        purpose?: "may-analysis";
         tool: "claude" | "codex";
         mode: "investigate" | "review" | "patch";
         cwd: string;
@@ -555,6 +544,7 @@ export type SystemEvent =
         reuseSession?: boolean;
         files?: string[];
         worktree?: string;
+        expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
       };
     }
   | {

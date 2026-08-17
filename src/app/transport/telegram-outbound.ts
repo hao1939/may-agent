@@ -448,6 +448,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           operationId: session.operationId,
           appInboxItemId: session.appInboxItemId,
           appInboxRequestId: session.appInboxRequestId,
+          deliveryKind: session.deliveryKind,
         },
       });
       return;

@@ -370,6 +370,41 @@ describe("control socket protocol", () => {
     });
   });
 
+  it("reads a derived App conversation without emitting an event", async () => {
+    const turns = [
+      {
+        requestId: "app-1",
+        input: { kind: "message", data: { message: "hello" } },
+        state: "working",
+        deliveries: [],
+      },
+    ];
+    const core = createCore({
+      getAppConversation: (appId, conversationId, limit) => {
+        expect({ appId, conversationId, limit }).toEqual({
+          appId: "may",
+          conversationId: "may-console:local-terminal:agent:may",
+          limit: 30,
+        });
+        return turns;
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.conversation.get",
+        appId: "may",
+        conversationId: "may-console:local-terminal:agent:may",
+        limit: 30,
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      command: "app.conversation.get",
+      turns,
+    });
+    expect(core.emitted).toEqual([]);
+  });
+
   it("discovers and invokes project action shortcuts", async () => {
     const core = createCore({
       describeProjectActions: (projectId) => [
@@ -485,7 +520,7 @@ describe("control socket protocol", () => {
     });
     const stream = (core.endpoint as () => Duplex)();
     await nextFrame(stream);
-    stream.write(JSON.stringify({ type: "subscribe", sessions: ["legacy-chat"] }) + "\n");
+    stream.write(JSON.stringify({ type: "subscribe", sessions: ["legacy-chat"], deliveryChannel: "web-ui" }) + "\n");
     await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
     const response = {
       type: "app.response.delivery.requested",
@@ -528,6 +563,44 @@ describe("control socket protocol", () => {
     });
     expect(core.emitted).toEqual([acknowledgement]);
     stream.destroy();
+  });
+
+  it("reports an App response that had no subscribed socket client", () => {
+    const forwarded: Array<{ event: ControlEvent; count: number }> = [];
+    const core = createCore({
+      onDelivered: (event, count) => forwarded.push({ event, count }),
+    });
+    const response: ControlEvent = {
+      type: "app.response.delivery.requested",
+      source: "app-inbox",
+      owner: "app:may",
+      data: {
+        channel: "may-console",
+        operationId: "app-progress:item-1:analysis-1",
+        appInboxItemId: "item-1",
+        appInboxRequestId: "app-inbox-human:item-1",
+        sessionId: "session-1",
+        text: "I’ll check this.",
+      },
+    };
+
+    core.getBroadcast()?.(response);
+
+    expect(forwarded).toEqual([{ event: response, count: 0 }]);
+  });
+
+  it("does not claim delivery availability for another transport", () => {
+    const forwarded: Array<{ event: ControlEvent; count: number }> = [];
+    const core = createCore({
+      onDelivered: (event, count) => forwarded.push({ event, count }),
+    });
+
+    core.getBroadcast()?.({
+      type: "app.response.delivery.requested",
+      data: { channel: "telegram", operationId: "telegram-delivery" },
+    });
+
+    expect(forwarded).toEqual([]);
   });
 
   it("rejects subscription filters containing non-string session ids", async () => {
