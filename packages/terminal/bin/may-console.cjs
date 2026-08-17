@@ -9,6 +9,7 @@ const instance = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "backgro
 const daemonAgent = process.env.DAEMON_AGENT || "may";
 const socketPath = path.join(stateDir, "instances", instance, `${daemonAgent}.sock`);
 const source = "may-console";
+const conversationId = `${source}:local-terminal:agent:${daemonAgent}`;
 
 let socket = null;
 let connected = false;
@@ -25,6 +26,9 @@ let lastDisconnectedMessage = "";
 
 const knownSessions = new Map();
 const sessionsWithText = new Set();
+const renderedConversationRequests = new Set();
+const renderedDeliveryOperations = new Set();
+let lastConversationSequence = Date.now();
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -76,9 +80,7 @@ function printResponseText(text = "") {
 }
 
 function eventPayload(event) {
-  return event && typeof event.data === "object" && event.data && !Array.isArray(event.data)
-    ? event.data
-    : {};
+  return event && typeof event.data === "object" && event.data && !Array.isArray(event.data) ? event.data : {};
 }
 
 function flatPayload(event) {
@@ -150,17 +152,56 @@ function canonicalFrame(type, data = {}, opts = {}) {
 }
 
 function mayInputFrame(message) {
-  return canonicalFrame("human.input.received", {
-    actor: "human",
-    text: message,
-    conversation: {
-      id: `${source}:local-terminal:agent:${daemonAgent}`,
-      channel: source,
-      channelThreadId: "local-terminal",
+  const sequence = Math.max(Date.now(), lastConversationSequence + 1);
+  lastConversationSequence = sequence;
+  return {
+    type: "app.input.admit",
+    appId: "may",
+    input: { kind: "message", data: { message } },
+    source: { kind: "human", id: `${source}:local-terminal:${sequence}` },
+    conversationId,
+    conversationSequence: sequence,
+    channel: source,
+    channelThreadId: "local-terminal",
+    idempotencyKey: `${source}:local-terminal:${sequence}`,
+  };
+}
+
+function requestConversation() {
+  return sendFrame(
+    {
+      type: "app.conversation.get",
+      appId: "may",
+      conversationId,
+      limit: 30,
     },
-    target: { agent: daemonAgent },
-    context: { forceNew: true },
-  });
+    { silent: true },
+  );
+}
+
+function renderConversation(turns) {
+  if (!Array.isArray(turns)) return;
+  for (const turn of turns) {
+    const requestId = typeof turn.requestId === "string" ? turn.requestId : "";
+    const message =
+      turn.input && turn.input.data && typeof turn.input.data.message === "string"
+        ? turn.input.data.message.trim()
+        : "";
+    if (requestId && message && !renderedConversationRequests.has(requestId)) {
+      printLine(`you: ${message}`);
+      renderedConversationRequests.add(requestId);
+    }
+    const deliveries = Array.isArray(turn.deliveries) ? turn.deliveries : [];
+    for (const delivery of deliveries) {
+      const operationId = typeof delivery.operationId === "string" ? delivery.operationId : "";
+      if (!operationId || renderedDeliveryOperations.has(operationId) || delivery.status !== "delivered") continue;
+      if (typeof delivery.text === "string" && delivery.text.trim()) printLine(`may: ${delivery.text.trim()}`);
+      renderedDeliveryOperations.add(operationId);
+    }
+    if (requestId && turn.state === "working" && deliveries.every((delivery) => delivery.status !== "delivered")) {
+      printLine("may: [working]");
+    }
+  }
 }
 
 function steerFrame(sessionId, message) {
@@ -182,7 +223,7 @@ function runtimeFrame(type) {
 
 function subscribe(mode = watchMode) {
   watchMode = mode;
-  return sendFrame({ type: "subscribe", sessions: watchSessions() });
+  return sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source });
 }
 
 function requestStatus() {
@@ -196,7 +237,8 @@ function resolveSessionId(input) {
   if (knownSessions.has(needle)) return { ok: true, sessionId: needle };
   const matches = [...knownSessions.keys()].filter((id) => id.startsWith(needle) || id.endsWith(needle));
   if (matches.length === 1) return { ok: true, sessionId: matches[0] };
-  if (matches.length > 1) return { ok: false, message: `ambiguous session id '${needle}': ${matches.map(shortSessionId).join(", ")}` };
+  if (matches.length > 1)
+    return { ok: false, message: `ambiguous session id '${needle}': ${matches.map(shortSessionId).join(", ")}` };
   return { ok: false, message: `unknown session id '${needle}'. Run /sessions first.` };
 }
 
@@ -209,7 +251,9 @@ function renderStatus(items) {
       const agent = String(item.agent || item.name || "?");
       const status = String(item.status || "?");
       const kind = String(item.kind || "?");
-      const task = String(item.task || "").replace(/\s+/g, " ").slice(0, 100);
+      const task = String(item.task || "")
+        .replace(/\s+/g, " ")
+        .slice(0, 100);
       return `${shortSessionId(sessionId).padEnd(10)}  ${agent.padEnd(12)}  ${status.padEnd(8)}  ${kind.padEnd(6)}  "${task}"`;
     })
     .join("\n");
@@ -252,7 +296,9 @@ function handleSessionStart(event) {
   });
   if (!debug && watchMode === "may") return;
   const parent = data.parentSessionId ? ` child of ${shortSessionId(data.parentSessionId)}` : "";
-  printLine(`[${data.agent || daemonAgent}] started ${shortSessionId(data.sessionId)}${parent}: ${String(data.task || "").slice(0, 100)}`);
+  printLine(
+    `[${data.agent || daemonAgent}] started ${shortSessionId(data.sessionId)}${parent}: ${String(data.task || "").slice(0, 100)}`,
+  );
 }
 
 function handleSessionEnd(event) {
@@ -270,7 +316,13 @@ function handleSessionEnd(event) {
   });
   const isMayTurn = agent === daemonAgent;
   const rawSummary = String(data.summary || data.error || "").trim();
-  if (isMayTurn && status === "done" && rawSummary && !sessionsWithText.has(sessionId)) {
+  if (
+    (debug || watchMode !== "may") &&
+    isMayTurn &&
+    status === "done" &&
+    rawSummary &&
+    !sessionsWithText.has(sessionId)
+  ) {
     printResponseText(rawSummary);
   }
   if (!debug && watchMode === "may" && status === "done") {
@@ -295,9 +347,9 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
-      if (event.command === "human.input.received") {
-        printLine(`[accepted${event.eventId ? ` #${event.eventId}` : ""}] May is handling this turn.`);
-      }
+      if (event.command === "app.conversation.get") renderConversation(event.turns);
+      // Admission is transport bookkeeping. May's durable acknowledgement or
+      // answer is the human-visible response.
       return;
     case "error":
       printLine(`[error] ${event.message || "unknown error"}`);
@@ -313,6 +365,7 @@ function handleEvent(event) {
       handleSessionStart(event);
       return;
     case "text":
+      if (!debug && watchMode === "may") return;
       {
         const sid = eventSessionId(event);
         if (sid) sessionsWithText.add(sid);
@@ -327,11 +380,36 @@ function handleEvent(event) {
       if (debug) printLine(`[tool] ${event.tool || "unknown"} ${formatToolArgs(event.tool, event.args)}`.trim());
       return;
     case "tool_result":
-      if (event.isError) printLine(`[tool error] ${event.tool || "unknown"}: ${String(event.preview || "").slice(0, 200)}`);
+      if (event.isError)
+        printLine(`[tool error] ${event.tool || "unknown"}: ${String(event.preview || "").slice(0, 200)}`);
       return;
     case "session.end":
       handleSessionEnd(event);
       return;
+    case "app.response.delivery.requested": {
+      if (data.channel !== source || typeof data.text !== "string") return;
+      printResponseText(data.text);
+      if (typeof data.operationId === "string") renderedDeliveryOperations.add(data.operationId);
+      const identity = [data.operationId, data.appInboxItemId, data.appInboxRequestId, data.sessionId];
+      if (identity.every((value) => typeof value === "string" && value.length > 0)) {
+        sendFrame({
+          type: "channel.delivery.completed",
+          source,
+          owner: "app:may",
+          target: { human: true },
+          data: {
+            channel: source,
+            sessionId: data.sessionId,
+            resultEventType: event.type,
+            operationId: data.operationId,
+            appInboxItemId: data.appInboxItemId,
+            appInboxRequestId: data.appInboxRequestId,
+            idempotencyKey: `${source}-delivery:${data.operationId}`,
+          },
+        });
+      }
+      return;
+    }
     case "message.created": {
       const normalizedTarget = typeof data.to === "string" ? data.to.trim().toLowerCase() : "";
       if (normalizedTarget === "human" || normalizedTarget === "human:operator") {
@@ -355,8 +433,9 @@ function connectSocket() {
     connected = true;
     reconnectDelayMs = 250;
     lastDisconnectedMessage = "";
-    sendFrame({ type: "subscribe", sessions: watchSessions() }, { silent: true });
+    sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source }, { silent: true });
     sendFrame({ type: "status" }, { silent: true });
+    requestConversation();
     refreshPrompt();
   });
 
@@ -402,17 +481,19 @@ function scheduleReconnect() {
 }
 
 function printHelp() {
-  printLine([
-    "Commands:",
-    "  /status, /sessions",
-    "  /watch may|all|<sessionId>",
-    "  /steer <sessionId> <message>",
-    "  /cancel <sessionId>|all",
-    "  /debug, /raw",
-    "  /reload, /restart, /shell, /exit",
-    "",
-    "Bare text always starts a bounded turn with May.",
-  ].join("\n"));
+  printLine(
+    [
+      "Commands:",
+      "  /status, /sessions",
+      "  /watch may|all|<sessionId>",
+      "  /steer <sessionId> <message>",
+      "  /cancel <sessionId>|all",
+      "  /debug, /raw",
+      "  /reload, /restart, /shell, /exit",
+      "",
+      "Bare text always starts a bounded turn with May.",
+    ].join("\n"),
+  );
 }
 
 function resolveCommandSession(name, reference) {
@@ -467,7 +548,9 @@ function handleCommand(input) {
       return;
     }
     case "use":
-      printLine("[/use] Input always goes to May. Use /watch <sessionId> to inspect or /steer <sessionId> <message> to steer.");
+      printLine(
+        "[/use] Input always goes to May. Use /watch <sessionId> to inspect or /steer <sessionId> <message> to steer.",
+      );
       return;
     case "may":
       watchedSessionId = null;

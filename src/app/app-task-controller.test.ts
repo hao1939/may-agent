@@ -161,7 +161,8 @@ describe("AppTaskController", () => {
   });
 
   it("shares the Host limit across replacement controllers", async () => {
-    const appCapacity = new HostCapacity(2);
+    // One of three Host slots is reserved for foreground May conversation.
+    const appCapacity = new HostCapacity(3);
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
     let releaseCurrent: (() => void) | undefined;

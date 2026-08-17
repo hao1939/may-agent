@@ -32,11 +32,13 @@ export interface AttachControlSocketOptions {
     channel?: string;
     channelThreadId?: string;
     channelMessageId?: number;
+    replyToSourceId?: string;
     idempotencyKey: string;
   }) => {
     eventId: number;
     eventType: string;
   };
+  getAppConversation?: (appId: string, conversationId: string, limit?: number) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -60,6 +62,7 @@ interface ClientState {
   filter: Set<string> | null;
   chatMode: boolean;
   subscribed: boolean;
+  deliveryChannel?: string;
 }
 
 export const CONTROL_SOCKET_LIMITS = {
@@ -119,12 +122,7 @@ function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.subscribed) return false;
   const data = eventPayload(event);
   if (event.type === "app.response.delivery.requested") {
-    return (
-      data.channel === "web-ui" ||
-      data.channel === "web" ||
-      data.channel === "socket" ||
-      data.channel === "control-socket"
-    );
+    return typeof data.channel === "string" && client.deliveryChannel === data.channel;
   }
   if (!client.filter) return true;
   if (typeof data.sessionId === "string") return client.filter.has(data.sessionId);
@@ -146,6 +144,7 @@ export interface ControlSocketCoreOptions {
   getEvent?: AttachControlSocketOptions["getEvent"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
+  getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
@@ -165,6 +164,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     publishEvent,
     getEvent,
     admitAppInput,
+    getAppConversation,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -189,7 +189,17 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
   }
 
   function broadcast(event: ControlEvent): void {
-    if (clients.size === 0) return;
+    const data = eventPayload(event);
+    const socketDelivery =
+      event.type === "app.response.delivery.requested" &&
+      typeof data.channel === "string" &&
+      [...clients.values()].some((client) => client.deliveryChannel === data.channel);
+    if (clients.size === 0) {
+      if (event.type === "app.response.delivery.requested" && data.channel === "may-console") {
+        onDelivered?.(event, 0);
+      }
+      return;
+    }
 
     const chatSid = getSessionId();
     for (const client of clients.values()) {
@@ -205,7 +215,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       }
     }
 
-    const data = eventPayload(event);
     if (
       event.type === "session.start" &&
       typeof data.parentSessionId === "string" &&
@@ -232,7 +241,12 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         clients.delete(sock);
       }
     }
-    if (delivered > 0 && (event.type === "session.idle" || event.type === "session.end")) {
+    if (
+      (event.type === "app.response.delivery.requested" &&
+        delivered === 0 &&
+        (socketDelivery || data.channel === "may-console")) ||
+      (delivered > 0 && (event.type === "session.idle" || event.type === "session.end"))
+    ) {
       onDelivered?.(event, delivered);
     }
   }
@@ -313,8 +327,14 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 
         if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = frame.sessions;
+          const deliveryChannel = frame.deliveryChannel;
           const client = clients.get(socket);
-          if (client && Array.isArray(sessions) && sessions.every((session) => typeof session === "string")) {
+          if (
+            client &&
+            Array.isArray(sessions) &&
+            sessions.every((session) => typeof session === "string") &&
+            (deliveryChannel === undefined || (typeof deliveryChannel === "string" && deliveryChannel.trim()))
+          ) {
             if (sessions.includes("*")) {
               client.filter = null;
               client.chatMode = false;
@@ -326,13 +346,17 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               client.filter = new Set(sessions);
               client.chatMode = false;
             }
+            client.deliveryChannel = typeof deliveryChannel === "string" ? deliveryChannel.trim() : undefined;
             client.subscribed = true;
             writeFrame(socket, { type: "ok", command: "subscribe" });
           } else {
             writeFrame(socket, {
               type: "error",
               command: "subscribe",
-              message: "sessions must be an array of strings",
+              message:
+                !Array.isArray(sessions) || !sessions.every((session) => typeof session === "string")
+                  ? "sessions must be an array of strings"
+                  : "deliveryChannel must be a non-empty string",
             });
           }
           continue;
@@ -465,9 +489,46 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
                 ? { channelThreadId: frame.channelThreadId.trim() }
                 : {}),
               ...(typeof frame.channelMessageId === "number" ? { channelMessageId: frame.channelMessageId } : {}),
+              ...(typeof frame.replyToSourceId === "string" && frame.replyToSourceId.trim()
+                ? { replyToSourceId: frame.replyToSourceId.trim() }
+                : {}),
               idempotencyKey,
             });
             writeFrame(socket, { type: "ok", command: normalized.command, appId, ...result });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "app.conversation.get") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          const conversationId = typeof frame.conversationId === "string" ? frame.conversationId.trim() : "";
+          const limit = frame.limit === undefined ? undefined : Number(frame.limit);
+          if (!appId || !conversationId || !getAppConversation) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId
+                ? "appId is required"
+                : !conversationId
+                  ? "conversationId is required"
+                  : "App conversation reads are unavailable",
+            });
+            continue;
+          }
+          try {
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              appId,
+              conversationId,
+              turns: getAppConversation(appId, conversationId, limit),
+            });
           } catch (error) {
             writeFrame(socket, {
               type: "error",
@@ -603,6 +664,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     publishEvent,
     getEvent,
     admitAppInput: opts.admitAppInput,
+    getAppConversation: opts.getAppConversation,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,

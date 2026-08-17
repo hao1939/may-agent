@@ -48,12 +48,30 @@ export type AppResult = {
  * exposing inbox leases, task storage, or runtime query capabilities.
  */
 export type AppDependencyObservation = {
-  kind: "app" | "task" | "session";
+  kind: "app" | "task" | "session" | "analysis";
   id: string;
   status: "pending" | "running" | "waiting" | "attention" | "done" | "error" | "interrupted" | "unknown";
   summary?: string;
   response?: string;
   evidence?: string[];
+};
+
+export type AppConversationContext = {
+  id: string;
+  sourceId: string;
+  replyToSourceId?: string;
+  prior: Array<{
+    requestId: string;
+    sourceId: string;
+    replyToSourceId?: string;
+    input: AppInput;
+    state: "working" | "done";
+    deliveries: Array<{
+      kind: "progress" | "final";
+      text?: string;
+      status: "pending" | "sending" | "delivered" | "failed" | "uncertain";
+    }>;
+  }>;
 };
 
 /** Author-visible request. Host lifecycle and lease fields stay private. */
@@ -63,9 +81,21 @@ export type AppRequest<TData = unknown> = {
   parentId?: string;
   input: AppInput<TData>;
   dependency?: AppDependencyObservation;
+  /** Bounded exact conversation evidence; it never owns or schedules work. */
+  conversation?: AppConversationContext;
 };
 
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
+
+/** One bounded, non-mutating evidence request owned and reviewed by May. */
+export type AppAnalysisRequest = {
+  tool: "codex" | "claude";
+  question: string;
+  cwd?: string;
+  files?: string[];
+  timeoutMs: number;
+  expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
+};
 
 /** The complete lifecycle vocabulary returned by an App owner. */
 export type AppDisposition =
@@ -76,7 +106,8 @@ export type AppDisposition =
       input: AppInput;
       reviewAfterMs?: number;
     }
-  | { type: "task"; task: AppTaskAttachment };
+  | { type: "task"; task: AppTaskAttachment }
+  | { type: "analyze"; analysis: AppAnalysisRequest; acknowledgement?: string };
 
 export type AppInboxBatchMode = "single" | "coalesce-compatible";
 

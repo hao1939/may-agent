@@ -169,6 +169,8 @@ describe("restart-aware deploy receipts", () => {
     expect(restarter).toContain(
       'receipt_tool="${MAY_AGENT_DEPLOY_RECEIPT_TOOL:-/app/projects/may-agent/bundle/deploy-receipt.ts}"',
     );
+    expect(restarter).toContain('sdk_root="${MAY_AGENT_DEPLOY_SDK_ROOT:-/app/projects/may-agent/bundle}"');
+    expect(restarter).not.toContain('sdk_root="${MAY_AGENT_SDK_ROOT:-');
     expect(restarter).toContain('switch_sdk "$sdk_release"');
     expect(restarter).toContain('switch_sdk "$previous_sdk_release"');
   });

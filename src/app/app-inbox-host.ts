@@ -1,8 +1,9 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   matchesEventSelector,
   type AppDependencyObservation,
   type AppDefinition,
+  type AppAnalysisRequest,
   type AppDisposition,
   type AppEvent,
   type AppInput,
@@ -22,6 +23,8 @@ import {
   getAppInboxItem,
   listAppInboxHealth,
   listAppInboxAssociatedSessionClaims,
+  listAppConversationTurns,
+  listAppInboxDependencyWaits,
   listUnlinkedAppDelegations,
   listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
@@ -31,6 +34,7 @@ import {
   restorePendingAppInboxDelivery,
   renewAppInboxClaim,
   stageAppInboxClaimDelivery,
+  stageAppInboxProgressDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
   type AppInboxClaim,
@@ -59,8 +63,20 @@ export type AppOwnerInvoker = (input: {
 
 export type AppDependencyReader = (input: {
   appId: string;
-  dependency: { kind: "task" | "session"; id: string };
+  dependency: { kind: "task" | "session" | "analysis"; id: string };
 }) => Promise<AppDependencyObservation | null>;
+
+/** Host-private admission boundary for one May-owned analysis attempt. */
+export type AppAnalysisAttacher = (input: {
+  appId: "may";
+  analysis: AppAnalysisRequest;
+  idempotencyKey: string;
+  request: Readonly<AppRequest>;
+}) => Promise<{
+  analysisId: string;
+  /** Closes completion-before-link races after the exact wait is durable. */
+  isComplete?: () => Promise<boolean>;
+}>;
 
 /**
  * The task engine must treat idempotencyKey as stable admission identity.
@@ -95,6 +111,7 @@ export type AdmitAppInput = {
   channel?: string;
   channelThreadId?: string;
   channelMessageId?: number;
+  replyToSourceId?: string;
   source: AppInputSource;
   input: AppInput;
   originEventId?: number;
@@ -131,6 +148,7 @@ export type AppInboxHostOptions = {
   invokeOwner: AppOwnerInvoker;
   readDependency?: AppDependencyReader;
   attachTask?: AppTaskAttacher;
+  attachAnalysis?: AppAnalysisAttacher;
   workerId?: string;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -180,6 +198,10 @@ function validateCompleteDisposition(disposition: Extract<AppDisposition, { type
   }
 }
 
+function analysisIdentity(analysis: AppAnalysisRequest): string {
+  return createHash("sha256").update(JSON.stringify(analysis)).digest("hex").slice(0, 16);
+}
+
 function withTransaction<T>(db: SqliteDb, operation: () => T): T {
   db.exec("BEGIN IMMEDIATE");
   try {
@@ -208,6 +230,7 @@ export class AppInboxHost {
   readonly #invokeOwner: AppOwnerInvoker;
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
+  readonly #attachAnalysis?: AppAnalysisAttacher;
   readonly #workerId: string;
   readonly #leaseMs: number;
   readonly #retryAfterMs: number;
@@ -219,6 +242,7 @@ export class AppInboxHost {
     this.#invokeOwner = options.invokeOwner;
     this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
+    this.#attachAnalysis = options.attachAnalysis;
     this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
     this.#leaseMs = options.leaseMs ?? 60_000;
     this.#retryAfterMs = options.retryAfterMs ?? 1_000;
@@ -484,6 +508,36 @@ export class AppInboxHost {
     return outcome;
   }
 
+  /** Re-observe exact analysis waits because terminal events can occur offline. */
+  async recoverAnalysisDependencies(): Promise<AppInboxSessionRecoveryResult> {
+    const outcome: AppInboxSessionRecoveryResult = {
+      linked: 0,
+      woken: 0,
+      wokenAppIds: [],
+      errors: [],
+    };
+    if (!this.#readDependency) return outcome;
+    const wokenApps = new Set<string>();
+    for (const item of listAppInboxDependencyWaits(this.#db, "analysis")) {
+      const dependency = item.waitingOn;
+      if (!dependency || dependency.kind !== "analysis") continue;
+      const analysisDependency = { kind: "analysis", id: dependency.id } as const;
+      try {
+        const observed = await this.#observeDependency(item.appId, analysisDependency);
+        if (!observed || !TERMINAL_SESSION_DEPENDENCY_STATUSES.has(observed.status)) continue;
+        const woken = wakeAppInboxItemsWaitingOn(this.#db, analysisDependency, this.#now());
+        if (woken > 0) {
+          outcome.woken += woken;
+          wokenApps.add(item.appId);
+        }
+      } catch (error) {
+        outcome.errors.push(`Wait ${item.id} analysis ${analysisDependency.id}: ${errorMessage(error)}`);
+      }
+    }
+    outcome.wokenAppIds = [...wokenApps].sort();
+    return outcome;
+  }
+
   recordDelivery(receipt: AppInboxDeliveryReceipt): {
     matched: boolean;
     completed: boolean;
@@ -617,6 +671,27 @@ export class AppInboxHost {
       parentId: item.parentId,
       input: item.input,
     };
+    if (item.conversationId) {
+      request.conversation = {
+        id: item.conversationId,
+        sourceId: item.source.id,
+        replyToSourceId: item.replyToSourceId,
+        prior: listAppConversationTurns(this.#db, item.appId, item.conversationId, 20)
+          .filter((turn) => turn.requestId !== item.id)
+          .map((turn) => ({
+            requestId: turn.requestId,
+            sourceId: turn.sourceId,
+            replyToSourceId: turn.replyToSourceId,
+            input: turn.input,
+            state: turn.state,
+            deliveries: turn.deliveries.map((delivery) => ({
+              kind: delivery.kind,
+              text: delivery.text,
+              status: delivery.status,
+            })),
+          })),
+      };
+    }
     const waitingOn = item.waitingOn;
     if (!waitingOn) return deepFreeze(request);
 
@@ -642,7 +717,9 @@ export class AppInboxHost {
       return deepFreeze(request);
     }
 
-    if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return deepFreeze(request);
+    if (waitingOn.kind !== "task" && waitingOn.kind !== "session" && waitingOn.kind !== "analysis") {
+      return deepFreeze(request);
+    }
     const dependency = { kind: waitingOn.kind, id: waitingOn.id } as const;
 
     const observed = await this.#observeDependency(item.appId, dependency);
@@ -652,7 +729,7 @@ export class AppInboxHost {
 
   async #observeDependency(
     appId: string,
-    dependency: { kind: "task" | "session"; id: string },
+    dependency: { kind: "task" | "session" | "analysis"; id: string },
   ): Promise<AppDependencyObservation | null> {
     const observed = await this.#readDependency?.({ appId, dependency });
     if (observed && (observed.kind !== dependency.kind || observed.id !== dependency.id)) {
@@ -813,6 +890,65 @@ export class AppInboxHost {
           } catch {
             // The durable completion event remains the authoritative wake path.
             // A failed post-link race check must not undo a valid wait link.
+          }
+        }
+        return;
+      }
+      case "analyze": {
+        if (app.id !== "may") throw new Error("Only the canonical May App may request bounded analysis");
+        if (!this.#attachAnalysis) throw new Error("May analysis attachment is not configured");
+        const question = requiredText(disposition.analysis.question, "Analysis question");
+        if (
+          !Number.isFinite(disposition.analysis.timeoutMs) ||
+          disposition.analysis.timeoutMs <= 0 ||
+          disposition.analysis.timeoutMs > 1_800_000
+        ) {
+          throw new Error("Analysis timeoutMs must be between 1 and 1800000");
+        }
+        const analysis = { ...disposition.analysis, question };
+        const prior = request.dependency?.id ?? "root";
+        const attached = await this.#attachAnalysis({
+          appId: "may",
+          analysis,
+          idempotencyKey: `analysis:${claim.item.id}:${prior}:${analysisIdentity(analysis)}`,
+          request,
+        });
+        const analysisId = requiredText(attached.analysisId, "Attached analysis id");
+        const acknowledgement =
+          disposition.acknowledgement === undefined
+            ? undefined
+            : requiredText(disposition.acknowledgement, "Analysis acknowledgement");
+        withTransaction(this.#db, () => {
+          const current = getAppInboxItem(this.#db, claim.item.id);
+          const waiting = waitAppInboxClaim(
+            this.#db,
+            claim,
+            { kind: "analysis", id: analysisId },
+            { now: this.#now() },
+          );
+          if (!waiting) throw new Error("claim is stale");
+          if (acknowledgement && current?.sessionId && claim.item.source.kind === "human" && claim.item.channel) {
+            stageAppInboxProgressDelivery(
+              this.#db,
+              {
+                itemId: claim.item.id,
+                operationId: `app-progress:${claim.item.id}:${analysisId}`,
+                channel: claim.item.channel,
+                sessionId: current.sessionId,
+                requestId: appInboxHumanRequestId(claim.item.id),
+                text: acknowledgement,
+              },
+              this.#now(),
+            );
+          }
+        });
+        if (attached.isComplete) {
+          try {
+            if (await attached.isComplete()) {
+              wakeAppInboxItemsWaitingOn(this.#db, { kind: "analysis", id: analysisId }, this.#now());
+            }
+          } catch {
+            // Terminal CLI evidence remains the authoritative wake path.
           }
         }
         return;

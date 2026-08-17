@@ -11,12 +11,15 @@ import {
   getAppInboxItem,
   listAppInboxAssociatedSessionClaims,
   listAppInboxHealth,
+  listAppInboxDeliveries,
+  listAppConversationTurns,
   listAppInboxItems,
   listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
   restoreReplayableAppInboxDeliveries,
   stageAppInboxClaimDelivery,
+  stageAppInboxProgressDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
 } from "./app-inbox-store.js";
@@ -96,6 +99,7 @@ describe("App inbox store", () => {
       channel: "telegram",
       channelThreadId: "topic:7",
       channelMessageId: 99,
+      replyToSourceId: "telegram:123:98",
       now: 100,
     });
 
@@ -105,8 +109,55 @@ describe("App inbox store", () => {
       channel: "telegram",
       channelThreadId: "topic:7",
       channelMessageId: 99,
+      replyToSourceId: "telegram:123:98",
       input: { kind: "message", data: { message: "hello" } },
     });
+  });
+
+  it("derives a conversation from requests, exact reply links, and deliveries", () => {
+    createAppInboxItem(db, {
+      id: "conversation-turn",
+      appId: "may",
+      source: { kind: "human", id: "telegram:123:11" },
+      input: { kind: "message", data: { message: "continue" } },
+      conversationId: "telegram:123",
+      conversationSequence: 11,
+      channel: "telegram",
+      channelMessageId: 11,
+      replyToSourceId: "telegram:123:10",
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "conversation-turn", "worker", 50, 100)!;
+    associateAppInboxClaimSession(db, claim, "session-conversation", 101);
+    const delivery = stageAppInboxClaimDelivery(
+      db,
+      claim,
+      {
+        channel: "telegram",
+        sessionId: "session-conversation",
+        requestId: "app-inbox-human:conversation-turn",
+        result: { summary: "done", response: "Continued." },
+      },
+      102,
+    );
+
+    expect(listAppConversationTurns(db, "may", "telegram:123")).toEqual([
+      {
+        requestId: "conversation-turn",
+        sourceId: "telegram:123:11",
+        replyToSourceId: "telegram:123:10",
+        input: { kind: "message", data: { message: "continue" } },
+        state: "working",
+        deliveries: [
+          expect.objectContaining({
+            operationId: delivery.operationId,
+            kind: "final",
+            text: "Continued.",
+            status: "pending",
+          }),
+        ],
+      },
+    ]);
   });
 
   it("does not treat a cross-App id collision as an idempotent create", () => {
@@ -295,6 +346,74 @@ describe("App inbox store", () => {
       status: "done",
       delivery: { status: "delivered", externalMessageId: "700" },
     });
+  });
+
+  it("delivers durable progress without completing the request", () => {
+    createAppInboxItem(db, {
+      id: "human-progress",
+      appId: "may",
+      source: { kind: "human", id: "telegram:42" },
+      input: { kind: "message", data: { text: "please inspect" } },
+      channel: "telegram",
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "human-progress", "worker-1", 50, 100)!;
+    expect(associateAppInboxClaimSession(db, claim, "session-progress", 101)).toBe(true);
+    expect(waitAppInboxClaim(db, claim, { kind: "analysis", id: "analysis-1" }, { now: 102 })).toBe(true);
+    const progress = stageAppInboxProgressDelivery(
+      db,
+      {
+        itemId: "human-progress",
+        operationId: "app-progress:human-progress:analysis-1",
+        channel: "telegram",
+        sessionId: "session-progress",
+        requestId: "app-inbox-human:human-progress",
+        text: "I’ll inspect this and return with the evidence.",
+      },
+      102,
+    );
+    // Retrying the same admitted analysis stages no duplicate message.
+    expect(
+      stageAppInboxProgressDelivery(
+        db,
+        {
+          itemId: "human-progress",
+          operationId: progress.operationId,
+          channel: "telegram",
+          sessionId: "session-progress",
+          requestId: "app-inbox-human:human-progress",
+          text: "I’ll inspect this and return with the evidence.",
+        },
+        103,
+      ).operationId,
+    ).toBe(progress.operationId);
+
+    const dispatch = claimNextAppInboxDelivery(db, 104)!;
+    expect(dispatch).toMatchObject({
+      text: "I’ll inspect this and return with the evidence.",
+      delivery: { kind: "progress", operationId: progress.operationId },
+    });
+    expect(
+      recordAppInboxDeliveryReceipt(
+        db,
+        {
+          operationId: progress.operationId,
+          itemId: "human-progress",
+          sessionId: "session-progress",
+          requestId: "app-inbox-human:human-progress",
+          channel: "telegram",
+          status: "delivered",
+        },
+        105,
+      ),
+    ).toEqual({ matched: true, completed: false, status: "delivered" });
+    expect(getAppInboxItem(db, "human-progress")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "analysis", id: "analysis-1" },
+    });
+    expect(listAppInboxDeliveries(db, "human-progress")).toMatchObject([
+      { kind: "progress", status: "delivered", text: "I’ll inspect this and return with the evidence." },
+    ]);
   });
 
   it("preserves a definite delivery failure for review without redispatch", () => {
