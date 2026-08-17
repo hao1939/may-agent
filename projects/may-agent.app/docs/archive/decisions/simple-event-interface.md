@@ -558,3 +558,21 @@ domain-specific `input.kind` for everything. The current implementation
 appears to use the latter (Apps route through `app.input.requested` or task
 subscriptions), but the doc should state this explicitly so no one attempts
 to register custom required-delivery types from App code.
+
+### Resolution after the Conversation refinement
+
+The review predates the shared Conversation implementation. Its general
+conclusion still stands: one `publish/get/subscribe` interface and the
+`record`/`required` contracts are sufficient. Three details are now explicit:
+
+1. May Console and Telegram publish required `conversation.message.created`,
+   not generic `app.input.requested`; only a human author derives a fenced May
+   request. Other authors are accepted as context without creating work.
+2. Generic `app.input.requested` remains the route for App actions, schedules,
+   delegation, and non-conversation callers; task subscriptions still wake task
+   resolution without creating an unrelated inbox item.
+3. Required event definitions remain Host-owned. Apps contribute typed inputs,
+   actions, and declared subscriptions, not EventBus handler registries.
+
+Child delegation idempotency remains derived from the durable parent request
+and disposition identity, so retrying a parent cannot create a duplicate child.

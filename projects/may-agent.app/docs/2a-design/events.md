@@ -70,11 +70,13 @@ internal producers may publish an unregistered record-only fact. External
 adapters admit only explicit type/schema allowlists. Logging, metrics, tracing,
 and stream observers never count as the one required accepter.
 
-Human `conversation.message.created`, `app.input.requested`, direct-agent
+`conversation.message.created`, `app.input.requested`, direct-agent
 `chat.start.requested`, exact session controls, and Host lifecycle controls are
-required. Ordinary reported facts and non-human Conversation context are
-record-only. A required event may remain `recorded` after persistence when its
-route temporarily fails; recovery retries the same event and identity.
+required. For a Conversation message, acceptance means the Conversation route
+accepted the message; only `author.kind=human` also creates a May request.
+Ordinary reported facts are record-only. A required event may remain `recorded`
+after persistence when its route temporarily fails; recovery retries the same
+event and identity.
 
 ## Routing outcomes
 
