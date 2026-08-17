@@ -509,6 +509,34 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("supports delivery-only subscriptions without forwarding session traffic", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    stream.write(JSON.stringify({ type: "subscribe", sessions: [], deliveryChannel: "may-console" }) + "\n");
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+
+    core.getBroadcast()?.({ type: "text", sessionId: "s_busy", agent: "worker", text: "skip" });
+    const response = {
+      type: "app.response.delivery.requested",
+      source: "app-inbox",
+      owner: "app:may",
+      data: {
+        channel: "may-console",
+        sessionId: "s_may",
+        operationId: "app-delivery:item-delivery-only:1",
+        appInboxItemId: "item-delivery-only",
+        appInboxRequestId: "app-inbox-human:item-delivery-only",
+        text: "Done.",
+      },
+    };
+    core.getBroadcast()?.(response);
+
+    await expect(nextFrame(stream)).resolves.toEqual(response);
+    stream.destroy();
+  });
+
   it("forwards a Web App inbox response without treating socket observation as delivery", async () => {
     const delivered: Array<{ event: ControlEvent; count: number }> = [];
     const core = createCore({
