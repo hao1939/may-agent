@@ -188,9 +188,49 @@ function requestConversation() {
   );
 }
 
+function requestCommitments() {
+  return sendFrame(
+    {
+      type: "app.commitments.get",
+      appId: "may",
+      limit: 20,
+    },
+    { silent: true },
+  );
+}
+
+function renderCommitments(commitments) {
+  if (!Array.isArray(commitments)) return;
+  if (commitments.length === 0) {
+    printLine("\nWorking: nothing.\n");
+    return;
+  }
+  const stateLabels = {
+    queued: "Queued",
+    working: "Working",
+    analyzing: "Analyzing",
+    waiting: "Waiting",
+    ready: "Ready",
+  };
+  const lines = ["", "Working:"];
+  commitments.forEach((item, index) => {
+    const message = typeof item.message === "string" && item.message.trim() ? item.message.trim() : "Request";
+    const state = stateLabels[item.state] || "Working";
+    lines.push(`  ${index + 1}. ${message} — ${state}`);
+    if (typeof item.progress === "string" && item.progress.trim()) {
+      lines.push(`     ${item.progress.trim()}`);
+    }
+  });
+  lines.push("");
+  printLine(lines.join("\n"));
+}
+
 function renderConversation(turns) {
   if (!Array.isArray(turns)) return;
   for (const turn of turns) {
+    // Unfinished turns are summarized once in the work view below instead of
+    // replaying the same request and a synthetic status line in the transcript.
+    if (turn.state === "working") continue;
     const requestId = typeof turn.requestId === "string" ? turn.requestId : "";
     const message =
       turn.input && turn.input.data && typeof turn.input.data.message === "string"
@@ -208,9 +248,6 @@ function renderConversation(turns) {
         printConversationText("may", delivery.text.trim());
       }
       renderedDeliveryOperations.add(operationId);
-    }
-    if (requestId && turn.state === "working" && deliveries.every((delivery) => delivery.status !== "delivered")) {
-      printConversationText("may", "[working]");
     }
   }
 }
@@ -359,6 +396,7 @@ function handleEvent(event) {
       return;
     case "ok":
       if (event.command === "app.conversation.get") renderConversation(event.turns);
+      if (event.command === "app.commitments.get") renderCommitments(event.commitments);
       // Admission is transport bookkeeping. May's durable acknowledgement or
       // answer is the human-visible response.
       return;
@@ -447,6 +485,7 @@ function connectSocket() {
     sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source }, { silent: true });
     sendFrame({ type: "status" }, { silent: true });
     requestConversation();
+    requestCommitments();
     refreshPrompt();
   });
 
@@ -496,6 +535,7 @@ function printHelp() {
   printLine(
     [
       "Commands:",
+      "  /work",
       "  /status, /sessions",
       "  /watch may|all|<sessionId>",
       "  /steer <sessionId> <message>",
@@ -529,6 +569,9 @@ function handleCommand(input) {
     case "status":
     case "sessions":
       requestStatus();
+      return;
+    case "work":
+      requestCommitments();
       return;
     case "watch": {
       const mode = rest.toLowerCase();

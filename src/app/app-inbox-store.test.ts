@@ -13,6 +13,7 @@ import {
   listAppInboxHealth,
   listAppInboxDeliveries,
   listAppConversationTurns,
+  listOpenAppCommitments,
   listAppInboxItems,
   listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
@@ -157,6 +158,127 @@ describe("App inbox store", () => {
           }),
         ],
       },
+    ]);
+  });
+
+  it("derives a compact work list from unfinished human requests", () => {
+    createAppInboxItem(db, {
+      id: "queued",
+      appId: "may",
+      source: { kind: "human", id: "console:1" },
+      input: { kind: "message", data: { message: "Review   the May design" } },
+      conversationId: "may-console",
+      conversationSequence: 1,
+      now: 100,
+    });
+    createAppInboxItem(db, {
+      id: "analysis",
+      appId: "may",
+      source: { kind: "human", id: "telegram:2" },
+      input: { kind: "message", data: { message: "Check the implementation" } },
+      conversationId: "telegram:42",
+      conversationSequence: 2,
+      now: 110,
+    });
+    const analysis = claimAppInboxItem(db, "analysis", "worker", 100, 120)!;
+    expect(waitAppInboxClaim(db, analysis, { kind: "analysis", id: "analysis-1" }, { now: 121 })).toBe(true);
+    stageAppInboxProgressDelivery(
+      db,
+      {
+        itemId: "analysis",
+        operationId: "progress:analysis",
+        channel: "telegram",
+        sessionId: "session-1",
+        requestId: "request-1",
+        text: "Codex is checking the implementation.",
+      },
+      122,
+    );
+    createAppInboxItem(db, {
+      id: "delegated",
+      appId: "may",
+      source: { kind: "human", id: "console:3" },
+      input: { kind: "message", data: { message: "Refine the AKS app" } },
+      now: 130,
+    });
+    const delegated = claimAppInboxItem(db, "delegated", "worker", 100, 131)!;
+    expect(waitAppInboxClaim(db, delegated, { kind: "app", id: "child-1" }, { now: 132 })).toBe(true);
+    createAppInboxItem(db, {
+      id: "completed",
+      appId: "may",
+      source: { kind: "human", id: "console:4" },
+      input: { kind: "message", data: { message: "Already answered" } },
+      now: 140,
+    });
+    const completed = claimAppInboxItem(db, "completed", "worker", 100, 141)!;
+    expect(completeAppInboxClaim(db, completed, { summary: "done" }, 142)).toBe(true);
+    createAppInboxItem(db, {
+      id: "ready",
+      appId: "may",
+      source: { kind: "human", id: "console:5" },
+      input: { kind: "message", data: { message: "Prepare a recommendation" } },
+      channel: "may-console",
+      now: 145,
+    });
+    const ready = claimAppInboxItem(db, "ready", "worker", 100, 146)!;
+    expect(associateAppInboxClaimSession(db, ready, "session-ready", 147)).toBe(true);
+    stageAppInboxClaimDelivery(
+      db,
+      ready,
+      {
+        channel: "may-console",
+        sessionId: "session-ready",
+        requestId: "request-ready",
+        result: { summary: "Recommendation is ready." },
+      },
+      148,
+    );
+    createAppInboxItem(db, {
+      id: "system",
+      appId: "may",
+      source: { kind: "system", id: "tick" },
+      input: { kind: "message", data: { message: "Internal work" } },
+      now: 150,
+    });
+
+    expect(listOpenAppCommitments(db, "may")).toEqual([
+      {
+        requestId: "ready",
+        message: "Prepare a recommendation",
+        state: "ready",
+        progress: "May has a result ready for may-console.",
+        createdAt: 145,
+        updatedAt: 148,
+      },
+      {
+        requestId: "delegated",
+        message: "Refine the AKS app",
+        state: "waiting",
+        createdAt: 130,
+        updatedAt: 132,
+      },
+      {
+        requestId: "analysis",
+        conversationId: "telegram:42",
+        message: "Check the implementation",
+        state: "analyzing",
+        progress: "Codex is checking the implementation.",
+        createdAt: 110,
+        updatedAt: 121,
+      },
+      {
+        requestId: "queued",
+        conversationId: "may-console",
+        message: "Review the May design",
+        state: "queued",
+        createdAt: 100,
+        updatedAt: 100,
+      },
+    ]);
+    expect(listOpenAppCommitments(db, "may", { excludeRequestId: "analysis" }).map((item) => item.requestId)).toEqual([
+      "ready",
+      "delegated",
+      "queued",
     ]);
   });
 

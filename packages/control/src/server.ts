@@ -39,6 +39,7 @@ export interface AttachControlSocketOptions {
     eventType: string;
   };
   getAppConversation?: (appId: string, conversationId: string, limit?: number) => unknown;
+  getAppCommitments?: (appId: string, limit?: number) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -145,6 +146,7 @@ export interface ControlSocketCoreOptions {
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
+  getAppCommitments?: AttachControlSocketOptions["getAppCommitments"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
@@ -165,6 +167,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getEvent,
     admitAppInput,
     getAppConversation,
+    getAppCommitments,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -540,6 +543,34 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "app.commitments.get") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          const limit = frame.limit === undefined ? undefined : Number(frame.limit);
+          if (!appId || !getAppCommitments) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId ? "appId is required" : "App commitment reads are unavailable",
+            });
+            continue;
+          }
+          try {
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              appId,
+              commitments: getAppCommitments(appId, limit),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "project.actions.describe") {
           const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
           if (!projectId || !describeProjectActions) {
@@ -666,6 +697,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getEvent,
     admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
+    getAppCommitments: opts.getAppCommitments,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,
