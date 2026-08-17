@@ -240,6 +240,9 @@ CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timest
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_handler ON events(handler, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_metric ON events(metric_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_app_conversation_message
+  ON events(json_extract(data, '$.appId'), json_extract(data, '$.conversationId'), id)
+  WHERE event_type = 'conversation.message.created';
 
 CREATE TABLE IF NOT EXISTS event_traces (
   event_id INTEGER PRIMARY KEY,

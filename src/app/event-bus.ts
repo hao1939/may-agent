@@ -235,6 +235,29 @@ type MetricEventData = {
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
   | {
+      type: "conversation.message.created";
+      source: string;
+      owner: string;
+      data: {
+        appId: string;
+        conversationId: string;
+        author: { kind: "human" | "agent" | "tool" | "command"; id: string };
+        text: string;
+        /** Kept in the event journal for transport/observation, but excluded from conversation context. */
+        transient?: boolean;
+        replyTo?: string;
+        context?: Record<string, unknown>;
+        metadata?: {
+          channel?: string;
+          channelThreadId?: string;
+          channelMessageId?: number;
+          requestId?: string;
+          command?: string;
+        };
+        idempotencyKey?: string;
+      };
+    }
+  | {
       type: "app.input.requested";
       source?: string;
       owner: string;

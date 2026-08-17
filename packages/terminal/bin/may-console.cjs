@@ -9,7 +9,7 @@ const instance = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "backgro
 const daemonAgent = process.env.DAEMON_AGENT || "may";
 const socketPath = path.join(stateDir, "instances", instance, `${daemonAgent}.sock`);
 const source = "may-console";
-const conversationId = `${source}:local-terminal:agent:${daemonAgent}`;
+const conversationId = `${daemonAgent}:primary`;
 
 let socket = null;
 let connected = false;
@@ -21,17 +21,16 @@ let raw = false;
 let debug = false;
 let watchMode = "may"; // may | all | current
 let watchedSessionId = null;
-let showNextStatus = false;
+let pendingStatusView = null;
 let lastDisconnectedMessage = "";
 
 const knownSessions = new Map();
 const sessionsWithText = new Set();
-const renderedConversationRequests = new Set();
+const renderedConversationMessages = new Set();
 const renderedDeliveryOperations = new Set();
 let lastConversationSequence = Date.now();
-let lastCommitments = [];
-let selectedCommitmentRequestId = null;
-const pendingCommitmentRenders = [];
+let lastWork = [];
+const pendingConversationReads = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -167,29 +166,26 @@ function canonicalFrame(type, data = {}, opts = {}) {
 function mayInputFrame(message) {
   const sequence = Math.max(Date.now(), lastConversationSequence + 1);
   lastConversationSequence = sequence;
+  const messageId = `${source}:local-terminal:${sequence}`;
   return {
-    type: "app.input.admit",
-    appId: "may",
-    input: {
-      kind: "message",
+    type: "publish",
+    event: {
+      type: "conversation.message.created",
+      target: { appId: "may" },
       data: {
-        message,
-        ...(selectedCommitmentRequestId
-          ? { context: { selectedWorkRequestId: selectedCommitmentRequestId } }
-          : {}),
+        conversationId,
+        author: { kind: "human", id: messageId },
+        text: message,
+        metadata: { channel: source, channelThreadId: "local-terminal" },
       },
+      idempotencyKey: messageId,
     },
-    source: { kind: "human", id: `${source}:local-terminal:${sequence}` },
-    conversationId,
-    conversationSequence: sequence,
-    channel: source,
-    channelThreadId: "local-terminal",
-    idempotencyKey: `${source}:local-terminal:${sequence}`,
   };
 }
 
 function requestConversation() {
-  return sendFrame(
+  pendingConversationReads.push({ kind: "startup" });
+  const sent = sendFrame(
     {
       type: "app.conversation.get",
       appId: "may",
@@ -198,85 +194,128 @@ function requestConversation() {
     },
     { silent: true },
   );
-}
-
-function requestCommitments(options = {}) {
-  const detailRequestId = typeof options.detailRequestId === "string" ? options.detailRequestId : null;
-  const pending = detailRequestId ? { kind: "detail", requestId: detailRequestId } : { kind: "list" };
-  pendingCommitmentRenders.push(pending);
-  const sent = sendFrame(
-    {
-      type: "app.commitments.get",
-      appId: "may",
-      limit: detailRequestId ? 1 : 20,
-      ...(detailRequestId ? { requestId: detailRequestId } : {}),
-    },
-    { silent: true },
-  );
-  if (!sent) pendingCommitmentRenders.pop();
+  if (!sent) pendingConversationReads.pop();
   return sent;
 }
 
-function renderCommitments(commitments) {
-  if (!Array.isArray(commitments)) return;
-  lastCommitments = commitments;
-  if (commitments.length === 0) {
-    printLine("\nWorking: nothing.\n");
+function requestWork(options = {}) {
+  const detailRequestId = typeof options.detailRequestId === "string" ? options.detailRequestId : null;
+  const all = options.all === true;
+  const transient = options.transient === true;
+  const command = typeof options.command === "string" ? options.command : "/work";
+  const pending = detailRequestId
+    ? { kind: "detail", requestId: detailRequestId, command, transient }
+    : { kind: "list", all, command, transient };
+  pendingConversationReads.push(pending);
+  const sent = sendFrame(
+    {
+      type: "app.conversation.get",
+      appId: "may",
+      conversationId,
+      ...(detailRequestId ? { workRequestId: detailRequestId } : {}),
+      ...(all ? { allWork: true } : {}),
+    },
+    { silent: true },
+  );
+  if (!sent) pendingConversationReads.pop();
+  return sent;
+}
+
+function appendConversationMessage({ author, text, transient = false, metadata = {} }) {
+  const sequence = Math.max(Date.now(), lastConversationSequence + 1);
+  lastConversationSequence = sequence;
+  sendFrame(
+    {
+      type: "publish",
+      event: {
+        type: "conversation.message.created",
+        target: { appId: "may" },
+        data: {
+          conversationId,
+          author,
+          text,
+          ...(transient ? { transient: true } : {}),
+          metadata: { channel: source, ...metadata },
+        },
+        idempotencyKey: `${source}:conversation:${sequence}`,
+      },
+    },
+    { silent: true },
+  );
+}
+
+function presentView(command, text, options = {}) {
+  printLine(text);
+  appendConversationMessage({
+    author: { kind: "command", id: source },
+    text,
+    transient: options.transient === true,
+    metadata: { command },
+  });
+}
+
+function renderWorkList(work, pending) {
+  if (!Array.isArray(work)) return;
+  lastWork = work;
+  const all = pending?.all === true;
+  const command = pending?.command || (all ? "/work all" : "/work");
+  const title = all ? "All work (newest first):" : "Active work:";
+  if (work.length === 0) {
+    presentView(command, `\n${title} nothing.\n`, { transient: pending?.transient === true });
     return;
   }
-  const lines = ["", "Working:"];
-  commitments.forEach((item, index) => {
+  const lines = ["", title];
+  work.forEach((item, index) => {
     const message = typeof item.message === "string" && item.message.trim() ? item.message.trim() : "Request";
-    const state = commitmentStateLabel(item.state);
+    const state = workStateLabel(item.state);
     lines.push(`  ${index + 1}. ${message} — ${state}`);
     if (typeof item.progress === "string" && item.progress.trim()) {
       lines.push(`     ${item.progress.trim()}`);
     }
   });
   lines.push("");
-  printLine(lines.join("\n"));
+  presentView(command, lines.join("\n"), { transient: pending?.transient === true });
 }
 
-function commitmentStateLabel(state) {
+function workStateLabel(state) {
   const labels = {
     queued: "Queued",
     working: "Working",
     analyzing: "Analyzing",
     waiting: "Waiting",
     ready: "Ready",
+    done: "Done",
   };
   return labels[state] || "Working";
 }
 
-function formatCommitmentTime(value) {
+function formatWorkTime(value) {
   const timestamp = Number(value);
   if (!Number.isFinite(timestamp)) return "Unknown";
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return "Unknown";
-  return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+  return date
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d{3}Z$/, " UTC");
 }
 
-function renderCommitmentDetail(commitments, requestId) {
-  if (!Array.isArray(commitments)) return;
-  const index = lastCommitments.findIndex((item) => item && item.requestId === requestId);
-  const selected = lastCommitments.find((item) => item && item.requestId === requestId);
-  const refreshed = commitments.find((item) => item && item.requestId === requestId);
+function renderWorkDetail(work, requestId, command) {
+  if (!Array.isArray(work)) return;
+  const index = lastWork.findIndex((item) => item && item.requestId === requestId);
+  const selected = lastWork.find((item) => item && item.requestId === requestId);
+  const refreshed = work.find((item) => item && item.requestId === requestId);
   if (!refreshed) {
     const message = selected && typeof selected.message === "string" ? selected.message.trim() : "Selected request";
-    printLine(
-      [
-        "",
-        `Work ${index >= 0 ? index + 1 : "item"}:`,
-        `  Request: ${message}`,
-        "  Status: No longer open",
-        "",
-      ].join("\n"),
+    presentView(
+      command,
+      ["", `Work ${index >= 0 ? index + 1 : "item"}:`, `  Request: ${message}`, "  Status: Not found", ""].join("\n"),
     );
-    selectedCommitmentRequestId = null;
     return;
   }
-  if (index >= 0) lastCommitments[index] = refreshed;
-  const message = typeof refreshed.message === "string" && refreshed.message.trim() ? refreshed.message.trim() : "Request";
+  if (index >= 0) lastWork[index] = refreshed;
+  const message =
+    typeof refreshed.message === "string" && refreshed.message.trim() ? refreshed.message.trim() : "Request";
   const progress =
     typeof refreshed.progress === "string" && refreshed.progress.trim()
       ? refreshed.progress.trim()
@@ -288,47 +327,32 @@ function renderCommitmentDetail(commitments, requestId) {
       : result && typeof result.summary === "string" && result.summary.trim()
         ? result.summary.trim()
         : "";
-  printLine(
+  presentView(
+    command,
     [
       "",
       `Work ${index >= 0 ? index + 1 : "item"}:`,
       `  Request: ${message}`,
-      `  Status: ${commitmentStateLabel(refreshed.state)}`,
+      `  Status: ${workStateLabel(refreshed.state)}`,
       `  Progress: ${progress}`,
       ...(resultText ? ["  Result:", ...resultText.split("\n").map((line) => `    ${line}`)] : []),
-      `  Created: ${formatCommitmentTime(refreshed.createdAt)}`,
-      `  Updated: ${formatCommitmentTime(refreshed.updatedAt)}`,
+      `  Created: ${formatWorkTime(refreshed.createdAt)}`,
+      `  Updated: ${formatWorkTime(refreshed.updatedAt)}`,
       "",
     ].join("\n"),
   );
-  // The next natural message can now refer to exactly what the console showed.
-  selectedCommitmentRequestId = requestId;
 }
 
-function renderConversation(turns) {
-  if (!Array.isArray(turns)) return;
-  for (const turn of turns) {
-    // Unfinished turns are summarized once in the work view below instead of
-    // replaying the same request and a synthetic status line in the transcript.
-    if (turn.state === "working") continue;
-    const requestId = typeof turn.requestId === "string" ? turn.requestId : "";
-    const message =
-      turn.input && turn.input.data && typeof turn.input.data.message === "string"
-        ? turn.input.data.message.trim()
-        : "";
-    if (requestId && message && !renderedConversationRequests.has(requestId)) {
-      printConversationText("you", message);
-      renderedConversationRequests.add(requestId);
-    }
-    const deliveries = Array.isArray(turn.deliveries) ? turn.deliveries : [];
-    for (const delivery of deliveries) {
-      const operationId = typeof delivery.operationId === "string" ? delivery.operationId : "";
-      if (!operationId || renderedDeliveryOperations.has(operationId) || delivery.status !== "delivered") continue;
-      if (typeof delivery.text === "string" && delivery.text.trim()) {
-        printConversationText("may", delivery.text.trim());
-      }
-      renderedDeliveryOperations.add(operationId);
-    }
+function renderConversation(messages) {
+  if (!Array.isArray(messages)) return;
+  for (const message of messages) {
+    const id = typeof message.id === "string" ? message.id : "";
+    const text = typeof message.text === "string" ? message.text.trim() : "";
+    if (!id || !text || renderedConversationMessages.has(id)) continue;
+    const kind = message.author && typeof message.author.kind === "string" ? message.author.kind : "agent";
+    const speaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
+    printConversationText(speaker, text);
+    renderedConversationMessages.add(id);
   }
 }
 
@@ -354,9 +378,9 @@ function subscribe(mode = watchMode) {
   return sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source });
 }
 
-function requestStatus() {
-  showNextStatus = true;
-  if (!sendFrame({ type: "status" })) showNextStatus = false;
+function requestStatus(command = "/status") {
+  pendingStatusView = command;
+  if (!sendFrame({ type: "status" })) pendingStatusView = null;
 }
 
 function resolveSessionId(input) {
@@ -468,6 +492,17 @@ function handleEvent(event) {
     return;
   }
 
+  if (event.type === "conversation.message.created") {
+    const data = flatPayload(event);
+    const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata : {};
+    const author = data.author && typeof data.author === "object" ? data.author : {};
+    if (metadata.channel === source && author.id !== source && typeof data.text === "string") {
+      const speaker = author.kind === "agent" ? "may" : author.kind || "notice";
+      printConversationText(speaker, data.text);
+    }
+    return;
+  }
+
   // A delivery channel is already an exact routing decision. Session stream
   // filters must not hide a response and then leave its durable work unresolved.
   if (event.type === "app.response.delivery.requested") {
@@ -503,24 +538,30 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
-      if (event.command === "app.conversation.get") renderConversation(event.turns);
-      if (event.command === "app.commitments.get") {
-        const pending = pendingCommitmentRenders.shift();
-        if (pending?.kind === "detail") renderCommitmentDetail(event.commitments, pending.requestId);
-        else renderCommitments(event.commitments);
+      if (event.command === "app.conversation.get") {
+        const pending = pendingConversationReads.shift();
+        if (pending?.kind === "startup") {
+          renderConversation(event.conversation?.messages);
+          renderWorkList(event.conversation?.work, { all: false, command: "/work", transient: true });
+        } else if (pending?.kind === "detail") {
+          renderWorkDetail(event.conversation?.work, pending.requestId, pending.command);
+        } else {
+          renderWorkList(event.conversation?.work, pending);
+        }
       }
       // Admission is transport bookkeeping. May's durable acknowledgement or
       // answer is the human-visible response.
       return;
     case "error":
-      if (event.command === "app.commitments.get") pendingCommitmentRenders.shift();
+      if (event.command === "app.conversation.get") pendingConversationReads.shift();
       printLine(`[error] ${event.message || "unknown error"}`);
       return;
     case "status":
       {
         const rendered = renderStatus(event.activeAgents);
-        if (showNextStatus || debug || watchMode === "all") printLine(rendered);
-        showNextStatus = false;
+        if (pendingStatusView) presentView(pendingStatusView, rendered);
+        else if (debug || watchMode === "all") printLine(rendered);
+        pendingStatusView = null;
       }
       return;
     case "session.start":
@@ -574,7 +615,6 @@ function connectSocket() {
     sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source }, { silent: true });
     sendFrame({ type: "status" }, { silent: true });
     requestConversation();
-    requestCommitments();
     refreshPrompt();
   });
 
@@ -604,7 +644,7 @@ function connectSocket() {
   socket.on("close", () => {
     connected = false;
     socket = null;
-    pendingCommitmentRenders.length = 0;
+    pendingConversationReads.length = 0;
     if (closing) return;
     refreshPrompt();
     scheduleReconnect();
@@ -625,7 +665,7 @@ function printHelp() {
   printLine(
     [
       "Commands:",
-      "  /work [number]",
+      "  /work [all|number]",
       "  /status, /sessions",
       "  /watch may|all|<sessionId>",
       "  /steer <sessionId> <message>",
@@ -658,24 +698,28 @@ function handleCommand(input) {
       return;
     case "status":
     case "sessions":
-      requestStatus();
+      requestStatus(`/${command}`);
       return;
     case "work":
       if (!rest) {
-        requestCommitments();
+        requestWork({ command: "/work" });
+        return;
+      }
+      if (rest.toLowerCase() === "all") {
+        requestWork({ all: true, command: "/work all" });
         return;
       }
       if (!/^[1-9]\d*$/.test(rest)) {
-        printLine("Usage: /work [positive number]");
+        printLine("Usage: /work [all|positive number]");
         return;
       }
       {
-        const selected = lastCommitments[Number(rest) - 1];
+        const selected = lastWork[Number(rest) - 1];
         if (!selected || typeof selected.requestId !== "string") {
           printLine(`[work] No item ${rest}. Use /work to refresh the list.`);
           return;
         }
-        requestCommitments({ detailRequestId: selected.requestId });
+        requestWork({ detailRequestId: selected.requestId, command: `/work ${rest}` });
       }
       return;
     case "watch": {
@@ -794,7 +838,7 @@ function handleInput(line) {
     watchedSessionId = null;
     subscribe("may");
   }
-  if (sendFrame(mayInputFrame(input))) selectedCommitmentRequestId = null;
+  sendFrame(mayInputFrame(input));
   refreshPrompt();
 }
 

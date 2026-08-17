@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import {
@@ -12,12 +15,12 @@ import {
   listAppInboxAssociatedSessionClaims,
   listAppInboxHealth,
   listAppInboxDeliveries,
-  listAppConversationTurns,
-  listOpenAppCommitments,
+  listAppWork,
   listAppInboxItems,
   listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
+  readAppConversationResource,
   restoreReplayableAppInboxDeliveries,
   stageAppInboxClaimDelivery,
   stageAppInboxProgressDelivery,
@@ -115,50 +118,119 @@ describe("App inbox store", () => {
     });
   });
 
-  it("derives a conversation from requests, exact reply links, and deliveries", () => {
+  it("projects one conversation resource and excludes transient events from context", () => {
     createAppInboxItem(db, {
-      id: "conversation-turn",
+      id: "human-1",
       appId: "may",
-      source: { kind: "human", id: "telegram:123:11" },
-      input: { kind: "message", data: { message: "continue" } },
-      conversationId: "telegram:123",
-      conversationSequence: 11,
-      channel: "telegram",
-      channelMessageId: 11,
-      replyToSourceId: "telegram:123:10",
+      source: { kind: "human", id: "console:1" },
+      input: { kind: "message", data: { message: "show my work" } },
+      conversationId: "may:primary",
+      conversationSequence: 10,
+      channel: "may-console",
+      originEventId: 10,
       now: 100,
     });
-    const claim = claimAppInboxItem(db, "conversation-turn", "worker", 50, 100)!;
-    associateAppInboxClaimSession(db, claim, "session-conversation", 101);
-    const delivery = stageAppInboxClaimDelivery(
-      db,
-      claim,
-      {
-        channel: "telegram",
-        sessionId: "session-conversation",
-        requestId: "app-inbox-human:conversation-turn",
-        result: { summary: "done", response: "Continued." },
-      },
-      102,
+    const insert = db.prepare(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (?, 'conversation.message.created', ?, 'app:may', ?, ?)`,
+    );
+    insert.run(
+      11,
+      "may-console",
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "command", id: "may-console" },
+        text: "Active work: 1 item",
+        metadata: { channel: "may-console", command: "/work" },
+      }),
+      110,
+    );
+    insert.run(
+      12,
+      "runtime",
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "tool", id: "progress" },
+        text: "50%",
+        transient: true,
+        metadata: { channel: "may-console" },
+      }),
+      120,
+    );
+    insert.run(
+      13,
+      "other-app",
+      JSON.stringify({
+        appId: "other",
+        conversationId: "may:primary",
+        author: { kind: "command", id: "other-app" },
+        text: "Must stay outside May's conversation",
+      }),
+      130,
     );
 
-    expect(listAppConversationTurns(db, "may", "telegram:123")).toEqual([
-      {
-        requestId: "conversation-turn",
-        sourceId: "telegram:123:11",
-        replyToSourceId: "telegram:123:10",
-        input: { kind: "message", data: { message: "continue" } },
-        state: "working",
-        deliveries: [
-          expect.objectContaining({
-            operationId: delivery.operationId,
-            kind: "final",
-            text: "Continued.",
-            status: "pending",
+    expect(readAppConversationResource(db, "may", "may:primary")).toMatchObject({
+      id: "may:primary",
+      owner: "may",
+      version: 11,
+      messages: [
+        { id: "console:1", sequence: 10, author: { kind: "human", id: "console:1" }, text: "show my work" },
+        {
+          id: "event:11",
+          sequence: 11,
+          author: { kind: "command", id: "may-console" },
+          text: "Active work: 1 item",
+        },
+      ],
+      work: [{ requestId: "human-1", state: "queued" }],
+    });
+  });
+
+  it("reconstructs the same Conversation resource after reopening durable state", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-conversation-restart-"));
+    const path = join(root, "state.db");
+    let persistentDb = openDatabase(path);
+    try {
+      applyDbSchema(persistentDb);
+      createAppInboxItem(persistentDb, {
+        id: "human-restart",
+        appId: "may",
+        source: { kind: "human", id: "console:restart:1" },
+        input: { kind: "message", data: { message: "remember this" } },
+        conversationId: "may:primary",
+        conversationSequence: 21,
+        channel: "may-console",
+        originEventId: 21,
+        now: 100,
+      });
+      persistentDb.run(
+        `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+         VALUES (?, 'conversation.message.created', 'telegram', 'app:may', ?, ?)`,
+        [
+          22,
+          JSON.stringify({
+            appId: "may",
+            conversationId: "may:primary",
+            author: { kind: "command", id: "telegram" },
+            text: "Active work: remember this — Queued",
+            metadata: { channel: "telegram", command: "/work" },
           }),
+          110,
         ],
-      },
-    ]);
+      );
+      const before = readAppConversationResource(persistentDb, "may", "may:primary");
+
+      persistentDb.close();
+      persistentDb = openDatabase(path);
+      applyDbSchema(persistentDb);
+
+      expect(readAppConversationResource(persistentDb, "may", "may:primary")).toEqual(before);
+    } finally {
+      persistentDb.close();
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("derives a compact work list from unfinished human requests", () => {
@@ -241,7 +313,7 @@ describe("App inbox store", () => {
       now: 150,
     });
 
-    expect(listOpenAppCommitments(db, "may")).toEqual([
+    expect(listAppWork(db, "may")).toEqual([
       {
         requestId: "ready",
         message: "Prepare a recommendation",
@@ -275,13 +347,13 @@ describe("App inbox store", () => {
         updatedAt: 100,
       },
     ]);
-    expect(listOpenAppCommitments(db, "may", { excludeRequestId: "analysis" }).map((item) => item.requestId)).toEqual([
+    expect(listAppWork(db, "may", { excludeRequestId: "analysis" }).map((item) => item.requestId)).toEqual([
       "ready",
       "delegated",
       "queued",
     ]);
     expect(
-      listOpenAppCommitments(db, "may", {
+      listAppWork(db, "may", {
         requestId: "ready",
         includeResultForRequestId: "ready",
         limit: 1,
@@ -295,6 +367,28 @@ describe("App inbox store", () => {
         result: { summary: "Recommendation is ready." },
         createdAt: 145,
         updatedAt: 148,
+      },
+    ]);
+    expect(listAppWork(db, "may", { all: true }).map(({ requestId, state }) => ({ requestId, state }))).toEqual([
+      { requestId: "ready", state: "ready" },
+      { requestId: "completed", state: "done" },
+      { requestId: "delegated", state: "waiting" },
+      { requestId: "analysis", state: "analyzing" },
+      { requestId: "queued", state: "queued" },
+    ]);
+    expect(
+      listAppWork(db, "may", {
+        requestId: "completed",
+        includeResultForRequestId: "completed",
+      }),
+    ).toEqual([
+      {
+        requestId: "completed",
+        message: "Already answered",
+        state: "done",
+        result: { summary: "done" },
+        createdAt: 140,
+        updatedAt: 142,
       },
     ]);
   });
@@ -400,6 +494,8 @@ describe("App inbox store", () => {
       appId: "may",
       source: { kind: "human", id: "event:42" },
       input: { kind: "message", data: { text: "hello" } },
+      conversationId: "may:primary",
+      conversationSequence: 42,
       channel: "telegram",
       now: 100,
     });
@@ -423,6 +519,9 @@ describe("App inbox store", () => {
       result: { summary: "finished", response: "Hello back" },
       delivery: { status: "pending" },
     });
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
+      expect.objectContaining({ author: { kind: "human", id: "event:42" }, text: "hello" }),
+    ]);
     expect(claimAppInboxItem(db, "human-delivery", "worker-2", 50, 200)).toBeNull();
     expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]?.waitingOnDelivery).toBe(1);
 
@@ -465,6 +564,7 @@ describe("App inbox store", () => {
       status: "handling",
       delivery: { status: "uncertain", failureReason: "request outcome unknown" },
     });
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toHaveLength(1);
 
     expect(
       recordAppInboxDeliveryReceipt(
@@ -485,6 +585,10 @@ describe("App inbox store", () => {
       status: "done",
       delivery: { status: "delivered", externalMessageId: "700" },
     });
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
+      expect.objectContaining({ author: { kind: "human", id: "event:42" }, text: "hello" }),
+      expect.objectContaining({ author: { kind: "agent", id: "may" }, text: "Hello back" }),
+    ]);
   });
 
   it("delivers durable progress without completing the request", () => {

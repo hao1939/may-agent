@@ -82,10 +82,11 @@ describe("shared system skills", () => {
     expect(content).not.toContain("`.state/tasks/state.json`");
   });
 
-  it("investigation and dispatch guidance use canonical task resources", () => {
+  it("investigation and dispatch guidance respect host-owned task resources", () => {
     const investigation = readSkill("shared/skills/system-investigation/SKILL.md");
     const dispatch = readSkill("shared/skills/dispatch-hygiene/SKILL.md");
-    expect(investigation).toContain("canonical `.state/tasks/state.json`");
+    expect(investigation).toMatch(/Task persistence is host-private and\s+reconciler-owned/);
+    expect(investigation).not.toContain("`.state/tasks/state.json`");
     expect(investigation).toContain("exactly one correlated");
     expect(investigation).toContain("`app.dependency.completed` wake the exact");
     expect(investigation).not.toContain("project.owner.reviewed");

@@ -11,7 +11,7 @@ import { AppRegistry } from "./app-registry.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { createAppAnalysisCapability } from "./app-analysis-capability.js";
-import { listAppConversationTurns, listOpenAppCommitments } from "./app-inbox-store.js";
+import { readAppConversationResource } from "./app-inbox-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
@@ -347,14 +347,8 @@ export async function runAppRuntime(opts: {
     getStatus: () => manager.status(),
     reportInfo: (message) => bus.emit({ type: "info", message }),
     admitAppInput,
-    getAppConversation: (appId, conversationId, limit) =>
-      listAppConversationTurns(getDb(opts.persistDir), appId, conversationId, limit),
-    getAppCommitments: (appId, limit, requestId) =>
-      listOpenAppCommitments(getDb(opts.persistDir), appId, {
-        limit,
-        requestId,
-        includeResultForRequestId: requestId,
-      }),
+    getAppConversation: (appId, conversationId, options) =>
+      readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });
