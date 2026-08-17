@@ -1,6 +1,7 @@
 # System Model
 
-**Status:** Accepted and implemented.
+**Design status:** Accepted.
+**Implementation status:** Implemented.
 
 May-agent has two primary concepts:
 
@@ -113,9 +114,15 @@ create a new attempt, but it must keep the same request or task identity.
 Queues, leases, traces, metrics, sessions, and projections support these
 records. They never become alternate work owners.
 
+`Conversation may:primary` is one such projection. It reconstructs shared human
+context and work views from messages, May App requests, dependencies, and
+confirmed delivery; it is not another database or owner.
+
 ## Events and time
 
 - Every state-changing input first becomes one event.
+- A human `conversation.message.created` event adds shared May Conversation
+  context and creates one fenced May App request.
 - An addressed `app.input.requested` event creates one durable App request.
 - A declared subscription translates a fact into an App request or task intent.
 - An exact task target wakes only that task.

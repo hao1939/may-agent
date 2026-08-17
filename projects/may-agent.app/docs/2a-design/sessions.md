@@ -54,11 +54,12 @@ conversation: the runtime removes the empty assistant message, retries the same
 user request once, and if the retry is still empty leaves the session `idle`
 with a visible error on the `session.idle` event.
 
-This persistent-chat policy applies to direct agent chat. Ordinary May input
-publishes `app.input.requested`: one linked May request owns one App inbox item,
-and each owner pass uses a bounded job session. A restart may replace that
-session without replacing or replaying the opening event or human request. See
-[Human Control Surfaces](human-control-surfaces.md).
+This persistent-chat policy applies to direct agent chat. Ordinary May Console
+and Telegram input publishes one human `conversation.message.created`: one
+linked May request owns one App inbox item, and each owner pass uses a bounded
+job session. A restart may replace that session without replacing or replaying
+the opening event or human request. See [Human Control
+Surfaces](human-control-surfaces.md).
 
 ## Chat Turn Causality
 

@@ -160,35 +160,34 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 
 ### Human-rooted traces
 
-- Treat `human.input.received` as the transport-neutral boundary/root event for
-  free-form conversational input, not as a request entity.
-- Understand human intention before emitting the semantic child. A question,
-  request for explanation or advice, correction, or uncertain response is not
-  an approval decision. Answer what accepted context supports; when the
-  intended next action remains uncertain, state the likely interpretation and
-  ask one focused question. Keep consequential state pending until the
-  intention is clear.
+- Treat a human `conversation.message.created` on `Conversation may:primary` as
+  both shared durable context and the fenced boundary for one May App request.
+  Do not add `human.input.received`, a second `app.input.requested`, or a mutable
+  current-session lifecycle for the same turn.
+- Understand human intention inside that May request. A question, request for
+  explanation or advice, correction, or uncertain response is not an approval
+  decision. Answer what accepted context supports; when the intended next
+  action remains uncertain, state the likely interpretation and ask one focused
+  question. Keep consequential state pending until the intention is clear.
 - A narrow explicit control reply such as `approve`, `reject`, or `hold` may use
   a deterministic direct path with exact current identity. Route longer,
   mixed, questioning, or uncertain replies to May for meaning-based judgment;
   never default unmatched text to a decision.
-- Emit exactly one semantic child intent from the input router. Use
-  `chat.start.requested` only to create/bind a chat; use
-  `session.steer.requested` for an existing target.
-- Treat a persistent chat session as a conversation container, not a trace.
-  Carry trace context per queued turn through `manager.send()`, cold resume,
-  tools, calls/forks, workflows, CLI delegation, and outbound delivery.
-- Close the semantic intent with the turn's `session.idle` or `session.end`.
-  Do not attach all future turns to the session's original trace.
-- Keep replies to notifications/results in the referenced trace. A standalone
-  follow-up starts a new trace. Never mutate or reopen an old closure; represent
-  rework as a new linked branch.
+- Agent, tool, and command-authored Conversation messages may add meaningful
+  shared context but create no work. `transient: true` adds neither durable
+  context nor work.
+- Treat every human message as its own request. Reply anchors and channel IDs
+  add context; they never reopen an older request or select a session.
+- A session is one replaceable attempt. Carry the exact May request through
+  tools, calls/forks, workflows, CLI analysis, and outbound delivery. Closure
+  belongs to the App result and confirmed delivery, not `session.idle` or
+  `session.end`.
 
 ### Project-intent traces
 
 - Explicit project HTTP/UI intent may persist `project.comment.created`
-  directly as its receipt and trace root. A conversational adapter may emit the
-  same event as the semantic child of `human.input.received`.
+  directly as its receipt and trace root. Conversational intent remains one May
+  request; May delegates a typed child App request when project work is needed.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.

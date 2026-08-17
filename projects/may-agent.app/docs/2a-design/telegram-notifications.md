@@ -1,29 +1,33 @@
 # Telegram Channel
 
 **Design status:** Accepted.
-**Implementation status:** Canonical May App admission, stable reply identity,
-correlated outbound delivery, restart-safe lookup, and bounded concurrent turns
-are implemented. Additional presentation/noise tuning does not change the
-ownership contract.
+**Implementation status:** Shared Conversation admission, stable reply identity,
+correlated outbound delivery, restart-safe lookup, native work reads, and
+bounded concurrent turns are implemented. Additional presentation/noise tuning
+does not change the ownership contract.
 
 ## Purpose
 
-Telegram is a mobile transport for the same human-request contract used by CLI,
-Web, and May Console. It must not create a Telegram-specific owner, queue,
+Telegram is a mobile adapter over the same May-owned Conversation used by May
+Console. It may use Telegram-native commands, replies, buttons, and formatting,
+but it must not create a Telegram-specific owner, queue, context store,
 escalation lifecycle, or completion rule.
 
 ```text
 human Telegram message
   -> normalize chat/topic/message/reply identity
-  -> one May App request
+  -> Conversation may:primary
+  -> one fenced May App request
   -> direct answer or typed child App delegation
   -> May review
   -> correlated delivery operation
   -> delivered / failed / uncertain
 ```
 
-The May App inbox item owns the human request. A Telegram message, event, trace,
-session, notification row, or reply anchor is transport/context evidence only.
+The May App inbox item owns the human request. The Conversation provides shared
+durable context across Telegram and Console. Telegram chat/topic/message IDs,
+traces, sessions, notification rows, and reply anchors are delivery or context
+evidence only.
 
 ## Responsibilities
 
@@ -64,27 +68,27 @@ type TelegramIngress = {
 };
 ```
 
-The adapter derives a stable idempotency key from the provider identity and
-admits one request to the `may` App. Provider redelivery cannot create another
-May item.
+The adapter derives a stable message identity from the provider coordinates and
+publishes one human `conversation.message.created` event for
+`Conversation may:primary`. The Host persists it and admits one request to the
+`may` App. Provider redelivery returns the same event/request receipt and cannot
+create another May item.
 
 The admission receipt means only “validated and durably admitted.” Telegram
 must not display or record semantic completion until the May request and
 required delivery operation reach their terminal states.
 
-## Reply Correlation
+## Reply Context
 
-One chat/topic may contain several unfinished requests. Resolve an inbound
-reply in this order:
+Every ordinary inbound Telegram message creates its own fenced May request. A
+Telegram reply anchor does not reopen, steer, or replace another request. It is
+attached as bounded context so May can understand references and decide whether
+to answer, clarify, or delegate.
 
-1. exact Telegram reply anchor mapped to a May request or prior child result;
-2. exact request/App/task reference carried by the message;
-3. the only plausible unfinished May request in the conversation; or
-4. one focused clarification request.
-
-Never choose the most recent session, latest event, or fuzzy text match as
-durable routing. If correlation is ambiguous, visible clarification is safer
-than attaching the reply to the wrong work.
+May reads the same bounded Conversation and active-work projection available to
+Console. Never choose the most recent session, latest event, or fuzzy text match
+as durable routing. If the human's meaning remains ambiguous, May asks one
+focused clarification inside the new request.
 
 The channel-message index records at least:
 
@@ -94,14 +98,15 @@ type ChannelMessageLink = {
   chatId: string;
   topicId?: string;
   messageId: string;
+  conversationId: "may:primary";
   mayRequestId: string;
   deliveryId?: string;
   traceId?: string;
 };
 ```
 
-Legacy context fields may be projected for history, but new routing uses the
-canonical May request and delivery identities.
+Legacy context fields may be projected for history, but new admission uses the
+shared Conversation and canonical May request/delivery identities.
 
 ## May Execution And Session Loss
 
@@ -194,15 +199,19 @@ trace or conversation.
 
 Explicit Telegram commands may map to deterministic typed controls such as:
 
+- read `/work`, `/work all`, or an exact work item from the shared Conversation;
 - steer/cancel an exact session;
 - invoke a declared App action;
 - submit an exact approval/Condition response;
 - status; and
 - authorized reload/restart.
 
-The adapter validates the exact target and records the control result. Bare
-cancel never expands to cancel-all. An ordinary language request still enters
-May admission rather than a command-specific ownership path.
+The adapter validates the exact target and records the control result. A
+human-requested read result that may shape the next turn is appended as a
+command-authored Conversation message after Telegram confirms delivery; it
+creates no work. Bare cancel never expands to cancel-all. Ordinary language
+still enters Conversation admission rather than a command-specific ownership
+path.
 
 ## Secrets And Presentation
 
@@ -246,9 +255,11 @@ missing human closeout.
 Telegram integration tests prove:
 
 - provider redelivery admits exactly one May request;
-- ordinary input uses the same May App path as other transports;
-- exact reply anchors isolate concurrent requests;
-- ambiguous replies clarify instead of guessing;
+- ordinary input and Console input use `Conversation may:primary`;
+- native command output becomes cross-channel context without creating work;
+- transient presentation creates neither context nor work;
+- reply anchors add context while each inbound message keeps its own request;
+- ambiguous references clarify instead of guessing;
 - direct answers close only after terminal delivery evidence;
 - delegated child completion wakes and resumes the exact May parent;
 - restart during May handling or delivery preserves identity;
@@ -256,15 +267,18 @@ Telegram integration tests prove:
 - proactive attention is one May child request, not an event-pair lifecycle;
 - uncertain sends do not duplicate blindly;
 - explicit controls target exact identities; and
-- secrets never enter prompts, facts, traces, or outbound diagnostics.
+- secrets never enter prompts, facts, traces, or outbound diagnostics;
+- confirmed output is readable from Console; and
+- restart reconstructs the same Conversation projection.
 
 ## Integrity Checklist
 
-- One human turn requiring a result has one May App request.
+- Telegram and Console share one `Conversation may:primary`.
+- One durable human message has at most one May App request.
 - One response attempt has one delivery operation.
-- Telegram identity is context, not work authority.
+- Telegram identity is delivery/context evidence, not Conversation or work authority.
 - May owns conversation and final wording; domain Apps own project outcomes.
 - Cross-App/human attention uses durable parent-child request dependencies.
 - Sessions, events, notifications, and traces never replace request/task state.
-- Restart and reply correlation preserve exact request identity.
+- Restart reconstructs Conversation and preserves exact request identity.
 - Delivery status is honest and separate from semantic completion.

@@ -70,10 +70,11 @@ internal producers may publish an unregistered record-only fact. External
 adapters admit only explicit type/schema allowlists. Logging, metrics, tracing,
 and stream observers never count as the one required accepter.
 
-`app.input.requested`, direct-agent `chat.start.requested`, exact session
-controls, and Host lifecycle controls are required. Ordinary reported facts
-are record-only. A required event may remain `recorded` after persistence when
-its route temporarily fails; recovery retries the same event and identity.
+Human `conversation.message.created`, `app.input.requested`, direct-agent
+`chat.start.requested`, exact session controls, and Host lifecycle controls are
+required. Ordinary reported facts and non-human Conversation context are
+record-only. A required event may remain `recorded` after persistence when its
+route temporarily fails; recovery retries the same event and identity.
 
 ## Routing outcomes
 
@@ -114,7 +115,7 @@ app.input.requested target.appId=<app>
   -> return the request link
 ```
 
-- human input publishes this event for the `may` App;
+- non-conversation callers may publish this event for the `may` App;
 - App delegation creates a child App inbox item;
 - an App action translates validated parameters to App input;
 - an input schedule creates a time-correlated App input; and
@@ -128,6 +129,21 @@ The inbox item persists `pending -> handling -> done`, with claims, lease
 fencing, dependency links, restart recovery, and delivery correlation owned by
 the host. The App sees only its typed request and dependency observation. It
 returns `complete`, `delegate`, or `task`.
+
+May human adapters use a more expressive required event:
+
+```text
+conversation.message.created target.appId=may
+  + conversationId=may:primary
+  + author.kind=human
+  -> create or find one durable May request
+```
+
+The human message is both shared Conversation context and the fenced ingress
+for one request. Agent, tool, and command authors add context but no work;
+`transient: true` adds neither durable context nor work. This special route
+does not replace generic `app.input.requested` for schedules, App actions,
+delegation, or non-conversation callers.
 
 ## Delivery acceptance
 
@@ -179,7 +195,9 @@ for audit but cannot replace inbox/task/delivery completion.
 ## Human-rooted flow
 
 ```text
-app.input.requested target.appId=may
+conversation.message.created target.appId=may
+  conversationId=may:primary
+  author.kind=human
   -> linked May inbox request
   -> direct result or child App dependency
   -> May result review
@@ -188,9 +206,10 @@ app.input.requested target.appId=may
   -> May request done
 ```
 
-A persistent chat is a conversation container, not the request authority or a
-permanent trace. Each admitted human turn has its own request identity. Reply
-anchors and traces help recover context; they do not decide which unfinished
+The Conversation is a bounded read model reconstructed from messages, admitted
+requests, dependencies, and confirmed delivery. It is not another database or
+work owner. Each admitted human turn has its own request identity. Reply anchors
+and channel coordinates add context; they do not decide which unfinished
 request owns the response.
 
 Direct typed runtime controls may bypass owner judgment, but their result and
@@ -204,7 +223,8 @@ the event stream into a work queue.
 
 ### Human and execution
 
-- normalized human ingress and channel delivery facts;
+- `conversation.message.created` for shared May human context and admission;
+- channel delivery facts;
 - `session.start`, `session.idle`, and `session.end`;
 - workflow/execution result and failure facts;
 - targeted cancellation, approval, and runtime-control requests where a shared
@@ -312,3 +332,5 @@ Detailed procedures live in
 - Retention protects causal evidence referenced by unfinished work.
 - Compatibility normalization is isolated at ingress and cannot create a
   second actionable route.
+- Conversation projection is reconstructed from existing durable evidence and
+  never becomes another work store.

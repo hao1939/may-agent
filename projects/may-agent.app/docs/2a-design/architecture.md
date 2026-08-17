@@ -1,6 +1,7 @@
 # Architecture
 
-**Status:** Accepted and implemented.
+**Design status:** Accepted.
+**Implementation status:** Implemented.
 
 Read [system-model.md](system-model.md) first. The architecture follows one
 split:

@@ -1,6 +1,7 @@
 # Host And App Boundary
 
-**Status:** Accepted and implemented.
+**Design status:** Accepted.
+**Implementation status:** Implemented.
 
 There is one architectural split:
 

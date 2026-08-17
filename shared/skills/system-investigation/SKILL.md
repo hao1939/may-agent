@@ -44,8 +44,8 @@ truth.
 - DB tables: use `query_db("pragma table_info(<table>)")` when available.
 - Handler/workflow contracts: read the handler or workflow source first.
 - Agent/project conventions: read the relevant V3 `project.json`, `app.ts`,
-  canonical `.state/tasks/state.json`, generated `.state/tasks/tree.json`
-  projection when useful, `AGENTS.md`, or manual page. Treat `project.md` as
+  host-generated task projection when useful, `AGENTS.md`, or manual page.
+  Task persistence is Host-private and reconciler-owned. Treat `project.md` as
   legacy compatibility material only.
 
 If `query_db` is unavailable, use a bounded readonly runtime query, not

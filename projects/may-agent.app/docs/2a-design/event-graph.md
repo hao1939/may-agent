@@ -73,12 +73,13 @@ must show the session as disconnected; the UI must not repair it heuristically.
 ## Human-Rooted Trace Contract
 
 Ordinary free-form input has one semantic root. The adapter publishes
-`app.input.requested` for May and attaches trusted human/channel provenance.
-That event admits one durable May App request whose identity, not the trace,
-owns eventual handling:
+`conversation.message.created` for `Conversation may:primary` and attaches
+trusted human/channel provenance. That event admits one durable May App request
+whose identity, not the trace or Conversation projection, owns eventual
+handling:
 
 ```text
-app.input.requested (target.appId=may)
+conversation.message.created (target.appId=may, author.kind=human)
   -> linked May App request
     -> bounded owner session
       -> App result
@@ -86,9 +87,14 @@ app.input.requested (target.appId=may)
           -> channel.delivery.completed
 ```
 
-Historical `human.input.received -> app.input.requested` chains remain valid
-compatibility evidence, but new ingress does not create two events for one
-human turn.
+Historical `human.input.received -> app.input.requested` and direct
+`app.input.requested` human roots remain valid compatibility evidence, but new
+Console and Telegram ingress does not create two events for one human turn.
+
+Agent, tool, and command-authored Conversation messages add context without a
+request link. Transient messages add neither durable context nor work. The
+Conversation read reconstructs messages and work from existing durable records;
+it is not another causal or mutable work graph.
 
 Deterministic controls instead emit one exact `session.steer.requested`,
 `session.cancel.requested`, `project.approval.submitted`, or
@@ -621,7 +627,7 @@ metric.breach
 Conditions are event attributes or link labels:
 
 ```text
-human.input.received
+conversation.message.created (author.kind=human)
   -> app.dependency.completed  data.outcome=answered
 
 project.test_run.completed
@@ -659,7 +665,7 @@ opening event:
 domain App request/task
   -> child May App request
   -> outbound delivery operation
-  -> human.input.received fact
+  -> conversation.message.created (author.kind=human)
   -> correlated May App result
   -> app.dependency.completed fact
   -> source App request/task resumes
@@ -724,7 +730,7 @@ compact attributes and references:
 Projected trace:
 
 ```text
-human.input.received
+conversation.message.created
   -> session.start
   -> llm.turn.completed
   -> tool.call.completed
@@ -738,7 +744,7 @@ The trace should make review concrete:
 | Question | Trace answer |
 |----------|--------------|
 | Did the event reach its declared route? | Event delivery records show the selected App inbox/task/exact-wake/observation disposition. |
-| Did May receive the human reply? | `human.input.received` exists under the prior `message.created`. |
+| Did May receive the human reply? | A human `conversation.message.created` exists with its reply/context anchor and linked May request. |
 | Did May close the human-attention request? | The exact May App child has a correlated result and terminal delivery evidence. |
 | Did the source consume the result? | Its dependency is completed and the exact parent App request/task resumed. |
 | Did the LLM/tool fail? | Detail nodes show missing or failed `tool.call.completed`. |

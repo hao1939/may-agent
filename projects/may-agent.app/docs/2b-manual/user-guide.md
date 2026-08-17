@@ -209,8 +209,8 @@ Control a running instance via Unix socket:
 # Watch events
 socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Send input through the compatibility socket frame. New adapters emit
-# human.input.received and one canonical semantic child intent.
+# Send input through the compatibility socket frame. May Console and Telegram
+# instead publish one human conversation.message.created event for may:primary.
 echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Send a canonical async message

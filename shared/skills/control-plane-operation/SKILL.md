@@ -22,7 +22,7 @@ Use this skill when you need to interact with may-agent runtime behavior:
 Use the control plane first.
 
 ```text
-conversation input -> May App inbox -> answer or delegation -> delivery
+conversation message -> Conversation may:primary -> fenced May App request -> result -> delivery
 project comment fact -> declared App subscription -> correlated App inbox request
 system fact -> task subscription, exact task wake, App subscription, or observation
 ```
@@ -47,7 +47,7 @@ only, and should normally live behind SDK/query/metrics helpers.
 |---|---|
 | Normal project request | Project comment ingress -> declared App subscription -> correlated App request |
 | Repeated stable app automation | Discover a typed App action -> validate -> App input admission |
-| Conversational human input | Admit one request to the `may` App |
+| Conversational human input | Publish a human Conversation message; Host admits one fenced `may` request |
 | Task-enabled project judgment | App `tasks.resolve` -> stable task -> resolved owner or owner-owned workflow |
 | Runtime maintenance callback | Narrow internal handler with no domain work authority |
 | App workflow live reads | Scoped `ctx.read` or workflow-collected context |

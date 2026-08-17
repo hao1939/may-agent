@@ -220,10 +220,11 @@ Human control surfaces may use:
 $verify-change review and verify the current patch
 ```
 
-Transport normalization creates `human.input.received`, then admits ordinary
-May input as one `app.input.requested`. Explicit direct-agent input may instead
-start or steer a named execution session. The selected skill is bounded
-owner/execution context; it is never another request or ownership record.
+May Console and Telegram publish one human `conversation.message.created` on
+`Conversation may:primary`; Host admission derives one fenced May App request.
+Explicit direct-agent input may instead start or steer a named execution
+session. The selected skill is bounded owner/execution context; it is never
+another request or ownership record.
 
 ### Explicit runtime and delegation invocation
 

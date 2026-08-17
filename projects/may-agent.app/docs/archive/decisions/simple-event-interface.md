@@ -4,6 +4,14 @@
 **Scope:** One event boundary for Web, CLI, console, integrations, Host code,
 and App-produced output
 
+**Conversation refinement:** May Console and Telegram now use one human
+`conversation.message.created` event on `Conversation may:primary`. That event
+is the shared-context message and the required route that admits one fenced May
+App request. Generic `app.input.requested` remains the addressed-input event for
+App actions, schedules, delegation, and non-conversation callers. This is a
+specialized event type on the same `publish/get/subscribe` interface, not a
+second ingress mechanism.
+
 ## Decision
 
 Use one event interface for every state-changing input:
@@ -222,19 +230,22 @@ App request was created or found by idempotency key. The receipt links that
 request. Completion remains the App request's result, not a mutation of the
 opening event.
 
-Ordinary human input therefore needs only one semantic ingress event:
+Ordinary May Conversation input therefore still needs only one semantic ingress
+event, refined after this decision was accepted:
 
 ```text
-app.input.requested target.appId=may
+conversation.message.created target.appId=may
+  conversationId=may:primary
+  author.kind=human
   -> May App request
   -> optional child App request or direct result
   -> channel delivery
 ```
 
-The adapter attaches human/channel provenance. It does not first publish a
-second transport-receipt event. Historical `human.input.received` events remain
-traceable compatibility evidence, but new ingress does not need two events to
-represent one input.
+The adapter attaches human/channel provenance to that message. It does not
+first publish a second transport-receipt event or separately publish
+`app.input.requested`. Historical `human.input.received` and direct human
+`app.input.requested` events remain traceable compatibility evidence.
 
 App-to-App delegation uses the same event semantics without exposing Host
 mechanics to App code:

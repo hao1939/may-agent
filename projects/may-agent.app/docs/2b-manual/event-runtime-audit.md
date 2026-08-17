@@ -145,11 +145,10 @@ For human-rooted work, verify the trace plus durable App lineage. One trace is
 not expected to own every asynchronous attempt:
 
 ```text
-human.input.received
-  -> exactly one semantic intent: app.input.requested or deterministic control
-    -> exact App inbox item/source reference
-      -> bounded owner attempt and optional child App/task dependency
-        -> App result and correlated channel delivery operation
+conversation.message.created (target.appId=may, author.kind=human)
+  -> exact May App inbox item/source reference
+    -> bounded owner attempt and optional child App/task dependency
+      -> App result and correlated channel delivery operation
 ```
 
 Also check that each May App request has one human intent, that bookkeeping
@@ -159,6 +158,10 @@ inside and between observed attempts; the inbox, dependency, and delivery IDs
 supply eventual-handling authority across restarts. Direct-agent
 persistent-chat turns, if used, must have distinct traces unless reply context
 links them.
+
+For Conversation reads, also verify that non-human semantic messages create no
+May request, transient messages do not replay, and only confirmed delivery is
+projected as seen human output.
 
 Trace tests should cover new May requests, later/corrective requests, approval,
 cancellation, App delegation and delivery, failure, and recovery. Compatibility

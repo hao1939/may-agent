@@ -75,7 +75,7 @@ Examples:
 
 | Human intent | Canonical path |
 | --- | --- |
-| Ordinary conversation | Publish `app.input.requested` for the `may` App |
+| May conversation adapter | Publish human `conversation.message.created` for `Conversation may:primary` |
 | Explicitly steer/cancel session | Publish an exact required session event |
 | Comment on project | Publish `project.comment.created`; declared App subscription may admit a correlated request |
 | Invoke App action | Discover schema, validate, call `toInput`, admit App request |

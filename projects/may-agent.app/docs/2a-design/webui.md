@@ -159,7 +159,7 @@ uses the shared `publish` operation. Examples:
 
 | Human intent | Canonical path |
 | --- | --- |
-| Ordinary human request | Required `app.input.requested` event targeting `may` |
+| Future May chat | Human `conversation.message.created` on `Conversation may:primary` -> fenced May App request |
 | Steer an active session | Required exact session event linked to its May request when applicable |
 | Comment/steer project | Publish `project.comment.created`; the declared App subscription admits one correlated Agent App request |
 | Invoke declared App action | Discover schema, validate input, translate and admit the App input |

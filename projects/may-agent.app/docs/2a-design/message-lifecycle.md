@@ -1,152 +1,124 @@
 # Message Lifecycle
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through May App admission, typed
-delegation, exact dependencies, and correlated channel delivery.
+**Implementation status:** Implemented for May Console and Telegram.
 
-Messages carry information. App requests and tasks own work. Execution sessions
-are replaceable attempts.
+## Mental model
 
-## The Loud Rule
+> **May owns the Conversation. Apps own work and outcomes.**
 
-> **May owns the conversation. Apps own the work.**
-
-May is Hao's immediate bridge to the App system. For every admitted human
-request, May either:
-
-- answers directly;
-- asks one focused clarification;
-- rejects the request with a reason; or
-- delegates one typed child request to the accountable App.
-
-May owns no standing schedules or task attachment. A domain App may complete a
-delegated request directly or attach durable desired work to its task
-reconciler. The parent May request remains unfinished until the exact child
-result is available and May has produced the final human response.
-
-## Ordinary Human Input
-
-Console, Web, Telegram, and control clients normalize ordinary May input onto
-one path:
+One stable resource represents the human conversation:
 
 ```text
-human.input.received
-  -> app.input.requested (appId=may)
-    -> durable May App inbox item
-      -> bounded owner attempt
-        -> direct result
-           or typed child App dependency
-             -> child result
-               -> May review
-        -> app.response.delivery.requested
-          -> channel delivery terminal state
+Conversation may:primary
 ```
 
-The May inbox item is the durable request authority. A trace explains causality
-inside and between attempts; it does not replace the inbox item. A session may
-finish, fail, or be replaced without losing the request.
+Console and Telegram are adapters over that resource. They may accept commands
+and render content differently. Provider chat, topic, terminal, and message IDs
+are delivery coordinates, not Conversation identity.
 
-Every ordinary human turn creates its own inbox item. Conversation identity,
-reply anchors, nearby requests, and durable preferences provide bounded
-context, but later text never implicitly steers or wakes a mutable “current
-session.”
+The lifecycle has only three relevant objects:
 
-## Explicit Session Control And Direct Chat
+- a Conversation message records durable shared context;
+- an App inbox request is one independently fenced unit of work;
+- a delivery receipt proves what reached a human surface.
 
-Session control is deterministic and always names its target:
+Do not add a second chat lifecycle, commitment controller, conversation store,
+or adapter-local context protocol.
+
+## Admission
+
+Every May human surface publishes the same semantic event:
 
 ```text
-session.steer.requested(sessionId, message)
-session.cancel.requested(sessionId)
-session.cancel_all.requested
+conversation.message.created
+  target: app:may
+  data.conversationId: may:primary
+  data.author.kind: human
 ```
 
-An explicitly addressed non-May agent may use direct chat:
+The Host persists the event and admits one idempotent May App inbox request
+before acknowledging it. The message ID is the retry fence. Every addressed
+human message keeps its own request identity and result, even when several
+requests depend on the same project task or analysis.
+
+Other authors use the same message envelope with different behavior:
+
+| Author | Durable Conversation context | Creates work |
+| --- | ---: | ---: |
+| `human` | Yes | One fenced App request |
+| `agent` | Yes | No |
+| `tool` | Yes, when meaningful to later turns | No |
+| `command` | Yes, when the human may refer to the view | No |
+| Any author with `transient: true` | No | No |
+
+Transient messages may drive a progress bar, reconnect notice, or notification,
+but do not advance Conversation version, replay after restart, or enter May's
+context.
+
+## Reconciliation
+
+May receives the current request plus one bounded Conversation projection:
 
 ```text
-chat.start.requested(agent != may)
-  -> persistent direct-agent session
-    -> session.idle
+human message
+  -> one May App inbox request
+  -> Conversation context + other active work
+  -> direct result, child App, task, session, or bounded CLI analysis
+  -> exact dependency completion wakes the same request
+  -> reviewed App result
+  -> channel delivery
 ```
 
-That chat session is execution context only. It owns neither May App input nor
-domain work. Ordinary May input never resumes it. Each direct-chat turn retains
-its own trace even when the session ID is reused.
+The workflow or agent may finish synchronously. Long-running work attaches an
+exact durable dependency and ends the current attempt. A later fact wakes the
+same request. Repeating the human prompt or creating replacement work is not
+recovery.
 
-## App And Agent Messages
+Project Apps remain responsible for project outcomes. May states intent,
+constraints, approval bounds, and expected evidence. A project App decides its
+task shape, workflow, waits, retries, and terminal proof.
 
-`message.created` is a durable communication fact, not a generic work queue.
+## Conversation projection
 
-- A message addressed to an agent owned unambiguously by one App may be
-  admitted as one correlated App inbox request.
-- A human-directed message is a notification and requires channel-delivery
-  evidence.
-- Cross-App work uses a typed child App request and exact dependency, not a
-  message acknowledgement.
-- Desired long-running outcomes use canonical App tasks.
-- Unknown or ambiguous addressed messages remain unaccepted; no generic owner
-  fallback invents work.
+The Conversation is reconstructed from existing durable evidence:
 
-The historical “created -> delivered -> resolved” message state machine is not
-the current ownership model. Request completion belongs to App inbox and
-dependency records. Human delivery belongs to a correlated delivery operation.
+- admitted human App inbox items;
+- delivered May responses and progress;
+- durable agent/tool/command Conversation events;
+- active or historical human work derived from App inbox and dependency state.
 
-## Closure Rules
+There is no separate Conversation database. Pending, failed, or uncertain May
+delivery is not projected as something the human saw. Restart must reconstruct
+the same bounded resource from durable state.
 
-- A direct May answer completes only after its response reaches the terminal
-  delivery state required by the channel's certainty policy.
-- A delegated May request waits for the exact child App result, then completes
-  only after May reviews it and the final response reaches terminal delivery.
-- A domain App request that attaches task work waits for the exact task
-  dependency; task completion alone does not complete the parent request until
-  the App records its disposition.
-- An outbound notification is not a request. It is complete only as a delivery
-  operation, and an uncertain send is never retried blindly.
-- A deterministic control is complete when its controller records the
-  correlated outcome; it does not create an App owner pass.
+`/work`, `/work all`, and `/work N` are Console read shortcuts over this
+projection. Telegram may expose native commands, buttons, or different layout.
+When a requested view may shape the next turn, the adapter records a concise
+command-authored semantic message representing what its human saw. Formatting
+and markup stay adapter-local.
 
-Bookkeeping acceptance is never semantic completion.
+## Delivery
 
-## Recovery
+Creating a message is not proof of delivery.
 
-At startup, the App inbox rescans durable unfinished items. An interrupted
-owner claim becomes an exact session wait or is fenced and replaced according
-to the observed session state. Completed dependencies wake the same parent
-request. Pending delivery operations follow their channel certainty policy.
+- Human ingress is accepted after durable event persistence and App admission.
+- May output enters the seen Conversation only after confirmed channel delivery.
+- A failed or uncertain delivery remains visible in the work projection for
+  review and is never blindly replayed.
+- A later human turn may arrive from another adapter; it still sees the shared
+  durable Conversation.
 
-Recovery never:
+## Invariants
 
-- reconstructs work from a transcript;
-- resumes the latest May session;
-- promotes a worker artifact into request authority;
-- infers a parent from similar text; or
-- resends an uncertain external delivery without review.
-
-This keeps the eventual-handling guarantee in one place: the owning App record.
-
-## Delivery Convention
-
-Reserve the delivery operation before sending. Carry its operation ID, App
-inbox item ID, request ID, channel, and reply anchor through the transport.
-Record a terminal delivery observation only when the channel supplies the
-required evidence.
-
-Web and attached socket clients can acknowledge after rendering the exact
-response. Telegram uses its provider result and stored reply context. A process
-crash after an external send but before confirmation is uncertain, not failed
-and not safely retryable.
-
-## Review Checklist
-
-For every human-rooted request, verify:
-
-1. one normalized human input produced one idempotent `app.input.requested`
-   event and linked May App admission;
-2. one durable inbox item owns the request;
-3. every delegated child or task wait uses an exact dependency identity;
-4. owner attempts are bounded and replaceable;
-5. the authored App result is distinct from execution/session success; and
-6. the final channel delivery is correlated to the same request.
-
-Any design that needs a global current May session, a second message queue, or
-an uncorrelated owner event violates this lifecycle.
+1. Console and Telegram map ordinary May interaction to `may:primary`.
+2. Adapter presentation may differ; semantic identity and work do not.
+3. Every durable human message admits at most one App inbox request.
+4. Agent/tool/command messages never create human work.
+5. Transient messages never enter durable context or replay.
+6. Dependency completion wakes the exact request that attached it.
+7. Each addressed request retains its own result.
+8. May output is seen only after confirmed delivery.
+9. Restart reconstructs Conversation; it does not restore correctness from a
+   mutable current chat session.
+10. Project outcomes remain owned by their Apps.

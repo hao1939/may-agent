@@ -1,9 +1,7 @@
 # Design: May Console
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for the focused terminal contract below;
-work and attention summaries still depend on the broader conversation read
-model.
+**Implementation status:** Implemented for the focused terminal contract below.
 **Aligned with:** `human-control-surfaces.md`, `runtime.md`, `sessions.md`,
 `events.md`, `webui.md`, `web-terminal.md`
 
@@ -25,7 +23,7 @@ The daemon owns event routing and execution. Apps own durable work.
 ```text
 human text
   -> may-console
-  -> human.input.received
+  -> Conversation may:primary
   -> one bounded May turn
   -> direct answer or app-owned continuation
   -> later material update, decision, or verified closeout
@@ -75,15 +73,16 @@ change where bare text goes.
 browser or terminal
   -> may-console process
     -> daemon Unix socket
-      -> command router
-        -> bounded May session or explicit session control
+      -> Event Interface
+        -> May App inbox or explicit session control
 ```
 
 | Layer | Responsibility |
 |---|---|
 | `may-console` | Readline, command parsing, quiet event rendering, reconnect |
 | daemon socket | Framing, read controls, durable intent ingress |
-| command router | Resolve human input into a bounded May turn or explicit control |
+| Event Interface | Persist and route one validated event |
+| May App inbox | Fence each human message and reconcile it with shared Conversation context |
 | app owner | Accept, reconcile, wait for, and close durable work |
 | execution manager | Run, steer, cancel, resume, and persist session attempts |
 
@@ -99,19 +98,25 @@ The socket path comes from:
 | `DAEMON_INSTANCE` or `INSTANCE` | Instance, default `background` |
 | `DAEMON_AGENT` | Interface agent, default `may` |
 
-On connection, the console sends only a subscription and status request:
+On connection, the console subscribes for May delivery, reads status, and
+restores the bounded Conversation resource, including its active-work
+projection. All three operations are passive:
 
 ```json
-{ "type": "subscribe", "sessions": ["*"] }
+{ "type": "subscribe", "sessions": [], "deliveryChannel": "may-console" }
 ```
 
 ```json
 { "type": "status" }
 ```
 
-Bounded May turns are separate execution sessions, so the legacy `chat`
-subscription cannot find all of them. The console subscribes broadly and
-filters locally for the normal May view. `/watch all` exposes the broad stream.
+```json
+{ "type": "app.conversation.get", "appId": "may", "conversationId": "may:primary" }
+```
+
+Bounded May turns are separate execution sessions. Normal mode subscribes only
+to May's exact delivery channel; `/watch` explicitly adds session streams when
+the human asks to inspect them.
 
 Startup must not emit a state-changing event.
 
@@ -122,37 +127,27 @@ conversation:
 
 ```json
 {
-  "type": "human.input.received",
-  "source": "may-console",
-  "owner": "agent:may",
+  "type": "conversation.message.created",
+  "target": { "appId": "may" },
   "data": {
-    "actor": "human",
+    "conversationId": "may:primary",
+    "author": { "kind": "human", "id": "may-console:local-terminal:..." },
     "text": "review Gym",
-    "conversation": {
-      "id": "may-console:local-terminal:agent:may",
-      "channel": "may-console",
-      "channelThreadId": "local-terminal"
-    },
-    "target": { "agent": "may" },
-    "context": { "forceNew": true }
+    "metadata": { "channel": "may-console" }
   }
 }
 ```
 
-The event does not contain a session target. The command router starts one
-bounded May turn and keeps the human trace attached. A short answer may return
-during that turn. If an app accepts durable work, the May turn may finish while
-the app continues. Later progress or closeout does not depend on resuming the
-same May session.
+The event does not contain a session target. The Event Interface persists it;
+the App runtime admits exactly one fenced May inbox request; and May reconciles
+that request with the shared Conversation. A short answer may return during
+that turn. If an App accepts durable work, the May turn may finish while the
+App continues. Later progress or closeout does not depend on resuming the same
+May session.
 
-After the socket durably accepts the event, the console prints an honest
-receipt:
-
-```text
-[accepted #1234] May is handling this turn.
-```
-
-Acceptance is not completion.
+The console does not print the transport-level `ok` receipt in normal mode.
+That receipt proves admission, not useful conversational progress. May's
+durable acknowledgement, answer, or `/work` view is the human-visible state.
 
 ## Explicit session control
 
@@ -182,6 +177,9 @@ unambiguous match. Unknown or ambiguous IDs fail locally.
 | `/help` | Print local help |
 | `/status` | Read compact daemon status |
 | `/sessions` | List known execution sessions |
+| `/work` | Show active May work |
+| `/work all` | Show all May work, newest first |
+| `/work N` | Show item `N` from the last work list, including its result |
 | `/watch may` | Return to the quiet May view |
 | `/watch all` | Show all subscribed runtime events |
 | `/watch <sessionId>` | Show one session without changing input routing |
@@ -199,15 +197,23 @@ unambiguous match. Unknown or ambiguous IDs fail locally.
 never create a sticky input target. Commands require `/`; the word `status` in
 ordinary text is a message to May, while `/status` is the read-only control.
 
-Future `/work` and `/attention` commands may read the shared conversation view
-once that read model is available. They must not introduce console-owned state.
+Read commands remain part of the Conversation the human sees. The Console
+appends an explicitly requested view as a command-authored durable message, so
+May receives the same text the human saw even when the next turn arrives from
+Telegram. Automatic reconnect snapshots use `transient: true` and do not enter
+May's bounded context. Neither path creates Console-local presentation state,
+a selection protocol, or a work store.
+
+This is a semantic contract, not a cross-channel rendering contract. Console
+owns terminal command parsing and text layout. Telegram may use native commands,
+buttons, and a different layout while reading the same Conversation projection
+and appending the semantic view its human received.
 
 ## Rendering
 
 Normal mode is a human conversation, not an operations log. It shows:
 
 - connection state;
-- acceptance receipts;
 - May's streamed response or terminal summary;
 - human-directed messages;
 - failed May turns;
@@ -220,7 +226,7 @@ detail.
 | Event | Normal rendering |
 |---|---|
 | `connected` | One connection line |
-| `ok` for `human.input.received` | Accepted receipt, never “done” |
+| `ok` for `publish` | Hidden transport bookkeeping |
 | `status` | Requested session table |
 | May `text` | Stream response text |
 | May `session.end` | Fallback summary, or visible failure |
@@ -254,7 +260,7 @@ If the daemon socket closes, May Console:
 2. keeps the prompt and terminal process alive;
 3. retries with bounded backoff;
 4. restores the current watch subscription;
-5. requests fresh status.
+5. requests fresh status and the current Conversation resource.
 
 Input while disconnected fails locally and is not queued. Reconnect preserves
 presentation preferences such as watch, debug, and raw mode. It does not
@@ -294,17 +300,19 @@ does not use them.
 - `projects/may-agent/packages/terminal` owns Web terminal PTY profiles.
 - `projects/may-agent/packages/control` owns socket framing and persistence
   acknowledgment.
-- daemon command routing owns bounded May turns and explicit session control.
+- the Event Interface and App runtime own durable admission and routing.
+- the May App owns bounded May turns and interpretation of Conversation context.
 - apps own durable work and its evidence.
 
 ## Test contract
 
 Tests cover the behavior boundary:
 
-- startup sends only broad subscription and status frames;
-- bare text emits `human.input.received` for May with no session target;
+- startup sends only passive subscription, status, and Conversation-read frames;
+- bare text emits `conversation.message.created` for `may:primary` with no session target;
 - each bare message requests a bounded May turn even when old sessions exist;
-- the acceptance receipt says accepted, not completed;
+- transport admission receipts stay hidden in normal conversation mode;
+- Console command views become durable Conversation messages that a later Telegram turn can reference;
 - `/watch <id>` does not change bare-input routing;
 - bare text from a session-only watch returns to the May view before starting
   the turn, so May's response is visible;

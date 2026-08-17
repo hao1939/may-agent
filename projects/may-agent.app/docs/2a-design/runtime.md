@@ -1,6 +1,7 @@
 # Host Runtime
 
-**Status:** Accepted implementation reference.
+**Design status:** Accepted.
+**Implementation status:** Implemented reference.
 
 The runtime is the Host code. It is not a third layer between Host and App.
 
