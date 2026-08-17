@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { associateAppInboxClaimSession, claimAppInboxItem, listAppInboxDeliveries } from "./app-inbox-store.js";
+import {
+  associateAppInboxClaimSession,
+  claimAppInboxItem,
+  listAppInboxDeliveries,
+  waitAppInboxClaim,
+} from "./app-inbox-store.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
@@ -414,6 +419,17 @@ describe("App inbox host", () => {
       },
     });
     host.admit({
+      id: "background-human",
+      appId: "may",
+      source: { kind: "human", id: "event:40" },
+      input: { kind: "probe", data: { value: "background" } },
+      conversationId: "web-ui:human",
+      conversationSequence: 40,
+      channel: "telegram",
+    });
+    const background = claimAppInboxItem(db, "background-human", "background-worker", 1_000)!;
+    expect(waitAppInboxClaim(db, background, { kind: "analysis", id: "analysis-background" })).toBe(true);
+    host.admit({
       id: "human-1",
       appId: "may",
       source: { kind: "human", id: "event:42" },
@@ -444,6 +460,13 @@ describe("App inbox host", () => {
               id: "telegram:123",
               sourceId: "event:42",
               replyToSourceId: "event:41",
+              commitments: [
+                expect.objectContaining({
+                  requestId: "background-human",
+                  message: "probe request",
+                  state: "analyzing",
+                }),
+              ],
               prior: [],
             },
           },

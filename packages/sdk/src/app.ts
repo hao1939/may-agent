@@ -56,10 +56,23 @@ export type AppDependencyObservation = {
   evidence?: string[];
 };
 
+/** Human-facing projection of one unfinished request; it never owns work. */
+export type AppCommitmentView = {
+  requestId: string;
+  conversationId?: string;
+  message: string;
+  state: "queued" | "working" | "analyzing" | "waiting" | "ready";
+  progress?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type AppConversationContext = {
   id: string;
   sourceId: string;
   replyToSourceId?: string;
+  /** Other unfinished human requests visible to this App owner turn. */
+  commitments?: AppCommitmentView[];
   prior: Array<{
     requestId: string;
     sourceId: string;

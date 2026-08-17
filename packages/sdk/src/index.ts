@@ -17,6 +17,7 @@ export type {
   AppAnalysisRequest,
   AppDefinition,
   AppDependencyObservation,
+  AppCommitmentView,
   AppConversationContext,
   AppDisposition,
   AppEvent,
