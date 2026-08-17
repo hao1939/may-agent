@@ -10,6 +10,8 @@ import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.
 import { AppRegistry } from "./app-registry.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
+import { createAppAnalysisCapability } from "./app-analysis-capability.js";
+import { listAppConversationTurns } from "./app-inbox-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
@@ -58,6 +60,7 @@ export function createAppInputAdmission(options: {
           channel: input.channel,
           channelThreadId: input.channelThreadId,
           channelMessageId: input.channelMessageId,
+          replyToSourceId: input.replyToSourceId,
         },
       },
       {
@@ -125,9 +128,9 @@ export async function runAppRuntime(opts: {
   } = opts.appArgs;
 
   const bus = new EventBus();
-  const configuredHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 2);
+  const configuredHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
   const hostCapacity = new HostCapacity(
-    Number.isInteger(configuredHostConcurrency) && configuredHostConcurrency > 0 ? configuredHostConcurrency : 2,
+    Number.isInteger(configuredHostConcurrency) && configuredHostConcurrency > 0 ? configuredHostConcurrency : 4,
   );
   attachEventPersistence({ bus, persistDir: opts.persistDir });
 
@@ -192,6 +195,11 @@ export async function runAppRuntime(opts: {
     getDb: () => getDb(opts.persistDir),
     runtime: appTaskOptions,
   });
+  const appAnalysis = createAppAnalysisCapability({
+    bus,
+    persistDir: opts.persistDir,
+    projectRoot: opts.projectRoot,
+  });
   const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
 
   appInboxRuntime = await startAppInboxRuntime({
@@ -199,12 +207,20 @@ export async function runAppRuntime(opts: {
     db: getDb(opts.persistDir),
     manager,
     bus,
-    runOwner: (work) => hostCapacity.run(work),
+    runOwner: (work, context) =>
+      context.appId === "may" && context.humanOrigin ? hostCapacity.runForeground(work) : hostCapacity.run(work),
     attachTask: appTasks.attach,
+    attachAnalysis: appAnalysis.attach,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
-    readDependency: appTasks.readDependency,
+    readDependency: (input) =>
+      input.dependency.kind === "analysis"
+        ? Promise.resolve(appAnalysis.read(input.dependency.id))
+        : appTasks.readDependency({
+            appDir: input.appDir,
+            dependency: { kind: input.dependency.kind, id: input.dependency.id },
+          }),
     observerContext: (appId, appDir) => {
       const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;
       const projectDir = definition?.workspace?.localPath ? resolve(appDir, definition.workspace.localPath) : appDir;
@@ -331,6 +347,8 @@ export async function runAppRuntime(opts: {
     getStatus: () => manager.status(),
     reportInfo: (message) => bus.emit({ type: "info", message }),
     admitAppInput,
+    getAppConversation: (appId, conversationId, limit) =>
+      listAppConversationTurns(getDb(opts.persistDir), appId, conversationId, limit),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });

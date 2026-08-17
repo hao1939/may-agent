@@ -14,8 +14,10 @@ export {
 } from "./task.js";
 export type {
   AppAction,
+  AppAnalysisRequest,
   AppDefinition,
   AppDependencyObservation,
+  AppConversationContext,
   AppDisposition,
   AppEvent,
   AppEventSubscription,

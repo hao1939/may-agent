@@ -28,6 +28,26 @@ const taskIntentSchema = Type.Object(
   { additionalProperties: true },
 );
 
+const appAnalysisSchema = Type.Object(
+  {
+    tool: Type.Union([Type.Literal("codex"), Type.Literal("claude")]),
+    question: Type.String({ minLength: 1 }),
+    cwd: Type.Optional(Type.String({ minLength: 1 })),
+    files: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
+    timeoutMs: Type.Number({ minimum: 1, maximum: 1_800_000 }),
+    expectedOutput: Type.Optional(
+      Type.Object(
+        {
+          format: Type.Union([Type.Literal("markdown"), Type.Literal("json")]),
+          requiredFields: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+  },
+  { additionalProperties: false },
+);
+
 export const appDispositionSchema = Type.Union([
   Type.Object(
     {
@@ -57,6 +77,14 @@ export const appDispositionSchema = Type.Union([
         ),
         Type.Object({ kind: Type.Literal("desired"), intent: taskIntentSchema }, { additionalProperties: false }),
       ]),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      type: Type.Literal("analyze"),
+      analysis: appAnalysisSchema,
+      acknowledgement: Type.Optional(Type.String({ minLength: 1 })),
     },
     { additionalProperties: false },
   ),
@@ -113,10 +141,26 @@ function ownerPrompt(app: AppDefinition, requests: AppRequest[], humanResponse: 
     "A complete disposition answers or finishes this input. A delegate disposition creates one child App input.",
     ...(app.tasks?.attach === true
       ? ["This App may return a task disposition to link durable desired work."]
-      : ["This App cannot attach tasks. Return complete or delegate; never return a task disposition."]),
-    "If a request has dependency, it is the current read-only observation of the exact child, task, or recovered Runtime session that woke this request. Review that observation instead of querying runtime storage.",
-    "Use bounded agent or workflow calls only when you can review their result in this attempt. Durable asynchronous ownership must be returned as a delegate or task disposition.",
+      : [
+          `This App cannot attach tasks. Return complete or delegate${app.id === "may" ? ", or May-only analyze" : ""}; never return a task disposition.`,
+        ]),
+    ...(app.id === "may"
+      ? [
+          "May may return analyze for one bounded, non-mutating Codex or Claude evidence request. The Host starts it only after admitting the disposition; do not call run_cli_agent.",
+          "When the analysis means the human will wait, include one short natural acknowledgement stating what you are checking. It is durable progress on this same request, not a new task.",
+          "Use analyze only for understanding or a reviewed proposal. Delegate implementation, service operation, repeated convergence, and proof to the accountable App.",
+        ]
+      : ["Only the canonical May App may return an analyze disposition."]),
+    "If a request has dependency, it is the current read-only observation of the exact child, task, analysis, or recovered Runtime session that woke this request. Review that observation instead of querying runtime storage.",
+    `Use bounded agent or workflow calls only when you can review their result in this attempt. Durable asynchronous ownership must be returned as ${
+      app.id === "may"
+        ? "a delegate or May-only analyze disposition"
+        : app.tasks?.attach === true
+          ? "a delegate or task disposition"
+          : "a delegate disposition"
+    }.`,
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
+    "When conversation evidence is present, use its exact reply links and prior durable deliveries to understand natural follow-up. If more than one unfinished subject remains plausible, ask one focused clarification instead of guessing.",
     ...(humanResponse
       ? [
           "This is one human-origin request. Put the exact concise human-facing progress or final reply in the finish summary as well as in the disposition response when completing.",

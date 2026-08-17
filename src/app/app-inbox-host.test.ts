@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { associateAppInboxClaimSession, claimAppInboxItem } from "./app-inbox-store.js";
+import { associateAppInboxClaimSession, claimAppInboxItem, listAppInboxDeliveries } from "./app-inbox-store.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
@@ -399,7 +399,7 @@ describe("App inbox host", () => {
     });
   });
 
-  it("passes single human transport metadata to the owner without exposing it in AppRequest", async () => {
+  it("passes exact bounded conversation links without exposing transport lifecycle fields", async () => {
     const invocations: unknown[] = [];
     const host = new AppInboxHost({
       db,
@@ -423,6 +423,7 @@ describe("App inbox host", () => {
       channel: "telegram",
       channelThreadId: "thread-7",
       channelMessageId: 99,
+      replyToSourceId: "event:41",
     });
 
     expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
@@ -439,6 +440,12 @@ describe("App inbox host", () => {
             id: "human-1",
             source: { kind: "human", id: "event:42" },
             input: { kind: "probe", data: { value: "hello" } },
+            conversation: {
+              id: "telegram:123",
+              sourceId: "event:42",
+              replyToSourceId: "event:41",
+              prior: [],
+            },
           },
         ],
       },
@@ -800,6 +807,226 @@ describe("App inbox host", () => {
     });
     expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
     expect(host.get("probe-fast")?.status).toBe("done");
+  });
+
+  it("lets only May attach one exact bounded analysis and observe its result", async () => {
+    let attempts = 0;
+    const attachments: unknown[] = [];
+    const requests: AppRequest[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app("may"), app("evaluation")],
+      now: () => 100,
+      attachAnalysis: async (input) => {
+        attachments.push(input);
+        return { analysisId: "analysis-exact" };
+      },
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: "done",
+        summary: "The repository evidence answers the question",
+        evidence: ["result.md"],
+      }),
+      invokeOwner: async ({ app: ownerApp, requests: ownerRequests }) => {
+        requests.push(...ownerRequests);
+        attempts += 1;
+        return ownerRequests.map((request) => ({
+          requestId: request.id,
+          disposition:
+            ownerApp.id === "may" && attempts === 1
+              ? {
+                  type: "analyze" as const,
+                  analysis: { tool: "codex" as const, question: "Inspect this design", timeoutMs: 30_000 },
+                }
+              : { type: "complete" as const, summary: "reviewed exact analysis" },
+        }));
+      },
+    });
+    admit(host, "may", "may-analysis");
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    expect(host.get("may-analysis")?.waitingOn).toEqual({ kind: "analysis", id: "analysis-exact" });
+    expect(attachments).toMatchObject([
+      {
+        appId: "may",
+        analysis: { tool: "codex", question: "Inspect this design", timeoutMs: 30_000 },
+        idempotencyKey: expect.stringContaining("analysis:may-analysis:root:"),
+      },
+    ]);
+
+    host.wake({ kind: "analysis", id: "analysis-exact" });
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    expect(requests[1]).toMatchObject({
+      dependency: {
+        kind: "analysis",
+        id: "analysis-exact",
+        status: "done",
+        summary: "The repository evidence answers the question",
+        evidence: ["result.md"],
+      },
+    });
+    expect(host.get("may-analysis")?.status).toBe("done");
+  });
+
+  it("rejects analysis from non-May Apps", async () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [app("evaluation")],
+      retryAfterMs: 0,
+      attachAnalysis: async () => ({ analysisId: "must-not-run" }),
+      invokeOwner: async ({ requests }) =>
+        requests.map((request) => ({
+          requestId: request.id,
+          disposition: {
+            type: "analyze" as const,
+            analysis: { tool: "claude" as const, question: "Inspect", timeoutMs: 1_000 },
+          },
+        })),
+    });
+    admit(host, "evaluation", "invalid-analysis");
+
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({
+      admitted: 0,
+      released: 1,
+      errors: ["Request invalid-analysis: Only the canonical May App may request bounded analysis"],
+    });
+  });
+
+  it("stages human analysis acknowledgement only after the exact wait is durable", async () => {
+    let sawLinkedWait = false;
+    const host = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      now: () => 100,
+      attachAnalysis: async () => ({ analysisId: "analysis-human" }),
+      invokeOwner: async ({ requests, onSessionStarted }) => {
+        onSessionStarted("session-human-analysis");
+        return requests.map((request) => ({
+          requestId: request.id,
+          disposition: {
+            type: "analyze" as const,
+            analysis: { tool: "codex" as const, question: "Review", timeoutMs: 1_000 },
+            acknowledgement: "I’ll review this and return with the evidence.",
+          },
+        }));
+      },
+    });
+    host.admit({
+      id: "human-analysis",
+      appId: "may",
+      source: { kind: "human", id: "telegram:123:42" },
+      input: { kind: "probe", data: { value: "review" } },
+      conversationId: "telegram:123",
+      conversationSequence: 42,
+      channel: "telegram",
+      channelMessageId: 42,
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    const item = host.get("human-analysis")!;
+    sawLinkedWait = item.waitingOn?.kind === "analysis" && item.waitingOn.id === "analysis-human";
+    expect(sawLinkedWait).toBe(true);
+    expect(listAppInboxDeliveries(db, item.id)).toMatchObject([
+      {
+        kind: "progress",
+        status: "pending",
+        text: "I’ll review this and return with the evidence.",
+        sessionId: "session-human-analysis",
+      },
+    ]);
+    const delivery = host.claimDelivery()!;
+    expect(delivery.text).toBe("I’ll review this and return with the evidence.");
+    expect(
+      host.recordDelivery({
+        operationId: delivery.delivery.operationId,
+        itemId: item.id,
+        sessionId: delivery.delivery.sessionId,
+        requestId: delivery.delivery.requestId,
+        channel: "telegram",
+        status: "delivered",
+      }),
+    ).toEqual({ matched: true, completed: false, status: "delivered" });
+    expect(host.get(item.id)).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "analysis", id: "analysis-human" },
+    });
+  });
+
+  it("wakes an analysis that completes before or while its exact wait is linked", async () => {
+    let attempts = 0;
+    let linked = false;
+    const host = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      now: () => 100,
+      attachAnalysis: async () => ({
+        analysisId: "analysis-fast",
+        isComplete: async () => {
+          const row = db
+            .prepare("SELECT waiting_on_kind, waiting_on_id FROM app_inbox_items WHERE id = ?")
+            .get("fast-analysis") as { waiting_on_kind: string | null; waiting_on_id: string | null };
+          linked = row.waiting_on_kind === "analysis" && row.waiting_on_id === "analysis-fast";
+          return true;
+        },
+      }),
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "done" }),
+      invokeOwner: async ({ requests }) => {
+        attempts += 1;
+        return requests.map((request) => ({
+          requestId: request.id,
+          disposition:
+            attempts === 1
+              ? {
+                  type: "analyze" as const,
+                  analysis: { tool: "codex" as const, question: "Fast", timeoutMs: 1_000 },
+                }
+              : { type: "complete" as const, summary: "fast analysis observed" },
+        }));
+      },
+    });
+    admit(host, "may", "fast-analysis");
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    expect(linked).toBe(true);
+    expect(host.get("fast-analysis")?.availableAt).toBe(100);
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    expect(host.get("fast-analysis")?.status).toBe("done");
+  });
+
+  it("re-observes terminal analysis waits after restart", async () => {
+    let terminal = false;
+    const first = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      now: () => 100,
+      attachAnalysis: async () => ({ analysisId: "analysis-offline" }),
+      invokeOwner: async ({ requests }) =>
+        requests.map((request) => ({
+          requestId: request.id,
+          disposition: {
+            type: "analyze" as const,
+            analysis: { tool: "codex" as const, question: "Offline", timeoutMs: 1_000 },
+          },
+        })),
+    });
+    admit(first, "may", "offline-analysis");
+    expect(await first.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+
+    const recovered = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      now: () => 200,
+      readDependency: async ({ dependency }) => ({ ...dependency, status: terminal ? "done" : "running" }),
+      invokeOwner: async () => [],
+    });
+    expect(await recovered.recoverAnalysisDependencies()).toMatchObject({ woken: 0 });
+    terminal = true;
+    expect(await recovered.recoverAnalysisDependencies()).toEqual({
+      linked: 0,
+      woken: 1,
+      wokenAppIds: ["may"],
+      errors: [],
+    });
   });
 
   it("renews claims while an owner invocation is still running", async () => {

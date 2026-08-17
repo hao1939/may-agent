@@ -33,14 +33,16 @@ describe("May Console", () => {
     let inputBuffer = "";
     const server: Server = createServer((socket) => {
       client = socket;
-      socket.write(`${JSON.stringify({
-        type: "connected",
-        agent: "may",
-        instance,
-        activeAgents: [
-          { sessionId: "s_worker_123", agent: "worker", status: "running", kind: "job", task: "focused work" },
-        ],
-      })}\n`);
+      socket.write(
+        `${JSON.stringify({
+          type: "connected",
+          agent: "may",
+          instance,
+          activeAgents: [
+            { sessionId: "s_worker_123", agent: "worker", status: "running", kind: "job", task: "focused work" },
+          ],
+        })}\n`,
+      );
       socket.on("data", (chunk) => {
         inputBuffer += chunk.toString();
         const lines = inputBuffer.split("\n");
@@ -52,31 +54,75 @@ describe("May Console", () => {
           if (frame.type === "subscribe") {
             socket.write(`${JSON.stringify({ type: "ok", command: "subscribe" })}\n`);
           } else if (frame.type === "status") {
-            socket.write(`${JSON.stringify({
-              type: "status",
-              command: "status",
-              activeAgents: [
-                { sessionId: "s_worker_123", agent: "worker", status: "running", kind: "job", task: "focused work" },
-              ],
-            })}\n`);
-          } else if (frame.type === "human.input.received") {
+            socket.write(
+              `${JSON.stringify({
+                type: "status",
+                command: "status",
+                activeAgents: [
+                  { sessionId: "s_worker_123", agent: "worker", status: "running", kind: "job", task: "focused work" },
+                ],
+              })}\n`,
+            );
+          } else if (frame.type === "app.conversation.get") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "app.conversation.get",
+                turns: [
+                  {
+                    requestId: "item-history",
+                    input: { kind: "message", data: { message: "Earlier question" } },
+                    state: "done",
+                    deliveries: [
+                      {
+                        operationId: "app-delivery:item-history:1",
+                        kind: "final",
+                        status: "delivered",
+                        text: "Earlier answer",
+                      },
+                    ],
+                  },
+                ],
+              })}\n`,
+            );
+          } else if (frame.type === "app.input.admit") {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
-            socket.write(`${JSON.stringify({
-              type: "text",
-              sessionId: "s_worker_123",
-              text: "unrelated worker output",
-            })}\n`);
-            const turn = frames.filter((item) => item.type === "human.input.received").length;
+            socket.write(
+              `${JSON.stringify({
+                type: "text",
+                sessionId: "s_worker_123",
+                text: "unrelated worker output",
+              })}\n`,
+            );
+            const turn = frames.filter((item) => item.type === "app.input.admit").length;
             const sessionId = `s_may_turn_${turn}`;
-            socket.write(`${JSON.stringify({
-              type: "session.start",
-              data: { sessionId, agent: "may", status: "running", kind: "job", task: "bounded May turn" },
-            })}\n`);
+            socket.write(
+              `${JSON.stringify({
+                type: "session.start",
+                data: { sessionId, agent: "may", status: "running", kind: "job", task: "bounded May turn" },
+              })}\n`,
+            );
             socket.write(`${JSON.stringify({ type: "text", sessionId, text: `May response ${turn}\n` })}\n`);
-            socket.write(`${JSON.stringify({
-              type: "session.end",
-              data: { sessionId, agent: "may", status: "done", kind: "job", summary: `May response ${turn}` },
-            })}\n`);
+            socket.write(
+              `${JSON.stringify({
+                type: "session.end",
+                data: { sessionId, agent: "may", status: "done", kind: "job", summary: `May response ${turn}` },
+              })}\n`,
+            );
+            socket.write(
+              `${JSON.stringify({
+                type: "app.response.delivery.requested",
+                owner: "app:may",
+                data: {
+                  channel: "may-console",
+                  sessionId,
+                  operationId: `app-delivery:item-${turn}:1`,
+                  appInboxItemId: `item-${turn}`,
+                  appInboxRequestId: `app-inbox-human:item-${turn}`,
+                  text: `May response ${turn}`,
+                },
+              })}\n`,
+            );
           } else {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
           }
@@ -92,8 +138,12 @@ describe("May Console", () => {
       stdio: "pipe",
     });
     let output = "";
-    child.stdout.on("data", (chunk) => { output += chunk.toString(); });
-    child.stderr.on("data", (chunk) => { output += chunk.toString(); });
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
 
     cleanups.push(() => rmSync(root, { recursive: true, force: true }));
     cleanups.push(() => server.close());
@@ -101,34 +151,40 @@ describe("May Console", () => {
     cleanups.push(() => child.kill("SIGKILL"));
 
     await waitFor(() => frames.some((frame) => frame.type === "status"));
-    expect(frames.find((frame) => frame.type === "subscribe")?.sessions).toEqual(["*"]);
+    await waitFor(() => output.includes("you: Earlier question") && output.includes("may: Earlier answer"));
+    expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
+      sessions: ["*"],
+      deliveryChannel: "may-console",
+    });
     expect(output).not.toContain("focused work");
 
     child.stdin.write("/sessions\n");
     await waitFor(() => output.includes("focused work"));
 
     child.stdin.write("review Gym\n");
-    await waitFor(() => frames.some((frame) => frame.type === "human.input.received"));
-    const input = frames.find((frame) => frame.type === "human.input.received");
+    await waitFor(() => frames.some((frame) => frame.type === "app.input.admit"));
+    const input = frames.find((frame) => frame.type === "app.input.admit");
     expect(input).toMatchObject({
-      source: "may-console",
-      owner: "agent:may",
-      data: {
-        actor: "human",
-        text: "review Gym",
-        conversation: {
-          id: "may-console:local-terminal:agent:may",
-          channel: "may-console",
-          channelThreadId: "local-terminal",
-        },
-        target: { agent: "may" },
-        context: { forceNew: true },
-      },
+      appId: "may",
+      input: { kind: "message", data: { message: "review Gym" } },
+      source: { kind: "human", id: expect.stringMatching(/^may-console:local-terminal:\d+$/) },
+      conversationId: "may-console:local-terminal:agent:may",
+      channel: "may-console",
+      channelThreadId: "local-terminal",
     });
-    expect(input?.data?.target?.sessionId).toBeUndefined();
-    await waitFor(() => output.includes("[accepted #42] May is handling this turn."));
     await waitFor(() => output.includes("May response 1"));
     expect(output).not.toContain("unrelated worker output");
+    expect(output).not.toContain("[accepted");
+    await waitFor(() => frames.some((frame) => frame.type === "channel.delivery.completed"));
+    expect(frames.find((frame) => frame.type === "channel.delivery.completed")).toMatchObject({
+      source: "may-console",
+      owner: "app:may",
+      data: {
+        channel: "may-console",
+        appInboxItemId: "item-1",
+        appInboxRequestId: "app-inbox-human:item-1",
+      },
+    });
 
     child.stdin.write("/steer s_worker use the smaller plan\n");
     await waitFor(() => frames.some((frame) => frame.type === "session.steer.requested"));
@@ -141,9 +197,9 @@ describe("May Console", () => {
     expect(frames.filter((frame) => frame.type === "subscribe")[1]?.sessions).toEqual(["s_worker_123"]);
 
     child.stdin.write("another May request\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "human.input.received").length === 2);
+    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 2);
     expect(frames.filter((frame) => frame.type === "subscribe")[2]?.sessions).toEqual(["*"]);
-    expect(frames.filter((frame) => frame.type === "human.input.received")[1]?.data?.target).toEqual({ agent: "may" });
+    expect(frames.filter((frame) => frame.type === "app.input.admit")[1]?.appId).toBe("may");
     await waitFor(() => output.includes("May response 2"));
 
     child.stdin.write("/exit\n");

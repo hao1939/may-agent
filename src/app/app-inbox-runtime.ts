@@ -10,7 +10,12 @@ import {
 import type { EventInput, EventReceipt } from "../../packages/control/src/protocol.js";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
-import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
+import {
+  AppInboxHost,
+  type AppAnalysisAttacher,
+  type AppInboxReconcileResult,
+  type AppTaskAttacher,
+} from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
@@ -47,6 +52,7 @@ export type StartAppInboxRuntimeOptions = {
   manager: AppOwnerManager;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
+  attachAnalysis?: AppAnalysisAttacher;
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -59,9 +65,9 @@ export type StartAppInboxRuntimeOptions = {
   readDependency?: (input: {
     appId: string;
     appDir: string;
-    dependency: { kind: "task" | "session"; id: string };
+    dependency: { kind: "task" | "session" | "analysis"; id: string };
   }) => Promise<AppDependencyObservation | null>;
-  runOwner?: <T>(work: () => Promise<T>) => Promise<T>;
+  runOwner?: <T>(work: () => Promise<T>, context: { appId: string; humanOrigin: boolean }) => Promise<T>;
   /** Maximum request batches the Host may process at once. */
   maxConcurrentRequests?: number;
   scanIntervalMs?: number;
@@ -195,8 +201,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
-    invokeOwner: options.runOwner ? (input) => options.runOwner!(() => invokeOwner(input)) : invokeOwner,
+    invokeOwner: options.runOwner
+      ? (input) =>
+          options.runOwner!(() => invokeOwner(input), {
+            appId: input.app.id,
+            humanOrigin: input.requests.some((request) => request.source.kind === "human"),
+          })
+      : invokeOwner,
     attachTask,
+    attachAnalysis: options.attachAnalysis,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
@@ -313,6 +326,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               operationId: delivery.operationId,
               appInboxItemId: delivery.itemId,
               appInboxRequestId: delivery.requestId,
+              deliveryKind: delivery.kind,
               sessionId: delivery.sessionId,
               channel: delivery.channel,
               channelThreadId: item.channelThreadId,
@@ -424,6 +438,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       });
     sessionRecovery = current;
     return current;
+  };
+
+  const recoverAnalysisDependencies = (): Promise<void> => {
+    return host.recoverAnalysisDependencies().then((outcome) => {
+      for (const appId of outcome.wokenAppIds) schedule(appId);
+      if (outcome.errors.length > 0) {
+        options.bus.emit({
+          type: "info",
+          message: `[app-inbox:analysis-recovery] ${outcome.errors.join("; ")}`,
+        });
+      }
+    });
   };
 
   const scanNow = () => {
@@ -609,6 +635,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         channel: typeof data.channel === "string" ? data.channel : undefined,
         channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
         channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
+        replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
         idempotencyKey:
           typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
       });
@@ -699,6 +726,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         return { accepted: true, by: "app-inbox:wake" };
       }
     }
+    if (event.type === "cli.task.completed" || event.type === "cli.task.failed" || event.type === "cli.task.orphaned") {
+      const analysisId = typeof data.taskId === "string" ? data.taskId.trim() : "";
+      if (analysisId && host.wake({ kind: "analysis", id: analysisId }) > 0) scanNow();
+    }
     if (event.type === "session.end") {
       const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
       if (sessionId && host.wake({ kind: "session", id: sessionId }) > 0) {
@@ -712,6 +743,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
       const channel = typeof data.channel === "string" ? data.channel.trim() : "";
       if (operationId && itemId && requestId && sessionId && channel) {
+        if (event.type === "channel.delivery.failed" && data.certainty === "not-delivered") {
+          if (host.restoreDelivery(operationId)) {
+            const retry = setTimeout(pumpDeliveries, options.retryAfterMs ?? 1_000);
+            retry.unref?.();
+          }
+          return { accepted: true, by: `app-inbox:delivery-retry:${itemId}` };
+        }
         const external = data.externalMessageId;
         const outcome = host.recordDelivery({
           operationId,
@@ -876,6 +914,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("App inbox scanIntervalMs must be positive");
   }
   await recoverSessionDependencies(true);
+  await recoverAnalysisDependencies();
   const timer = setInterval(scanNow, scanIntervalMs);
   timer.unref?.();
   scanNow();

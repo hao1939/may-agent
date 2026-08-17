@@ -67,9 +67,7 @@ function fakeSuccessfulSpawnWithPermissionWords(_command: string, args: string[]
   child.pid = 12346;
   queueMicrotask(() => {
     const outputIndex = args.indexOf("-o");
-    child.stdout.write(
-      JSON.stringify({ type: "thread.started", thread_id: "codex-session-2" }) + "\n",
-    );
+    child.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "codex-session-2" }) + "\n");
     child.stdout.write(
       JSON.stringify({
         type: "item.completed",
@@ -193,9 +191,7 @@ describe("CLI task runner", () => {
       await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
 
       expect(events.some((event) => event.type === "cli.task.failed")).toBe(false);
-      const structured = JSON.parse(
-        readFileSync(payload.structuredResultPath, "utf8"),
-      ) as any;
+      const structured = JSON.parse(readFileSync(payload.structuredResultPath, "utf8")) as any;
       expect(structured.status).toBe("completed");
       expect(structured.failureCategory).toBeUndefined();
     } finally {
@@ -944,6 +940,117 @@ describe("CLI task runner", () => {
       expect(events.some((event) => event.type === "cli.task.orphaned")).toBe(false);
       const record = JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8"));
       expect(record.status).toBe("running");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("runs May analysis inside the read-only OS sandbox with restricted CLI arguments", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-analysis-sandbox-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    const spawns: Array<{ command: string; args: string[] }> = [];
+    bus.subscribe((event) => events.push(event));
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[]) => {
+        spawns.push({ command, args });
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    try {
+      for (const [taskId, tool] of [
+        ["analysis-codex", "codex"],
+        ["analysis-claude", "claude"],
+      ] as const) {
+        const directory = join(persistDir, "cli-tasks", taskId);
+        mkdirSync(directory, { recursive: true });
+        const promptPath = join(directory, "prompt.md");
+        writeFileSync(promptPath, "Review without changing anything");
+        bus.emit({
+          type: "cli.task.requested",
+          source: "app:may",
+          owner: "runtime:cli-task-runner",
+          data: {
+            taskId,
+            purpose: "may-analysis",
+            tool,
+            mode: "review",
+            cwd: root,
+            promptPath,
+            resultPath: join(directory, "result.md"),
+            structuredResultPath: join(directory, "result.json"),
+            eventsPath: join(directory, "events.jsonl"),
+            sandbox: "danger-full-access",
+            timeoutMs: 10_000,
+            sourceOwner: "agent:may",
+          },
+        });
+      }
+      await waitFor(() => events.filter((event) => event.type === "cli.task.completed").length === 2);
+
+      expect(spawns).toHaveLength(2);
+      for (const spawn of spawns) {
+        expect(spawn.command).toBe("bwrap");
+        expect(spawn.args).toContain("--ro-bind");
+        expect(spawn.args).toContain("--tmpfs");
+      }
+      const codex = spawns.find((spawn) => spawn.args.includes("codex"))!;
+      expect(codex.args).toContain("read-only");
+      const claude = spawns.find((spawn) => spawn.args.includes("claude"))!;
+      expect(claude.args).toContain("plan");
+      expect(claude.args).toContain("Read,Glob,Grep");
+      expect(claude.args).not.toContain("bypassPermissions");
+      expect(claude.args).not.toContain("--dangerously-skip-permissions");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resumes a durable requested CLI task after runtime restart", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-requested-recovery-"));
+    const persistDir = join(root, ".state");
+    const directory = join(persistDir, "cli-tasks", "analysis-requested");
+    mkdirSync(directory, { recursive: true });
+    const promptPath = join(directory, "prompt.md");
+    const resultPath = join(directory, "result.md");
+    writeFileSync(promptPath, "Recover me");
+    writeFileSync(
+      join(directory, "task.json"),
+      `${JSON.stringify({
+        taskId: "analysis-requested",
+        purpose: "may-analysis",
+        tool: "codex",
+        mode: "review",
+        cwd: root,
+        promptPath,
+        resultPath,
+        structuredResultPath: join(directory, "result.json"),
+        eventsPath: join(directory, "events.jsonl"),
+        sandbox: "read-only",
+        timeoutMs: 10_000,
+        sourceOwner: "agent:may",
+        status: "requested",
+        requestedAt: "2026-08-17T00:00:00.000Z",
+      })}\n`,
+    );
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+
+    try {
+      attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: fakeSpawn as any });
+      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
+      expect(JSON.parse(readFileSync(join(directory, "task.json"), "utf8"))).toMatchObject({
+        taskId: "analysis-requested",
+        status: "completed",
+        effectiveSandbox: "read-only",
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

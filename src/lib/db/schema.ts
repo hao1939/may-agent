@@ -297,6 +297,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   channel             TEXT,
   channel_thread_id   TEXT,
   channel_message_id  INTEGER,
+  reply_to_source_id  TEXT,
   source_kind         TEXT NOT NULL,
   source_id           TEXT NOT NULL,
   input_kind          TEXT NOT NULL,
@@ -318,7 +319,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   completed_at        INTEGER,
   CHECK (source_kind IN ('human', 'app', 'system')),
   CHECK (status IN ('pending', 'handling', 'done')),
-  CHECK (waiting_on_kind IS NULL OR waiting_on_kind IN ('app', 'task', 'session'))
+  CHECK (waiting_on_kind IS NULL OR waiting_on_kind IN ('app', 'task', 'session', 'analysis'))
 );
 CREATE INDEX IF NOT EXISTS idx_app_inbox_ready
   ON app_inbox_items(app_id, status, available_at, created_at);
@@ -373,8 +374,10 @@ CREATE INDEX IF NOT EXISTS idx_app_event_admission_command_status
   ON app_event_admission_commands(app_id, status, updated_at);
 
 CREATE TABLE IF NOT EXISTS app_inbox_deliveries (
-  item_id              TEXT PRIMARY KEY,
-  operation_id         TEXT NOT NULL UNIQUE,
+  operation_id         TEXT PRIMARY KEY,
+  item_id              TEXT NOT NULL,
+  kind                 TEXT NOT NULL DEFAULT 'final',
+  text                 TEXT,
   session_id           TEXT NOT NULL,
   request_id           TEXT NOT NULL,
   channel              TEXT NOT NULL,
@@ -386,10 +389,13 @@ CREATE TABLE IF NOT EXISTS app_inbox_deliveries (
   updated_at           INTEGER NOT NULL,
   attempted_at         INTEGER,
   completed_at         INTEGER,
+  CHECK (kind IN ('progress', 'final')),
   CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'uncertain'))
 );
 CREATE INDEX IF NOT EXISTS idx_app_inbox_delivery_status
   ON app_inbox_deliveries(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_delivery_item
+  ON app_inbox_deliveries(item_id, created_at);
 
 CREATE TRIGGER IF NOT EXISTS trg_events_referential_retention
 BEFORE DELETE ON events
@@ -528,20 +534,147 @@ CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, s
 `;
 
 export function applyDbSchema(db: SqliteDb): void {
-  ensureExistingEventsTableColumns(db);
-  ensureExistingAppInboxTableColumns(db);
-  // Trigger definitions are not replaced by CREATE TRIGGER IF NOT EXISTS.
-  // Recreate this retention fence so existing databases gain every new durable
-  // reference added to the canonical schema.
-  db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
-  db.exec(SCHEMA);
-  ensureExistingEventsTableColumns(db);
-  ensureExistingAppInboxTableColumns(db);
-  ensureExistingAppEventAdmissionColumns(db);
+  // The daemon, web server, and maintenance process can open the same database
+  // together after a restart. Serialize the complete shape upgrade so another
+  // process cannot observe a table between rename, rebuild, and copy.
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    ensureExistingEventsTableColumns(db);
+    ensureExistingAppInboxTableColumns(db);
+    ensureExistingAppInboxWaitKinds(db);
+    // Trigger definitions are not replaced by CREATE TRIGGER IF NOT EXISTS.
+    // Recreate this retention fence so existing databases gain every new durable
+    // reference added to the canonical schema.
+    db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
+    db.exec(SCHEMA);
+    ensureExistingAppInboxDeliveryShape(db);
+    ensureExistingEventsTableColumns(db);
+    ensureExistingAppInboxTableColumns(db);
+    ensureExistingAppEventAdmissionColumns(db);
+    db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
+      ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
+      WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
+    `);
+    db.exec("COMMIT");
+  } catch (error) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // Preserve the original migration error.
+    }
+    throw error;
+  }
+}
+
+/** Progress and final replies are separate durable operations for one request. */
+function ensureExistingAppInboxDeliveryShape(db: SqliteDb): void {
+  if (!tableExists(db, "app_inbox_deliveries")) return;
+  const columns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{
+    name?: unknown;
+    pk?: unknown;
+  }>;
+  const hasKind = columns.some((column) => column.name === "kind");
+  const hasText = columns.some((column) => column.name === "text");
+  const operationPrimary = columns.some((column) => column.name === "operation_id" && column.pk === 1);
+  if (hasKind && hasText && operationPrimary) return;
   db.exec(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
-    ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
-    WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
+    DROP INDEX IF EXISTS idx_app_inbox_delivery_status;
+    DROP INDEX IF EXISTS idx_app_inbox_delivery_item;
+    ALTER TABLE app_inbox_deliveries RENAME TO app_inbox_deliveries_before_progress;
+    CREATE TABLE app_inbox_deliveries (
+      operation_id         TEXT PRIMARY KEY,
+      item_id              TEXT NOT NULL,
+      kind                 TEXT NOT NULL DEFAULT 'final',
+      text                 TEXT,
+      session_id           TEXT NOT NULL,
+      request_id           TEXT NOT NULL,
+      channel              TEXT NOT NULL,
+      status               TEXT NOT NULL DEFAULT 'pending',
+      external_message_id  TEXT,
+      failure_reason       TEXT,
+      receipt_event_id     INTEGER,
+      created_at           INTEGER NOT NULL,
+      updated_at           INTEGER NOT NULL,
+      attempted_at         INTEGER,
+      completed_at         INTEGER,
+      CHECK (kind IN ('progress', 'final')),
+      CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'uncertain'))
+    );
+    INSERT INTO app_inbox_deliveries (
+      operation_id, item_id, kind, text, session_id, request_id, channel,
+      status, external_message_id, failure_reason, receipt_event_id,
+      created_at, updated_at, attempted_at, completed_at
+    )
+    SELECT
+      operation_id, item_id, 'final', NULL, session_id, request_id, channel,
+      status, external_message_id, failure_reason, receipt_event_id,
+      created_at, updated_at, attempted_at, completed_at
+    FROM app_inbox_deliveries_before_progress;
+    DROP TABLE app_inbox_deliveries_before_progress;
+    CREATE INDEX idx_app_inbox_delivery_status
+      ON app_inbox_deliveries(status, created_at);
+    CREATE INDEX idx_app_inbox_delivery_item
+      ON app_inbox_deliveries(item_id, created_at);
+  `);
+}
+
+/** SQLite cannot widen a CHECK constraint in place. Rebuild only the inbox table. */
+function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
+  if (!tableExists(db, "app_inbox_items")) return;
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'").get() as
+    { sql?: unknown } | undefined;
+  if (typeof row?.sql === "string" && row.sql.includes("'analysis'")) return;
+  db.exec(`
+    ALTER TABLE app_inbox_items RENAME TO app_inbox_items_before_analysis_wait;
+    CREATE TABLE app_inbox_items (
+      id                  TEXT PRIMARY KEY,
+      app_id              TEXT NOT NULL,
+      parent_id           TEXT,
+      conversation_id     TEXT,
+      conversation_seq    INTEGER,
+      channel             TEXT,
+      channel_thread_id   TEXT,
+      channel_message_id  INTEGER,
+      reply_to_source_id  TEXT,
+      source_kind         TEXT NOT NULL,
+      source_id           TEXT NOT NULL,
+      input_kind          TEXT NOT NULL,
+      input_data          TEXT NOT NULL,
+      status              TEXT NOT NULL DEFAULT 'pending',
+      session_id          TEXT,
+      waiting_on_kind     TEXT,
+      waiting_on_id       TEXT,
+      result              TEXT,
+      available_at        INTEGER,
+      review_at           INTEGER,
+      lease_generation    INTEGER NOT NULL DEFAULT 0,
+      lease_owner         TEXT,
+      lease_expires_at    INTEGER,
+      origin_event_id     INTEGER,
+      idempotency_key     TEXT,
+      created_at          INTEGER NOT NULL,
+      updated_at          INTEGER NOT NULL,
+      completed_at        INTEGER,
+      CHECK (source_kind IN ('human', 'app', 'system')),
+      CHECK (status IN ('pending', 'handling', 'done')),
+      CHECK (waiting_on_kind IS NULL OR waiting_on_kind IN ('app', 'task', 'session', 'analysis'))
+    );
+    INSERT INTO app_inbox_items (
+      id, app_id, parent_id, conversation_id, conversation_seq, channel,
+      channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
+      input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
+      available_at, review_at, lease_generation, lease_owner, lease_expires_at,
+      origin_event_id, idempotency_key, created_at, updated_at, completed_at
+    )
+    SELECT
+      id, app_id, parent_id, conversation_id, conversation_seq, channel,
+      channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
+      input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
+      available_at, review_at, lease_generation, lease_owner, lease_expires_at,
+      origin_event_id, idempotency_key, created_at, updated_at, completed_at
+    FROM app_inbox_items_before_analysis_wait;
+    DROP TABLE app_inbox_items_before_analysis_wait;
   `);
 }
 
@@ -549,6 +682,7 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["channel", "TEXT"],
   ["channel_thread_id", "TEXT"],
   ["channel_message_id", "INTEGER"],
+  ["reply_to_source_id", "TEXT"],
   ["origin_event_id", "INTEGER"],
 ];
 
