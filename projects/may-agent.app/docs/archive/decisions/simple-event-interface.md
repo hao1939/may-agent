@@ -481,3 +481,69 @@ The accepted contract requires these checks:
    `required`?
 2. Which small set of event types should the first HTTP and socket allowlists
    expose?
+
+## Review Comments
+
+### Round 1 (2026-08-16)
+
+**Verdict: accept.** This is the natural completion of the runtime
+simplification — the inbox migration removed overlapping work-tracking
+mechanisms, and this removes overlapping ingress mechanisms. The system goes
+from five ways to put input in (HTTP endpoints, socket frames, Telegram
+parsing, internal EventBus, compatibility adapters) to one way
+(`publish(EventInput)`) with two delivery contracts. That is a genuine
+simplification.
+
+**Answer to review question 1:** No. The only candidate is "fire and forget,
+don't retry" — but that is just `record` with no declared route, which
+already works. Every other delivery pattern maps cleanly: "one accepter must
+take responsibility" is `required`; "zero or more may observe" is `record`;
+"at-least-once durable route" is a declared route on a `record` event with
+recovery. Two contracts are sufficient.
+
+**Answer to review question 2:** Start with 5–8 types and grow per measured
+usage:
+
+- `app.input.requested` (human messages and cross-app delegation)
+- `session.cancel.requested`
+- `task.approval.submitted`
+- `host.reload.requested`
+- `metric.snapshot` (record-only, dashboard observation)
+- `app.health.observed` (record-only, dashboard observation)
+
+The allowlist should be explicitly enumerated in the adapter config and
+expanded only when a real consumer demonstrates the need. Do not expose all
+internal event types by default.
+
+**Three suggestions for the doc:**
+
+**1. State the inbox routing boundary explicitly.** The inbox scope reduction
+proposal says "signals that wake existing work go directly to the task
+resolver, not the inbox." This proposal says `app.input.requested` creates a
+durable App request. Those are compatible but the connection is implicit. Add
+one sentence: "Record-only events that match a task subscription wake the
+task resolver directly without creating an App request. Only
+`app.input.requested` and direct-agent session events create durable inbox
+items or session requests."
+
+**2. State how child idempotency keys are derived during delegation.** The
+doc says "Scope idempotency by event type and canonical target" and "Return
+the same event ID for the same key and payload." When App A delegates to
+App B, the Host publishes a child `app.input.requested` event. If the
+child's idempotency key is random, a retry of the parent's admit creates a
+duplicate child. State that the Host derives child idempotency keys
+deterministically from the parent request ID and disposition content, so that
+retried admission is safe.
+
+**3. The `EventDefinition` registry needs an ownership rule.** The doc says
+"This is a Host ingress registry, not an application handler catalog inside
+the EventBus." But it does not say who may add a definition. Can an App
+declare new event types in its `defineApp`? Or are all definitions
+Host-owned? If Apps can contribute types (e.g. gym declares
+`gym.regression.requested`), the registry grows with App generations and
+must be validated atomically with the App snapshot. If only the Host owns
+definitions, Apps must use generic `app.input.requested` with their
+domain-specific `input.kind` for everything. The current implementation
+appears to use the latter (Apps route through `app.input.requested` or task
+subscriptions), but the doc should state this explicitly so no one attempts
+to register custom required-delivery types from App code.
