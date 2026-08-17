@@ -152,6 +152,94 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("creates work only for durable human conversation messages and deduplicates retries", async () => {
+    const mayDir = join(root, "may.app");
+    mkdirSync(mayDir, { recursive: true });
+    writeFileSync(
+      join(mayDir, "app.js"),
+      `export default {
+        id: "may", version: 1, owner: "may",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: {
+            kind: { const: "message" },
+            data: {
+              type: "object", required: ["message"],
+              properties: { message: { type: "string" } }
+            }
+          }
+        },
+        inbox: { batch: "single" }
+      };\n`,
+    );
+    const calls: string[] = [];
+    const bus = new EventBus();
+    let nextEventId = 42;
+    const persistedIds = new Map<string, number>();
+    bus.setPersistenceSubscriber((event) => {
+      const data = event.data as { idempotencyKey?: string; author?: { id?: string } };
+      const identity = data.idempotencyKey ?? `${event.type}:${data.author?.id ?? nextEventId}`;
+      const prior = persistedIds.get(identity);
+      const eventId = prior ?? nextEventId++;
+      persistedIds.set(identity, eventId);
+      Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
+      if (prior !== undefined) {
+        Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+        Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+      }
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+
+    const humanMessage = () => ({
+      type: "conversation.message.created" as const,
+      source: "may-console",
+      owner: "app:may",
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "human" as const, id: "may-console:message:1" },
+        text: "Review the design",
+        metadata: { channel: "may-console" },
+        idempotencyKey: "may-console:message:1",
+      },
+    });
+    bus.emit(humanMessage());
+    bus.emit(humanMessage());
+    await waitUntil(() => calls.length === 1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
+      count: 1,
+    });
+
+    for (const [kind, transient] of [
+      ["command", false],
+      ["tool", true],
+    ] as const) {
+      bus.emit({
+        type: "conversation.message.created",
+        source: "test",
+        owner: "app:may",
+        data: {
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind, id: `test:${kind}` },
+          text: kind === "command" ? "Active work: 1 item" : "50%",
+          ...(transient ? { transient: true } : {}),
+        },
+      });
+    }
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
+      count: 1,
+    });
+  });
+
   it("carries one natural Telegram request through progress, restart, analysis review, and final delivery", async () => {
     const mayDir = join(root, "may.app");
     mkdirSync(mayDir, { recursive: true });

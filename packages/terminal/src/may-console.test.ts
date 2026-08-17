@@ -29,7 +29,7 @@ describe("May Console", () => {
     mkdirSync(socketDir, { recursive: true });
 
     const frames: Array<Record<string, any>> = [];
-    let completedCommitmentId: string | null = null;
+    let completedWorkId: string | null = null;
     let client: Socket | null = null;
     let inputBuffer = "";
     const server: Server = createServer((socket) => {
@@ -65,60 +65,75 @@ describe("May Console", () => {
               })}\n`,
             );
           } else if (frame.type === "app.conversation.get") {
+            const work = [
+              {
+                requestId: "item-working",
+                message: "Review the May design",
+                state: completedWorkId === "item-working" ? "done" : "analyzing",
+                ...(completedWorkId === "item-working" ? {} : { progress: "Codex is reviewing the implementation." }),
+                ...(frame.workRequestId === "item-working"
+                  ? {
+                      result: {
+                        summary: "The review is complete.",
+                        response: "The exact selected review result.",
+                      },
+                    }
+                  : {}),
+                createdAt: Date.UTC(2026, 7, 17, 8, 20, 0),
+                updatedAt: Date.UTC(2026, 7, 17, 8, 25, 0),
+              },
+              {
+                requestId: "item-queued",
+                message: "Review AKS tasks",
+                state: "queued",
+                createdAt: Date.UTC(2026, 7, 17, 8, 10, 0),
+                updatedAt: Date.UTC(2026, 7, 17, 8, 10, 0),
+              },
+              {
+                requestId: "item-done",
+                message: "Review the earlier release",
+                state: "done",
+                createdAt: Date.UTC(2026, 7, 17, 7, 0, 0),
+                updatedAt: Date.UTC(2026, 7, 17, 7, 5, 0),
+              },
+            ]
+              .filter(
+                (item) => frame.allWork === true || item.state !== "done" || frame.workRequestId === item.requestId,
+              )
+              .filter((item) => !frame.workRequestId || item.requestId === frame.workRequestId);
             socket.write(
               `${JSON.stringify({
                 type: "ok",
                 command: "app.conversation.get",
-                turns: [
-                  {
-                    requestId: "item-history",
-                    input: { kind: "message", data: { message: "Earlier question" } },
-                    state: "done",
-                    deliveries: [
-                      {
-                        operationId: "app-delivery:item-history:1",
-                        kind: "final",
-                        status: "delivered",
-                        text: "Earlier answer",
-                      },
-                    ],
-                  },
-                ],
+                conversation: {
+                  id: "may:primary",
+                  owner: "may",
+                  version: 2,
+                  messages: [
+                    {
+                      id: "human-history",
+                      sequence: 1,
+                      author: { kind: "human", id: "human-history" },
+                      text: "Earlier question",
+                      createdAt: 1,
+                    },
+                    {
+                      id: "delivery:history",
+                      sequence: 2,
+                      author: { kind: "agent", id: "may" },
+                      text: "Earlier answer",
+                      createdAt: 2,
+                    },
+                  ],
+                  work,
+                },
               })}\n`,
             );
-          } else if (frame.type === "app.commitments.get") {
-            socket.write(
-              `${JSON.stringify({
-                type: "ok",
-                command: "app.commitments.get",
-                commitments: [
-                  {
-                    requestId: "item-working",
-                    message: "Review the May design",
-                    state: "analyzing",
-                    progress: "Codex is reviewing the implementation.",
-                    ...(frame.requestId === "item-working"
-                      ? {
-                          result: {
-                            summary: "The review is complete.",
-                            response: "The exact selected review result.",
-                          },
-                        }
-                      : {}),
-                    createdAt: Date.UTC(2026, 7, 17, 8, 0, 0),
-                    updatedAt: Date.UTC(2026, 7, 17, 8, 5, 0),
-                  },
-                  {
-                    requestId: "item-queued",
-                    message: "Review AKS tasks",
-                    state: "queued",
-                    createdAt: Date.UTC(2026, 7, 17, 8, 10, 0),
-                    updatedAt: Date.UTC(2026, 7, 17, 8, 10, 0),
-                  },
-                ].filter((item) => item.requestId !== completedCommitmentId),
-              })}\n`,
-            );
-          } else if (frame.type === "app.input.admit") {
+          } else if (
+            frame.type === "publish" &&
+            frame.event?.type === "conversation.message.created" &&
+            frame.event?.data?.author?.kind === "human"
+          ) {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
             socket.write(
               `${JSON.stringify({
@@ -127,7 +142,12 @@ describe("May Console", () => {
                 text: "unrelated worker output",
               })}\n`,
             );
-            const turn = frames.filter((item) => item.type === "app.input.admit").length;
+            const turn = frames.filter(
+              (item) =>
+                item.type === "publish" &&
+                item.event?.type === "conversation.message.created" &&
+                item.event?.data?.author?.kind === "human",
+            ).length;
             const sessionId = `s_may_turn_${turn}`;
             if (turn > 1) {
               socket.write(
@@ -179,6 +199,13 @@ describe("May Console", () => {
     child.stderr.on("data", (chunk) => {
       output += chunk.toString();
     });
+    const humanFrames = () =>
+      frames.filter(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.author?.kind === "human",
+      );
 
     cleanups.push(() => rmSync(root, { recursive: true, force: true }));
     cleanups.push(() => server.close());
@@ -189,7 +216,7 @@ describe("May Console", () => {
     await waitFor(() => output.includes("\nyou> Earlier question\n\n") && output.includes("\nmay> Earlier answer\n\n"));
     await waitFor(
       () =>
-        output.includes("Working:") &&
+        output.includes("Active work:") &&
         output.includes("Review the May design — Analyzing") &&
         output.includes("Codex is reviewing the implementation.") &&
         output.includes("Review AKS tasks — Queued"),
@@ -201,13 +228,20 @@ describe("May Console", () => {
     expect(output).not.toContain("focused work");
 
     child.stdin.write("/work\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 2);
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 2);
+
+    child.stdin.write("/work all\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 3);
+    expect(frames.filter((frame) => frame.type === "app.conversation.get")[2]).toMatchObject({ allWork: true });
+    expect(frames.filter((frame) => frame.type === "app.conversation.get")[2]).not.toHaveProperty("limit");
+    await waitFor(
+      () => output.includes("All work (newest first):") && output.includes("Review the earlier release — Done"),
+    );
 
     child.stdin.write("/work 1\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 3);
-    expect(frames.filter((frame) => frame.type === "app.commitments.get")[2]).toMatchObject({
-      limit: 1,
-      requestId: "item-working",
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 4);
+    expect(frames.filter((frame) => frame.type === "app.conversation.get")[3]).toMatchObject({
+      workRequestId: "item-working",
     });
     await waitFor(
       () =>
@@ -216,25 +250,37 @@ describe("May Console", () => {
         output.includes("Status: Analyzing") &&
         output.includes("Progress: Codex is reviewing the implementation.") &&
         output.includes("Result:\n    The exact selected review result.") &&
-        output.includes("Created: 2026-08-17 08:00:00 UTC") &&
-        output.includes("Updated: 2026-08-17 08:05:00 UTC"),
+        output.includes("Created: 2026-08-17 08:20:00 UTC") &&
+        output.includes("Updated: 2026-08-17 08:25:00 UTC"),
     );
 
     child.stdin.write("show me the result\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 1);
-    expect(frames.filter((frame) => frame.type === "app.input.admit")[0]).toMatchObject({
-      input: {
-        kind: "message",
-        data: { message: "show me the result", context: { selectedWorkRequestId: "item-working" } },
+    await waitFor(() => humanFrames().length === 1);
+    expect(humanFrames()[0]).toMatchObject({
+      event: {
+        type: "conversation.message.created",
+        target: { appId: "may" },
+        data: {
+          conversationId: "may:primary",
+          author: { kind: "human", id: expect.stringMatching(/^may-console:local-terminal:\d+$/) },
+          text: "show me the result",
+          metadata: { channel: "may-console", channelThreadId: "local-terminal" },
+        },
       },
     });
     await waitFor(() => output.includes("\nmay> May response 1\n\nyou> "));
-    expect(frames.filter((frame) => frame.type === "app.input.admit")[0]?.input.data.context).toEqual({
-      selectedWorkRequestId: "item-working",
-    });
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.metadata?.command === "/work 1" &&
+          String(frame.event?.data?.text).includes("The exact selected review result."),
+      ),
+    ).toBe(true);
 
     child.stdin.write("/work 2\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 4);
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 5);
     await waitFor(
       () =>
         output.includes("Work 2:") &&
@@ -243,34 +289,41 @@ describe("May Console", () => {
         output.includes("Progress: No durable progress update yet."),
     );
 
-    completedCommitmentId = "item-working";
+    completedWorkId = "item-working";
     child.stdin.write("/work 1\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.commitments.get").length === 5);
-    await waitFor(() => output.includes("Request: Review the May design") && output.includes("Status: No longer open"));
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 6);
+    await waitFor(() => output.includes("Request: Review the May design") && output.includes("Status: Done"));
 
     child.stdin.write("/sessions\n");
     await waitFor(() => output.includes("focused work"));
 
     child.stdin.write("review Gym\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 2);
-    const input = frames.filter((frame) => frame.type === "app.input.admit")[1];
+    await waitFor(() => humanFrames().length === 2);
+    const input = humanFrames()[1];
     expect(input).toMatchObject({
-      appId: "may",
-      input: { kind: "message", data: { message: "review Gym" } },
-      source: { kind: "human", id: expect.stringMatching(/^may-console:local-terminal:\d+$/) },
-      conversationId: "may-console:local-terminal:agent:may",
-      channel: "may-console",
-      channelThreadId: "local-terminal",
+      event: {
+        target: { appId: "may" },
+        data: {
+          text: "review Gym",
+          conversationId: "may:primary",
+          metadata: { channel: "may-console", channelThreadId: "local-terminal" },
+        },
+      },
     });
-    expect(input?.input.data).not.toHaveProperty("context");
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.data?.metadata?.command === "/sessions" &&
+          String(frame.event?.data?.text).includes("s_worker_1"),
+      ),
+    ).toBe(true);
     await waitFor(() => output.includes("\nmay> May response 2\n\nyou> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     await waitFor(() => frames.some((frame) => frame.type === "channel.delivery.completed"));
     expect(
-      frames.find(
-        (frame) => frame.type === "channel.delivery.completed" && frame.data?.appInboxItemId === "item-2",
-      ),
+      frames.find((frame) => frame.type === "channel.delivery.completed" && frame.data?.appInboxItemId === "item-2"),
     ).toMatchObject({
       source: "may-console",
       owner: "app:may",
@@ -292,9 +345,9 @@ describe("May Console", () => {
     expect(frames.filter((frame) => frame.type === "subscribe")[1]?.sessions).toEqual(["s_worker_123"]);
 
     child.stdin.write("another May request\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "app.input.admit").length === 3);
+    await waitFor(() => humanFrames().length === 3);
     expect(frames.filter((frame) => frame.type === "subscribe")[2]?.sessions).toEqual([]);
-    expect(frames.filter((frame) => frame.type === "app.input.admit")[2]?.appId).toBe("may");
+    expect(humanFrames()[2]?.event?.target?.appId).toBe("may");
     await waitFor(() => output.includes("\nmay> May response 3\n\nyou> "));
 
     child.stdin.write("/debug\n");

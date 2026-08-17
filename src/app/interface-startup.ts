@@ -20,7 +20,6 @@ export interface InterfaceStartupOptions {
   reportInfo: (message: string) => void;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  getAppCommitments?: AttachControlSocketOptions["getAppCommitments"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
@@ -73,7 +72,6 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         reportInfo: options.reportInfo,
         admitAppInput: options.admitAppInput,
         getAppConversation: options.getAppConversation,
-        getAppCommitments: options.getAppCommitments,
         describeProjectActions: options.describeProjectActions,
         invokeProjectAction: options.invokeProjectAction,
         agentName: options.interfaceAgent,

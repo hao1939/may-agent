@@ -9,8 +9,8 @@ import {
   buildTelegramQuoteReplyText,
   extractProjectPath,
   normalizeProjectPath,
+  primaryConversationId,
   readSessionReplyContext,
-  telegramConversationId,
 } from "./telegram-reply-router.js";
 
 describe("telegram reply router helpers", () => {
@@ -25,9 +25,8 @@ describe("telegram reply router helpers", () => {
     expect(normalizeProjectPath("shared/projects/demo", root)).toBe("projects/demo");
   });
 
-  it("uses one stable Telegram conversation identity per chat, topic, and May agent", () => {
-    expect(telegramConversationId(123, undefined, "may")).toBe("telegram:chat:123:topic:0:agent:may");
-    expect(telegramConversationId("123", 7, "may")).toBe("telegram:chat:123:topic:7:agent:may");
+  it("maps configured human surfaces to one May-owned conversation resource", () => {
+    expect(primaryConversationId("may")).toBe("may:primary");
   });
 
   it("rejects non-project paths", () => {

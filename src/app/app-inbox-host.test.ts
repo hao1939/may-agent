@@ -440,19 +440,33 @@ describe("App inbox host", () => {
     });
     expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
     invocations.length = 0;
+    db.run(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (?, 'conversation.message.created', 'telegram', 'app:may', ?, ?)`,
+      [
+        40,
+        JSON.stringify({
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "command", id: "telegram" },
+          text: "Work 1:\n  Result: Hello",
+          metadata: { channel: "telegram", command: "/work 1" },
+        }),
+        40,
+      ],
+    );
     host.admit({
       id: "human-1",
       appId: "may",
       source: { kind: "human", id: "event:42" },
       input: {
         kind: "probe",
-        data: { value: "hello", context: { selectedWorkRequestId: "selected-human" } },
+        data: { value: "hello" },
       },
-      conversationId: "telegram:123",
+      conversationId: "may:primary",
       conversationSequence: 42,
-      channel: "telegram",
-      channelThreadId: "thread-7",
-      channelMessageId: 99,
+      channel: "may-console",
+      channelThreadId: "local-terminal",
       replyToSourceId: "event:41",
     });
 
@@ -460,10 +474,9 @@ describe("App inbox host", () => {
     expect(invocations).toMatchObject([
       {
         transport: {
-          channel: "telegram",
-          channelThreadId: "thread-7",
-          channelMessageId: 99,
-          conversationId: "telegram:123",
+          channel: "may-console",
+          channelThreadId: "local-terminal",
+          conversationId: "may:primary",
         },
         requests: [
           {
@@ -471,17 +484,17 @@ describe("App inbox host", () => {
             source: { kind: "human", id: "event:42" },
             input: {
               kind: "probe",
-              data: { value: "hello", context: { selectedWorkRequestId: "selected-human" } },
+              data: { value: "hello" },
             },
             conversation: {
-              id: "telegram:123",
-              sourceId: "event:42",
-              replyToSourceId: "event:41",
-              commitments: [
+              id: "may:primary",
+              owner: "may",
+              version: 40,
+              current: { messageId: "event:42", replyTo: "event:41" },
+              work: [
                 expect.objectContaining({
                   requestId: "selected-human",
                   state: "ready",
-                  result: { summary: "done", response: "Hello" },
                 }),
                 expect.objectContaining({
                   requestId: "background-human",
@@ -489,7 +502,16 @@ describe("App inbox host", () => {
                   state: "analyzing",
                 }),
               ],
-              prior: [],
+              messages: [
+                {
+                  id: "event:40",
+                  sequence: 40,
+                  author: { kind: "command", id: "telegram" },
+                  text: "Work 1:\n  Result: Hello",
+                  metadata: { channel: "telegram", command: "/work 1" },
+                  createdAt: 40,
+                },
+              ],
             },
           },
         ],
@@ -503,7 +525,7 @@ describe("App inbox host", () => {
       delivery: {
         operationId: "app-delivery:human-1:1",
         status: "pending",
-        channel: "telegram",
+        channel: "may-console",
       },
     });
   });

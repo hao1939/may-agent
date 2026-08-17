@@ -616,6 +616,63 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`,
       );
     }
+    if (event.type === "conversation.message.created") {
+      const appId = typeof data.appId === "string" ? data.appId.trim() : "";
+      const conversationId = typeof data.conversationId === "string" ? data.conversationId.trim() : "";
+      const author =
+        data.author && typeof data.author === "object" && !Array.isArray(data.author)
+          ? (data.author as Record<string, unknown>)
+          : {};
+      const authorKind = typeof author.kind === "string" ? author.kind.trim() : "";
+      const authorId = typeof author.id === "string" ? author.id.trim() : "";
+      const text = typeof data.text === "string" ? data.text.trim() : "";
+      if (!appId || !conversationId || !authorKind || !authorId || !text) {
+        throw new Error("Conversation message is missing its App, conversation, author, or text");
+      }
+      if (authorKind === "human") {
+        const metadata =
+          data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
+            ? (data.metadata as Record<string, unknown>)
+            : {};
+        const persistedEventId = eventRowId(event);
+        const fallbackSequence =
+          typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
+            ? metadata.channelMessageId
+            : undefined;
+        const admitted = host.admit({
+          appId,
+          source: { kind: "human", id: authorId },
+          input: {
+            kind: "message",
+            data: {
+              message: text,
+              ...(data.context && typeof data.context === "object" && !Array.isArray(data.context)
+                ? { context: data.context }
+                : {}),
+            },
+          },
+          originEventId: persistedEventId,
+          conversationId,
+          conversationSequence: persistedEventId ?? fallbackSequence,
+          channel: typeof metadata.channel === "string" ? metadata.channel : undefined,
+          channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
+          channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
+          replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
+          idempotencyKey:
+            typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
+              ? data.idempotencyKey.trim()
+              : eventIdentity(event),
+        });
+        schedule(admitted.item.appId);
+        return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
+      }
+      return {
+        accepted: true,
+        by: `conversation:${conversationId}`,
+        route: "direct",
+        note: data.transient === true ? "transient conversation transport" : "durable conversation context",
+      };
+    }
     if (event.type === "app.input.requested") {
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";
       const identity = eventIdentity(event);

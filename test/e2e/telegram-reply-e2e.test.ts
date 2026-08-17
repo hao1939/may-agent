@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../../src/app/event-bus.js";
+import { createAppInboxItem } from "../../src/app/app-inbox-store.js";
 import { attachTelegramBot } from "../../src/app/transport/telegram.js";
 import { getDb } from "../../src/lib/requests.js";
 
@@ -117,9 +118,9 @@ describe("telegram reply e2e", () => {
     });
 
     const bus = new EventBus();
-    const appInputs: any[] = [];
+    const conversationMessages: any[] = [];
     bus.subscribe((event: any) => {
-      if (event.type === "app.input.requested") appInputs.push(event);
+      if (event.type === "conversation.message.created") conversationMessages.push(event);
     });
 
     const bot = attachTelegramBot({
@@ -130,36 +131,90 @@ describe("telegram reply e2e", () => {
     });
 
     await waitFor(() => {
-      expect(appInputs).toHaveLength(1);
-      expect(appInputs[0]).toMatchObject({
+      expect(conversationMessages).toHaveLength(1);
+      expect(conversationMessages[0]).toMatchObject({
         source: "telegram",
         owner: "app:may",
         data: {
           appId: "may",
-          conversationId: "telegram:chat:12345:topic:0:agent:may",
-          channel: "telegram",
-          channelMessageId: 200,
-          replyToSourceId: "telegram:12345:100",
-          input: {
-            kind: "message",
-            data: {
-              context: {
-                telegramReply: {
-                  replyToMsgId: 100,
-                  fallback: "telegram-quote",
-                },
-              },
+          conversationId: "may:primary",
+          author: { kind: "human", id: "telegram:12345:200" },
+          replyTo: "telegram:12345:100",
+          metadata: { channel: "telegram", channelMessageId: 200 },
+          context: {
+            telegramReply: {
+              replyToMsgId: 100,
+              conversationId: "may:primary",
+              fallback: "telegram-quote",
             },
           },
         },
       });
-      const input = String(appInputs[0].data?.input?.data?.message);
+      const input = String(conversationMessages[0].data?.text);
       expect(input).toContain("[User replying to Telegram message]");
       expect(input).toContain("Project needs attention");
       expect(input).toContain("User says: show details");
     });
     expect(sentMessages).toHaveLength(0);
 
+    bot.close();
+  });
+
+  it("renders Telegram work from the shared Conversation and records what the human saw", async () => {
+    createAppInboxItem(getDb(persistDir), {
+      id: "work-1",
+      appId: "may",
+      source: { kind: "human", id: "telegram:12345:100" },
+      input: { kind: "message", data: { message: "Review the design" } },
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "telegram",
+      now: 1,
+    });
+    const sentMessages: Array<{ chat_id: string; text: string }> = [];
+    let getUpdatesCount = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount += 1;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            { update_id: 1, message: { message_id: 200, chat: { id: 12345 }, text: "/work" } },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 300 });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const messages: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "conversation.message.created") messages.push(event);
+    });
+    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+
+    await waitFor(() => {
+      expect(sentMessages).toHaveLength(1);
+      expect(sentMessages[0]?.text).toContain("Active work:");
+      expect(sentMessages[0]?.text).toContain("Review the design — Queued");
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toMatchObject({
+        data: {
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "command", id: "telegram" },
+          metadata: { channel: "telegram", channelMessageId: 300, command: "/work" },
+        },
+      });
+    });
     bot.close();
   });
 
@@ -315,7 +370,7 @@ describe("telegram reply e2e", () => {
     const bus = new EventBus();
     const appInputs: any[] = [];
     bus.subscribe((event: any) => {
-      if (event.type === "app.input.requested") appInputs.push(event);
+      if (event.type === "conversation.message.created") appInputs.push(event);
     });
 
     const bot = attachTelegramBot({
@@ -355,17 +410,17 @@ describe("telegram reply e2e", () => {
 
     await waitFor(() => {
       expect(appInputs).toHaveLength(1);
-      const inputText = String(appInputs[0].data?.input?.data?.message ?? "");
+      const inputText = String(appInputs[0].data?.text ?? "");
       expect(inputText).toBe("approve");
       expect(inputText).not.toContain("Conversation: approval:approval-123");
       expect(inputText).not.toContain("Approval id:");
-      expect(appInputs[0].data?.conversationId).toBe("telegram:chat:12345:topic:0:agent:may");
-      expect(appInputs[0].data?.input?.data?.context?.telegramReply).toMatchObject({
-        conversationId: "telegram:chat:12345:topic:0:agent:may",
+      expect(appInputs[0].data?.conversationId).toBe("may:primary");
+      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
+        conversationId: "may:primary",
         requestConversationId: "approval:approval-123",
         expectedClosure: ["project.approval.submitted"],
       });
-      expect(appInputs[0].data?.input?.data?.context?.suggestedTarget).toMatchObject({
+      expect(appInputs[0].data?.context?.suggestedTarget).toMatchObject({
         agent: "may",
         projectPath: "projects/alpha-project.app",
       });
@@ -449,7 +504,7 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "app.input.requested") appInputs.push(event);
+      if (event.type === "conversation.message.created") appInputs.push(event);
       if (event.type === "project.comment.created") comments.push(event);
       if (event.type === "project.approval.submitted") approvals.push(event);
     });
@@ -462,13 +517,13 @@ describe("telegram reply e2e", () => {
     });
     await waitFor(() => {
       expect(appInputs).toHaveLength(1);
-      expect(String(appInputs[0].data?.input?.data?.message)).toBe("approve");
-      expect(appInputs[0].data?.conversationId).toBe("telegram:chat:12345:topic:0:agent:may");
-      expect(appInputs[0].data?.input?.data?.context?.suggestedTarget).toMatchObject({
+      expect(String(appInputs[0].data?.text)).toBe("approve");
+      expect(appInputs[0].data?.conversationId).toBe("may:primary");
+      expect(appInputs[0].data?.context?.suggestedTarget).toMatchObject({
         agent: "may",
         projectPath: "projects/alpha-project.app",
       });
-      expect(appInputs[0].data?.input?.data?.context?.telegramReply).toMatchObject({
+      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
         requestConversationId: "approval:approval-650",
         expectedClosure: ["project.approval.submitted"],
         sessionId: "s_approval_source",
@@ -554,7 +609,7 @@ describe("telegram reply e2e", () => {
     let activeChatSessionId = "";
     bus.subscribe((event: any) => {
       if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "app.input.requested") appInputs.push(event);
+      if (event.type === "conversation.message.created") appInputs.push(event);
       if (event.type === "project.comment.created") comments.push(event);
       if (event.type === "session.steer.requested") steers.push(event);
     });
@@ -569,11 +624,11 @@ describe("telegram reply e2e", () => {
     await waitFor(() => {
       expect(chatStarts).toHaveLength(0);
       expect(appInputs).toHaveLength(1);
-      const appMessage = String(appInputs[0].data?.input?.data?.message);
+      const appMessage = String(appInputs[0].data?.text);
       expect(appMessage).toBe("please revise the scoped plan");
-      expect(appInputs[0].data?.conversationId).toBe("telegram:chat:12345:topic:0:agent:may");
-      expect(appInputs[0].data?.input?.data?.context?.telegramReply).toMatchObject({
-        conversationId: "telegram:chat:12345:topic:0:agent:may",
+      expect(appInputs[0].data?.conversationId).toBe("may:primary");
+      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
+        conversationId: "may:primary",
         requestConversationId: "tg_project_review_1",
         taskId: "review-plan",
         projectId: "projects/example-project",
@@ -591,12 +646,12 @@ describe("telegram reply e2e", () => {
         {
           sessionId: activeChatSessionId,
           agent: "may",
-          task: String(appInputs[0].data?.input?.data?.message),
+          task: String(appInputs[0].data?.text),
           trigger: "chat",
           firedAt: Date.now(),
           kind: "chat",
           channelMessageId: 701,
-          conversationId: "telegram:chat:12345:topic:0:agent:may",
+          conversationId: "may:primary",
         },
         "telegram",
       ) as any,
@@ -694,7 +749,7 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "app.input.requested") appInputs.push(event);
+      if (event.type === "conversation.message.created") appInputs.push(event);
     });
 
     const bot = attachTelegramBot({
@@ -707,11 +762,11 @@ describe("telegram reply e2e", () => {
       expect(steers).toHaveLength(0);
       expect(chatStarts).toHaveLength(0);
       expect(appInputs).toHaveLength(1);
-      const appMessage = String(appInputs[0].data?.input?.data?.message);
+      const appMessage = String(appInputs[0].data?.text);
       expect(appMessage).toBe("continue with the smaller plan");
-      expect(appInputs[0].data?.conversationId).toBe("telegram:chat:12345:topic:0:agent:may");
-      expect(appInputs[0].data?.input?.data?.context?.telegramReply).toMatchObject({
-        conversationId: "telegram:chat:12345:topic:0:agent:may",
+      expect(appInputs[0].data?.conversationId).toBe("may:primary");
+      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
+        conversationId: "may:primary",
         requestConversationId: "tg_session_input_1",
         sessionId: "s_reply_target",
         originalIssue: { eventType: "session.blocked", sourceSessionId: "s_reply_target" },
@@ -792,7 +847,7 @@ describe("telegram reply e2e", () => {
     const steers: any[] = [];
     bus.subscribe((event: any) => {
       if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "app.input.requested") appInputs.push(event);
+      if (event.type === "conversation.message.created") appInputs.push(event);
       if (event.type === "session.steer.requested") steers.push(event);
     });
 
@@ -806,10 +861,10 @@ describe("telegram reply e2e", () => {
       expect(steers).toHaveLength(0);
       expect(chatStarts).toHaveLength(0);
       expect(appInputs).toHaveLength(1);
-      const appMessage = String(appInputs[0].data?.input?.data?.message);
+      const appMessage = String(appInputs[0].data?.text);
       expect(appMessage).toBe("approve retry");
-      expect(appInputs[0].data?.conversationId).toBe("telegram:chat:12345:topic:0:agent:may");
-      expect(appInputs[0].data?.input?.data?.context?.telegramReply).toMatchObject({
+      expect(appInputs[0].data?.conversationId).toBe("may:primary");
+      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
         requestConversationId: "escalation:esc_1",
         sessionId: "s_escalation_source",
         expectedClosure: ["escalation.resolved", "escalation.dismissed"],

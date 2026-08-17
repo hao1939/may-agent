@@ -27,7 +27,6 @@ export interface SocketUIOptions {
   instance: string;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  getAppCommitments?: AttachControlSocketOptions["getAppCommitments"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
@@ -80,7 +79,6 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     describeProjectActions: opts.describeProjectActions,
     admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
-    getAppCommitments: opts.getAppCommitments,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onDelivered: (event, clientCount) => {
