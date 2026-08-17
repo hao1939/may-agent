@@ -72,6 +72,45 @@ type EventDefinition = {
  * Trusted in-process facts may remain unregistered and default to record-only.
  */
 const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
+  "conversation.message.created": {
+    delivery: "required",
+    validate: (input, options) => {
+      const appId = requiredTarget(input, "appId");
+      if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
+      requiredText(input.data.conversationId, "conversation.message.created data.conversationId");
+      requiredText(input.data.text, "conversation.message.created data.text");
+      const author = record(input.data.author, "conversation.message.created data.author");
+      const kind = requiredText(author.kind, "conversation.message.created data.author.kind");
+      if (!(["human", "agent", "tool", "command"] as const).includes(kind as never)) {
+        throw new Error("conversation.message.created data.author.kind is invalid");
+      }
+      requiredText(author.id, "conversation.message.created data.author.id");
+      if (input.data.transient !== undefined && typeof input.data.transient !== "boolean") {
+        throw new Error("conversation.message.created data.transient must be boolean");
+      }
+      optionalTextField(input.data, "replyTo", "conversation.message.created data.replyTo");
+      if (input.data.context !== undefined) {
+        record(input.data.context, "conversation.message.created data.context");
+      }
+      if (input.data.metadata !== undefined) {
+        const metadata = record(input.data.metadata, "conversation.message.created data.metadata");
+        optionalTextField(metadata, "channel", "conversation.message.created data.metadata.channel");
+        optionalTextField(
+          metadata,
+          "channelThreadId",
+          "conversation.message.created data.metadata.channelThreadId",
+        );
+        if (
+          metadata.channelMessageId !== undefined &&
+          (!Number.isSafeInteger(metadata.channelMessageId) || Number(metadata.channelMessageId) <= 0)
+        ) {
+          throw new Error("conversation.message.created data.metadata.channelMessageId must be a positive integer");
+        }
+        optionalTextField(metadata, "requestId", "conversation.message.created data.metadata.requestId");
+        optionalTextField(metadata, "command", "conversation.message.created data.metadata.command");
+      }
+    },
+  },
   "app.input.requested": {
     delivery: "required",
     validate: (input, options) => {
@@ -327,7 +366,15 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
   };
   const appId = optionalText(data.appId);
   const idempotencyKey = optionalText(data.idempotencyKey) ?? `event:${eventId}`;
-  if (eventType === "app.input.requested" && appId) {
+  const conversationAuthor =
+    data.author && typeof data.author === "object" && !Array.isArray(data.author)
+      ? (data.author as Record<string, unknown>)
+      : undefined;
+  if (
+    (eventType === "app.input.requested" ||
+      (eventType === "conversation.message.created" && conversationAuthor?.kind === "human")) &&
+    appId
+  ) {
     const item = db
       .prepare(
         `SELECT id, status FROM app_inbox_items

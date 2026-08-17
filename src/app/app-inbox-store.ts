@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppCommitmentView, AppInput, AppInputSource, AppResult } from "@may-agent/sdk";
+import type {
+  AppConversationMessage,
+  AppConversationResource,
+  AppInput,
+  AppInputSource,
+  AppResult,
+  AppWorkView,
+} from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
@@ -103,13 +110,10 @@ export type AppInboxHealth = {
   oldestHandlingItemAgeMs?: number;
 };
 
-export type AppConversationTurn = {
-  requestId: string;
-  sourceId: string;
-  replyToSourceId?: string;
-  input: AppInput;
-  state: "working" | "done";
-  deliveries: AppInboxDelivery[];
+type ConversationEventRow = {
+  id: number;
+  data: string;
+  timestamp: number;
 };
 
 type InboxRow = Record<string, unknown>;
@@ -294,62 +298,216 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
     });
 }
 
-/** Read-only conversation view derived from inbox requests and delivery operations. */
-export function listAppConversationTurns(
+function conversationText(input: AppInput): string | undefined {
+  const data = input.data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return undefined;
+  const record = data as Record<string, unknown>;
+  for (const field of ["message", "text"]) {
+    const value = record[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function boundedConversationText(value: string, limit = 8_000): string {
+  const text = value.trim();
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 1).trimEnd()}…`;
+}
+
+function conversationEventMessage(row: ConversationEventRow): AppConversationMessage | undefined {
+  let data: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(row.data) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
+    data = parsed as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+  if (data.transient === true || typeof data.text !== "string" || !data.text.trim()) return undefined;
+  const author = data.author;
+  if (!author || typeof author !== "object" || Array.isArray(author)) return undefined;
+  const authorRecord = author as Record<string, unknown>;
+  const kind = authorRecord.kind;
+  const id = authorRecord.id;
+  if (!(["human", "agent", "tool", "command"] as const).includes(kind as never)) return undefined;
+  // Human messages are projected from their durably admitted inbox child so
+  // the Conversation never shows an unaccepted request or duplicates it.
+  if (kind === "human") return undefined;
+  if (typeof id !== "string" || !id.trim()) return undefined;
+  const rawMetadata = data.metadata;
+  const metadata =
+    rawMetadata && typeof rawMetadata === "object" && !Array.isArray(rawMetadata)
+      ? (rawMetadata as Record<string, unknown>)
+      : undefined;
+  return {
+    id: `event:${row.id}`,
+    sequence: row.id,
+    author: { kind: kind as AppConversationMessage["author"]["kind"], id: id.trim() },
+    text: boundedConversationText(data.text),
+    ...(typeof data.replyTo === "string" && data.replyTo.trim() ? { replyTo: data.replyTo.trim() } : {}),
+    ...(metadata
+      ? {
+          metadata: {
+            ...(typeof metadata.channel === "string" && metadata.channel.trim()
+              ? { channel: metadata.channel.trim() }
+              : {}),
+            ...(typeof metadata.channelThreadId === "string" && metadata.channelThreadId.trim()
+              ? { channelThreadId: metadata.channelThreadId.trim() }
+              : {}),
+            ...(typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
+              ? { channelMessageId: metadata.channelMessageId }
+              : {}),
+            ...(typeof metadata.requestId === "string" && metadata.requestId.trim()
+              ? { requestId: metadata.requestId.trim() }
+              : {}),
+            ...(typeof metadata.command === "string" && metadata.command.trim()
+              ? { command: metadata.command.trim() }
+              : {}),
+          },
+        }
+      : {}),
+    createdAt: row.timestamp,
+  };
+}
+
+/**
+ * One bounded cross-channel conversation projection over existing durable
+ * inbox, delivery, and event-journal evidence. Transient message events are
+ * deliberately excluded from App context and reconnect replay.
+ */
+export function listAppConversationMessages(
   db: SqliteDb,
   appId: string,
   conversationId: string,
   limit = 50,
-): AppConversationTurn[] {
+): AppConversationMessage[] {
   requiredText(appId, "appId");
   requiredText(conversationId, "conversationId");
   if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 200) {
-    throw new Error("Conversation limit must be an integer from 1 to 200");
+    throw new Error("Conversation message limit must be an integer from 1 to 200");
   }
-  const rows = db
+
+  const messages: AppConversationMessage[] = [];
+  const humanRows = db
     .prepare(
-      `SELECT * FROM (
-         SELECT * FROM app_inbox_items
-         WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
-         ORDER BY conversation_seq DESC, created_at DESC, id DESC
-         LIMIT ?
-       ) recent
-       ORDER BY conversation_seq, created_at, id`,
+      `SELECT * FROM app_inbox_items
+       WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(appId, conversationId, limit)
+    .map(rowToItem);
+  for (const item of humanRows) {
+    const text = conversationText(item.input);
+    if (!text) continue;
+    const sequence = item.originEventId ?? item.conversationSequence ?? item.createdAt;
+    messages.push({
+      id: item.source.id,
+      sequence,
+      author: { kind: "human", id: item.source.id },
+      text: boundedConversationText(text),
+      ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
+      metadata: {
+        ...(item.channel ? { channel: item.channel } : {}),
+        requestId: item.id,
+      },
+      createdAt: item.createdAt,
+    });
+  }
+
+  const deliveryRows = db
+    .prepare(
+      `SELECT delivery.*, item.app_id, item.conversation_id
+       FROM app_inbox_deliveries delivery
+       JOIN app_inbox_items item ON item.id = delivery.item_id
+       WHERE item.app_id = ? AND item.conversation_id = ?
+         AND delivery.status = 'delivered' AND delivery.text IS NOT NULL
+       ORDER BY delivery.completed_at DESC, delivery.created_at DESC
+       LIMIT ?`,
     )
     .all(appId, conversationId, limit);
-  return rows.map((row) => {
-    const item = rowToItem(row);
-    return {
-      requestId: item.id,
-      sourceId: item.source.id,
-      replyToSourceId: item.replyToSourceId,
-      input: item.input,
-      state: item.status === "done" ? "done" : "working",
-      deliveries: listAppInboxDeliveries(db, item.id),
-    };
-  });
+  for (const row of deliveryRows) {
+    const delivery = rowToDelivery(row);
+    if (!delivery.text?.trim()) continue;
+    messages.push({
+      id: `delivery:${delivery.operationId}`,
+      sequence: delivery.receiptEventId ?? delivery.completedAt ?? delivery.createdAt,
+      author: { kind: "agent", id: appId },
+      text: boundedConversationText(delivery.text),
+      metadata: { channel: delivery.channel, requestId: delivery.requestId },
+      createdAt: delivery.completedAt ?? delivery.createdAt,
+    });
+  }
+
+  const eventRows = db
+    .prepare(
+      `SELECT id, data, timestamp FROM events
+       WHERE event_type = 'conversation.message.created'
+         AND json_extract(data, '$.appId') = ?
+         AND json_extract(data, '$.conversationId') = ?
+       ORDER BY id DESC
+       LIMIT ?`,
+    )
+    .all(appId, conversationId, limit) as ConversationEventRow[];
+  for (const row of eventRows) {
+    const message = conversationEventMessage(row);
+    if (message) messages.push(message);
+  }
+
+  return messages
+    .sort((left, right) => left.sequence - right.sequence || left.createdAt - right.createdAt || left.id.localeCompare(right.id))
+    .slice(-limit);
 }
 
-function boundedCommitmentText(value: string, limit: number): string {
+/** Stable May/App-owned conversation resource derived without another store. */
+export function readAppConversationResource(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  options: { limit?: number; allWork?: boolean; workRequestId?: string } = {},
+): AppConversationResource {
+  const limit = options.limit ?? 50;
+  const messages = listAppConversationMessages(db, appId, conversationId, limit);
+  const workRequestId = options.workRequestId?.trim();
+  return {
+    id: conversationId,
+    owner: appId,
+    version: messages.at(-1)?.sequence ?? 0,
+    messages,
+    work: listAppWork(db, appId, {
+      // `allWork` is an explicit full-history read. Keep the ordinary active
+      // view bounded by the conversation limit, but do not silently truncate
+      // the history page because message and work bounds are separate concerns.
+      limit: workRequestId ? 1 : options.allWork ? undefined : Math.min(limit, 100),
+      all: options.allWork,
+      requestId: workRequestId,
+      includeResultForRequestId: workRequestId,
+    }),
+  };
+}
+
+function boundedWorkText(value: string, limit: number): string {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (normalized.length <= limit) return normalized;
   return `${normalized.slice(0, limit - 1).trimEnd()}…`;
 }
 
-function commitmentMessage(item: AppInboxItem): string {
+function workMessage(item: AppInboxItem): string {
   const data = item.input.data;
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const record = data as Record<string, unknown>;
     for (const field of ["message", "text"]) {
       if (typeof record[field] === "string" && record[field].trim()) {
-        return boundedCommitmentText(record[field], 160);
+        return boundedWorkText(record[field], 160);
       }
     }
   }
-  return boundedCommitmentText(`${item.input.kind} request`, 160);
+  return boundedWorkText(`${item.input.kind} request`, 160);
 }
 
-function commitmentState(item: AppInboxItem): AppCommitmentView["state"] {
+function workState(item: AppInboxItem): AppWorkView["state"] {
+  if (item.status === "done") return "done";
   if (item.status === "pending") return "queued";
   if (item.result) return "ready";
   if (item.waitingOn?.kind === "analysis" || item.waitingOn?.kind === "session") return "analyzing";
@@ -357,10 +515,10 @@ function commitmentState(item: AppInboxItem): AppCommitmentView["state"] {
   return "working";
 }
 
-function commitmentProgress(
+function workProgress(
   item: AppInboxItem,
   deliveries: AppInboxDelivery[],
-  state: AppCommitmentView["state"],
+  state: AppWorkView["state"],
 ): string | undefined {
   if (state === "ready") {
     const finalDelivery = deliveries.filter((delivery) => delivery.kind === "final").at(-1);
@@ -376,48 +534,59 @@ function commitmentProgress(
   return deliveries.filter((delivery) => delivery.kind === "progress" && delivery.text?.trim()).at(-1)?.text;
 }
 
-/** Read-only human work view derived from unfinished durable App requests. */
-export function listOpenAppCommitments(
+/** Read-only human work view derived from durable App requests. */
+export function listAppWork(
   db: SqliteDb,
   appId: string,
   options: {
+    all?: boolean;
     excludeRequestId?: string;
     requestId?: string;
     includeResultForRequestId?: string;
     limit?: number;
   } = {},
-): AppCommitmentView[] {
+): AppWorkView[] {
   requiredText(appId, "appId");
-  const limit = options.limit ?? 20;
-  if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 100) {
-    throw new Error("Commitment limit must be an integer from 1 to 100");
+  const limit = options.limit;
+  if (limit !== undefined && (!Number.isSafeInteger(limit) || limit <= 0 || limit > 100)) {
+    throw new Error("Work limit must be an integer from 1 to 100");
   }
   const excludeRequestId = options.excludeRequestId?.trim();
   const requestId = options.requestId?.trim();
   const includeResultForRequestId = options.includeResultForRequestId?.trim();
+  const all = options.all === true || Boolean(requestId);
   const rows = db
     .prepare(
       `SELECT * FROM app_inbox_items
-       WHERE app_id = ? AND source_kind = 'human' AND status IN ('pending', 'handling')
+       WHERE app_id = ? AND source_kind = 'human'
+         AND (? = 1 OR status IN ('pending', 'handling'))
          AND (? = '' OR id != ?)
          AND (? = '' OR id = ?)
        ORDER BY created_at DESC, id DESC
-       LIMIT ?`,
+       ${limit === undefined ? "" : "LIMIT ?"}`,
     )
-    .all(appId, excludeRequestId ?? "", excludeRequestId ?? "", requestId ?? "", requestId ?? "", limit);
+    .all(
+      appId,
+      all ? 1 : 0,
+      excludeRequestId ?? "",
+      excludeRequestId ?? "",
+      requestId ?? "",
+      requestId ?? "",
+      ...(limit === undefined ? [] : [limit]),
+    );
 
   return rows.map((row) => {
     const item = rowToItem(row);
     const deliveries = listAppInboxDeliveries(db, item.id);
-    const state = commitmentState(item);
-    const progress = commitmentProgress(item, deliveries, state);
+    const state = workState(item);
+    const progress = workProgress(item, deliveries, state);
     const updatedAt = deliveries.reduce((latest, delivery) => Math.max(latest, delivery.updatedAt), item.updatedAt);
     return {
       requestId: item.id,
       ...(item.conversationId ? { conversationId: item.conversationId } : {}),
-      message: commitmentMessage(item),
+      message: workMessage(item),
       state,
-      ...(progress ? { progress: boundedCommitmentText(progress, 240) } : {}),
+      ...(progress ? { progress: boundedWorkText(progress, 240) } : {}),
       ...(includeResultForRequestId === item.id && item.result ? { result: item.result } : {}),
       createdAt: item.createdAt,
       updatedAt,

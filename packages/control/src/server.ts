@@ -38,8 +38,11 @@ export interface AttachControlSocketOptions {
     eventId: number;
     eventType: string;
   };
-  getAppConversation?: (appId: string, conversationId: string, limit?: number) => unknown;
-  getAppCommitments?: (appId: string, limit?: number, requestId?: string) => unknown;
+  getAppConversation?: (
+    appId: string,
+    conversationId: string,
+    options?: { limit?: number; allWork?: boolean; workRequestId?: string },
+  ) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -146,7 +149,6 @@ export interface ControlSocketCoreOptions {
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  getAppCommitments?: AttachControlSocketOptions["getAppCommitments"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
@@ -167,7 +169,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getEvent,
     admitAppInput,
     getAppConversation,
-    getAppCommitments,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -513,6 +514,8 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           const conversationId = typeof frame.conversationId === "string" ? frame.conversationId.trim() : "";
           const limit = frame.limit === undefined ? undefined : Number(frame.limit);
+          const workRequestId = typeof frame.workRequestId === "string" ? frame.workRequestId.trim() : undefined;
+          const allWork = frame.allWork === true;
           if (!appId || !conversationId || !getAppConversation) {
             writeFrame(socket, {
               type: "error",
@@ -531,36 +534,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               conversationId,
-              turns: getAppConversation(appId, conversationId, limit),
-            });
-          } catch (error) {
-            writeFrame(socket, {
-              type: "error",
-              command: normalized.command,
-              message: error instanceof Error ? error.message : String(error),
-            });
-          }
-          continue;
-        }
-
-        if (normalized.kind === "control" && normalized.command === "app.commitments.get") {
-          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-          const limit = frame.limit === undefined ? undefined : Number(frame.limit);
-          const requestId = typeof frame.requestId === "string" ? frame.requestId.trim() : undefined;
-          if (!appId || !getAppCommitments) {
-            writeFrame(socket, {
-              type: "error",
-              command: normalized.command,
-              message: !appId ? "appId is required" : "App commitment reads are unavailable",
-            });
-            continue;
-          }
-          try {
-            writeFrame(socket, {
-              type: "ok",
-              command: normalized.command,
-              appId,
-              commitments: getAppCommitments(appId, limit, requestId),
+              conversation: getAppConversation(appId, conversationId, { limit, workRequestId, allWork }),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -698,7 +672,6 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getEvent,
     admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
-    getAppCommitments: opts.getAppCommitments,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,

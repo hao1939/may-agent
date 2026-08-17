@@ -18,9 +18,11 @@
 
 import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve } from "node:path";
+import type { AppWorkView } from "@may-agent/sdk";
 import { EVENT_ROW_ID, type AgentEvent, type EventBus, type EventTrace } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 import { readSessionMeta } from "../../lib/persistence.js";
+import { getDb } from "../../lib/requests.js";
 import {
   getLatestInboundNotificationMessage,
   getNotificationMessage,
@@ -28,7 +30,8 @@ import {
   isApprovalNotificationResolved,
   storeNotificationMessage,
 } from "../../lib/db/notifications.js";
-import { buildTelegramReplyRoute, telegramConversationId } from "./telegram-reply-router.js";
+import { buildTelegramReplyRoute, primaryConversationId } from "./telegram-reply-router.js";
+import { readAppConversationResource } from "../app-inbox-store.js";
 import { createTelegramClient } from "./telegram-client.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
 import { reviewHumanAttention } from "./human-attention-review.js";
@@ -58,6 +61,41 @@ export interface TelegramBot {
 
 const PROACTIVE_DEDUPE_WINDOW_MS = 60 * 60 * 1000;
 
+function workStateLabel(state: unknown): string {
+  const labels: Record<string, string> = {
+    queued: "Queued",
+    working: "Working",
+    analyzing: "Analyzing",
+    waiting: "Waiting",
+    ready: "Ready",
+    done: "Done",
+  };
+  return typeof state === "string" ? (labels[state] ?? "Working") : "Working";
+}
+
+function renderTelegramWorkList(work: AppWorkView[], all: boolean): string {
+  const title = all ? "All work (newest first):" : "Active work:";
+  if (work.length === 0) return `${title} nothing.`;
+  return [
+    title,
+    ...work.flatMap((item, index) => [
+      `${index + 1}. ${item.message} — ${workStateLabel(item.state)}`,
+      ...(item.progress ? [`   ${item.progress}`] : []),
+    ]),
+  ].join("\n");
+}
+
+function renderTelegramWorkDetail(item: AppWorkView, index: number): string {
+  const result = item.result?.response?.trim() || item.result?.summary?.trim();
+  return [
+    `Work ${index + 1}:`,
+    `Request: ${item.message}`,
+    `Status: ${workStateLabel(item.state)}`,
+    ...(item.progress ? [`Progress: ${item.progress}`] : []),
+    ...(result ? [`Result:\n${result}`] : []),
+  ].join("\n");
+}
+
 export function telegramMayInputEvent(input: {
   message: string;
   chatId: string;
@@ -70,26 +108,23 @@ export function telegramMayInputEvent(input: {
 }): AgentEvent {
   const sourceId = `telegram:${input.chatId}:${input.messageId}`;
   return {
-    type: "app.input.requested",
+    type: "conversation.message.created",
     source: "telegram",
     owner: "app:may",
     data: {
       appId: "may",
-      input: {
-        kind: "message",
-        data: {
-          message: input.message,
-          ...(input.context ? { context: input.context } : {}),
-        },
-      },
-      source: { kind: "human", id: sourceId },
       conversationId: input.conversationId,
-      conversationSequence: input.messageId,
-      channel: "telegram",
-      channelThreadId: input.topicId === undefined ? undefined : String(input.topicId),
-      channelMessageId: input.messageId,
-      replyToSourceId:
-        input.replyToMessageId === undefined ? undefined : `telegram:${input.chatId}:${input.replyToMessageId}`,
+      author: { kind: "human", id: sourceId },
+      text: input.message,
+      ...(input.context ? { context: input.context } : {}),
+      ...(input.replyToMessageId === undefined
+        ? {}
+        : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
+      metadata: {
+        channel: "telegram",
+        ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
+        channelMessageId: input.messageId,
+      },
       idempotencyKey: sourceId,
     },
     ...(input.trace ? { trace: input.trace } : {}),
@@ -131,6 +166,36 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     emitInfo: (message) => bus.emit({ type: "info", message }),
   });
   const { apiCall, sendMessage } = telegramClient;
+  const lastWorkBySurface = new Map<string, AppWorkView[]>();
+
+  function recordConversationMessage(input: {
+    conversationId: string;
+    text: string;
+    command: string;
+    messageId: number;
+    topicId?: number;
+    transient?: boolean;
+  }): void {
+    bus.emit({
+      type: "conversation.message.created",
+      source: "telegram",
+      owner: `app:${opts.interfaceAgent}`,
+      data: {
+        appId: opts.interfaceAgent,
+        conversationId: input.conversationId,
+        author: { kind: "command", id: "telegram" },
+        text: input.text,
+        ...(input.transient ? { transient: true } : {}),
+        metadata: {
+          channel: "telegram",
+          ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
+          channelMessageId: input.messageId,
+          command: input.command,
+        },
+        idempotencyKey: `telegram:conversation:${input.messageId}:${input.command}`,
+      },
+    });
+  }
 
   /** Unified outbound: all messages to user go through here.
    * Always stores context for reply enrichment. */
@@ -162,7 +227,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const conversationId =
       context?.conversationId ??
       stringValue(inboundData?.conversationId) ??
-      telegramConversationId(pendingChatId, null, opts.interfaceAgent);
+      primaryConversationId(opts.interfaceAgent);
     const priorConversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
     if (priorConversationId && priorConversationId !== conversationId && data.requestConversationId === undefined) {
       data.requestConversationId = priorConversationId;
@@ -359,7 +424,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     try {
       storeNotificationMessage(persistDir, {
         telegram_msg_id: channelMessageId,
-        event_type: "app.input.requested",
+        event_type: "conversation.message.created",
         agent: opts.interfaceAgent,
         session_id: null,
         project_id: target?.projectPath ?? stringValue(telegramReply?.projectId) ?? null,
@@ -421,7 +486,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     const chatIdStr = String(chatId);
     const topicId = msg.message_thread_id as number | undefined;
-    const conversationId = telegramConversationId(chatIdStr, topicId, opts.interfaceAgent);
+    const conversationId = primaryConversationId(opts.interfaceAgent);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
     // Keep the human text authoritative and attach provider reply context as
@@ -535,6 +600,55 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     const [cmd = "", ...rest] = text.split(/\s+/);
     const command = cmd.split("@")[0];
+
+    if (command === "/work") {
+      const surface = `${chatIdStr}:${topicId ?? 0}`;
+      const argument = rest.join(" ").trim().toLowerCase();
+      let rendered: string;
+      if (!argument || argument === "all") {
+        const all = argument === "all";
+        const work =
+          readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
+            limit: all ? 100 : 50,
+            allWork: all,
+          }).work ?? [];
+        lastWorkBySurface.set(surface, work);
+        rendered = renderTelegramWorkList(work, all);
+      } else if (/^[1-9]\d*$/.test(argument)) {
+        const index = Number(argument) - 1;
+        const selected = lastWorkBySurface.get(surface)?.[index];
+        if (!selected) {
+          rendered = `No work item ${argument}. Use /work or /work all to refresh the list.`;
+        } else {
+          const refreshed = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
+            limit: 1,
+            allWork: true,
+            workRequestId: selected.requestId,
+          }).work?.[0];
+          rendered = refreshed
+            ? renderTelegramWorkDetail(refreshed, index)
+            : `Work ${argument} was not found. Use /work all to refresh the list.`;
+        }
+      } else {
+        rendered = "Use: /work, /work all, or /work <number>";
+      }
+      const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
+        eventType: "telegram.reply",
+        agent: opts.interfaceAgent,
+        data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
+        replyToMessageId: msg.message_id,
+      });
+      if (deliveredMessageId) {
+        recordConversationMessage({
+          conversationId,
+          text: rendered,
+          command: text,
+          messageId: deliveredMessageId,
+          topicId,
+        });
+      }
+      return true;
+    }
 
     if (command === "/start" || command === "/help") {
       await sendMessage(

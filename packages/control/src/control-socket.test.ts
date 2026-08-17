@@ -371,22 +371,29 @@ describe("control socket protocol", () => {
   });
 
   it("reads a derived App conversation without emitting an event", async () => {
-    const turns = [
-      {
-        requestId: "app-1",
-        input: { kind: "message", data: { message: "hello" } },
-        state: "working",
-        deliveries: [],
-      },
-    ];
+    const conversation = {
+      id: "may:primary",
+      owner: "may",
+      version: 1,
+      messages: [
+        {
+          id: "human:1",
+          sequence: 1,
+          author: { kind: "human", id: "human:1" },
+          text: "hello",
+          createdAt: 1,
+        },
+      ],
+      work: [],
+    };
     const core = createCore({
-      getAppConversation: (appId, conversationId, limit) => {
-        expect({ appId, conversationId, limit }).toEqual({
+      getAppConversation: (appId, conversationId, options) => {
+        expect({ appId, conversationId, options }).toEqual({
           appId: "may",
-          conversationId: "may-console:local-terminal:agent:may",
-          limit: 30,
+          conversationId: "may:primary",
+          options: { limit: 30, workRequestId: undefined, allWork: false },
         });
-        return turns;
+        return conversation;
       },
     });
 
@@ -394,19 +401,19 @@ describe("control socket protocol", () => {
       sendSocketCommand(core.endpoint, {
         type: "app.conversation.get",
         appId: "may",
-        conversationId: "may-console:local-terminal:agent:may",
+        conversationId: "may:primary",
         limit: 30,
       }),
     ).resolves.toMatchObject({
       type: "ok",
       command: "app.conversation.get",
-      turns,
+      conversation,
     });
     expect(core.emitted).toEqual([]);
   });
 
-  it("reads unfinished human commitments without emitting an event", async () => {
-    const commitments = [
+  it("reads active or historical human work through the conversation resource", async () => {
+    const work = [
       {
         requestId: "app-1",
         message: "Review the design",
@@ -414,24 +421,37 @@ describe("control socket protocol", () => {
         progress: "Codex is reviewing it.",
       },
     ];
+    const conversation = {
+      id: "may:primary",
+      owner: "may",
+      version: 0,
+      messages: [],
+      work,
+    };
     const core = createCore({
-      getAppCommitments: (appId, limit, requestId) => {
-        expect({ appId, limit, requestId }).toEqual({ appId: "may", limit: 20, requestId: "app-1" });
-        return commitments;
+      getAppConversation: (appId, conversationId, options) => {
+        expect({ appId, conversationId, options }).toEqual({
+          appId: "may",
+          conversationId: "may:primary",
+          options: { limit: 20, workRequestId: "app-1", allWork: true },
+        });
+        return conversation;
       },
     });
 
     await expect(
       sendSocketCommand(core.endpoint, {
-        type: "app.commitments.get",
+        type: "app.conversation.get",
         appId: "may",
+        conversationId: "may:primary",
         limit: 20,
-        requestId: "app-1",
+        workRequestId: "app-1",
+        allWork: true,
       }),
     ).resolves.toMatchObject({
       type: "ok",
-      command: "app.commitments.get",
-      commitments,
+      command: "app.conversation.get",
+      conversation,
     });
     expect(core.emitted).toEqual([]);
   });

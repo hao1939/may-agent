@@ -23,8 +23,7 @@ import {
   getAppInboxItem,
   listAppInboxHealth,
   listAppInboxAssociatedSessionClaims,
-  listAppConversationTurns,
-  listOpenAppCommitments,
+  readAppConversationResource,
   listAppInboxDependencyWaits,
   listUnlinkedAppDelegations,
   listAppInboxSessionWaits,
@@ -223,15 +222,6 @@ function deepFreeze<T>(value: T): T {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const nested of Object.values(value)) deepFreeze(nested);
   return Object.freeze(value);
-}
-
-function selectedWorkRequestId(input: AppInput): string | undefined {
-  if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return undefined;
-  const context = (input.data as Record<string, unknown>).context;
-  if (!context || typeof context !== "object" || Array.isArray(context)) return undefined;
-  const requestId = (context as Record<string, unknown>).selectedWorkRequestId;
-  if (typeof requestId !== "string") return undefined;
-  return requestId.trim() || undefined;
 }
 
 export class AppInboxHost {
@@ -682,38 +672,17 @@ export class AppInboxHost {
       input: item.input,
     };
     if (item.conversationId) {
-      const selectedRequestId = selectedWorkRequestId(item.input);
-      let commitments = listOpenAppCommitments(this.#db, item.appId, {
-        excludeRequestId: item.id,
-      });
-      if (selectedRequestId && selectedRequestId !== item.id) {
-        const selected = listOpenAppCommitments(this.#db, item.appId, {
-          excludeRequestId: item.id,
-          requestId: selectedRequestId,
-          includeResultForRequestId: selectedRequestId,
-          limit: 1,
-        })[0];
-        if (selected) commitments = [selected, ...commitments.filter((entry) => entry.requestId !== selected.requestId)];
-      }
+      const conversation = readAppConversationResource(this.#db, item.appId, item.conversationId, { limit: 40 });
       request.conversation = {
-        id: item.conversationId,
-        sourceId: item.source.id,
-        replyToSourceId: item.replyToSourceId,
-        commitments,
-        prior: listAppConversationTurns(this.#db, item.appId, item.conversationId, 20)
-          .filter((turn) => turn.requestId !== item.id)
-          .map((turn) => ({
-            requestId: turn.requestId,
-            sourceId: turn.sourceId,
-            replyToSourceId: turn.replyToSourceId,
-            input: turn.input,
-            state: turn.state,
-            deliveries: turn.deliveries.map((delivery) => ({
-              kind: delivery.kind,
-              text: delivery.text,
-              status: delivery.status,
-            })),
-          })),
+        ...conversation,
+        current: {
+          messageId: item.source.id,
+          ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
+        },
+        work: (conversation.work ?? []).filter((work) => work.requestId !== item.id),
+        messages: conversation.messages.filter(
+          (message) => message.metadata?.requestId !== item.id,
+        ),
       };
     }
     const waitingOn = item.waitingOn;

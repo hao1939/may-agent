@@ -56,37 +56,53 @@ export type AppDependencyObservation = {
   evidence?: string[];
 };
 
-/** Human-facing projection of one unfinished request; it never owns work. */
-export type AppCommitmentView = {
+/** Human-facing projection of one durable human request; it never owns work. */
+export type AppWorkView = {
   requestId: string;
   conversationId?: string;
   message: string;
-  state: "queued" | "working" | "analyzing" | "waiting" | "ready";
+  state: "queued" | "working" | "analyzing" | "waiting" | "ready" | "done";
   progress?: string;
-  /** Present only when a caller explicitly selects this exact commitment. */
+  /** Present only when a caller explicitly reads this exact work item. */
   result?: AppResult;
   createdAt: number;
   updatedAt: number;
 };
 
-export type AppConversationContext = {
+export type AppConversationMessage = {
   id: string;
-  sourceId: string;
-  replyToSourceId?: string;
-  /** Other unfinished human requests visible to this App owner turn. */
-  commitments?: AppCommitmentView[];
-  prior: Array<{
-    requestId: string;
-    sourceId: string;
-    replyToSourceId?: string;
-    input: AppInput;
-    state: "working" | "done";
-    deliveries: Array<{
-      kind: "progress" | "final";
-      text?: string;
-      status: "pending" | "sending" | "delivered" | "failed" | "uncertain";
-    }>;
-  }>;
+  sequence: number;
+  author: {
+    kind: "human" | "agent" | "tool" | "command";
+    id: string;
+  };
+  text: string;
+  replyTo?: string;
+  metadata?: {
+    channel?: string;
+    channelThreadId?: string;
+    channelMessageId?: number;
+    requestId?: string;
+    command?: string;
+  };
+  createdAt: number;
+};
+
+/** May/App-owned aggregate derived from durable messages, requests, and delivery receipts. */
+export type AppConversationResource = {
+  id: string;
+  owner: string;
+  /** Latest durable message sequence represented by this view. */
+  version: number;
+  /** Exact incoming message currently being reconciled, when authoring an App request. */
+  current?: {
+    messageId: string;
+    replyTo?: string;
+  };
+  /** Other active human requests visible to this App owner turn. */
+  work?: AppWorkView[];
+  /** Durable messages only, in the order shared by every human surface. */
+  messages: AppConversationMessage[];
 };
 
 /** Author-visible request. Host lifecycle and lease fields stay private. */
@@ -97,7 +113,7 @@ export type AppRequest<TData = unknown> = {
   input: AppInput<TData>;
   dependency?: AppDependencyObservation;
   /** Bounded exact conversation evidence; it never owns or schedules work. */
-  conversation?: AppConversationContext;
+  conversation?: AppConversationResource;
 };
 
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };

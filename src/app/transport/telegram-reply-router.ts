@@ -235,14 +235,9 @@ function integerOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
 }
 
-export function telegramConversationId(
-  chatId: string | number,
-  topicId: string | number | null | undefined,
-  agent: string,
-): string {
-  const normalizedTopic =
-    topicId === null || topicId === undefined || String(topicId).trim() === "" ? "0" : String(topicId);
-  return `telegram:chat:${String(chatId)}:topic:${normalizedTopic}:agent:${agent.trim() || "may"}`;
+/** One logical human conversation; provider chat/topic IDs remain delivery coordinates. */
+export function primaryConversationId(agent: string): string {
+  return `${agent.trim() || "may"}:primary`;
 }
 
 export function normalizeProjectPath(value: unknown, projectRoot: string): string | null {
