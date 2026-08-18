@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const net = require("node:net");
+const { randomUUID } = require("node:crypto");
 const path = require("node:path");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
@@ -10,6 +11,7 @@ const daemonAgent = process.env.DAEMON_AGENT || "may";
 const socketPath = path.join(stateDir, "instances", instance, `${daemonAgent}.sock`);
 const source = "may-console";
 const conversationId = `${daemonAgent}:primary`;
+const adapterInstanceId = randomUUID();
 
 let socket = null;
 let connected = false;
@@ -31,6 +33,7 @@ const renderedDeliveryOperations = new Set();
 let lastConversationSequence = Date.now();
 let lastWork = [];
 const pendingConversationReads = [];
+let conversationSyncDirty = false;
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -166,7 +169,11 @@ function canonicalFrame(type, data = {}, opts = {}) {
 function mayInputFrame(message) {
   const sequence = Math.max(Date.now(), lastConversationSequence + 1);
   lastConversationSequence = sequence;
-  const messageId = `${source}:local-terminal:${sequence}`;
+  const messageId = `${source}:${adapterInstanceId}:${sequence}`;
+  // Readline already rendered this human turn in the current terminal. Keep
+  // its durable identity so a Conversation wake does not echo it back here,
+  // while turns from another Console process remain visible.
+  renderedConversationMessages.add(messageId);
   return {
     type: "publish",
     event: {
@@ -183,8 +190,16 @@ function mayInputFrame(message) {
   };
 }
 
-function requestConversation() {
-  pendingConversationReads.push({ kind: "startup" });
+function requestConversation(kind = "startup") {
+  if (
+    kind === "sync" &&
+    pendingConversationReads.some((pending) => pending.kind === "startup" || pending.kind === "sync")
+  ) {
+    conversationSyncDirty = true;
+    return true;
+  }
+  if (kind === "sync") conversationSyncDirty = false;
+  pendingConversationReads.push({ kind });
   const sent = sendFrame(
     {
       type: "app.conversation.get",
@@ -237,7 +252,7 @@ function appendConversationMessage({ author, text, transient = false, metadata =
           ...(transient ? { transient: true } : {}),
           metadata: { channel: source, ...metadata },
         },
-        idempotencyKey: `${source}:conversation:${sequence}`,
+        idempotencyKey: `${source}:${adapterInstanceId}:conversation:${sequence}`,
       },
     },
     { silent: true },
@@ -349,8 +364,10 @@ function renderConversation(messages) {
     const id = typeof message.id === "string" ? message.id : "";
     const text = typeof message.text === "string" ? message.text.trim() : "";
     if (!id || !text || renderedConversationMessages.has(id)) continue;
+    const channel = message.metadata && typeof message.metadata.channel === "string" ? message.metadata.channel : "";
     const kind = message.author && typeof message.author.kind === "string" ? message.author.kind : "agent";
-    const speaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
+    const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
+    const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
     printConversationText(speaker, text);
     renderedConversationMessages.add(id);
   }
@@ -375,7 +392,12 @@ function runtimeFrame(type) {
 
 function subscribe(mode = watchMode) {
   watchMode = mode;
-  return sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source });
+  return sendFrame({
+    type: "subscribe",
+    sessions: watchSessions(),
+    conversations: [conversationId],
+    deliveryChannel: source,
+  });
 }
 
 function requestStatus(command = "/status") {
@@ -487,6 +509,14 @@ function handleSessionEnd(event) {
 
 function handleEvent(event) {
   if (!event || typeof event !== "object") return;
+  if (event.type === "conversation.updated") {
+    const data = flatPayload(event);
+    if (data.conversationId === conversationId) {
+      conversationSyncDirty = true;
+      requestConversation("sync");
+    }
+    return;
+  }
   if (raw) {
     printLine(JSON.stringify(event));
     return;
@@ -508,7 +538,10 @@ function handleEvent(event) {
   if (event.type === "app.response.delivery.requested") {
     const data = flatPayload(event);
     if (data.channel !== source || typeof data.text !== "string") return;
-    if (typeof data.operationId === "string") renderedDeliveryOperations.add(data.operationId);
+    if (typeof data.operationId === "string") {
+      renderedDeliveryOperations.add(data.operationId);
+      renderedConversationMessages.add(`delivery:${data.operationId}`);
+    }
     const identity = [data.operationId, data.appInboxItemId, data.appInboxRequestId, data.sessionId];
     printResponseText(data.text, () => {
       if (!identity.every((value) => typeof value === "string" && value.length > 0)) return;
@@ -538,16 +571,24 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
+      if (event.command === "publish" && Number.isSafeInteger(event.eventId) && event.eventId > 0) {
+        // Non-human Conversation events are projected by durable event row ID.
+        // Marking every local publish receipt is harmless for other event kinds.
+        renderedConversationMessages.add(`event:${event.eventId}`);
+      }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
           renderWorkList(event.conversation?.work, { all: false, command: "/work", transient: true });
+        } else if (pending?.kind === "sync") {
+          renderConversation(event.conversation?.messages);
         } else if (pending?.kind === "detail") {
           renderWorkDetail(event.conversation?.work, pending.requestId, pending.command);
         } else {
           renderWorkList(event.conversation?.work, pending);
         }
+        if (conversationSyncDirty) requestConversation("sync");
       }
       // Admission is transport bookkeeping. May's durable acknowledgement or
       // answer is the human-visible response.
@@ -612,7 +653,15 @@ function connectSocket() {
     connected = true;
     reconnectDelayMs = 250;
     lastDisconnectedMessage = "";
-    sendFrame({ type: "subscribe", sessions: watchSessions(), deliveryChannel: source }, { silent: true });
+    sendFrame(
+      {
+        type: "subscribe",
+        sessions: watchSessions(),
+        conversations: [conversationId],
+        deliveryChannel: source,
+      },
+      { silent: true },
+    );
     sendFrame({ type: "status" }, { silent: true });
     requestConversation();
     refreshPrompt();

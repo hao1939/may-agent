@@ -609,6 +609,8 @@ describe("Telegram outbound turn ownership", () => {
         appInboxRequestId: "app-inbox-human:app_123",
         sessionId: "s_app_inbox_human",
         channel: "telegram",
+        channelTargetId: "chat-123",
+        channelThreadId: "7",
         channelMessageId: 701,
         conversationId,
         text: "The admitted durable May response is complete.",
@@ -623,6 +625,8 @@ describe("Telegram outbound turn ownership", () => {
           eventType: "app.response.delivery.requested",
           agent: "may",
           sessionId: "s_app_inbox_human",
+          channelTargetId: "chat-123",
+          channelThreadId: "7",
           replyToMessageId: 701,
           conversationId,
           data: {

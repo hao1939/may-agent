@@ -329,6 +329,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               deliveryKind: delivery.kind,
               sessionId: delivery.sessionId,
               channel: delivery.channel,
+              channelTargetId: item.channelTargetId,
               channelThreadId: item.channelThreadId,
               channelMessageId: item.channelMessageId,
               conversationId: item.conversationId,
@@ -355,6 +356,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     } finally {
       dispatchingDelivery = false;
     }
+  };
+
+  const notifyConversationUpdated = (appId: string, conversationId?: string): void => {
+    const normalizedAppId = appId.trim();
+    const normalizedConversationId = conversationId?.trim();
+    if (!normalizedAppId || !normalizedConversationId) return;
+    options.bus.emit({
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: `app:${normalizedAppId}`,
+      data: { appId: normalizedAppId, conversationId: normalizedConversationId },
+    });
   };
 
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
@@ -655,6 +668,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           conversationId,
           conversationSequence: persistedEventId ?? fallbackSequence,
           channel: typeof metadata.channel === "string" ? metadata.channel : undefined,
+          channelTargetId: typeof metadata.channelTargetId === "string" ? metadata.channelTargetId : undefined,
           channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
           channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
           replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
@@ -664,8 +678,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               : eventIdentity(event),
         });
         schedule(admitted.item.appId);
+        notifyConversationUpdated(admitted.item.appId, admitted.item.conversationId);
         return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
       }
+      if (data.transient !== true) notifyConversationUpdated(appId, conversationId);
       return {
         accepted: true,
         by: `conversation:${conversationId}`,
@@ -690,6 +706,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               : eventRowId(event)
             : undefined,
         channel: typeof data.channel === "string" ? data.channel : undefined,
+        channelTargetId: typeof data.channelTargetId === "string" ? data.channelTargetId : undefined,
         channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
         channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
         replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
@@ -827,6 +844,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         });
         if (outcome.matched) {
           if (outcome.completed) scanNow();
+          if (event.type === "channel.delivery.completed") {
+            const item = host.get(itemId);
+            if (item) notifyConversationUpdated(item.appId, item.conversationId);
+          }
           return { accepted: true, by: `app-inbox:delivery:${itemId}` };
         }
       }

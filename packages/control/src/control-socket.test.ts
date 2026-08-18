@@ -588,6 +588,32 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("forwards updates only for watched Conversation resources", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    stream.write(JSON.stringify({ type: "subscribe", sessions: [], conversations: ["may:primary"] }) + "\n");
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+
+    core.getBroadcast()?.({
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: "app:other",
+      data: { appId: "other", conversationId: "other:primary" },
+    });
+    const update = {
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: "app:may",
+      data: { appId: "may", conversationId: "may:primary" },
+    };
+    core.getBroadcast()?.(update);
+
+    await expect(nextFrame(stream)).resolves.toEqual(update);
+    stream.destroy();
+  });
+
   it("forwards a Web App inbox response without treating socket observation as delivery", async () => {
     const delivered: Array<{ event: ControlEvent; count: number }> = [];
     const core = createCore({

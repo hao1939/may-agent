@@ -175,7 +175,7 @@ export function getLatestInboundNotificationMessage(
       .prepare(
         `SELECT *
          FROM notification_messages
-         WHERE event_type = 'human.input.received'
+         WHERE event_type IN ('human.input.received', 'conversation.message.created')
            AND json_valid(data) = 1
            AND json_extract(data, '$.direction') = 'inbound'
            AND json_extract(data, '$.traceId') = ?

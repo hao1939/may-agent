@@ -97,6 +97,11 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
         optionalTextField(metadata, "channel", "conversation.message.created data.metadata.channel");
         optionalTextField(
           metadata,
+          "channelTargetId",
+          "conversation.message.created data.metadata.channelTargetId",
+        );
+        optionalTextField(
+          metadata,
           "channelThreadId",
           "conversation.message.created data.metadata.channelThreadId",
         );

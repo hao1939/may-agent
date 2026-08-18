@@ -25,7 +25,7 @@ describe("Telegram May input", () => {
         text: "Please inspect this",
         context: { quotedText: "Earlier question" },
         replyTo: "telegram:123:499",
-        metadata: { channel: "telegram", channelThreadId: "7", channelMessageId: 502 },
+        metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 502 },
         idempotencyKey: "telegram:123:502",
       },
       trace: { traceId: "telegram:502", parentEventId: 41 },

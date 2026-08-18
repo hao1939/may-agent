@@ -10,6 +10,8 @@ export interface TelegramOutboundContext {
   projectId?: string;
   summary?: string;
   data?: Record<string, unknown>;
+  channelTargetId?: string;
+  channelThreadId?: string;
   replyToMessageId?: number;
   allowTraceReplyFallback?: boolean;
   conversationId?: string;
@@ -442,6 +444,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         eventType: "app.response.delivery.requested",
         agent: opts.interfaceAgent,
         sessionId,
+        channelTargetId: nonEmptyString(session.channelTargetId),
+        channelThreadId: nonEmptyString(session.channelThreadId),
         replyToMessageId: numberOrUndefined(session.channelMessageId),
         conversationId: typeof session.conversationId === "string" ? session.conversationId : undefined,
         data: {

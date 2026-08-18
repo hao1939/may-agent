@@ -19,6 +19,9 @@ function sessionStart(data: Record<string, unknown>, source = "runtime") {
 
 function attentionReviewManager() {
   return {
+    status() {
+      return [];
+    },
     async callAgent(_agent: string, prompt: string) {
       const marker = "Candidate:\n";
       const candidate = JSON.parse(prompt.slice(prompt.lastIndexOf(marker) + marker.length)) as { content: string };
@@ -180,9 +183,7 @@ describe("telegram reply e2e", () => {
       if (method === "getUpdates") {
         getUpdatesCount += 1;
         if (getUpdatesCount === 1) {
-          return jsonResponse([
-            { update_id: 1, message: { message_id: 200, chat: { id: 12345 }, text: "/work" } },
-          ]);
+          return jsonResponse([{ update_id: 1, message: { message_id: 200, chat: { id: 12345 }, text: "/work" } }]);
         }
         await new Promise((resolve) => setTimeout(resolve, 25));
         return jsonResponse([]);
@@ -214,6 +215,165 @@ describe("telegram reply e2e", () => {
           metadata: { channel: "telegram", channelMessageId: 300, command: "/work" },
         },
       });
+    });
+    bot.close();
+  });
+
+  it("delivers a May response to the exact originating chat and topic", async () => {
+    process.env.TELEGRAM_CHAT_ID = "111,222";
+    const sentMessages: Array<Record<string, unknown>> = [];
+    let getUpdatesCount = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount += 1;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            {
+              update_id: 1,
+              message: { message_id: 80, message_thread_id: 7, chat: { id: 222 }, text: "Review this" },
+            },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 81 });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    let input: any;
+    bus.subscribe((event: any) => {
+      if (event.type === "conversation.message.created" && event.data?.author?.kind === "human") input = event;
+    });
+    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+    await waitFor(() => expect(input).toBeTruthy());
+
+    bus.emit({
+      type: "app.response.delivery.requested",
+      source: "app-inbox",
+      owner: "app:may",
+      target: { human: true },
+      data: {
+        appId: "may",
+        operationId: "delivery-80",
+        appInboxItemId: "item-80",
+        appInboxRequestId: "request-80",
+        sessionId: "session-80",
+        channel: "telegram",
+        channelTargetId: input.data.metadata.channelTargetId,
+        channelThreadId: input.data.metadata.channelThreadId,
+        channelMessageId: input.data.metadata.channelMessageId,
+        conversationId: "may:primary",
+        text: "Reviewed.",
+      },
+    });
+
+    await waitFor(() => expect(sentMessages).toHaveLength(1));
+    expect(sentMessages[0]).toMatchObject({
+      chat_id: "222",
+      message_thread_id: 7,
+      text: "Reviewed.",
+      reply_parameters: { message_id: 80, allow_sending_without_reply: true },
+    });
+    bot.close();
+  });
+
+  it("renders a new Console message from the shared Conversation without appending a duplicate", async () => {
+    const sentMessages: Array<Record<string, unknown>> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 600 });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const conversationEvents: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "conversation.message.created") conversationEvents.push(event);
+    });
+    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+    createAppInboxItem(getDb(persistDir), {
+      id: "console-message-1",
+      appId: "may",
+      source: { kind: "human", id: "may-console:instance:1" },
+      input: { kind: "message", data: { message: "Message sent from Console" } },
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "may-console",
+      now: 1,
+    });
+    bus.emit({
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: "app:may",
+      data: { appId: "may", conversationId: "may:primary" },
+    });
+
+    await waitFor(() => expect(sentMessages).toHaveLength(1));
+    expect(sentMessages[0]).toMatchObject({
+      chat_id: "12345",
+      text: "Console · You\nMessage sent from Console",
+    });
+    expect(conversationEvents).toEqual([]);
+    bot.close();
+  });
+
+  it("handles native status and unknown commands locally without creating May work", async () => {
+    const sentMessages: Array<Record<string, unknown>> = [];
+    let getUpdatesCount = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount += 1;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            { update_id: 1, message: { message_id: 90, chat: { id: 12345 }, text: "/status" } },
+            { update_id: 2, message: { message_id: 91, chat: { id: 12345 }, text: "/does-not-exist" } },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 100 + sentMessages.length });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const messages: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "conversation.message.created") messages.push(event);
+    });
+    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+
+    await waitFor(() => expect(sentMessages).toHaveLength(2));
+    expect(sentMessages.map((message) => message.text)).toEqual([
+      "No active sessions.",
+      "Unknown command: /does-not-exist. Use /help to see available commands.",
+    ]);
+    await waitFor(() => expect(messages).toHaveLength(1));
+    expect(messages[0]).toMatchObject({
+      data: { author: { kind: "command" }, text: "No active sessions.", metadata: { command: "/status" } },
     });
     bot.close();
   });
