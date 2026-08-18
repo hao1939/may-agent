@@ -78,10 +78,14 @@ function renderTelegramWorkList(work: AppWorkView[], all: boolean): string {
   if (work.length === 0) return `${title} nothing.`;
   return [
     title,
-    ...work.flatMap((item, index) => [
-      `${index + 1}. ${item.message} — ${workStateLabel(item.state)}`,
-      ...(item.progress ? [`   ${item.progress}`] : []),
-    ]),
+    ...work.flatMap((item, index) => {
+      const result = item.result?.response?.trim() || item.result?.summary?.trim();
+      return [
+        `${index + 1}. ${item.message} — ${workStateLabel(item.state)}`,
+        ...(item.progress ? [`   ${item.progress}`] : []),
+        ...(result ? [`   Result: ${result}`] : []),
+      ];
+    }),
   ].join("\n");
 }
 
@@ -201,7 +205,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }).messages;
     for (const message of messages) {
       if (renderedConversationMessages.has(message.id)) continue;
-      if (message.metadata?.channel === "telegram") {
+      if (message.metadata?.channel === "telegram" && message.author.kind !== "agent") {
         renderedConversationMessages.add(message.id);
         continue;
       }

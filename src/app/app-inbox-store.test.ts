@@ -317,14 +317,6 @@ describe("App inbox store", () => {
 
     expect(listAppWork(db, "may")).toEqual([
       {
-        requestId: "ready",
-        message: "Prepare a recommendation",
-        state: "ready",
-        progress: "May has a result ready for may-console.",
-        createdAt: 145,
-        updatedAt: 148,
-      },
-      {
         requestId: "delegated",
         message: "Refine the AKS app",
         state: "waiting",
@@ -350,7 +342,6 @@ describe("App inbox store", () => {
       },
     ]);
     expect(listAppWork(db, "may", { excludeRequestId: "analysis" }).map((item) => item.requestId)).toEqual([
-      "ready",
       "delegated",
       "queued",
     ]);
@@ -364,15 +355,14 @@ describe("App inbox store", () => {
       {
         requestId: "ready",
         message: "Prepare a recommendation",
-        state: "ready",
-        progress: "May has a result ready for may-console.",
+        state: "done",
         result: { summary: "Recommendation is ready." },
         createdAt: 145,
         updatedAt: 148,
       },
     ]);
     expect(listAppWork(db, "may", { all: true }).map(({ requestId, state }) => ({ requestId, state }))).toEqual([
-      { requestId: "ready", state: "ready" },
+      { requestId: "ready", state: "done" },
       { requestId: "completed", state: "done" },
       { requestId: "delegated", state: "waiting" },
       { requestId: "analysis", state: "analyzing" },
@@ -490,7 +480,7 @@ describe("App inbox store", () => {
     expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
   });
 
-  it("holds an admitted human result until the exact delivery is proved", () => {
+  it("projects a human result independently from transport delivery state", () => {
     createAppInboxItem(db, {
       id: "human-delivery",
       appId: "may",
@@ -523,6 +513,7 @@ describe("App inbox store", () => {
     });
     expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
       expect.objectContaining({ author: { kind: "human", id: "event:42" }, text: "hello" }),
+      expect.objectContaining({ author: { kind: "agent", id: "may" }, text: "Hello back" }),
     ]);
     expect(claimAppInboxItem(db, "human-delivery", "worker-2", 50, 200)).toBeNull();
     expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]?.waitingOnDelivery).toBe(1);
@@ -566,7 +557,7 @@ describe("App inbox store", () => {
       status: "handling",
       delivery: { status: "uncertain", failureReason: "request outcome unknown" },
     });
-    expect(readAppConversationResource(db, "may", "may:primary").messages).toHaveLength(1);
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toHaveLength(2);
 
     expect(
       recordAppInboxDeliveryReceipt(

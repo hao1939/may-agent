@@ -124,6 +124,8 @@ export type AppInboxReconcileResult = {
   admitted: number;
   released: number;
   errors: string[];
+  /** Conversations whose semantic messages changed during this reconciliation. */
+  conversationIds?: string[];
 };
 
 export type AppInboxSessionRecoveryResult = {
@@ -634,10 +636,17 @@ export class AppInboxHost {
 
     const byRequest = new Map(results.map((entry) => [entry.requestId, entry.disposition]));
     const outcome: AppInboxReconcileResult = { claimed: claims.length, admitted: 0, released: 0, errors: [] };
+    const conversationIds = new Set<string>();
     try {
       for (const claim of claims) {
         try {
-          await this.#admitDisposition(app, claim, requestsById.get(claim.item.id)!, byRequest.get(claim.item.id)!);
+          const changedConversation = await this.#admitDisposition(
+            app,
+            claim,
+            requestsById.get(claim.item.id)!,
+            byRequest.get(claim.item.id)!,
+          );
+          if (changedConversation) conversationIds.add(changedConversation);
           outcome.admitted += 1;
         } catch (error) {
           const message = `Request ${claim.item.id}: ${errorMessage(error)}`;
@@ -655,6 +664,7 @@ export class AppInboxHost {
     } finally {
       stopRenewing();
     }
+    if (conversationIds.size > 0) outcome.conversationIds = [...conversationIds].sort();
     return outcome;
   }
 
@@ -794,7 +804,7 @@ export class AppInboxHost {
     claim: AppInboxClaim,
     request: Readonly<AppRequest>,
     disposition: AppDisposition,
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     switch (disposition.type) {
       case "complete": {
         validateCompleteDisposition(disposition);
@@ -804,6 +814,15 @@ export class AppInboxHost {
           evidence: disposition.evidence,
         };
         withTransaction(this.#db, () => {
+          // The Conversation is the human-facing authority. Persisting its
+          // result completes the work; adapters observe conversation.updated
+          // and render it independently, without a per-surface delivery gate.
+          if (claim.item.source.kind === "human" && claim.item.conversationId) {
+            const completed = completeAppInboxClaim(this.#db, claim, result, this.#now());
+            if (!completed) throw new Error("claim is stale");
+            wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
+            return;
+          }
           const responseChannel = claim.item.channel;
           if (responseChannel && (claim.item.source.kind === "human" || responseChannel.startsWith("agent:"))) {
             const current = getAppInboxItem(this.#db, claim.item.id);
@@ -828,7 +847,7 @@ export class AppInboxHost {
           if (!completed) throw new Error("claim is stale");
           wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
         });
-        return;
+        return claim.item.source.kind === "human" ? claim.item.conversationId : undefined;
       }
       case "delegate": {
         const target = this.#requiredApp(disposition.appId);
