@@ -1728,6 +1728,54 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("terminalizes a frozen App admission plan when its event becomes unhandled", async () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const db = getDb(root);
+      const inserted = db
+        .prepare(
+          `INSERT INTO events (event_type, data, timestamp, ttl_ms, delivery_status)
+           VALUES ('reload', '{}', ?, 1, 'pending')`,
+        )
+        .run(Date.now() - 60_000);
+      const eventId = Number(inserted.lastInsertRowid);
+      db.prepare(
+        `INSERT INTO app_event_admission_plans
+         (event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)
+         VALUES (?, 'snapshot-1', 1, 'pending', ?, ?)`,
+      ).run(eventId, Date.now(), Date.now());
+      db.prepare(
+        `INSERT INTO app_event_admission_commands
+         (event_id, app_id, route_kind, route_id, payload, status, last_error, updated_at)
+         VALUES (?, 'may-agent', 'exact-task', 'missing-task', '{}', 'pending', 'task is absent', ?)`,
+      ).run(eventId, Date.now());
+
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "sample", agent: "may", durationMs: 5 },
+      } as any);
+
+      expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(eventId)).toEqual({
+        delivery_status: "unhandled",
+      });
+      expect(
+        db.prepare("SELECT status, last_error FROM app_event_admission_commands WHERE event_id = ?").get(eventId),
+      ).toEqual({ status: "superseded", last_error: "task is absent" });
+      expect(
+        db
+          .prepare("SELECT status, last_error, completed_at FROM app_event_admission_plans WHERE event_id = ?")
+          .get(eventId),
+      ).toMatchObject({ status: "superseded", last_error: "origin event became unhandled before App admission" });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("accepts reconciled terminal session.end lifecycle facts as terminal no-ops", async () => {
     const root = tempRoot();
     try {

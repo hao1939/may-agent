@@ -856,7 +856,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (identity) {
       const eventId = eventRowId(event)!;
       const frozenPlan = getAppEventAdmissionPlan(options.db, eventId);
-      if (frozenPlan) return dispatchAdmissionPlan(frozenPlan, event);
+      // A timed-out plan remains as immutable routing evidence, but it is no
+      // longer admission authority. An explicit retry of the unhandled event
+      // must not reclassify it or report the superseded commands as pending.
+      if (frozenPlan) {
+        if (frozenPlan.status === "superseded") return undefined;
+        return dispatchAdmissionPlan(frozenPlan, event);
+      }
 
       const canonical = canonicalAppEvent(event);
       const exactTarget = exactTaskTarget(canonical);
