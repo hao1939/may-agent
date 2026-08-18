@@ -473,4 +473,83 @@ describe("canonical App task runtime", () => {
       tasks: { "work/terminal-child": { parent_id: intent.id } },
     });
   });
+
+  it("rejects an invalid persisted terminal result without crashing recovery", () => {
+    const f = fixture();
+    const persistDir = join(f.root, ".state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const intent = {
+      id: "work/invalid-terminal",
+      parentId: "operations",
+      outcome: "Recover safely",
+      acceptance: ["Invalid terminal output is retried"],
+      mode: "achieve" as const,
+      owner: "sample-owner",
+    };
+    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    const claim = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appOwner: "sample-owner",
+      handler: "auto",
+      reason: "test",
+      isOwnerRunnable: () => true,
+    });
+    if (claim.kind !== "claimed") throw new Error("expected direct-owner claim");
+    recordAppTaskAttemptSession(config, claim, "session-invalid-terminal");
+
+    mkdirSync(join(persistDir, "sessions", "session-invalid-terminal"), { recursive: true });
+    const duplicateAction = {
+      kind: "create-task",
+      id: "work/duplicate-child",
+      parentId: intent.id,
+      outcome: "Complete child",
+      acceptance: ["Child converges"],
+    };
+    writeFileSync(
+      join(persistDir, "sessions", "session-invalid-terminal", "result.json"),
+      JSON.stringify({
+        status: "done",
+        finishParams: {
+          status: "success",
+          result: {
+            state: "waiting",
+            summary: "invalid duplicate actions",
+            evidence: ["session:session-invalid-terminal"],
+            actions: [duplicateAction, duplicateAction],
+          },
+        },
+      }),
+    );
+
+    let rejection = "";
+    expect(
+      consumePersistedTerminalOwnerResult({
+        persistDir,
+        config,
+        descriptor: {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          owner: "sample-owner",
+          app: definition(),
+          reconciliationPaused: false,
+        },
+        taskId: intent.id,
+        sessionId: "session-invalid-terminal",
+        onRejected: (error) => {
+          rejection = error instanceof Error ? error.message : String(error);
+        },
+      }),
+    ).toBeNull();
+    expect(rejection).toContain("multiple actions for work/duplicate-child");
+    expect(readTaskState(config)).toMatchObject({
+      resources: { [intent.id]: { status: { phase: "running" } } },
+      attempts: { [claim.attemptId]: { state: "running", sessionId: "session-invalid-terminal" } },
+    });
+  });
 });
