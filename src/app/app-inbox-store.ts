@@ -978,12 +978,13 @@ export function claimReferencedAppInboxWork(
     .prepare(
       `UPDATE app_inbox_items
        SET status = 'handling', available_at = NULL, review_at = NULL,
+           conversation_id = COALESCE(conversation_id, ?),
            session_id = (SELECT active.session_id FROM app_inbox_items active WHERE active.id = ?),
            started_at = COALESCE(started_at, ?), changed_at = ?,
            lease_generation = lease_generation + 1,
            lease_owner = ?, lease_expires_at = ?, updated_at = ?
        WHERE id = ?
-         AND app_id = ? AND conversation_id = ? AND source_kind = 'human'
+         AND app_id = ? AND (conversation_id = ? OR conversation_id IS NULL) AND source_kind = 'human'
          AND continues_request_id IS NULL AND status != 'done'
          AND (lease_owner IS NULL OR lease_expires_at <= ?)
          AND EXISTS (
@@ -994,6 +995,7 @@ export function claimReferencedAppInboxWork(
        RETURNING *`,
     )
     .get(
+      conversationId,
       current.item.id,
       now,
       now,
