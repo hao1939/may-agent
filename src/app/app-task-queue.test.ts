@@ -20,6 +20,35 @@ describe("AppTaskQueue", () => {
     expect(queue.enqueue("goal", { front: true })).toBe(false);
   });
 
+  it("promotes an already-front-queued exact wake ahead of passive replenishment without duplication", () => {
+    const queue = new AppTaskQueue(1);
+    for (let index = 0; index < 200; index++) {
+      queue.enqueue(`aftermath-${index}`, { front: true, priority: "P1" });
+    }
+    queue.enqueue("exact-task", { front: true, priority: "P1" });
+    expect(queue.enqueue("exact-task", { front: true, promote: true, priority: "P1" })).toBe(true);
+    for (let index = 200; index < 240; index++) {
+      queue.enqueue(`aftermath-${index}`, { front: true, priority: "P1" });
+    }
+
+    expect(queue.snapshot().pending.filter((taskId) => taskId === "exact-task")).toHaveLength(1);
+    expect(queue.take()).toBe("exact-task");
+    queue.complete("exact-task");
+    expect(queue.take()).toBe("aftermath-0");
+  });
+
+  it("preserves FIFO order among fresh exact promotions", () => {
+    const queue = new AppTaskQueue(1);
+    queue.enqueue("passive-a", { front: true, priority: "P1" });
+    queue.enqueue("exact-a", { front: true, priority: "P1" });
+    queue.enqueue("passive-b", { front: true, priority: "P1" });
+    queue.enqueue("exact-b", { front: true, priority: "P1" });
+
+    queue.enqueue("exact-a", { promote: true, priority: "P1" });
+    queue.enqueue("exact-b", { promote: true, priority: "P1" });
+    expect(queue.snapshot().pending).toEqual(["exact-a", "exact-b", "passive-a", "passive-b"]);
+  });
+
   it("preserves FIFO order within the front lane", () => {
     const queue = new AppTaskQueue(1);
     queue.enqueue("old-a");
