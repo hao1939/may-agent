@@ -2385,6 +2385,9 @@ function installConventionTaskControllers(
       maxRetries: 3,
       resync: {
         intervalMs: tasks.resyncIntervalMs ?? 60_000,
+        // Installation recovery seeds this queue from the same cached state
+        // pass; reparsing it when the startup gate opens only delays ingress.
+        onStart: false,
         tasks: () => listRunnableAppTaskQueueEntries(config),
       },
       reconcile: async (taskId) => {
@@ -2731,8 +2734,7 @@ function recoverInterruptedAppTasks(
       }
     }
     const attentions = pendingAppTaskRecoveryAttention(config);
-    if (attentions.length === 0) continue;
-    if (!descriptor.reconciliationPaused) {
+    if (attentions.length > 0 && !descriptor.reconciliationPaused) {
       opts.bus.emit(
         appOwnerReviewEvent({
           appId: descriptor.id,
@@ -2752,6 +2754,11 @@ function recoverInterruptedAppTasks(
         }),
       );
       for (const attention of attentions) acknowledgeAppTaskRecoveryAttention(config, attention.taskId);
+    }
+    if (controller && !descriptor.reconciliationPaused) {
+      for (const entry of listRunnableAppTaskQueueEntries(config)) {
+        controller.enqueue(entry.taskId, entry.options);
+      }
     }
   }
   return claimedSessionIds;
