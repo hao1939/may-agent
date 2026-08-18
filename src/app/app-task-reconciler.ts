@@ -3302,6 +3302,7 @@ export function completeAppTask(
     ];
     const parentTaskId = recordExecutableParentTrigger(tree, task, "converged", input.summary, input.evidence, now);
     const pendingSelfTrigger = Boolean(tree.taskTriggers?.[task.id]?.event);
+    const maintainHasLiveChildren = claim.mode === "maintain" && liveChildren.length > 0;
     const dependentTaskIds = [
       ...new Set([
         ...reconcileActionTaskIds,
@@ -3314,7 +3315,7 @@ export function completeAppTask(
     ];
     if (claim.mode === "maintain") {
       touchResource(resource, {
-        phase: pendingSelfTrigger ? "pending" : "converged",
+        phase: pendingSelfTrigger ? "pending" : maintainHasLiveChildren ? "waiting" : "converged",
         observedGeneration: claim.generation,
         currentAttemptId: undefined,
         summary: input.summary,
@@ -3370,7 +3371,9 @@ export function completeAppTask(
       actionsApplied,
       dependentTaskIds,
       supersededSessionIds,
-      ...(claim.mode === "maintain" && pendingSelfTrigger ? { taskContinues: true as const } : {}),
+      ...(claim.mode === "maintain" && (pendingSelfTrigger || maintainHasLiveChildren)
+        ? { taskContinues: true as const }
+        : {}),
     };
   });
 }
