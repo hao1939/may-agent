@@ -952,7 +952,7 @@ export type DeliveryResult = {
 };
 export type SubscriberResult = DeliveryResult | void;
 export type Subscriber = (event: AgentEvent) => SubscriberResult;
-export type SubscribeOptions = { priority?: "first" | "normal" };
+export type SubscribeOptions = { priority?: "first" | "normal"; label?: string };
 export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
 
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
@@ -1007,10 +1007,12 @@ export class EventBus {
   private emitDepth = 0;
   private reportingFailures = false;
   private pendingFailureEvents: AgentEvent[] = [];
+  private subscriberLabels = new WeakMap<Subscriber, string>();
 
   /** Subscribe to all events. Returns unsubscribe function. */
   subscribe(fn: Subscriber, opts?: SubscribeOptions): () => void {
     const list = opts?.priority === "first" ? this.firstSubscribers : this.normalSubscribers;
+    if (opts?.label?.trim()) this.subscriberLabels.set(fn, opts.label.trim());
     list.push(fn);
     return () => {
       this.firstSubscribers = this.firstSubscribers.filter((s) => s !== fn);
@@ -1146,7 +1148,11 @@ export class EventBus {
     } finally {
       const durationMs = performance.now() - startedAt;
       if (durationMs >= EVENT_SUBSCRIBER_WARN_MS) {
-        log("warn", `[event-bus] ${priority} subscriber took ${durationMs.toFixed(1)}ms on event '${event.type}'`);
+        const label = (this.subscriberLabels.get(fn) ?? fn.name) || "anonymous";
+        log(
+          "warn",
+          `[event-bus] ${priority} subscriber '${label}' took ${durationMs.toFixed(1)}ms on event '${event.type}'`,
+        );
       }
     }
   }
