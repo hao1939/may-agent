@@ -26,6 +26,11 @@ commands and render aligned terminal text. Telegram may use native commands,
 buttons, reply anchors, Markdown, or compact messages. Both publish and read the
 same semantic Conversation contract.
 
+They also watch the same resource. After a message becomes durably visible,
+the Host emits a wake-only `conversation.updated` observation. Adapters re-read
+the Conversation and render unseen stable message IDs using their own
+presentation. They never forward adapter events directly to one another.
+
 ## Shared boundary
 
 Ordinary human text publishes:
@@ -56,6 +61,7 @@ An adapter may:
 
 - parse channel-native controls;
 - attach provider reply and delivery coordinates;
+- watch Conversation changes and render unseen messages;
 - choose layout, markup, buttons, pagination, and notification style;
 - query the bounded Conversation projection;
 - append a durable semantic command/tool view when the human may refer to it;
@@ -68,6 +74,33 @@ An adapter must not:
 - own a request queue, work archive, or selected-context protocol;
 - report delivery before its channel confirms it;
 - make transient presentation part of May's durable context.
+
+## Resource synchronization
+
+Conversation synchronization follows the ordinary resource-watch pattern:
+
+```text
+durable human/command message or confirmed May delivery
+  -> conversation.updated(appId, conversationId)
+  -> adapter reads Conversation
+  -> adapter skips message IDs already rendered on that surface
+  -> adapter renders the remaining messages in its native style
+```
+
+`conversation.updated` is only a wake signal. It carries no message content and
+does not own state. Several updates may coalesce into one read without losing a
+message because the append-only Conversation projection is authoritative.
+Mirroring one existing message to another surface does not append another
+Conversation message and creates no May work.
+
+Startup presentation is adapter-specific. Console restores bounded history for
+a new terminal. Telegram seeds its rendered-ID set from current Conversation
+truth without replaying old messages into a chat whose provider already keeps
+history. New cross-surface messages are then presented live.
+
+Adapter instances deduplicate by exact stable message ID, not merely by channel
+name. This lets two Console processes share the same Conversation while each
+suppresses only content it already rendered itself.
 
 ## Conversation and work reads
 
@@ -113,6 +146,8 @@ See [may-console.md](may-console.md) for terminal presentation details.
 - Ordinary text is a human `conversation.message.created` message for
   `may:primary`.
 - Chat/topic/message IDs are retained as delivery and reply coordinates only.
+- `channelTargetId`, `channelThreadId`, and `channelMessageId` are opaque Host
+  delivery mechanics; they are not App meaning or Conversation identity.
 - Reply metadata is attached as context so May can interpret the human's
   intention; it does not replace Conversation or work identity.
 - Native commands may answer through direct Conversation reads.
@@ -160,6 +195,8 @@ Every May human adapter must prove:
 8. failed or uncertain delivery is not shown as seen;
 9. requested command views are visible to a later May turn;
 10. restart reconstructs the same Conversation resource.
+11. a new message from one adapter is rendered by the other without creating a
+    duplicate Conversation message or May request.
 
 The goal is semantic consistency with channel-appropriate interaction—not
 identical UI.

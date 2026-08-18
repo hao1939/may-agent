@@ -214,6 +214,11 @@ work owner. Each admitted human turn has its own request identity. Reply anchors
 and channel coordinates add context; they do not decide which unfinished
 request owns the response.
 
+`conversation.updated` is an internal record-only resource notification emitted
+after the Conversation projection can durably expose a new message. Adapters
+watch it and re-read the resource. It carries no content, cannot create work,
+and may be coalesced.
+
 Direct typed runtime controls may bypass owner judgment, but their result and
 delivery remain linked to the originating May request.
 
@@ -226,6 +231,7 @@ the event stream into a work queue.
 ### Human and execution
 
 - `conversation.message.created` for shared May human context and admission;
+- `conversation.updated` as a wake-only signal for Conversation readers;
 - channel delivery facts;
 - `session.start`, `session.idle`, and `session.end`;
 - workflow/execution result and failure facts;

@@ -92,6 +92,13 @@ There is no separate Conversation database. Pending, failed, or uncertain May
 delivery is not projected as something the human saw. Restart must reconstruct
 the same bounded resource from durable state.
 
+After durable admission of a human/command/tool message, or after confirmed May
+delivery, the Host emits `conversation.updated`. This is a coalescible wake
+signal, not another message. Console and Telegram respond by reading the
+Conversation and rendering stable message IDs they have not already shown.
+Adapters do not forward content to one another, and rendering the same message
+on another surface does not append a duplicate.
+
 `/work`, `/work all`, and `/work N` are Console read shortcuts over this
 projection. Telegram may expose native commands, buttons, or different layout.
 When a requested view may shape the next turn, the adapter records a concise
@@ -122,3 +129,5 @@ Creating a message is not proof of delivery.
 9. Restart reconstructs Conversation; it does not restore correctness from a
    mutable current chat session.
 10. Project outcomes remain owned by their Apps.
+11. Cross-surface synchronization reads Conversation truth; update signals and
+    adapter render cursors never become conversation or work authority.

@@ -40,6 +40,12 @@ Telegram transport owns:
 - send attempts and provider receipts; and
 - presentation constraints such as length and formatting.
 
+It also watches `Conversation may:primary`. On `conversation.updated`, it reads
+the resource and presents unseen non-Telegram messages using Telegram-native
+layout. It marks Telegram-origin messages as already rendered, so the adapter
+does not echo its own input or May reply. A mirrored Console message remains the
+same Conversation message; Telegram does not append a copy.
+
 It does not:
 
 - choose a project App, task, workflow, or owner;
@@ -192,6 +198,12 @@ dependency result, use the persisted channel link of the May request that owns
 the response. If the exact reply anchor is unavailable, send visibly as a
 standalone message in the same chat/topic and retain the May request link.
 
+The durable return address is the request's opaque `channelTargetId`
+(Telegram chat), optional `channelThreadId` (topic), and `channelMessageId`
+(reply anchor). These fields remain Host/transport mechanics and are not shown
+to the App owner. With several allowed chats, a response always uses the exact
+originating target rather than the first configured chat.
+
 Never fall forward to a newer human message merely because it is on the same
 trace or conversation.
 
@@ -270,6 +282,8 @@ Telegram integration tests prove:
 - secrets never enter prompts, facts, traces, or outbound diagnostics;
 - confirmed output is readable from Console; and
 - restart reconstructs the same Conversation projection.
+- a new Console message is rendered once in Telegram without another
+  Conversation append or May request.
 
 ## Integrity Checklist
 

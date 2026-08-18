@@ -103,7 +103,7 @@ restores the bounded Conversation resource, including its active-work
 projection. All three operations are passive:
 
 ```json
-{ "type": "subscribe", "sessions": [], "deliveryChannel": "may-console" }
+{ "type": "subscribe", "sessions": [], "conversations": ["may:primary"], "deliveryChannel": "may-console" }
 ```
 
 ```json
@@ -223,6 +223,13 @@ It hides successful tool calls, unrelated sessions, heartbeats, and generic
 daemon chatter. `/debug`, `/watch all`, and `/raw` progressively expose more
 detail.
 
+When `conversation.updated` arrives, Console re-reads `may:primary` and renders
+unseen messages. Messages from another adapter include a compact source label,
+for example `you[telegram]>`. The current Console records the stable IDs it has
+already rendered locally, so it suppresses its own echoes without hiding a turn
+from another Console process. This is presentation-only and does not append an
+echo message.
+
 | Event | Normal rendering |
 |---|---|
 | `connected` | One connection line |
@@ -320,6 +327,10 @@ Tests cover the behavior boundary:
 - `/cancel <id>` emits one explicit cancel event;
 - missing, unknown, and ambiguous session IDs fail locally;
 - reconnect restores watching and status without starting work;
+- a Telegram-origin message update is re-read and rendered once without
+  creating Console work or a duplicate message;
+- two Console processes use distinct message IDs and can render one another's
+  turns without echoing their own;
 - normal rendering hides unrelated session and successful tool noise;
 - raw mode preserves full diagnostic access.
 
