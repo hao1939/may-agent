@@ -63,7 +63,7 @@ export type AppWorkView = {
   message: string;
   state: "queued" | "working" | "analyzing" | "waiting" | "ready" | "done";
   progress?: string;
-  /** Present only when a caller explicitly reads this exact work item. */
+  /** Semantic result when available. Ordinary views are bounded; an exact work read returns it in full. */
   result?: AppResult;
   createdAt: number;
   updatedAt: number;
@@ -88,7 +88,7 @@ export type AppConversationMessage = {
   createdAt: number;
 };
 
-/** May/App-owned aggregate derived from durable messages, requests, and delivery receipts. */
+/** May/App-owned aggregate derived from durable messages, requests, and accepted results. */
 export type AppConversationResource = {
   id: string;
   owner: string;

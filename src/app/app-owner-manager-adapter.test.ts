@@ -161,6 +161,8 @@ describe("manager App owner adapter", () => {
     });
     expect(calls[0]?.prompt).toContain("exact concise human-facing progress or final reply");
     expect(calls[0]?.prompt).toContain("cannot attach tasks");
+    expect(calls[0]?.prompt).toContain("when an item contains result, give the human that result directly");
+    expect(calls[0]?.prompt).toContain("Never discuss channels, delivery receipts");
   });
 
   it("rejects an unstructured successful owner result", async () => {

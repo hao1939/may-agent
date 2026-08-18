@@ -94,6 +94,10 @@ describe("May Console", () => {
                 requestId: "item-done",
                 message: "Review the earlier release",
                 state: "done",
+                result: {
+                  summary: "The earlier release is healthy.",
+                  response: "The earlier release passed every required check.",
+                },
                 createdAt: Date.UTC(2026, 7, 17, 7, 0, 0),
                 updatedAt: Date.UTC(2026, 7, 17, 7, 5, 0),
               },
@@ -237,7 +241,10 @@ describe("May Console", () => {
     expect(frames.filter((frame) => frame.type === "app.conversation.get")[2]).toMatchObject({ allWork: true });
     expect(frames.filter((frame) => frame.type === "app.conversation.get")[2]).not.toHaveProperty("limit");
     await waitFor(
-      () => output.includes("All work (newest first):") && output.includes("Review the earlier release — Done"),
+      () =>
+        output.includes("All work (newest first):") &&
+        output.includes("Review the earlier release — Done") &&
+        output.includes("Result:\n       The earlier release passed every required check."),
     );
 
     child.stdin.write("/work 1\n");
