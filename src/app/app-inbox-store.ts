@@ -36,6 +36,8 @@ export type AppInboxItem = {
   id: string;
   appId: string;
   parentId?: string;
+  /** Human feedback linked to an existing root request, not separate work. */
+  continuesRequestId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -156,6 +158,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     id: requiredText(row.id, "id"),
     appId: requiredText(row.app_id, "app_id"),
     parentId: optionalText(row.parent_id),
+    continuesRequestId: optionalText(row.continues_request_id),
     conversationId: optionalText(row.conversation_id),
     conversationSequence: optionalNumber(row.conversation_seq),
     channel: optionalText(row.channel),
@@ -430,7 +433,9 @@ export function listAppConversationMessages(
         createdAt: item.createdAt,
       });
     }
-    const resultText = item.result?.response?.trim() || item.result?.summary?.trim();
+    const resultText = item.continuesRequestId
+      ? item.result?.response?.trim()
+      : item.result?.response?.trim() || item.result?.summary?.trim();
     if (!resultText) continue;
     messages.push({
       id: `result:${item.id}`,
@@ -458,7 +463,10 @@ export function listAppConversationMessages(
   }
 
   return messages
-    .sort((left, right) => left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id))
+    .sort(
+      (left, right) =>
+        left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id),
+    )
     .slice(-limit);
 }
 
@@ -567,6 +575,7 @@ export function listAppWork(
     .prepare(
       `SELECT * FROM app_inbox_items
        WHERE app_id = ? AND source_kind = 'human'
+         AND continues_request_id IS NULL
          AND (? = 1 OR (status IN ('pending', 'handling') AND result IS NULL))
          AND (? = '' OR id != ?)
          AND (? = '' OR id = ?)
@@ -950,6 +959,60 @@ export function claimNextAppInboxItem(
   return { item, generation: item.lease!.generation, owner };
 }
 
+/**
+ * Fence one represented unfinished human request so the current May owner turn
+ * can replace its mechanism without scheduling May a second time.
+ */
+export function claimReferencedAppInboxWork(
+  db: SqliteDb,
+  current: AppInboxClaim,
+  requestId: string,
+  leaseMs: number,
+  now = Date.now(),
+): AppInboxClaim | null {
+  const targetId = requiredText(requestId, "continued request id");
+  const conversationId = requiredText(current.item.conversationId, "current conversation id");
+  if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
+  if (targetId === current.item.id) return null;
+  const row = db
+    .prepare(
+      `UPDATE app_inbox_items
+       SET status = 'handling', available_at = NULL, review_at = NULL,
+           session_id = (SELECT active.session_id FROM app_inbox_items active WHERE active.id = ?),
+           started_at = COALESCE(started_at, ?), changed_at = ?,
+           lease_generation = lease_generation + 1,
+           lease_owner = ?, lease_expires_at = ?, updated_at = ?
+       WHERE id = ?
+         AND app_id = ? AND conversation_id = ? AND source_kind = 'human'
+         AND continues_request_id IS NULL AND status != 'done'
+         AND (lease_owner IS NULL OR lease_expires_at <= ?)
+         AND EXISTS (
+           SELECT 1 FROM app_inbox_items active
+           WHERE active.id = ? AND active.status = 'handling'
+             AND active.lease_generation = ? AND active.lease_owner = ?
+         )
+       RETURNING *`,
+    )
+    .get(
+      current.item.id,
+      now,
+      now,
+      current.owner,
+      now + leaseMs,
+      now,
+      targetId,
+      current.item.appId,
+      conversationId,
+      now,
+      current.item.id,
+      current.generation,
+      current.owner,
+    );
+  if (!row) return null;
+  const item = rowToItem(row);
+  return { item, generation: item.lease!.generation, owner: current.owner };
+}
+
 export function renewAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, leaseMs: number, now = Date.now()): boolean {
   if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
   return (
@@ -1063,6 +1126,34 @@ export function completeAppInboxClaim(
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
       [JSON.stringify(result), now, now, now, claim.item.id, claim.generation, claim.owner],
+    ).changes === 1
+  );
+}
+
+/** Complete a human feedback turn as context linked to existing work. */
+export function completeAppInboxContinuation(
+  db: SqliteDb,
+  claim: AppInboxClaim,
+  requestId: string,
+  response: string | undefined,
+  now = Date.now(),
+): boolean {
+  const targetId = requiredText(requestId, "continued request id");
+  const normalizedResponse = response?.trim();
+  const result: AppResult = {
+    summary: `Continued request ${targetId}`,
+    ...(normalizedResponse ? { response: normalizedResponse } : {}),
+  };
+  return (
+    db.run(
+      `UPDATE app_inbox_items
+       SET status = 'done', continues_request_id = ?, result = ?, completed_at = ?, changed_at = ?, updated_at = ?,
+           waiting_on_kind = NULL, waiting_on_id = NULL,
+           review_at = NULL, available_at = NULL,
+           lease_owner = NULL, lease_expires_at = NULL
+       WHERE id = ? AND status = 'handling'
+         AND lease_generation = ? AND lease_owner = ?`,
+      [targetId, JSON.stringify(result), now, now, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }

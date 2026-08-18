@@ -10,6 +10,7 @@ import {
   type AppInputSource,
   type AppRequest,
   type AppTaskAttachment,
+  type AppWorkDisposition,
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
@@ -18,6 +19,8 @@ import {
   associateAppInboxClaimSession,
   claimNextAppInboxItem,
   claimNextAppInboxDelivery,
+  claimReferencedAppInboxWork,
+  completeAppInboxContinuation,
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
@@ -167,6 +170,14 @@ const TERMINAL_SESSION_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["s
   "done",
   "error",
   "interrupted",
+]);
+
+const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["status"]>([
+  "attention",
+  "done",
+  "error",
+  "interrupted",
+  "unknown",
 ]);
 
 export function appInboxHumanRequestId(itemId: string): string {
@@ -545,6 +556,39 @@ export class AppInboxHost {
     return outcome;
   }
 
+  /** Re-observe task waits so attention or missing tasks cannot wait forever. */
+  async recoverTaskDependencies(): Promise<AppInboxSessionRecoveryResult> {
+    const outcome: AppInboxSessionRecoveryResult = {
+      linked: 0,
+      woken: 0,
+      wokenAppIds: [],
+      errors: [],
+    };
+    if (!this.#readDependency) return outcome;
+    const wokenApps = new Set<string>();
+    for (const item of listAppInboxDependencyWaits(this.#db, "task")) {
+      const dependency = item.waitingOn;
+      if (!dependency || dependency.kind !== "task") continue;
+      const taskDependency = { kind: "task", id: dependency.id } as const;
+      try {
+        const observed = (await this.#observeDependency(item.appId, taskDependency)) ?? {
+          ...taskDependency,
+          status: "unknown" as const,
+        };
+        if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
+        const woken = wakeAppInboxItemsWaitingOn(this.#db, taskDependency, this.#now());
+        if (woken > 0) {
+          outcome.woken += woken;
+          wokenApps.add(item.appId);
+        }
+      } catch (error) {
+        outcome.errors.push(`Wait ${item.id} task ${taskDependency.id}: ${errorMessage(error)}`);
+      }
+    }
+    outcome.wokenAppIds = [...wokenApps].sort();
+    return outcome;
+  }
+
   recordDelivery(receipt: AppInboxDeliveryReceipt): {
     matched: boolean;
     completed: boolean;
@@ -700,9 +744,7 @@ export class AppInboxHost {
           ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
         },
         work: (conversation.work ?? []).filter((work) => work.requestId !== item.id),
-        messages: conversation.messages.filter(
-          (message) => message.metadata?.requestId !== item.id,
-        ),
+        messages: conversation.messages.filter((message) => message.metadata?.requestId !== item.id),
       };
     }
     const waitingOn = item.waitingOn;
@@ -841,6 +883,8 @@ export class AppInboxHost {
     disposition: AppDisposition,
   ): Promise<string | undefined> {
     switch (disposition.type) {
+      case "continue":
+        return this.#continueConversationWork(app, claim, request, disposition);
       case "complete": {
         validateCompleteDisposition(disposition);
         const result = {
@@ -1003,6 +1047,56 @@ export class AppInboxHost {
       }
       default:
         throw new Error(`Unknown App disposition: ${String((disposition as { type?: unknown }).type)}`);
+    }
+  }
+
+  async #continueConversationWork(
+    app: RegisteredApp,
+    currentClaim: AppInboxClaim,
+    currentRequest: Readonly<AppRequest>,
+    continuation: Extract<AppDisposition, { type: "continue" }>,
+  ): Promise<string | undefined> {
+    if (app.id !== "may") throw new Error("Only the canonical May App may continue conversation work");
+    if (currentClaim.item.source.kind !== "human" || !currentClaim.item.conversationId) {
+      throw new Error("Only a human Conversation turn may continue work");
+    }
+    const targetId = requiredText(continuation.requestId, "Continued request id");
+    const represented = currentRequest.conversation?.work?.some((work) => work.requestId === targetId) === true;
+    if (!represented) {
+      throw new Error(`Continued request ${targetId} is not represented as active work in this Conversation`);
+    }
+
+    const target = getAppInboxItem(this.#db, targetId);
+    if (
+      !target ||
+      target.appId !== app.id ||
+      target.conversationId !== currentClaim.item.conversationId ||
+      target.source.kind !== "human" ||
+      target.status === "done" ||
+      target.result ||
+      target.continuesRequestId
+    ) {
+      throw new Error(`Continued request ${targetId} is not unfinished May work in this Conversation`);
+    }
+
+    // Author the target while its old dependency is still linked so May's
+    // chosen replacement is reviewed against the exact current observation.
+    const targetRequest = await this.#authorRequest(target);
+    const targetClaim = claimReferencedAppInboxWork(this.#db, currentClaim, targetId, this.#leaseMs, this.#now());
+    if (!targetClaim) throw new Error(`Continued request ${targetId} changed before it could be fenced`);
+
+    try {
+      await this.#admitDisposition(app, targetClaim, targetRequest, continuation.disposition as AppWorkDisposition);
+      if (!completeAppInboxContinuation(this.#db, currentClaim, targetId, continuation.response, this.#now())) {
+        throw new Error("feedback turn claim is stale");
+      }
+      return currentClaim.item.conversationId;
+    } catch (error) {
+      releaseAppInboxClaim(this.#db, targetClaim, {
+        retryAfterMs: this.#retryAfterMs,
+        now: this.#now(),
+      });
+      throw error;
     }
   }
 }

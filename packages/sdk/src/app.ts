@@ -144,7 +144,7 @@ export type AppAnalysisRequest = {
 };
 
 /** The complete lifecycle vocabulary returned by an App owner. */
-export type AppDisposition =
+export type AppWorkDisposition =
   | { type: "complete"; summary: string; response?: string; evidence?: string[] }
   | {
       type: "delegate";
@@ -154,6 +154,20 @@ export type AppDisposition =
     }
   | { type: "task"; task: AppTaskAttachment }
   | { type: "analyze"; analysis: AppAnalysisRequest; acknowledgement?: string };
+
+/**
+ * One May conversation turn may advance represented unfinished work directly.
+ * The Host fences requestId to May-owned work in the same Conversation.
+ */
+export type AppContinueDisposition = {
+  type: "continue";
+  requestId: string;
+  disposition: Exclude<AppWorkDisposition, { type: "task" }>;
+  /** Optional immediate reply for an asynchronous continuation. */
+  response?: string;
+};
+
+export type AppDisposition = AppWorkDisposition | AppContinueDisposition;
 
 export type AppInboxBatchMode = "single" | "coalesce-compatible";
 

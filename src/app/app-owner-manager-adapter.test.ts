@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
+import { Check } from "typebox/value";
 import {
   appOwnerBatchResultSchema,
   createManagerAppOwnerInvoker,
@@ -7,6 +8,37 @@ import {
 } from "./app-owner-manager-adapter.js";
 
 describe("manager App owner adapter", () => {
+  it("accepts same-turn May continuation but not direct task attachment", () => {
+    expect(
+      Check(appOwnerBatchResultSchema, {
+        dispositions: [
+          {
+            requestId: "feedback-turn",
+            disposition: {
+              type: "continue",
+              requestId: "original-work",
+              disposition: { type: "complete", summary: "done", response: "Done." },
+            },
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      Check(appOwnerBatchResultSchema, {
+        dispositions: [
+          {
+            requestId: "feedback-turn",
+            disposition: {
+              type: "continue",
+              requestId: "original-work",
+              disposition: { type: "task", task: { kind: "existing", taskId: "task-1" } },
+            },
+          },
+        ],
+      }),
+    ).toBe(false);
+  });
+
   it("runs one schema-bound owner session for a batch", async () => {
     const calls: Array<{ agent: string; prompt: string; options: Record<string, unknown> }> = [];
     const manager: AppOwnerManager = {
@@ -19,9 +51,7 @@ describe("manager App owner adapter", () => {
         return {
           status: "done",
           structuredResult: {
-            dispositions: [
-              { requestId: "probe-1", disposition: { type: "complete", summary: "passed" } },
-            ],
+            dispositions: [{ requestId: "probe-1", disposition: { type: "complete", summary: "passed" } }],
           },
         };
       },
@@ -50,9 +80,7 @@ describe("manager App owner adapter", () => {
     });
 
     expect(sessions).toEqual(["session-1"]);
-    expect(result).toEqual([
-      { requestId: "probe-1", disposition: { type: "complete", summary: "passed" } },
-    ]);
+    expect(result).toEqual([{ requestId: "probe-1", disposition: { type: "complete", summary: "passed" } }]);
     expect(calls[0]).toMatchObject({
       agent: "evaluator",
       options: {
@@ -68,7 +96,9 @@ describe("manager App owner adapter", () => {
     });
     expect(calls[0]!.prompt).toContain('"id": "probe-1"');
     expect(calls[0]!.prompt).toContain("current read-only observation");
-    expect(calls[0]!.prompt).toContain("Durable asynchronous ownership must be returned as a delegate or task disposition");
+    expect(calls[0]!.prompt).toContain(
+      "Durable asynchronous ownership must be returned as a delegate or task disposition",
+    );
     expect(calls[0]!.prompt).toContain("may return a task disposition");
     expect(calls[0]!.prompt).not.toContain("lease_generation");
   });
@@ -180,8 +210,6 @@ describe("manager App owner adapter", () => {
       inputSchema: Type.Unknown(),
     });
 
-    await expect(invoker({ app, requests: [], onSessionStarted() {} })).rejects.toThrow(
-      "Invalid App owner result",
-    );
+    await expect(invoker({ app, requests: [], onSessionStarted() {} })).rejects.toThrow("Invalid App owner result");
   });
 });

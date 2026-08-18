@@ -468,6 +468,27 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     });
   };
 
+  let taskRecovery: Promise<void> | null = null;
+  const recoverTaskDependencies = (): Promise<void> => {
+    if (taskRecovery) return taskRecovery;
+    const current = host
+      .recoverTaskDependencies()
+      .then((outcome) => {
+        for (const appId of outcome.wokenAppIds) schedule(appId);
+        if (outcome.errors.length > 0) {
+          options.bus.emit({
+            type: "info",
+            message: `[app-inbox:task-recovery] ${outcome.errors.join("; ")}`,
+          });
+        }
+      })
+      .finally(() => {
+        if (taskRecovery === current) taskRecovery = null;
+      });
+    taskRecovery = current;
+    return current;
+  };
+
   const scanNow = () => {
     publishPendingDelegations();
     const currentTime = now();
@@ -515,6 +536,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     for (const appId of host.appIds()) schedule(appId);
     observerRuntime.scanNow();
     void recoverSessionDependencies();
+    void recoverTaskDependencies();
     pumpDeliveries();
   };
 
@@ -795,7 +817,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
       }
     }
-    if (event.type === "app.dependency.completed") {
+    if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
       const kind = data.kind;
       const id = typeof data.id === "string" ? data.id.trim() : "";
       if ((kind === "app" || kind === "task" || kind === "session") && id) {
@@ -1002,6 +1024,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   }
   await recoverSessionDependencies(true);
   await recoverAnalysisDependencies();
+  await recoverTaskDependencies();
   const timer = setInterval(scanNow, scanIntervalMs);
   timer.unref?.();
   scanNow();
