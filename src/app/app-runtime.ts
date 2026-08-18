@@ -177,7 +177,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
   });
 
-  const { loaderOpts, appTaskOptions } = await prepareDaemonAgents({
+  const { loaderOpts, appTaskOptions, claimedAppTaskSessionIds } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     projectsRoot: opts.projectsRoot,
@@ -409,6 +409,7 @@ export async function runAppRuntime(opts: {
       manager,
       bus,
       loaderOpts,
+      claimedAppTaskSessionIds,
     });
   }
 

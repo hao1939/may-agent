@@ -26,7 +26,11 @@ export async function prepareDaemonAgents(opts: {
   cronEnabled: boolean;
   appRegistry: AppRegistry;
   hostCapacity: HostCapacity;
-}): Promise<{ loaderOpts: AgentLoaderOptions; appTaskOptions?: AppTaskRuntimeOptions }> {
+}): Promise<{
+  loaderOpts: AgentLoaderOptions;
+  appTaskOptions?: AppTaskRuntimeOptions;
+  claimedAppTaskSessionIds: ReadonlySet<string>;
+}> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
@@ -129,6 +133,7 @@ export async function prepareDaemonAgents(opts: {
   };
 
   let appTaskOptions: AppTaskRuntimeOptions | undefined;
+  let claimedAppTaskSessionIds: ReadonlySet<string> = new Set();
   if (opts.cronEnabled) {
     appTaskOptions = {
       projectsRoot: opts.projectsRoot,
@@ -143,7 +148,11 @@ export async function prepareDaemonAgents(opts: {
       appRegistry: opts.appRegistry,
     };
 
-    const appResult = await installAppTaskRuntimes(appTaskOptions);
+    // Startup recovery must inspect each App task tree once. Claim resumable
+    // fresh sessions in this pass and hand the exact set to generic session
+    // recovery instead of rescanning every large task tree later.
+    const appResult = await installAppTaskRuntimes(appTaskOptions, { includeFreshLeases: true });
+    claimedAppTaskSessionIds = appResult.claimedSessionIds;
     if (appResult.installed.length > 0) {
       opts.bus.emit({
         type: "info",
@@ -184,5 +193,5 @@ export async function prepareDaemonAgents(opts: {
     });
   }
 
-  return { loaderOpts, appTaskOptions };
+  return { loaderOpts, appTaskOptions, claimedAppTaskSessionIds };
 }
