@@ -157,6 +157,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         manager: deps.manager,
         runtimeCtx,
         agentName: agentForWorkflow,
+        sessionSource: opts?.sessionSource,
         persistDir: deps.persistDir,
         workflowDir,
         guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),

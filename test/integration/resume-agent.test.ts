@@ -324,9 +324,9 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     writeRegistryState(persistDir, {
       "session-heartbeat": {
         agent: "may",
-        task: "You are **may** waking up for your heartbeat.",
+        task: "Review current maintenance state.",
         status: "running",
-        source: "workflow:may-heartbeat",
+        source: "heartbeat",
         kind: "job",
         startedAt: Date.now() - 10000,
       },

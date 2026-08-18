@@ -113,20 +113,25 @@ export async function execute(ctx) {
 `,
     );
     const logged: string[] = [];
+    let agentSessionSource: string | undefined;
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: async () => ({
-          sessionId: "s_app_step",
-          status: "done",
-          lastAssistantText: "fallback",
-          messages: [],
-          duration: "0s",
-          outputDir: "",
-          finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
-        }),
+        callAgent: async (_agent: string, _task: string, options: { source?: string }) => {
+          agentSessionSource = options.source;
+          return {
+            sessionId: "s_app_step",
+            status: "done",
+            lastAssistantText: "fallback",
+            messages: [],
+            duration: "0s",
+            outputDir: "",
+            finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
+          };
+        },
       } as any,
       workflowDir,
       agentName: "owner",
+      sessionSource: "heartbeat",
       runtimeCtx: {
         emit: () => undefined,
         dispatchEvent: () => undefined,
@@ -157,6 +162,7 @@ export async function execute(ctx) {
         output: { ok: true },
       },
     });
+    expect(agentSessionSource).toBe("heartbeat");
     expect(logged).toEqual(["bounded move complete"]);
   });
 

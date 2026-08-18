@@ -29,7 +29,7 @@ export type HeartbeatWorkflowContext = {
   commands: { reviewInboxEvents(eventIds: number[], agent: string): unknown };
   emit(event: { type: string; [key: string]: unknown }): void;
   log(message: string): void;
-  runAgent(agent: string, task: string): Promise<any>;
+  runAgent(agent: string, task: string, options?: { source?: string }): Promise<any>;
   summarize(result: unknown, options?: Record<string, unknown>): string;
   done(summary: string, output?: unknown): HeartbeatWorkflowResult;
   blocked(reason: string, context?: unknown): HeartbeatWorkflowResult;
@@ -630,7 +630,7 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
 
   let result: any;
   try {
-    result = await ctx.runAgent(agent, prompt);
+    result = await ctx.runAgent(agent, prompt, { source: "heartbeat" });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordCircuitOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);

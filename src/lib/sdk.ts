@@ -73,6 +73,8 @@ export type WorkflowSDK = Omit<AgentSDK, "escalate"> & {
 
 export interface RunOpts {
   source?: string;
+  /** Session classification for agent steps started by a workflow. */
+  sessionSource?: string;
   projectId?: string;
   timeout?: number;
 }

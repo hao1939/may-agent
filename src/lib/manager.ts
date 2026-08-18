@@ -64,6 +64,7 @@ import {
   updateSessionProgress,
   listWorkflowRunIds,
   getWorkflowRun,
+  getWorkflowStepSessions,
   updateWorkflowRun,
   hasEvaluation,
   getDb,
@@ -176,10 +177,14 @@ type DispatchDedupDb = {
   version?: number;
 };
 
-function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
+function isLegacyHeartbeatSession(meta: { source?: string; task?: string }): boolean {
   const source = meta.source ?? "";
   const task = meta.task ?? "";
   return source.includes("heartbeat") || task.includes("waking up for your heartbeat") || /^\[heartbeat\]/i.test(task);
+}
+
+function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
+  return meta.source === "heartbeat" || isLegacyHeartbeatSession(meta);
 }
 
 function releaseStaleHeartbeatDispatchLease(persistDir: string, agent: string): boolean {
@@ -1253,9 +1258,14 @@ export class SubagentManager {
     return this._projectRoot;
   }
 
-  getWorkflowSteps(_workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
-    // TODO: implement via DB query when needed
-    return [];
+  getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
+    return getWorkflowStepSessions(this._persistDir, workflowRunId)
+      .filter((session) => ["done", "error", "interrupted"].includes(session.status))
+      .map((session) => ({
+        step: session.stepLabel ?? session.agent,
+        sessionId: session.sessionId,
+        summary: `${session.status}: ${(session.outcome ?? "").slice(0, 300)}`,
+      }));
   }
 
   getSessionTree(sessionId: string): any {
