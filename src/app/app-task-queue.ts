@@ -11,9 +11,11 @@ export class AppTaskQueue {
   private readonly pending: string[] = [];
   private readonly queued = new Set<string>();
   private readonly frontQueued = new Set<string>();
+  private readonly promotedQueued = new Set<string>();
   private readonly running = new Set<string>();
   private readonly dirty = new Set<string>();
   private readonly dirtyFront = new Set<string>();
+  private readonly dirtyPromote = new Set<string>();
   private readonly priorities = new Map<string, AppTaskPriority>();
   private readonly dirtyPriorities = new Map<string, AppTaskPriority>();
   private readonly frontPrioritySkips = new Map<string, number>();
@@ -33,14 +35,25 @@ export class AppTaskQueue {
     if (this.running.has(key)) {
       const alreadyDirty = this.dirty.has(key);
       this.dirty.add(key);
-      if (opts.front) this.dirtyFront.add(key);
+      if (opts.front || opts.promote) this.dirtyFront.add(key);
+      if (opts.promote) this.dirtyPromote.add(key);
       this.dirtyPriorities.set(key, priority);
       return !alreadyDirty;
     }
     if (this.queued.has(key)) {
       const priorityChanged = this.priorities.get(key) !== priority;
       this.priorities.set(key, priority);
-      if (!opts.front || this.frontQueued.has(key)) return priorityChanged;
+      if (opts.promote && !this.promotedQueued.has(key)) {
+        const index = this.pending.indexOf(key);
+        if (index >= 0) this.pending.splice(index, 1);
+        this.pending.splice(this.promotedQueued.size, 0, key);
+        this.frontQueued.add(key);
+        this.promotedQueued.add(key);
+        this.ordinaryPrioritySkips.delete(key);
+        this.frontPrioritySkips.set(key, 0);
+        return true;
+      }
+      if ((!opts.front && !opts.promote) || this.frontQueued.has(key)) return priorityChanged;
       const index = this.pending.indexOf(key);
       if (index >= 0) this.pending.splice(index, 1);
       this.pending.splice(this.frontQueued.size, 0, key);
@@ -51,7 +64,12 @@ export class AppTaskQueue {
     }
     this.queued.add(key);
     this.priorities.set(key, priority);
-    if (opts.front) {
+    if (opts.promote) {
+      this.pending.splice(this.promotedQueued.size, 0, key);
+      this.frontQueued.add(key);
+      this.promotedQueued.add(key);
+      this.frontPrioritySkips.set(key, 0);
+    } else if (opts.front) {
       this.pending.splice(this.frontQueued.size, 0, key);
       this.frontQueued.add(key);
       this.frontPrioritySkips.set(key, 0);
@@ -73,6 +91,7 @@ export class AppTaskQueue {
     this.queued.delete(taskId);
     this.frontPrioritySkips.delete(taskId);
     this.ordinaryPrioritySkips.delete(taskId);
+    this.promotedQueued.delete(taskId);
     if (this.frontQueued.delete(taskId)) this.consecutiveFrontTakes += 1;
     else this.consecutiveFrontTakes = 0;
     this.running.add(taskId);
@@ -85,9 +104,10 @@ export class AppTaskQueue {
     }
     if (this.dirty.delete(taskId)) {
       const front = this.dirtyFront.delete(taskId);
+      const promote = this.dirtyPromote.delete(taskId);
       const priority = this.dirtyPriorities.get(taskId) ?? this.priorities.get(taskId);
       this.dirtyPriorities.delete(taskId);
-      this.enqueue(taskId, { front, priority });
+      this.enqueue(taskId, { front, promote, priority });
     } else {
       this.priorities.delete(taskId);
     }
@@ -184,6 +204,8 @@ export type AppTaskPriority = "P0" | "P1" | "P2" | "P3";
 
 export type AppTaskQueueOptions = {
   front?: boolean;
+  /** Fresh exact wake: move an already-front-queued key ahead of passive resync backlog. */
+  promote?: boolean;
   priority?: AppTaskPriority;
 };
 
