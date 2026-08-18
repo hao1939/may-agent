@@ -1070,7 +1070,7 @@ export class AppInboxHost {
     if (
       !target ||
       target.appId !== app.id ||
-      target.conversationId !== currentClaim.item.conversationId ||
+      (target.conversationId !== undefined && target.conversationId !== currentClaim.item.conversationId) ||
       target.source.kind !== "human" ||
       target.status === "done" ||
       target.result ||
