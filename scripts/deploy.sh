@@ -20,6 +20,12 @@ if [ -z "$task_id" ]; then
   exit 2
 fi
 
+# An exact task wake is a reference to existing durable work, not task-creation
+# authority. Fail before building or restarting when a stale caller supplies a
+# task that the running App can never admit.
+task_state="${MAY_AGENT_DEPLOY_TASK_STATE:-$(dirname "$deploy_root")/${project}.app/.state/tasks/state.json}"
+bun scripts/deploy-receipt.ts validate-target "$task_state" "$project" "$task_id"
+
 source_commit="$(git rev-parse --verify HEAD)"
 sdk_release_name="sdk-$source_commit"
 

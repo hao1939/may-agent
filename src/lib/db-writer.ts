@@ -434,6 +434,7 @@ export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
   private deliveryTrackingStartedAt = Date.now();
+  private reconciledUnhandledAdmissionPlans = false;
 
   constructor(persistDir: string) {
     this.persistDir = persistDir;
@@ -938,14 +939,62 @@ export class DbWriter {
         );
       }
 
-      this.db.run(
+      const newlyUnhandled = this.db.run(
         `UPDATE events
          SET delivery_status = 'unhandled',
              delivery_note = COALESCE(delivery_note, 'no responsible consumer accepted event before timeout')
          WHERE delivery_status = 'pending'
-           AND timestamp >= ?
-           AND timestamp + COALESCE(ttl_ms, ?) < ?`,
-        [this.deliveryTrackingStartedAt, DEFAULT_UNACCEPTED_TTL_MS, now],
+           AND timestamp + COALESCE(ttl_ms, ?) < ?
+           AND (
+             timestamp >= ?
+             OR EXISTS (
+               SELECT 1 FROM app_event_admission_plans plan
+               WHERE plan.event_id = events.id AND plan.status = 'pending'
+             )
+           )`,
+        [DEFAULT_UNACCEPTED_TTL_MS, now, this.deliveryTrackingStartedAt],
+      );
+
+      // Frozen App plans are explicit current-runtime obligations, unlike
+      // unclassified legacy event history. Reconcile an expired plan even if
+      // its event predates this process so a crash cannot leave it pending for
+      // every later generation.
+      // Once the durable event itself has reached its terminal unhandled
+      // state, its frozen App admission plan cannot remain pending forever.
+      // Preserve both rows and their last_error for diagnosis, but release the
+      // App registry instead of keeping an impossible exact-task target
+      // registered indefinitely.
+      if (this.reconciledUnhandledAdmissionPlans && newlyUnhandled.changes === 0) {
+        return;
+      }
+      this.reconciledUnhandledAdmissionPlans = true;
+      this.db.run(
+        `UPDATE app_event_admission_commands
+         SET status = 'superseded',
+             last_error = COALESCE(last_error, 'origin event became unhandled before App admission'),
+             updated_at = ?
+         WHERE status = 'pending'
+           AND event_id IN (
+             SELECT id FROM events WHERE delivery_status = 'unhandled'
+           )`,
+        [now],
+      );
+      this.db.run(
+        `UPDATE app_event_admission_plans
+         SET status = 'superseded',
+             last_error = COALESCE(last_error, 'origin event became unhandled before App admission'),
+             completed_at = COALESCE(completed_at, ?),
+             updated_at = ?
+         WHERE status = 'pending'
+           AND event_id IN (
+             SELECT id FROM events WHERE delivery_status = 'unhandled'
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM app_event_admission_commands command
+             WHERE command.event_id = app_event_admission_plans.event_id
+               AND command.status = 'pending'
+           )`,
+        [now, now],
       );
     } catch {
       /* best-effort delivery sweep */

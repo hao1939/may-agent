@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deployReceiptPrompt, readDeployReceiptForTask } from "../src/app/app-task-runtime";
-import { requestReceipt, settleReceipt } from "./deploy-receipt";
+import { requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
 
 function fixture() {
   const projectDir = mkdtempSync(join(tmpdir(), "deploy-receipt-"));
@@ -13,6 +13,29 @@ function fixture() {
 }
 
 describe("restart-aware deploy receipts", () => {
+  it("rejects a stale exact-task wake before deployment", () => {
+    const f = fixture();
+    try {
+      const statePath = join(f.projectDir, "state.json");
+      writeFileSync(
+        statePath,
+        JSON.stringify({
+          project: "may-agent",
+          resources: {
+            live: { metadata: { id: "live" }, status: { phase: "running" } },
+          },
+        }),
+      );
+      expect(() => validateDeployTaskTarget(statePath, "may-agent", "missing")).toThrow(
+        "does not exist; refusing to emit an unresolvable targeted wake",
+      );
+      expect(() => validateDeployTaskTarget(statePath, "other", "live")).toThrow("belongs to may-agent, not other");
+      expect(() => validateDeployTaskTarget(statePath, "may-agent", "live")).not.toThrow();
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
   it("persists requested metadata before interruption and tells recovery to wait", () => {
     const f = fixture();
     try {
@@ -134,6 +157,7 @@ describe("restart-aware deploy receipts", () => {
 
   it("builds deployable artifacts from one immutable tested commit", () => {
     const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
+    expect(deploy).toContain('deploy-receipt.ts validate-target "$task_state" "$project" "$task_id"');
     expect(deploy).toContain('source_commit="$(git rev-parse --verify HEAD)"');
     expect(deploy).toContain('git archive "$source_commit" | tar -x -C "$build_dir"');
     expect(deploy).toContain(
