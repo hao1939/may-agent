@@ -30,6 +30,7 @@ export async function prepareDaemonAgents(opts: {
   loaderOpts: AgentLoaderOptions;
   appTaskOptions?: AppTaskRuntimeOptions;
   claimedAppTaskSessionIds: ReadonlySet<string>;
+  startAppTaskControllers: () => void;
 }> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
@@ -134,7 +135,18 @@ export async function prepareDaemonAgents(opts: {
 
   let appTaskOptions: AppTaskRuntimeOptions | undefined;
   let claimedAppTaskSessionIds: ReadonlySet<string> = new Set();
+  let startAppTaskControllers = () => {};
   if (opts.cronEnabled) {
+    let started = false;
+    let openStartGate = () => {};
+    const startAfter = new Promise<void>((resolve) => {
+      openStartGate = resolve;
+    });
+    startAppTaskControllers = () => {
+      if (started) return;
+      started = true;
+      openStartGate();
+    };
     appTaskOptions = {
       projectsRoot: opts.projectsRoot,
       projectRoot: opts.projectRoot,
@@ -146,6 +158,7 @@ export async function prepareDaemonAgents(opts: {
       hostCapacity: opts.hostCapacity,
       registerLocalAgent,
       appRegistry: opts.appRegistry,
+      startAfter,
     };
 
     // Startup recovery must inspect each App task tree once. Claim resumable
@@ -193,5 +206,5 @@ export async function prepareDaemonAgents(opts: {
     });
   }
 
-  return { loaderOpts, appTaskOptions, claimedAppTaskSessionIds };
+  return { loaderOpts, appTaskOptions, claimedAppTaskSessionIds, startAppTaskControllers };
 }

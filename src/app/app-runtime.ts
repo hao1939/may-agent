@@ -177,7 +177,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
   });
 
-  const { loaderOpts, appTaskOptions, claimedAppTaskSessionIds } = await prepareDaemonAgents({
+  const { loaderOpts, appTaskOptions, claimedAppTaskSessionIds, startAppTaskControllers } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     projectsRoot: opts.projectsRoot,
@@ -411,6 +411,9 @@ export async function runAppRuntime(opts: {
       loaderOpts,
       claimedAppTaskSessionIds,
     });
+    // App work is asynchronous, but it must not compete with state recovery,
+    // session fencing, or opening the human interfaces during daemon startup.
+    startAppTaskControllers();
   }
 
   if (!CONSOLE_ENABLED && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
