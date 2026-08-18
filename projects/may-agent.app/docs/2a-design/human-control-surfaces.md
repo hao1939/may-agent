@@ -47,10 +47,11 @@ Required data is:
 - the raw human `text`;
 - optional `replyTo` and channel delivery metadata.
 
-The Host durably admits one fenced May App inbox request from the human message.
-Retrying the same adapter message returns the original receipt. Opening a
-surface, reconnecting, reading status, or rendering a view creates no human
-work.
+The Host durably admits one fenced May App inbox turn from the human message.
+May decides during that turn whether the message starts new work or continues
+one referenced active request. Retrying the same adapter message returns the
+original receipt. Opening a surface, reconnecting, reading status, or rendering
+a view creates no human work.
 
 State-changing controls use their existing typed events, such as
 `session.steer.requested`, `session.cancel.requested`, project App actions, and
@@ -118,6 +119,26 @@ Work views are projections, not objects with another lifecycle:
 - all work shows active and finished requests, newest first;
 - completed work includes its bounded result;
 - one exact work read includes that request's full result.
+
+A human message is conversation input, not automatically a new commitment. If
+May determines that it is feedback about an active request represented in the
+bounded Conversation, May may apply one ordinary disposition to that request in
+the same owner turn. The Host fences the target to the same App and
+Conversation. The new message remains durable context, but it is linked to the
+existing request and omitted from `/work` and `/work all` as a separate item.
+
+```text
+human feedback + bounded Conversation
+  -> May selects referenced request
+  -> Host fences that unfinished request
+  -> complete, delegate, or analyze it now
+  -> keep the original request ID
+```
+
+This is not a selected-work mode and does not add another May cycle. A later
+reconciliation is needed only when the disposition attaches genuinely
+asynchronous work. Sessions, children, tasks, and analyses may be replaced;
+the original human request remains the commitment.
 
 The human request remains the work identity. A session, task, child App, or
 analysis is only a resource used to fulfil it and may be replaced across
@@ -226,6 +247,8 @@ Every May human adapter must prove:
 10. restart reconstructs the same Conversation resource.
 11. a new message from one adapter is rendered by the other without creating a
     duplicate Conversation message or May request.
+12. feedback about represented active work advances that request in the same
+    May turn and does not appear as another work item.
 
 The goal is semantic consistency with channel-appropriate interaction—not
 identical UI.
@@ -236,3 +259,8 @@ Older socket shortcut frames may remain temporarily, but they normalize at the
 socket boundary. They are not an alternate lifecycle and new adapters should
 use event publication, validated App admission/action invocation, and the
 bounded Conversation read directly.
+
+The socket boundary also normalizes exact May `/reload` and `/restart` text
+from stale clients into their typed Runtime controls before persistence. A
+client-version mismatch therefore cannot turn a control into conversational
+work.

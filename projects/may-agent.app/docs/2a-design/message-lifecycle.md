@@ -64,10 +64,11 @@ May receives the current request plus one bounded Conversation projection:
 
 ```text
 human message
-  -> one May App inbox request
+  -> one May App inbox turn
   -> Conversation context + other active work
+  -> new work, or same-turn continuation of represented active work
   -> direct result, child App, task, session, or bounded CLI analysis
-  -> exact dependency completion wakes the same request
+  -> a reviewable dependency observation wakes the same request
   -> reviewed App result
   -> Conversation message + conversation.updated
   -> each adapter independently reads and renders
@@ -82,6 +83,19 @@ Project Apps remain responsible for project outcomes. May states intent,
 constraints, approval bounds, and expected evidence. A project App decides its
 task shape, workflow, waits, retries, and terminal proof.
 
+May's owner decision is also the admission decision. An ordinary message may
+start a new commitment, but feedback such as “continue the second one” or “that
+wait is invalid” may instead continue a represented unfinished request. The
+Host applies the selected disposition to that request before the owner turn
+ends and records the feedback turn as linked conversation context. It does not
+schedule May again merely to interpret May's own decision.
+
+Only an unfinished human request owned by the same App and Conversation may be
+continued. This Host fence prevents guessed IDs or cross-conversation context
+from mutating work. The target's dependency is replaceable; its request ID is
+not. If the replacement is asynchronous, its terminal observation wakes the
+same target request later.
+
 ## Conversation projection
 
 The Conversation is reconstructed from existing durable evidence:
@@ -92,7 +106,9 @@ The Conversation is reconstructed from existing durable evidence:
 - active or historical human work derived from App inbox and dependency state.
 
 An ordinary Conversation read contains the active-work projection derived from
-unfinished human requests. It is never persisted or reconciled separately.
+unfinished root human requests. A later human turn linked as feedback is a
+durable message, but not another projected work item. The projection is never
+persisted or reconciled separately.
 Each item is rooted at its stable request ID and may expose its most recent
 execution resource and exact dependency. Sessions and tasks remain replaceable
 mechanisms, not Conversation-owned work.
@@ -140,10 +156,12 @@ ordering of active work.
 
 1. Console and Telegram map ordinary May interaction to `may:primary`.
 2. Adapter presentation may differ; semantic identity and work do not.
-3. Every durable human message admits at most one App inbox request.
+3. Every durable human message admits at most one App inbox turn; May may link
+   that turn to one represented active request instead of creating new work.
 4. Agent/tool/command messages never create human work.
 5. Transient messages never enter durable context or replay.
-6. Dependency completion wakes the exact request that attached it.
+6. Dependency completion, failure, interruption, attention, or disappearance
+   wakes the exact request that attached it for review.
 7. Each addressed request retains its own result.
 8. A persisted May result is the Conversation output; adapter delivery never
    gates its completion.
@@ -152,3 +170,5 @@ ordering of active work.
 10. Project outcomes remain owned by their Apps.
 11. Cross-surface synchronization reads Conversation truth; update signals and
     adapter render cursors never become conversation or work authority.
+12. Continuing represented work happens in the current owner turn; only the
+    attached asynchronous mechanism requires a later wake.

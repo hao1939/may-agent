@@ -168,8 +168,12 @@ optional dependency observation. Host-private rows, claims, leases, channel
 metadata, and persistence handles never enter App code.
 
 Addressed ingress uses a required `app.input.requested` event. Acceptance means
-the Host created or found exactly one durable request and linked it to the event
-ID. The request—not the opening event—retains mutable status and result state.
+the Host created or found exactly one durable inbox turn and linked it to the
+event ID. For ordinary addressed work that turn is the request. For May human
+conversation, the owner may instead link a feedback turn to one represented
+unfinished request and apply its next disposition immediately. The root
+request—not the opening event or later feedback message—retains mutable status
+and result state.
 
 The optional pure `route(request)` policy may return the same disposition
 vocabulary as the owner:
@@ -179,9 +183,22 @@ vocabulary as the owner:
   linked request; or
 - `task`: attach this request to an existing task or desired `TaskIntent`.
 
+The canonical May App additionally has a `continue` disposition. It names one
+active request present in the bounded Conversation and wraps one normal
+`complete`, `delegate`, or `analyze` disposition. The Host fences the
+target to May, the same Conversation, and unfinished human work; then it applies
+the wrapped disposition in the current owner attempt. This capability is not a
+general inbox mutation API and is unavailable to project Apps.
+
 Returning `null` asks the owner for one bounded judgment. An inbox item remains
 the authority while it waits on a child App, task, session, or delivery. It is
 not replaced by an event pair or by a copied task record.
+
+A dependency wake means “re-read and decide,” not only success. Completion,
+failure, interruption, task attention, and a missing formerly linked task all
+wake the exact requester. The Host re-observes stored task waits after restart
+and during ordinary resync, so a missed event cannot turn a reviewable failure
+into permanent waiting.
 
 The `may` App owns ordinary human conversation and its semantic result. It may
 answer directly or delegate to another App and review the child result. Console
