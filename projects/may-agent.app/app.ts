@@ -219,6 +219,7 @@ const app = defineApp({
   ],
   observations: [
     "runtime.daemon.heartbeat",
+    "metric.recovered",
     "handler.workflow_dispatched",
     "handler.skipped",
     "metric.feedback.routed",
