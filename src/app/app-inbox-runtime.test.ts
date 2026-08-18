@@ -10,6 +10,7 @@ import {
   associateAppInboxClaimSession,
   claimAppInboxItem,
   createAppInboxItem,
+  readAppConversationResource,
   waitAppInboxClaim,
 } from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
@@ -240,7 +241,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("carries one natural Telegram request through progress, restart, analysis review, and final delivery", async () => {
+  it("carries one natural Telegram request through progress, restart, analysis review, and a shared result", async () => {
     const mayDir = join(root, "may.app");
     mkdirSync(mayDir, { recursive: true });
     writeFileSync(
@@ -390,14 +391,14 @@ describe("App inbox runtime", () => {
     terminal = true;
     runtime = await start();
     runtime.enableDelivery();
-    await waitUntil(() => delivered.length === 2 && runtime?.host.get(itemId)?.status === "done");
-    expect(delivered[1]).toEqual({
-      kind: "final",
-      text: "I reviewed it. The evidence is sound.",
-      channelTargetId: "123",
-      channelThreadId: "7",
-      channelMessageId: 42,
-    });
+    await waitUntil(() => runtime?.host.get(itemId)?.status === "done");
+    expect(delivered).toHaveLength(1);
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toContainEqual(
+      expect.objectContaining({
+        author: { kind: "agent", id: "may" },
+        text: "I reviewed it. The evidence is sound.",
+      }),
+    );
     expect(conversationUpdates).toEqual([
       { appId: "may", conversationId: "may:primary" },
       { appId: "may", conversationId: "may:primary" },
@@ -1731,9 +1732,9 @@ describe("App inbox runtime", () => {
       cancel() {},
     };
     const bus = new EventBus();
-    const deliveryRequests: Array<Extract<AgentEvent, { type: "app.response.delivery.requested" }>> = [];
+    const conversationUpdates: Array<{ appId?: string; conversationId?: string }> = [];
     bus.subscribe((event) => {
-      if (event.type === "app.response.delivery.requested") deliveryRequests.push(event);
+      if (event.type === "conversation.updated") conversationUpdates.push(event.data);
     });
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
@@ -1768,9 +1769,9 @@ describe("App inbox runtime", () => {
     const item = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = ?").get("evaluation-canary") as {
       id: string;
     };
-    await waitUntil(() => deliveryRequests.length === 1);
+    await waitUntil(() => runtime?.host.get(item.id)?.status === "done");
     expect(runtime?.host.get(item.id)).toMatchObject({
-      status: "handling",
+      status: "done",
       source: { kind: "human", id: "event:42" },
       conversationId: "telegram:123",
       conversationSequence: 42,
@@ -1778,7 +1779,6 @@ describe("App inbox runtime", () => {
       channelThreadId: "topic:7",
       channelMessageId: 99,
       result: { summary: "human request handled" },
-      delivery: { status: "sending" },
     });
     expect(calls[0]).toMatchObject({
       source: "telegram",
@@ -1790,22 +1790,13 @@ describe("App inbox runtime", () => {
       toolPolicy: "app-owner-deputy",
     });
     expect(ownerContexts).toEqual([{ appId: "evaluation-canary", humanOrigin: true }]);
-    const request = deliveryRequests[0].data;
-    bus.emit({
-      type: "channel.delivery.completed",
-      source: "telegram",
-      owner: "agent:may",
-      target: { human: true },
-      data: {
-        channel: request.channel,
-        sessionId: request.sessionId,
-        operationId: request.operationId,
-        appInboxItemId: request.appInboxItemId,
-        appInboxRequestId: request.appInboxRequestId,
-        externalMessageId: 700,
-      },
-    });
-    await waitUntil(() => runtime?.host.get(item.id)?.status === "done");
+    expect(conversationUpdates).toContainEqual({ appId: "evaluation-canary", conversationId: "telegram:123" });
+    expect(readAppConversationResource(db, "evaluation-canary", "telegram:123").messages).toContainEqual(
+      expect.objectContaining({
+        author: { kind: "agent", id: "evaluation-canary" },
+        text: "human request handled",
+      }),
+    );
   });
 
   it("dispatches a restart-pending delivery once and never blindly redispatches an attempted send", async () => {

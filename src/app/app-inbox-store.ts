@@ -376,7 +376,7 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
 
 /**
  * One bounded cross-channel conversation projection over existing durable
- * inbox, delivery, and event-journal evidence. Transient message events are
+ * inbox results and event-journal evidence. Transient message events are
  * deliberately excluded from App context and reconnect replay.
  */
 export function listAppConversationMessages(
@@ -403,43 +403,30 @@ export function listAppConversationMessages(
     .map(rowToItem);
   for (const item of humanRows) {
     const text = conversationText(item.input);
-    if (!text) continue;
     const sequence = item.originEventId ?? item.conversationSequence ?? item.createdAt;
+    if (text) {
+      messages.push({
+        id: item.source.id,
+        sequence,
+        author: { kind: "human", id: item.source.id },
+        text: boundedConversationText(text),
+        ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
+        metadata: {
+          ...(item.channel ? { channel: item.channel } : {}),
+          requestId: item.id,
+        },
+        createdAt: item.createdAt,
+      });
+    }
+    const resultText = item.result?.response?.trim() || item.result?.summary?.trim();
+    if (!resultText) continue;
     messages.push({
-      id: item.source.id,
+      id: `result:${item.id}`,
       sequence,
-      author: { kind: "human", id: item.source.id },
-      text: boundedConversationText(text),
-      ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
-      metadata: {
-        ...(item.channel ? { channel: item.channel } : {}),
-        requestId: item.id,
-      },
-      createdAt: item.createdAt,
-    });
-  }
-
-  const deliveryRows = db
-    .prepare(
-      `SELECT delivery.*, item.app_id, item.conversation_id
-       FROM app_inbox_deliveries delivery
-       JOIN app_inbox_items item ON item.id = delivery.item_id
-       WHERE item.app_id = ? AND item.conversation_id = ?
-         AND delivery.status = 'delivered' AND delivery.text IS NOT NULL
-       ORDER BY delivery.completed_at DESC, delivery.created_at DESC
-       LIMIT ?`,
-    )
-    .all(appId, conversationId, limit);
-  for (const row of deliveryRows) {
-    const delivery = rowToDelivery(row);
-    if (!delivery.text?.trim()) continue;
-    messages.push({
-      id: `delivery:${delivery.operationId}`,
-      sequence: delivery.receiptEventId ?? delivery.completedAt ?? delivery.createdAt,
       author: { kind: "agent", id: appId },
-      text: boundedConversationText(delivery.text),
-      metadata: { channel: delivery.channel, requestId: delivery.requestId },
-      createdAt: delivery.completedAt ?? delivery.createdAt,
+      text: boundedConversationText(resultText),
+      metadata: { ...(item.channel ? { channel: item.channel } : {}), requestId: item.id },
+      createdAt: item.completedAt ?? item.updatedAt,
     });
   }
 
@@ -459,7 +446,7 @@ export function listAppConversationMessages(
   }
 
   return messages
-    .sort((left, right) => left.sequence - right.sequence || left.createdAt - right.createdAt || left.id.localeCompare(right.id))
+    .sort((left, right) => left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id))
     .slice(-limit);
 }
 
@@ -476,7 +463,7 @@ export function readAppConversationResource(
   return {
     id: conversationId,
     owner: appId,
-    version: messages.at(-1)?.sequence ?? 0,
+    version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
     messages,
     work: listAppWork(db, appId, {
       // `allWork` is an explicit full-history read. Keep the ordinary active
@@ -510,31 +497,29 @@ function workMessage(item: AppInboxItem): string {
 }
 
 function workState(item: AppInboxItem): AppWorkView["state"] {
+  // A result is semantic completion. Outbound transport may still be pending,
+  // failed, or uncertain, but that is Host health—not the human's work state.
+  if (item.result) return "done";
   if (item.status === "done") return "done";
   if (item.status === "pending") return "queued";
-  if (item.result) return "ready";
   if (item.waitingOn?.kind === "analysis" || item.waitingOn?.kind === "session") return "analyzing";
   if (item.waitingOn) return "waiting";
   return "working";
 }
 
-function workProgress(
-  item: AppInboxItem,
-  deliveries: AppInboxDelivery[],
-  state: AppWorkView["state"],
-): string | undefined {
-  if (state === "ready") {
-    const finalDelivery = deliveries.filter((delivery) => delivery.kind === "final").at(-1);
-    if (!finalDelivery) return "May has a result ready to deliver.";
-    if (finalDelivery.status === "uncertain") {
-      return `May has a result; delivery to ${finalDelivery.channel} is unconfirmed.`;
-    }
-    if (finalDelivery.status === "failed") {
-      return `May has a result; delivery to ${finalDelivery.channel} failed.`;
-    }
-    return `May has a result ready for ${finalDelivery.channel}.`;
-  }
+function workProgress(deliveries: AppInboxDelivery[]): string | undefined {
   return deliveries.filter((delivery) => delivery.kind === "progress" && delivery.text?.trim()).at(-1)?.text;
+}
+
+function workResult(result: AppResult, exact: boolean): AppResult {
+  if (exact) return result;
+  return {
+    summary: boundedConversationText(result.summary, 1_000),
+    ...(result.response ? { response: boundedConversationText(result.response, 4_000) } : {}),
+    ...(result.evidence
+      ? { evidence: result.evidence.slice(0, 8).map((entry) => boundedConversationText(entry, 500)) }
+      : {}),
+  };
 }
 
 /** Read-only human work view derived from durable App requests. */
@@ -562,7 +547,7 @@ export function listAppWork(
     .prepare(
       `SELECT * FROM app_inbox_items
        WHERE app_id = ? AND source_kind = 'human'
-         AND (? = 1 OR status IN ('pending', 'handling'))
+         AND (? = 1 OR (status IN ('pending', 'handling') AND result IS NULL))
          AND (? = '' OR id != ?)
          AND (? = '' OR id = ?)
        ORDER BY created_at DESC, id DESC
@@ -582,7 +567,7 @@ export function listAppWork(
     const item = rowToItem(row);
     const deliveries = listAppInboxDeliveries(db, item.id);
     const state = workState(item);
-    const progress = workProgress(item, deliveries, state);
+    const progress = workProgress(deliveries);
     const updatedAt = deliveries.reduce((latest, delivery) => Math.max(latest, delivery.updatedAt), item.updatedAt);
     return {
       requestId: item.id,
@@ -590,7 +575,7 @@ export function listAppWork(
       message: workMessage(item),
       state,
       ...(progress ? { progress: boundedWorkText(progress, 240) } : {}),
-      ...(includeResultForRequestId === item.id && item.result ? { result: item.result } : {}),
+      ...(item.result ? { result: workResult(item.result, includeResultForRequestId === item.id) } : {}),
       createdAt: item.createdAt,
       updatedAt,
     };

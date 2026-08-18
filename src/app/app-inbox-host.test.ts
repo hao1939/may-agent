@@ -493,10 +493,6 @@ describe("App inbox host", () => {
               current: { messageId: "event:42", replyTo: "event:41" },
               work: [
                 expect.objectContaining({
-                  requestId: "selected-human",
-                  state: "ready",
-                }),
-                expect.objectContaining({
                   requestId: "background-human",
                   message: "probe request",
                   state: "analyzing",
@@ -519,14 +515,9 @@ describe("App inbox host", () => {
     ]);
     expect((invocations[0] as { requests: Array<Record<string, unknown>> }).requests[0]).not.toHaveProperty("channel");
     expect(host.get("human-1")).toMatchObject({
-      status: "handling",
+      status: "done",
       sessionId: "session-human-1",
       result: { summary: "done", response: "Hello" },
-      delivery: {
-        operationId: "app-delivery:human-1:1",
-        status: "pending",
-        channel: "may-console",
-      },
     });
   });
 

@@ -3,7 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../../src/app/event-bus.js";
-import { createAppInboxItem } from "../../src/app/app-inbox-store.js";
+import {
+  associateAppInboxClaimSession,
+  claimAppInboxItem,
+  createAppInboxItem,
+  stageAppInboxClaimDelivery,
+} from "../../src/app/app-inbox-store.js";
 import { attachTelegramBot } from "../../src/app/transport/telegram.js";
 import { getDb } from "../../src/lib/requests.js";
 
@@ -164,7 +169,8 @@ describe("telegram reply e2e", () => {
   });
 
   it("renders Telegram work from the shared Conversation and records what the human saw", async () => {
-    createAppInboxItem(getDb(persistDir), {
+    const db = getDb(persistDir);
+    createAppInboxItem(db, {
       id: "work-1",
       appId: "may",
       source: { kind: "human", id: "telegram:12345:100" },
@@ -174,6 +180,19 @@ describe("telegram reply e2e", () => {
       channel: "telegram",
       now: 1,
     });
+    const claim = claimAppInboxItem(db, "work-1", "worker", 100, 2)!;
+    expect(associateAppInboxClaimSession(db, claim, "session-1", 3)).toBe(true);
+    stageAppInboxClaimDelivery(
+      db,
+      claim,
+      {
+        channel: "telegram",
+        sessionId: "session-1",
+        requestId: "request-1",
+        result: { summary: "The design is sound.", response: "The design is clean and ready to use." },
+      },
+      4,
+    );
     const sentMessages: Array<{ chat_id: string; text: string }> = [];
     let getUpdatesCount = 0;
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
@@ -183,7 +202,7 @@ describe("telegram reply e2e", () => {
       if (method === "getUpdates") {
         getUpdatesCount += 1;
         if (getUpdatesCount === 1) {
-          return jsonResponse([{ update_id: 1, message: { message_id: 200, chat: { id: 12345 }, text: "/work" } }]);
+          return jsonResponse([{ update_id: 1, message: { message_id: 200, chat: { id: 12345 }, text: "/work all" } }]);
         }
         await new Promise((resolve) => setTimeout(resolve, 25));
         return jsonResponse([]);
@@ -204,15 +223,16 @@ describe("telegram reply e2e", () => {
 
     await waitFor(() => {
       expect(sentMessages).toHaveLength(1);
-      expect(sentMessages[0]?.text).toContain("Active work:");
-      expect(sentMessages[0]?.text).toContain("Review the design — Queued");
+      expect(sentMessages[0]?.text).toContain("All work (newest first):");
+      expect(sentMessages[0]?.text).toContain("Review the design — Done");
+      expect(sentMessages[0]?.text).toContain("Result: The design is clean and ready to use.");
       expect(messages).toHaveLength(1);
       expect(messages[0]).toMatchObject({
         data: {
           appId: "may",
           conversationId: "may:primary",
           author: { kind: "command", id: "telegram" },
-          metadata: { channel: "telegram", channelMessageId: 300, command: "/work" },
+          metadata: { channel: "telegram", channelMessageId: 300, command: "/work all" },
         },
       });
     });

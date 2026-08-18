@@ -161,6 +161,7 @@ function ownerPrompt(app: AppDefinition, requests: AppRequest[], humanResponse: 
     }.`,
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
     "When conversation evidence is present, use its ordered durable messages and exact reply links to understand natural follow-up. Command and meaningful tool output are messages too. Transient progress and notifications are deliberately absent. If more than one unfinished subject remains plausible, ask one focused clarification instead of guessing.",
+    "Conversation work is semantic: when an item contains result, give the human that result directly. Never discuss channels, delivery receipts, display confirmation, or transport uncertainty unless the human explicitly asks for an operational delivery diagnosis.",
     ...(humanResponse
       ? [
           "This is one human-origin request. Put the exact concise human-facing progress or final reply in the finish summary as well as in the disposition response when completing.",

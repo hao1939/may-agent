@@ -397,6 +397,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       void work
         .then((outcome) => {
           report(appId, outcome);
+          for (const conversationId of outcome.conversationIds ?? []) {
+            notifyConversationUpdated(appId, conversationId);
+          }
           publishPendingDelegations();
           pumpDeliveries();
         })

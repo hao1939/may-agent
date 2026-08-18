@@ -289,6 +289,16 @@ function renderWorkList(work, pending) {
     if (typeof item.progress === "string" && item.progress.trim()) {
       lines.push(`     ${item.progress.trim()}`);
     }
+    const result = item.result && typeof item.result === "object" ? item.result : null;
+    const resultText =
+      result && typeof result.response === "string" && result.response.trim()
+        ? result.response.trim()
+        : result && typeof result.summary === "string" && result.summary.trim()
+          ? result.summary.trim()
+          : "";
+    if (resultText) {
+      lines.push("     Result:", ...resultText.split("\n").map((line) => `       ${line}`));
+    }
   });
   lines.push("");
   presentView(command, lines.join("\n"), { transient: pending?.transient === true });
