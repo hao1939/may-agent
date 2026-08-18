@@ -110,6 +110,27 @@ function activeStatus(status: ControlStatusItem[]): ControlStatusItem[] {
     }));
 }
 
+function exactRuntimeControl(text: unknown): "runtime.reload.requested" | "runtime.restart.requested" | null {
+  if (typeof text !== "string") return null;
+  switch (text.trim().toLowerCase()) {
+    case "/reload":
+      return "runtime.reload.requested";
+    case "/restart":
+      return "runtime.restart.requested";
+    default:
+      return null;
+  }
+}
+
+function exactMayInputControl(appId: string, input: unknown): ReturnType<typeof exactRuntimeControl> {
+  if (appId !== "may" || !input || typeof input !== "object" || Array.isArray(input)) return null;
+  const record = input as Record<string, unknown>;
+  if (record.kind !== "message" || !record.data || typeof record.data !== "object" || Array.isArray(record.data)) {
+    return null;
+  }
+  return exactRuntimeControl((record.data as Record<string, unknown>).message);
+}
+
 function socketStatus(status: ControlStatusItem[], currentSessionId: string, agentName: string): ControlStatusItem[] {
   const active = activeStatus(status);
   if (currentSessionId && !active.some((item) => item.sessionId === currentSessionId)) {
@@ -416,10 +437,22 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             if (target !== undefined && (!target || typeof target !== "object" || Array.isArray(target))) {
               throw new Error("Event target must be an object");
             }
+            const eventData = data as Record<string, unknown>;
+            const eventTarget = target as EventInput["target"] | undefined;
+            const author = eventData.author;
+            const runtimeControl =
+              eventType === "conversation.message.created" &&
+              eventTarget?.appId === "may" &&
+              author &&
+              typeof author === "object" &&
+              !Array.isArray(author) &&
+              (author as Record<string, unknown>).kind === "human"
+                ? exactRuntimeControl(eventData.text)
+                : null;
             const receipt = publishEvent({
-              type: eventType,
-              ...(target ? { target: target as EventInput["target"] } : {}),
-              data: data as Record<string, unknown>,
+              type: runtimeControl ?? eventType,
+              ...(runtimeControl ? {} : eventTarget ? { target: eventTarget } : {}),
+              data: runtimeControl ? { reason: "human control command" } : eventData,
               ...(typeof event.idempotencyKey === "string" && event.idempotencyKey.trim()
                 ? { idempotencyKey: event.idempotencyKey.trim() }
                 : {}),
@@ -494,6 +527,17 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             continue;
           }
           try {
+            const runtimeControl = exactMayInputControl(appId, input);
+            if (runtimeControl) {
+              if (!publishEvent) throw new Error("Event publication is unavailable");
+              const receipt = publishEvent({
+                type: runtimeControl,
+                data: { reason: "human control command" },
+                idempotencyKey,
+              });
+              writeFrame(socket, { type: "ok", command: normalized.command, appId, ...receipt });
+              continue;
+            }
             const result = admitAppInput({
               appId,
               input: input as Record<string, unknown>,

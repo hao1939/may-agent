@@ -293,6 +293,13 @@ export type SystemEvent =
       data: { kind: "app" | "task" | "session"; id: string };
     }
   | {
+      /** Wake-only observation; the requester re-reads exact dependency state. */
+      type: "app.dependency.updated";
+      source?: string;
+      owner: string;
+      data: { kind: "app" | "task" | "session"; id: string };
+    }
+  | {
       type: "app.response.delivery.requested";
       source: "app-inbox";
       owner: string;
