@@ -4,6 +4,7 @@ import type { AppEvent, AppInput } from "@may-agent/sdk";
 import app, {
   OWNER_HEARTBEAT_INTERVAL_MS,
   OWNER_REVIEW_TASK_ID,
+  PLATFORM_METRIC_INTERVAL_MS,
   PLATFORM_REVIEW_INTERVAL_MS,
   resolveMayAgentTask,
   routeMayAgentRequest,
@@ -55,6 +56,16 @@ describe("canonical may-agent platform App", () => {
       app.schedules?.find(({ id }) => id === "platform-review")?.intervalMs,
     ).toBe(PLATFORM_REVIEW_INTERVAL_MS);
     expect(
+      app.schedules?.find(({ id }) => id === "platform-metrics"),
+    ).toMatchObject({
+      intervalMs: PLATFORM_METRIC_INTERVAL_MS,
+      event: {
+        type: "trigger.metrics-snapshot",
+        data: { reason: "scheduled-platform-measurement" },
+        target: { appId: "may-agent", project: "may-agent" },
+      },
+    });
+    expect(
       app.schedules?.find(({ id }) => id === "owner-heartbeat")?.intervalMs,
     ).toBe(OWNER_HEARTBEAT_INTERVAL_MS);
     for (const schedule of app.schedules ?? []) {
@@ -74,15 +85,17 @@ describe("canonical may-agent platform App", () => {
 });
 
 describe("may-agent task routing", () => {
-  it("routes App-owned platform facts while host maintenance stays separate", () => {
-    expect(
-      resolveMayAgentTask(event("project.tick", { reason: "scheduled" })),
-    ).toMatchObject({
+  it("routes App-owned platform facts to the runnable canonical owner", () => {
+    const intent = resolveMayAgentTask(
+      event("project.tick", { reason: "scheduled" }),
+    );
+    expect(intent).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
-      workflow: "platform-owner-review",
+      owner: "may",
       input: { scope: "may-agent-platform" },
     });
+    expect(intent).not.toHaveProperty("workflow");
     expect(resolveMayAgentTask(event("project.ops_health.tick"))).toBeNull();
     expect(resolveMayAgentTask(event("project.ops_digest.tick"))).toBeNull();
   });

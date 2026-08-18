@@ -14,6 +14,7 @@ const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
 export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
+export const PLATFORM_METRIC_INTERVAL_MS = 300_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
 const platformInputSchema = Type.Union(
@@ -109,7 +110,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "The owner performs one useful platform step or records an evidence-backed no-op, with task-tree changes proposed as typed actions.",
         ],
         mode: "maintain",
-        workflow: "platform-owner-review",
+        owner: projectOwnerAgent,
         input: { scope: "may-agent-platform" },
         priority: "P1",
       };
@@ -238,6 +239,13 @@ const app = defineApp({
       event: scheduledEvent("project.tick", {
         reason: "scheduled-project-review",
         lane: "platform-review",
+      }),
+    },
+    {
+      id: "platform-metrics",
+      intervalMs: PLATFORM_METRIC_INTERVAL_MS,
+      event: scheduledEvent("trigger.metrics-snapshot", {
+        reason: "scheduled-platform-measurement",
       }),
     },
     {
