@@ -18,6 +18,7 @@ describe("canonical App event selectors", () => {
         {
           type: "metric.breach",
           project: "evaluation",
+          source: "metrics",
           owner: "evaluator",
           urgency: "high",
           actions: ["repair"],
@@ -32,6 +33,7 @@ describe("canonical App event selectors", () => {
 
   it("rejects one mismatched constraint", () => {
     expect(matchesEventSelector({ type: "metric.breach", actions: ["ignore"] }, event)).toBeFalse();
+    expect(matchesEventSelector({ type: "metric.breach", source: "unknown" }, event)).toBeFalse();
     expect(matchesEventSelector({ type: "metric.breach", metricIds: ["latency"] }, event)).toBeFalse();
     expect(matchesEventSelector("metric.recovered", event)).toBeFalse();
   });
