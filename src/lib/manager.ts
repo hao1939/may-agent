@@ -2183,7 +2183,7 @@ export class SubagentManager {
           lastActivityAt: Date.now(),
         });
       } catch {
-        // Progress telemetry must not interrupt the agent loop.
+        // A later progress event retries durable liveness; do not interrupt the agent loop.
       }
     };
 

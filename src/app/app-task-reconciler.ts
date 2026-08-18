@@ -159,11 +159,22 @@ function boundedLeaseTimes(nowMs = Date.now()): { lastActivityAt: string; expire
   };
 }
 
-function leaseIsFresh(attempt: AppTaskAttempt, nowMs: number): boolean {
+type AttemptSessionActivity = { sessionId: string; lastActivityAt: number | null };
+
+function leaseIsFresh(attempt: AppTaskAttempt, nowMs: number, sessionActivity?: AttemptSessionActivity): boolean {
   const lease = attempt.lease;
   if (!lease || lease.runtimeId !== attempt.runtimeId || lease.sessionId !== attempt.sessionId) return false;
   const expiry = Date.parse(lease.expiresAt);
-  return Number.isFinite(expiry) && expiry > nowMs;
+  if (Number.isFinite(expiry) && expiry > nowMs) return true;
+  if (
+    sessionActivity?.sessionId !== attempt.sessionId ||
+    typeof sessionActivity.lastActivityAt !== "number" ||
+    !Number.isFinite(sessionActivity.lastActivityAt)
+  ) {
+    return false;
+  }
+  const activityAt = Math.max(0, Math.min(sessionActivity.lastActivityAt, nowMs + 1_000));
+  return activityAt + APP_TASK_ATTEMPT_LEASE_DURATION_MS > nowMs;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -914,6 +925,7 @@ export function expiredOwnerSessionAppTaskAttempt(
   config: TaskStateConfig,
   taskId: string,
   nowMs = Date.now(),
+  sessionActivity?: AttemptSessionActivity,
 ): AppTaskAttemptRecovery | null {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
@@ -927,7 +939,7 @@ export function expiredOwnerSessionAppTaskAttempt(
       !attempt.lease ||
       attempt.lease.sessionId !== attempt.sessionId ||
       attempt.lease.runtimeId !== attempt.runtimeId ||
-      leaseIsFresh(attempt, nowMs)
+      leaseIsFresh(attempt, nowMs, sessionActivity)
     ) {
       return null;
     }
@@ -1017,6 +1029,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
   recovery: AppTaskTerminalSessionRecovery,
   summary: string,
   nowMs = Date.now(),
+  sessionActivity?: AttemptSessionActivity,
 ): { released: boolean; sessionIds: string[] } {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
@@ -1041,7 +1054,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
       attempt.lease.version !== recovery.leaseVersion ||
       attempt.lease.sessionId !== recovery.sessionId ||
       attempt.lease.runtimeId !== attempt.runtimeId ||
-      leaseIsFresh(attempt, nowMs)
+      leaseIsFresh(attempt, nowMs, sessionActivity)
     ) {
       return { released: false, sessionIds: [] };
     }
@@ -2553,28 +2566,6 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId: string, nowMs =
 }
 
 /**
- * Refresh a session-owned attempt lease from an observable model/tool progress event.
- * Exact session matching prevents activity from extending another attempt's lease.
- */
-export function refreshAppTaskAttemptLeaseBySession(
-  config: TaskStateConfig,
-  sessionId: string,
-  nowMs = Date.now(),
-): boolean {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    const attempt = Object.values(tree.attempts ?? {}).find(
-      (candidate) => candidate.state === "running" && candidate.sessionId === sessionId,
-    );
-    if (!attempt) return false;
-    attempt.metadata.resourceVersion += 1;
-    refreshAttemptLease(attempt, sessionId, nowMs);
-    saveTaskState(config, tree);
-    return true;
-  });
-}
-
-/**
  * Atomically transfer a fresh previous-runtime attempt lease to this runtime
  * before the generic session manager resumes that exact persisted session.
  */
@@ -2583,6 +2574,7 @@ export function claimFreshAppTaskSessionForStartup(
   binding: { taskId: string; generation: number },
   sessionId: string,
   nowMs = Date.now(),
+  sessionActivity?: AttemptSessionActivity,
 ): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
@@ -2595,7 +2587,7 @@ export function claimFreshAppTaskSessionForStartup(
       attempt.state !== "running" ||
       attempt.sessionId !== sessionId ||
       attempt.runtimeId === reconcilerRuntimeId ||
-      !leaseIsFresh(attempt, nowMs)
+      !leaseIsFresh(attempt, nowMs, sessionActivity)
     )
       return false;
     attempt.metadata.resourceVersion += 1;
