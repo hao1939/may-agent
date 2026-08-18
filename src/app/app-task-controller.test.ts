@@ -11,6 +11,30 @@ async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<v
 }
 
 describe("AppTaskController", () => {
+  it("holds queued work behind an explicit startup gate", async () => {
+    const started: string[] = [];
+    let openGate = () => {};
+    const startAfter = new Promise<void>((resolve) => {
+      openGate = resolve;
+    });
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      startAfter,
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+
+    controller.enqueue("recovered-work");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual([]);
+
+    openGate();
+    await waitUntil(() => started.length === 1);
+    expect(started).toEqual(["recovered-work"]);
+    controller.close();
+  });
+
   it("runs deduplicated keys through one bounded worker pool", async () => {
     const started: string[] = [];
     const releases = new Map<string, () => void>();
