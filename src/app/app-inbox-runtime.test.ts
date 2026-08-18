@@ -2097,6 +2097,83 @@ describe("App inbox runtime", () => {
     await waitUntil(() => requestIds.every((id) => runtime?.host.get(id)?.status === "done"));
   });
 
+  it("dispatches a foreground May turn even when background inbox slots are full", async () => {
+    const mayDir = join(root, "may.app");
+    mkdirSync(mayDir, { recursive: true });
+    writeFileSync(
+      join(mayDir, "app.js"),
+      `export default {
+        id: "may",
+        version: 1,
+        owner: "may",
+        inputSchema: {
+          type: "object",
+          required: ["kind", "data"],
+          properties: { kind: { const: "message" }, data: { type: "object" } }
+        }
+      };\n`,
+    );
+    const started: string[] = [];
+    const releases: Array<() => void> = [];
+    const blockingManager: AppOwnerManager = {
+      hasAgent: () => true,
+      run(_agent, prompt, options) {
+        const requestId = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0].id;
+        started.push(options.projectId);
+        return `session:${requestId}`;
+      },
+      waitFor(sessionId) {
+        return new Promise((resolve) => {
+          releases.push(() =>
+            resolve({
+              status: "done",
+              structuredResult: {
+                dispositions: [
+                  {
+                    requestId: sessionId.replace(/^session:/, ""),
+                    disposition: { type: "complete", summary: "done", response: "done" },
+                  },
+                ],
+              },
+            }),
+          );
+        });
+      },
+      cancel() {},
+    };
+    const bus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: blockingManager,
+      bus,
+      scanIntervalMs: 10_000,
+      maxConcurrentRequests: 1,
+    });
+    bus.emit({
+      type: "app.input.requested",
+      data: {
+        appId: "evaluation-canary",
+        input: { kind: "probe", data: { value: "background" } },
+        source: { kind: "system", id: "test" },
+      },
+    });
+    await waitUntil(() => started.length === 1);
+    runtime.host.admit({
+      appId: "may",
+      source: { kind: "human", id: "console:foreground" },
+      input: { kind: "message", data: { message: "foreground" } },
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "may-console",
+    });
+    runtime.scanNow();
+
+    await waitUntil(() => started.length === 2);
+    expect(started).toEqual(["evaluation-canary", "may"]);
+    for (const release of releases.splice(0)) release();
+  });
+
   it("runs independent requests up to the App inbox concurrency limit", async () => {
     writeFileSync(
       join(root, "evaluation.app", "app.js"),

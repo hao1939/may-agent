@@ -380,8 +380,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const pump = (): void => {
     const activeCount = () => [...active.values()].reduce((total, count) => total + count, 0);
-    while (!closed && activeCount() < maxConcurrentRequests) {
-      const appId = pending.shift();
+    while (!closed) {
+      const foregroundIndex = pending.findIndex((appId) => appId === "may" && (active.get(appId) ?? 0) === 0);
+      const nextIndex = activeCount() < maxConcurrentRequests ? 0 : foregroundIndex;
+      if (nextIndex < 0) return;
+      const [appId] = pending.splice(nextIndex, 1);
       if (!appId) return;
       queued.delete(appId);
       if (!dirty.has(appId)) continue;
