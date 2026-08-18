@@ -13,6 +13,30 @@ import { basename, dirname, join } from "node:path";
 
 export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
 
+export function validateDeployTaskTarget(path: string, project: string, taskId: string): void {
+  let state: unknown;
+  try {
+    state = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`Cannot read deploy task state ${path}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!state || typeof state !== "object" || Array.isArray(state)) {
+    throw new Error(`Deploy task state ${path} is not an object`);
+  }
+  const record = state as Record<string, unknown>;
+  if (record.project !== project) {
+    throw new Error(`Deploy task state ${path} belongs to ${String(record.project ?? "unknown")}, not ${project}`);
+  }
+  const resources = record.resources;
+  if (!resources || typeof resources !== "object" || Array.isArray(resources)) {
+    throw new Error(`Deploy task state ${path} has no resource map`);
+  }
+  const target = (resources as Record<string, unknown>)[taskId];
+  if (!target || typeof target !== "object" || Array.isArray(target)) {
+    throw new Error(`Deploy task ${project}/${taskId} does not exist; refusing to emit an unresolvable targeted wake`);
+  }
+}
+
 function atomicJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
   const existing = existsSync(path) ? statSync(path) : undefined;
@@ -91,7 +115,10 @@ if (import.meta.main) {
   const [command, pathArg, ...args] = process.argv.slice(2);
   const path = pathArg;
   if (!path) throw new Error("Usage: deploy-receipt.ts <request|settle> <path> ...");
-  if (command === "request") {
+  if (command === "validate-target") {
+    const [projectArg, taskArg] = args;
+    validateDeployTaskTarget(path, validId(projectArg, "project"), validId(taskArg, "task id"));
+  } else if (command === "request") {
     const [projectArg, taskArg, correlationArg, shaArg, sourceCommitArg] = args;
     const created = requestReceipt(
       path,
