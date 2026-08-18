@@ -81,14 +81,16 @@ describe("May Console", () => {
                     }
                   : {}),
                 createdAt: Date.UTC(2026, 7, 17, 8, 20, 0),
-                updatedAt: Date.UTC(2026, 7, 17, 8, 25, 0),
+                startedAt: Date.UTC(2026, 7, 17, 8, 21, 0),
+                changedAt: Date.UTC(2026, 7, 17, 8, 25, 0),
+                dependency: { kind: "analysis", id: "analysis-review" },
               },
               {
                 requestId: "item-queued",
                 message: "Review AKS tasks",
                 state: "queued",
                 createdAt: Date.UTC(2026, 7, 17, 8, 10, 0),
-                updatedAt: Date.UTC(2026, 7, 17, 8, 10, 0),
+                changedAt: Date.UTC(2026, 7, 17, 8, 10, 0),
               },
               {
                 requestId: "item-done",
@@ -99,7 +101,8 @@ describe("May Console", () => {
                   response: "The earlier release passed every required check.",
                 },
                 createdAt: Date.UTC(2026, 7, 17, 7, 0, 0),
-                updatedAt: Date.UTC(2026, 7, 17, 7, 5, 0),
+                startedAt: Date.UTC(2026, 7, 17, 7, 1, 0),
+                changedAt: Date.UTC(2026, 7, 17, 7, 5, 0),
               },
             ]
               .filter(
@@ -224,6 +227,7 @@ describe("May Console", () => {
       () =>
         output.includes("Active work:") &&
         output.includes("Review the May design — Analyzing") &&
+        output.includes(" · changed ") &&
         output.includes("Codex is reviewing the implementation.") &&
         output.includes("Review AKS tasks — Queued"),
     );
@@ -260,7 +264,9 @@ describe("May Console", () => {
         output.includes("Progress: Codex is reviewing the implementation.") &&
         output.includes("Result:\n    The exact selected review result.") &&
         output.includes("Created: 2026-08-17 08:20:00 UTC") &&
-        output.includes("Updated: 2026-08-17 08:25:00 UTC"),
+        output.includes("Started: 2026-08-17 08:21:00 UTC") &&
+        output.includes("Changed: 2026-08-17 08:25:00 UTC") &&
+        output.includes("Waiting on: analysis:analysis-review"),
     );
 
     child.stdin.write("show me the result\n");
@@ -287,6 +293,7 @@ describe("May Console", () => {
           frame.type === "publish" &&
           frame.event?.type === "conversation.message.created" &&
           frame.event?.data?.metadata?.command === "/work 1" &&
+          frame.event?.data?.metadata?.requestIds?.[0] === "item-working" &&
           String(frame.event?.data?.text).includes("The exact selected review result."),
       ),
     ).toBe(true);
@@ -432,7 +439,7 @@ describe("May Console", () => {
           message: "Inspect the first item",
           state: "working",
           createdAt: 1,
-          updatedAt: 2,
+          changedAt: 2,
         },
       ],
     };

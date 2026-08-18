@@ -30,6 +30,7 @@ export type {
   AppObserver,
   AppRead,
   AppRequest,
+  AppResourceRef,
   AppResult,
   AppSchedule,
   AppTaskAttachment,

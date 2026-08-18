@@ -56,6 +56,8 @@ export type AppInboxItem = {
   originEventId?: number;
   idempotencyKey?: string;
   createdAt: number;
+  startedAt?: number;
+  changedAt: number;
   updatedAt: number;
   completedAt?: number;
 };
@@ -182,6 +184,8 @@ function rowToItem(row: InboxRow): AppInboxItem {
     originEventId: optionalNumber(row.origin_event_id),
     idempotencyKey: optionalText(row.idempotency_key),
     createdAt: Number(row.created_at),
+    startedAt: optionalNumber(row.started_at),
+    changedAt: optionalNumber(row.changed_at) ?? Number(row.created_at),
     updatedAt: Number(row.updated_at),
     completedAt: optionalNumber(row.completed_at),
   };
@@ -367,6 +371,14 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
             ...(typeof metadata.command === "string" && metadata.command.trim()
               ? { command: metadata.command.trim() }
               : {}),
+            ...(Array.isArray(metadata.requestIds)
+              ? {
+                  requestIds: metadata.requestIds
+                    .filter((value): value is string => typeof value === "string" && Boolean(value.trim()))
+                    .map((value) => value.trim())
+                    .slice(0, 100),
+                }
+              : {}),
           },
         }
       : {}),
@@ -511,6 +523,14 @@ function workProgress(deliveries: AppInboxDelivery[]): string | undefined {
   return deliveries.filter((delivery) => delivery.kind === "progress" && delivery.text?.trim()).at(-1)?.text;
 }
 
+function workDependency(item: AppInboxItem): AppWorkView["dependency"] {
+  if (!item.waitingOn) return undefined;
+  return {
+    kind: item.waitingOn.kind === "app" ? "request" : item.waitingOn.kind,
+    id: item.waitingOn.id,
+  };
+}
+
 function workResult(result: AppResult, exact: boolean): AppResult {
   if (exact) return result;
   return {
@@ -568,7 +588,10 @@ export function listAppWork(
     const deliveries = listAppInboxDeliveries(db, item.id);
     const state = workState(item);
     const progress = workProgress(deliveries);
-    const updatedAt = deliveries.reduce((latest, delivery) => Math.max(latest, delivery.updatedAt), item.updatedAt);
+    const dependency = workDependency(item);
+    const changedAt = deliveries
+      .filter((delivery) => delivery.kind === "progress")
+      .reduce((latest, delivery) => Math.max(latest, delivery.createdAt), item.changedAt);
     return {
       requestId: item.id,
       ...(item.conversationId ? { conversationId: item.conversationId } : {}),
@@ -576,8 +599,11 @@ export function listAppWork(
       state,
       ...(progress ? { progress: boundedWorkText(progress, 240) } : {}),
       ...(item.result ? { result: workResult(item.result, includeResultForRequestId === item.id) } : {}),
+      ...(item.sessionId ? { executor: { kind: "session" as const, id: item.sessionId } } : {}),
+      ...(dependency ? { dependency } : {}),
       createdAt: item.createdAt,
-      updatedAt,
+      ...(item.startedAt === undefined ? {} : { startedAt: item.startedAt }),
+      changedAt,
     };
   });
 }
@@ -714,8 +740,8 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
        id, app_id, parent_id, conversation_id, conversation_seq,
        channel, channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id,
        source_kind, source_id, input_kind, input_data, status,
-       available_at, origin_event_id, idempotency_key, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+       available_at, origin_event_id, idempotency_key, created_at, changed_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
@@ -734,6 +760,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
       now,
       input.originEventId ?? null,
       input.idempotencyKey ?? null,
+      now,
       now,
       now,
     ],
@@ -823,6 +850,8 @@ function claimedRow(
        SET status = 'handling',
            available_at = NULL,
            session_id = NULL,
+           started_at = COALESCE(started_at, ?),
+           changed_at = ?,
            lease_generation = lease_generation + 1,
            lease_owner = ?,
            lease_expires_at = ?,
@@ -830,7 +859,7 @@ function claimedRow(
        WHERE ${whereSql}
        RETURNING *`,
     )
-    .get(owner, now + leaseMs, now, ...whereParams);
+    .get(now, now, owner, now + leaseMs, now, ...whereParams);
   if (!row) return null;
   const item = rowToItem(row);
   return { item, generation: item.lease!.generation, owner };
@@ -881,6 +910,8 @@ export function claimNextAppInboxItem(
        SET status = 'handling',
            available_at = NULL,
            session_id = NULL,
+           started_at = COALESCE(started_at, ?),
+           changed_at = ?,
            lease_generation = lease_generation + 1,
            lease_owner = ?,
            lease_expires_at = ?,
@@ -913,7 +944,7 @@ export function claimNextAppInboxItem(
        )
        RETURNING *`,
     )
-    .get(owner, now + leaseMs, now, appId, now, now, now);
+    .get(now, now, owner, now + leaseMs, now, appId, now, now, now);
   if (!row) return null;
   const item = rowToItem(row);
   return { item, generation: item.lease!.generation, owner };
@@ -942,10 +973,10 @@ export function associateAppInboxClaimSession(
   return (
     db.run(
       `UPDATE app_inbox_items
-       SET session_id = ?, updated_at = ?
+       SET session_id = ?, changed_at = ?, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
-      [sessionId, now, claim.item.id, claim.generation, claim.owner],
+      [sessionId, now, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }
@@ -966,10 +997,10 @@ export function waitAppInboxClaim(
     db.run(
       `UPDATE app_inbox_items
        SET waiting_on_kind = ?, waiting_on_id = ?, review_at = ?, available_at = ?,
-           session_id = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+           session_id = NULL, lease_owner = NULL, lease_expires_at = NULL, changed_at = ?, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
-      [waitingOn.kind, waitingOn.id, reviewAt, reviewAt, now, claim.item.id, claim.generation, claim.owner],
+      [waitingOn.kind, waitingOn.id, reviewAt, reviewAt, now, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }
@@ -1025,13 +1056,13 @@ export function completeAppInboxClaim(
   return (
     db.run(
       `UPDATE app_inbox_items
-       SET status = 'done', result = ?, completed_at = ?, updated_at = ?,
+       SET status = 'done', result = ?, completed_at = ?, changed_at = ?, updated_at = ?,
            waiting_on_kind = NULL, waiting_on_id = NULL,
            review_at = NULL, available_at = NULL,
            lease_owner = NULL, lease_expires_at = NULL
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
-      [JSON.stringify(result), now, now, claim.item.id, claim.generation, claim.owner],
+      [JSON.stringify(result), now, now, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }
@@ -1052,10 +1083,10 @@ export function releaseAppInboxClaim(
       `UPDATE app_inbox_items
        SET status = CASE WHEN waiting_on_kind IS NULL THEN 'pending' ELSE 'handling' END,
            available_at = ?, session_id = NULL,
-           lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+           lease_owner = NULL, lease_expires_at = NULL, changed_at = ?, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
-      [retryAt, now, claim.item.id, claim.generation, claim.owner],
+      [retryAt, now, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }
@@ -1081,10 +1112,10 @@ export function stageAppInboxClaimDelivery(
     `UPDATE app_inbox_items
      SET result = ?, waiting_on_kind = NULL, waiting_on_id = NULL,
          review_at = NULL, available_at = NULL,
-         lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+         lease_owner = NULL, lease_expires_at = NULL, changed_at = ?, updated_at = ?
      WHERE id = ? AND status = 'handling'
        AND lease_generation = ? AND lease_owner = ? AND session_id = ?`,
-    [JSON.stringify(input.result), now, claim.item.id, claim.generation, claim.owner, sessionId],
+    [JSON.stringify(input.result), now, now, claim.item.id, claim.generation, claim.owner, sessionId],
   );
   if (updated.changes !== 1) throw new Error("claim is stale or has no matching owner session");
 
@@ -1274,12 +1305,12 @@ export function recordAppInboxDeliveryReceipt(
     current.kind === "final" &&
     db.run(
       `UPDATE app_inbox_items
-     SET status = 'done', completed_at = ?, updated_at = ?,
+     SET status = 'done', completed_at = ?, changed_at = ?, updated_at = ?,
          waiting_on_kind = NULL, waiting_on_id = NULL,
          review_at = NULL, available_at = NULL,
          lease_owner = NULL, lease_expires_at = NULL
      WHERE id = ? AND status = 'handling' AND result IS NOT NULL AND session_id = ?`,
-      [now, now, current.itemId, current.sessionId],
+      [now, now, now, current.itemId, current.sessionId],
     ).changes === 1;
   return { matched: true, completed, status: "delivered" };
 }

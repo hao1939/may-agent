@@ -150,6 +150,43 @@ describe("simple event interface", () => {
     expect(events.get(receipt.eventId)?.delivery.acceptedBy).toBeUndefined();
   });
 
+  it("accepts bounded ordered work references on a Conversation view", () => {
+    const { events } = fixture();
+    const receipt = events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "sample" },
+        data: {
+          conversationId: "sample:primary",
+          author: { kind: "command", id: "console" },
+          text: "Active work: two items",
+          metadata: { command: "/work", requestIds: ["request-2", "request-1"] },
+        },
+      },
+      { source: "control-socket" },
+    );
+
+    expect(events.get(receipt.eventId)?.event.data.metadata).toEqual({
+      command: "/work",
+      requestIds: ["request-2", "request-1"],
+    });
+    expect(() =>
+      events.publish(
+        {
+          type: "conversation.message.created",
+          target: { appId: "sample" },
+          data: {
+            conversationId: "sample:primary",
+            author: { kind: "command", id: "console" },
+            text: "Invalid view",
+            metadata: { requestIds: [""] },
+          },
+        },
+        { source: "control-socket" },
+      ),
+    ).toThrow("metadata.requestIds");
+  });
+
   it("deduplicates one semantic input across trusted adapters", () => {
     const { db, events } = fixture();
     const input = {

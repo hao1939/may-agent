@@ -267,7 +267,10 @@ function presentView(command, text, options = {}) {
     author: { kind: "command", id: source },
     text,
     transient: options.transient === true,
-    metadata: { command },
+    metadata: {
+      command,
+      ...(Array.isArray(options.requestIds) && options.requestIds.length > 0 ? { requestIds: options.requestIds } : {}),
+    },
   });
 }
 
@@ -285,7 +288,12 @@ function renderWorkList(work, pending) {
   work.forEach((item, index) => {
     const message = typeof item.message === "string" && item.message.trim() ? item.message.trim() : "Request";
     const state = workStateLabel(item.state);
-    lines.push(`  ${index + 1}. ${message} — ${state}`);
+    const baseline = Number(item.startedAt ?? item.createdAt);
+    const changedAt = Number(item.changedAt);
+    const age = formatWorkAge(baseline);
+    const changed = formatWorkAge(item.changedAt);
+    const showChanged = Number.isFinite(baseline) && Number.isFinite(changedAt) && changedAt > baseline;
+    lines.push(`  ${index + 1}. ${message} — ${state} · ${age}${showChanged ? ` · changed ${changed}` : ""}`);
     if (typeof item.progress === "string" && item.progress.trim()) {
       lines.push(`     ${item.progress.trim()}`);
     }
@@ -301,7 +309,10 @@ function renderWorkList(work, pending) {
     }
   });
   lines.push("");
-  presentView(command, lines.join("\n"), { transient: pending?.transient === true });
+  presentView(command, lines.join("\n"), {
+    transient: pending?.transient === true,
+    requestIds: work.map((item) => item.requestId).filter((id) => typeof id === "string" && id),
+  });
 }
 
 function workStateLabel(state) {
@@ -325,6 +336,23 @@ function formatWorkTime(value) {
     .toISOString()
     .replace("T", " ")
     .replace(/\.\d{3}Z$/, " UTC");
+}
+
+function formatWorkAge(value, now = Date.now()) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp)) return "unknown age";
+  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function formatWorkRef(ref) {
+  if (!ref || typeof ref !== "object" || typeof ref.kind !== "string" || typeof ref.id !== "string") return null;
+  return `${ref.kind}:${ref.id}`;
 }
 
 function renderWorkDetail(work, requestId, command) {
@@ -364,9 +392,13 @@ function renderWorkDetail(work, requestId, command) {
       `  Progress: ${progress}`,
       ...(resultText ? ["  Result:", ...resultText.split("\n").map((line) => `    ${line}`)] : []),
       `  Created: ${formatWorkTime(refreshed.createdAt)}`,
-      `  Updated: ${formatWorkTime(refreshed.updatedAt)}`,
+      ...(refreshed.startedAt === undefined ? [] : [`  Started: ${formatWorkTime(refreshed.startedAt)}`]),
+      `  Changed: ${formatWorkTime(refreshed.changedAt)}`,
+      ...(formatWorkRef(refreshed.executor) ? [`  Execution: ${formatWorkRef(refreshed.executor)}`] : []),
+      ...(formatWorkRef(refreshed.dependency) ? [`  Waiting on: ${formatWorkRef(refreshed.dependency)}`] : []),
       "",
     ].join("\n"),
+    { requestIds: [refreshed.requestId] },
   );
 }
 

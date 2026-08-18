@@ -80,8 +80,10 @@ function renderTelegramWorkList(work: AppWorkView[], all: boolean): string {
     title,
     ...work.flatMap((item, index) => {
       const result = item.result?.response?.trim() || item.result?.summary?.trim();
+      const baseline = item.startedAt ?? item.createdAt;
+      const changed = item.changedAt > baseline ? ` · changed ${formatWorkAge(item.changedAt)}` : "";
       return [
-        `${index + 1}. ${item.message} — ${workStateLabel(item.state)}`,
+        `${index + 1}. ${item.message} — ${workStateLabel(item.state)} · ${formatWorkAge(baseline)}${changed}`,
         ...(item.progress ? [`   ${item.progress}`] : []),
         ...(result ? [`   Result: ${result}`] : []),
       ];
@@ -91,13 +93,37 @@ function renderTelegramWorkList(work: AppWorkView[], all: boolean): string {
 
 function renderTelegramWorkDetail(item: AppWorkView, index: number): string {
   const result = item.result?.response?.trim() || item.result?.summary?.trim();
+  const executor = formatWorkRef(item.executor);
+  const dependency = formatWorkRef(item.dependency);
   return [
     `Work ${index + 1}:`,
     `Request: ${item.message}`,
     `Status: ${workStateLabel(item.state)}`,
     ...(item.progress ? [`Progress: ${item.progress}`] : []),
     ...(result ? [`Result:\n${result}`] : []),
+    `Created: ${formatWorkTime(item.createdAt)}`,
+    ...(item.startedAt === undefined ? [] : [`Started: ${formatWorkTime(item.startedAt)}`]),
+    `Changed: ${formatWorkTime(item.changedAt)}`,
+    ...(executor ? [`Execution: ${executor}`] : []),
+    ...(dependency ? [`Waiting on: ${dependency}`] : []),
   ].join("\n");
+}
+
+function formatWorkTime(value: number): string {
+  return new Date(value).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+}
+
+function formatWorkAge(value: number, now = Date.now()): string {
+  const seconds = Math.max(0, Math.floor((now - value) / 1_000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  return hours < 48 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
+}
+
+function formatWorkRef(ref: AppWorkView["executor"]): string | undefined {
+  return ref ? `${ref.kind}:${ref.id}` : undefined;
 }
 
 function renderTelegramConversationMessage(message: AppConversationMessage): string {
@@ -251,6 +277,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     topicId?: number;
     chatId?: string;
     transient?: boolean;
+    requestIds?: string[];
   }): void {
     bus.emit({
       type: "conversation.message.created",
@@ -267,6 +294,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
           channelMessageId: input.messageId,
           command: input.command,
+          ...(input.requestIds?.length ? { requestIds: input.requestIds } : {}),
         },
         idempotencyKey: `telegram:${input.chatId ?? "unknown"}:conversation:${input.messageId}:${input.command}`,
       },
@@ -678,6 +706,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const surface = `${chatIdStr}:${topicId ?? 0}`;
       const argument = rest.join(" ").trim().toLowerCase();
       let rendered: string;
+      let renderedRequestIds: string[] = [];
       if (!argument || argument === "all") {
         const all = argument === "all";
         const work =
@@ -686,6 +715,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             allWork: all,
           }).work ?? [];
         lastWorkBySurface.set(surface, work);
+        renderedRequestIds = work.map((item) => item.requestId);
         rendered = renderTelegramWorkList(work, all);
       } else if (/^[1-9]\d*$/.test(argument)) {
         const index = Number(argument) - 1;
@@ -701,6 +731,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           rendered = refreshed
             ? renderTelegramWorkDetail(refreshed, index)
             : `Work ${argument} was not found. Use /work all to refresh the list.`;
+          if (refreshed) renderedRequestIds = [refreshed.requestId];
         }
       } else {
         rendered = "Use: /work, /work all, or /work <number>";
@@ -720,6 +751,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           messageId: deliveredMessageId,
           chatId: chatIdStr,
           topicId,
+          requestIds: renderedRequestIds,
         });
       }
       return true;
