@@ -579,6 +579,7 @@ export function consumePersistedTerminalOwnerResult(input: {
   descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
   sessionId: string;
+  onRejected?: (error: unknown) => void;
 }): PersistedTerminalOwnerResultConsumption | null {
   const raw = readPersistedTerminalOwnerResult(input.persistDir, input.sessionId);
   if (raw === undefined) return null;
@@ -586,50 +587,54 @@ export function consumePersistedTerminalOwnerResult(input: {
   if (!claim) return null;
   const defaultParentId = readTaskState(input.config).root_task_id;
   if (!defaultParentId) return null;
-  const result = normalizeTaskHandlerResult(
-    raw,
-    { type: "done", summary: `Recovered terminal owner result from session ${input.sessionId}`, runId: input.sessionId },
-    {
-      allowNeedsOwner: false,
-      defaultParentId,
-      rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-      validateAction: input.descriptor.app.tasks?.validateAction,
-    },
-  );
-  if (result.state === "converged") {
-    const applied = completeAppTask(input.config, claim, {
-      summary: result.summary,
-      evidence: result.evidence,
-      actions: result.actions,
-      acceptanceBasis: { method: "owner-judgment", evidence: result.evidence },
-    });
-    if (applied.status !== "applied") return null;
-    return {
-      claim,
-      state: "converged",
-      summary: result.summary,
-      evidence: result.evidence,
-      actionsApplied: applied.actionsApplied,
-      reconcileTaskIds: applied.dependentTaskIds,
-    };
-  }
-  if (result.state === "waiting") {
-    const applied = deferAppTask(input.config, claim, {
-      disposition: "waiting",
-      summary: result.summary,
-      evidence: result.evidence,
-      actions: result.actions,
-      conditions: result.conditions,
-    });
-    if (applied.status !== "applied") return null;
-    return {
-      claim,
-      state: "waiting",
-      summary: result.summary,
-      evidence: result.evidence,
-      actionsApplied: applied.actionsApplied,
-      reconcileTaskIds: applied.reconcileTaskIds,
-    };
+  try {
+    const result = normalizeTaskHandlerResult(
+      raw,
+      { type: "done", summary: `Recovered terminal owner result from session ${input.sessionId}`, runId: input.sessionId },
+      {
+        allowNeedsOwner: false,
+        defaultParentId,
+        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+        validateAction: input.descriptor.app.tasks?.validateAction,
+      },
+    );
+    if (result.state === "converged") {
+      const applied = completeAppTask(input.config, claim, {
+        summary: result.summary,
+        evidence: result.evidence,
+        actions: result.actions,
+        acceptanceBasis: { method: "owner-judgment", evidence: result.evidence },
+      });
+      if (applied.status !== "applied") return null;
+      return {
+        claim,
+        state: "converged",
+        summary: result.summary,
+        evidence: result.evidence,
+        actionsApplied: applied.actionsApplied,
+        reconcileTaskIds: applied.dependentTaskIds,
+      };
+    }
+    if (result.state === "waiting") {
+      const applied = deferAppTask(input.config, claim, {
+        disposition: "waiting",
+        summary: result.summary,
+        evidence: result.evidence,
+        actions: result.actions,
+        conditions: result.conditions,
+      });
+      if (applied.status !== "applied") return null;
+      return {
+        claim,
+        state: "waiting",
+        summary: result.summary,
+        evidence: result.evidence,
+        actionsApplied: applied.actionsApplied,
+        reconcileTaskIds: applied.reconcileTaskIds,
+      };
+    }
+  } catch (error) {
+    input.onRejected?.(error);
   }
   return null;
 }
@@ -1697,6 +1702,14 @@ async function reconcileTask(input: {
           descriptor,
           taskId: input.taskId,
           sessionId: active.sessionId,
+          onRejected: (error) => {
+            opts.bus.emit({
+              type: "info",
+              message: `[app-task:${descriptor.id}] Rejected terminal result for ${input.taskId}; the task will be retried: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            });
+          },
         });
         if (consumed) {
           emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", input.taskId, {
@@ -2619,11 +2632,11 @@ function recoverInterruptedAppTasks(
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
     cacheTaskStateReads(config);
-    const releaseRecovery = (recovery: AppTaskAttemptRecovery) => {
+    const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       const released = releaseInterruptedAppTaskAttempt(
         config,
         recovery,
-        `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
+        reason ?? `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
       );
       for (const sessionId of released.sessionIds) {
         interruptSupersededOwnerSession(
@@ -2651,12 +2664,16 @@ function recoverInterruptedAppTasks(
         ? readSessionMeta(opts.persistDir, recovery.sessionId)
         : null;
       if (recovery.sessionId && persistedSession?.status === "done") {
+        let rejection: string | undefined;
         const consumed = consumePersistedTerminalOwnerResult({
           persistDir: opts.persistDir,
           config,
           descriptor,
           taskId: recovery.taskId,
           sessionId: recovery.sessionId,
+          onRejected: (error) => {
+            rejection = error instanceof Error ? error.message : String(error);
+          },
         });
         if (consumed) {
           emitTaskReconciliationEvent(
@@ -2681,6 +2698,10 @@ function recoverInterruptedAppTasks(
           for (const taskId of consumed.reconcileTaskIds) {
             if (controller && !descriptor.reconciliationPaused) enqueueAppTask(controller, config, taskId);
           }
+          continue;
+        }
+        if (rejection) {
+          releaseRecovery(recovery, `Rejected terminal result for ${recovery.taskId}: ${rejection}`);
           continue;
         }
       }
