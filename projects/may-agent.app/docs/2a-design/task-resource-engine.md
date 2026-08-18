@@ -2,8 +2,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Core reconciliation, generation fencing, Conditions,
-parent/child work, recovery, and bounded concurrency are implemented. Pending
-event dispatch and some pressure/drain guarantees remain partial.
+parent/child work, recovery, and bounded concurrency are implemented. Some
+pressure/drain guarantees remain partial.
 
 The task engine is an optional Host attachment for Apps that own desired state
 across repeated bounded attempts. Read [agent-app.md](agent-app.md) first.
@@ -48,7 +48,7 @@ attempt state are sufficient to recover it.
 
 | Surface | Role |
 | --- | --- |
-| `.state/tasks/state.json` | Sole mutable authority for tasks, Conditions, attempts, triggers, receipts, and pending event intents |
+| `.state/tasks/state.json` | Sole mutable authority for tasks, Conditions, attempts, triggers, and receipts |
 | `.state/tasks/tree.json` | Disposable human/UI projection |
 | `tasks/seed.json` | Initial desired state for a new App |
 | `project.json` | Authored project configuration, never rewritten by task operations |
@@ -243,11 +243,13 @@ contract but does not replace tool sandboxing or process isolation.
 
 ## Follow-up events
 
-Task state and the event store are separate authorities. A transition that
-requires a follow-up event writes a stable pending event intent in the same
-task transaction. Dispatch is idempotent by task, generation, attempt, and
-event identity. Workflows still return the single result contract and do not
-publish competing task-completion claims.
+Task state and the event store are separate authorities. Task transitions
+commit canonical state first; transition events are persisted observational
+projections and may be lost if the process stops between those writes. Recovery
+does not depend on replaying such an event: persisted task state, triggers,
+parent wakes, dependencies, and Conditions make runnable work discoverable
+again. Workflows still return the single result contract and do not publish
+competing task-completion claims.
 
 ## Pause, reload, and recovery
 
