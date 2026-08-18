@@ -2972,10 +2972,11 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
     if (event.type === "session.end" && typeof event.sessionId === "string") {
       progressRoutes.delete(event.sessionId.trim());
     }
+    const hasTaskRecoveryScope = Boolean(successfulOwner?.binding || successfulOwner?.workflowRunId);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
-      if (successfulOwner && taskController && descriptor.app.tasks) {
+      if (successfulOwner && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
         const config = taskReconciliationConfig({
           appDir: descriptor.appDir,
           projectDir: descriptor.projectDir,
