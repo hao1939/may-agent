@@ -96,6 +96,11 @@ from mutating work. The target's dependency is replaceable; its request ID is
 not. If the replacement is asynchronous, its terminal observation wakes the
 same target request later.
 
+During migration, a represented May request admitted before Conversation IDs
+existed may have no scope value. May may continue that legacy-unscoped request
+from `may:primary`; the Host assigns that scope while fencing it. A non-empty
+different Conversation ID is still rejected.
+
 ## Conversation projection
 
 The Conversation is reconstructed from existing durable evidence:
