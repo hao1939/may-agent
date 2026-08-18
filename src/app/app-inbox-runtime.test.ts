@@ -304,6 +304,7 @@ describe("App inbox runtime", () => {
     };
     const bus = new EventBus();
     const conversationUpdates: Array<{ appId?: string; conversationId?: string }> = [];
+    const visibleWorkStates: string[] = [];
     const delivered: Array<{
       kind?: string;
       text?: string;
@@ -314,6 +315,8 @@ describe("App inbox runtime", () => {
     bus.subscribe((event) => {
       if (event.type === "conversation.updated") {
         conversationUpdates.push(event.data);
+        const work = readAppConversationResource(db, "may", "may:primary", { allWork: true }).work?.[0];
+        if (work) visibleWorkStates.push(work.state);
         return;
       }
       if (event.type !== "app.response.delivery.requested") return;
@@ -399,11 +402,11 @@ describe("App inbox runtime", () => {
         text: "I reviewed it. The evidence is sound.",
       }),
     );
-    expect(conversationUpdates).toEqual([
-      { appId: "may", conversationId: "may:primary" },
-      { appId: "may", conversationId: "may:primary" },
-      { appId: "may", conversationId: "may:primary" },
-    ]);
+    expect(conversationUpdates.length).toBeGreaterThanOrEqual(4);
+    expect(conversationUpdates.every((update) => update.appId === "may" && update.conversationId === "may:primary")).toBe(
+      true,
+    );
+    expect(visibleWorkStates).toEqual(expect.arrayContaining(["queued", "working", "analyzing", "done"]));
     expect(ownerAttempts).toBe(2);
     expect(JSON.parse(readFileSync(join(root, "owner-request-2.json"), "utf8"))).toMatchObject({
       dependency: {

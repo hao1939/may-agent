@@ -21,6 +21,7 @@ import {
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
   readAppConversationResource,
+  renewAppInboxClaim,
   restoreReplayableAppInboxDeliveries,
   stageAppInboxClaimDelivery,
   stageAppInboxProgressDelivery,
@@ -144,7 +145,7 @@ describe("App inbox store", () => {
         conversationId: "may:primary",
         author: { kind: "command", id: "may-console" },
         text: "Active work: 1 item",
-        metadata: { channel: "may-console", command: "/work" },
+        metadata: { channel: "may-console", command: "/work", requestIds: ["human-1"] },
       }),
       110,
     );
@@ -184,6 +185,7 @@ describe("App inbox store", () => {
           sequence: 11,
           author: { kind: "command", id: "may-console" },
           text: "Active work: 1 item",
+          metadata: { channel: "may-console", command: "/work", requestIds: ["human-1"] },
         },
       ],
       work: [{ requestId: "human-1", state: "queued" }],
@@ -320,8 +322,10 @@ describe("App inbox store", () => {
         requestId: "delegated",
         message: "Refine the AKS app",
         state: "waiting",
+        dependency: { kind: "request", id: "child-1" },
         createdAt: 130,
-        updatedAt: 132,
+        startedAt: 131,
+        changedAt: 132,
       },
       {
         requestId: "analysis",
@@ -329,8 +333,10 @@ describe("App inbox store", () => {
         message: "Check the implementation",
         state: "analyzing",
         progress: "Codex is checking the implementation.",
+        dependency: { kind: "analysis", id: "analysis-1" },
         createdAt: 110,
-        updatedAt: 122,
+        startedAt: 120,
+        changedAt: 122,
       },
       {
         requestId: "queued",
@@ -338,7 +344,7 @@ describe("App inbox store", () => {
         message: "Review the May design",
         state: "queued",
         createdAt: 100,
-        updatedAt: 100,
+        changedAt: 100,
       },
     ]);
     expect(listAppWork(db, "may", { excludeRequestId: "analysis" }).map((item) => item.requestId)).toEqual([
@@ -357,8 +363,10 @@ describe("App inbox store", () => {
         message: "Prepare a recommendation",
         state: "done",
         result: { summary: "Recommendation is ready." },
+        executor: { kind: "session", id: "session-ready" },
         createdAt: 145,
-        updatedAt: 148,
+        startedAt: 146,
+        changedAt: 148,
       },
     ]);
     expect(listAppWork(db, "may", { all: true }).map(({ requestId, state }) => ({ requestId, state }))).toEqual([
@@ -380,7 +388,8 @@ describe("App inbox store", () => {
         state: "done",
         result: { summary: "done" },
         createdAt: 140,
-        updatedAt: 142,
+        startedAt: 141,
+        changedAt: 142,
       },
     ]);
   });
@@ -407,6 +416,22 @@ describe("App inbox store", () => {
     expect(first?.generation).toBe(1);
     expect(claimAppInboxItem(db, "item-1", "worker-2", 50, 149)).toBeNull();
     expect(claimNextAppInboxItem(db, "may", "worker-2", 50, 149)).toBeNull();
+  });
+
+  it("keeps lease heartbeats out of human work progress time", () => {
+    createAppInboxItem(db, {
+      id: "human-work",
+      appId: "may",
+      source: { kind: "human", id: "console:work" },
+      input: { kind: "message", data: { message: "Review the design" } },
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "human-work", "worker-1", 50, 110)!;
+
+    expect(renewAppInboxClaim(db, claim, 50, 140)).toBe(true);
+    expect(listAppWork(db, "may")).toMatchObject([
+      { requestId: "human-work", createdAt: 100, startedAt: 110, changedAt: 110 },
+    ]);
   });
 
   it("queries the authoritative inbox projection without decoding events", () => {

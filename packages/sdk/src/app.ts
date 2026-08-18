@@ -56,6 +56,12 @@ export type AppDependencyObservation = {
   evidence?: string[];
 };
 
+/** Stable identity of a resource currently involved in fulfilling human work. */
+export type AppResourceRef = {
+  kind: "request" | "task" | "session" | "analysis";
+  id: string;
+};
+
 /** Human-facing projection of one durable human request; it never owns work. */
 export type AppWorkView = {
   requestId: string;
@@ -65,8 +71,15 @@ export type AppWorkView = {
   progress?: string;
   /** Semantic result when available. Ordinary views are bounded; an exact work read returns it in full. */
   result?: AppResult;
+  /** Most recent execution attempt, when one is known. */
+  executor?: AppResourceRef;
+  /** Exact request or resource this work is waiting for, when suspended. */
+  dependency?: AppResourceRef;
   createdAt: number;
-  updatedAt: number;
+  /** First time the request was claimed for processing. */
+  startedAt?: number;
+  /** Last user-visible state, progress, link, or result change; lease heartbeats never advance it. */
+  changedAt: number;
 };
 
 export type AppConversationMessage = {
@@ -84,6 +97,8 @@ export type AppConversationMessage = {
     channelMessageId?: number;
     requestId?: string;
     command?: string;
+    /** Ordered work identities represented by this rendered command/tool view. */
+    requestIds?: string[];
   };
   createdAt: number;
 };
@@ -99,7 +114,7 @@ export type AppConversationResource = {
     messageId: string;
     replyTo?: string;
   };
-  /** Other active human requests visible to this App owner turn. */
+  /** Derived human work for this read; ordinary owner reads contain only other active requests. */
   work?: AppWorkView[];
   /** Durable messages only, in the order shared by every human surface. */
   messages: AppConversationMessage[];

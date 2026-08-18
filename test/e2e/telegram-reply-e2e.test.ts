@@ -225,6 +225,7 @@ describe("telegram reply e2e", () => {
       expect(sentMessages).toHaveLength(1);
       expect(sentMessages[0]?.text).toContain("All work (newest first):");
       expect(sentMessages[0]?.text).toContain("Review the design — Done");
+      expect(sentMessages[0]?.text).toContain(" · changed ");
       expect(sentMessages[0]?.text).toContain("Result: The design is clean and ready to use.");
       expect(messages).toHaveLength(1);
       expect(messages[0]).toMatchObject({
@@ -232,7 +233,12 @@ describe("telegram reply e2e", () => {
           appId: "may",
           conversationId: "may:primary",
           author: { kind: "command", id: "telegram" },
-          metadata: { channel: "telegram", channelMessageId: 300, command: "/work all" },
+          metadata: {
+            channel: "telegram",
+            channelMessageId: 300,
+            command: "/work all",
+            requestIds: ["work-1"],
+          },
         },
       });
     });

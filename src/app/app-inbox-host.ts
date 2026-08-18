@@ -124,7 +124,7 @@ export type AppInboxReconcileResult = {
   admitted: number;
   released: number;
   errors: string[];
-  /** Conversations whose semantic messages changed during this reconciliation. */
+  /** Conversations whose visible messages or active-work projection changed. */
   conversationIds?: string[];
 };
 
@@ -157,6 +157,8 @@ export type AppInboxHostOptions = {
   retryAfterMs?: number;
   maxBatchSize?: number;
   now?: () => number;
+  /** Wake-only notification after a visible Conversation projection change. */
+  onConversationChanged?: (appId: string, conversationId: string) => void;
 };
 
 type RegisteredApp = AppDefinition;
@@ -239,6 +241,7 @@ export class AppInboxHost {
   readonly #retryAfterMs: number;
   readonly #maxBatchSize: number;
   readonly #now: () => number;
+  readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
 
   constructor(options: AppInboxHostOptions) {
     this.#db = options.db;
@@ -251,6 +254,7 @@ export class AppInboxHost {
     this.#retryAfterMs = options.retryAfterMs ?? 1_000;
     this.#maxBatchSize = options.maxBatchSize ?? 8;
     this.#now = options.now ?? Date.now;
+    this.#onConversationChanged = options.onConversationChanged;
     if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
@@ -559,6 +563,7 @@ export class AppInboxHost {
     const app = this.#requiredApp(appId);
     const claims = this.#claimBatch(app);
     if (claims.length === 0) return { claimed: 0, admitted: 0, released: 0, errors: [] };
+    this.#notifyConversationChanges(claims.map((claim) => claim.item));
 
     const stopRenewing = this.#renewClaims(claims);
     const routed: AppOwnerDispositionResult[] = [];
@@ -614,6 +619,7 @@ export class AppInboxHost {
                     }
                   }
                 });
+                this.#notifyConversationChanges(unresolvedClaims.map((claim) => claim.item));
               },
             });
     } catch (error) {
@@ -658,6 +664,9 @@ export class AppInboxHost {
             })
           ) {
             outcome.released += 1;
+            if (claim.item.source.kind === "human" && claim.item.conversationId) {
+              conversationIds.add(claim.item.conversationId);
+            }
           }
         }
       }
@@ -786,6 +795,7 @@ export class AppInboxHost {
 
   #releaseBatch(claims: AppInboxClaim[], message: string): AppInboxReconcileResult {
     let released = 0;
+    const conversationIds = new Set<string>();
     for (const claim of claims) {
       if (
         releaseAppInboxClaim(this.#db, claim, {
@@ -794,9 +804,34 @@ export class AppInboxHost {
         })
       ) {
         released += 1;
+        if (claim.item.source.kind === "human" && claim.item.conversationId) {
+          conversationIds.add(claim.item.conversationId);
+        }
       }
     }
-    return { claimed: claims.length, admitted: 0, released, errors: [message] };
+    return {
+      claimed: claims.length,
+      admitted: 0,
+      released,
+      errors: [message],
+      ...(conversationIds.size > 0 ? { conversationIds: [...conversationIds].sort() } : {}),
+    };
+  }
+
+  #notifyConversationChanges(items: AppInboxItem[]): void {
+    if (!this.#onConversationChanged) return;
+    const conversations = new Map<string, string>();
+    for (const item of items) {
+      if (item.source.kind === "human" && item.conversationId) conversations.set(item.conversationId, item.appId);
+    }
+    for (const [conversationId, appId] of conversations) {
+      try {
+        this.#onConversationChanged(appId, conversationId);
+      } catch {
+        // Conversation updates are coalescible wakes. A failed observer must
+        // never strand the authoritative request claim.
+      }
+    }
   }
 
   async #admitDisposition(
@@ -875,7 +910,7 @@ export class AppInboxHost {
           );
           if (!waiting) throw new Error("claim is stale");
         });
-        return;
+        return claim.item.source.kind === "human" ? claim.item.conversationId : undefined;
       }
       case "task": {
         if (app.tasks?.attach !== true) {
@@ -905,7 +940,7 @@ export class AppInboxHost {
             // A failed post-link race check must not undo a valid wait link.
           }
         }
-        return;
+        return claim.item.source.kind === "human" ? claim.item.conversationId : undefined;
       }
       case "analyze": {
         if (app.id !== "may") throw new Error("Only the canonical May App may request bounded analysis");
@@ -964,7 +999,7 @@ export class AppInboxHost {
             // Terminal CLI evidence remains the authoritative wake path.
           }
         }
-        return;
+        return claim.item.source.kind === "human" ? claim.item.conversationId : undefined;
       }
       default:
         throw new Error(`Unknown App disposition: ${String((disposition as { type?: unknown }).type)}`);

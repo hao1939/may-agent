@@ -21,6 +21,7 @@ const expectedRootExports = [
   "AppObserver",
   "AppRead",
   "AppRequest",
+  "AppResourceRef",
   "AppResult",
   "AppSchedule",
   "AppTaskAttachment",
