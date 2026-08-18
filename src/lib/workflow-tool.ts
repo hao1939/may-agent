@@ -704,6 +704,8 @@ export interface RunWorkflowDirectOpts {
   manager: SubagentManager;
   runtimeCtx: RuntimeCtx;
   agentName: string;
+  /** Exact source stored on agent sessions started by this workflow. */
+  sessionSource?: string;
   persistDir: string;
   workflowDir?: string;
   guardsDir?: string;
@@ -743,6 +745,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     sharedGuardsDir: opts.sharedGuardsDir,
     persistDir: opts.persistDir,
     agentName: opts.agentName,
+    sessionSource: opts.sessionSource,
     parentSessionId: opts.parentSessionId,
     projectId: opts.projectId,
     taskBinding: opts.taskBinding,
@@ -805,6 +808,8 @@ export interface WorkflowToolOptions {
   /** The name of the agent that owns this workflow tool.
    *  Exposed as `ctx.agent` so reusable workflow code can delegate to the calling agent. */
   agentName?: string;
+  /** Exact source stored on agent sessions started by this workflow. */
+  sessionSource?: string;
   /** Maximum workflow nesting depth (default: 3). */
   maxDepth?: number;
   /** Maximum guard-injected steps per workflow run (default: 5). */
@@ -1257,7 +1262,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               taskResult = manager.result(sid);
             } catch {
               manager.resumeSession(sid, effectiveTask, {
-                source: `workflow:${workflow.name}`,
+                source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
                 timeoutMs: stepOpts?.timeoutMs,
                 suppressBenignRaceEvent: true,
                 requireFinish: true,
@@ -1278,7 +1283,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               projectId: effectiveProjectId,
               recoveryOwner: opts.recoveryOwner,
               stepLabel: agentName,
-              source: `workflow:${workflow.name}`,
+              source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
               kind: "call",
               timeoutMs: stepOpts?.timeoutMs,
               trace: resolveTrace(),
@@ -1299,7 +1304,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         onEvent?.({ type: "workflow.step_started", step: agentName });
         taskResult = await manager.callAgent(agentName, effectiveTask, {
           parentSessionId,
-          source: `workflow:${workflow.name}`,
+          source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
           workflowRunId: runId,
           projectId: effectiveProjectId,
           recoveryOwner: opts.recoveryOwner,
@@ -1691,7 +1696,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               projectId: effectiveProjectId,
               recoveryOwner: opts.recoveryOwner,
               stepLabel: stepName,
-              source: `workflow:${label}`,
+              source: opts.sessionSource ?? `workflow:${label}`,
               trace: resolveTrace(),
               requireFinish: true,
               toolPolicy: sessionOpts.tools,

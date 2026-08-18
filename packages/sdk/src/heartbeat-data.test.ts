@@ -5,9 +5,12 @@ import { describe, expect, it } from "bun:test";
 import { genericHeartbeat, type HeartbeatWorkflowContext } from "./heartbeat-data.js";
 import { recordOutcome as recordCircuitOutcome } from "./circuit-breaker.js";
 
-function makeHeartbeatCtx(agentsRoot: string): HeartbeatWorkflowContext & { events: any[]; runAgentCalls: string[] } {
+function makeHeartbeatCtx(agentsRoot: string): HeartbeatWorkflowContext & {
+  events: any[];
+  runAgentCalls: Array<{ agent: string; source?: string }>;
+} {
   const events: any[] = [];
-  const runAgentCalls: string[] = [];
+  const runAgentCalls: Array<{ agent: string; source?: string }> = [];
   return {
     task: "heartbeat",
     agent: "may",
@@ -29,8 +32,8 @@ function makeHeartbeatCtx(agentsRoot: string): HeartbeatWorkflowContext & { even
     agentsRoot,
     sharedRoot: join(agentsRoot, "..", "shared"),
     projectsRoot: join(agentsRoot, "..", "projects"),
-    runAgent: async (agentName) => {
-      runAgentCalls.push(agentName);
+    runAgent: async (agentName, _task, options) => {
+      runAgentCalls.push({ agent: agentName, source: options?.source });
       return { status: "success", summary: "ok" } as any;
     },
     runWorkflow: async () => ({ type: "done", summary: "ok" }),
@@ -56,7 +59,7 @@ describe("genericHeartbeat events", () => {
       const result = await genericHeartbeat(ctx, "builder");
 
       expect(result.type).toBe("done");
-      expect(ctx.runAgentCalls).toEqual(["builder"]);
+      expect(ctx.runAgentCalls).toEqual([{ agent: "builder", source: "heartbeat" }]);
       expect(ctx.events).toContainEqual({
         type: "heartbeat.step_started",
         source: "agent:builder",

@@ -15,6 +15,7 @@ export interface WorkflowHandlerOptions {
   workflow: ValueResolver<string>;
   task: ValueResolver<string>;
   source?: ValueResolver<string | undefined>;
+  sessionSource?: ValueResolver<string | undefined>;
   projectId?: ValueResolver<string | undefined>;
   includeEvent?: boolean;
   shouldRun?: (
@@ -90,6 +91,8 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions) {
     const task = options.includeEvent ? appendEvent(rawTask, event) : rawTask;
     const runOpts: RunOpts = {};
     if (source) runOpts.source = source;
+    const sessionSource = await resolveValue(options.sessionSource, ctx, event, entry);
+    if (sessionSource) runOpts.sessionSource = sessionSource;
     if (projectId) runOpts.projectId = projectId;
 
     ctx.sdk.log(

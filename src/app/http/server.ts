@@ -61,6 +61,14 @@ const LIVE_VITAL_METRIC_IDS = [
   "eval.llm-coverage-lag-h",
 ];
 const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
+// New heartbeat sessions carry source='heartbeat'. The remaining clauses are
+// read-only compatibility for sessions persisted before typed classification.
+const HEARTBEAT_SESSION_PREDICATE = `(
+  source = 'heartbeat'
+  OR source LIKE 'workflow:%heartbeat%'
+  OR task LIKE '[heartbeat]%'
+  OR task LIKE 'You are %waking up for your heartbeat.%'
+)`;
 
 export interface WebUIOptions {
   stateDir: string;
@@ -872,30 +880,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
     const scheduledHeartbeatAgents = new Set(listScheduledHeartbeatAgents(agents));
-    const heartbeatPredicate = `(
-      source LIKE 'workflow:%heartbeat%'
-      OR source = 'heartbeat'
-      OR task LIKE '[heartbeat]%'
-      OR task LIKE 'You are %waking up for your heartbeat.%'
-    )`;
-
     const heartbeatCandidates = db
       .prepare(
-        // Heartbeat detection covers all dispatch styles in production:
-        //   1. Cron-driven sessions whose task starts with "[heartbeat]".
-        //   2. Per-agent workflow sessions whose task is rebuilt internally
-        //      to start with "You are **<agent>** waking up for your heartbeat."
-        //      (Source is just "workflow"; only the task body identifies it.
-        //      We anchor at the start of task to avoid matching aftermath
-        //      reviews that embed a heartbeat session's JSON inside their task.)
-        //   3. Future workflows that adopt source="workflow:<agent>-heartbeat"
-        //      or source="heartbeat" once we standardize trigger typing.
-        // TODO: replace string matching once heartbeat workflows set a typed
-        // source / trigger field (see webui.md "Data model gaps to close" §2).
         `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
        FROM sessions
        WHERE startedAt > ?
-         AND ${heartbeatPredicate}
+         AND ${HEARTBEAT_SESSION_PREDICATE}
        ORDER BY startedAt DESC
        LIMIT ?`,
       )
@@ -911,7 +901,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
                   ROW_NUMBER() OVER (PARTITION BY agent ORDER BY startedAt DESC) AS recency
            FROM sessions
            WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
-             AND ${heartbeatPredicate}
+             AND ${HEARTBEAT_SESSION_PREDICATE}
          )
          WHERE recency = 1`,
       )
@@ -1068,10 +1058,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
        FROM sessions
        WHERE startedAt > ?
          AND (
-           source LIKE 'workflow:%heartbeat%'
-           OR source = 'heartbeat'
-           OR task LIKE '[heartbeat]%'
-           OR task LIKE 'You are %waking up for your heartbeat.%'
+           ${HEARTBEAT_SESSION_PREDICATE}
          )
        ORDER BY startedAt DESC
        LIMIT 8`,
@@ -3863,7 +3850,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             `
           SELECT
             COUNT(*) as total,
-            SUM(CASE WHEN COALESCE(kind,'') = 'heartbeat' OR task LIKE '[heartbeat]%' OR task LIKE 'You are %waking up for your heartbeat.%' THEN 1 ELSE 0 END) as heartbeats,
+            SUM(CASE WHEN ${HEARTBEAT_SESSION_PREDICATE} THEN 1 ELSE 0 END) as heartbeats,
             MAX(startedAt) as lastStart,
             SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors
           FROM sessions WHERE agent = ? AND startedAt >= ?
