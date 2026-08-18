@@ -14,6 +14,7 @@ import {
   releaseStaleAppTaskResult,
   taskReconciliationConfig,
 } from "./app-task-reconciler.ts";
+import { readTaskState } from "./app-task-store.js";
 
 const roots: string[] = [];
 
@@ -105,6 +106,44 @@ describe("App task parent semantics", () => {
       disposition: "converged",
     });
     expect(readAppTaskIntent(config, "parent")).not.toBeNull();
+    expect(listRunnableAppTaskIds(config)).toEqual(["parent"]);
+  });
+
+  it("keeps a maintain parent nonterminal while its required child is live", () => {
+    const config = fixture();
+    recordAppTaskTrigger(config, "parent", {
+      type: "project.task.tick",
+      data: { taskId: "parent", reason: "review-live-child" },
+    });
+    const parentClaim = claimObservedAppTask(config, {
+      taskId: "parent",
+      appOwner: "app-owner",
+      handler: "owner",
+      reason: "test",
+    });
+    if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);
+
+    expect(
+      completeAppTask(config, parentClaim, {
+        summary: "review identified required child work",
+        evidence: ["task:child remains pending"],
+      }),
+    ).toMatchObject({ status: "applied", taskContinues: true });
+    expect(readAppTaskIntent(config, "parent")).not.toBeNull();
+    const parentStatus = readTaskState(config).resources?.parent?.status;
+    expect(parentStatus).toMatchObject({ phase: "waiting" });
+    expect(parentStatus).not.toHaveProperty("currentAttemptId");
+    expect(listRunnableAppTaskIds(config)).toEqual(["child"]);
+
+    completeAppTask(config, claimChild(config), {
+      summary: "required child complete",
+      evidence: ["artifact:repair", "test:regression", "metric:remeasured"],
+    });
+    expect(readAppTaskTrigger(config, "parent")).toMatchObject({
+      type: "project.task.child-transitioned",
+      childTaskId: "child",
+      disposition: "converged",
+    });
     expect(listRunnableAppTaskIds(config)).toEqual(["parent"]);
   });
 
