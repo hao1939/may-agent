@@ -37,6 +37,7 @@ export type AgentCommand =
         conversation?: {
           id?: string;
           channel?: string;
+          channelTargetId?: string;
           channelThreadId?: string;
           channelMessageId?: number;
           replyToInputId?: string;
@@ -59,6 +60,7 @@ export type AgentCommand =
         agent?: string;
         message: string;
         channel?: string;
+        channelTargetId?: string;
         channelThreadId?: string;
         channelMessageId?: number;
         replyToSourceId?: string;
@@ -235,6 +237,13 @@ type MetricEventData = {
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
   | {
+      /** Wake-only resource notification. Consumers re-read Conversation truth. */
+      type: "conversation.updated";
+      source: "app-inbox";
+      owner: string;
+      data: { appId: string; conversationId: string };
+    }
+  | {
       type: "conversation.message.created";
       source: string;
       owner: string;
@@ -249,6 +258,7 @@ export type SystemEvent =
         context?: Record<string, unknown>;
         metadata?: {
           channel?: string;
+          channelTargetId?: string;
           channelThreadId?: string;
           channelMessageId?: number;
           requestId?: string;
@@ -269,6 +279,7 @@ export type SystemEvent =
         conversationId?: string;
         conversationSequence?: number;
         channel?: string;
+        channelTargetId?: string;
         channelThreadId?: string;
         channelMessageId?: number;
         replyToSourceId?: string;
@@ -294,6 +305,7 @@ export type SystemEvent =
         deliveryKind?: "progress" | "final";
         sessionId: string;
         channel: string;
+        channelTargetId?: string;
         channelThreadId?: string;
         channelMessageId?: number;
         conversationId?: string;

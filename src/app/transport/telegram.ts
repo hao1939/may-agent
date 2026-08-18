@@ -18,7 +18,7 @@
 
 import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve } from "node:path";
-import type { AppWorkView } from "@may-agent/sdk";
+import type { AppConversationMessage, AppWorkView } from "@may-agent/sdk";
 import { EVENT_ROW_ID, type AgentEvent, type EventBus, type EventTrace } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 import { readSessionMeta } from "../../lib/persistence.js";
@@ -96,6 +96,20 @@ function renderTelegramWorkDetail(item: AppWorkView, index: number): string {
   ].join("\n");
 }
 
+function renderTelegramConversationMessage(message: AppConversationMessage): string {
+  const channel = message.metadata?.channel?.trim() || "another surface";
+  const surface = channel === "may-console" ? "Console" : channel;
+  const speaker =
+    message.author.kind === "human"
+      ? "You"
+      : message.author.kind === "agent"
+        ? "May"
+        : message.author.kind === "command"
+          ? "View"
+          : "Tool";
+  return `${surface} · ${speaker}\n${message.text}`;
+}
+
 export function telegramMayInputEvent(input: {
   message: string;
   chatId: string;
@@ -122,6 +136,7 @@ export function telegramMayInputEvent(input: {
         : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
       metadata: {
         channel: "telegram",
+        channelTargetId: input.chatId,
         ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
         channelMessageId: input.messageId,
       },
@@ -167,6 +182,62 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   });
   const { apiCall, sendMessage } = telegramClient;
   const lastWorkBySurface = new Map<string, AppWorkView[]>();
+  const sharedConversationId = primaryConversationId(opts.interfaceAgent);
+  const renderedConversationMessages = new Set<string>();
+  try {
+    for (const message of readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+      limit: 200,
+    }).messages) {
+      renderedConversationMessages.add(message.id);
+    }
+  } catch {
+    // The Conversation may not be available until App runtime startup finishes.
+  }
+  let conversationSync = Promise.resolve();
+
+  async function syncConversation(): Promise<void> {
+    const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+      limit: 200,
+    }).messages;
+    for (const message of messages) {
+      if (renderedConversationMessages.has(message.id)) continue;
+      if (message.metadata?.channel === "telegram") {
+        renderedConversationMessages.add(message.id);
+        continue;
+      }
+      if (!pendingChatId) return;
+      const delivered = await sendMessage(pendingChatId, renderTelegramConversationMessage(message), undefined, {
+        eventType: "conversation.mirror",
+        agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
+        data: JSON.stringify({
+          direction: "mirror",
+          conversationId: sharedConversationId,
+          conversationMessageId: message.id,
+          sourceChannel: message.metadata?.channel,
+          text: message.text.slice(0, 500),
+        }),
+      });
+      if (!delivered) return;
+      renderedConversationMessages.add(message.id);
+    }
+  }
+
+  function queueConversationSync(): void {
+    conversationSync = conversationSync
+      .then(() => (running ? syncConversation() : undefined))
+      .catch((error) => {
+        bus.emit({
+          type: "info",
+          message: `[telegram] Conversation sync failed: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      });
+  }
+
+  const unsubscribeConversation = bus.subscribe((event: any) => {
+    if (event.type !== "conversation.updated") return;
+    const data = event && typeof event.data === "object" && event.data ? event.data : {};
+    if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) queueConversationSync();
+  });
 
   function recordConversationMessage(input: {
     conversationId: string;
@@ -174,6 +245,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     command: string;
     messageId: number;
     topicId?: number;
+    chatId?: string;
     transient?: boolean;
   }): void {
     bus.emit({
@@ -192,7 +264,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           channelMessageId: input.messageId,
           command: input.command,
         },
-        idempotencyKey: `telegram:conversation:${input.messageId}:${input.command}`,
+        idempotencyKey: `telegram:${input.chatId ?? "unknown"}:conversation:${input.messageId}:${input.command}`,
       },
     });
   }
@@ -208,6 +280,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       projectId?: string;
       summary?: string;
       data?: Record<string, unknown>;
+      channelTargetId?: string;
+      channelThreadId?: string;
       replyToMessageId?: number;
       allowTraceReplyFallback?: boolean;
       conversationId?: string;
@@ -216,7 +290,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       taskId?: string;
     },
   ) {
-    if (!pendingChatId) return;
     if (shouldSuppressProactive(text, context)) return;
     const data = { ...(context?.data ?? {}) };
     const latestInbound =
@@ -224,15 +297,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ? getLatestInboundNotificationMessage(persistDir, context.traceId)
         : null;
     const inboundData = parseJsonRecord(latestInbound?.data);
+    const channelTargetId =
+      context?.channelTargetId ??
+      stringValue(data.channelTargetId) ??
+      stringValue(inboundData?.chatId) ??
+      pendingChatId;
+    if (!channelTargetId) return;
+    const rawThreadId =
+      context?.channelThreadId ?? stringValue(data.channelThreadId) ?? stringValue(inboundData?.topicId);
+    const messageThreadId = rawThreadId && /^[1-9]\d*$/.test(rawThreadId) ? Number(rawThreadId) : undefined;
     const conversationId =
-      context?.conversationId ??
-      stringValue(inboundData?.conversationId) ??
-      primaryConversationId(opts.interfaceAgent);
+      context?.conversationId ?? stringValue(inboundData?.conversationId) ?? primaryConversationId(opts.interfaceAgent);
     const priorConversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
     if (priorConversationId && priorConversationId !== conversationId && data.requestConversationId === undefined) {
       data.requestConversationId = priorConversationId;
     }
     data.conversationId = conversationId;
+    data.channelTargetId = channelTargetId;
+    if (rawThreadId) data.channelThreadId = rawThreadId;
     data.direction = "outbound";
     if (context?.traceId) data.traceId = context.traceId;
     if (context?.parentEventId) data.parentEventId = context.parentEventId;
@@ -251,6 +333,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         summary: context?.summary,
       }),
       replyToMessageId,
+      messageThreadId,
     };
     const sourceEventId =
       typeof data.sourceEventId === "number" && Number.isInteger(data.sourceEventId) && data.sourceEventId > 0
@@ -261,7 +344,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ...(typeof data.appInboxItemId === "string" ? { appInboxItemId: data.appInboxItemId } : {}),
       ...(typeof data.appInboxRequestId === "string" ? { appInboxRequestId: data.appInboxRequestId } : {}),
     };
-    sendMessage(pendingChatId, text, undefined, ctx)
+    sendMessage(channelTargetId, text, undefined, ctx)
       .then((messageId) => {
         if (messageId) {
           bus.emit({
@@ -498,7 +581,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const replyToMsgId = replyToMsg?.message_id;
     if (replyToMsgId) {
       try {
-        const ctx = getNotificationMessage(opts.persistDir ?? ".state", replyToMsgId);
+        const candidate = getNotificationMessage(opts.persistDir ?? ".state", replyToMsgId);
+        const candidateData = parseJsonRecord(candidate?.data);
+        const candidateChatId = stringValue(candidateData?.chatId) ?? stringValue(candidateData?.channelTargetId);
+        const ctx = candidateChatId && candidateChatId !== chatIdStr ? null : candidate;
         const route = buildTelegramReplyRoute({
           text,
           replyToMsgId,
@@ -556,25 +642,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return;
     }
 
-    // Map remaining /commands to ordinary May input.
-    let inputMessage = text;
-    if (text.startsWith("/")) {
-      const cmdMap: Record<string, string> = {
-        "/status": "status",
-        "/agents": "status", // status shows agents
-      };
-      const [cmd, ...rest] = text.split(/\s+/);
-      const mapped = cmdMap[cmd!];
-      if (mapped) {
-        inputMessage = rest.length > 0 ? `${mapped} ${rest.join(" ")}` : mapped;
-      } else {
-        // Unknown /command — strip the slash and send as regular input
-        inputMessage = text.slice(1);
-      }
-    }
-
     // Every ordinary turn becomes one durable May request.
-    const finalMessage = replyToMsgId ? enrichedText : inputMessage;
+    const finalMessage = replyToMsgId ? enrichedText : text;
     emitChatStart(
       finalMessage,
       "telegram",
@@ -637,6 +706,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         agent: opts.interfaceAgent,
         data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
         replyToMessageId: msg.message_id,
+        messageThreadId: topicId,
       });
       if (deliveredMessageId) {
         recordConversationMessage({
@@ -644,6 +714,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           text: rendered,
           command: text,
           messageId: deliveredMessageId,
+          chatId: chatIdStr,
           topicId,
         });
       }
@@ -656,13 +727,49 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         "🤖 *May Agent Bot*\n\n" +
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
+          "/work — Show active work (`/work all` for history)\n" +
           "/status — Show active sessions\n" +
           "/cancel <session>|all — Cancel an explicit target\n" +
           "/steer <session> <message> — Explicitly steer one execution session\n" +
           "/reload — Reload agent configs\n" +
           "/help — Show this message",
         "Markdown",
+        { messageThreadId: topicId },
       );
+      return true;
+    }
+
+    if (command === "/status" || command === "/agents") {
+      const sessions = _manager.status();
+      const rendered =
+        sessions.length === 0
+          ? "No active sessions."
+          : [
+              "Active sessions:",
+              ...sessions.map(
+                (session) =>
+                  `• ${session.agent} · ${session.status} · ${session.sessionId.slice(0, 12)}${
+                    session.task ? `\n  ${session.task.replace(/\s+/g, " ").trim().slice(0, 120)}` : ""
+                  }`,
+              ),
+            ].join("\n");
+      const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
+        eventType: "telegram.reply",
+        agent: opts.interfaceAgent,
+        data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
+        replyToMessageId: msg.message_id,
+        messageThreadId: topicId,
+      });
+      if (deliveredMessageId) {
+        recordConversationMessage({
+          conversationId,
+          text: rendered,
+          command: text,
+          messageId: deliveredMessageId,
+          chatId: chatIdStr,
+          topicId,
+        });
+      }
       return true;
     }
 
@@ -679,6 +786,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           agent: opts.interfaceAgent,
           data: JSON.stringify({ direction: "outbound", conversationId }),
           replyToMessageId: msg.message_id,
+          messageThreadId: topicId,
         });
         return true;
       }
@@ -695,6 +803,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           agent: opts.interfaceAgent,
           data: JSON.stringify({ direction: "outbound", conversationId }),
           replyToMessageId: msg.message_id,
+          messageThreadId: topicId,
         });
         return true;
       }
@@ -715,6 +824,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         sessionId,
         data: JSON.stringify({ direction: "outbound", conversationId }),
         replyToMessageId: msg.message_id,
+        messageThreadId: topicId,
       });
       return true;
     }
@@ -740,7 +850,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return true;
     }
 
-    return false;
+    await sendMessage(chatIdStr, `Unknown command: ${command}. Use /help to see available commands.`, undefined, {
+      eventType: "telegram.reply",
+      agent: opts.interfaceAgent,
+      data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
+      replyToMessageId: msg.message_id,
+      messageThreadId: topicId,
+    });
+    return true;
   }
 
   // ── Outbound: session-scoped assistant responses ─────────────────
@@ -821,6 +938,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
+      unsubscribeConversation();
       outbound.close();
     },
     sendAlert: outbound.sendAlert,

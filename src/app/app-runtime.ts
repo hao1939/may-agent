@@ -58,6 +58,7 @@ export function createAppInputAdmission(options: {
           conversationId: input.conversationId,
           conversationSequence: input.conversationSequence,
           channel: input.channel,
+          channelTargetId: input.channelTargetId,
           channelThreadId: input.channelThreadId,
           channelMessageId: input.channelMessageId,
           replyToSourceId: input.replyToSourceId,

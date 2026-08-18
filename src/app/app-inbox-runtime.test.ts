@@ -302,10 +302,27 @@ describe("App inbox runtime", () => {
       cancel() {},
     };
     const bus = new EventBus();
-    const delivered: Array<{ kind?: string; text?: string }> = [];
+    const conversationUpdates: Array<{ appId?: string; conversationId?: string }> = [];
+    const delivered: Array<{
+      kind?: string;
+      text?: string;
+      channelTargetId?: string;
+      channelThreadId?: string;
+      channelMessageId?: number;
+    }> = [];
     bus.subscribe((event) => {
+      if (event.type === "conversation.updated") {
+        conversationUpdates.push(event.data);
+        return;
+      }
       if (event.type !== "app.response.delivery.requested") return;
-      delivered.push({ kind: event.data.deliveryKind, text: event.data.text });
+      delivered.push({
+        kind: event.data.deliveryKind,
+        text: event.data.text,
+        channelTargetId: event.data.channelTargetId,
+        channelThreadId: event.data.channelThreadId,
+        channelMessageId: event.data.channelMessageId,
+      });
       bus.emit({
         type: "channel.delivery.completed",
         source: "telegram",
@@ -344,15 +361,27 @@ describe("App inbox runtime", () => {
         message: "Please review this design",
         chatId: "123",
         messageId: 42,
-        conversationId: "telegram:chat:123:topic:0:agent:may",
+        topicId: 7,
+        conversationId: "may:primary",
       }),
     );
     await waitUntil(() => delivered.length === 1);
-    expect(delivered).toEqual([{ kind: "progress", text: "I’ll inspect this and return with the evidence." }]);
+    expect(delivered).toEqual([
+      {
+        kind: "progress",
+        text: "I’ll inspect this and return with the evidence.",
+        channelTargetId: "123",
+        channelThreadId: "7",
+        channelMessageId: 42,
+      },
+    ]);
     const itemId = (db.prepare("SELECT id FROM app_inbox_items WHERE app_id = 'may'").get() as { id: string }).id;
     expect(runtime.host.get(itemId)).toMatchObject({
       status: "handling",
       waitingOn: { kind: "analysis", id: "analysis-natural" },
+      channelTargetId: "123",
+      channelThreadId: "7",
+      channelMessageId: 42,
       replyToSourceId: undefined,
     });
 
@@ -362,7 +391,18 @@ describe("App inbox runtime", () => {
     runtime = await start();
     runtime.enableDelivery();
     await waitUntil(() => delivered.length === 2 && runtime?.host.get(itemId)?.status === "done");
-    expect(delivered[1]).toEqual({ kind: "final", text: "I reviewed it. The evidence is sound." });
+    expect(delivered[1]).toEqual({
+      kind: "final",
+      text: "I reviewed it. The evidence is sound.",
+      channelTargetId: "123",
+      channelThreadId: "7",
+      channelMessageId: 42,
+    });
+    expect(conversationUpdates).toEqual([
+      { appId: "may", conversationId: "may:primary" },
+      { appId: "may", conversationId: "may:primary" },
+      { appId: "may", conversationId: "may:primary" },
+    ]);
     expect(ownerAttempts).toBe(2);
     expect(JSON.parse(readFileSync(join(root, "owner-request-2.json"), "utf8"))).toMatchObject({
       dependency: {

@@ -9,6 +9,7 @@ export interface TelegramSendContext {
   projectId?: string;
   data?: string;
   replyToMessageId?: number;
+  messageThreadId?: number;
 }
 
 export interface TelegramClientOptions {
@@ -59,11 +60,13 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
       const replyParams = context?.replyToMessageId
         ? { reply_parameters: { message_id: context.replyToMessageId, allow_sending_without_reply: true } }
         : {};
+      const threadParams = context?.messageThreadId ? { message_thread_id: context.messageThreadId } : {};
       try {
         const result = await apiCall("sendMessage", {
           chat_id: chatId,
           text: chunk,
           ...(parseMode ? { parse_mode: parseMode } : {}),
+          ...threadParams,
           ...replyParams,
         });
         lastMsgId = result?.message_id;
@@ -72,7 +75,12 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
       } catch (err) {
         if (parseMode) {
           try {
-            const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk, ...replyParams });
+            const result = await apiCall("sendMessage", {
+              chat_id: chatId,
+              text: chunk,
+              ...threadParams,
+              ...replyParams,
+            });
             lastMsgId = result?.message_id;
             if (lastMsgId) sentMsgIds.push(lastMsgId);
             else complete = false;
@@ -96,7 +104,7 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
             agent: context.agent || null,
             session_id: context.sessionId || null,
             project_id: context.projectId || null,
-            data: context.data || null,
+            data: notificationDataForChat(context.data, chatId),
           });
         } catch {
           /* best-effort */
@@ -134,6 +142,19 @@ export function splitTelegramMessage(text: string, maxLen = TELEGRAM_MAX_LENGTH)
   }
 
   return chunks;
+}
+
+function notificationDataForChat(data: string | undefined, chatId: string): string {
+  if (!data) return JSON.stringify({ channelTargetId: chatId });
+  try {
+    const parsed = JSON.parse(data) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return JSON.stringify({ ...(parsed as Record<string, unknown>), channelTargetId: chatId });
+    }
+  } catch {
+    // Preserve non-JSON legacy context below.
+  }
+  return data;
 }
 
 function errorMessage(err: unknown): string {
