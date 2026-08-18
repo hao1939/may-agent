@@ -70,8 +70,10 @@ bun run check:event-graph
 ```
 
 Build the deployable binary with `bun run bundle`. Deploy with
-`bun run deploy`; `reload` only reloads agent and app definitions and does not
-deploy runtime code.
+`bun run deploy` from work owned by a live `may-agent` App task. The candidate
+must contain the current canonical May commit. Another App cannot deploy the
+May Host on behalf of its own task. `reload` only reloads agent and app
+definitions and does not deploy runtime code.
 
 ## Layout rules
 

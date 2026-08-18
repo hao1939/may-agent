@@ -14,6 +14,11 @@ import { basename, dirname, join } from "node:path";
 export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
 
 export function validateDeployTaskTarget(path: string, project: string, taskId: string): void {
+  if (project !== "may-agent") {
+    throw new Error(
+      `May runtime deployment belongs to may-agent, not ${project}; route the runtime change through the may-agent App`,
+    );
+  }
   let state: unknown;
   try {
     state = JSON.parse(readFileSync(path, "utf8"));
