@@ -29,8 +29,35 @@ describe("restart-aware deploy receipts", () => {
       expect(() => validateDeployTaskTarget(statePath, "may-agent", "missing")).toThrow(
         "does not exist; refusing to emit an unresolvable targeted wake",
       );
-      expect(() => validateDeployTaskTarget(statePath, "other", "live")).toThrow("belongs to may-agent, not other");
+      expect(() => validateDeployTaskTarget(statePath, "other", "live")).toThrow(
+        "May runtime deployment belongs to may-agent, not other",
+      );
       expect(() => validateDeployTaskTarget(statePath, "may-agent", "live")).not.toThrow();
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a task owned by another App even when that task exists", () => {
+    const f = fixture();
+    try {
+      const statePath = join(f.projectDir, "state.json");
+      writeFileSync(
+        statePath,
+        JSON.stringify({
+          project: "alpha-project",
+          resources: {
+            "ops/deploy-may-runtime": {
+              metadata: { id: "ops/deploy-may-runtime" },
+              status: { phase: "running" },
+            },
+          },
+        }),
+      );
+
+      expect(() => validateDeployTaskTarget(statePath, "alpha-project", "ops/deploy-may-runtime")).toThrow(
+        "May runtime deployment belongs to may-agent, not alpha-project",
+      );
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
@@ -157,8 +184,12 @@ describe("restart-aware deploy receipts", () => {
 
   it("builds deployable artifacts from one immutable tested commit", () => {
     const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
+    expect(deploy).toContain('project="may-agent"');
+    expect(deploy).not.toContain("MAY_AGENT_DEPLOY_PROJECT:-");
     expect(deploy).toContain('deploy-receipt.ts validate-target "$task_state" "$project" "$task_id"');
     expect(deploy).toContain('source_commit="$(git rev-parse --verify HEAD)"');
+    expect(deploy).toContain('canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"');
+    expect(deploy).toContain('git merge-base --is-ancestor "$canonical_commit" "$source_commit"');
     expect(deploy).toContain('git archive "$source_commit" | tar -x -C "$build_dir"');
     expect(deploy).toContain(
       "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
