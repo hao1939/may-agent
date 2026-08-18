@@ -116,7 +116,9 @@ records. They never become alternate work owners.
 
 `Conversation may:primary` is one such projection. It reconstructs shared human
 context and work views from messages, May App requests, dependencies, and
-confirmed delivery; it is not another database or owner.
+accepted results; it is not another database or owner. Adapters observe its
+updates and render independently, so their delivery state never gates a human
+request's semantic completion.
 
 ## Events and time
 

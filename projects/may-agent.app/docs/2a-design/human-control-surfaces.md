@@ -29,7 +29,8 @@ same semantic Conversation contract.
 They also watch the same resource. After a message becomes durably visible,
 the Host emits a wake-only `conversation.updated` observation. Adapters re-read
 the Conversation and render unseen stable message IDs using their own
-presentation. They never forward adapter events directly to one another.
+presentation. The wake is not a delivery guarantee, and adapters never forward
+adapter events directly to one another.
 
 ## Shared boundary
 
@@ -72,7 +73,7 @@ An adapter must not:
 - invent a different Conversation identity for its channel;
 - infer work from the latest session;
 - own a request queue, work archive, or selected-context protocol;
-- report delivery before its channel confirms it;
+- turn provider delivery state into Conversation or work state;
 - make transient presentation part of May's durable context.
 
 ## Resource synchronization
@@ -80,7 +81,7 @@ An adapter must not:
 Conversation synchronization follows the ordinary resource-watch pattern:
 
 ```text
-durable human/command message or confirmed May delivery
+durable human/command message or persisted May result
   -> conversation.updated(appId, conversationId)
   -> adapter reads Conversation
   -> adapter skips message IDs already rendered on that surface
@@ -115,7 +116,8 @@ Work views are projections, not objects with another lifecycle:
 
 - active work shows unfinished human App requests;
 - all work shows active and finished requests, newest first;
-- one exact work read may include that request's result.
+- completed work includes its bounded result;
+- one exact work read includes that request's full result.
 
 Console exposes `/work`, `/work all`, and `/work N`. Telegram may expose the
 same meanings through native commands or controls and may render each item
@@ -151,8 +153,9 @@ See [may-console.md](may-console.md) for terminal presentation details.
 - Reply metadata is attached as context so May can interpret the human's
   intention; it does not replace Conversation or work identity.
 - Native commands may answer through direct Conversation reads.
-- Immediate replies target the incoming message. Later delivery uses the exact
-  persisted request/channel coordinates and never guesses the newest message.
+- Immediate replies target the incoming message. Conversation synchronization
+  renders new shared messages using the adapter's current presentation context;
+  provider coordinates remain adapter-local.
 - Unknown native commands show help or fail locally.
 
 Telegram owns its presentation. A work list may use buttons, Markdown, or one
@@ -168,18 +171,20 @@ typed events or validated App input before runtime logic.
 Direct and Gym agent runs are portable execution surfaces, not May human
 conversation adapters, and do not require this Conversation contract.
 
-## Delivery and restart
-
-Message creation and human delivery are separate facts.
+## Presentation and restart
 
 - Inbound human acceptance requires durable App admission.
-- Outbound May content enters the seen Conversation only after confirmed
-  delivery.
-- Failed or uncertain delivery stays out of the seen message list and remains
-  inspectable through work/delivery state.
+- Persisting May's result completes work and makes the result a shared
+  Conversation message immediately.
+- Console and Telegram listen for `conversation.updated`, reread the resource,
+  and render unseen messages independently. Their acknowledgements do not feed
+  back into work state.
+- Provider delivery failures may be inspected operationally, but are not shown
+  as May's answer and do not change `/work` status.
 - Restart reconstructs the Conversation from durable events, App inbox items,
-  dependencies, and delivery receipts.
-- Correctness never depends on a mutable persistent May chat session.
+  dependencies, and results.
+- Correctness never depends on a mutable persistent May chat session or an
+  adapter receipt.
 
 ## Test contract
 
@@ -191,8 +196,8 @@ Every May human adapter must prove:
 4. command/tool messages add context without work;
 5. transient presentation adds neither context nor work;
 6. explicit session controls do not change bare-text routing;
-7. confirmed output is readable from another adapter;
-8. failed or uncertain delivery is not shown as seen;
+7. a persisted result is readable from another adapter without delivery state;
+8. failed or uncertain adapter delivery does not change work or result content;
 9. requested command views are visible to a later May turn;
 10. restart reconstructs the same Conversation resource.
 11. a new message from one adapter is rendered by the other without creating a

@@ -83,8 +83,8 @@ conversation.message.created (target.appId=may, author.kind=human)
   -> linked May App request
     -> bounded owner session
       -> App result
-        -> app.response.delivery.requested
-          -> channel.delivery.completed
+        -> conversation.updated
+          -> independent adapter read/render
 ```
 
 Historical `human.input.received -> app.input.requested` and direct
@@ -137,11 +137,12 @@ events and projections:
 | Was it handled? | A responsible domain consumer or queryable owner route accepted the intent. |
 | Was work started? | A child session, workflow, task transition, or explicit rejection/no-op exists. |
 | Was the intent completed? | A terminal event has a closure link to the opening intent. |
-| Did the human receive the result? | The channel delivery projection links to the terminal result. |
+| Did a surface render the result? | Adapter/provider evidence, when available; this is operational and does not gate the result. |
 | Did the human confirm it? | A later human reply explicitly accepts, approves, corrects, or continues the result. |
 
-Most conversational turns finish at delivered. Approval gates and explicit
-human decisions require confirmed. Human silence is not confirmation.
+Most conversational turns finish when the App result is persisted. Approval
+gates and explicit human decisions require a later correlated human message.
+Human silence is not confirmation.
 
 Closure is immutable. A later correction or follow-up does not reopen or
 rewrite the old event. It creates a new human input and semantic intent linked

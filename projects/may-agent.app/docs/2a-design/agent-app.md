@@ -183,10 +183,12 @@ Returning `null` asks the owner for one bounded judgment. An inbox item remains
 the authority while it waits on a child App, task, session, or delivery. It is
 not replaced by an event pair or by a copied task record.
 
-The `may` App owns ordinary human conversation and final channel delivery. It
-may answer directly or delegate to another App and review the child result.
-It has no schedules, observers, or task attachment, so conversational
-ownership cannot become a background project controller.
+The `may` App owns ordinary human conversation and its semantic result. It may
+answer directly or delegate to another App and review the child result. Console
+and Telegram independently render the resulting Conversation message; their
+delivery state is not part of May's work. The App has no schedules, observers,
+or task attachment, so conversational ownership cannot become a background
+project controller.
 
 ## Events and subscriptions
 
@@ -333,8 +335,8 @@ request. It is never an alternate work authority.
 11. Recovery preserves obligation identity and does not invent desired state.
 12. Read projections, event delivery rows, and queue entries never become
     mutation authority.
-13. Human delivery remains correlated to the originating May request through
-    uncertain-delivery handling and final receipt.
+13. Human results remain correlated to the originating May request and enter
+    Conversation without waiting for an adapter receipt.
 14. The public authoring surface contains no `defineProjectApp`,
     `@may-agent/sdk/legacy`, owner-inbox fallback, or imperative event execution.
 
