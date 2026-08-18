@@ -51,6 +51,7 @@ describe("app runtime startup order", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).toContain("const hostCapacity = new HostCapacity");
     expect(source).toContain("process.env.MAY_HOST_MAX_CONCURRENT ?? 4");
+    expect(source).toContain("maxConcurrentRequests: configuredHostConcurrency");
     expect(source).toContain('context.appId === "may" && context.humanOrigin');
     expect(source).toContain("hostCapacity.runForeground(work)");
     expect(source).not.toContain("runOwner: appTasks.runOwner");
