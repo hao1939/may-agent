@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
+  cacheTaskStateReads,
   migrateTaskState,
   readTaskState,
   saveTaskState,
@@ -92,6 +93,22 @@ describe("saveTaskState shrinkage guard", () => {
 
     const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
     expect(saved.project_lifecycle).toBe("active");
+  });
+
+  it("preserves lifecycle and shrinkage guards when a bounded pass reuses its parsed tree", () => {
+    const lifecycleConfig = makeConfig();
+    writeFileSync(lifecycleConfig.statePath, JSON.stringify(makeTree(6, "active")));
+    cacheTaskStateReads(lifecycleConfig);
+    const lifecycleTree = readTaskState(lifecycleConfig);
+    lifecycleTree.project_lifecycle = "paused";
+    expect(() => saveTaskState(lifecycleConfig, lifecycleTree)).toThrow(/lifecycle guard/);
+
+    const shrinkageConfig = makeConfig();
+    writeFileSync(shrinkageConfig.statePath, JSON.stringify(makeTree(6, "active")));
+    cacheTaskStateReads(shrinkageConfig);
+    const shrinkageTree = readTaskState(shrinkageConfig);
+    shrinkageTree.groups = { "task-0": shrinkageTree.groups?.["task-0"]! };
+    expect(() => saveTaskState(shrinkageConfig, shrinkageTree)).toThrow(/shrinkage guard/);
   });
 
   it("allows explicit project pause writes with a reason and journal entry", () => {

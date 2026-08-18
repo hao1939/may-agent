@@ -220,6 +220,8 @@ type TaskStateReadCache = {
   mtimeMs?: number;
   size?: number;
   tree?: TaskTree;
+  sourceLifecycle?: string;
+  sourceResourceCount?: number;
 };
 
 const taskStateReadCaches = new WeakMap<TaskStateConfig, TaskStateReadCache>();
@@ -340,6 +342,8 @@ export function readTaskState(config: TaskStateConfig): TaskTree {
         cache.mtimeMs = state.mtimeMs;
         cache.size = state.size;
         cache.tree = tree;
+        cache.sourceLifecycle = normalizedLifecycle(tree.project_lifecycle);
+        cache.sourceResourceCount = taskStateResourceCount(tree);
         return tree;
       }
       const tree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
@@ -381,22 +385,6 @@ function appendTaskTreeJournal(config: TaskStateConfig, entry: Record<string, un
   );
 }
 
-function validateLifecycleTransition(
-  config: TaskStateConfig,
-  current: TaskTree,
-  next: TaskTree,
-  options?: SaveTaskStateOptions,
-): void {
-  const currentLifecycle = normalizedLifecycle(current.project_lifecycle);
-  const nextLifecycle = normalizedLifecycle(next.project_lifecycle);
-  if (currentLifecycle !== nextLifecycle && !options?.projectLifecycleReason?.trim()) {
-    throw new Error(
-      `saveTaskState lifecycle guard: refusing to change project ${config.projectDir} ` +
-        `from ${currentLifecycle || "unset"} to ${nextLifecycle || "unset"} without an explicit reason.`,
-    );
-  }
-}
-
 export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?: SaveTaskStateOptions): void {
   const runtimePaths = projectRuntimePaths(config.appDir);
   if (config.statePath !== runtimePaths.taskStatePath) {
@@ -404,13 +392,28 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   }
   normalizeTaskStateInPlace(tree);
 
+  const cache = taskStateReadCaches.get(config);
   let existingTree: TaskTree | null = null;
+  let existingLifecycle: string | null = null;
+  let existingResourceCount: number | null = null;
   if (existsSync(config.statePath)) {
-    try {
-      existingTree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
-      normalizeTaskStateInPlace(existingTree);
-    } catch {
-      existingTree = null;
+    if (
+      !config.validateMutation &&
+      cache?.tree === tree &&
+      cache.sourceLifecycle !== undefined &&
+      cache.sourceResourceCount !== undefined
+    ) {
+      existingLifecycle = cache.sourceLifecycle;
+      existingResourceCount = cache.sourceResourceCount;
+    } else {
+      try {
+        existingTree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
+        normalizeTaskStateInPlace(existingTree);
+        existingLifecycle = normalizedLifecycle(existingTree.project_lifecycle);
+        existingResourceCount = taskStateResourceCount(existingTree);
+      } catch {
+        existingTree = null;
+      }
     }
   }
 
@@ -422,17 +425,20 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
     });
   }
 
-  if (existingTree) {
-    validateLifecycleTransition(config, existingTree, tree, options);
+  const nextLifecycle = normalizedLifecycle(tree.project_lifecycle);
+  if (existingLifecycle !== null && existingLifecycle !== nextLifecycle && !options?.projectLifecycleReason?.trim()) {
+    throw new Error(
+      `saveTaskState lifecycle guard: refusing to change project ${config.projectDir} ` +
+        `from ${existingLifecycle || "unset"} to ${nextLifecycle || "unset"} without an explicit reason.`,
+    );
   }
 
   // Shrinkage guard: reject writes that reduce task count by >80%.
   // This prevents agent-caused data loss from whole-file overwrites.
   if (!options?.allowShrinkage && existsSync(config.statePath)) {
     try {
-      const existing = existingTree;
-      if (!existing) throw new Error("existing task tree is unavailable");
-      const existingCount = Object.keys(existing.groups ?? {}).length + Object.keys(existing.resources ?? {}).length;
+      if (existingResourceCount === null) throw new Error("existing task tree is unavailable");
+      const existingCount = existingResourceCount;
       const newCount = Object.keys(tree.groups ?? {}).length + Object.keys(tree.resources ?? {}).length;
       // Only guard when existing tree has enough tasks to be meaningful (>=5)
       // and the new tree drops by more than 80%.
@@ -455,13 +461,14 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   const tempPath = `${config.statePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.statePath);
-  const cache = taskStateReadCaches.get(config);
   if (cache) {
     const state = statSync(config.statePath);
     cache.ino = state.ino;
     cache.mtimeMs = state.mtimeMs;
     cache.size = state.size;
     cache.tree = tree;
+    cache.sourceLifecycle = normalizedLifecycle(tree.project_lifecycle);
+    cache.sourceResourceCount = taskStateResourceCount(tree);
   }
   writeAppTaskConditionRouteIndex(config, tree);
 
@@ -476,10 +483,10 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   renameSync(projectionTempPath, projectionPath);
 
   if (
-    existingTree &&
-    normalizedLifecycle(existingTree.project_lifecycle) !== normalizedLifecycle(tree.project_lifecycle)
+    existingLifecycle !== null &&
+    existingLifecycle !== normalizedLifecycle(tree.project_lifecycle)
   ) {
-    const from = normalizedLifecycle(existingTree.project_lifecycle);
+    const from = existingLifecycle;
     const to = normalizedLifecycle(tree.project_lifecycle);
     appendTaskTreeJournal(config, {
       kind:
