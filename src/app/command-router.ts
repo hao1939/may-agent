@@ -232,6 +232,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         conversationId,
         conversationSequence: sequence,
         channel,
+        channelTargetId: nonEmptyString(input.conversation.channelTargetId) ?? undefined,
         channelThreadId: nonEmptyString(input.conversation.channelThreadId) ?? undefined,
         channelMessageId,
         idempotencyKey:
@@ -499,6 +500,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         requestId: nonEmptyString(data.requestId) ?? undefined,
         conversationId: nonEmptyString(data.conversationId) ?? undefined,
         channel: nonEmptyString(data.channel) ?? source,
+        channelTargetId: nonEmptyString(data.channelTargetId) ?? undefined,
         channelThreadId: nonEmptyString(data.channelThreadId) ?? undefined,
         channelMessageId: integerField(data, "channelMessageId") ?? undefined,
         context: isRecord(data.context) ? data.context : undefined,
@@ -564,6 +566,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       requestId?: string;
       conversationId?: string;
       channel?: string;
+      channelTargetId?: string;
       channelThreadId?: string;
       channelMessageId?: number;
       context?: Record<string, unknown>;
@@ -583,6 +586,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         conversationId: metadata.conversationId,
         conversationSequence: metadata.channelMessageId,
         channel: metadata.channel ?? source,
+        channelTargetId: metadata.channelTargetId,
         channelThreadId: metadata.channelThreadId,
         channelMessageId: metadata.channelMessageId,
         idempotencyKey: metadata.requestId,

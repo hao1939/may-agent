@@ -39,6 +39,7 @@ export type AppInboxItem = {
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
+  channelTargetId?: string;
   channelThreadId?: string;
   channelMessageId?: number;
   replyToSourceId?: string;
@@ -66,6 +67,7 @@ export type CreateAppInboxItem = {
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
+  channelTargetId?: string;
   channelThreadId?: string;
   channelMessageId?: number;
   replyToSourceId?: string;
@@ -155,6 +157,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     conversationId: optionalText(row.conversation_id),
     conversationSequence: optionalNumber(row.conversation_seq),
     channel: optionalText(row.channel),
+    channelTargetId: optionalText(row.channel_target_id),
     channelThreadId: optionalText(row.channel_thread_id),
     channelMessageId: optionalNumber(row.channel_message_id),
     replyToSourceId: optionalText(row.reply_to_source_id),
@@ -724,10 +727,10 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   const result = db.run(
     `INSERT OR IGNORE INTO app_inbox_items (
        id, app_id, parent_id, conversation_id, conversation_seq,
-       channel, channel_thread_id, channel_message_id, reply_to_source_id,
+       channel, channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id,
        source_kind, source_id, input_kind, input_data, status,
        available_at, origin_event_id, idempotency_key, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
@@ -735,6 +738,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
       input.conversationId ?? null,
       input.conversationSequence ?? null,
       input.channel ?? null,
+      input.channelTargetId ?? null,
       input.channelThreadId ?? null,
       input.channelMessageId ?? null,
       input.replyToSourceId ?? null,

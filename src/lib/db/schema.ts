@@ -298,6 +298,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   conversation_id     TEXT,
   conversation_seq    INTEGER,
   channel             TEXT,
+  channel_target_id   TEXT,
   channel_thread_id   TEXT,
   channel_message_id  INTEGER,
   reply_to_source_id  TEXT,
@@ -637,6 +638,7 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
       conversation_id     TEXT,
       conversation_seq    INTEGER,
       channel             TEXT,
+      channel_target_id   TEXT,
       channel_thread_id   TEXT,
       channel_message_id  INTEGER,
       reply_to_source_id  TEXT,
@@ -665,14 +667,14 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
     );
     INSERT INTO app_inbox_items (
       id, app_id, parent_id, conversation_id, conversation_seq, channel,
-      channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
+      channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
       input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
       available_at, review_at, lease_generation, lease_owner, lease_expires_at,
       origin_event_id, idempotency_key, created_at, updated_at, completed_at
     )
     SELECT
       id, app_id, parent_id, conversation_id, conversation_seq, channel,
-      channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
+      channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
       input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
       available_at, review_at, lease_generation, lease_owner, lease_expires_at,
       origin_event_id, idempotency_key, created_at, updated_at, completed_at
@@ -683,6 +685,7 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
 
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["channel", "TEXT"],
+  ["channel_target_id", "TEXT"],
   ["channel_thread_id", "TEXT"],
   ["channel_message_id", "INTEGER"],
   ["reply_to_source_id", "TEXT"],

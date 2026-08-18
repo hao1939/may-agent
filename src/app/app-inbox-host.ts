@@ -109,6 +109,7 @@ export type AdmitAppInput = {
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
+  channelTargetId?: string;
   channelThreadId?: string;
   channelMessageId?: number;
   replyToSourceId?: string;

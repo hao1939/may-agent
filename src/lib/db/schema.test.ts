@@ -43,6 +43,7 @@ describe("canonical database schema", () => {
       expect(inboxColumns.some(({ name }) => name === "lease_generation")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "available_at")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel")).toBe(true);
+      expect(inboxColumns.some(({ name }) => name === "channel_target_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel_thread_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "channel_message_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "reply_to_source_id")).toBe(true);
@@ -145,6 +146,7 @@ describe("canonical database schema", () => {
       expect(columns.map(({ name }) => name)).toEqual(
         expect.arrayContaining([
           "channel",
+          "channel_target_id",
           "channel_thread_id",
           "channel_message_id",
           "reply_to_source_id",

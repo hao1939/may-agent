@@ -29,6 +29,7 @@ describe("May Console", () => {
     mkdirSync(socketDir, { recursive: true });
 
     const frames: Array<Record<string, any>> = [];
+    const remoteConversationMessages: Array<Record<string, any>> = [];
     let completedWorkId: string | null = null;
     let client: Socket | null = null;
     let inputBuffer = "";
@@ -124,6 +125,7 @@ describe("May Console", () => {
                       text: "Earlier answer",
                       createdAt: 2,
                     },
+                    ...remoteConversationMessages,
                   ],
                   work,
                 },
@@ -262,7 +264,10 @@ describe("May Console", () => {
         target: { appId: "may" },
         data: {
           conversationId: "may:primary",
-          author: { kind: "human", id: expect.stringMatching(/^may-console:local-terminal:\d+$/) },
+          author: {
+            kind: "human",
+            id: expect.stringMatching(/^may-console:[0-9a-f-]{36}:\d+$/),
+          },
           text: "show me the result",
           metadata: { channel: "may-console", channelThreadId: "local-terminal" },
         },
@@ -357,9 +362,112 @@ describe("May Console", () => {
     await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 5);
     expect(frames.filter((frame) => frame.type === "subscribe")[4]?.sessions).toEqual([]);
 
+    remoteConversationMessages.push({
+      id: "telegram-human-1",
+      sequence: 3,
+      author: { kind: "human", id: "telegram:123:1" },
+      text: "Message sent from Telegram",
+      metadata: { channel: "telegram", requestId: "telegram-work-1" },
+      createdAt: 3,
+    });
+    client?.write(
+      `${JSON.stringify({
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      })}\n`,
+    );
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 7);
+    await waitFor(() => output.includes("\nyou[telegram]> Message sent from Telegram\n\n"));
+
+    remoteConversationMessages.push({
+      id: "may-console:another-process:4",
+      sequence: 4,
+      author: { kind: "human", id: "may-console:another-process:4" },
+      text: "Message sent from another Console",
+      metadata: { channel: "may-console", requestId: "console-work-1" },
+      createdAt: 4,
+    });
+    client?.write(
+      `${JSON.stringify({
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      })}\n`,
+    );
+    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 8);
+    await waitFor(() => output.includes("\nyou> Message sent from another Console\n\n"));
+
     child.stdin.write("/exit\n");
     await once(child, "exit");
   }, 10_000);
+
+  test("uses a distinct durable message identity for each Console process", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-identity-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    const clients = new Set<Socket>();
+    const humanIds: string[] = [];
+    const server: Server = createServer((socket) => {
+      clients.add(socket);
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      let buffer = "";
+      socket.on("data", (chunk) => {
+        buffer += chunk.toString();
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          if (frame.event?.type === "conversation.message.created" && frame.event?.data?.author?.kind === "human") {
+            humanIds.push(frame.event.data.author.id);
+          }
+          if (frame.type === "status") {
+            socket.write(`${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`);
+          } else if (frame.type === "app.conversation.get") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "app.conversation.get",
+                conversation: { id: "may:primary", owner: "may", version: 0, messages: [], work: [] },
+              })}\n`,
+            );
+          } else {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
+          }
+        }
+      });
+      socket.on("close", () => clients.delete(socket));
+    });
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const children = [0, 1].map(() =>
+      spawn("node", [consolePath], {
+        env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+        stdio: "pipe",
+      }),
+    );
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => clients.forEach((client) => client.destroy()));
+    cleanups.push(() => children.forEach((child) => child.kill("SIGKILL")));
+
+    await waitFor(() => clients.size === 2);
+    children[0]!.stdin.write("first process\n");
+    children[1]!.stdin.write("second process\n");
+    await waitFor(() => humanIds.length === 2);
+
+    expect(humanIds[0]).toMatch(/^may-console:[0-9a-f-]{36}:\d+$/);
+    expect(humanIds[1]).toMatch(/^may-console:[0-9a-f-]{36}:\d+$/);
+    expect(new Set(humanIds).size).toBe(2);
+  });
 
   test("exits cleanly when stdin closes", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-eof-"));

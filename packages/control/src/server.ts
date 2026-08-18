@@ -30,6 +30,7 @@ export interface AttachControlSocketOptions {
     conversationId?: string;
     conversationSequence?: number;
     channel?: string;
+    channelTargetId?: string;
     channelThreadId?: string;
     channelMessageId?: number;
     replyToSourceId?: string;
@@ -64,6 +65,7 @@ export interface ControlSocket {
 interface ClientState {
   socket: Duplex;
   filter: Set<string> | null;
+  conversations: Set<string>;
   chatMode: boolean;
   subscribed: boolean;
   deliveryChannel?: string;
@@ -127,6 +129,9 @@ function shouldForward(client: ClientState, event: ControlEvent): boolean {
   const data = eventPayload(event);
   if (event.type === "app.response.delivery.requested") {
     return typeof data.channel === "string" && client.deliveryChannel === data.channel;
+  }
+  if (event.type === "conversation.updated") {
+    return typeof data.conversationId === "string" && client.conversations.has(data.conversationId);
   }
   if (!client.filter) return true;
   if (typeof data.sessionId === "string") return client.filter.has(data.sessionId);
@@ -273,7 +278,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       socket.end();
       return;
     }
-    clients.set(socket, { socket, filter: null, chatMode: false, subscribed: false });
+    clients.set(socket, { socket, filter: null, conversations: new Set(), chatMode: false, subscribed: false });
     const removeClient = () => clients.delete(socket);
     socket.on("close", removeClient);
     socket.on("error", removeClient);
@@ -332,12 +337,15 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 
         if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = frame.sessions;
+          const conversations = frame.conversations;
           const deliveryChannel = frame.deliveryChannel;
           const client = clients.get(socket);
           if (
             client &&
             Array.isArray(sessions) &&
             sessions.every((session) => typeof session === "string") &&
+            (conversations === undefined ||
+              (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim()))) &&
             (deliveryChannel === undefined || (typeof deliveryChannel === "string" && deliveryChannel.trim()))
           ) {
             if (sessions.includes("*")) {
@@ -352,6 +360,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               client.chatMode = false;
             }
             client.deliveryChannel = typeof deliveryChannel === "string" ? deliveryChannel.trim() : undefined;
+            client.conversations = new Set(
+              Array.isArray(conversations) ? conversations.map((id) => String(id).trim()) : [],
+            );
             client.subscribed = true;
             writeFrame(socket, { type: "ok", command: "subscribe" });
           } else {
@@ -361,7 +372,11 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               message:
                 !Array.isArray(sessions) || !sessions.every((session) => typeof session === "string")
                   ? "sessions must be an array of strings"
-                  : "deliveryChannel must be a non-empty string",
+                  : conversations !== undefined &&
+                      (!Array.isArray(conversations) ||
+                        !conversations.every((id) => typeof id === "string" && id.trim()))
+                    ? "conversations must be an array of non-empty strings"
+                    : "deliveryChannel must be a non-empty string",
             });
           }
           continue;
@@ -490,6 +505,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
                 ? { conversationSequence: frame.conversationSequence }
                 : {}),
               ...(typeof frame.channel === "string" && frame.channel.trim() ? { channel: frame.channel.trim() } : {}),
+              ...(typeof frame.channelTargetId === "string" && frame.channelTargetId.trim()
+                ? { channelTargetId: frame.channelTargetId.trim() }
+                : {}),
               ...(typeof frame.channelThreadId === "string" && frame.channelThreadId.trim()
                 ? { channelThreadId: frame.channelThreadId.trim() }
                 : {}),
