@@ -3055,7 +3055,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       }
     }
     return undefined;
-  });
+  }, { label: "app-task-progress" });
 }
 
 function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
