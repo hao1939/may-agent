@@ -729,41 +729,53 @@ function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string,
   for (const key of [
     "type",
     "source",
+    "owner",
     "timestamp",
     "eventId",
+    "sessionId",
+    "agent",
+    "status",
+    "summary",
+    "outcome",
+    "error",
+    "workflowRunId",
+    "projectId",
     "project",
     "taskId",
     "task_id",
+    "childTaskId",
+    "parentTaskId",
     "runId",
     "pipelineRunId",
     "idempotencyKey",
     "target",
+    "trace",
+    "action",
+    "urgency",
   ]) {
     if (trigger[key] !== undefined) compact[key] = trigger[key];
+  }
+  if (trigger.data !== undefined && JSON.stringify(trigger.data).length <= 8_192) {
+    compact.data = trigger.data;
   }
   return compact;
 }
 
 function compactHistoricalAttemptTriggers(tree: TaskTree): void {
   const attempts = Object.values(tree.attempts ?? {});
-  const keepFull = new Set<string>();
   for (const attempt of attempts) {
-    if (attempt.state === "running") keepFull.add(attempt.metadata.id);
-  }
-  for (const resource of Object.values(tree.resources ?? {})) {
-    const latest = attempts
-      .filter(
-        (attempt) => attempt.taskId === resource.metadata.id && attempt.taskGeneration === resource.metadata.generation,
-      )
-      .sort(
-        (left, right) =>
-          right.startedAt.localeCompare(left.startedAt) || right.metadata.id.localeCompare(left.metadata.id),
-      )[0];
-    if (latest) keepFull.add(latest.metadata.id);
-  }
-  for (const attempt of attempts) {
-    if (!attempt.trigger || keepFull.has(attempt.metadata.id)) continue;
+    if (!attempt.trigger || attempt.state === "running") continue;
+    if (JSON.stringify(attempt.trigger).length <= 16_384) continue;
     attempt.trigger = compactAttemptTrigger(attempt.trigger);
+  }
+}
+
+function compactPendingTaskTriggers(tree: TaskTree): void {
+  for (const trigger of Object.values(tree.taskTriggers ?? {})) {
+    const eventId = Number(trigger.event?.eventId);
+    if (!Number.isInteger(eventId) || eventId <= 0) continue;
+    if (JSON.stringify(trigger.event).length <= 16_384) continue;
+    trigger.event = compactAttemptTrigger(trigger.event);
   }
 }
 
@@ -772,6 +784,7 @@ function canonicalTaskStateForWrite(tree: TaskTree): Record<string, unknown> {
   const canonical = state as unknown as TaskTree;
   compactHistoricalReceipts(canonical);
   compactHistoricalAttemptTriggers(canonical);
+  compactPendingTaskTriggers(canonical);
   delete state.tasks;
   delete state.active_task_id;
   delete state.active_task_ids;
