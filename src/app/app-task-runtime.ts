@@ -2354,7 +2354,10 @@ function installConventionTaskControllers(
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
     try {
-      refreshAppTaskTreeProjection(config);
+      // Every canonical state save refreshes this disposable projection. On
+      // startup, preserve a projection already newer than its source instead
+      // of parsing and serializing the entire historical task tree again.
+      refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
     } catch (error) {
       opts.bus.emit({
         type: "info",
@@ -3014,7 +3017,8 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
 async function commitAppTaskRuntimeDescriptors(
   opts: AppTaskRuntimeOptions,
   prepared: AppTaskRuntimeDescriptor[],
-): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
+  recovery: { includeFreshLeases: boolean },
+): Promise<{ installed: AppTaskRuntimeDescriptor[]; claimedSessionIds: Set<string> }> {
   const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
     const { id } = descriptor;
@@ -3041,24 +3045,32 @@ async function commitAppTaskRuntimeDescriptors(
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
   }
-  recoverInterruptedAppTasks(opts, installed, controllers);
+  const claimedSessionIds = recoverInterruptedAppTasks(
+    opts,
+    installed,
+    controllers,
+    recovery.includeFreshLeases,
+  );
   await requeueRepairedAppTaskHandlers(opts, installed, controllers);
 
-  return { installed };
+  return { installed, claimedSessionIds };
 }
 
 export async function installAppTaskRuntimes(
   opts: AppTaskRuntimeOptions,
-): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
+  recovery: { includeFreshLeases?: boolean } = {},
+): Promise<{ installed: AppTaskRuntimeDescriptor[]; claimedSessionIds: Set<string> }> {
   const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
   try {
-    const result = await commitAppTaskRuntimeDescriptors(opts, prepared);
+    const result = await commitAppTaskRuntimeDescriptors(opts, prepared, {
+      includeFreshLeases: recovery.includeFreshLeases === true,
+    });
     opts.afterCommit?.(result);
     return result;
   } catch (error) {
     try {
-      await commitAppTaskRuntimeDescriptors(opts, previous);
+      await commitAppTaskRuntimeDescriptors(opts, previous, { includeFreshLeases: false });
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],

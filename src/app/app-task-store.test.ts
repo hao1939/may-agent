@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -207,6 +207,30 @@ describe("project runtime state paths", () => {
       schema_version: 2,
       tasks: { work: { phase: "pending", outcome: "Do work" } },
     });
+  });
+
+  test("preserves a current disposable projection during startup refresh", async () => {
+    const appDir = await makeApp();
+    const paths = projectRuntimePaths(appDir);
+    await writeJson(paths.taskStatePath, {
+      project: "sample",
+      groups: {},
+      resources: {},
+    });
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: appDir,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "owner",
+      maxConcurrent: 1,
+    };
+    refreshAppTaskTreeProjection(config);
+    const before = statSync(paths.taskTreePath);
+
+    refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
+
+    expect(statSync(paths.taskTreePath).ino).toBe(before.ino);
   });
 
   test("writes structural groups to canonical state and full nodes to the generated tree", async () => {
