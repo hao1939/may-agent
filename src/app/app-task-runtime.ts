@@ -145,6 +145,8 @@ export interface AppTaskRuntimeOptions {
   appRegistrySnapshot?: AppRegistrySnapshot;
   /** Final synchronous publication step inside the atomic generation boundary. */
   afterCommit?: (result: { installed: AppTaskRuntimeDescriptor[] }) => void;
+  /** Do not execute queued App work until daemon startup has fenced sessions. */
+  startAfter?: PromiseLike<void>;
   /**
    * Called when an app-local agent used by the app is not yet registered.
    * The app brings its own agents; this callback registers one from its
@@ -2342,6 +2344,10 @@ function installConventionTaskControllers(
   const previousControllersDrained = previousControllers?.size
     ? Promise.all([...previousControllers.values()].map((controller) => controller.whenDrained())).then(() => undefined)
     : undefined;
+  const startAfter =
+    previousControllersDrained && opts.startAfter
+      ? Promise.all([previousControllersDrained, opts.startAfter]).then(() => undefined)
+      : (previousControllersDrained ?? opts.startAfter);
   const controllers = new Map<string, AppTaskController>();
 
   for (const descriptor of descriptors) {
@@ -2370,7 +2376,7 @@ function installConventionTaskControllers(
       // A superseded generation may still be finishing a reconcile that owns
       // the task-state lock. Queue the replacement immediately, but do not let
       // it claim work until every previous controller has drained.
-      startAfter: previousControllersDrained,
+      startAfter,
       maxRetries: 3,
       resync: {
         intervalMs: tasks.resyncIntervalMs ?? 60_000,
