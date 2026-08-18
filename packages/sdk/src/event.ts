@@ -27,6 +27,7 @@ export type EventSelector =
       type: string;
       target?: AppEventTarget;
       project?: string;
+      source?: string;
       owner?: string;
       urgency?: AppEvent["urgency"];
       actions?: string[];
@@ -60,6 +61,7 @@ export function matchesEventSelector(selector: EventSelector, event: AppEvent<Re
 
   const expectedProject = selector.target?.project ?? selector.project;
   if (expectedProject && selectedValue(event, "project", "projectId", "project_id") !== expectedProject) return false;
+  if (selector.source && event.source !== selector.source) return false;
   if (selector.target?.taskId && selectedValue(event, "taskId", "task_id") !== selector.target.taskId) return false;
   if (selector.target?.sessionId && selectedValue(event, "sessionId", "session_id") !== selector.target.sessionId) {
     return false;
