@@ -13,6 +13,8 @@ export type AppTaskControllerOptions = {
   startAfter?: PromiseLike<void>;
   resync?: {
     intervalMs: number;
+    /** Startup may seed the queue from an existing canonical-state pass. */
+    onStart?: boolean;
     taskIds?(): Iterable<string>;
     tasks?(): Iterable<{ taskId: string; options?: AppTaskQueueOptions }>;
   };
@@ -45,7 +47,7 @@ export class AppTaskController {
       }
       this.resyncTimer = setInterval(() => this.resyncConfiguredTasks(), options.resync.intervalMs);
       this.resyncTimer.unref?.();
-      if (this.startReady) this.resyncConfiguredTasks();
+      if (this.startReady && options.resync.onStart !== false) this.resyncConfiguredTasks();
     }
   }
 
@@ -166,7 +168,7 @@ export class AppTaskController {
 
   private releaseStartGate(): void {
     this.startReady = true;
-    if (this.options.resync) this.resyncConfiguredTasks();
+    if (this.options.resync?.onStart !== false) this.resyncConfiguredTasks();
     this.resolveDrainWaiters();
     this.schedulePump();
   }

@@ -35,6 +35,32 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("does not repeat an initial resync when startup already seeded the queue", async () => {
+    let openGate = () => {};
+    let resyncs = 0;
+    const startAfter = new Promise<void>((resolve) => {
+      openGate = resolve;
+    });
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      startAfter,
+      reconcile: async () => {},
+      resync: {
+        intervalMs: 10_000,
+        onStart: false,
+        tasks: () => {
+          resyncs += 1;
+          return [];
+        },
+      },
+    });
+
+    openGate();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(resyncs).toBe(0);
+    controller.close();
+  });
+
   it("runs deduplicated keys through one bounded worker pool", async () => {
     const started: string[] = [];
     const releases = new Map<string, () => void>();
