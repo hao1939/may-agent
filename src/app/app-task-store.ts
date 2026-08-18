@@ -19,6 +19,7 @@ import type {
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { writeAppTaskConditionRouteIndex } from "./app-task-condition-index.js";
 import { currentProcessInstance, isProcessInstanceAlive } from "../lib/process-identity.js";
 
 export type TaskNode = {
@@ -427,6 +428,7 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   const tempPath = `${config.statePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.statePath);
+  writeAppTaskConditionRouteIndex(config, tree);
 
   const projectionPath = runtimePaths.taskTreePath;
   const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;

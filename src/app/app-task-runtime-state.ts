@@ -8,6 +8,8 @@ export type ProjectRuntimePaths = {
   stateAppDir: string;
   stateDir: string;
   taskStatePath: string;
+  /** Disposable routing projection for task Conditions. */
+  taskConditionRoutesPath: string;
   /** Generated human/agent read projection. Never a mutation authority. */
   taskTreePath: string;
   projectStatePath: string;
@@ -89,6 +91,7 @@ export function projectRuntimePaths(appDir: string, canonicalProjectsRoot?: stri
     stateAppDir,
     stateDir,
     taskStatePath: join(taskStateDir, "state.json"),
+    taskConditionRoutesPath: join(taskStateDir, "condition-routes.json"),
     taskTreePath: join(taskStateDir, "tree.json"),
     projectStatePath: join(stateDir, "project-state.json"),
     journalPath: join(stateDir, "journal.jsonl"),
