@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { getDb } from "../lib/requests.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID } from "./event-bus.js";
-import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
+import {
+  attachMetricSourceMeasurement,
+  STALE_ACTIVE_SOURCE_QUERY,
+} from "./metric-source-measurement.js";
 
 describe("source-query metric measurement", () => {
   let persistDir: string;
@@ -83,7 +86,7 @@ describe("source-query metric measurement", () => {
         triggerEventId,
       ),
     ).toEqual({
-      accepted_by: "runtime:metric-source-query",
+      accepted_by: "runtime:metric-source-measurement",
       delivery_route: "direct",
     });
   });
@@ -107,5 +110,71 @@ describe("source-query metric measurement", () => {
     expect(db.prepare("SELECT current FROM metrics WHERE id = 'unsafe.metric'").get()).toEqual({
       current: null,
     });
+  });
+
+  it("records real source-command output and preserves its evidence", () => {
+    const db = getDb(persistDir);
+    const sampler = join(persistDir, "sample.ts");
+    writeFileSync(
+      sampler,
+      `console.log(JSON.stringify({ value: 7, sampleSize: 3, measuredAt: Date.now(), note: { source: "fixture" } }));\n`,
+    );
+    db.run(
+      `INSERT INTO metrics
+         (id, name, type, owner, current, threshold, priority, status, source_command, measure_interval, updated_at, alert_op)
+       VALUES ('command.metric', 'Command', 'gauge', 'may', 0, 5, 'P1', 'active', ?, 300000, 0, '>')`,
+      [`bun ${sampler}`],
+    );
+
+    bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      data: { reason: "source-command-golden-trace" },
+    });
+
+    expect(db.prepare("SELECT current FROM metrics WHERE id = 'command.metric'").get()).toEqual({
+      current: 7,
+    });
+    expect(
+      db
+        .prepare(
+          "SELECT value, sample_size, measured_by, note FROM metric_snapshots WHERE metric_id = 'command.metric' ORDER BY id DESC LIMIT 1",
+        )
+        .get(),
+    ).toEqual({
+      value: 7,
+      sample_size: 3,
+      measured_by: "runtime:metric-source-command",
+      note: JSON.stringify({ source: "fixture" }),
+    });
+  });
+
+  it("counts only cadence-bound metrics after their freshness allowance", () => {
+    const db = getDb(persistDir);
+    const now = Date.now();
+    const insertMetric = db.prepare(
+      `INSERT INTO metrics
+         (id, name, type, owner, status, source_query, source_command, measure_interval, updated_at)
+       VALUES (?, ?, 'gauge', 'may', ?, ?, ?, ?, 0)`,
+    );
+    const insertSnapshot = db.prepare(
+      "INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, 1, ?, 'fixture')",
+    );
+
+    insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
+    insertSnapshot.run("query.fresh", now - 60_000);
+    insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);
+    insertSnapshot.run("command.stale", now - 16 * 60_000);
+    insertMetric.run("push.long-fresh", "long fresh", "active", null, null, 3_600_000);
+    insertSnapshot.run("push.long-fresh", now - 30 * 60_000);
+    insertMetric.run("push.long-stale", "long stale", "active", null, null, 3_600_000);
+    insertSnapshot.run("push.long-stale", now - 121 * 60_000);
+    insertMetric.run("legacy.no-cadence", "legacy", "active", null, null, null);
+    insertSnapshot.run("legacy.no-cadence", now - 24 * 60 * 60_000);
+    insertMetric.run("retired.stale", "retired", "retired", null, null, 300_000);
+    insertSnapshot.run("retired.stale", now - 24 * 60 * 60_000);
+
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toEqual({ value: 2 });
   });
 });
