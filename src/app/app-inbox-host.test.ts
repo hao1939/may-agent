@@ -561,8 +561,6 @@ describe("App inbox host", () => {
       appId: "may",
       source: { kind: "human", id: "console:1" },
       input: { kind: "probe", data: { value: "/reload" } },
-      conversationId: "may:primary",
-      conversationSequence: 1,
       channel: "may-console",
     });
     const original = claimAppInboxItem(db, "original-work", "old-owner", 1_000, 200)!;
@@ -601,6 +599,14 @@ describe("App inbox host", () => {
       expect.objectContaining({ requestId: "original-work", state: "done" }),
     ]);
     const conversation = readAppConversationResource(db, "may", "may:primary", { allWork: true });
+    expect(conversation.work).toEqual([
+      expect.objectContaining({
+        requestId: "original-work",
+        result: expect.objectContaining({
+          response: "I closed the stale reload request instead of leaving it waiting.",
+        }),
+      }),
+    ]);
     expect(conversation.messages.map((message) => message.text)).toEqual([
       "I closed the stale reload request instead of leaving it waiting.",
     ]);
