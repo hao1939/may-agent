@@ -295,6 +295,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   id                  TEXT PRIMARY KEY,
   app_id              TEXT NOT NULL,
   parent_id           TEXT,
+  continues_request_id TEXT,
   conversation_id     TEXT,
   conversation_seq    INTEGER,
   channel             TEXT,
@@ -333,6 +334,8 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_waiting
   ON app_inbox_items(waiting_on_kind, waiting_on_id, status);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_parent
   ON app_inbox_items(parent_id);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_continues
+  ON app_inbox_items(continues_request_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
   ON app_inbox_items(origin_event_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
@@ -637,6 +640,7 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
       id                  TEXT PRIMARY KEY,
       app_id              TEXT NOT NULL,
       parent_id           TEXT,
+      continues_request_id TEXT,
       conversation_id     TEXT,
       conversation_seq    INTEGER,
       channel             TEXT,
@@ -670,14 +674,14 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
       CHECK (waiting_on_kind IS NULL OR waiting_on_kind IN ('app', 'task', 'session', 'analysis'))
     );
     INSERT INTO app_inbox_items (
-      id, app_id, parent_id, conversation_id, conversation_seq, channel,
+      id, app_id, parent_id, continues_request_id, conversation_id, conversation_seq, channel,
       channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
       input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
       available_at, review_at, lease_generation, lease_owner, lease_expires_at,
       origin_event_id, idempotency_key, created_at, started_at, changed_at, updated_at, completed_at
     )
     SELECT
-      id, app_id, parent_id, conversation_id, conversation_seq, channel,
+      id, app_id, parent_id, NULL, conversation_id, conversation_seq, channel,
       channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
       input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
       available_at, review_at, lease_generation, lease_owner, lease_expires_at,
@@ -688,6 +692,7 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
 }
 
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
+  ["continues_request_id", "TEXT"],
   ["channel", "TEXT"],
   ["channel_target_id", "TEXT"],
   ["channel_thread_id", "TEXT"],

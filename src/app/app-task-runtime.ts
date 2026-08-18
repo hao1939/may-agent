@@ -1769,6 +1769,7 @@ async function reconcileTask(input: {
       route: "task-controller",
       ...skip,
     });
+    if (primary.kind === "attention") emitAppTaskDependencyUpdated(opts, descriptor, input.taskId);
     return [];
   }
   for (const sessionId of primary.supersededSessionIds ?? []) {
@@ -2119,6 +2120,7 @@ async function reconcileTask(input: {
             : "handler-blocked",
     wakeParent: !ownerHandoff,
   });
+  if (attention.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
   if (!ownerHandoff) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
@@ -2577,6 +2579,19 @@ function emitAppTaskDependencyCompleted(
 ): void {
   opts.bus.emit({
     type: "app.dependency.completed",
+    source: `app-task:${descriptor.id}:task-reconciler`,
+    owner: `agent:${descriptor.owner}`,
+    data: { kind: "task", id: taskId },
+  });
+}
+
+function emitAppTaskDependencyUpdated(
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
+  taskId: string,
+): void {
+  opts.bus.emit({
+    type: "app.dependency.updated",
     source: `app-task:${descriptor.id}:task-reconciler`,
     owner: `agent:${descriptor.owner}`,
     data: { kind: "task", id: taskId },

@@ -5,7 +5,9 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import {
   associateAppInboxClaimSession,
   claimAppInboxItem,
+  listAppWork,
   listAppInboxDeliveries,
+  readAppConversationResource,
   waitAppInboxClaim,
 } from "./app-inbox-store.js";
 import {
@@ -519,6 +521,90 @@ describe("App inbox host", () => {
       sessionId: "session-human-1",
       result: { summary: "done", response: "Hello" },
     });
+  });
+
+  it("applies human feedback to represented work in the same May owner turn", async () => {
+    let ownerCalls = 0;
+    const host = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      now: () => 200,
+      invokeOwner: async ({ requests, onSessionStarted }) => {
+        ownerCalls += 1;
+        onSessionStarted("session-feedback");
+        expect(requests).toHaveLength(1);
+        expect(requests[0]?.conversation?.work).toEqual([
+          expect.objectContaining({
+            requestId: "original-work",
+            state: "waiting",
+            dependency: { kind: "request", id: "old-child" },
+          }),
+        ]);
+        return [
+          {
+            requestId: requests[0]!.id,
+            disposition: {
+              type: "continue",
+              requestId: "original-work",
+              disposition: {
+                type: "complete",
+                summary: "Reload no longer needs to wait",
+                response: "I closed the stale reload request instead of leaving it waiting.",
+              },
+            },
+          },
+        ];
+      },
+    });
+    host.admit({
+      id: "original-work",
+      appId: "may",
+      source: { kind: "human", id: "console:1" },
+      input: { kind: "probe", data: { value: "/reload" } },
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "may-console",
+    });
+    const original = claimAppInboxItem(db, "original-work", "old-owner", 1_000, 200)!;
+    expect(waitAppInboxClaim(db, original, { kind: "app", id: "old-child" }, { now: 200 })).toBe(true);
+    host.admit({
+      id: "feedback-turn",
+      appId: "may",
+      source: { kind: "human", id: "console:2" },
+      input: { kind: "probe", data: { value: "work 1 should not still be waiting" } },
+      conversationId: "may:primary",
+      conversationSequence: 2,
+      channel: "may-console",
+    });
+
+    expect(await host.reconcileOnce("may")).toEqual({
+      claimed: 1,
+      admitted: 1,
+      released: 0,
+      errors: [],
+      conversationIds: ["may:primary"],
+    });
+    expect(ownerCalls).toBe(1);
+    expect(host.get("original-work")).toMatchObject({
+      status: "done",
+      result: {
+        summary: "Reload no longer needs to wait",
+        response: "I closed the stale reload request instead of leaving it waiting.",
+      },
+    });
+    expect(host.get("feedback-turn")).toMatchObject({
+      status: "done",
+      continuesRequestId: "original-work",
+      result: { summary: "Continued request original-work" },
+    });
+    expect(listAppWork(db, "may", { all: true })).toEqual([
+      expect.objectContaining({ requestId: "original-work", state: "done" }),
+    ]);
+    const conversation = readAppConversationResource(db, "may", "may:primary", { allWork: true });
+    expect(conversation.messages.map((message) => message.text)).toEqual([
+      "I closed the stale reload request instead of leaving it waiting.",
+    ]);
+    expect(conversation.messages.some((message) => message.text.includes("Continued request"))).toBe(false);
   });
 
   it("releases the whole batch when the owner result is not usable", async () => {
@@ -1085,6 +1171,44 @@ describe("App inbox host", () => {
       wokenAppIds: ["may"],
       errors: [],
     });
+  });
+
+  it("re-observes task attention after restart instead of leaving the request waiting", async () => {
+    const first = new AppInboxHost({
+      db,
+      apps: [app("evaluation", "single", true)],
+      now: () => 100,
+      attachTask: async () => ({ taskId: "task-needs-review" }),
+      invokeOwner: async ({ requests }) =>
+        requests.map((request) => ({
+          requestId: request.id,
+          disposition: {
+            type: "task" as const,
+            task: { kind: "existing" as const, taskId: "task-needs-review" },
+          },
+        })),
+    });
+    admit(first, "evaluation", "waiting-task-request");
+    expect(await first.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
+
+    const recovered = new AppInboxHost({
+      db,
+      apps: [app("evaluation", "single", true)],
+      now: () => 200,
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: "attention",
+        summary: "Resolved owner is not runnable",
+      }),
+      invokeOwner: async () => [],
+    });
+    expect(await recovered.recoverTaskDependencies()).toEqual({
+      linked: 0,
+      woken: 1,
+      wokenAppIds: ["evaluation"],
+      errors: [],
+    });
+    expect(recovered.get("waiting-task-request")).toMatchObject({ availableAt: 200 });
   });
 
   it("renews claims while an owner invocation is still running", async () => {

@@ -370,6 +370,70 @@ describe("control socket protocol", () => {
     });
   });
 
+  it("normalizes stale May reload input before it can become conversation work", async () => {
+    const published: unknown[] = [];
+    const core = createCore({
+      admitAppInput: () => {
+        throw new Error("reload must not enter the May inbox");
+      },
+      publishEvent: (event) => {
+        published.push(event);
+        return { eventId: 73, eventType: event.type, delivery: "accepted" };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.input.admit",
+        appId: "may",
+        input: { kind: "message", data: { message: "/reload" } },
+        source: { kind: "human", id: "stale-console:1" },
+        conversationId: "may:primary",
+        idempotencyKey: "stale-console:1",
+      }),
+    ).resolves.toMatchObject({ eventId: 73, eventType: "runtime.reload.requested" });
+    expect(published).toEqual([
+      {
+        type: "runtime.reload.requested",
+        data: { reason: "human control command" },
+        idempotencyKey: "stale-console:1",
+      },
+    ]);
+  });
+
+  it("normalizes a published human reload command before persistence", async () => {
+    const published: unknown[] = [];
+    const core = createCore({
+      publishEvent: (event) => {
+        published.push(event);
+        return { eventId: 74, eventType: event.type, delivery: "accepted" };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "publish",
+        event: {
+          type: "conversation.message.created",
+          target: { appId: "may" },
+          data: {
+            conversationId: "may:primary",
+            author: { kind: "human", id: "stale-console:2" },
+            text: "/reload",
+          },
+          idempotencyKey: "stale-console:2",
+        },
+      }),
+    ).resolves.toMatchObject({ eventId: 74, eventType: "runtime.reload.requested" });
+    expect(published).toEqual([
+      {
+        type: "runtime.reload.requested",
+        data: { reason: "human control command" },
+        idempotencyKey: "stale-console:2",
+      },
+    ]);
+  });
+
   it("reads a derived App conversation without emitting an event", async () => {
     const conversation = {
       id: "may:primary",
