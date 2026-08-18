@@ -746,7 +746,7 @@ The trace should make review concrete:
 |----------|--------------|
 | Did the event reach its declared route? | Event delivery records show the selected App inbox/task/exact-wake/observation disposition. |
 | Did May receive the human reply? | A human `conversation.message.created` exists with its reply/context anchor and linked May request. |
-| Did May close the human-attention request? | The exact May App child has a correlated result and terminal delivery evidence. |
+| Did May close the human-attention request? | The exact May App child has a correlated persisted result; adapter delivery is a separate operational edge. |
 | Did the source consume the result? | Its dependency is completed and the exact parent App request/task resumed. |
 | Did the LLM/tool fail? | Detail nodes show missing or failed `tool.call.completed`. |
 

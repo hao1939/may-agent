@@ -4,6 +4,24 @@ Start with [README.md](README.md) for task-oriented reading paths. This index
 lists every current design/manual and routes historical material to the
 archive.
 
+## Which document owns the answer?
+
+| Question | Authority |
+| --- | --- |
+| What is the whole mental model? | [system-model.md](2a-design/system-model.md) |
+| Where does runtime code compose? | [architecture.md](2a-design/architecture.md) |
+| Is this Host or App responsibility? | [system-boundary.md](2a-design/system-boundary.md) |
+| Is this a request, task, or fact? | [work-model.md](1-principles/work-model.md) |
+| How does an App declare behavior? | [agent-app.md](2a-design/agent-app.md) |
+| How are desired-state tasks reconciled? | [task-resource-engine.md](2a-design/task-resource-engine.md) |
+| How does admitted input/fact routing work? | [events.md](2a-design/events.md) |
+| How do humans share context across adapters? | [human-control-surfaces.md](2a-design/human-control-surfaces.md) |
+| How does a particular subsystem behave? | Its Tier 2a subsystem document |
+| How do I perform an operation? | The corresponding Tier 2b manual |
+
+Do not restate a subsystem contract in a whole-system document. Link to its
+owning document and keep implementation details there.
+
 ## Tier 1 — Principles
 
 | Document                                              | Purpose                                                |
@@ -51,7 +69,7 @@ archive.
 
 | Document                                                         | Purpose                                              |
 | ---------------------------------------------------------------- | ---------------------------------------------------- |
-| [events.md](2a-design/events.md)                                 | Event envelope, delivery, and ownership.             |
+| [events.md](2a-design/events.md)                                 | Event admission, routing, and acceptance.             |
 | [event-graph.md](2a-design/event-graph.md)                       | Causality, closure, and delivery read model.         |
 | [cron.md](2a-design/cron.md)                                     | Time-based event production.                         |
 | [heartbeat.md](2a-design/heartbeat.md)                           | Owner heartbeat workflows and loaders.               |
@@ -68,7 +86,7 @@ archive.
 | [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console intent contract. |
 | [http-boundary.md](2a-design/http-boundary.md)                   | HTTP adapter boundary.                                  |
 | [message-lifecycle.md](2a-design/message-lifecycle.md)           | Open-to-resolved message ownership and recovery.        |
-| [telegram-notifications.md](2a-design/telegram-notifications.md) | Telegram delivery and interaction contract.             |
+| [telegram-notifications.md](2a-design/telegram-notifications.md) | Telegram Conversation adapter and transport contract.   |
 | [webui.md](2a-design/webui.md)                                   | Web UI surfaces and steering.                           |
 | [may-console.md](2a-design/may-console.md)                       | Terminal REPL over the daemon socket.                   |
 | [web-terminal.md](2a-design/web-terminal.md)                     | Browser terminal transport and ownership.               |
@@ -93,7 +111,18 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
-There are no active proposals or trackers.
+There are no active proposals or trackers. The three reviewed drafts were
+resolved as follows:
+
+- service composition: accepted only as explicit typed Host-internal
+  composition; the public service-loader/service-locator proposal was rejected;
+- work admission: accepted with responsibility-based request/task/fact and
+  bounded-attempt rules; source-based routes and rigid thresholds were rejected;
+- Herdr terminal: the retained custom xterm/gateway proposal was rejected in
+  favor of full-window ttyd attached directly to Herdr.
+
+The decision records and current authorities are indexed under
+[archive/](archive/README.md).
 
 Completed proposals do not remain in the active proposal folder.
 

@@ -25,6 +25,7 @@ contracts; Tier-2 design governs when wording conflicts.
 | [task-reconciliation-simplification-and-integrity.md](decisions/task-reconciliation-simplification-and-integrity.md) | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
 | [task-workspace-convention.md](decisions/task-workspace-convention.md)                                               | [Task Resource Engine](../2a-design/task-resource-engine.md) and [Projects](../2a-design/projects.md)   |
 | [simple-event-interface.md](decisions/simple-event-interface.md)                                                     | [Events](../2a-design/events.md), [Runtime](../2a-design/runtime.md), and [HTTP Boundary](../2a-design/http-boundary.md) |
+| [herdr-backed-web-terminal.md](decisions/herdr-backed-web-terminal.md)                                               | [Web Terminal](../2a-design/web-terminal.md)                                                                          |
 
 ## Reviews
 

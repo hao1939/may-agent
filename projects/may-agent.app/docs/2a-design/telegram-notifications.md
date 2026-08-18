@@ -20,8 +20,8 @@ human Telegram message
   -> one fenced May App request
   -> direct answer or typed child App delegation
   -> May review
-  -> correlated delivery operation
-  -> delivered / failed / uncertain
+  -> persisted result in Conversation
+  -> Telegram independently renders unseen messages
 ```
 
 The May App inbox item owns the human request. The Conversation provides shared
@@ -80,9 +80,10 @@ publishes one human `conversation.message.created` event for
 `may` App. Provider redelivery returns the same event/request receipt and cannot
 create another May item.
 
-The admission receipt means only “validated and durably admitted.” Telegram
-must not display or record semantic completion until the May request and
-required delivery operation reach their terminal states.
+The admission receipt means only “validated and durably admitted.” May's
+persisted result completes semantic work and enters Conversation. Telegram may
+render that result when it observes the Conversation update; its transport
+state does not change the request result.
 
 ## Reply Context
 
@@ -124,7 +125,7 @@ A session is replaceable execution context. If its original session is gone:
 
 ```text
 unfinished May request
-  -> recover exact request/dependency/delivery state
+  -> recover exact request, dependency, and Conversation state
   -> prepare a fresh bounded May session
   -> continue the same request
 ```
@@ -158,8 +159,9 @@ typed child request to the `may` App containing:
 - stable semantic correlation key; and
 - the source resume condition.
 
-May may deduplicate, clarify, reject, defer under explicit policy, or deliver.
-Only a delivered May response creates a human-facing Telegram notification.
+May may deduplicate, clarify, reject, defer under explicit policy, or respond.
+Telegram creates a human-facing notification by rendering the persisted
+Conversation response.
 The source App/task waits on the exact May child result or an exact human
 Condition; it never waits on a notification event.
 
@@ -168,10 +170,11 @@ read-only evidence. They do not own new attention work or resume sessions.
 
 ## Outbound Delivery
 
-The host stages one delivery operation linked to the originating May request:
+The adapter may stage one delivery operation linked to the originating
+Conversation message:
 
 ```text
-May response
+persisted Conversation message
   -> durable delivery operation
   -> Telegram send attempt
   -> delivered / failed / uncertain
@@ -181,15 +184,16 @@ Keep semantic result and transport certainty separate:
 
 | State | Meaning |
 | --- | --- |
-| May result ready | The response content is terminal |
+| May result ready | Semantic work is terminal and the content is readable from any adapter |
 | Delivery pending | No provider attempt has reached a terminal policy state |
 | Delivered | Provider evidence confirms the message |
 | Failed | Retry policy may safely continue or the failure is terminal |
 | Uncertain | The send may have succeeded; blind retry could duplicate it |
 
-A response-required May request closes only after its delivery policy is
-terminal. For an uncertain send, inspect provider/channel state or request
-operator judgment while preserving the same operation ID.
+Delivery state is operational adapter state. It never reopens, delays, or
+changes the May result. For an uncertain send, inspect provider/channel state
+or request operator judgment while preserving the same operation ID; do not
+blindly duplicate it.
 
 ## Reply Target
 
@@ -220,10 +224,10 @@ Explicit Telegram commands may map to deterministic typed controls such as:
 
 The adapter validates the exact target and records the control result. A
 human-requested read result that may shape the next turn is appended as a
-command-authored Conversation message after Telegram confirms delivery; it
-creates no work. Bare cancel never expands to cancel-all. Ordinary language
-still enters Conversation admission rather than a command-specific ownership
-path.
+command-authored Conversation message only after Telegram has actually shown
+it; it creates no work. Bare cancel never expands to cancel-all. Ordinary
+language still enters Conversation admission rather than a command-specific
+ownership path.
 
 ## Secrets And Presentation
 
@@ -272,7 +276,7 @@ Telegram integration tests prove:
 - transient presentation creates neither context nor work;
 - reply anchors add context while each inbound message keeps its own request;
 - ambiguous references clarify instead of guessing;
-- direct answers close only after terminal delivery evidence;
+- persisted direct answers close semantic work without delivery evidence;
 - delegated child completion wakes and resumes the exact May parent;
 - restart during May handling or delivery preserves identity;
 - original session loss creates a fresh session for the same request;
@@ -280,8 +284,8 @@ Telegram integration tests prove:
 - uncertain sends do not duplicate blindly;
 - explicit controls target exact identities; and
 - secrets never enter prompts, facts, traces, or outbound diagnostics;
-- confirmed output is readable from Console; and
-- restart reconstructs the same Conversation projection.
+- persisted output is readable from Console even if Telegram delivery fails;
+- restart reconstructs the same Conversation projection; and
 - a new Console message is rendered once in Telegram without another
   Conversation append or May request.
 
@@ -289,7 +293,7 @@ Telegram integration tests prove:
 
 - Telegram and Console share one `Conversation may:primary`.
 - One durable human message has at most one May App request.
-- One response attempt has one delivery operation.
+- One adapter response attempt has at most one delivery operation.
 - Telegram identity is delivery/context evidence, not Conversation or work authority.
 - May owns conversation and final wording; domain Apps own project outcomes.
 - Cross-App/human attention uses durable parent-child request dependencies.

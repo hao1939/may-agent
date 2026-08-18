@@ -133,7 +133,8 @@ unfinished stored request or task
 ```
 
 Recovery cannot invent a new task, owner, strategy, or completion claim.
-Paused Apps continue to store new work but do not start task attempts.
+Apps with paused task reconciliation continue to store new work but do not
+start task attempts.
 
 ## Public boundary
 

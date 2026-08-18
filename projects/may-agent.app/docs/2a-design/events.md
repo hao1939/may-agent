@@ -179,13 +179,16 @@ opening event pairs:
 
 ```text
 May request -> child App request -> optional task -> child result
-            -> May review -> delivery operation -> receipt -> May completion
+            -> May review -> persisted result -> May completion
+                                      -> Conversation update
+                                      -> adapters render independently
 ```
 
 An App parent waits on the exact child App, task, or session identity. A task
-waits on exact Conditions. A human response waits on its channel delivery
-operation. Events provide causal evidence and wakes along those relationships;
-they do not recreate the relationships as opener/closer pairs.
+waits on exact Conditions. A persisted May result completes the semantic
+request and enters Conversation; channel adapters may render it independently.
+Events provide causal evidence and wakes along those relationships; they do
+not recreate the relationships as opener/closer pairs.
 
 Escalation is an explicit cross-owner request linked to its source App request
 or task. Its resolution wakes that source obligation. Metric alert state remains
@@ -203,24 +206,26 @@ conversation.message.created target.appId=may
   -> linked May inbox request
   -> direct result or child App dependency
   -> May result review
-  -> channel delivery operation
-  -> delivery receipt
   -> May request done
+  -> persisted Conversation result
+  -> Console and Telegram independently observe and render
 ```
 
 The Conversation is a bounded read model reconstructed from messages, admitted
-requests, dependencies, and confirmed delivery. It is not another database or
+requests, dependencies, and persisted results. It is not another database or
 work owner. Each admitted human turn has its own request identity. Reply anchors
 and channel coordinates add context; they do not decide which unfinished
-request owns the response.
+request owns the response. Adapter delivery attempts and receipts are
+operational evidence only and never gate Conversation content or May work.
 
 `conversation.updated` is an internal record-only resource notification emitted
 after the Conversation projection can durably expose a new message. Adapters
 watch it and re-read the resource. It carries no content, cannot create work,
 and may be coalesced.
 
-Direct typed runtime controls may bypass owner judgment, but their result and
-delivery remain linked to the originating May request.
+Direct typed runtime controls may bypass owner judgment. If their rendered
+result should inform later conversation, the adapter appends it as a command
+message only after the human actually saw it.
 
 ## Core event vocabulary
 
@@ -299,7 +304,8 @@ Retention protects:
 - events referenced by unfinished App requests, task triggers, Conditions, or
   delivery operations;
 - retained trace parents and closure links;
-- human roots/results whose delivery evidence is still required; and
+- human roots/results still referenced by Conversation or adapter operations;
+  and
 - explicit audit holds.
 
 After referential protection, old event detail may be pruned. Long-term truth

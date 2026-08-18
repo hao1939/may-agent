@@ -148,20 +148,23 @@ not expected to own every asynchronous attempt:
 conversation.message.created (target.appId=may, author.kind=human)
   -> exact May App inbox item/source reference
     -> bounded owner attempt and optional child App/task dependency
-      -> App result and correlated channel delivery operation
+      -> persisted App result and Conversation message
+        -> independent channel rendering attempt
 ```
 
 Also check that each May App request has one human intent, that bookkeeping
-acceptance does not hide a missing App disposition, and that generated human
-output has a correlated transport delivery. Trace identity supplies causality
-inside and between observed attempts; the inbox, dependency, and delivery IDs
-supply eventual-handling authority across restarts. Direct-agent
+acceptance does not hide a missing App disposition, and that its persisted
+result is readable from Conversation regardless of transport state. Trace
+identity supplies causality inside and between observed attempts; inbox and
+dependency IDs supply eventual-handling authority across restarts. Delivery
+IDs diagnose adapter attempts only. Direct-agent
 persistent-chat turns, if used, must have distinct traces unless reply context
 links them.
 
 For Conversation reads, also verify that non-human semantic messages create no
-May request, transient messages do not replay, and only confirmed delivery is
-projected as seen human output.
+May request and transient messages do not replay. A command/tool view is
+appended as seen human context only after the adapter actually rendered it;
+May results require no delivery receipt to enter Conversation.
 
 Trace tests should cover new May requests, later/corrective requests, approval,
 cancellation, App delegation and delivery, failure, and recovery. Compatibility
@@ -178,8 +181,8 @@ Treat these as follow-up tasks:
   correlation key, or explicit exception.
 - A closed pair has no persisted closure link or its opener/closer traces differ.
 - A persistent chat session reuses one trace for unrelated human turns.
-- A human semantic intent has no child work/disposition or its result has no
-  channel-delivery projection.
+- A human semantic intent has no disposition or its persisted result is absent
+  from Conversation.
 - A targeted domain event is accepted only by lifecycle bookkeeping rather
   than durable admission or a bounded internal handler.
 - A handler subscribes to a legacy or shortcut event when a canonical event

@@ -1,7 +1,7 @@
 # Practice Learning Loop
 
-**Design status:** Draft; evidence and ownership boundaries are accepted, while
-candidate decision and later-validation UX remains under refinement.
+**Design status:** Accepted. Candidate decisions remain append-only evidence,
+while implementation work stays in the owning App/project.
 **Implementation status:** Partial; evaluation trails, owner findings, and an
 append-only candidate log exist. Applying, validating, promoting, and retiring
 changes remain owner decisions.

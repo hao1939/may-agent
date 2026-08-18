@@ -191,8 +191,8 @@ the wrapped disposition in the current owner attempt. This capability is not a
 general inbox mutation API and is unavailable to project Apps.
 
 Returning `null` asks the owner for one bounded judgment. An inbox item remains
-the authority while it waits on a child App, task, session, or delivery. It is
-not replaced by an event pair or by a copied task record.
+the authority while it waits on a child App, task, or session. It is not
+replaced by an event pair, delivery operation, or copied task record.
 
 A dependency wake means “re-read and decide,” not only success. Completion,
 failure, interruption, task attention, and a missing formerly linked task all
@@ -307,9 +307,10 @@ observer interpretation, workflows, and domain metrics. Apps never receive raw
 SQL, unrestricted task storage, global runtime paths, scheduler handles, or
 recovery APIs.
 
-When `project_lifecycle` is paused, the host installs no schedules, observers,
-task routing, controller, recovery, or resync for that App. Pause and resume
-remain explicit control operations, not conclusions inferred from open work.
+When task reconciliation is paused, the Host admits input and keeps schedules,
+observers, and declared event routes active, but starts no new task attempts.
+Durable task intent and wakes accumulate for resume. Pause and resume remain
+explicit control operations, not conclusions inferred from open work.
 
 ## Reliability convention
 

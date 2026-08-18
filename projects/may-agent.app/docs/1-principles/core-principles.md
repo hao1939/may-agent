@@ -1,213 +1,134 @@
-# Core Architecture Principles
+# Core Principles
 
-Read this first. These principles govern every design decision in the system. Individual design docs elaborate on each — this doc is the **why** that holds them together.
+**Design status:** Accepted.
 
----
+These principles explain why the current design looks the way it does. Start
+with [system-model.md](../2a-design/system-model.md) for the concrete mental
+model.
 
-## 1. Reactive work is event-driven
+## 1. Apps own meaning; the Host owns mechanics
 
-When something happens that another owner, handler, session, or human can react
-to — metric breaches, project changes, session completion, agent findings —
-emit an event. Facts that nobody reacts to belong in state, logs, metrics, or
-knowledge, not as decorative events.
+An App decides what an input means, what outcome it owns, and whether one
+bounded attempt completed that outcome. The Host validates and admits input,
+persists state, schedules attempts, limits concurrency, recovers after restart,
+and exposes observations.
 
-The EventBus is the central nervous system. Commands go in, observations come out. Components subscribe and react.
+Do not put domain policy in queues, adapters, sessions, or storage code. Do not
+make App code manage leases, retries, delivery bookkeeping, or database rows.
 
-**Elaborated in:** [events.md](../2a-design/events.md)
+## 2. Events carry input and facts
 
-## 2. Everything has an owner — owner is the backstop, not the first responder
+An event is the small interface for something that happened. A declared route
+may turn it into an independently correlated App request, revise or wake a
+task, or merely observe it. A record-only fact is still valid when nobody needs
+to act.
 
-Every metric, handler, project, and event has an owner. The owner's role is
-**accountability**, not first-line handling. Events route by target first, then
-fall back through ownership:
+Required input is accepted only by its explicit route. There is no generic
+owner fallback for an unknown target or unhandled fact.
 
-```
-Event fires
-  -> Targeted handler/session/project path exists? -> fire that target
-  -> Target missing or cannot consume it?          -> owner picks it up
-  -> Owner cannot resolve it?                      -> escalate up the chain
-```
+See [events.md](../2a-design/events.md).
 
-Owner means: if this falls on the floor, it's your problem. Owners don't do all the work — they guarantee nothing is orphaned.
+## 3. Durable work has an explicit owner
 
-This event-delivery fallback is not task-handler substitution. If a task
-explicitly binds a workflow, an unavailable workflow moves the task to
-attention. Only the workflow's explicit `needs-owner` result hands that task to
-its owner.
+An App inbox item owns one independently correlated result. A task optionally
+owns desired-state identity that must converge across bounded attempts. A
+session, workflow, event, metric, queue entry, or delivery receipt never
+becomes a second work lifecycle.
 
-Agents exist as **accountability boundaries**. We don't have multiple agents because we need multiple workers — any LLM can do anything. We have separate agents because we need distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
+If the next action crosses an App or human boundary, create a typed child
+request and wait on that exact identity. Escalation is an explicit handoff, not
+a routing fallback.
 
-**Elaborated in:** [system-model.md](../2a-design/system-model.md), [metrics.md](../2a-design/metrics.md)
-
-## 3. Events must be consumed
-
-No actionable event fires into the void. A targeted consumer accepts it or the
-accountable owner's inbox keeps it visible. If the next required action crosses
-an ownership boundary, the current owner creates an explicit escalation to the
-receiving agent or human role. Closed loop means the signal receives a typed
-disposition; it does not mean every event starts an agent session.
-
-**Elaborated in:** [projects.md](../2a-design/projects.md), [escalation.md](../2a-design/escalation.md)
+See [work-model.md](work-model.md) and
+[agent-app.md](../2a-design/agent-app.md).
 
 ## 4. Context is discovered, not dumped
 
-System prompt = just enough to START discovering. Agents get:
+Prompts contain enough identity, request state, and pointers to begin. Agents
+discover project history, skills, knowledge, metrics, and design details when
+needed. Continuity lives in durable App/project/task state and session
+evidence, not an ever-growing default prompt.
 
-- **AGENTS.md** — who you are
-- **common-sense.md** — how to think, where things are
-- **Tools** — what you can do
-- **Runtime** — paths, workspace
+See [sessions.md](../2a-design/sessions.md) and
+[skills.md](../2a-design/skills.md).
 
-Everything else — skills, knowledge, project history, metrics, design docs — is on-demand. Agents read what they need, guided by the conventions table in common-sense.md.
+## 5. Match the mechanism to the responsibility
 
-This is deliberately minimal. Dumping context produces agents that skim. Discovery produces agents that understand.
+First decide what is owned:
 
-Continuity across sessions comes from project/task state, owned knowledge,
-session evidence, and standalone heartbeat context where applicable—not from
-dumping memory into every prompt.
-
-**Elaborated in:** [sessions.md](../2a-design/sessions.md), [heartbeat.md](../2a-design/heartbeat.md)
-
-## 5. Evidence before systems
-
-```
-Hypothesis -> minimal test -> A/B -> honest results -> deploy or abandon
+```text
+one independently correlated result            -> App inbox item
+desired state across repeated bounded attempts -> task
+changed or observed state                       -> fact
 ```
 
-No multi-layer architecture before the base case is proven. No 20KB design brief before any experiment. If the simplest test shows no difference, say so — don't rationalize.
+Then decide how one bounded attempt runs:
 
-The context-learning project is the canonical case study: built infrastructure first, tested, found zero improvement on derivable knowledge, pivoted to environmental knowledge, found consistent improvement, deployed.
+| Need | Smallest suitable mechanism |
+| --- | --- |
+| Deterministic calculation or adapter | TypeScript helper |
+| Context-dependent judgment | Agent, optionally guided by a skill |
+| Stable ordering, branching, limits, or verification | Workflow |
+| Mechanical detection | Observer, guard, or metric |
 
-**Elaborated in:** [evidence-first.md](evidence-first.md)
+Asynchrony, restart survival, importance, or frequency alone do not require a
+task or workflow.
 
-## 6. Match structure to the cause
+## 6. Evidence before complexity
 
-Novel judgment belongs to an agent. Reusable guidance belongs in a skill.
-Workflow structure is justified when evidence shows that a repeatable sequence,
-branch, retry, or verification step is being lost or reordered.
+Use the smallest mechanism that can test the hypothesis. Add structure only
+when evidence identifies a repeated failure that the structure prevents.
+Known safety-critical protocols may justify structure immediately; otherwise
+prefer a bounded direct attempt before inventing a framework.
 
-| Problem type                           | Right mechanism            | Avoid                                  |
-| -------------------------------------- | -------------------------- | -------------------------------------- |
-| Novel or ambiguous judgment            | Direct owner/agent session | Premature workflow encoding            |
-| Reusable situational method            | Skill                      | Permanent prompt dumping               |
-| Repeated ordering/verification failure | Workflow                   | Reminder text alone                    |
-| Environmental fact                     | Owned context/knowledge    | Hard-coded environment assumptions     |
-| Mechanical check                       | Code or calibrated guard   | Model judgment for deterministic facts |
+See [evidence-first.md](evidence-first.md),
+[code-vs-data.md](code-vs-data.md), and [evolution.md](evolution.md).
 
-Guards are mechanical detectors first. A guard trigger should emit an event or
-risk signal; warning, repair, escalation, and blocking are intervention modes.
-Use hard blocking only for high-confidence, high-impact risks. Owned context is
-for facts that change with the environment. Workflows preserve learned
-processes; they are not mandatory wrappers around every judgment.
+## 7. Metrics are observations, not decisions
 
-**Elaborated in:** [code-vs-data.md](code-vs-data.md), [evolution.md](evolution.md)
+Metrics expose health, progress, and blind spots. A breach is evidence for the
+owning App to interpret, not automatic proof of failure or permission to
+mutate work. Pair activity measures with outcome evidence where useful, and
+retire metrics whose meaning is weak.
 
-## 7. Metrics are signals, not targets
+See [metrics.md](../2a-design/metrics.md).
 
-> "When a measure becomes a target, it ceases to be a good measure." — Goodhart's Law
+## 8. Human interfaces share the Conversation
 
-Metrics inform decisions; they don't make them. A regression is a signal to investigate. No metric is the sole input to any decision. Agents combine metric data with their own judgment, context, and expertise.
+Console and Telegram append to and render the same Conversation resource.
+May's persisted result completes semantic work and becomes conversation
+content. Each adapter chooses an appropriate presentation and independently
+tracks transport attempts; adapter delivery never gates or rewrites the work.
 
-If an agent's output quality drops while their metric improves, the metric is being gamed. The system should catch this — May watches for the pattern.
+See [human-control-surfaces.md](../2a-design/human-control-surfaces.md).
 
-**Elaborated in:** [metrics.md](../2a-design/metrics.md)
+## 9. Prefer explicit declarations with useful conventions
 
-## 8. Supervision is async and decoupled
+Conventions reduce repetition and make ownership easy to find. Executable
+behavior still has an explicit, typed, validated declaration: one `app.ts`, one
+`defineApp`, and one atomic App generation. Do not add a second loader,
+service locator, or implicit route merely to avoid a small declaration.
 
-Agents work independently. May reviews asynchronously. Intervention is the exception.
+## 10. Debug from evidence
 
-- **Agent-scope** (own workspace, own config, knowledge) — proceed freely
-- **System-scope** (shared guards/docs, other agents' config, cross-agent protocols) — flag for review
+When behavior is wrong, inspect the complete causal path:
 
-Agents don't need to know they're being supervised. The gatekeeper pattern requires zero code — it's a behavioral convention that May follows during her normal observation cycle.
+1. the request and context the model saw;
+2. authoritative App, task, and session state;
+3. runtime admission, scheduling, concurrency, and recovery evidence; and
+4. external provider or transport evidence.
 
-**Elaborated in:** [agents.md](../2a-design/agents.md)
+Fix the layer that violated its contract. Prompt problems are common, but so
+are stale state, incorrect scheduling, resource pressure, and adapter faults.
+Do not assume either the model or infrastructure is guilty before checking.
 
-## 9. Convention over configuration
+## Review rule
 
-When behavior can be derived from a naming convention, don't build configuration for it.
+A change fits these principles when the answer to each question is clear:
 
-- Metric `coach.skill-effectiveness` conventionally suggests coach ownership;
-  an explicit registry entry validates the operational definition.
-- Event `metric.breach` with `owner: "agent:coach"` → coach is accountable. No lookup needed.
-- File under `agents/bob/` (skills/, knowledge/, workspace/) → bob owns it. No mapping needed.
-- App schedule under `scout-knowledge-lib.app` → that app owns the review route.
-
-(Project ownership is explicit in `project.json`; directory names identify the
-app, not the accountable agent.)
-
-Conventions are self-documenting, zero-maintenance, and enforce consistency. Configuration is a liability — it drifts, requires code to read, and creates a single point of failure.
-
-**Corollary:** Don't invent new conventions when existing ones work. File locations are fixed (see common-sense.md conventions table). Naming follows `<domain>.<action>` for events and metrics. Project status fields use the same vocabulary everywhere: `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed`. Check if a convention already covers your need before creating anything.
-
-**Elaborated in:** common-sense.md Conventions section
-
-## 10. Simple first, always
-
-Try the simplest approach. If it works, stop.
-
-- One handler before a framework
-- One metric before a dashboard
-- One experiment before a pipeline
-- context.md before a guard
-- One bounded session/fork before a workflow when no enforced sequence is needed
-
-Complexity is justified only when simplicity has been tried and failed with evidence.
-
-## 11. Debug the message, not the model
-
-When an agent behaves unexpectedly, the cause is almost always **something misleading in what the LLM received** — not a broken model or flawed logic. LLMs respond to their input faithfully; wrong output means wrong input.
-
-The misleading content could be anywhere in the API call:
-
-- System prompt (stale AGENTS.md, contradictory conventions)
-- User message (ambiguous task description, wrong context)
-- Tool output (unexpected format, error messages treated as instructions)
-- Injected docs (outdated knowledge, irrelevant context confusing the task)
-
-**Debug order:**
-
-1. Read the full session transcript — what did the LLM actually see?
-2. Find the misleading content that caused the wrong behavior
-3. Fix the source (the doc, the prompt builder, the tool output)
-4. Only after ruling out input issues: consider workflow or infra changes
-
-Most "agent bugs" are input bugs.
-
----
-
-## How They Connect
-
-These principles aren't independent. They form a system:
-
-```
-Something happens                           (Principle 1: event)
-  -> Targeted consumer handles it           (Principle 2: target-first routing)
-  -> If target cannot consume, owner picks it up (Principle 3: closed loop)
-  -> Consumer discovers context it needs    (Principle 4: on-demand context)
-  -> Acts based on evidence                 (Principle 5: evidence first)
-  -> Uses structure for judgment calls      (Principle 6: structure > instructions)
-  -> Checks metrics as signals              (Principle 7: Goodhart guardrail)
-  -> May reviews async if system-scope      (Principle 8: decoupled supervision)
-  -> Follows conventions, not configuration  (Principle 9: convention)
-  -> Starts simple                          (Principle 10: simplicity)
-  -> Debugs input, not model                (Principle 11: debug the message)
-```
-
-## Known Tensions
-
-These principles sometimes pull in opposite directions. The tensions are managed, not eliminated.
-
-| Tension                                                  | Resolution                                                                                                                                                                 |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Event-driven (P1) vs timer-based review                  | Timers are event sources. Events are persisted with mutable delivery bookkeeping; domain state remains in its owning entity.                                               |
-| Owner accountability (P2) vs May reviews everything (P8) | May supervises system-scope. Domain owners handle domain events. May is the fallback owner for unowned things, not the primary handler for everything.                     |
-| Metrics drive work (P7) vs don't chase numbers (P7)      | Metric events wake the accountable owner, who combines the measurement with project/context evidence.                                                                      |
-| Evidence first (P5) vs we need to ship (pragmatism)      | Evidence-first applies to system changes and new mechanisms. Known patterns (add a handler, create a metric) can proceed directly. Don't A/B test adding a database index. |
-| Simple first (P10) vs structure beats instructions (P6)  | Start with the smallest mechanism matching the cause. Knowledge, workflows, guards, tools, and handlers are choices, not one mandatory ladder.                             |
-
-## Relationship to common-sense.md
-
-common-sense.md is what agents see every session. It distills these principles into actionable thinking patterns: "Context first", "Evidence first", "Own it", "Event-driven", "Metric-oriented", "Simple first", "Convention over configuration."
-
-This doc is the architectural source of truth. common-sense.md is the agent-facing summary. If they conflict, update common-sense.md to match this doc.
+- Which App owns the meaning and terminal result?
+- Is this a request, desired-state task, or fact?
+- What is one bounded attempt, and why is its mechanism necessary?
+- Which state is authoritative?
+- Which Host mechanic preserves and advances it?
+- What evidence proves completion or explains lack of progress?

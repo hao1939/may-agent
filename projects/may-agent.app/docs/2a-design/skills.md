@@ -2,7 +2,7 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for scoped discovery, bounded catalogs,
-explicit/model activation, delegation, new-session reload snapshots, and trace
+explicit/model/rule activation, delegation, new-session reload snapshots, and trace
 evidence. In-place catalog refresh for existing persistent chats and
 effectiveness evaluation by content hash remain follow-up work.
 
@@ -13,7 +13,7 @@ method without making that method part of its permanent identity.
 
 Skills are context resources, not work records:
 
-- an event represents a durable signal or commitment;
+- an event carries admitted input or a fact;
 - a session performs bounded or conversational work;
 - a workflow enforces repeatable orchestration;
 - a guard observes or intervenes on mechanical risk;
@@ -25,11 +25,10 @@ remain the work and closure identities.
 
 ## Skill And Workflow Boundary
 
-Skills and workflows share a resource architecture, not execution semantics.
-Both should have scoped ownership, names, descriptions, provenance,
-precedence, compact catalogs, validation, content hashes, reload behavior,
-trace evidence, and evaluation. The shared resource envelope is defined in
-[`workflows.md`](workflows.md#shared-capability-resource-contract).
+Skills and workflows share a few authoring conventions, not an execution
+architecture. Both have scoped ownership, names, descriptions, validation,
+reload behavior, and trace evidence. Their loaders and controllers remain
+separate.
 
 Their controllers remain different:
 
@@ -37,7 +36,7 @@ Their controllers remain different:
 |---|---|---|
 | Primary source | `SKILL.md` instructions | TypeScript module |
 | Controller | Model judgment | Workflow runtime |
-| Unit of use | One model turn | Durable workflow run |
+| Unit of use | One model turn | One bounded workflow attempt |
 | Sequencing | Advisory | Enforced by code |
 | Closure | Enclosing session/work | Workflow terminal result |
 
@@ -267,7 +266,7 @@ type SkillLoadedData = {
   name: string;
   agent: string;
   sessionId: string;
-  activation: "explicit" | "model";
+  activation: "explicit" | "model" | "rule";
   scope: "app-agent" | "agent" | "shared";
   filePath: string;
   contentHash: string;
@@ -361,7 +360,7 @@ agent runtime and must not create another work lifecycle.
 - Agent and shared name collisions resolve deterministically.
 - Reload never mutates a running turn; new sessions receive the new catalog.
 - `skill.loaded` shares the enclosing turn trace and creates no lifecycle pair.
-- Existing terminal and delivery evidence remain the only turn closure.
+- Existing session terminal evidence remains the only turn closure.
 - Skill scripts use TypeScript/JavaScript and Bun unless an existing required
   tool has no maintained equivalent.
 - Tests cover discovery, precedence, prompt budget, explicit invocation, and

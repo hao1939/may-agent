@@ -34,7 +34,8 @@ resolved, downgraded, excepted, or escalated.
 
 A `metric.alert_judged` event means the owner made a judgment. It is not proof
 that the alert is closed. Closure still needs a concrete operation and a later
-validation signal, usually the next `metrics-snapshot` and `metric.recovered`.
+measurement followed by `MetricService.evaluate()`, which emits
+`metric.recovered` when the rule is healthy again.
 
 ## Priority
 
@@ -93,9 +94,9 @@ The operation is not complete until the owner has actually made the change or
 started the workflow that can make it. Saying that someone should act later is
 not a fix.
 
-Do not manually resolve the alert before the metric recovers. The next
-`metrics-snapshot` run is a validation signal; the owner agent remains
-responsible for judging whether the issue is actually fixed.
+Do not manually resolve the alert before the metric recovers. The App observer
+or workflow that owns the measurement must record fresh evidence and evaluate
+it; the owner remains responsible for judging whether the issue is fixed.
 
 ### 3. Calibrate Metric
 

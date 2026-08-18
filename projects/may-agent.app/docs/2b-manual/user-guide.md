@@ -222,23 +222,23 @@ echo '{"type":"fork","agent":"dev","task":"fix the test"}' | socat - UNIX-CONNEC
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Manually fire a trigger entry through the control shortcut.
-# Domain lifecycle docs should use canonical event names, not trigger.*.
-may-agent --emit trigger.metrics-snapshot '{}'
+# Manually fire a configured trigger entry through the control shortcut.
+# Replace <entry-name> with an entry declared by the running App generation.
+may-agent --emit 'trigger.<entry-name>' '{}'
 
 # Emit to the background container/runtime instance
-DAEMON_INSTANCE=background may-agent --emit trigger.metrics-snapshot '{}'
+DAEMON_INSTANCE=background may-agent --emit 'trigger.<entry-name>' '{}'
 
 # If the daemon runs inside Docker and the host cannot connect to the Unix
 # socket namespace, execute the same control command inside the container.
-docker exec may-agent may-agent --emit trigger.metrics-snapshot '{}'
+docker exec may-agent may-agent --emit 'trigger.<entry-name>' '{}'
 
 # Send a compatibility agent notification through the running daemon.
 # This does not create durable App work.
 DAEMON_INSTANCE=background may-agent --send scout --message "review your active project"
 
 # From a source checkout
-bun src/app/may.ts --emit trigger.metrics-snapshot '{}'
+bun src/app/may.ts --emit 'trigger.<entry-name>' '{}'
 ```
 
 See [runtime.md](../2a-design/runtime.md) for socket protocol details.
@@ -249,7 +249,7 @@ You usually interact with events through features, not through the event schema:
 
 | Scenario | What to do |
 | --- | --- |
-| Manually rerun a cron job | Emit `trigger.<entry-name>` as an operator shortcut, for example `trigger.metrics-snapshot` |
+| Manually rerun a configured trigger | Emit `trigger.<entry-name>` as an operator shortcut after verifying that entry exists |
 | Publish a changed domain fact | Emit the semantic fact; its App/task route or observation status must already be declared |
 | React when a session ends | Use an internal projection or declared App/task subscription; a session event does not own follow-up work |
 | React when a metric breaches | Use a declared App/task subscription or host-internal health route; never generic owner fallback |

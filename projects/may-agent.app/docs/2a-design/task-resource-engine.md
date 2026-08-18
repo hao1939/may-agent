@@ -1,355 +1,124 @@
 # Task Resource Engine
 
 **Design status:** Accepted.
-**Implementation status:** Core reconciliation implemented; pending-event
-outbox, exact escalation continuation, and full pressure/drain guarantees
-remain partial.
+**Implementation status:** Core reconciliation, generation fencing, Conditions,
+parent/child work, recovery, and bounded concurrency are implemented. Pending
+event dispatch and some pressure/drain guarantees remain partial.
 
-The task resource engine is the optional autonomy attachment for durable app
-work. It follows the Kubernetes pattern: an app declares desired state, one
-generic controller reconciles observed state toward it, and the task tree is a
-read model rather than a scheduler.
+The task engine is an optional Host attachment for Apps that own desired state
+across repeated bounded attempts. Read [agent-app.md](agent-app.md) first.
 
-See [Agent App Contract](agent-app.md) for the app boundary and the historical
-[App Task Reconciliation Model](../archive/decisions/app-task-reconciliation-model.md)
-for the decision rationale.
+## When a task is appropriate
+
+Use an App inbox item when the App owes one independently correlated result.
+Attach a task only when an outcome needs stable desired-state identity for one
+or more of these reasons:
+
+- repeated reconciliation against current evidence;
+- several inputs revise or wake the same outcome;
+- an exact external Condition must be observed later;
+- independently tracked decomposition or dependencies are needed; or
+- the outcome is maintained over time.
+
+Asynchrony, audit, importance, and restart survival alone do not require a
+task. The inbox already persists a request across restart. Facts with no owned
+result or desired-state change remain facts.
 
 ## Mental model
 
 ```text
-app resolver or admitted task action
-  -> declare desired task spec
-  -> enqueue stable task ID
-
-accepted targeted wake
-  -> persist trigger for an existing task
-  -> enqueue stable task ID
-
-Condition observation
-  -> atomically persist Condition status and task trigger
-  -> enqueue stable task ID
-
-delivery resync
-  -> enqueue runnable task IDs only
-
-worker
-  -> re-read and atomically claim the current canonical task by ID
-  -> invoke its workflow or resolved owner
-  -> validate and atomically apply one result
+App policy declares or revises TaskIntent
+  -> Host persists canonical task state
+  -> queue receives (appId, taskId)
+  -> worker rereads and claims the current generation
+  -> one owner or workflow performs one bounded attempt
+  -> Host validates and atomically applies one result
+  -> task converges, waits on exact evidence, or becomes visible attention
 ```
 
-The queue carries task IDs, never copied specs. A stale queue reader therefore
-cannot restore older desired state. Delivery resync repairs missed task work;
-it does not invent a trigger, rewrite a spec, poll a domain source, or schedule
-work from the tree projection.
+Observers publish facts. The Condition tracker may update exact Condition
+state and wake its task. A periodic resync only redelivers known runnable task
+IDs; it never invents desired state, polls external systems, or reads the task
+tree as a queue.
 
-The compact rule is:
-
-> Apps organize work. Agents decide. Workflows repeat learned processes. The
-> controller enforces mechanics. Conditions represent external facts. Read
-> models explain canonical state.
-
-An awakened resource remains hot until it reaches a stable level. Stable means
-that its outcome is satisfied, it is waiting on a live direct child or exact
-external Condition, or it has entered visible attention. It never means that
-the app emitted another internal tick. Bounded attempts may end, but the
-resource loop continues through the same queue and task identity.
-
-## When to attach a task resource
-
-A task is desired-state identity across bounded attempts, not a generic
-durability wrapper. Attach one when an App owns an outcome that requires
-repeated reconciliation, stable desired-state identity revised or woken by
-multiple triggers, exact Conditions, independently tracked decomposition, an
-outcome that other work or operators must address, revise, wake, or depend on
-by stable identity, or a standing condition maintained over time.
-
-Do not create a task merely because work is asynchronous, auditable, or must
-survive restart. The App inbox already provides durable correlation and may
-complete directly, delegate to one child App request, or remain the correlated
-parent of an attached task. Observers produce facts only; they never complete
-inbox or task work.
-
-The forcing question is whether the App owes a distinct correlated result or
-owns desired state that must converge. The first remains an inbox obligation;
-the second deserves task identity. One request may attach to one task when both
-responsibilities exist. A changed fact with neither responsibility remains a
-fact and may satisfy a Condition or refresh existing work without creating a
-new work record.
-
-## Keyed runtime contract
-
-The execution key is `(appId, taskId)`. The controller serializes one current
-attempt for that key while allowing unrelated keys to run concurrently. Every
-wake follows the same path:
-
-```text
-persist event or task change
-  -> correlate to stable task key
-  -> enqueue key as an in-memory hint
-  -> reread and claim current generation
-  -> run one bounded workflow or owner attempt
-  -> admit result and pending event intents atomically
-  -> dispatch events or wait on Conditions
-```
-
-The persisted task, trigger, and Condition state make a queue hint recoverable;
-the queue itself does not become another authority. Delivery is therefore
-at-least-once around restart boundaries. Duplicate wakes are expected and
-deduplicated by key, while stale claims and results are rejected by generation,
-resource version, and attempt identity.
-
-A high-rate event stream must not create one task resource per observation when
-the real desired state is a current frontier. Reduce those events to one compact
-wake for a standing `maintain` task, keep the event or domain store as the
-source of truth, and reconcile a bounded ordered batch or one item plus a
-continuation wake. Use per-item `achieve` tasks only when each item is
-independently assigned, reviewed, depended on, or explicitly requested. This
-keeps task state from becoming a second event archive.
-
-An unresolved trigger that arrives during a current attempt remains durable,
-but delivery resync must not enqueue that key again until the current attempt
-ends. The completion path then replays the trigger. This preserves the wake
-without creating an active-attempt reconciliation loop.
+The queue is an in-memory hint. The persisted task, trigger, Condition, and
+attempt state are sufficient to recover it.
 
 ## Authority
 
-| Surface                   | Authority                                                                                                                          |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `.state/tasks/state.json` | Sole mutable authority for task resources, Conditions, attempts, triggers, receipts, pending event intents, and structural groups. |
-| `.state/tasks/tree.json`  | Generated disposable projection for people, agents, UI, and queries.                                                               |
-| `tasks/seed.json`         | Boot-only desired state for a new app.                                                                                             |
-| `project.json`            | Authored app/project configuration.                                                                                                |
-| HTTP, UI, and query views | Derived read models.                                                                                                               |
+| Surface | Role |
+| --- | --- |
+| `.state/tasks/state.json` | Sole mutable authority for tasks, Conditions, attempts, triggers, receipts, and pending event intents |
+| `.state/tasks/tree.json` | Disposable human/UI projection |
+| `tasks/seed.json` | Initial desired state for a new App |
+| `project.json` | Authored project configuration, never rewritten by task operations |
 
-The runtime never restores canonical state from `tree.json`, and generic task
-operations never rewrite `project.json`. Read models may be regenerated at any
-time.
+`tree.json` may be regenerated and must never restore canonical state. Task
+state retains the bounded detail needed for reconciliation and recovery;
+long-term domain evidence belongs in projects, reports, knowledge, session
+evidence, or other owned artifacts.
 
-### Generated task projection
+## Task identity and state
 
-`tree.json` explains current work; it is not a copy of canonical history. Its
-stable content is intentionally small:
+The stable execution key is `(appId, taskId)`. A task contains:
 
-- projected structural groups and live tasks;
-- each task's current summary, evidence, attempt count, and active attempt;
-- current Conditions;
-- active task IDs; and
-- satisfaction facts only for dependencies referenced by live tasks.
+- `metadata.id`, `generation`, and `resourceVersion`;
+- `spec` describing the outcome, mode, owner or workflow, inputs, outputs,
+  dependencies, parent, priority, and acceptance; and
+- `status` describing observed generation, phase, summary, evidence, current
+  attempt, and linked Conditions.
 
-Full live resources and the bounded recent history needed for recovery remain
-in canonical state and are omitted from the projection. Completed identities
-remain durable, but old receipt detail and terminal trigger payloads may be
-compacted after they leave every live recovery/context window. Compaction keeps
-the task identity, generation, spec hash, parent, completion time, summary, and
-a hash of omitted detail. The append-only task journal and referenced evidence
-remain the audit surfaces; `state.json` must not grow as the permanent archive.
-Consumers that need recovery or audit history must read the appropriate
-canonical, journal, evidence, or trace surface, not infer it from `tree.json`.
+`generation` advances only when execution-relevant desired state changes.
+`resourceVersion` advances on any task-resource mutation. Results are admitted
+only when the task ID, generation, resource version/claim, and attempt still
+match. A stale result applies no mutation.
 
-The default storage limits are mechanical and app-independent:
+There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
+App policy validates which actions may revise a task; the generic engine uses
+one admission path for all task IDs.
 
-- keep full detail for the newest 32 completion receipts under each parent;
-- compact older receipt acceptance, evidence, acceptance basis evidence, and
-  workspace lineage into a SHA-256 digest while retaining completion identity,
-  ownership, outcome, summary, and dependency lineage;
-- keep at most 1,000 attempts, except that running attempts are never removed;
-  prune the oldest terminal attempts first; and
-- keep full triggers only for running attempts and the latest recovery-relevant
-  attempt of each live generation; compact older trigger payloads to identity
-  fields plus a SHA-256 digest.
+## Controller
 
-These limits protect controller recovery, not domain history. An app that needs
-long-term evidence must write it to its session, workflow, pipeline, or domain
-store and reference it from the task result.
+An App with tasks has one logical controller and one deduplicating key queue.
+An App without tasks has neither. The controller may:
 
-## Task resource
+- deduplicate and prioritize task keys;
+- derive readiness from dependencies and exact Conditions;
+- claim at most one current attempt per key;
+- resolve the declared owner and optional workflow;
+- validate and apply one result/action batch atomically;
+- reject stale results; and
+- repair bounded delivery and execution state after restart.
 
-Each executable task has:
+It must not interpret task prose, choose project strategy, infer external truth
+from time, contain App-specific policy, or use `tree.json` as a scheduler.
 
-- `metadata.id`: stable identity;
-- `metadata.generation`: execution-relevant desired-state revision;
-- `metadata.resourceVersion`: revision of that task resource;
-- `spec`: outcome, acceptance, mode, owner/workflow binding, input, outputs,
-  dependencies, containment, priority, and category; and
-- `status`: observed generation, phase, summary, evidence, current attempt,
-  and linked Condition IDs.
+Global and per-App capacity limits allow unrelated keys to run concurrently
+while serializing each key. Durable excess work stays pending. A bounded urgent
+FIFO lane favors exact wakes and continuations without starving older ordinary
+work; elapsed time never promotes work into explicitly critical `P0`.
 
-Task identity does not encode a second specification authority. Both a pure
-App resolver observation and an admitted owner action may declare or revise
-the same task through the reconciler. The state lock, `expectedGeneration`,
-current-attempt fence, and atomic action admission serialize those changes. A
-later resolver observation may deliberately reassert current App policy; it
-does not restore state from a parallel store.
+## Selecting the attempt handler
 
-There is no `managedBy` field, manager-transfer lifecycle, or authority meaning
-attached to an ID prefix such as `runtime/`. Apps that need a narrower domain
-mutation rule enforce it through their pure `validateAction` policy. The
-generic reconciler applies the same admission rules to every task identity.
-
-Attempts, triggers, Conditions, receipts, and pending event intents are
-separate durable records.
-Event IDs, timestamps, handler summaries, and current observations are runtime
-state; they never become desired task fields.
-
-## One controller per attached app
-
-An app that declares tasks gets one logical level-based controller and one
-deduplicating key queue. An app without tasks gets neither. Multiple loops,
-focus plans, or one-off tasks are ordinary resources in that same controller;
-they do not create controller types or schedulers.
-
-The controller may:
-
-- deduplicate task IDs;
-- check dependencies and exact Conditions;
-- resolve the accountable owner and optional workflow;
-- claim at most one current attempt for a task generation;
-- validate handler results and task actions;
-- reject stale results;
-- apply state transitions and pending event intents atomically; and
-- perform bounded delivery and attempt recovery.
-
-It must not:
-
-- interpret task prose;
-- decide project strategy, decomposition, or priority;
-- contain AKS-, Scout-, Gym-, Evaluation-, or May-specific policy;
-- infer external truth from time or Condition age; or
-- scan the tree projection as a scheduling queue.
-
-Cron owns time. Watchers own external observation. The controller owns task
-mechanics.
-
-## Cross-app adoption
-
-The pattern is adopted one app at a time, from the smallest operational risk to
-the largest:
-
-1. `scout-knowledge-lib.app`
-2. `gym.app`
-3. `evaluation.app`
-4. `may-agent.app`
-5. `aks-rp-e2e.app`
-
-Adoption status (2026-08-04):
-
-- `scout-knowledge-lib.app` is structurally aligned. Credential observations
-  are level-triggered and repeated unchanged observations do not wake work.
-- `gym.app` is structurally aligned. Its remaining cleanup is to reduce
-  deterministic per-evaluation intake to one standing frontier while keeping
-  independently reviewable proposals as tasks.
-- `evaluation.app` is aligned. Automatic session aftermath now uses one
-  standing, sequential frontier; explicit session requests still receive an
-  independently auditable task.
-- `may-agent.app` is structurally aligned. Its ops observer still needs to
-  suppress unchanged signal-family wakes to stay within its session budget.
-- `aks-rp-e2e.app` is structurally aligned, but its live state shows excessive
-  historical receipts, old waits, duplicate failure carriers, and five-minute
-  master-validation churn. Those are app-policy cleanup, not new controller
-  concepts.
-
-An aligned app may still contain a current task in `attention`. That is a
-visible owner decision state, not a scheduling mechanism. Alignment requires
-that a later matching event can reclaim the same resource and that the app does
-not invent a recovery tree around it.
-
-An app moves to the next stage only after all of these are true:
-
-- each recurring responsibility resolves to one stable `maintain` resource;
-- finite work resolves to an `achieve` resource with a semantic identity;
-- timers and domain observations wake the affected resource instead of scanning
-  the task tree;
-- the app has no `project.task.reconciled` scheduling or recovery handler;
-- Conditions represent external facts, while child transitions and retries are
-  left to the shared controller;
-- source tests pass and current live state proves the same behavior; and
-- any old live resources are closed or explicitly classified as migration
-  residue before the app is considered aligned.
-
-The conformance boundary is behavioral, not a required task-tree shape. Each
-app may choose flat tasks, executable parents, groups, dependencies, parallel
-children, direct owners, or learned workflows. The shared requirements are:
-
-- every runnable task is eventually represented by its stable key in the app
-  queue;
-- a waiting task has an exact external Condition or a live direct child;
-- child creation and parent waiting are admitted atomically;
-- child convergence or attention durably wakes an executable parent;
-- schedules and watchers wake tasks but never decide their completion; and
-- `project.task.reconciled` may update a read projection, but may not emit
-  refill, replay, or recovery work.
-
-The order is a migration rule, not runtime coordination. Apps remain independent
-resources and continue reconciling normally while later apps are migrated.
-
-## Handler resolution
-
-Ownership resolves by convention:
+Owner resolution is:
 
 ```text
-task.owner
-  ?? nearest explicit ancestor owner
-  ?? app.owner
+task.owner ?? nearest explicit ancestor owner ?? app.owner
 ```
 
-The resolved owner must be a runnable agent. An unresolved owner moves the task
-to `attention` before an attempt is claimed.
+An unresolved or unrunnable owner moves the task to `attention`. If the task
+names a workflow, that exact workflow is the selected handler. An unavailable,
+failed, timed-out, or invalid workflow does not silently fall back to the
+owner.
 
-If `task.workflow` is present, the runtime resolves that workflow under the
-resolved agent. The workflow is reusable experience delegated by that owner.
-Without a workflow, the owner handles the task directly.
+A workflow may explicitly return `needs-owner` after exhausting its bounded,
+safe moves. That creates at most one sequential owner attempt for the same
+task. Cross-owner work is a typed App delegation/escalation, not
+`needs-owner`.
 
-An explicit workflow binding is the selected execution method for that task
-generation. An unavailable workflow records `HandlerUnavailable` and moves the
-task to `attention`; it is not replaced by direct owner execution. A successful
-app reload enqueues the task once after the named workflow resolves again.
+## Result contract
 
-An owner or workflow execution that ends without a valid handler decision
-records `HandlerExecutionFailed`. It remains in `attention` until fresh
-structured runtime evidence proves that the same owner can execute again, such
-as a later successful session for that owner. The controller then requeues the
-same task generation once. It does not inspect provider error prose, assume
-that time alone repaired the runtime, or apply this recovery to a completed but
-invalid/rejected handler decision.
-
-A workflow may return `needs-owner` explicitly. This is the only automatic
-workflow-to-owner handoff, and it creates at most one sequential owner attempt.
-That same-task continuation enters the controller's bounded front lane instead
-of waiting behind the whole runnable backlog. Existing front-lane fairness still
-admits ordinary older work after a short burst.
-Missing, blocked, thrown, timed-out, and invalid workflows do not imply
-handoff.
-
-The same bounded front lane applies when an exact task Condition becomes true.
-The observed fact is the continuation of that waiting task, not unrelated new
-work; delaying it behind the full backlog would turn a correct wait into a
-dead-looking task.
-
-A wake changes readiness and queue position; it does not erase the task's
-declared priority. Event, Condition, recovery, resync, and same-task handoff
-entries all carry the current effective task priority into the controller, so
-a `P0` continuation is not silently reduced to the queue's default priority
-while lower-priority wakes drain first.
-
-`P0` is reserved for work explicitly declared critical. Persistent queue
-fairness may age older `P2`/`P3` work toward `P1`, and bounded front-lane and
-ordinary-lane fairness still admit lower-priority work, but elapsed time alone
-must not promote a task into `P0`. Otherwise a large stale wait backlog can
-erase the critical-work boundary and indefinitely delay fresh live-result or
-recovery work that the project explicitly marked `P0`.
-
-`needs-owner` is an exception to a learned process, not its normal failure
-branch. A domain workflow is expected to invoke its owning agent for in-scope
-repair and verification before handing the same task back to the owner. Merge
-conflicts, failed tests, and rejected hypotheses are ordinary domain feedback.
-They become `needs-owner` only after the workflow has exhausted its bounded,
-safe in-scope moves. Work that requires another owner is an explicit
-escalation, not `needs-owner`.
-
-## One executable result contract
-
-The SDK owns the exact model schema and runtime admission contract:
+The SDK schema and runtime admission use one result shape:
 
 ```ts
 type HandlerResult =
@@ -367,51 +136,24 @@ type HandlerResult =
     };
 ```
 
-Unknown fields are rejected. Task actions use the same schema and convention
-defaults in model output, authored workflows, tests, and production admission:
+Unknown fields are rejected. `needs-owner` is workflow-only. `waiting` requires
+at least one open exact Condition or live direct child after actions are
+applied. A thrown exception, timeout, unavailable runtime, invalid result,
+rejected action batch, or failed verifier is a failed attempt—not a domain
+result.
 
-- parent defaults to the app root;
-- app/project id aliases may normalize to that same app root during admission;
-- mode defaults to `achieve`;
-- priority defaults to `P2`;
-- outputs default to an empty list; and
-- the desired result field is `outcome`.
+Creating follow-up work does not complete the current task. Required
+decomposition creates direct children and returns `waiting`; independent later
+work may be a successor only after the current outcome is actually accepted.
 
-`needs-owner` is valid only from a workflow. A resolved owner returns
-`converged` or `waiting`. Waiting requires at least one exact typed Condition
-or one live direct child after the result actions are admitted. Conditions are
-invalid on other results.
-
-Creating follow-up work does not complete an unfinished `achieve` task. When
-the new work is required to satisfy the current task, create it as a direct
-child, return `waiting`, and keep the parent open until that child resolves and
-the parent can judge aggregate acceptance. A sibling successor is not evidence
-that the current outcome converged.
-
-A carrier may return `converged` while creating an independent successor only
-when its own outcome and acceptance are already satisfied, or when its contract
-explicitly accepts the evidenced terminal disposition. In that case the
-successor owns separate desired work and any external wake belongs to the
-successor's Condition rather than the completed carrier.
-
-A thrown exception, timeout, unavailable runtime, invalid envelope, rejected
-action batch, or verifier rejection fails the attempt. `failed` is an attempt
-state, not a handler decision.
-
-Action admission remains atomic, but an `unblock-task` action can race normal
-reconciliation after the handler reads state. If the named generation is still
-current but the target has already moved from `waiting` or `attention` to
-`pending`, `running`, or `converged`, the action result is stale rather than an
-invalid handler judgment. Release and requeue the calling task from current
-state; do not strand it in `attention`. A generation mismatch remains the same
-stale-result case, while a missing target without a completion receipt remains
-an invalid action.
+Actions and the result apply in one transaction. Races against a newer
+generation or already-advanced target are treated as stale and retried from
+current state, not converted into partial mutation or misleading attention.
 
 ## Acceptance
 
-Mechanical admission proves that a result is safe to apply; it does not prove
-the domain claim. Every completed task receipt therefore records an
-`acceptanceBasis`:
+Mechanical validation proves that a result is safe to apply, not that its
+domain claim is true. Every completed receipt records:
 
 ```ts
 type AcceptanceBasis = {
@@ -421,84 +163,14 @@ type AcceptanceBasis = {
 };
 ```
 
-- `deterministic`: an optional workflow verifier accepted the postcondition;
-- `workflow-contract`: the owner delegated acceptance to the bound reusable
-  process; or
-- `owner-judgment`: the accountable owner handled or accepted the work.
+A workflow verifier runs after result validation and before commit. It proves a
+positive postcondition. Missing or unknown evidence is not success. When a
+workflow can hand off with `needs-owner`, its hard verifier still applies to a
+later owner claim of convergence.
 
-A verifier runs after handler admission and before the result transaction. A
-rejected or invalid verifier fails the attempt and creates no receipt.
+## Conditions
 
-The verifier belongs to the workflow-bound task, not only to the workflow's
-first attempt. If the workflow returns `needs-owner`, the same verifier checks
-any later converged owner-handoff result. The owner may make an exceptional
-judgment, but cannot bypass hard workflow invariants such as exact live proof,
-source integration, or artifact presence.
-
-A workflow that can return `needs-owner` must verify any later owner claim of
-`converged`. Without that verifier, the owner may clarify the task, record an
-exact wait, or leave visible attention, but cannot turn the workflow exception
-into unverified completion.
-
-Verification is positive: it proves the named postcondition. A verifier rejects
-a missing, unknown, unfinished, or safety-stop checkpoint. Merely finding no
-known wait is not completion proof.
-
-Runtime admission checks shape and mechanical safety. It must never translate a
-failed call, invalid result, missing required artifact, or unfinished outcome
-into `converged`. Apps must not add wrappers that perform that translation.
-
-## Generation and resource version
-
-Each mutated resource advances its own `resourceVersion`. A task's
-`generation` advances only when its normalized execution intent changes:
-
-- outcome and acceptance;
-- mode;
-- effective owner or workflow binding;
-- stable input and declared outputs; or
-- dependencies.
-
-Containment, category, and priority are desired organization but do not by
-themselves invalidate active work. They change task `resourceVersion`, not
-generation. A parent move that changes inherited effective ownership does
-change generation.
-
-Triggers, timestamps, attempt summaries, Condition observations, and read
-projections never change task generation.
-
-An unresolved explicit owner input (`project.owner.requested`,
-`project.comment.created`, or an owner-addressed `message.created`) remains the
-primary persisted trigger until the owning App request records its correlated
-result. Routine watcher, metric, and pipeline events may make the same task
-dirty, but they must not replace that owner input payload before the owner has
-processed it. A later owner input may become primary only while retaining every
-unresolved source reference and its structured input, so one coalesced owner
-run can judge every admitted request before recording their correlated results.
-
-An explicit owner input also wakes a task that is waiting on an older
-Condition. The owner must be able to answer or redirect new human intent while
-preserving, replacing, or closing that wait. Routine events still require the
-Condition to become true or an explicit `overrideWait`; accepting an owner
-input and then suppressing its task trigger is invalid delivery.
-
-Delivery resync schedules a task carrying an unresolved direct
-`project.comment.created` or app-owner message trigger before autonomous
-priority backlog. This is a delivery guarantee for explicit direction, not a
-change to the task's declared priority or a code-side project decision. Once
-the owner emits the correlated terminal result, ordinary task priority ordering
-applies again.
-
-More generally, delivery resync schedules runnable tasks with a persisted event
-trigger before untriggered desired work. The trigger is durable evidence that
-an existing reconciliation has new facts to consume, such as a terminal
-pipeline observation; restart must not demote that continuation behind newly
-declared backlog. Direct project comments remain first within this continuation
-lane, and declared task priority still orders peers within each lane.
-
-## Conditions and watchers
-
-A Condition describes one exact external observation:
+A Condition names one exact external observation, for example:
 
 ```ts
 {
@@ -506,366 +178,117 @@ A Condition describes one exact external observation:
   type: "credential.state",
   subject: "credential:xhs",
   expected: { field: "state", equals: "ready" },
-  reviewAfterMs: 300_000
+  reviewAfterMs: 300_000,
 }
 ```
 
-`reviewAfterMs` is optional. It is a supervision backstop, not a claim that the
-Condition became true and not a human-update timer. Values must be whole
-milliseconds and at least 60 seconds. At the first delivery resync after the
-open Condition reaches that age, the controller claims the same task for the
-same owner with trigger `project.task.condition-review.missed`. It creates no
-timer job, scheduler, task, or request record.
+A watcher reads an external source and publishes a fact. It does not know task
+storage or invoke an agent. The generic Condition tracker atomically updates
+the Condition, stores the triggering event, and returns the affected task IDs
+to enqueue.
 
-If the owner returns `waiting` with the same open Condition, the checkpoint
-starts again from that accepted result, for at most three reviews of that exact
-Condition in one task generation. The trigger carries `reviewAttempt` and
-`finalReview`. If the final review returns the same Condition with another
-timer, the controller removes the timer and leaves the exact event-driven wait.
-A new task generation or Condition identity starts a new bounded review cycle.
-A satisfied observation still wakes the task normally.
+`reviewAfterMs` is a bounded supervision checkpoint, never proof that the
+Condition became true. Repeated unchanged reviews are capped; after the final
+review the task remains on its exact event-driven wait rather than becoming a
+polling loop. Provider observation time and monotonic source revision, when
+available, prevent known older facts from replacing newer Condition state.
 
-Repeated empty reviews are evidence of a stall: the owner must change
-execution or prove a real blocker instead of creating duplicate work. The
-bounded cycle makes that rule mechanical and prevents a supervision backstop
-from becoming a polling loop. When the task is linked to a human request, the
-checkpoint result also wakes one fresh May review; ordinary waiting remains
-silent.
+Human approval or action uses an explicit May/human request plus a Condition
+on its exact disposition. The reply becomes evidence for the next attempt; it
+does not itself prove the task outcome.
 
-A watcher monitors the external source and emits a semantic event. It does not
-invoke an agent, know task IDs, or mutate task storage. The generic Condition
-tracker matches the event and, in one state transaction:
+## Modes and phases
 
-1. updates Condition status;
-2. stores the exact event as each linked task's trigger; and
-3. returns the task IDs to enqueue.
+Phases are:
 
-The worker later claims the current task spec and that exact trigger together.
-A queue hint alone is never treated as the observation.
+- `pending`: desired state needs another attempt;
+- `running`: one current attempt owns the generation;
+- `waiting`: exact Conditions or live direct children remain;
+- `attention`: mechanics or result admission could not produce an applicable
+  result and owner review is required; and
+- `converged`: a live `maintain` task currently satisfies desired state.
 
-Events whose type ends in `.state`, `.check`, `.pulse`, or `-pulse` are level
-observations. After a task consumes one and establishes a new wait, the tracker
-rejects the older event for that new Condition. A watcher must publish the
-current level again when it changes or on its next bounded observation cycle.
-Immutable completion events such as `session.end` remain facts and do not use
-this freshness rule.
+An `achieve` task is finite. Acceptance writes a compact receipt, removes it
+from the live graph, and wakes dependents. A `maintain` task remains live and
+must be woken by a domain fact/watcher and, only where necessary, a declared
+scheduled check. An observation arriving during an attempt keeps the same
+maintain task pending for another bounded attempt.
 
-Semantic observations carry the provider's observation time as
-`data.observedAt` and, when the provider exposes one, a monotonic
-`data.sourceRevision`. Runtime receipt time remains separate. The Condition
-tracker must not replace a newer observation with one known to be older;
-providers without ordered revisions still rely on exact correlation and
-idempotent reconciliation.
+## Parents and dependencies
 
-### Human Conditions
+Executable parents own aggregate outcomes. Structural groups provide display
+containment only. Dependencies provide ordering. All use the same App
+controller.
 
-When an owner agent needs human approval, advice, or action, it creates one
-deduplicated escalation and returns `waiting` with an exact Condition for that
-escalation's resolved disposition. The Host delivers the request and
-correlates the human reply. The resulting semantic event updates the Condition
-and enqueues the same task key; no workflow or session remains suspended.
+```text
+parent returns waiting + child actions
+  -> parent wait and children commit atomically
+  -> children run within normal App capacity
+  -> meaningful child transition stores a parent trigger
+  -> parent rereads current children and receipts
+```
 
-The human disposition becomes trigger evidence for the next attempt. It does
-not mutate desired task state or prove task completion until the owner applies
-and verifies it. Approval and rejection are resolved outcomes; dismissal does
-not satisfy the Condition and moves the task to attention. See
-[Escalation](escalation.md).
+The parent consumes no attempt slot while waiting. Only live direct children
+form its decomposition frontier. Child completion does not automatically prove
+parent completion; the parent judges aggregate acceptance. Missing parents,
+self-parenting, and cycles are rejected.
+
+## Outputs and workspaces
+
+The Host resolves App, project, and workspace roots before an attempt and
+admits declared outputs only inside allowed roots. A workflow may request a
+task-generation Git worktree; its branch and lineage are attempt evidence, not
+another scheduler or desired-state store. Output admission validates the task
+contract but does not replace tool sandboxing or process isolation.
 
 ## Follow-up events
 
-Task-state mutation is atomic inside `state.json`, but the event store is a
-separate authority. A result that requires follow-up events therefore writes
-stable pending event intents in the same task transaction. Each intent has an
-idempotency key derived from its task, generation, attempt, and event identity.
+Task state and the event store are separate authorities. A transition that
+requires a follow-up event writes a stable pending event intent in the same
+task transaction. Dispatch is idempotent by task, generation, attempt, and
+event identity. Workflows still return the single result contract and do not
+publish competing task-completion claims.
 
-The dispatcher may publish an event more than once across a crash. Event
-ingress returns the existing receipt for the same key. After the receipt is
-recorded in task state, the pending intent can be removed. Changed dependent
-task keys may be enqueued after the state commit because delivery resync can
-reconstruct those in-memory hints.
+## Pause, reload, and recovery
 
-Pending events are derived by the Host from the accepted transition; they
-are not a second workflow result language. Workflows still return the one
-result contract above and must not emit their own task-completion claims. Tool
-side effects remain subject to ordinary idempotency and verification.
+Pause stops new task attempts. App input admission, schedules, observers, and
+event routing continue, and task intent/wakes remain durable. Resume rereads
+canonical state and queues runnable IDs.
 
-## Paths and output admission
-
-The Host resolves `appDir`, `projectDir`, and `workspaceDir` before
-invoking a handler. Declared outputs are resolved once and admitted only inside
-the app and domain roots.
-
-`workspaceDir` normally equals `projectDir`. When the selected workflow exports
-`workspace = "task"`, the Host prepares and reuses a task-generation Git
-worktree from the app workspace branch before handler execution. A workflow
-that intentionally integrates elsewhere may instead export
-`workspace = { kind: "task", baseBranch: "main" }`; the Host uses that exact
-branch as the worktree base. Workspace lineage is observed attempt and receipt
-metadata; it is not desired task spec or a second scheduling record.
-The workflow runtime supplies the same directory to nested agent tools as their
-actual execution root.
-
-An interrupted Git operation is recoverable task state. A detached worktree is
-re-admitted only when Git's operation metadata names the exact expected task
-branch; the same owner then decides whether to continue or abort the operation.
-Arbitrary detached worktrees and worktrees attached to another branch remain
-hard admission failures.
-
-Output admission validates the task contract; it is not a filesystem sandbox.
-Tool policy and process isolation still constrain actual writes.
-
-## Phases and modes
-
-- `pending`: current desired state still needs reconciliation;
-- `running`: one current attempt owns the generation;
-- `waiting`: exact Conditions remain open;
-- `attention`: workflow execution, owner recovery, or result admission could
-  not produce an applicable result; it is a process-recovery state, not an
-  ordinary domain outcome; and
-- `converged`: a `maintain` task currently satisfies desired state.
-
-`achieve` is finite. On convergence the engine atomically applies actions,
-writes a compact receipt, removes the task from the live graph, and enqueues
-dependents.
-
-`maintain` is standing desired state. It remains live after convergence and is
-woken when observed facts may have changed. Each maintain task must be covered
-by a domain event or watcher and, when that signal is not reliable enough, a
-scheduled check. Delivery resync wakes only work already known to be runnable;
-it is not the task's domain observer. Loops are ordinary maintain tasks. Focus
-plans and bounded work are normally achieve tasks.
-
-An event recorded for the same maintain task during its current attempt takes
-precedence over that attempt's completion. The attempt is recorded, but the
-resource returns to `pending`, the same task ID is requeued, and result surfaces
-report continued progress rather than convergence. This is the ordinary durable
-loop for bounded work; it is not another scheduler.
-
-## Parents, dependencies, and completion
-
-An executable parent expresses decomposition and aggregate ownership. A
-structural group expresses containment only. Dependencies express ordering.
-None of them creates a second scheduler: the same app controller still queues
-and reconciles task IDs.
-
-A parent may break a large goal into independently runnable child tasks:
-
-```text
-parent reconciliation
-  -> return waiting + create child actions
-  -> admit parent wait and children atomically
-  -> enqueue child IDs in the same app controller
-  -> run children concurrently within app capacity
-  -> meaningful child transition records a trigger for the parent
-  -> enqueue and reconcile the same parent ID
-  -> parent refills, repairs, or accepts the aggregate result
-```
-
-The parent does not occupy execution capacity while waiting. The runtime
-derives readiness from live direct children; handlers do not author
-`project.task.reconciled` Conditions or app-specific refill routes. A child
-convergence or transition to `attention` is meaningful. Ordinary running or
-timestamp changes do not wake the parent.
-
-Only live direct children count as the parent's in-flight decomposition.
-Related tasks elsewhere in the graph may be useful evidence, but they do not
-keep this parent waiting or occupy its child frontier.
-
-App-wide focus and stall reviewers receive a separate bounded live-task
-snapshot. It excludes the reviewing task, is capped at 64 entries, and reports
-truncation. This observation surface can prevent a false terminal judgment; it
-does not make sibling tasks children, consume child-frontier capacity, or grant
-access to task persistence.
-
-The child transition and parent trigger commit in the same task-state
-transaction. The in-memory queue hint follows that commit and delivery resync
-can reconstruct it. When several children change together, key deduplication
-collapses their wakes and the parent rereads all current children and receipts.
-
-If a parent reconciliation observes a live child and returns `waiting` without
-an external Condition, but that child finishes before the result is applied,
-the result is stale rather than invalid. The engine preserves the child
-transition trigger and immediately retries the parent from current evidence;
-it must not turn this normal race into `attention`.
-
-- Every live `parentId` resolves to a live task resource or structural group.
-- Missing parents, self-parenting, and cycles are rejected.
-- Structural groups are passive and are never enqueued.
-- A meaningful child transition wakes its executable parent by convention.
-- Child status does not automatically determine parent completion.
-- A parent receives bounded current child status and completion receipts in its
-  reconciliation context.
-- An achieve task cannot be absorbed while it has live children.
-
-Receipts preserve the minimum lineage and identity needed after finite work
-leaves the live graph. The latest bounded child receipts per parent retain the
-full acceptance and evidence used by parent reconciliation. Older receipts keep
-their immutable completion identity and a digest of compacted detail; old
-terminal attempts keep full payload only while a live task may need it for
-recovery. The engine does not keep an archive tree. Reusable experience belongs
-in workflows, skills, tests, design, and domain evidence.
-
-## Operational signals
-
-Every attached app exposes enough data to answer five questions without reading
-the whole journal:
-
-- How large are canonical task state and its receipts?
-- How many times did each task and generation start in the last hour?
-- How old is each unresolved wait, and what exact Condition or child can wake it?
-- How large and how fresh is the append-only journal?
-- How many parent starts resulted from each meaningful child transition?
-
-The UI and health observers report state bytes, receipt bytes and count, starts
-per task per hour, oldest wait age, journal bytes and last-write time, and
-parent-wake amplification. Each app may set tighter budgets, but a growing
-metric with unchanged desired state is itself a design signal: inspect event
-deduplication, frontier identity, and history placement before adding retries,
-timers, or recovery tasks.
-
-## Recovery and lifecycle
-
-Stale handler results cannot close a newer generation or a different current
-attempt. Interrupted previous-runtime attempts are either safely requeued from
-persisted trigger/current evidence or moved to attention; they are never
-silently treated as running forever.
-
-The execution bound covers the complete task handler, not only its agent
-sessions. A task-bound workflow that exceeds the controller's workflow
-deadline is recorded as `HandlerExecutionFailed`; its task slot is released
-and the same resource is reconciled again from current state. This also covers
-pre-agent and between-agent stalls, where no session exists for session-level
-silence recovery to interrupt.
-
-Every bounded agent session started directly by an attempt or from inside its
-workflow is correlated to `(appId, taskId, generation)` when the neutral
-`session.start` notification reaches the Host. If desired state advances,
-the controller ends the old attempt and interrupts its attached session
-immediately. A session that starts late for a missing task, obsolete generation,
-or non-current attempt is rejected and interrupted instead of consuming
-capacity or returning stale work. This correlation belongs to the autonomous
-host; the agent runtime remains unaware of task storage and reconciliation.
-
-Recovery uses the same task resource and the same app controller:
-
-1. retry a known transient delivery or execution failure within its bound;
-2. repair stale leases, attempts, or other mechanical state;
-3. requeue the same persisted task ID;
-4. move the task to `attention` when progress requires domain judgment;
-5. wake the accountable owner once with accumulated, deduplicated evidence;
-6. escalate only when the next action crosses an ownership boundary.
-
-An owner handoff may discover that the task's desired state is incomplete or
-stale. The owner can revise that same resource with one generation-changing
-`update-task` action. The reconciler records the current attempt as completed,
-keeps the achieve task live, and queues the new generation. It must not create
-a repair task merely to carry the correction, and it must not treat the
-revision as accepted domain completion. Self-close, self-unblock, a no-op
-self-update, and a self-update mixed with other actions remain invalid.
-
-Execution recovery is evidence gated. `HandlerExecutionFailed` means the
-selected handler produced no applicable decision because its execution did not
-complete. A later successful session for the same owner is sufficient evidence
-to retry that task once through the ordinary controller. A schema-invalid
-decision, rejected action, failed acceptance check, or workspace admission
-failure is a different `handler-blocked` condition and is not released by
-unrelated runtime success.
-
-The ladder begins after the domain workflow has performed its normal work.
-Expected domain failures stay inside the task's reconciliation loop: collect
-current evidence, let the agent choose a changed repair, verify it, and repeat
-within a bound. Recovery must not blindly rerun an unchanged deterministic
-failure, and it must not convert ordinary domain difficulty into attention.
-
-Watchdogs and metrics may detect that this ladder is needed. They do not create
-a replacement task, change desired state, or run an app-specific recovery
-planner. Equivalent signals attach to the existing task/attempt/alert context
-and are coalesced before an owner is woken.
-
-Backpressure is mechanical. Global and per-app concurrency bounds limit new
-attempts; excess durable work remains pending instead of starting unlimited
-agent sessions. One app must not monopolize all runtime capacity. Pressure may
-delay execution, but it must not discard canonical task state or fabricate
+Shutdown stops new claims, drains for a bound, and records unfinished attempts
+as interrupted where possible. Restart repairs stale claims and requeues the
+same task identities; it never resumes an in-memory workflow stack or fabricates
 completion.
 
-Shared capacity is acquired before an app removes a task key from its local
-queue. A capacity-starved app keeps at most one shared-capacity waiter, so its
-local running slots remain truthful and a later front promotion can still be
-chosen when capacity becomes available. Releasing one shared slot grants one
-app another choice from its current queue; it does not reserve that slot for an
-older task key selected while capacity was unavailable.
+Hot reload publishes one validated App generation. Prior active attempts retain
+their capacity claims until they end, while the replacement controller may use
+remaining capacity. Generation and attempt fences prevent duplicate execution
+or stale completion.
 
-That shared-capacity wait is cancellable. Replacing or closing a controller
-removes its pending claim, while a granted lease remains held only by the task
-that actually starts. Repeated hot reloads therefore cannot leave stale
-waiters ahead of current work.
+Recovery follows one ladder:
 
-Event ingress uses one idempotency key across acknowledgement retries. If the
-transport acknowledgement times out after the event was persisted, the
-adapter confirms that key in the durable event log before reporting failure.
-It must not tell a caller to retry work that the controller has already
-accepted.
+1. retry a known transient mechanical failure within its bound;
+2. repair stale claims, leases, or queue hints;
+3. requeue the same persisted task ID;
+4. expose `attention` when domain judgment is required; and
+5. delegate/escalate only when the next action crosses ownership.
 
-Front promotion is an urgent FIFO lane, not a LIFO stack. Explicit targeted
-wakes run before ordinary queued work, while reconciler-created child and
-dependent work joins the ordinary FIFO lane so it cannot displace an older
-recovered task. After a bounded burst of urgent work, the controller chooses
-the oldest ordinary key; a continuing stream of targeted wakes therefore
-cannot starve durable runnable work.
-
-On pause or shutdown, the controller stops claiming new keys, allows a bounded
-drain period, and records unfinished attempts as interrupted before exit when
-possible. Restart recovery rereads canonical state and requeues the same task
-keys; it does not resume an in-memory workflow stack. A previous-runtime
-attempt is released to pending state immediately, while its persisted trigger
-is retained as the next durable wake. Capacity pressure may delay the new
-attempt, but must not leave the dead attempt projected as running.
-
-Task-state locks record their owning process. After a forced runtime recovery,
-the successor may reclaim a lock only when that owner process is gone; a live
-owner remains protected by the normal wait and stale-lock bounds. This avoids a
-restart loop without weakening single-writer task-state admission.
-
-On app or workflow hot reload, the prior controller stops claiming new keys but
-its active attempts keep their shared per-app capacity leases until they end.
-The replacement controller may claim unrelated work immediately from the
-remaining app capacity. Canonical task claims prevent the same task generation
-from running twice, while the shared lease spans controller generations so
-successive reloads cannot multiply the app concurrency budget. A long attempt
-therefore does not turn hot reload into an app-wide scheduling pause.
-
-Pausing and resuming are explicit control operations. A paused app has no task
-controller, schedules, event routing, recovery, or resync. Lifecycle changes
-go through `setProjectLifecycle(config, next, reason)` and are journaled;
-ordinary task saves cannot change lifecycle.
+Metrics and watchdogs may reveal a stuck task, but they never create a
+replacement lifecycle or change desired state.
 
 ## Required invariants
 
-Tests and live audits must prove:
+Tests and audits must prove:
 
-1. `state.json` is the only mutable task authority;
-2. events, Conditions, and resync enqueue IDs without rewriting desired spec;
-3. a stale reader claims the current canonical spec;
-4. Condition status and trigger persistence are atomic, and a known-older
-   observation cannot replace newer Condition state;
-5. at most one current attempt exists per task;
-6. the model schema and runtime admission contract are identical;
-7. stale results and invalid action batches apply no partial mutation;
-8. completion receipts contain `acceptanceBasis`;
-9. parents and declared outputs pass admission boundaries; and
-10. direct or Gym execution works without attaching this task runtime;
-11. recovery reuses the same task identity and cannot invent desired state;
-12. equivalent recovery signals produce at most one pending owner wake;
-13. result state and pending event intents commit together, and repeated dispatch
-    returns one semantic event receipt; and
-14. pressure and restart never create an additional attempt for the same key;
-15. parent waiting and child creation apply atomically; and
-16. a meaningful child transition durably wakes the same executable parent
-    without an app-specific route; and
-17. direct and workflow-nested sessions attach to their current task attempt,
-    and task supersession interrupts or rejects sessions from the old
-    generation; and
-18. history compaction preserves completed identity, dependency satisfaction,
-    current recovery inputs, and the latest bounded parent child context while
-    preventing old evidence and trigger payloads from growing `state.json`
-    without bound.
+1. `state.json` is the only mutable task authority.
+2. Queue entries contain IDs and stale readers claim current canonical state.
+3. At most one current attempt exists per `(appId, taskId)`.
+4. Condition update and trigger persistence are atomic.
+5. Result/action admission is atomic and stale results apply nothing.
+6. Completion has an explicit acceptance basis.
+7. Parent waits and child creation commit together; meaningful child changes
+   durably wake the same parent.
+8. Pause/restart/pressure retain work without inventing another attempt.
+9. Direct owner and workflow-nested sessions remain correlated to the current
+   task generation and obsolete sessions cannot complete it.
+10. Apps without desired-state reconciliation work without this engine.

@@ -138,7 +138,7 @@ an owner or starts an agent because an event was not handled.
 
 ## Waiting and delegation
 
-An App request may depend on one child App request, task, session, or delivery.
+An App request may depend on one child App request, task, or session.
 The Host stores that link before starting the child and wakes the parent when
 the exact dependency finishes.
 
@@ -147,8 +147,8 @@ the background or keep durable business state in local variables.
 
 ## Pause and restart
 
-Pausing an App stops task attempts, not admission. New inputs and task intent
-remain durable. Resuming queues the retained work.
+Pausing task reconciliation stops new task attempts, not App admission. New
+inputs and task intent remain durable. Resuming queues the retained work.
 
 On restart, the Host reads durable requests and tasks, repairs stale attempts,
 and continues only work that still has an owner and acceptance contract. It

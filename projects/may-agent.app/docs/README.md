@@ -8,13 +8,13 @@ contract, update the corresponding document here in the same change.
 May-agent is easiest to understand as:
 
 ```text
-events move work
+events carry input and facts
 metrics expose signals
 agents judge and act
-workflows make repeated work explicit
-apps organize durable domain work
+workflows enforce a learned bounded process
+apps own durable domain results
 projects hold goal and posture
-task resources optionally track desired and observed work state
+tasks optionally reconcile desired state across bounded attempts
 ```
 
 ## Documentation tiers
@@ -27,13 +27,14 @@ tier.
 | `1-principles/` | Stable requirements, goals, and conventions.                            |
 | `2a-design/`    | Current architecture and subsystem contracts.                           |
 | `2b-manual/`    | How-to guidance derived from design and implementation.                 |
-| `3-proposals/`  | Active proposals and convergence trackers only.                         |
+| `3-proposals/`  | Active proposals/trackers only; absent when there are none.              |
 | `archive/`      | Historical decisions, reviews, implementation records, and V2 material. |
 
 Each current design records separate `Design status` and `Implementation
-status` fields. Stable design documents define contracts and current gaps, not
-dated incident narration. Historical documents must link to the current design
-that replaced them.
+status` fields. Stable design documents define implemented contracts and
+explicit current gaps, not dated incident narration. A proposal moves to the
+archive after its accepted rules enter current design, or after a rejection
+record names the selected alternative.
 
 ## Start here
 
