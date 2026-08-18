@@ -215,6 +215,20 @@ export type TaskStateConfig = {
   validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
 };
 
+type TaskStateReadCache = {
+  ino?: number;
+  mtimeMs?: number;
+  size?: number;
+  tree?: TaskTree;
+};
+
+const taskStateReadCaches = new WeakMap<TaskStateConfig, TaskStateReadCache>();
+
+/** Reuse one parsed tree for a short-lived config dedicated to a sequential pass. */
+export function cacheTaskStateReads(config: TaskStateConfig): void {
+  taskStateReadCaches.set(config, {});
+}
+
 function timeoutFromAnyEnv(names: string[], fallbackMs: number): number {
   for (const name of names) {
     const value = Number(process.env[name]);
@@ -315,6 +329,19 @@ export function readTaskState(config: TaskStateConfig): TaskTree {
 
   while (true) {
     try {
+      const cache = taskStateReadCaches.get(config);
+      if (cache) {
+        const state = statSync(config.statePath);
+        if (cache.tree && cache.ino === state.ino && cache.mtimeMs === state.mtimeMs && cache.size === state.size)
+          return cache.tree;
+        const tree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
+        normalizeTaskStateInPlace(tree);
+        cache.ino = state.ino;
+        cache.mtimeMs = state.mtimeMs;
+        cache.size = state.size;
+        cache.tree = tree;
+        return tree;
+      }
       const tree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
       normalizeTaskStateInPlace(tree);
       return tree;
@@ -428,6 +455,14 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   const tempPath = `${config.statePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.statePath);
+  const cache = taskStateReadCaches.get(config);
+  if (cache) {
+    const state = statSync(config.statePath);
+    cache.ino = state.ino;
+    cache.mtimeMs = state.mtimeMs;
+    cache.size = state.size;
+    cache.tree = tree;
+  }
   writeAppTaskConditionRouteIndex(config, tree);
 
   const projectionPath = runtimePaths.taskTreePath;

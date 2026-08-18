@@ -9,7 +9,13 @@ import {
   projectRuntimePaths,
   saveProjectRuntimeState,
 } from "./app-task-runtime-state.js";
-import { readTaskState, refreshAppTaskTreeProjection, saveTaskState, type TaskStateConfig } from "./app-task-store.js";
+import {
+  cacheTaskStateReads,
+  readTaskState,
+  refreshAppTaskTreeProjection,
+  saveTaskState,
+  type TaskStateConfig,
+} from "./app-task-store.js";
 
 async function makeApp(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "may-sdk-runtime-state-"));
@@ -231,6 +237,29 @@ describe("project runtime state paths", () => {
     refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
 
     expect(statSync(paths.taskTreePath).ino).toBe(before.ino);
+  });
+
+  test("reuses one parsed tree during a bounded startup pass and notices external changes", async () => {
+    const appDir = await makeApp();
+    const paths = projectRuntimePaths(appDir);
+    await writeJson(paths.taskStatePath, { project: "first", groups: {}, resources: {} });
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: appDir,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "owner",
+      maxConcurrent: 1,
+    };
+    cacheTaskStateReads(config);
+
+    const first = readTaskState(config);
+    expect(readTaskState(config)).toBe(first);
+
+    await writeJson(paths.taskStatePath, { project: "externally-updated", groups: {}, resources: {} });
+    const updated = readTaskState(config);
+    expect(updated).not.toBe(first);
+    expect(updated.project).toBe("externally-updated");
   });
 
   test("writes structural groups to canonical state and full nodes to the generated tree", async () => {

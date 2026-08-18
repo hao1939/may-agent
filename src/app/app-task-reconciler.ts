@@ -2569,6 +2569,46 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId: string, nowMs =
  * Atomically transfer a fresh previous-runtime attempt lease to this runtime
  * before the generic session manager resumes that exact persisted session.
  */
+export function claimFreshAppTaskSessionsForStartup(
+  config: TaskStateConfig,
+  candidates: Array<{
+    binding: { taskId: string; generation: number };
+    sessionId: string;
+    nowMs?: number;
+    sessionActivity?: AttemptSessionActivity;
+  }>,
+): Set<string> {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const claimed = new Set<string>();
+    for (const candidate of candidates) {
+      const nowMs = candidate.nowMs ?? Date.now();
+      const resource = tree.resources?.[candidate.binding.taskId];
+      if (
+        !resource ||
+        resource.metadata.generation !== candidate.binding.generation ||
+        resource.status.phase !== "running"
+      )
+        continue;
+      const attempt = currentResourceAttempt(tree, resource);
+      if (
+        !attempt ||
+        attempt.state !== "running" ||
+        attempt.sessionId !== candidate.sessionId ||
+        attempt.runtimeId === reconcilerRuntimeId ||
+        !leaseIsFresh(attempt, nowMs, candidate.sessionActivity)
+      )
+        continue;
+      attempt.metadata.resourceVersion += 1;
+      attempt.runtimeId = reconcilerRuntimeId;
+      refreshAttemptLease(attempt, candidate.sessionId, nowMs);
+      claimed.add(candidate.sessionId);
+    }
+    if (claimed.size > 0) saveTaskState(config, tree);
+    return claimed;
+  });
+}
+
 export function claimFreshAppTaskSessionForStartup(
   config: TaskStateConfig,
   binding: { taskId: string; generation: number },
@@ -2576,26 +2616,9 @@ export function claimFreshAppTaskSessionForStartup(
   nowMs = Date.now(),
   sessionActivity?: AttemptSessionActivity,
 ): boolean {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    const resource = tree.resources?.[binding.taskId];
-    if (!resource || resource.metadata.generation !== binding.generation || resource.status.phase !== "running")
-      return false;
-    const attempt = currentResourceAttempt(tree, resource);
-    if (
-      !attempt ||
-      attempt.state !== "running" ||
-      attempt.sessionId !== sessionId ||
-      attempt.runtimeId === reconcilerRuntimeId ||
-      !leaseIsFresh(attempt, nowMs, sessionActivity)
-    )
-      return false;
-    attempt.metadata.resourceVersion += 1;
-    attempt.runtimeId = reconcilerRuntimeId;
-    refreshAttemptLease(attempt, sessionId, nowMs);
-    saveTaskState(config, tree);
-    return true;
-  });
+  return claimFreshAppTaskSessionsForStartup(config, [
+    { binding, sessionId, nowMs, sessionActivity },
+  ]).has(sessionId);
 }
 
 /** Attach the launched owner-session id and initial lease to the current attempt. */

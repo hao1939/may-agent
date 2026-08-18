@@ -48,7 +48,11 @@ import {
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
-import { readTaskState, refreshAppTaskTreeProjection } from "./app-task-store.js";
+import {
+  cacheTaskStateReads,
+  readTaskState,
+  refreshAppTaskTreeProjection,
+} from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "./app-read.js";
@@ -101,9 +105,10 @@ import {
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
-  claimFreshAppTaskSessionForStartup,
+  claimFreshAppTaskSessionsForStartup,
   taskReconciliationConfig,
   APP_TASK_RECOVERY_OWNER,
+  type AppTaskAttemptRecovery,
   type AppTaskChildContext,
   type AppTaskClaim,
 } from "./app-task-reconciler.js";
@@ -2595,6 +2600,31 @@ function recoverInterruptedAppTasks(
       owner: descriptor.owner,
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
+    cacheTaskStateReads(config);
+    const releaseRecovery = (recovery: AppTaskAttemptRecovery) => {
+      const released = releaseInterruptedAppTaskAttempt(
+        config,
+        recovery,
+        `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
+      );
+      for (const sessionId of released.sessionIds) {
+        interruptSupersededOwnerSession(
+          opts,
+          sessionId,
+          `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
+          recovery.taskId,
+        );
+      }
+      if (released.released && controller && !descriptor.reconciliationPaused) {
+        enqueueAppTask(controller, config, recovery.taskId);
+      }
+    };
+    const freshCandidates: Array<{
+      recovery: AppTaskAttemptRecovery;
+      sessionId: string;
+      nowMs: number;
+      sessionActivity: { sessionId: string; lastActivityAt: number | null };
+    }> = [];
     for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases)) {
       if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
@@ -2640,37 +2670,33 @@ function recoverInterruptedAppTasks(
         includeFreshLeases &&
         recovery.sessionId &&
         opts.persistDir &&
-        persistedAppTaskSessionCanResume(readSessionMeta(opts.persistDir, recovery.sessionId)) &&
-        claimFreshAppTaskSessionForStartup(
-          config,
-          { taskId: recovery.taskId, generation: recovery.taskGeneration },
-          recovery.sessionId,
-          Date.now(),
-          {
+        persistedAppTaskSessionCanResume(persistedSession)
+      ) {
+        freshCandidates.push({
+          recovery,
+          sessionId: recovery.sessionId,
+          nowMs: Date.now(),
+          sessionActivity: {
             sessionId: recovery.sessionId,
             lastActivityAt: readSessionLastActivityAt(opts.persistDir, recovery.sessionId),
           },
-        )
-      ) {
-        claimedSessionIds.add(recovery.sessionId);
+        });
         continue;
       }
-      const released = releaseInterruptedAppTaskAttempt(
-        config,
-        recovery,
-        `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
-      );
-      for (const sessionId of released.sessionIds) {
-        interruptSupersededOwnerSession(
-          opts,
-          sessionId,
-          `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
-          recovery.taskId,
-        );
-      }
-      if (released.released && controller && !descriptor.reconciliationPaused) {
-        enqueueAppTask(controller, config, recovery.taskId);
-      }
+      releaseRecovery(recovery);
+    }
+    const claimed = claimFreshAppTaskSessionsForStartup(
+      config,
+      freshCandidates.map((candidate) => ({
+        binding: { taskId: candidate.recovery.taskId, generation: candidate.recovery.taskGeneration },
+        sessionId: candidate.sessionId,
+        nowMs: candidate.nowMs,
+        sessionActivity: candidate.sessionActivity,
+      })),
+    );
+    for (const candidate of freshCandidates) {
+      if (claimed.has(candidate.sessionId)) claimedSessionIds.add(candidate.sessionId);
+      else releaseRecovery(candidate.recovery);
     }
     const missingAttemptRepairs = repairRunningAppTasksWithoutAttempt(config);
     for (const repair of missingAttemptRepairs) {
@@ -2763,6 +2789,7 @@ async function requeueRepairedAppTaskHandlers(
       owner: descriptor.owner,
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     });
+    cacheTaskStateReads(config);
     for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.owner)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
