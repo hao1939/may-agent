@@ -3,7 +3,7 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-project="${MAY_AGENT_DEPLOY_PROJECT:-may-agent}"
+project="may-agent"
 task_id="${MAY_AGENT_DEPLOY_TASK_ID:-}"
 correlation="${MAY_AGENT_DEPLOY_CORRELATION:-deploy-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 deploy_root="${MAY_AGENT_DEPLOY_ROOT:-$PWD}"
@@ -27,6 +27,12 @@ task_state="${MAY_AGENT_DEPLOY_TASK_STATE:-$(dirname "$deploy_root")/${project}.
 bun scripts/deploy-receipt.ts validate-target "$task_state" "$project" "$task_id"
 
 source_commit="$(git rev-parse --verify HEAD)"
+canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"
+if ! git merge-base --is-ancestor "$canonical_commit" "$source_commit"; then
+  echo "Refusing to deploy stale May source $source_commit: it does not contain canonical commit $canonical_commit." >&2
+  echo "Rebase or merge current may-agent main into the candidate, verify it, and retry from May-owned work." >&2
+  exit 2
+fi
 sdk_release_name="sdk-$source_commit"
 
 # The canonical checkout is shared and may contain unrelated tracked edits from

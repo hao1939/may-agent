@@ -184,7 +184,7 @@ describe("canonical project actions", () => {
               kind: "event",
               event: {
                 type: "evaluation.project.review.requested",
-                data: { targetProject: "aks-rp-e2e.app", reason: "compatibility-proof" },
+                data: { targetProject: "aks-rp-e2e.app", reason: "manual-proof" },
                 target: { appId: "evaluation", project: "evaluation" },
               },
             }),
@@ -199,9 +199,9 @@ describe("canonical project actions", () => {
     expect(
       access.invoke({
         projectId: "evaluation.app",
-        actionId: "review-project-app",
-        params: { targetProject: "aks-rp-e2e.app", reason: "compatibility-proof" },
-        idempotencyKey: "review-project-app:73",
+        actionId: "publish-project-review",
+        params: { targetProject: "aks-rp-e2e.app", reason: "manual-proof" },
+        idempotencyKey: "publish-project-review:73",
       }),
     ).toEqual({
       eventId: 73,
@@ -216,13 +216,13 @@ describe("canonical project actions", () => {
           type: "evaluation.project.review.requested",
           data: {
             targetProject: "aks-rp-e2e.app",
-            reason: "compatibility-proof",
+            reason: "manual-proof",
           },
           target: { appId: "evaluation", project: "evaluation" },
-          idempotencyKey: "review-project-app:73",
+          idempotencyKey: "publish-project-review:73",
         },
         context: {
-          source: "app:evaluation:action:review-project-app",
+          source: "app:evaluation:action:publish-project-review",
           allowUnregistered: true,
         },
       },
