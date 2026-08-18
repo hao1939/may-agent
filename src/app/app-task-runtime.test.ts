@@ -11,6 +11,8 @@ import {
   consumePersistedTerminalOwnerResult,
   installAppTaskRuntimes,
   readLoadedAppTaskView,
+  refreshAppTaskProgressRoute,
+  APP_TASK_PROGRESS_REFRESH_INTERVAL_MS,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
@@ -106,6 +108,34 @@ afterEach(async () => {
 });
 
 describe("canonical App task runtime", () => {
+  it("negative-caches sessions that do not own App task attempts", () => {
+    const descriptors = [{ id: "first" }, { id: "second" }] as Parameters<typeof refreshAppTaskProgressRoute>[0];
+    const routes = new Map();
+    let scans = 0;
+    const refresh = () => {
+      scans += 1;
+      return false;
+    };
+
+    expect(refreshAppTaskProgressRoute(descriptors, routes, "direct-session", 1_000, refresh)).toBe(false);
+    expect(scans).toBe(2);
+    expect(routes.get("direct-session")).toEqual({ appId: null, refreshedAt: 1_000 });
+
+    expect(refreshAppTaskProgressRoute(descriptors, routes, "direct-session", 1_001, refresh)).toBe(false);
+    expect(scans).toBe(2);
+
+    expect(
+      refreshAppTaskProgressRoute(
+        descriptors,
+        routes,
+        "direct-session",
+        1_000 + APP_TASK_PROGRESS_REFRESH_INTERVAL_MS,
+        refresh,
+      ),
+    ).toBe(false);
+    expect(scans).toBe(2);
+  });
+
   it("does not discover or import App definitions independently", async () => {
     const f = fixture();
     const bus = eventBus();
