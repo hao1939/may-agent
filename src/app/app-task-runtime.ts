@@ -2193,7 +2193,7 @@ function admitResolvedAppTaskEvent(input: {
     }
     const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
     if (triggerResult.kind === "recorded") {
-      if (controller) enqueueAppTask(controller, config, targetedTaskId, { front: true });
+      if (controller) enqueueAppTask(controller, config, targetedTaskId, { front: true, promote: true });
       return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
     }
     if (triggerResult.kind === "waiting") {
