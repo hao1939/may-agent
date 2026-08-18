@@ -406,7 +406,7 @@ describe("saveTaskState shrinkage guard", () => {
     expect(readTaskState(config).receipts?.["completed-0"]?.compactedDetailSha256).toBe(digest);
   });
 
-  it("compacts old terminal triggers while preserving running and latest recovery inputs", () => {
+  it("compacts terminal triggers while preserving running inputs", () => {
     const config = makeConfig();
     const tree = makeTree(5);
     tree.resources = {
@@ -449,8 +449,13 @@ describe("saveTaskState shrinkage guard", () => {
       ...(state === "failed" ? { finishedAt: startedAt, failureReason: "HandlerExecutionFailed" } : {}),
     });
     tree.attempts = {
-      old: attempt("old-1", "2026-07-28T00:00:00.000Z", "failed", "old detail"),
-      latest: attempt("latest-2", "2026-07-28T01:00:00.000Z", "failed", "latest recovery detail"),
+      old: attempt("old-1", "2026-07-28T00:00:00.000Z", "failed", "old detail".repeat(2_000)),
+      latest: attempt(
+        "latest-2",
+        "2026-07-28T01:00:00.000Z",
+        "failed",
+        "latest recovery detail".repeat(1_000),
+      ),
       running: {
         ...attempt("running-3", "2026-07-28T02:00:00.000Z", "running", "running detail"),
         taskId: "orphan-running",
@@ -468,8 +473,42 @@ describe("saveTaskState shrinkage guard", () => {
     });
     expect(saved.attempts?.old?.trigger?.compactedPayloadSha256).toBeString();
     expect(saved.attempts?.old?.trigger).not.toHaveProperty("payload");
-    expect(saved.attempts?.latest?.trigger?.payload).toBe("latest recovery detail");
+    expect(saved.attempts?.latest?.trigger?.compactedPayloadSha256).toBeString();
+    expect(saved.attempts?.latest?.trigger).not.toHaveProperty("payload");
     expect(saved.attempts?.running?.trigger?.payload).toBe("running detail");
+  });
+
+  it("keeps only durable provenance for oversized pending event triggers", () => {
+    const config = makeConfig();
+    const tree = makeTree(5);
+    tree.taskTriggers = {
+      "task-0": {
+        taskId: "task-0",
+        taskGeneration: 1,
+        resourceVersion: 1,
+        observedAt: "2026-07-28T00:00:00.000Z",
+        event: {
+          type: "session.end",
+          source: "runtime",
+          eventId: 123,
+          sessionId: "session-123",
+          status: "done",
+          payload: "x".repeat(20_000),
+        },
+      },
+    };
+
+    saveTaskState(config, tree);
+    const trigger = readTaskState(config).taskTriggers?.["task-0"]?.event;
+    expect(trigger).toMatchObject({
+      type: "session.end",
+      source: "runtime",
+      eventId: 123,
+      sessionId: "session-123",
+      status: "done",
+    });
+    expect(trigger?.compactedPayloadSha256).toBeString();
+    expect(trigger).not.toHaveProperty("payload");
   });
 
   it("rejects 19% of original (just below boundary)", () => {
