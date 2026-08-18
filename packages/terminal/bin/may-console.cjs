@@ -25,6 +25,8 @@ let watchMode = "may"; // may | all | current
 let watchedSessionId = null;
 let pendingStatusView = null;
 let lastDisconnectedMessage = "";
+let conversationReady = false;
+const pendingInputLines = [];
 
 const knownSessions = new Map();
 const sessionsWithText = new Set();
@@ -581,6 +583,8 @@ function handleEvent(event) {
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
           renderWorkList(event.conversation?.work, { all: false, command: "/work", transient: true });
+          conversationReady = true;
+          flushPendingInput();
         } else if (pending?.kind === "sync") {
           renderConversation(event.conversation?.messages);
         } else if (pending?.kind === "detail") {
@@ -594,7 +598,13 @@ function handleEvent(event) {
       // answer is the human-visible response.
       return;
     case "error":
-      if (event.command === "app.conversation.get") pendingConversationReads.shift();
+      if (event.command === "app.conversation.get") {
+        const pending = pendingConversationReads.shift();
+        if (pending?.kind === "startup") {
+          conversationReady = true;
+          flushPendingInput();
+        }
+      }
       printLine(`[error] ${event.message || "unknown error"}`);
       return;
     case "status":
@@ -692,6 +702,7 @@ function connectSocket() {
 
   socket.on("close", () => {
     connected = false;
+    conversationReady = false;
     socket = null;
     pendingConversationReads.length = 0;
     if (closing) return;
@@ -876,6 +887,16 @@ function handleInput(line) {
     return;
   }
 
+  // Commands such as `/work 1` depend on the current rendered work list, and
+  // ordinary turns should follow the Conversation history the human is about
+  // to see. Preserve early keystrokes until the initial Conversation snapshot
+  // arrives instead of executing them against an empty local view.
+  if (!connected || !conversationReady) {
+    pendingInputLines.push(input);
+    printLine("[waiting for May; input queued]");
+    return;
+  }
+
   if (input.startsWith("/")) {
     handleCommand(input);
     return;
@@ -889,6 +910,12 @@ function handleInput(line) {
   }
   sendFrame(mayInputFrame(input));
   refreshPrompt();
+}
+
+function flushPendingInput() {
+  if (!connected || !conversationReady || pendingInputLines.length === 0) return;
+  const queued = pendingInputLines.splice(0);
+  for (const input of queued) handleInput(input);
 }
 
 function closeAndExit(code) {
