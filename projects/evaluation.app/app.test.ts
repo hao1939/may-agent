@@ -103,9 +103,10 @@ describe("canonical evaluation App", () => {
       type: "evaluation.project.review.requested",
       data: {
         targetProject: "aks-rp-e2e.app",
+        project: "evaluation",
         reason: "compatibility-proof",
       },
-      target: { appId: "evaluation", project: "evaluation" },
+      target: { appId: "evaluation" },
     });
     expect(app.actions?.["review-project-app"]?.toInput).toBeUndefined();
   });

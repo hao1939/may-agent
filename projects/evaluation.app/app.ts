@@ -616,9 +616,10 @@ const app = defineApp({
           type: "evaluation.project.review.requested",
           data: {
             ...projectTarget(data.targetProject),
+            project: projectId,
             reason: stringValue(data.reason),
           },
-          target: { appId: projectId, project: projectId },
+          target: { appId: projectId },
         };
       },
     },
