@@ -6,6 +6,11 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
+import {
+  appTaskConditionRoutesByEventType,
+  readAppTaskConditionRoutes,
+  writeAppTaskConditionRouteIndex,
+} from "./app-task-condition-index.js";
 
 export type AppTaskConditionWake = {
   conditionId: string;
@@ -330,21 +335,28 @@ export function trackAppTaskConditionEvent(
   return trackAppTaskConditionEvents(config, [event]);
 }
 
-/** Pure preflight used by the canonical App router before it chooses a route. */
+/** Read-only canonical-state preflight used before the App router chooses a route. */
 export function matchingAppTaskConditionTaskIds(
   config: TaskStateConfig,
   event: Record<string, unknown>,
   allowedTaskIds?: Iterable<string>,
 ): string[] {
   const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
-  const tree = readTaskState(config);
+  const eventType = typeof event.type === "string" ? event.type : "";
+  let routes = readAppTaskConditionRoutes(config, eventType);
+  if (routes === null) {
+    const tree = readTaskState(config);
+    routes = appTaskConditionRoutesByEventType(tree)[eventType] ?? [];
+    // Repair missing projections lazily for task states created before this
+    // index existed. This does not mutate canonical task state.
+    writeAppTaskConditionRouteIndex(config, tree);
+  }
   const matched = new Set<string>();
-  for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
+  for (const { condition, taskIds } of routes) {
     if (!isCondition(condition) || !matches(condition, event)) continue;
-    for (const resource of Object.values(tree.resources ?? {})) {
-      if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
-      if (allowed && !allowed.has(resource.metadata.id)) continue;
-      matched.add(resource.metadata.id);
+    for (const taskId of taskIds) {
+      if (allowed && !allowed.has(taskId)) continue;
+      matched.add(taskId);
     }
   }
   return [...matched].sort();

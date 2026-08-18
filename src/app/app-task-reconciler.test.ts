@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { readTaskState, saveTaskState, type TaskStateConfig } from "./app-task-store.js";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
   matchingAppTaskConditionTaskIds,
   trackAppTaskConditionEvent,
@@ -964,10 +965,22 @@ describe("App task reconciler state", () => {
     }
     const event = { type: "provider.state", provider: "shared", state: "ready" };
 
+    const conditionRoutesPath = projectRuntimePaths(config.appDir).taskConditionRoutesPath;
+    expect(JSON.parse(readFileSync(conditionRoutesPath, "utf-8"))).toMatchObject({
+      schemaVersion: 1,
+      eventTypes: {
+        "provider.state": [{ taskIds: ["work/first"] }, { taskIds: ["work/second"] }],
+      },
+    });
+
     expect(matchingAppTaskConditionTaskIds(config, event)).toEqual(["work/first", "work/second"]);
     expect(readAppTaskTrigger(config, "work/first")).toBeUndefined();
     expect(readAppTaskTrigger(config, "work/second")).toBeUndefined();
     expect(matchingAppTaskConditionTaskIds(config, event, ["work/first"])).toEqual(["work/first"]);
+
+    rmSync(conditionRoutesPath);
+    expect(matchingAppTaskConditionTaskIds(config, event)).toEqual(["work/first", "work/second"]);
+    expect(existsSync(conditionRoutesPath)).toBe(true);
 
     expect(trackAppTaskConditionEventForTasks(config, event, ["work/first"])).toEqual([
       { conditionId: "shared-ready:work/first", taskId: "work/first" },
