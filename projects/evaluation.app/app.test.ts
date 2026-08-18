@@ -67,33 +67,47 @@ describe("canonical evaluation App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
-  test("translates every action into validated canonical input", () => {
+  test("keeps canonical App-input actions and declares the narrow semantic compatibility action", () => {
     expect(
-      app.actions?.["app-inbox-canary"]?.toInput({ prompt: "Probe" }),
+      app.actions?.["app-inbox-canary"]?.toInput?.({ prompt: "Probe" }),
     ).toEqual({
       kind: "canary-probe",
       data: { prompt: "Probe" },
     });
     expect(
-      app.actions?.["app-runtime-canary"]?.toInput({ itemId: "probe-1" }),
+      app.actions?.["app-runtime-canary"]?.toInput?.({ itemId: "probe-1" }),
     ).toEqual({
       kind: "runtime-canary",
       data: { itemId: "probe-1" },
     });
     expect(
-      app.actions?.["evaluate-session"]?.toInput({ sessionId: "s-1" }),
+      app.actions?.["evaluate-session"]?.toInput?.({ sessionId: "s-1" }),
     ).toEqual({
       kind: "evaluate-session",
       data: { sessionId: "s-1" },
     });
     expect(
-      app.actions?.["review-agent-app"]?.toInput({ targetProject: "gym" }),
+      app.actions?.["review-agent-app"]?.toInput?.({ targetProject: "gym" }),
     ).toMatchObject({
       kind: "project-review",
       data: {
         targetProject: "gym.app",
       },
     });
+    expect(
+      app.actions?.["review-project-app"]?.toEvent?.({
+        targetProject: "aks-rp-e2e.app",
+        reason: "compatibility-proof",
+      }),
+    ).toEqual({
+      type: "evaluation.project.review.requested",
+      data: {
+        targetProject: "aks-rp-e2e.app",
+        reason: "compatibility-proof",
+      },
+      target: { appId: "evaluation", project: "evaluation" },
+    });
+    expect(app.actions?.["review-project-app"]?.toInput).toBeUndefined();
   });
 
   test("handles configured work by policy and leaves human messages to owner judgment", () => {
