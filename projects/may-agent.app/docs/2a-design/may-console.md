@@ -204,6 +204,11 @@ Telegram. Automatic reconnect snapshots use `transient: true` and do not enter
 May's bounded context. Neither path creates Console-local presentation state,
 a selection protocol, or a work store.
 
+The recorded command message also carries the rendered list's ordered request
+IDs. `/work` shows relative age; `/work N` shows exact created, first-started,
+and last-semantic-change times plus the current execution/dependency links.
+Lease heartbeats and channel delivery receipts are intentionally absent.
+
 This is a semantic contract, not a cross-channel rendering contract. Console
 owns terminal command parsing and text layout. Telegram may use native commands,
 buttons, and a different layout while reading the same Conversation projection

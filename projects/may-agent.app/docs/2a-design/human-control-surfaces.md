@@ -26,11 +26,11 @@ commands and render aligned terminal text. Telegram may use native commands,
 buttons, reply anchors, Markdown, or compact messages. Both publish and read the
 same semantic Conversation contract.
 
-They also watch the same resource. After a message becomes durably visible,
-the Host emits a wake-only `conversation.updated` observation. Adapters re-read
-the Conversation and render unseen stable message IDs using their own
-presentation. The wake is not a delivery guarantee, and adapters never forward
-adapter events directly to one another.
+They also watch the same resource. After a message or work change becomes
+durably visible, the Host emits a wake-only `conversation.updated` observation.
+Adapters re-read the Conversation and render unseen stable message IDs using
+their own presentation. The wake is not a delivery guarantee, and adapters
+never forward adapter events directly to one another.
 
 ## Shared boundary
 
@@ -81,7 +81,7 @@ An adapter must not:
 Conversation synchronization follows the ordinary resource-watch pattern:
 
 ```text
-durable human/command message or persisted May result
+durable message, persisted result, or visible active-work change
   -> conversation.updated(appId, conversationId)
   -> adapter reads Conversation
   -> adapter skips message IDs already rendered on that surface
@@ -119,6 +119,24 @@ Work views are projections, not objects with another lifecycle:
 - completed work includes its bounded result;
 - one exact work read includes that request's full result.
 
+The human request remains the work identity. A session, task, child App, or
+analysis is only a resource used to fulfil it and may be replaced across
+attempts. Each projected item therefore carries only the current bounded
+links: its most recent `executor`, when known, and exact `dependency`, when it
+is waiting. Historical attempts remain discoverable by `requestId`; they are
+not copied into Conversation.
+
+Work timing has three precise meanings:
+
+- `createdAt` is durable request admission;
+- `startedAt` is the first processing claim, when known;
+- `changedAt` is the last human-visible state, progress, resource-link, or
+  result change.
+
+Lease renewal and delivery bookkeeping never advance `changedAt`. Adapters may
+show relative age in a list and exact local time in a detail view. Age is
+evidence for human review, not a new `stuck` lifecycle state.
+
 Console exposes `/work`, `/work all`, and `/work N`. Telegram may expose the
 same meanings through native commands or controls and may render each item
 differently. The shared contract is the selected work identity and semantic
@@ -129,6 +147,12 @@ When a human explicitly requests a view, the adapter records a concise
 turn on either channel can then understand references such as “the first one”
 or “show me that result.” Automatic startup/reconnect views use
 `transient: true`.
+
+That message metadata retains the ordered `requestIds` represented by the
+rendered view. Ordinal language refers to what the human actually saw, even if
+the active list changes later. The visible text remains the primary context;
+the IDs provide exact navigation and bounded resource lookup without creating
+a selected-work controller.
 
 ## Console contract
 

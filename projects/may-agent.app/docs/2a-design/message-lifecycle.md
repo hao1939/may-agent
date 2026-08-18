@@ -91,22 +91,37 @@ The Conversation is reconstructed from existing durable evidence:
 - durable agent/tool/command Conversation events;
 - active or historical human work derived from App inbox and dependency state.
 
+An ordinary Conversation read contains the active-work projection derived from
+unfinished human requests. It is never persisted or reconciled separately.
+Each item is rooted at its stable request ID and may expose its most recent
+execution resource and exact dependency. Sessions and tasks remain replaceable
+mechanisms, not Conversation-owned work.
+
+`createdAt`, first `startedAt`, and semantic `changedAt` make request age and
+stale progress visible. Infrastructure heartbeats do not count as semantic
+change. Completion removes an item from the ordinary active projection; the
+result remains a durable Conversation message and `/work all` can still derive
+the historical item.
+
 There is no separate Conversation database. Adapter delivery state is not
 projected into May's answer or the human work lifecycle. Restart must
 reconstruct the same bounded resource from durable state.
 
-After durable admission of a human/command/tool message, or after a May result
-is persisted, the Host emits `conversation.updated`. This is a coalescible wake
-signal, not another message or a delivery guarantee. Console and Telegram
-respond by reading the Conversation and rendering stable message IDs they have
-not already shown. Adapters do not forward content to one another, and
-rendering the same message on another surface does not append a duplicate.
+After durable admission of a human/command/tool message, a visible active-work
+change, or a persisted May result, the Host emits `conversation.updated`. This
+is a coalescible wake signal, not another message or a delivery guarantee.
+Console and Telegram respond by reading the Conversation and rendering stable
+message IDs they have not already shown. Adapters do not forward content to one
+another, and rendering the same message on another surface does not append a
+duplicate.
 
 `/work`, `/work all`, and `/work N` are Console read shortcuts over this
 projection. Telegram may expose native commands, buttons, or different layout.
 When a requested view may shape the next turn, the adapter records a concise
 command-authored semantic message representing what its human saw. Formatting
-and markup stay adapter-local.
+and markup stay adapter-local. Ordered request IDs accompany numbered work
+views so “work 1” resolves against the last rendered view rather than a later
+ordering of active work.
 
 ## Presentation
 
