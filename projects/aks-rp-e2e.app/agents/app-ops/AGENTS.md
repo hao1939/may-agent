@@ -127,6 +127,16 @@ decisions.
     actionable notification, and wait for the human to satisfy repository
     policies and merge it into `main`. Never merge a focused repair PR on the
     human's behalf.
+17. An AKS task does not authorize a May Host deployment. `app-ops` may reload
+    current App definitions and may report an exact Runtime compatibility gap,
+    but it must route a May Runtime source change or deployment to the
+    `may-agent` App. Never install `/usr/local/bin/may-agent`, invoke the May
+    deploy script with an AKS task, or turn an App compatibility check into a
+    Host rollout. Before restoring a removed action or compatibility alias,
+    verify it against current accepted design and a current caller; otherwise
+    correct the stale task instead of restoring the retired interface.
+    Historical release source and completed receipts are evidence only; they
+    are never desired current source.
 
 ## Finish Criteria
 

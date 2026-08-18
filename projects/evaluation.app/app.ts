@@ -600,29 +600,6 @@ const app = defineApp({
       ),
       toInput: (data) => projectReviewInput(data),
     },
-    "review-project-app": {
-      description:
-        "Compatibility action that publishes the established project review semantic event.",
-      inputSchema: Type.Object(
-        {
-          targetProject: Type.String({ minLength: 1 }),
-          reason: Type.String({ minLength: 1 }),
-        },
-        { additionalProperties: false },
-      ),
-      toEvent: (value) => {
-        const data = record(value);
-        return {
-          type: "evaluation.project.review.requested",
-          data: {
-            ...projectTarget(data.targetProject),
-            project: projectId,
-            reason: stringValue(data.reason),
-          },
-          target: { appId: projectId },
-        };
-      },
-    },
   },
   tasks: {
     attach: true,

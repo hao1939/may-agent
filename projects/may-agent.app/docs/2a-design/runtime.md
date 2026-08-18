@@ -42,6 +42,15 @@ open stores
 Reload prepares a full replacement before publication. Generation-owned timers,
 subscriptions, and workers are closed when replaced.
 
+## Deployment
+
+Reload applies current agent and App definitions; it does not replace Host
+code. A Host deployment belongs to a live `may-agent` App task. The immutable
+candidate must contain the current canonical May commit before it may replace
+the process binary and SDK. A project App may report a Host compatibility gap,
+but its task cannot authorize a global May deployment. Historical releases and
+worktrees are evidence, never rollout targets.
+
 ## Store first, then run
 
 The Host stores identity and intent before it queues work. The code calls this

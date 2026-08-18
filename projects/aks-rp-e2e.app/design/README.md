@@ -54,6 +54,13 @@ Responsibilities are deliberately narrow:
 - Runtime: schedules attempts, enforces concurrency, persists state, rejects
   stale results, wakes Conditions, and performs recovery.
 
+AKS owns neither May Runtime source nor its deployment. An AKS compatibility
+task may test the current Host and reload current App definitions. A Runtime
+change is a request to the `may-agent` App and is deployed only by a May-owned
+task from a candidate containing current canonical May source. An old release,
+worktree, receipt, or previously working event is diagnostic evidence, not
+rollout authority.
+
 ## Domain task reconciliation
 
 The task owns the durable loop; one workflow run is one bounded iteration:

@@ -67,7 +67,7 @@ describe("canonical evaluation App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
-  test("keeps canonical App-input actions and declares the narrow semantic compatibility action", () => {
+  test("keeps canonical App-input actions without a legacy project-review alias", () => {
     expect(
       app.actions?.["app-inbox-canary"]?.toInput?.({ prompt: "Probe" }),
     ).toEqual({
@@ -94,21 +94,7 @@ describe("canonical evaluation App", () => {
         targetProject: "gym.app",
       },
     });
-    expect(
-      app.actions?.["review-project-app"]?.toEvent?.({
-        targetProject: "aks-rp-e2e.app",
-        reason: "compatibility-proof",
-      }),
-    ).toEqual({
-      type: "evaluation.project.review.requested",
-      data: {
-        targetProject: "aks-rp-e2e.app",
-        project: "evaluation",
-        reason: "compatibility-proof",
-      },
-      target: { appId: "evaluation" },
-    });
-    expect(app.actions?.["review-project-app"]?.toInput).toBeUndefined();
+    expect(app.actions?.["review-project-app"]).toBeUndefined();
   });
 
   test("handles configured work by policy and leaves human messages to owner judgment", () => {
