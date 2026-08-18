@@ -208,6 +208,7 @@ export async function runAppRuntime(opts: {
     db: getDb(opts.persistDir),
     manager,
     bus,
+    maxConcurrentRequests: configuredHostConcurrency,
     runOwner: (work, context) =>
       context.appId === "may" && context.humanOrigin ? hostCapacity.runForeground(work) : hostCapacity.run(work),
     attachTask: appTasks.attach,
