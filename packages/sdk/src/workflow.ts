@@ -72,6 +72,8 @@ export type WorkflowMetricCapability = {
 export type AgentCallOptions = {
   sessionId?: string;
   timeoutMs?: number;
+  /** Exact source classification persisted on the execution session. */
+  source?: string;
 };
 
 /** Bounded stable projections. It intentionally has no list or SQL escape hatch. */

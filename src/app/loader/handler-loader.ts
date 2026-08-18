@@ -233,6 +233,7 @@ function createWorkflowBackedHandler(
   return createWorkflowHandler({
     workflow: handler.workflow,
     source: handler.agent ?? entry.agent ?? ctx.agentName,
+    sessionSource: entry.category === "heartbeat" ? "heartbeat" : undefined,
     projectId: handler.projectId,
     task: handler.task,
     includeEvent: handler.includeEvent,

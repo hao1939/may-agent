@@ -9,6 +9,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
+import { upsertSession } from "./requests.js";
 import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -108,6 +109,51 @@ describe("createAgentsTool()", () => {
       expect(session.agent).toBe("researcher");
 
       await manager.waitFor(sessionId);
+    });
+  });
+
+  describe("action: context", () => {
+    it("returns persisted steps from the caller's workflow run", async () => {
+      const callerSessionId = "caller-session";
+      const workflowRunId = "workflow-run-1";
+      manager.activeSessions.set(callerSessionId, { workflowRunId } as any);
+      upsertSession(persistDir, {
+        sessionId: "step-session-1",
+        agent: "researcher",
+        task: "inspect the implementation",
+        status: "done",
+        workflowRunId,
+        stepLabel: "inspect",
+        startedAt: 1,
+        endedAt: 2,
+        outcome: "implementation inspected",
+      });
+      upsertSession(persistDir, {
+        sessionId: "current-running-step",
+        agent: "writer",
+        task: "current caller",
+        status: "running",
+        workflowRunId,
+        startedAt: 3,
+      });
+      upsertSession(persistDir, {
+        sessionId: "other-workflow-step",
+        agent: "writer",
+        task: "must not leak",
+        status: "done",
+        workflowRunId: "workflow-run-2",
+        startedAt: 4,
+      });
+
+      const tool = manager.createAgentsTool({ getCallerSessionId: () => callerSessionId });
+      const result = await tool.execute("tc-context-workflow", { action: "context", scope: "workflow" });
+      manager.activeSessions.delete(callerSessionId);
+
+      expect(parseResult(result)).toEqual({
+        scope: "workflow",
+        workflowRunId,
+        steps: [{ step: "inspect", sessionId: "step-session-1", summary: "done: implementation inspected" }],
+      });
     });
   });
 
