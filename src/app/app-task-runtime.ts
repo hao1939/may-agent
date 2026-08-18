@@ -2283,7 +2283,7 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
   });
 }
 
-/** Pure task-Condition route preflight for the canonical App coordinator. */
+/** Read-only canonical-state task-Condition preflight for the App coordinator. */
 export function previewLoadedCanonicalAppTaskEvent(input: {
   bus: EventBus;
   appId: string;
