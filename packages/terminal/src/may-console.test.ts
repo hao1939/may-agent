@@ -404,6 +404,88 @@ describe("May Console", () => {
     await once(child, "exit");
   }, 10_000);
 
+  test("queues early work commands until the initial Conversation view arrives", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-early-input-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    const frames: Array<Record<string, any>> = [];
+    let client: Socket | null = null;
+    let inputBuffer = "";
+    const conversation = {
+      id: "may:primary",
+      owner: "may",
+      version: 1,
+      messages: [],
+      work: [
+        {
+          requestId: "work-one",
+          message: "Inspect the first item",
+          state: "working",
+          createdAt: 1,
+          updatedAt: 2,
+        },
+      ],
+    };
+    const server: Server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      socket.on("data", (chunk) => {
+        inputBuffer += chunk.toString();
+        const lines = inputBuffer.split("\n");
+        inputBuffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "status") {
+            socket.write(`${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`);
+          } else if (frame.type === "app.conversation.get" && frame.workRequestId) {
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: "app.conversation.get", conversation })}\n`,
+            );
+          } else if (frame.type !== "app.conversation.get") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
+      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    child.stdin.write("/work 1\n");
+    await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get" && !frame.workRequestId));
+    expect(frames.some((frame) => frame.workRequestId)).toBe(false);
+    expect(output).toContain("[waiting for May; input queued]");
+
+    client?.write(`${JSON.stringify({ type: "ok", command: "app.conversation.get", conversation })}\n`);
+    await waitFor(() => frames.some((frame) => frame.workRequestId === "work-one"));
+    await waitFor(() => output.includes("Work 1:") && output.includes("Request: Inspect the first item"));
+    expect(output).not.toContain("[work] No item 1");
+
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  });
+
   test("uses a distinct durable message identity for each Console process", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-identity-"));
     const instance = "test";
