@@ -13,6 +13,8 @@ export interface CronRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   loaderOpts: AgentLoaderOptions;
+  /** Exact task sessions fenced during the initial App task install pass. */
+  claimedAppTaskSessionIds?: ReadonlySet<string>;
 }
 
 function fieldFromPrompt(prompt: string, name: string): string | null {
@@ -72,7 +74,7 @@ export function shouldResumeStartupSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts } = options;
 
-  const claimedAppTaskSessionIds = recoverInstalledAppTasks(bus);
+  const claimedAppTaskSessionIds = options.claimedAppTaskSessionIds ?? recoverInstalledAppTasks(bus);
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
     shouldResume: (sessionId, session) => shouldResumeStartupSession(sessionId, session, claimedAppTaskSessionIds),

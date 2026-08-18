@@ -976,10 +976,20 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
 }
 
 /** Rebuild the disposable read projection without mutating canonical task state. */
-export function refreshAppTaskTreeProjection(config: TaskStateConfig): string {
+export function refreshAppTaskTreeProjection(
+  config: TaskStateConfig,
+  options: { ifStaleOnly?: boolean } = {},
+): string {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
     const projectionPath = projectRuntimePaths(config.appDir).taskTreePath;
+    if (options.ifStaleOnly) {
+      try {
+        if (statSync(projectionPath).mtimeMs >= statSync(config.statePath).mtimeMs) return projectionPath;
+      } catch {
+        // Missing or unreadable projection: rebuild from canonical state.
+      }
+    }
+    const tree = readTaskState(config);
     const tempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
     ensureDir(dirname(projectionPath));
     writeFileSync(
