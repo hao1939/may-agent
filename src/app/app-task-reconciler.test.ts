@@ -36,6 +36,7 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
+  expiredOwnerSessionAppTaskAttempt,
   terminalOwnerSessionAppTaskClaim,
   releaseHandlerExecutionFailedAppTask,
   releaseHandlerUnavailableAppTask,
@@ -2193,6 +2194,68 @@ describe("App task reconciler state", () => {
     }
   });
 
+  it("uses durable session activity to resume an active task without progress lease rewrites", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(recordAppTaskAttemptSession(config, claim, "session-active-at-restart")).toBe(true);
+
+    const before = readTaskState(config);
+    const attempt = before.attempts?.[claim.attemptId];
+    if (!attempt?.lease) throw new Error("expected leased attempt");
+    attempt.runtimeId = "previous-runtime";
+    attempt.lease.runtimeId = "previous-runtime";
+    attempt.lease.lastActivityAt = "2026-08-15T00:00:00.000Z";
+    attempt.lease.expiresAt = "2026-08-15T00:15:00.000Z";
+    saveTaskState(config, before);
+
+    const restartAt = Date.parse("2026-08-18T01:00:00.000Z");
+    expect(
+      claimFreshAppTaskSessionForStartup(
+        config,
+        { taskId: claim.taskId, generation: claim.generation },
+        "session-active-at-restart",
+        restartAt,
+        { sessionId: "session-active-at-restart", lastActivityAt: restartAt - 1_000 },
+      ),
+    ).toBe(true);
+    expect(readTaskState(config).attempts?.[claim.attemptId]).toMatchObject({
+      state: "running",
+      sessionId: "session-active-at-restart",
+      lease: { sessionId: "session-active-at-restart" },
+    });
+
+    const stale = fixture();
+    const staleClaim = declareAndClaimTask(stale.config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (staleClaim.kind !== "claimed") throw new Error("expected stale claim");
+    expect(recordAppTaskAttemptSession(stale.config, staleClaim, "session-stale-at-restart")).toBe(true);
+    const staleBefore = readTaskState(stale.config);
+    const staleAttempt = staleBefore.attempts?.[staleClaim.attemptId];
+    if (!staleAttempt?.lease) throw new Error("expected stale leased attempt");
+    staleAttempt.runtimeId = "previous-runtime";
+    staleAttempt.lease.runtimeId = "previous-runtime";
+    staleAttempt.lease.expiresAt = "2026-08-15T00:15:00.000Z";
+    saveTaskState(stale.config, staleBefore);
+    expect(
+      claimFreshAppTaskSessionForStartup(
+        stale.config,
+        { taskId: staleClaim.taskId, generation: staleClaim.generation },
+        "session-stale-at-restart",
+        restartAt,
+        { sessionId: "session-stale-at-restart", lastActivityAt: restartAt - 16 * 60_000 },
+      ),
+    ).toBe(false);
+    expect(readTaskState(stale.config).attempts?.[staleClaim.attemptId]).toEqual(staleAttempt);
+  });
+
   it("consumes a terminal direct-owner result exactly once even while its lease is fresh", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -2324,6 +2387,24 @@ describe("App task reconciler state", () => {
     });
     attempt.lease.expiresAt = "2020-01-01T00:00:00.000Z";
     saveTaskState(config, tree);
+    const activeAt = Date.now();
+    const activity = { sessionId: "live-owner-session", lastActivityAt: activeAt - 1_000 };
+    expect(expiredOwnerSessionAppTaskAttempt(config, claim.taskId, activeAt, activity)).toBeNull();
+    expect(
+      expiredOwnerSessionAppTaskAttempt(config, claim.taskId, activeAt, {
+        sessionId: "unrelated-session",
+        lastActivityAt: activeAt,
+      }),
+    ).toMatchObject({ taskId: claim.taskId, sessionId: "live-owner-session" });
+    expect(
+      releaseTerminalSessionExpiredAppTaskAttempt(
+        config,
+        recovery,
+        "recent session activity must preserve ownership",
+        activeAt,
+        activity,
+      ),
+    ).toEqual({ released: false, sessionIds: [] });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
         config,
