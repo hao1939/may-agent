@@ -198,6 +198,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     : undefined;
 
   const invokeOwner = createManagerAppOwnerInvoker(options.manager);
+  const notifyConversationUpdated = (appId: string, conversationId?: string): void => {
+    const normalizedAppId = appId.trim();
+    const normalizedConversationId = conversationId?.trim();
+    if (!normalizedAppId || !normalizedConversationId) return;
+    options.bus.emit({
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: `app:${normalizedAppId}`,
+      data: { appId: normalizedAppId, conversationId: normalizedConversationId },
+    });
+  };
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
@@ -220,6 +231,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     maxBatchSize: options.maxBatchSize,
+    onConversationChanged: notifyConversationUpdated,
   });
   host.recoverDeliveries();
   const active = new Map<string, number>();
@@ -356,18 +368,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     } finally {
       dispatchingDelivery = false;
     }
-  };
-
-  const notifyConversationUpdated = (appId: string, conversationId?: string): void => {
-    const normalizedAppId = appId.trim();
-    const normalizedConversationId = conversationId?.trim();
-    if (!normalizedAppId || !normalizedConversationId) return;
-    options.bus.emit({
-      type: "conversation.updated",
-      source: "app-inbox",
-      owner: `app:${normalizedAppId}`,
-      data: { appId: normalizedAppId, conversationId: normalizedConversationId },
-    });
   };
 
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
