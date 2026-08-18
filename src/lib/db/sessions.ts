@@ -170,3 +170,10 @@ export function updateSessionProgress(
     [fields.opCount ?? 0, fields.opCount ?? 0, activityAt, activityAt, activityAt, sessionId],
   );
 }
+
+/** Read durable session liveness without loading session artifacts. */
+export function readSessionLastActivityAt(persistDir: string, sessionId: string): number | null {
+  const row = getDb(persistDir).prepare("SELECT lastActivityAt FROM sessions WHERE sessionId = ?").get(sessionId) as
+    { lastActivityAt: number | null } | undefined;
+  return row?.lastActivityAt ?? null;
+}

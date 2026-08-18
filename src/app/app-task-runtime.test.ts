@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
@@ -11,8 +11,6 @@ import {
   consumePersistedTerminalOwnerResult,
   installAppTaskRuntimes,
   readLoadedAppTaskView,
-  refreshAppTaskProgressRoute,
-  APP_TASK_PROGRESS_REFRESH_INTERVAL_MS,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
@@ -108,32 +106,54 @@ afterEach(async () => {
 });
 
 describe("canonical App task runtime", () => {
-  it("negative-caches sessions that do not own App task attempts", () => {
-    const descriptors = [{ id: "first" }, { id: "second" }] as Parameters<typeof refreshAppTaskProgressRoute>[0];
-    const routes = new Map();
-    let scans = 0;
-    const refresh = () => {
-      scans += 1;
-      return false;
-    };
+  it("does not rewrite App task state for high-volume session progress", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      appRegistrySnapshot: {
+        id: "boot:progress",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/progress",
+        parentId: "operations",
+        outcome: "Process progress",
+        acceptance: ["Work converges"],
+        mode: "achieve",
+        owner: "sample-owner",
+      },
+      appOwner: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/progress",
+      appOwner: "sample-owner",
+      handler: "owner:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(recordAppTaskAttemptSession(config, claim, "session-progress")).toBe(true);
 
-    expect(refreshAppTaskProgressRoute(descriptors, routes, "direct-session", 1_000, refresh)).toBe(false);
-    expect(scans).toBe(2);
-    expect(routes.get("direct-session")).toEqual({ appId: null, refreshedAt: 1_000 });
-
-    expect(refreshAppTaskProgressRoute(descriptors, routes, "direct-session", 1_001, refresh)).toBe(false);
-    expect(scans).toBe(2);
-
-    expect(
-      refreshAppTaskProgressRoute(
-        descriptors,
-        routes,
-        "direct-session",
-        1_000 + APP_TASK_PROGRESS_REFRESH_INTERVAL_MS,
-        refresh,
-      ),
-    ).toBe(false);
-    expect(scans).toBe(2);
+    const before = readFileSync(config.statePath, "utf8");
+    for (let index = 0; index < 100; index += 1) {
+      bus.emit({
+        type: "tool_call",
+        sessionId: "session-progress",
+        agent: "sample-owner",
+        tool: "read",
+        args: { index },
+      });
+    }
+    expect(readFileSync(config.statePath, "utf8")).toBe(before);
   });
 
   it("does not discover or import App definitions independently", async () => {

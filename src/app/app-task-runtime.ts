@@ -19,7 +19,7 @@ import type { SubagentManager } from "../lib/index.js";
 import type { EventEnvelope } from "../lib/handler-context.js";
 import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
 import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../lib/workflow-tool.js";
-import { getDb, updateSessionDb } from "../lib/requests.js";
+import { getDb, readSessionLastActivityAt, updateSessionDb } from "../lib/requests.js";
 import {
   appendSessionMessage,
   markSessionInactive,
@@ -101,7 +101,6 @@ import {
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
-  refreshAppTaskAttemptLeaseBySession,
   claimFreshAppTaskSessionForStartup,
   taskReconciliationConfig,
   APP_TASK_RECOVERY_OWNER,
@@ -1708,7 +1707,12 @@ async function reconcileTask(input: {
           return consumed.reconcileTaskIds;
         }
       }
-      const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId);
+      const leaseCheckAt = Date.now();
+      const sessionActivity =
+        active?.sessionId && opts.persistDir
+          ? { sessionId: active.sessionId, lastActivityAt: readSessionLastActivityAt(opts.persistDir, active.sessionId) }
+          : undefined;
+      const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId, leaseCheckAt, sessionActivity);
       const sessionId = expired?.sessionId;
       const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
       const terminalStatus =
@@ -1720,6 +1724,8 @@ async function reconcileTask(input: {
           config,
           { ...expired, sessionId, terminalStatus },
           `Expired reconciliation ${input.taskId} lost its synchronous caller after owner session completion`,
+          leaseCheckAt,
+          sessionActivity,
         );
         if (released.released) {
           emitTaskReconciliationEvent(
@@ -2130,49 +2136,6 @@ async function reconcileTask(input: {
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, AppTaskRuntimeDescriptor[]>();
 const appRouterOptionsByBus = new WeakMap<EventBus, AppTaskRuntimeOptions>();
-export const APP_TASK_PROGRESS_REFRESH_INTERVAL_MS = 60_000;
-export type AppTaskProgressRoute = { appId: string | null; refreshedAt: number };
-const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, AppTaskProgressRoute>>();
-
-/**
- * Keep high-volume session progress on its exact App after the first durable
- * match. A miss scans current descriptors so the index remains disposable and
- * can always be rebuilt from authoritative task state.
- */
-export function refreshAppTaskProgressRoute(
-  descriptors: readonly AppTaskRuntimeDescriptor[],
-  routes: Map<string, AppTaskProgressRoute>,
-  sessionId: string,
-  observedAt: number,
-  refresh: (descriptor: AppTaskRuntimeDescriptor) => boolean,
-): boolean {
-  const normalizedSessionId = sessionId.trim();
-  if (!normalizedSessionId) return false;
-  const now = Number.isFinite(observedAt) ? observedAt : Date.now();
-  const cachedRoute = routes.get(normalizedSessionId);
-  if (cachedRoute) {
-    // Session ownership is fixed at session.start. A known non-task session
-    // never needs to scan every App task tree on later progress events.
-    if (cachedRoute.appId === null) return false;
-    if (now >= cachedRoute.refreshedAt && now - cachedRoute.refreshedAt < APP_TASK_PROGRESS_REFRESH_INTERVAL_MS) {
-      return true;
-    }
-    const cached = descriptors.find((descriptor) => descriptor.id === cachedRoute.appId);
-    if (cached && refresh(cached)) {
-      routes.set(normalizedSessionId, { appId: cached.id, refreshedAt: now });
-      return true;
-    }
-    routes.delete(normalizedSessionId);
-  }
-  for (const descriptor of descriptors) {
-    if (descriptor.id === cachedRoute?.appId) continue;
-    if (!refresh(descriptor)) continue;
-    routes.set(normalizedSessionId, { appId: descriptor.id, refreshedAt: now });
-    return true;
-  }
-  routes.set(normalizedSessionId, { appId: null, refreshedAt: now });
-  return false;
-}
 
 function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTaskRuntimeDescriptor | undefined {
   const normalized = projectId.trim().replace(/\.app$/, "");
@@ -2471,7 +2434,6 @@ export async function closeInstalledAppTaskRuntimes(bus: EventBus): Promise<void
   if (!appTaskControllersByBus.has(bus)) {
     appRouterDescriptorsByBus.get(bus)?.splice(0);
     appRouterOptionsByBus.delete(bus);
-    appTaskProgressRoutesByBus.get(bus)?.clear();
   }
 }
 
@@ -2674,6 +2636,11 @@ function recoverInterruptedAppTasks(
           config,
           { taskId: recovery.taskId, generation: recovery.taskGeneration },
           recovery.sessionId,
+          Date.now(),
+          {
+            sessionId: recovery.sessionId,
+            lastActivityAt: readSessionLastActivityAt(opts.persistDir, recovery.sessionId),
+          },
         )
       ) {
         claimedSessionIds.add(recovery.sessionId);
@@ -2857,11 +2824,6 @@ async function requeueRepairedAppTaskHandlers(
 
 function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskRuntimeDescriptor[]): void {
   appRouterOptionsByBus.set(opts.bus, opts);
-  let progressRoutes = appTaskProgressRoutesByBus.get(opts.bus);
-  if (!progressRoutes) {
-    progressRoutes = new Map();
-    appTaskProgressRoutesByBus.set(opts.bus, progressRoutes);
-  }
   const existing = appRouterDescriptorsByBus.get(opts.bus);
   if (existing) {
     existing.splice(0, existing.length, ...descriptors);
@@ -2871,45 +2833,9 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent): DeliveryResult | void => {
     const event = flattenEvent(rawEvent);
-    const progressSessionId =
-      (event.type === "tool_call" ||
-        event.type === "tool_result" ||
-        (event.type === "text" && typeof event.text === "string" && event.text.trim().length > 0)) &&
-      typeof event.sessionId === "string"
-        ? event.sessionId.trim()
-        : "";
-    if (progressSessionId) {
-      const observedAt = typeof event.timestamp === "number" ? event.timestamp : Date.now();
-      refreshAppTaskProgressRoute(
-        appRouterDescriptorsByBus.get(opts.bus) ?? [],
-        progressRoutes,
-        progressSessionId,
-        observedAt,
-        (descriptor) =>
-          Boolean(
-            descriptor.app.tasks &&
-            refreshAppTaskAttemptLeaseBySession(
-              taskReconciliationConfig({
-                appDir: descriptor.appDir,
-                projectDir: descriptor.projectDir,
-                owner: descriptor.owner,
-                maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-              }),
-              progressSessionId,
-              observedAt,
-            ),
-          ),
-      );
-    }
     const startedSessionId =
       event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
     const sessionBinding = startedSessionId ? parseAppTaskSessionBinding(event.task) : null;
-    if (startedSessionId && !sessionBinding) {
-      progressRoutes.set(startedSessionId, {
-        appId: null,
-        refreshedAt: typeof event.timestamp === "number" ? event.timestamp : Date.now(),
-      });
-    }
     if (sessionBinding) {
       const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
         (candidate) => candidate.id === sessionBinding.appId,
@@ -2925,16 +2851,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           sessionBinding,
           startedSessionId,
         );
-        if (association.status === "recorded") {
-          progressRoutes.set(startedSessionId, {
-            appId: descriptor.id,
-            refreshedAt: typeof event.timestamp === "number" ? event.timestamp : Date.now(),
-          });
-        } else {
-          progressRoutes.set(startedSessionId, {
-            appId: null,
-            refreshedAt: typeof event.timestamp === "number" ? event.timestamp : Date.now(),
-          });
+        if (association.status !== "recorded") {
           interruptSupersededOwnerSession(
             opts,
             startedSessionId,
@@ -2969,9 +2886,6 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
             };
           })()
         : null;
-    if (event.type === "session.end" && typeof event.sessionId === "string") {
-      progressRoutes.delete(event.sessionId.trim());
-    }
     const hasTaskRecoveryScope = Boolean(successfulOwner?.binding || successfulOwner?.workflowRunId);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
@@ -3056,7 +2970,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       }
     }
     return undefined;
-  }, { label: "app-task-progress" });
+  }, { label: "app-task-session" });
 }
 
 function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
