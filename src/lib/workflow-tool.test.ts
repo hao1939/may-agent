@@ -106,7 +106,7 @@ describe("App workflow authoring context", () => {
 export const name = "app-agent";
 export const description = "App SDK Agent adapter test";
 export async function execute(ctx) {
-  const result = await ctx.agents.call("worker", String(ctx.input));
+  const result = await ctx.agents.call("worker", String(ctx.input), { operationAllowance: 50 });
   ctx.log.info(result.summary);
   return ctx.done("adapted", result);
 }
@@ -114,10 +114,12 @@ export async function execute(ctx) {
     );
     const logged: string[] = [];
     let agentSessionSource: string | undefined;
+    let operationAllowance: number | undefined;
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: async (_agent: string, _task: string, options: { source?: string }) => {
+        callAgent: async (_agent: string, _task: string, options: { source?: string; operationAllowance?: number }) => {
           agentSessionSource = options.source;
+          operationAllowance = options.operationAllowance;
           return {
             sessionId: "s_app_step",
             status: "done",
@@ -163,7 +165,40 @@ export async function execute(ctx) {
       },
     });
     expect(agentSessionSource).toBe("heartbeat");
+    expect(operationAllowance).toBe(50);
     expect(logged).toEqual(["bounded move complete"]);
+  });
+
+  it("rejects invalid operation allowances before provider execution", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-invalid-allowance-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "invalid-allowance.ts"),
+      `
+export const name = "invalid-allowance";
+export const description = "Invalid operation allowance test";
+export async function execute(ctx) {
+  return ctx.agents.call("worker", "must not run", { operationAllowance: Number.POSITIVE_INFINITY });
+}
+`,
+    );
+    let calls = 0;
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: async () => {
+          calls += 1;
+          throw new Error("provider should not run");
+        },
+      } as any,
+      workflowDir,
+      agentName: "owner",
+    });
+
+    const result = await runner.run("invalid-allowance", "input");
+    expect(result).toMatchObject({ type: "error" });
+    expect(result.type === "error" ? result.error : "").toContain("finite positive integer");
+    expect(calls).toBe(0);
   });
 
   it("normalizes a directly returned execution error at the host boundary", async () => {
