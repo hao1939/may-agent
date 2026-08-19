@@ -1,7 +1,7 @@
 # Scout Design Integrity and Cleanup
 
-**Status:** Approved and implemented in source; live runtime verification is
-recorded separately
+**Status:** Historical cleanup and verification record. Current behavior is
+defined by `../scout-knowledge-library-process.md`.
 
 **Reviewed:** 2026-07-20
 

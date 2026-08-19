@@ -1,6 +1,7 @@
 # Scout Post-Fix Closeout and Verified Cleanup
 
-**Status:** Implemented; liveness verified, artifact closeout still open
+**Status:** Historical implementation and closeout record. Current behavior is
+defined by `../scout-knowledge-library-process.md`.
 
 **Scope:** Retire the verified HN duplication, restore current Scout task state,
 close the remaining exact-source admission gap, and prove that scheduled source

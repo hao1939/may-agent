@@ -123,7 +123,7 @@ describe("Scout owner reconciliation boundary", () => {
       }),
     );
 
-    expect(prompt).toContain("sole task-tree mutation authority");
+    expect(prompt).toContain("Host is the sole task-state mutation authority");
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",

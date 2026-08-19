@@ -1,7 +1,7 @@
 # Scout Autonomous Artifact Integrity Loop
 
-**Status:** Scout implementation verified locally; May recovery fencing and
-runtime rollout remain
+**Status:** Historical implementation and rollout record. Current behavior is
+defined by `../scout-knowledge-library-process.md`.
 
 **Scope:** Prevent and autonomously repair Scout finding-path and digest-identity
 collisions.

@@ -53,6 +53,13 @@ autonomy, durable reconciliation, observation, and recovery.
 
 The app has one accountable owner: `scout`.
 
+`agents/scout/` is the App's only active agent directory. The former `amy` and
+`amy-kimi` agents duplicated Scout's XHS responsibility, were not bound to any
+App task or workflow, and carried instructions for retired knowledge paths.
+Their files are preserved under `archive/agents/` as historical evidence and
+are not loaded by the Host. Restoring either agent requires a new explicit role
+that does not duplicate Scout and a reviewed plan for its output authority.
+
 Reusable research and maintenance processes belong to Scout and live under:
 
 ```text

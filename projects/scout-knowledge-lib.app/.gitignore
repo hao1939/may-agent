@@ -1,4 +1,5 @@
 /.state/
+**/.xhs_cookies.json
 node_modules/
 agents/*/last-eval.md
 agents/*/last-session.md

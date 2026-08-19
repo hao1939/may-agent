@@ -1,8 +1,9 @@
-# Scout Knowledge Library Task Tree
+# Scout Knowledge Library Task Resources
 
 `tasks/seed.json` declares only the standing desired state used to initialize a
 new Scout app. After initialization,
-`.state/tasks/state.json` is the sole mutable task authority.
+`.state/tasks/state.json` is the Host-owned mutable task authority. App code,
+workflows, observers, and agents never edit it directly.
 
 `.state/tasks/tree.json` is a generated human/agent read projection. Do not
 edit it and never use it as mutation or bootstrap input after cutover.
@@ -16,7 +17,7 @@ tasks only for bounded work that needs durable tracking. Use tasks to represent:
 - what the library is trying to improve
 - what quality signal or user steering triggered work
 - which note/index/report changed
-- what remains blocked or intentionally deferred
+- what remains in attention or intentionally waiting on an exact Condition
 
 Do not represent every schedule tick as a task. A tick only wakes Scout to
 reconcile the matching stable task. Event IDs, timestamps, health packets, and
@@ -29,7 +30,8 @@ fake `human` agent. Workflows belong to Scout under
 See `design/scout-knowledge-library-process.md` for the complete Scout-specific
 task, Condition, path, and cutover model.
 
-Task-bound workflow failures remain on the failed task. They are not translated
-into owner maintenance work. The owner planner admits only the named reasons
+Workflow failures remain evidence on the same task; an unavailable binding is
+visible in `attention`. They are not translated into owner maintenance work.
+The owner planner admits only the named reasons
 `experience-review`, `library-health-signal`, `project-comment`,
 `manual-library-review`, and `repair-index`.

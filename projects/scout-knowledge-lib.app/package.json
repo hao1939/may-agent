@@ -2,7 +2,7 @@
   "name": "@may-agent/scout-knowledge-lib-app",
   "private": true,
   "type": "module",
-  "description": "May-agent project app that drives the Scout knowledge library domain workspace.",
+  "description": "Agent App that drives the Scout knowledge library domain workspace.",
   "scripts": {
     "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts ./agents/scout/workflows/scout-daily-digest.ts ./agents/scout/workflows/scout-explore.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",
@@ -13,7 +13,7 @@
     "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json agents/scout/workflows/**/*.ts agents/scout/tools/*.ts watchers/**/*.ts"
   },
   "dependencies": {
-    "@may-agent/sdk": "file:../may-agent/packages/sdk"
+    "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

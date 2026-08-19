@@ -48,7 +48,7 @@ function isExperienceReview(ctx: WorkflowContext): boolean {
 
 export const name = "knowledge-planner";
 export const description =
-  "Scout knowledge-library planner. Reviews the project task tree and performs the smallest useful library maintenance step.";
+  "Scout knowledge-library planner. Reviews current task resources and performs the smallest useful library maintenance step.";
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (!ctx.workspace || !ctx.reconciliation) {
@@ -72,8 +72,9 @@ Scout maintains this knowledge-library project:
 - Working digest: ${appDir}/agents/scout/workspace/digest/today.md
 - External shared corpus: /app/shared/knowledge
 
-Your job in this workflow is not a freeform heartbeat. Review the project task
-tree, understand the trigger, and do the smallest useful maintenance step.
+Your job in this workflow is not a freeform heartbeat. Review the bounded task
+resource context, understand the trigger, and do the smallest useful maintenance
+step.
 
 Start by reading:
 - ${appDir}/project.json
@@ -122,10 +123,10 @@ Operating rules:
 - Keep source-grounded <ai_context> preambles where the library already uses them.
 - Do not bulk-edit just to improve a metric.
 - Do not create ceremonial project/control tasks.
-- The generic reconciler is the sole task-tree mutation authority. Never edit
-  the task-tree JSON, call task-tree mutation commands, or write task state via
-  the database. Return task changes only through the typed actions in \`finish\`.
-- Existing-task actions require the exact generation shown in the tree. Never
+- The Host is the sole task-state mutation authority. Never edit task JSON,
+  call private task mutation commands, or write task state through a database.
+  Return proposed task changes only through typed actions in \`finish\`.
+- Existing-task actions require the exact generation in the supplied context. Never
   mutate or create task ids beginning with \`runtime/\`.
 - You may edit Scout-owned knowledge and report files, plus the working digest,
   when that is the smallest useful domain step. Task actions describe the
