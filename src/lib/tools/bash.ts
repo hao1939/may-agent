@@ -58,18 +58,34 @@ function processGroupExists(pgid: number): boolean {
 	}
 }
 
+export function processGroupContainsLiveMember(
+	pgid: number,
+	entries: Iterable<string>,
+	readStat: (pid: string) => string = (pid) => readFileSync(`/proc/${pid}/stat`, "utf8"),
+): boolean {
+	for (const entry of entries) {
+		if (!/^\d+$/.test(entry)) continue;
+		try {
+			const stat = readStat(entry);
+			const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+			if (Number(fields[2]) === pgid && fields[0] !== "Z") return true;
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException).code;
+			// A process may exit between readdir and read. It cannot still be a
+			// live member of this group; keep inspecting the remaining entries.
+			if (code === "ENOENT" || code === "ESRCH") continue;
+			return true;
+		}
+	}
+	return false;
+}
+
 function processGroupAlive(pgid: number): boolean {
 	if (!processGroupExists(pgid)) return false;
 	// kill(0) includes unreaped zombies. On Linux, regard a zombie-only group as
 	// drained so settlement and recovery do not wait on an unrelated reaper.
 	try {
-		for (const entry of readdirSync("/proc")) {
-			if (!/^\d+$/.test(entry)) continue;
-			const stat = readFileSync(`/proc/${entry}/stat`, "utf8");
-			const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
-			if (Number(fields[2]) === pgid && fields[0] !== "Z") return true;
-		}
-		return false;
+		return processGroupContainsLiveMember(pgid, readdirSync("/proc"));
 	} catch {
 		return true;
 	}
