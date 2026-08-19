@@ -16,6 +16,7 @@ import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
+import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
 
 // Keep informational CLI modes ahead of runtime-root resolution, identity
 // creation, and app startup. In particular, --help must remain read-only: app
@@ -70,10 +71,6 @@ if (process.argv.includes("--maintenance") || process.argv.includes("--maintenan
 const INSTANCE = process.env.INSTANCE || "";
 const INSTANCE_LABEL = INSTANCE || "default";
 
-const PROCESS_START_TIME = Date.now();
-
-const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
-
 let appArgs: ReturnType<typeof parseAppArgs>;
 try {
   appArgs = parseAppArgs();
@@ -83,6 +80,13 @@ try {
 }
 
 const { emitMode: EMIT_MODE, interfaceAgent, webOnlyMode: WEB_ONLY_MODE } = appArgs;
+
+const controlExitCode = await runRequestedControlExitMode({
+  appArgs,
+  agentsRoot: AGENTS_ROOT,
+  persistDir: PERSIST_DIR,
+});
+if (controlExitCode !== null) process.exit(controlExitCode);
 
 if (EMIT_MODE) {
   // ── Operator emit mode: send one event to the running daemon and exit ─
@@ -110,6 +114,9 @@ if (WEB_ONLY_MODE) {
     port: parseWebPort(process.env.WEB_PORT),
   });
 }
+
+const PROCESS_START_TIME = Date.now();
+const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
 
 // ── Models ──────────────────────────────────────────────────────────────
 
