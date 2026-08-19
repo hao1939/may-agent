@@ -174,6 +174,8 @@ export type TaskCompletionReceipt = {
   workspace?: AppTaskWorkspace;
   /** Digest of acceptance/evidence/workspace detail removed from old bounded history. */
   compactedDetailSha256?: string;
+  /** Digest of unbounded outcome/summary/response/input detail removed from old bounded history. */
+  compactedPayloadSha256?: string;
 };
 
 export type AppTaskAdmission = {
@@ -386,6 +388,17 @@ function appendTaskTreeJournal(config: TaskStateConfig, entry: Record<string, un
   );
 }
 
+function serializeCanonicalTaskState(state: Record<string, unknown>): string {
+  const lifecycle = state.project_lifecycle;
+  if (typeof lifecycle !== "string") return JSON.stringify(state);
+  const { project_lifecycle: _lifecycle, ...rest } = state;
+  // Keep the lifecycle in the bounded header consumed by the generation
+  // watcher while leaving the machine-owned history compact.
+  const serializedRest = JSON.stringify(rest);
+  if (serializedRest === "{}") return `{\n  "project_lifecycle": ${JSON.stringify(lifecycle)}\n}`;
+  return `{\n  "project_lifecycle": ${JSON.stringify(lifecycle)},\n  ${serializedRest.slice(1)}`;
+}
+
 export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?: SaveTaskStateOptions): void {
   const runtimePaths = projectRuntimePaths(config.appDir);
   if (config.statePath !== runtimePaths.taskStatePath) {
@@ -461,7 +474,11 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   }
 
   tree.updated_at = new Date().toISOString();
-  const serialized = `${JSON.stringify(canonicalTaskStateForWrite(tree), null, 2)}\n`;
+  // Canonical state is machine-owned; readable inspection is provided by the
+  // resource API and disposable projection. Pretty-printing multi-megabyte
+  // history on every mutation only enlarges the synchronous durability path.
+  const canonical = canonicalTaskStateForWrite(tree);
+  const serialized = `${serializeCanonicalTaskState(canonical)}\n`;
   ensureDir(dirname(config.statePath));
   const tempPath = `${config.statePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
@@ -480,9 +497,11 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   const projectionPath = runtimePaths.taskTreePath;
   const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
   ensureDir(dirname(projectionPath));
+  const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
+  const serializedProjection = `${JSON.stringify(projection)}\n`;
   writeFileSync(
     projectionTempPath,
-    `${JSON.stringify(buildAppTaskTreeProjection(tree, config.maxConcurrent), null, 2)}\n`,
+    serializedProjection,
     "utf-8",
   );
   renameSync(projectionTempPath, projectionPath);
@@ -679,38 +698,17 @@ function buildTaskTreeProjection(
   return tasks;
 }
 
-const FULL_RECEIPTS_PER_PARENT = 32;
+// Reconciliation exposes at most eight completed children to a live parent.
+// Keeping more full-detail receipts cannot affect its next decision; identity,
+// summary, and the detail digest remain durable for every older receipt.
+const FULL_RECEIPTS_PER_PARENT = 8;
 
 function sha256(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-function compactHistoricalReceipts(tree: TaskTree): void {
-  const receipts = Object.values(tree.receipts ?? {});
-  const byParent = new Map<string, TaskCompletionReceipt[]>();
-  for (const receipt of receipts) {
-    const group = byParent.get(receipt.parentId) ?? [];
-    group.push(receipt);
-    byParent.set(receipt.parentId, group);
-  }
-
-  const keepFull = new Set<string>();
-  for (const [parentId, group] of byParent) {
-    // A receipted parent cannot reconcile from child detail again; its own
-    // receipt is the durable summary. Parent absence alone is not enough:
-    // imported historical receipts may not include their parent resource.
-    if (tree.receipts?.[parentId]) continue;
-    group
-      .sort(
-        (left, right) =>
-          right.completedAt.localeCompare(left.completedAt) || right.metadata.id.localeCompare(left.metadata.id),
-      )
-      .slice(0, FULL_RECEIPTS_PER_PARENT)
-      .forEach((receipt) => keepFull.add(receipt.metadata.id));
-  }
-
-  for (const receipt of receipts) {
-    if (keepFull.has(receipt.metadata.id) || receipt.compactedDetailSha256) continue;
+function compactHistoricalReceipt(receipt: TaskCompletionReceipt): void {
+  if (!receipt.compactedDetailSha256) {
     receipt.compactedDetailSha256 = sha256({
       acceptance: receipt.acceptance,
       evidence: receipt.evidence,
@@ -725,40 +723,112 @@ function compactHistoricalReceipts(tree: TaskTree): void {
     };
     delete receipt.workspace;
   }
+  if (!receipt.compactedPayloadSha256) {
+    const input = receipt.input ?? {};
+    const failureFingerprints = receipt.failureFingerprints ?? [];
+    const needsPayloadCompaction =
+      receipt.outcome.length > 512 ||
+      receipt.summary.length > 512 ||
+      (receipt.response?.length ?? 0) > 512 ||
+      (Object.keys(input).length > 0 && JSON.stringify(input).length > 512) ||
+      (failureFingerprints.length > 0 && JSON.stringify(failureFingerprints).length > 512);
+    if (!needsPayloadCompaction) return;
+    const payload = {
+      outcome: receipt.outcome,
+      summary: receipt.summary,
+      response: receipt.response,
+      input,
+      failureFingerprints,
+    };
+    receipt.compactedPayloadSha256 = sha256(payload);
+    receipt.outcome = receipt.outcome.slice(0, 512);
+    receipt.summary = receipt.summary.slice(0, 512);
+    if (receipt.response !== undefined) receipt.response = receipt.response.slice(0, 512);
+    receipt.input = {};
+    receipt.failureFingerprints = [];
+  }
 }
 
+function compactHistoricalReceipts(tree: TaskTree): void {
+  const receipts = Object.values(tree.receipts ?? {});
+  const fullByParent = new Map<string, TaskCompletionReceipt[]>();
+  for (const receipt of receipts) {
+    // A prior save already established that this receipt is outside the live
+    // detail window. Finish an older partial compaction once, then never sort
+    // or hash it again on the steady-state save path.
+    if (receipt.compactedDetailSha256 || receipt.compactedPayloadSha256) {
+      compactHistoricalReceipt(receipt);
+      continue;
+    }
+    const group = fullByParent.get(receipt.parentId) ?? [];
+    group.push(receipt);
+    fullByParent.set(receipt.parentId, group);
+  }
+
+  for (const [parentId, group] of fullByParent) {
+    // A receipted parent cannot reconcile from child detail again; its own
+    // receipt is the durable summary. Parent absence alone is not enough:
+    // imported historical receipts may not include their parent resource.
+    if (tree.receipts?.[parentId]) {
+      for (const receipt of group) compactHistoricalReceipt(receipt);
+      continue;
+    }
+    if (group.length <= FULL_RECEIPTS_PER_PARENT) continue;
+    group
+      .sort(
+        (left, right) =>
+          right.completedAt.localeCompare(left.completedAt) || right.metadata.id.localeCompare(left.metadata.id),
+      )
+      .slice(FULL_RECEIPTS_PER_PARENT)
+      .forEach(compactHistoricalReceipt);
+  }
+}
+
+const COMPACT_TRIGGER_KEYS = [
+  "type",
+  "source",
+  "owner",
+  "timestamp",
+  "eventId",
+  "sessionId",
+  "agent",
+  "status",
+  "summary",
+  "outcome",
+  "error",
+  "workflowRunId",
+  "projectId",
+  "project",
+  "taskId",
+  "task_id",
+  "childTaskId",
+  "parentTaskId",
+  "runId",
+  "pipelineRunId",
+  "idempotencyKey",
+  "target",
+  "trace",
+  "action",
+  "urgency",
+] as const;
+const COMPACT_TRIGGER_KEY_SET = new Set<string>([
+  ...COMPACT_TRIGGER_KEYS,
+  "data",
+  "compactedPayloadSha256",
+]);
+
 function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string, unknown> {
-  if (typeof trigger.compactedPayloadSha256 === "string") return trigger;
+  const existingDigest =
+    typeof trigger.compactedPayloadSha256 === "string" && trigger.compactedPayloadSha256.length === 64
+      ? trigger.compactedPayloadSha256
+      : undefined;
   const compact: Record<string, unknown> = {
-    compactedPayloadSha256: sha256(trigger),
+    // A previously compacted trigger can be re-expanded by an old producer or
+    // compatibility reader. Preserve its original audit digest while restoring
+    // the bounded canonical shape instead of trusting the marker alone.
+    compactedPayloadSha256: existingDigest ?? sha256(trigger),
   };
-  for (const key of [
-    "type",
-    "source",
-    "owner",
-    "timestamp",
-    "eventId",
-    "sessionId",
-    "agent",
-    "status",
-    "summary",
-    "outcome",
-    "error",
-    "workflowRunId",
-    "projectId",
-    "project",
-    "taskId",
-    "task_id",
-    "childTaskId",
-    "parentTaskId",
-    "runId",
-    "pipelineRunId",
-    "idempotencyKey",
-    "target",
-    "trace",
-    "action",
-    "urgency",
-  ]) {
+  for (const key of COMPACT_TRIGGER_KEYS) {
     if (trigger[key] !== undefined) compact[key] = trigger[key];
   }
   if (trigger.data !== undefined && JSON.stringify(trigger.data).length <= 8_192) {
@@ -767,16 +837,25 @@ function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string,
   return compact;
 }
 
+function triggerNeedsCompaction(trigger: Record<string, unknown>): boolean {
+  if (typeof trigger.compactedPayloadSha256 === "string") {
+    // Old compatibility writers could re-expand a previously compacted event.
+    // A bounded envelope contains only the retained canonical keys and data.
+    return Object.keys(trigger).some((key) => !COMPACT_TRIGGER_KEY_SET.has(key));
+  }
+  return JSON.stringify(trigger).length > 16_384;
+}
+
 function compactHistoricalAttemptTriggers(tree: TaskTree): void {
   const attempts = Object.values(tree.attempts ?? {});
   for (const attempt of attempts) {
     for (const entry of attempt.events ?? []) {
-      if (JSON.stringify(entry.event).length > 16_384) {
+      if (triggerNeedsCompaction(entry.event)) {
         entry.event = compactAttemptTrigger(entry.event);
       }
     }
     if (!attempt.trigger || attempt.state === "running") continue;
-    if (JSON.stringify(attempt.trigger).length <= 16_384) continue;
+    if (!triggerNeedsCompaction(attempt.trigger)) continue;
     attempt.trigger = compactAttemptTrigger(attempt.trigger);
   }
 }
@@ -785,13 +864,13 @@ function compactPendingTaskTriggers(tree: TaskTree): void {
   for (const trigger of Object.values(tree.taskTriggers ?? {})) {
     for (const entry of trigger.events ?? []) {
       const entryEventId = Number(entry.event?.eventId);
-      if (Number.isInteger(entryEventId) && entryEventId > 0 && JSON.stringify(entry.event).length > 16_384) {
+      if (Number.isInteger(entryEventId) && entryEventId > 0 && triggerNeedsCompaction(entry.event)) {
         entry.event = compactAttemptTrigger(entry.event);
       }
     }
     const eventId = Number(trigger.event?.eventId);
     if (!Number.isInteger(eventId) || eventId <= 0) continue;
-    if (JSON.stringify(trigger.event).length <= 16_384) continue;
+    if (!triggerNeedsCompaction(trigger.event)) continue;
     trigger.event = compactAttemptTrigger(trigger.event);
   }
 }
@@ -1062,7 +1141,7 @@ export function refreshAppTaskTreeProjection(config: TaskStateConfig, options: {
     ensureDir(dirname(projectionPath));
     writeFileSync(
       tempPath,
-      `${JSON.stringify(buildAppTaskTreeProjection(tree, config.maxConcurrent), null, 2)}\n`,
+      `${JSON.stringify(buildAppTaskTreeProjection(tree, config.maxConcurrent))}\n`,
       "utf-8",
     );
     renameSync(tempPath, projectionPath);

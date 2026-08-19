@@ -11,7 +11,7 @@ import {
   type TaskStateConfig,
   type TaskTree,
 } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { projectRuntimePaths, readTaskStateLifecycle } from "./app-task-runtime-state.js";
 
 const TEST_DIR = join(import.meta.dir, "__test_shrinkage__");
 
@@ -122,6 +122,7 @@ describe("saveTaskState shrinkage guard", () => {
 
     const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
     expect(saved.project_lifecycle).toBe("paused");
+    expect(readTaskStateLifecycle(config.appDir)).toBe("paused");
     expect(readFileSync(config.journalPath, "utf-8")).toContain("project_lifecycle_paused");
     expect(readFileSync(config.journalPath, "utf-8")).toContain("operator requested a bounded pause");
   });
@@ -359,7 +360,7 @@ describe("saveTaskState shrinkage guard", () => {
     const config = makeConfig();
     const tree = makeTree(5);
     tree.receipts = Object.fromEntries(
-      Array.from({ length: 34 }, (_, index) => {
+      Array.from({ length: 10 }, (_, index) => {
         const id = `completed-${index}`;
         return [
           id,
@@ -367,11 +368,13 @@ describe("saveTaskState shrinkage guard", () => {
             metadata: { id, generation: 1, resourceVersion: 1 },
             specHash: `hash-${index}`,
             parentId: "task-0",
-            outcome: `Completed outcome ${index}`,
+            outcome: `Completed outcome ${index} ${"o".repeat(600)}`,
             acceptance: [`acceptance-${index}`],
             owner: "app-owner",
             handler: "owner:app-owner",
-            summary: `Completed summary ${index}`,
+            summary: `Completed summary ${index} ${"s".repeat(600)}`,
+            response: `Completed response ${index} ${"r".repeat(600)}`,
+            input: { detail: `input-${index}-${"i".repeat(600)}` },
             evidence: [`evidence-${index}`],
             acceptanceBasis: {
               method: "owner-judgment" as const,
@@ -396,9 +399,10 @@ describe("saveTaskState shrinkage guard", () => {
     saveTaskState(config, tree);
     const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
     const oldest = saved.receipts?.["completed-0"];
-    const newest = saved.receipts?.["completed-33"];
+    const ninthNewest = saved.receipts?.["completed-1"];
+    const newest = saved.receipts?.["completed-9"];
 
-    expect(Object.keys(saved.receipts ?? {})).toHaveLength(34);
+    expect(Object.keys(saved.receipts ?? {})).toHaveLength(10);
     expect(oldest).toMatchObject({
       metadata: { id: "completed-0", generation: 1 },
       specHash: "hash-0",
@@ -408,10 +412,19 @@ describe("saveTaskState shrinkage guard", () => {
       acceptanceBasis: { method: "owner-judgment", evidence: [] },
     });
     expect(oldest?.compactedDetailSha256).toHaveLength(64);
+    expect(oldest?.compactedPayloadSha256).toHaveLength(64);
+    expect(oldest?.outcome.length).toBe(512);
+    expect(oldest?.summary.length).toBe(512);
+    expect(oldest?.response?.length).toBe(512);
+    expect(oldest?.input).toEqual({});
     expect(oldest?.workspace).toBeUndefined();
-    expect(newest?.acceptance).toEqual(["acceptance-33"]);
-    expect(newest?.evidence).toEqual(["evidence-33"]);
-    expect(newest?.workspace?.headCommit).toBe("head-33");
+    expect(ninthNewest?.compactedDetailSha256).toHaveLength(64);
+    expect(ninthNewest?.evidence).toEqual([]);
+    expect(newest?.acceptance).toEqual(["acceptance-9"]);
+    expect(newest?.evidence).toEqual(["evidence-9"]);
+    expect(newest?.input).toEqual({ detail: `input-9-${"i".repeat(600)}` });
+    expect(newest?.compactedPayloadSha256).toBeUndefined();
+    expect(newest?.workspace?.headCommit).toBe("head-9");
     expect(tree.receipts?.["completed-0"]?.compactedDetailSha256).toBe(oldest?.compactedDetailSha256);
     expect(tree.receipts?.["completed-0"]?.evidence).toEqual([]);
 
@@ -564,6 +577,84 @@ describe("saveTaskState shrinkage guard", () => {
     });
     expect(trigger?.compactedPayloadSha256).toBeString();
     expect(trigger).not.toHaveProperty("payload");
+  });
+
+  it("re-bounds an oversized pending trigger that already carries an audit digest", () => {
+    const config = makeConfig();
+    const tree = makeTree(5);
+    const digest = "a".repeat(64);
+    tree.taskTriggers = {
+      "task-0": {
+        taskId: "task-0",
+        taskGeneration: 1,
+        resourceVersion: 1,
+        observedAt: "2026-07-28T00:00:00.000Z",
+        event: {
+          compactedPayloadSha256: digest,
+          type: "session.end",
+          source: "runtime",
+          eventId: 124,
+          sessionId: "session-124",
+          status: "done",
+          // Re-expanded compatibility data can be substantial in aggregate
+          // even when each individual trigger remains below the old 16 KiB
+          // compaction threshold.
+          task: "old producer detail".repeat(100),
+          data: { nested: "old compatibility detail".repeat(400) },
+        },
+      },
+    };
+
+    saveTaskState(config, tree);
+
+    const trigger = readTaskState(config).taskTriggers?.["task-0"]?.event;
+    expect(trigger).toEqual({
+      compactedPayloadSha256: digest,
+      type: "session.end",
+      source: "runtime",
+      eventId: 124,
+      sessionId: "session-124",
+      status: "done",
+    });
+  });
+
+  it("preserves flattened canonical trigger fields consumed by task handlers", () => {
+    const config = makeConfig();
+    const tree = makeTree(5);
+    tree.taskTriggers = {
+      "task-0": {
+        taskId: "task-0",
+        taskGeneration: 1,
+        resourceVersion: 1,
+        observedAt: "2026-07-28T00:00:00.000Z",
+        event: {
+          type: "session.end",
+          source: "runtime",
+          eventId: 125,
+          sessionId: "session-125",
+          status: "done",
+          task: "duplicate flattened prompt".repeat(100),
+          data: {
+            sessionId: "session-125",
+            status: "done",
+            task: "duplicate flattened prompt".repeat(100),
+            customFact: "preserved for matching",
+          },
+        },
+      },
+    };
+
+    saveTaskState(config, tree);
+
+    const trigger = readTaskState(config).taskTriggers?.["task-0"]?.event;
+    expect(trigger?.data).toEqual({
+      sessionId: "session-125",
+      status: "done",
+      task: "duplicate flattened prompt".repeat(100),
+      customFact: "preserved for matching",
+    });
+    expect(trigger?.task).toBe("duplicate flattened prompt".repeat(100));
+    expect(trigger).not.toHaveProperty("compactedPayloadSha256");
   });
 
   it("rejects 19% of original (just below boundary)", () => {
