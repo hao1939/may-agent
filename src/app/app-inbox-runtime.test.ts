@@ -348,7 +348,7 @@ describe("App inbox runtime", () => {
     expect(task.attached).toEqual([]);
   });
 
-  it("fails an unavailable exact Task target before emit returns", async () => {
+  it("records an unavailable exact Task target without blocking event delivery", async () => {
     const bus = persistentBus();
     const failures: Array<Record<string, unknown>> = [];
     bus.subscribe((event) => {
@@ -363,6 +363,7 @@ describe("App inbox runtime", () => {
       scanIntervalMs: 10_000,
     });
 
+    const startedAt = performance.now();
     bus.emit({
       type: "project.task.tick",
       source: "test",
@@ -370,15 +371,22 @@ describe("App inbox runtime", () => {
       target: { appId: "evaluation", taskId: "missing-task" },
       data: {},
     });
+    const elapsed = performance.now() - startedAt;
 
-    expect(failures).toHaveLength(1);
-    expect(failures[0]).toMatchObject({
-      originalEventType: "project.task.tick",
-      error: expect.stringContaining("did not durably admit frozen missing-task"),
-    });
+    expect(elapsed).toBeLessThan(25);
+    expect(failures).toHaveLength(0);
+    await waitUntil(
+      () => getAppEventAdmissionPlan(db, 1)?.lastError?.includes("did not durably admit frozen missing-task") === true,
+    );
     expect(getAppEventAdmissionPlan(db, 1)).toMatchObject({
       status: "pending",
-      commands: [expect.objectContaining({ appId: "evaluation", status: "pending" })],
+      commands: [
+        expect.objectContaining({
+          appId: "evaluation",
+          status: "pending",
+          lastError: expect.stringContaining("did not durably admit frozen missing-task"),
+        }),
+      ],
     });
   });
 
