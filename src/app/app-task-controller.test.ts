@@ -171,6 +171,35 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("yields between synchronous claim prefixes from independent Apps", async () => {
+    let markerRan = false;
+    const starts: Array<{ app: string; markerRan: boolean }> = [];
+    const controller = (app: string) =>
+      new AppTaskController({
+        maxConcurrent: 1,
+        async reconcile() {
+          starts.push({ app, markerRan });
+          const until = performance.now() + 20;
+          while (performance.now() < until) {
+            // Model each App writing its own large canonical task state.
+          }
+        },
+      });
+    const first = controller("first");
+    const second = controller("second");
+    first.enqueue("work");
+    second.enqueue("work");
+    setTimeout(() => {
+      markerRan = true;
+    }, 0);
+
+    await waitUntil(() => starts.length === 2);
+    expect(starts[0]?.markerRan).toBeFalse();
+    expect(starts[1]?.markerRan).toBeTrue();
+    first.close();
+    second.close();
+  });
+
   it("yields to the event loop between shared-capacity handoffs", async () => {
     const capacity = new HostCapacity(1);
     const started: string[] = [];
@@ -227,6 +256,7 @@ describe("AppTaskController", () => {
     controllerA.enqueue("one");
     controllerB.enqueue("two");
     await waitUntil(() => started.length === 1);
+    await waitUntil(() => capacity.snapshot().waiting === 1);
     expect(capacity.snapshot()).toEqual({ running: 1, waiting: 1 });
 
     releases.get(started[0])?.();

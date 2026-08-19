@@ -254,13 +254,5 @@ export function runDbMaintenancePass(
     checkpoint = "failed";
   }
 
-  // Opportunistic and bounded; does nothing when incremental auto-vacuum has
-  // no reclaimable pages. Full VACUUM is an explicit offline operator action.
-  try {
-    db.exec("PRAGMA incremental_vacuum(100)");
-  } catch {
-    /* best effort */
-  }
-
   return { deleted, checkpoint };
 }
