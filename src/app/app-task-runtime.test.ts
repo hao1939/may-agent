@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
@@ -12,13 +13,18 @@ import { AppRegistry } from "./app-registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
+  applyCanonicalOwnerResidueCleanup,
   attachLoadedAppTask,
+  beginCanonicalOwnerResidueGuard,
   closeInstalledAppTaskRuntimes,
   consumePersistedTerminalOwnerResult,
+  finishCanonicalOwnerResidueGuard,
   installAppTaskRuntimes,
+  planCanonicalOwnerResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
+  rejectConvergedDirectOwnerResidue,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
@@ -113,6 +119,94 @@ afterEach(async () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+function gitResidueFixture() {
+  const root = join(tmpdir(), `app-task-residue-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  roots.push(root);
+  mkdirSync(root, { recursive: true });
+  execFileSync("git", ["init", "-b", "main", root]);
+  execFileSync("git", ["-C", root, "config", "user.email", "test@example.com"]);
+  execFileSync("git", ["-C", root, "config", "user.name", "Test"]);
+  writeFileSync(join(root, "tracked.txt"), "tracked baseline\n");
+  writeFileSync(join(root, "concurrent-index.txt"), "index baseline\n");
+  execFileSync("git", ["-C", root, "add", "."]);
+  execFileSync("git", ["-C", root, "commit", "-m", "baseline"]);
+  return root;
+}
+
+describe("canonical direct-owner residue cleanup", () => {
+  it("restores owner file and index edits that remain unchanged since planning", () => {
+    const projectDir = gitResidueFixture();
+    writeFileSync(join(projectDir, "preexisting.txt"), "preexisting baseline\n");
+    const guard = beginCanonicalOwnerResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
+
+    writeFileSync(join(projectDir, "tracked.txt"), "owner edit\n");
+    writeFileSync(join(projectDir, "preexisting.txt"), "owner changed preexisting\n");
+    writeFileSync(join(projectDir, "created.txt"), "owner created\n");
+    execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
+
+    const plan = planCanonicalOwnerResidueCleanup(guard);
+    const restored = applyCanonicalOwnerResidueCleanup(plan);
+
+    expect(restored).toContain("file:tracked.txt");
+    expect(restored).toContain("file:preexisting.txt");
+    expect(restored).toContain("file:created.txt");
+    expect(restored).toContain("index");
+    expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("tracked baseline\n");
+    expect(readFileSync(join(projectDir, "preexisting.txt"), "utf8")).toBe("preexisting baseline\n");
+    expect(existsSync(join(projectDir, "created.txt"))).toBe(false);
+    expect(execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" })).toBe(
+      "?? preexisting.txt\n",
+    );
+  });
+
+  it("preserves concurrent file and index edits while applying other planned cleanup", () => {
+    const projectDir = gitResidueFixture();
+    const guard = beginCanonicalOwnerResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
+
+    writeFileSync(join(projectDir, "tracked.txt"), "owner edit\n");
+    writeFileSync(join(projectDir, "created.txt"), "owner created\n");
+    execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
+    const plan = planCanonicalOwnerResidueCleanup(guard);
+
+    writeFileSync(join(projectDir, "tracked.txt"), "concurrent file edit\n");
+    writeFileSync(join(projectDir, "concurrent-index.txt"), "concurrent index edit\n");
+    execFileSync("git", ["-C", projectDir, "add", "concurrent-index.txt"]);
+    const restored = applyCanonicalOwnerResidueCleanup(plan);
+
+    expect(restored).toEqual(["file:created.txt"]);
+    expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("concurrent file edit\n");
+    expect(execFileSync("git", ["-C", projectDir, "diff", "--cached", "--name-only"], { encoding: "utf8" })).toBe(
+      "concurrent-index.txt\ntracked.txt\n",
+    );
+  });
+
+  it("rejects only converged direct-owner results whose edits were restored", () => {
+    const converged = {
+      state: "converged" as const,
+      summary: "claimed convergence",
+      evidence: ["owner-result"],
+      actions: [],
+    };
+    expect(rejectConvergedDirectOwnerResidue(converged, ["file:tracked.txt"])).toMatchObject({
+      state: "error",
+      evidence: ["owner-result", "owner-residue-restored:file:tracked.txt"],
+    });
+    expect(rejectConvergedDirectOwnerResidue(converged, [])).toBe(converged);
+
+    const worktree = join(projectDirForBypass(), "workflow-output.txt");
+    writeFileSync(worktree, "mutation-capable output\n");
+    expect(finishCanonicalOwnerResidueGuard(null)).toEqual([]);
+    expect(readFileSync(worktree, "utf8")).toBe("mutation-capable output\n");
+  });
+});
+
+function projectDirForBypass(): string {
+  const root = join(tmpdir(), `app-task-workflow-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  roots.push(root);
+  mkdirSync(root, { recursive: true });
+  return root;
+}
 
 describe("canonical App task runtime", () => {
   it("carries a deterministic cross-App result back as the parent's next Event", async () => {
@@ -250,11 +344,13 @@ describe("canonical App task runtime", () => {
           },
         ],
       });
-      expect(deferAppTask(config, initial, {
-        disposition: "waiting",
-        summary: "Waiting for the independent review",
-        conditions,
-      }).status).toBe("applied");
+      expect(
+        deferAppTask(config, initial, {
+          disposition: "waiting",
+          summary: "Waiting for the independent review",
+          conditions,
+        }).status,
+      ).toBe("applied");
 
       const requestId = conditions[0]!.subject.slice("id:".length);
       const attachmentDeadline = Date.now() + 1_000;
