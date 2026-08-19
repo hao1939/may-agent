@@ -1,9 +1,10 @@
-# Evaluation Task Tree
+# Evaluation Task Resources
 
-The task tree records desired evaluation outcomes and their current observed
-state. Events only wake reconciliation. Workflow runs, agent sessions, reports,
-and database rows are evidence linked to a task generation; they are not extra
-task-state authorities.
+Task resources record desired evaluation outcomes and their current observed
+state. The generated tree presents their relationships; it is not an authority.
+Events only wake reconciliation. Workflow runs, agent sessions, reports, and
+database rows are evidence linked to a task generation, not extra task-state
+authorities.
 
 The normative schema and authoring rules live in
 `projects/may-agent.app/docs/2a-design/task-resource-engine.md`.
@@ -34,7 +35,7 @@ fallback.
 ## Stable Responsibilities
 
 `tasks/seed.json` contains only responsibilities that remain true for the life
-of the app. They use `reconcile_mode: "maintain"`:
+of the app. They use `mode: "maintain"`:
 
 | Task                       | Desired state                                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,15 +57,16 @@ after their result is absorbed.
 
 `app.ts` maps known events to task intent:
 
-| Task key                              | Mode       | Handler                    | Convergence                                                                                                                                                                                                           |
-| ------------------------------------- | ---------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`      | The highest-priority eligible missing evaluation is recorded (failed/interrupted first, then done sessions inside the recent 3h coverage window, then older done backlog); the same task continues while more remain. |
-| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`      | An explicitly requested session has a durable evaluation or structured skip.                                                                                                                                          |
-| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`      | The requested session has one workflow-traced deep judgment.                                                                                                                                                          |
-| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`      | At most one candidate is reviewed, or none exists now.                                                                                                                                                                |
-| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection` | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                                                                                      |
-| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator` | The target fingerprint is current and any due report/feedback is persisted.                                                                                                                                           |
-| `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`      | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op.                                                                     |
+| Task key                              | Mode       | Handler                                 | Convergence                                                                                                                                                                                                           |
+| ------------------------------------- | ---------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`                   | The highest-priority eligible missing evaluation is recorded (failed/interrupted first, then done sessions inside the recent 3h coverage window, then older done backlog); the same task continues while more remain. |
+| `runtime/aftermath-coverage-snapshot` | `achieve`  | `evaluator-aftermath-coverage-snapshot` | One fresh trailing-3h eligible/evaluated count and coverage metric sample is persisted.                                                                                                                               |
+| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`                   | An explicitly requested session has a durable evaluation or structured skip.                                                                                                                                          |
+| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`                   | The requested session has one workflow-traced deep judgment.                                                                                                                                                          |
+| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                                                                                                |
+| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection`        | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                                                                                                |
+| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`              | The target fingerprint is current and any due report/feedback is persisted.                                                                                                                                           |
+| `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`                   | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op.                                                                     |
 
 Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.
@@ -77,8 +79,8 @@ the App's declared task concurrency instead of serializing behind a standing
 scan. The scheduled `evaluation.aftermath.scan` task remains the restart-safe
 fallback: its bounded evaluator call selects at most one uncovered session and
 emits the same compact wake while more remain. Durable `evaluation.recorded`
-facts and their runtime projection hold evaluation history; the task tree holds
-only desired work and bounded receipts.
+facts and their runtime projection hold automatic evaluation history; task
+resources hold only desired work and bounded receipts.
 
 ## Historical Aftermath Migration
 
@@ -96,7 +98,9 @@ Task execution follows one rule:
 
 ```text
 explicit task workflow -> reusable workflow
-no workflow or workflow exception -> evaluation.app owner entry
+no workflow -> evaluation.app owner entry
+workflow returns needs-owner -> one evaluation.app owner judgment
+named workflow unavailable -> attention until the binding is repaired
 ```
 
 Handlers return a structured disposition, summary, evidence, optional actions,

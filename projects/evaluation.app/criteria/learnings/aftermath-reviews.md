@@ -1,5 +1,9 @@
 # Aftermath reviews — evaluator patterns
 
+> Historical calibration examples. Names and paths may be retired; apply the
+> underlying evidence lesson only when it matches the current session and active
+> agent contract.
+
 ## Pattern: schema guessing causes avoidable query errors
 - Symptom: querying `events.type` (or other guessed columns) fails; session then uses PRAGMA to discover real schema.
 - Fix: if table is unfamiliar, run `PRAGMA table_info(<table>)` first.

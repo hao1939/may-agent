@@ -89,7 +89,17 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function parsedRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== "string") return record(value);
+  if (typeof value !== "string") {
+    const envelope = record(value);
+    if (Object.keys(record(envelope.result)).length) {
+      return record(envelope.result);
+    }
+    if (typeof envelope.summary === "string") {
+      const summary = parsedRecord(envelope.summary);
+      if (Object.keys(summary).length) return summary;
+    }
+    return envelope;
+  }
   const fenced = value.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
   for (const candidate of [fenced, value]) {
     if (!candidate) continue;
@@ -552,7 +562,10 @@ export async function execute(
     );
   }
 
-  const outcome = parseAftermathOutcome(execution.output, requestedSessionId);
+  const outcome = parseAftermathOutcome(
+    execution.output ?? { summary: execution.summary },
+    requestedSessionId,
+  );
   if (!outcome) {
     return reviewFailed(
       ctx,

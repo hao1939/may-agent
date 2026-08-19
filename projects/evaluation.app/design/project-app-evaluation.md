@@ -1,14 +1,16 @@
 # Project/App Evaluation
 
-Status: implemented first pass
+**Design status:** Accepted.
+**Implementation status:** Implemented; coverage and publication durability are
+calibrated through bounded operational checks.
 
 `evaluation.app` currently evaluates completed sessions. Session aftermath
 answers whether one worker session did useful work. That is necessary, but it is
-not enough to judge whether a whole project app is healthy.
+not enough to judge whether a whole Agent App is healthy.
 
 Project/app evaluation answers the bigger owner-facing question:
 
-> Is this project app moving toward its goal, or does a human need to intervene?
+> Is this Agent App moving toward its goal, or does a human need to intervene?
 
 Its purpose is to produce an independent, evidence-backed finding. It does not
 take ownership of fixing the target project.
@@ -19,13 +21,13 @@ The simple rule is:
 
 ```text
 each app exists to achieve its own domain goal
-project app owns the work
+the target App owns the work
 evaluation.app audits whether the app is working correctly
 review result goes to the target owner
 the owner resolves or records the exact wait
 ```
 
-Each project app must:
+Each target App must:
 
 - understand and push its own goal forward;
 - run its own domain work;
@@ -43,7 +45,7 @@ Each project app must:
 - check whether the target app reacted with useful recovery work instead of
   silent drift, repeated churn, or vague blockers;
 - check whether the target app uses escalation correctly and efficiently;
-- check whether project-state, task tree, metrics, workflow runs, and UI-facing
+- check whether project posture, task resources, metrics, workflow runs, and UI-facing
   reports agree with each other;
 - write a plain review result and recommendation to the target owner;
 - notify the human only when the owner needs a concrete human decision or the
@@ -84,164 +86,40 @@ In practical terms:
 These are audit questions, not work assigned to `evaluation.app` on the
 target's behalf.
 
-## Escalation Evaluation
+## Cross-owner and human waits
 
-Escalation is an infrastructure ability. It lets an app ask for human,
-platform, credential, environment, or ownership help when local work cannot
-truthfully continue.
-
-The mental model is:
+An App asks another owner for help through one linked child request. A task that
+needs an external fact records one exact Condition and ends its bounded attempt.
+Neither a sent notification nor an old `escalation.*` event is completion.
 
 ```text
-escalation is not done
-escalation is an active wait with an outside owner
+source request or task
+  -> linked child App request, or exact Condition
+  -> responsible owner or May handles the request
+  -> correlated result or observed fact wakes the source
+  -> source App accepts, continues, or records a new exact wait
 ```
 
-The lifecycle is:
+Evaluation reads public App/request/task projections and bounded `query_db`
+results. It never opens private task persistence or treats raw SQL as an App
+capability. Historical `escalation.*`, `message.created`, and approval events
+may support causality, but current responsibility lives in the linked request,
+task, dependency, or Condition.
 
-```text
-local recovery exhausted
-  -> escalation.created
-  -> routed/message-created/approval-requested delivery proof
-  -> linked blocked/wait task carries the live wait
-  -> watcher rechecks next_check_at/fallback_at
-  -> human/owner answer returns through May with original context attached
-  -> May or the responsible owner emits escalation.resolved, escalation.dismissed,
-     project-owner feedback, or an exact follow-up wait
-  -> target app converts the answer into work, refreshed wait, done, or terminal finding
-```
+A healthy cross-owner wait has:
 
-Events record facts. The task tree records the live state. `handled`,
-`routed`, or `message.created` are useful delivery facts, but they do not mean
-the target project is unblocked.
+- one accountable source request or task;
+- one exact child request or Condition identity;
+- a concrete requested action or observable fact;
+- bounded evidence explaining why local work cannot continue safely;
+- a correlated result or an observer capable of changing the Condition; and
+- source state that consumes the result instead of equating transport delivery
+  with domain completion.
 
-`evaluation.app` does not consume the human answer or resolve the escalation.
-It audits whether the answer path closed cleanly: the reply was correlated to
-the original issue, May or the target owner emitted a structured result, and the
-target app reflected that result in task state or follow-up work.
-
-The escalation itself does not need to be routed to `evaluation.app` as a work
-item. `evaluation.app` can read the runtime database and target app artifacts:
-
-- `escalation.created`;
-- `escalation.resolved`;
-- `escalation.dismissed`;
-- `escalation.resume_failed`;
-- target app approval or human-message events;
-- target app task-tree waits that reference an escalation, approval, owner
-  decision, or human/operator ask;
-- target app local dispatch logs such as `approval-dispatch-runs.jsonl`.
-
-The evaluator is not judging the domain answer inside the escalation. It is
-judging whether the app is using the escalation mechanism well.
-
-A good escalation has:
-
-- exact owner or target surface;
-- exact requested action;
-- exact reason why local recovery is exhausted or unsafe;
-- affected task/spec/feature/run ids;
-- delivery proof, such as routed event, message, approval request, or local
-  dispatch log;
-- linked blocked/wait task, so the project does not lose the wait;
-- `waitingFor`, resume condition, observer/check method, next check, and
-  fallback;
-- closure when the answer arrives, or replacement when the ask becomes stale.
-
-An exact wait is the task-tree shape that proves the project did not lose the
-escalation. It has:
-
-- a blocked task owned by the responsible person, agent, project, or team;
-- the requested action or decision;
-- a resume condition;
-- next check or fallback behavior;
-- an escalation id, approval id, packet path, or equivalent linkage.
-
-Those are structured fields, not prose guesses. The evaluator may display task
-goal, summary, and context text, but it should only count an exact wait when it
-can normalize these fields:
-
-```json
-{
-  "state": "blocked",
-  "owner": "human | agent:name | project:name | team:name",
-  "blocker": {
-    "condition": "why local work cannot continue",
-    "owner": "who owns the returned signal",
-    "waiting_for": {
-      "type": "approval | message | pipeline | external fact",
-      "id": "stable correlation id"
-    },
-    "resume_condition": "what proves the project can continue",
-    "next_check_at": "optional ISO timestamp",
-    "fallback_at": "optional ISO timestamp",
-    "fallback_action": "what happens if the wait does not resolve"
-  }
-}
-```
-
-Legacy apps may keep equivalent fields under `context`; the evaluator may read
-them through an explicit compatibility normalizer. New exact waits use the
-structured `blocker` contract. Prose such as "waiting for owner, fallback
-tomorrow" is useful context, but it is not enough to suppress a human
-notification.
-
-When an exact wait exists, `evaluation.app` should not keep asking the human to
-"assign owner." The owner is already recorded. If the runtime still lacks a
-matching `escalation.resolved` or `escalation.dismissed` event, the finding
-becomes owner feedback about formal lifecycle cleanup, not another human
-assignment escalation.
-
-The allowed healthy states are:
-
-- waiting with a linked exact wait and future next check/fallback;
-- resolved and converted back into work, done, or a terminal finding;
-- dismissed because the ask is duplicate, wrong, superseded, or no longer
-  needed;
-- expired but already represented by active recovery, follow-up, reroute, or
-  repair work.
-
-Bad escalation use includes:
-
-- vague "human please look" asks;
-- duplicate asks for the same unresolved blocker;
-- escalation without a linked blocked/wait task;
-- blocked task that claims external dependency but no escalation/owner path
-  exists;
-- stale escalation with no recheck or fallback;
-- using escalation before trying obvious local diagnosis;
-- continuing to retry unchanged work after escalation already proved a human or
-  infrastructure decision is required;
-- treating a sent escalation as final success instead of waiting for a returned
-  signal or recording a valid exact wait.
-- treating `handled` as resolved;
-- letting `escalation.routed` or `message.created` remain pending forever
-  without a linked wait/fallback.
-
-The project/app health report should therefore say:
-
-- how many escalation/approval signals exist in the review window;
-- how many are open, stale, resolved, dismissed, expired, or failed to resume;
-- whether approval dispatch actually created human-visible messages;
-- whether blocked waits are linked to escalation/owner paths when needed;
-- whether routed/handled events have an actual project-state closure path;
-- whether escalation is reducing uncertainty and work, or just accumulating.
-
-Efficient escalation does not mean "few escalations." It means the app escalates
-only when escalation is the right next tool, makes the ask exact, watches the
-answer, and converts the result back into project progress.
-
-The evaluator should grade escalation use by asking:
-
-- Was escalation necessary, or could the app still do local diagnosis/repair?
-- Was the ask exact enough that the recipient can answer without re-triage?
-- Was the ask delivered?
-- Is there one linked wait that carries the escalation id or equivalent packet
-  path?
-- Does that wait have next check/fallback behavior?
-- If the answer arrived, did the target app consume it?
-- If the answer did not arrive, did the app follow up once, reroute, or record a
-  longer explicit wait rather than repeatedly sending the same ask?
+The evaluator reports duplicate asks, vague owner requests, Conditions with no
+observer, repeated unchanged retries, orphaned dependencies, or results the
+source App did not consume. It does not require legacy escalation open/close
+pairs and does not ask a human to assign an owner already declared by the App.
 
 ## What We Learned
 
@@ -251,13 +129,14 @@ pattern is separation of responsibilities:
 ```text
 app organizes work
 workflows execute reusable experience
-task tree records durable state
+task resources record durable desired and observed state
 metrics/watchdog detect process failure
 owner sees raw facts plus judgment
 ```
 
 The failure mode we saw is also important: a target app can have watchdogs,
-metrics, planners, and recovery loops, yet still sit with stale blocked work,
+metrics, planners, and recovery loops, yet still sit with stale waiting or
+attention work,
 misleading progress, or repeated recovery churn. If the target app could always
 recognize and fix that itself, the issue would already be fixed.
 
@@ -334,15 +213,16 @@ event wake
   -> observed state and reconciliation event
 ```
 
-The task tree records desired outcomes and relationships. It is not the queue,
-and app code is not a second planner. Known evaluation processes are explicit
-workflows. The evaluator owner judges novel or ambiguous evaluator-local work.
-Both return the shared structured result and neither mutates the tree directly.
+Task resources record desired outcomes and observed state. Their generated tree
+shows relationships; it is neither the queue nor a mutation surface. App code
+is not a second planner. Known evaluation processes are explicit workflows. The
+evaluator owner judges novel or ambiguous evaluator-local work. Both return the
+shared structured result and neither edits Host task persistence directly.
 
-`session.end` is a high-rate observation, but it does carry one exact session
-identity. Evaluation now routes concrete `session.end` events into
-`evaluation.session.requested` so the reconciler can run bounded
-`runtime/session-aftermath/<session>` work with normal task-level concurrency.
+`session.end` is a high-rate fact with one exact session identity. Evaluation
+resolves it directly to bounded `runtime/session-aftermath/<session>` work with
+normal task-level concurrency. Explicit `evaluation.session.requested` input
+uses the same task identity without manufacturing an intermediate event.
 The standing `evaluation.aftermath.scan` wake remains the restart-safe fallback
 for missed, delayed, or backlog sessions older than the grace window. The
 sessions and evaluations tables remain the durable source of truth, and the
@@ -400,16 +280,17 @@ not consume evaluator sessions merely to repeat unchanged child state.
 
 ### Runtime Tasks
 
-| Event                                  | Task                                  | Mode       | Observable postcondition                                                                                               |
-| -------------------------------------- | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `session.end`                          | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip without waiting for the periodic backfill scan. |
-| `evaluation.aftermath.scan`            | `runtime/aftermath-backfill`          | `maintain` | The oldest grace-eligible missing evaluation is recorded; one compact continuation wake is emitted while more remain.  |
-| `evaluation.session.requested`         | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                          |
-| `evaluation.deep.requested`            | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                               |
-| evaluator-owned metric breach/recovery | `runtime/owner-review`                | `maintain` | The exact metric fact is reviewed from bounded reconciliation context without a broad pipeline rescan.                 |
-| `evaluation.deep.scan`                 | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                               |
-| `evaluation.project.review.requested`  | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                           |
-| `evaluation.tick`                      | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                                     |
+| Event                                              | Task                                  | Mode       | Observable postcondition                                                                                               |
+| -------------------------------------------------- | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `session.end`                                      | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip without waiting for the periodic backfill scan. |
+| `evaluation.aftermath.scan`                        | `runtime/aftermath-backfill`          | `maintain` | The oldest grace-eligible missing evaluation is recorded; one compact continuation wake is emitted while more remain.  |
+| `evaluation.aftermath.coverage_snapshot.requested` | `runtime/aftermath-coverage-snapshot` | `achieve`  | A fresh trailing-3h eligible/evaluated count and coverage metric sample are persisted.                                 |
+| `evaluation.session.requested`                     | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                          |
+| `evaluation.deep.requested`                        | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                               |
+| evaluator-owned metric breach/recovery             | `runtime/owner-review`                | `maintain` | The exact metric fact is reviewed from bounded reconciliation context without a broad pipeline rescan.                 |
+| `evaluation.deep.scan`                             | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                               |
+| `evaluation.project.review.requested`              | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                           |
+| `evaluation.tick`                                  | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                                     |
 
 An `achieve` task leaves the live graph after outcome absorption and keeps a
 bounded completion reference for deduplication. A converged `maintain` task
@@ -422,20 +303,21 @@ returns `waiting`; the bounded run then ends. The Condition owns its observer,
 freshness, next check, owner, and fallback. A Condition change wakes affected
 tasks.
 
-`failed` means the current attempt failed. It does not prove the desired
-outcome impossible or justify a generic blocked task. Known-workflow failures
-fall back to the evaluator owner with evidence. Supervision repairs only broken
-mechanical invariants such as lost delivery or a dead attempt; it does not
-repeat evaluation judgment.
+An attempt failure does not prove the desired outcome impossible or justify a
+generic blocked task. A workflow asks for one owner judgment only by returning
+`needs-owner`; an unavailable named workflow leaves the task in `attention`
+until its binding is repaired. Supervision repairs only broken mechanical
+invariants such as lost delivery or a dead attempt; it does not repeat
+evaluation judgment.
 
 ## Self-Recovery Contract
 
-Every project app should own the first attempt to recover its own process
+Every Agent App should own the first attempt to recover its own process
 failures. The minimum contract is:
 
 - task state exists and unfinished work is visible;
 - owner/planner wake exists for judgment and work creation;
-- project-owned metric breaches can be routed to the project app first;
+- App-owned metric breaches can be routed to the accountable App first;
 - a scheduled observer checks progress without human polling;
 - stuck work has a fallback path, such as watchdog, health review, stall review,
   or owner review;
@@ -448,7 +330,7 @@ the contract looks `strong`, `partial`, or `weak`, then reports when unfinished
 work exists without enough self-recovery.
 
 The useful reusable pattern is not owned by one app. `aks-rp-e2e.app` is a good
-source because it has exercised many failure modes, but every project app can
+source because it has exercised many failure modes, but every Agent App can
 teach the shared app-maintenance pattern:
 
 ```text
@@ -477,7 +359,7 @@ Project/app evaluation must not become a second planner for the target app.
 
 It should not:
 
-- mutate the target task tree;
+- mutate the target's Host-owned task state;
 - dispatch target app workers;
 - decide target domain truth;
 - silently fix target project state;
@@ -760,7 +642,7 @@ to the output that caused it:
 }
 ```
 
-The evaluator does not mutate the target task tree and does not decide that the
+The evaluator does not mutate the target's Host-owned task state and does not decide that the
 recommendation was accepted. The target owner may create repair work, link an
 existing correction, or reject the finding with evidence. A later review may
 call the finding resolved only after the named artifact or relevant output
@@ -826,12 +708,12 @@ target signals, not from making the scheduled loop noisy.
 The workflow keeps a small Evaluation-owned generated cursor:
 
 ```text
-generated/project-health-state/targets/<targetProject>.json
+.state/project-health/targets/<targetProject>.json
 ```
 
-It records last report path, last verdict, last notification dedupe key, last
-semantic fingerprint, and owner-feedback delivery state. It is ignored
-generated App data, not host-owned `.state` and not a second task authority.
+It records last report and facts paths, last verdict, notification dedupe key,
+semantic fingerprint, and owner-feedback state. It is ignored Evaluation-owned
+workflow state under `.state`, not a second task authority.
 
 There is one durable maintain task per target, not a task node per review. The
 cursor only suppresses duplicate artifacts and delivery; task intent remains
@@ -843,7 +725,6 @@ The same workflow should also run immediately for important target signals:
 
 ```text
 metric.breach(targetProject=aks-rp-e2e.app)
-escalation.created(targetProject=aks-rp-e2e.app)
 project.output.claimed(targetProject=aks-rp-e2e.app)
 project.loop.progress.changed(targetProject=aks-rp-e2e.app)
 ```
@@ -888,9 +769,9 @@ targetProject + concernFamily + topEvidenceFingerprint
 
 Examples:
 
-- `aks-rp-e2e.app:overdue-blocked-frontier:spec-loop`
+- `aks-rp-e2e.app:overdue-waiting-frontier:spec-loop`
 - `aks-rp-e2e.app:false-live-pass:compact-feature`
-- `aks-rp-e2e.app:escalation-without-owner:capacity`
+- `aks-rp-e2e.app:orphaned-owner-dependency:capacity`
 - `aks-rp-e2e.app:loop-no-progress:feature-compact`
 
 Repeat notification only when:
@@ -914,11 +795,11 @@ A finding is closed when later public observations show one of:
 
 - public observations recover and remain recovered for the configured window;
 - target app creates credible active repair work and progress follows;
-- target app records a valid exact wait with owner, watcher, fallback, and
-  resume condition;
+- target app records a valid exact Condition or linked child request with an
+  owner and observable resume path;
 - target app proves the concern was a false positive;
-- human acknowledged the issue and an exact wait/escalation records that state;
-- escalation is resolved or dismissed and the target state reflects the result.
+- a human or child owner returned a correlated result and the source reflected it;
+- an obsolete ask was superseded or dismissed and the source state reflects it.
 
 Silent disappearance is not closure. The next report must say why the concern is
 closed or downgraded.
@@ -927,7 +808,7 @@ The evaluator must distinguish an absent owner/wait path from an exact wait
 whose formal closure is missing. Both go to the target's already-declared App
 owner. Only a concrete external decision or input may additionally address May.
 
-## Implementation Plan
+## Implementation
 
 The canonical implementation is complete for this workflow slice:
 
@@ -937,12 +818,14 @@ The canonical implementation is complete for this workflow slice:
    and performs one bounded evaluator-agent inspection without raw SQL, task
    storage, prompt parsing, or global runtime paths.
 3. Reports and sidecars live under `reports/project-health/`; dedupe cursor data
-   lives under ignored `generated/project-health-state/`.
+   lives under ignored `.state/project-health/` and is read back after writing.
 4. Non-`ok` findings use `project.owner.requested`; concrete human decisions use
    `evaluation.human_decision.requested` and the May App subscription.
 5. Incomplete evaluator results block the attempt and remain evaluator-local;
    they do not blame a target App or manufacture a successful review.
 6. Standing schedules cover every configured target, including `gym.app`.
+7. An explicit coverage snapshot publishes one bounded trailing-3h metric sample
+   without becoming another evaluation lane.
 
 Follow-on work is operational calibration: verify target-owner reactions from
 later public evidence, add precise target event fast paths only when they have
@@ -954,7 +837,5 @@ cost and latency rather than adding another queue or watcher.
 - Should `watch` verdicts create reports only, or also lightweight UI entries?
 - Should the two-hour sampling interval change after measured evaluator cost and
   finding latency are available?
-- Should target configuration live in `app.ts`, `project.json`, or a small
-  `config/project-targets.json` file?
 - Which target-App facts should trigger immediate review next:
-  metrics only, escalations too, or output claims too?
+  metrics only, dependency failures too, or output claims too?

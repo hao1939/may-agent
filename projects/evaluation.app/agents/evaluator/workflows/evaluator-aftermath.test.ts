@@ -72,11 +72,19 @@ function agentResult(output: unknown): ExecutionResult {
   };
 }
 
-function context(input: AftermathInput, output: unknown, events: AppEvent[]) {
+function context(
+  input: AftermathInput,
+  output: unknown,
+  events: AppEvent[],
+  summary?: string,
+) {
   return createTestAppWorkflowContext({
     input,
     reconciliation: reconciliation(input),
-    callAgent: async () => agentResult(output),
+    callAgent: async () =>
+      summary === undefined
+        ? agentResult(output)
+        : { ...agentResult(undefined), summary },
     emit: async (event) => {
       events.push(event);
     },
@@ -101,6 +109,24 @@ describe("canonical evaluator aftermath", () => {
       findings: [finding],
       backlogRemaining: true,
     });
+  });
+
+  test("accepts canonical result and legacy finish-summary envelopes", () => {
+    const expected = {
+      kind: "evaluation" as const,
+      evaluation,
+      findings: [],
+      backlogRemaining: false,
+    };
+    expect(parseAftermathOutcome({ result: expected }, "s_source")).toEqual(
+      expected,
+    );
+    expect(
+      parseAftermathOutcome(
+        { summary: JSON.stringify(expected), completed_items: ["evaluated"] },
+        "s_source",
+      ),
+    ).toEqual(expected);
   });
 
   test("rejects substitution, invalid scores, and partially valid finding lists", () => {
@@ -227,18 +253,20 @@ describe("canonical evaluator aftermath", () => {
     });
   });
 
-  test("evaluates an exact session, persists before routing, and returns a typed reconciliation result", async () => {
+  test("evaluates an exact session from a finish summary, persists before routing, and returns a typed reconciliation result", async () => {
     const events: AppEvent[] = [];
+    const outcome = {
+      kind: "evaluation",
+      evaluation,
+      findings: [finding],
+      backlogRemaining: true,
+    };
     const result = await execute(
       context(
         { sessionId: "s_source" },
-        {
-          kind: "evaluation",
-          evaluation,
-          findings: [finding],
-          backlogRemaining: true,
-        },
+        undefined,
         events,
+        JSON.stringify(outcome),
       ),
     );
     expect(result.status).toBe("done");

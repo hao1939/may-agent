@@ -6,7 +6,7 @@ to responsible project owners, and notifies humans only when useful.
 
 This is an Agent App: it organizes the evaluation process, task state,
 workflow capabilities, and scoring criteria. The evaluator agent provides
-adaptive judgment and is the app's accountable fallback for unfamiliar work.
+adaptive judgment when an addressed request needs one bounded owner decision.
 Every Agent App remains responsible for its own domain goal and remediation.
 `evaluation.app` observes, judges, and reports; it does not become a second
 planner or fixer for the target project.
@@ -18,23 +18,26 @@ session.end -> collect evidence -> evaluate -> report
 project/app sample -> collect evidence -> evaluate -> report -> deliver
 ```
 
-Three audit lanes and one derived feedback projection are implemented:
+Three audit lanes, one bounded coverage observation, and one derived feedback
+projection are implemented:
 
 1. **Session aftermath** — exact event-driven evaluation of completed sessions,
    plus one bounded backfill candidate every seven minutes
 2. **Deep eval** — explicit LLM-powered evaluation for selected sessions
 3. **Project/app audit** — delta-gated, independent review of target progress,
    risks, waits, recovery behavior, and escalation quality
-4. **Agent feedback projection** — a generated, disposable view of the latest
+4. **Aftermath coverage observation** — an explicit trailing-three-hour count
+   and metric sample; it observes coverage without creating a second audit path
+5. **Agent feedback projection** — a generated, disposable view of the latest
    durable evaluation fact for the evaluated agent
 
-All four lanes use the task reconciliation model:
+Each path uses the same task resource model:
 
 ```text
 event -> short-lived achieve task or standing maintain task
       -> bound workflow, otherwise evaluator owner entry
       -> structured workflow result
-      -> reconciler updates or absorbs the task
+      -> Host updates or absorbs the task
 ```
 
 Session and explicit deep evaluations use short-lived tasks so independent
@@ -77,7 +80,7 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 ## Commands
 
 ```sh
-bun run check       # syntax, typecheck, and formatting
+bun run check       # syntax, typecheck, formatting, and tests
 bun run bundle      # build the app manifest and local workflows
 ```
 
@@ -110,7 +113,7 @@ result projection and emits an observation; it has no database, queue, task
 store, or global-path capability.
 
 The app manifest in `app.ts` owns schedules, event-to-task correlation,
-workflow bindings, and owner fallback.
+workflow bindings, and bounded owner judgment.
 Session aftermath runs only for `session.end`, bounded backfill, or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
 evaluator-owned metric facts wake the stable owner-review task directly.
@@ -129,12 +132,15 @@ persists that fact and its `evaluations` read-model projection. Owner findings
 use `project.owner.requested`, and only concrete human decisions use
 `evaluation.human_decision.requested` through the May App.
 
-The canonical cutover deliberately replaces the old two-stage heuristic plus
-review override. Historical false-good events and calibration documents remain
-evidence, but new evaluations have one final bounded judgment. Host-owned
-`session.eval.jsonl` trails, direct evaluation-table writes, and the private
-learning-candidate JSONL store are retired. Structured evaluation facts,
-owner requests, and human-decision requests are the durable evidence instead.
+The canonical cutover replaces the old two-stage heuristic plus review
+override. Historical false-good events and calibration documents remain
+evidence, but new automatic evaluations have one final bounded judgment.
+`evaluation.recorded` is the write path for the durable Evaluation fact and its
+database projection; App code never writes that table directly. A session's
+append-only `session.eval.jsonl` remains valid supporting evidence for summaries
+and human/evaluator notes, but it is not another work queue or evaluation
+projection. The former private learning-candidate log is not part of the
+current Evaluation workflow.
 
 Project/app auditing is separate from session aftermath. It reads target app
 state, metrics, events, loop progress, and output evidence, then produces a

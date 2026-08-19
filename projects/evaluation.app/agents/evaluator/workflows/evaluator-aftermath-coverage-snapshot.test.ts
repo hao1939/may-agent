@@ -1,0 +1,82 @@
+import { describe, expect, test } from "bun:test";
+import type { ExecutionResult } from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import {
+  METRIC_ID,
+  execute,
+  parseCoverageCounts,
+} from "./evaluator-aftermath-coverage-snapshot.ts";
+
+function reconciliation() {
+  return {
+    appId: "evaluation",
+    taskId: "runtime/aftermath-coverage-snapshot",
+    generation: 2,
+    resourceVersion: 3,
+    owner: "evaluator",
+    mode: "achieve" as const,
+    outcome: "Publish coverage.",
+    acceptance: ["Persist one sample."],
+    input: { reason: "test" },
+    children: { live: [], completed: [] },
+    taskSnapshot: { live: [], truncated: false },
+  };
+}
+
+function agent(output: unknown, summary = "counted"): ExecutionResult {
+  return {
+    id: "s_counter",
+    kind: "agent",
+    status: "done",
+    summary,
+    ...(output !== undefined ? { output } : {}),
+  };
+}
+
+describe("aftermath coverage snapshot", () => {
+  test("parses direct and finish-result count envelopes", () => {
+    const counts = {
+      eligible: 10,
+      evaluated: 3,
+      windowStart: 100,
+      windowEnd: 200,
+    };
+    expect(parseCoverageCounts(counts)).toEqual(counts);
+    expect(parseCoverageCounts({ result: counts })).toEqual(counts);
+    expect(parseCoverageCounts({ summary: JSON.stringify(counts) })).toEqual(
+      counts,
+    );
+    expect(parseCoverageCounts({ ...counts, evaluated: 11 })).toBeNull();
+  });
+
+  test("records value, sample size, and source counts from a finish summary then converges", async () => {
+    const records: unknown[][] = [];
+    const counts = {
+      eligible: 10,
+      evaluated: 3,
+      windowStart: 100,
+      windowEnd: 200,
+    };
+    const result = await execute(
+      createTestAppWorkflowContext({
+        input: { reason: "repair" },
+        reconciliation: reconciliation(),
+        callAgent: async () => agent(undefined, JSON.stringify(counts)),
+        recordMetric: async (...args) => {
+          records.push(args);
+        },
+      }),
+    );
+    expect(result.status).toBe("done");
+    expect(records).toHaveLength(1);
+    expect(records[0]?.[0]).toBe(METRIC_ID);
+    expect(records[0]?.[1]).toBe(0.3);
+    expect(records[0]?.[2]).toMatchObject({
+      sampleSize: 10,
+      measuredBy: "workflow:evaluator-aftermath-coverage-snapshot",
+    });
+    expect(String((records[0]?.[2] as { note: string }).note)).toContain(
+      '"evaluated":3',
+    );
+  });
+});

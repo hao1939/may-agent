@@ -1,5 +1,8 @@
 # Aftermath Patterns (Evaluator)
 
+> Historical observations, not a current runtime inventory. Verify every agent,
+> path, tool, and guard against the evaluated session before applying a pattern.
+
 ## Finish blocked by uncommitted changes
 Common failure mode: an agent creates required deliverables under `agents/<agent>/...` but calls `finish()` before committing them. The guard blocks with a message listing uncommitted files.
 
@@ -9,8 +12,10 @@ Common failure mode: an agent creates required deliverables under `agents/<agent
 - `git commit -m "<agent>: <specific change>"`
 - then call `finish()`
 
-## Missing ripgrep (rg) in runtime
-Some sessions assume `rg` is installed; in this environment it may not be. Prefer portable fallbacks (`grep -R`, `find ... -exec grep`) or explicitly install only when allowed by workflow.
+## Command availability varies by runtime generation
+Some older sessions lacked `rg`; current environments may include it. Judge the
+session from the command result and adapt to an available search tool instead of
+hard-coding either assumption.
 
 ## Telemetry mismatch: opCount=0 with tool calls present
 Observed at least once: workflow summary lists opCount=0 while transcript clearly includes tool calls. This can cause evaluator heuristics to misfire; flag to maintainers for investigation.

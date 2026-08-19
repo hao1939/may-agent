@@ -1,4 +1,10 @@
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
@@ -17,6 +23,7 @@ import {
   scheduledProjectReviewDecision,
   shouldFeedbackTargetOwner,
   shouldNotify,
+  verifyProjectHealthDurability,
   type ProjectHealthJudgment,
 } from "./project-health-evaluator.js";
 
@@ -309,16 +316,13 @@ describe("canonical project-health evaluator", () => {
     ).toHaveLength(2);
     expect(
       existsSync(
-        join(
-          root,
-          "generated",
-          "project-health-state",
-          "targets",
-          "gym.app.json",
-        ),
+        join(root, ".state", "project-health", "targets", "gym.app.json"),
       ),
     ).toBe(true);
-    expect(existsSync(join(root, ".state", "project-health"))).toBe(false);
+    expect(verifyProjectHealthDurability(root, ["gym.app"])).toMatchObject({
+      ok: true,
+      errors: [],
+    });
   });
 
   test("creates a correlated May request for a genuine human decision", async () => {
@@ -400,6 +404,34 @@ describe("canonical project-health evaluator", () => {
     expect(existsSync(join(root, "generated", "project-health-state"))).toBe(
       false,
     );
+  });
+
+  test("rejects a durability claim when a pointer's claimed artifact is absent", async () => {
+    const root = mkdtempSync(join(tmpdir(), "project-health-durability-"));
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "gym.app" },
+      reconciliation: reconciliation("manual"),
+      workspace: { root, output: root },
+      callAgent: async () => ({
+        id: "s_durability",
+        kind: "agent",
+        status: "done",
+        summary: "audited",
+        output: judgment,
+      }),
+    });
+    await expect(execute(ctx)).resolves.toMatchObject({ status: "done" });
+    const reportDir = join(root, "reports", "project-health", "gym.app");
+    const facts = readdirSync(reportDir).find((entry) =>
+      entry.endsWith(".facts.json"),
+    );
+    expect(facts).toBeDefined();
+    unlinkSync(join(reportDir, facts!));
+    expect(verifyProjectHealthDurability(root, ["gym.app"])).toMatchObject({
+      ok: false,
+      evidence: [],
+      errors: ["gym.app: claimed publication pair is absent"],
+    });
   });
 
   test("keeps only the newest report/facts pairs", () => {

@@ -65,6 +65,7 @@ export type ProjectHealthState = {
   lastReviewedAt?: string;
   lastCheckedAt?: string;
   lastReportPath?: string;
+  lastFactsPath?: string;
   lastVerdict?: string;
   lastDedupeKey?: string;
   lastRequestedHumanAction?: string;
@@ -370,8 +371,8 @@ export function shouldFeedbackTargetOwner(
 function stateFile(workspaceRoot: string, targetProject: string): string {
   return join(
     workspaceRoot,
-    "generated",
-    "project-health-state",
+    ".state",
+    "project-health",
     "targets",
     `${targetProject}.json`,
   );
@@ -405,6 +406,7 @@ export function projectHealthStateUpdate(
     lastReviewedAt: now,
     lastCheckedAt: now,
     lastReportPath: reportPath,
+    lastFactsPath: reportPath.replace(/\.md$/, ".facts.json"),
     lastVerdict: judgment.verdict,
     lastDedupeKey: judgment.dedupeKey,
     lastRequestedHumanAction: judgment.requestedHumanAction,
@@ -426,10 +428,9 @@ function writeState(
   targetProject: string,
 ): void {
   const path = stateFile(workspaceRoot, targetProject);
-  mkdirSync(
-    join(workspaceRoot, "generated", "project-health-state", "targets"),
-    { recursive: true },
-  );
+  mkdirSync(join(workspaceRoot, ".state", "project-health", "targets"), {
+    recursive: true,
+  });
   writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
@@ -491,6 +492,85 @@ ${JSON.stringify(facts, null, 2)}
 \`\`\`
 `;
   return { facts, report };
+}
+
+export type ProjectHealthDurabilityCheck = {
+  ok: boolean;
+  evidence: string[];
+  errors: string[];
+};
+
+/**
+ * Re-open persisted target pointers and both publication artifacts from the
+ * active workspace. A receipt must call this after publication (or from a
+ * fresh process) instead of treating successful write calls as durability.
+ */
+export function verifyProjectHealthDurability(
+  workspaceRoot: string,
+  targetProjects: readonly string[],
+  stateRoot = join(workspaceRoot, ".state", "project-health", "targets"),
+): ProjectHealthDurabilityCheck {
+  const evidence: string[] = [];
+  const errors: string[] = [];
+  for (const targetProject of targetProjects) {
+    const pointerPath = join(stateRoot, `${targetProject}.json`);
+    if (!existsSync(pointerPath)) {
+      errors.push(`${targetProject}: missing pointer ${pointerPath}`);
+      continue;
+    }
+    let state: ProjectHealthState;
+    try {
+      state = record(
+        JSON.parse(readFileSync(pointerPath, "utf8")),
+      ) as ProjectHealthState;
+    } catch {
+      errors.push(`${targetProject}: unreadable pointer ${pointerPath}`);
+      continue;
+    }
+    const reportRef = text(state.lastReportPath);
+    const factsRef =
+      text(state.lastFactsPath) || reportRef.replace(/\.md$/, ".facts.json");
+    const fingerprint = text(state.lastInputFingerprint);
+    if (!reportRef || !factsRef || !fingerprint) {
+      errors.push(
+        `${targetProject}: pointer lacks report, facts, or fingerprint`,
+      );
+      continue;
+    }
+    const reportPath = join(workspaceRoot, reportRef);
+    const factsPath = join(workspaceRoot, factsRef);
+    if (!existsSync(reportPath) || !existsSync(factsPath)) {
+      errors.push(`${targetProject}: claimed publication pair is absent`);
+      continue;
+    }
+    try {
+      const report = readFileSync(reportPath, "utf8");
+      const facts = record(JSON.parse(readFileSync(factsPath, "utf8")));
+      const factsJudgment = record(facts.judgment);
+      const factsTarget = text(facts.targetProject);
+      const factsVerdict = text(factsJudgment.verdict);
+      const factsDedupeKey = text(factsJudgment.dedupeKey);
+      if (
+        factsTarget !== targetProject ||
+        (text(state.lastVerdict) && factsVerdict !== text(state.lastVerdict)) ||
+        (text(state.lastDedupeKey) &&
+          factsDedupeKey !== text(state.lastDedupeKey)) ||
+        !report.includes(`Project: ${targetProject}`) ||
+        (factsVerdict && !report.includes(`Verdict: ${factsVerdict}`))
+      ) {
+        errors.push(
+          `${targetProject}: pointer, report, and facts do not match`,
+        );
+        continue;
+      }
+      evidence.push(
+        `${targetProject}:${relative(workspaceRoot, reportPath)}:${relative(workspaceRoot, factsPath)}:${fingerprint}`,
+      );
+    } catch {
+      errors.push(`${targetProject}: publication pair is unreadable`);
+    }
+  }
+  return { ok: errors.length === 0, evidence, errors };
 }
 
 export function pruneProjectHealthReports(
@@ -705,6 +785,20 @@ export async function execute(
     ),
     targetProject,
   );
+  const durability = verifyProjectHealthDurability(ctx.workspace.root, [
+    targetProject,
+  ]);
+  if (!durability.ok) {
+    await ctx.events.emit({
+      type: "evaluation.project.publication_failed",
+      data: { targetProject, reportPath, errors: durability.errors },
+      target: { appId: "evaluation", project: "evaluation" },
+    });
+    return ctx.blocked(
+      `${targetProject} project/App publication failed durability verification`,
+      durability.errors,
+    );
+  }
 
   const reviewed = {
     targetProject,

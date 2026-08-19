@@ -1,5 +1,9 @@
 # Aftermath learnings (evaluator)
 
+> Historical calibration log. Agent names, paths, tools, and closeout guards may
+> describe older runtime generations. Reuse only the evidence pattern after
+> checking it against the current criteria and active agent contract.
+
 ## 2026-05-08 — s_1778211532870_3
 - Do not rely on the `write()` preview as verification; always `read()` the artifact after writing before calling `finish(success)`.
 - Avoid directory reads (EISDIR): read `.../project.md` explicitly.

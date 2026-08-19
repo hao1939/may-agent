@@ -99,11 +99,12 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  ...["aftermath-scan", "deep-scan"].map((kind) =>
-    Type.Object(
-      { kind: Type.Literal(kind), data: detailsSchema },
-      { additionalProperties: false },
-    ),
+  ...["aftermath-scan", "aftermath-coverage-snapshot", "deep-scan"].map(
+    (kind) =>
+      Type.Object(
+        { kind: Type.Literal(kind), data: detailsSchema },
+        { additionalProperties: false },
+      ),
   ),
 ]);
 
@@ -287,6 +288,21 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         input: { scope: "session-aftermath-frontier" },
         priority: "P1",
       };
+    case "aftermath-coverage-snapshot":
+      return {
+        id: "runtime/aftermath-coverage-snapshot",
+        parentId: "pipeline-health",
+        outcome:
+          "Publish one fresh 3h aftermath coverage sample from bounded eligible and evaluated session counts.",
+        acceptance: [
+          "A responsible executor terminates with exact eligible and evaluated counts for the trailing 3h window.",
+          "The evaluator.aftermath-coverage-rate-3h sample persists with sample-size and count/source evidence.",
+        ],
+        mode: "achieve",
+        workflow: "evaluator-aftermath-coverage-snapshot",
+        input: data,
+        priority: "P0",
+      };
     case "deep-eval": {
       const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;
@@ -432,6 +448,8 @@ export function taskInputForEvent(
     }
     case "evaluation.aftermath.scan":
       return eventInput("aftermath-scan", event);
+    case "evaluation.aftermath.coverage_snapshot.requested":
+      return eventInput("aftermath-coverage-snapshot", event);
     case "evaluation.deep.requested": {
       const sessionId = eventSessionId(event);
       return sessionId
@@ -578,6 +596,12 @@ const app = defineApp({
       inputSchema: sessionSchema,
       toInput: (data) => ({ kind: "evaluate-session", data }),
     },
+    "snapshot-aftermath-coverage": {
+      description:
+        "Compute and persist one bounded trailing-3h aftermath coverage sample.",
+      inputSchema: Type.Object({}, { additionalProperties: true }),
+      toInput: (data) => ({ kind: "aftermath-coverage-snapshot", data }),
+    },
     "deep-eval": {
       description: "Run one deep evaluator review for a specific session.",
       inputSchema: sessionSchema,
@@ -607,6 +631,10 @@ const app = defineApp({
       "session.end",
       { type: "evaluation.session.requested", project: projectId },
       { type: "evaluation.aftermath.scan", project: projectId },
+      {
+        type: "evaluation.aftermath.coverage_snapshot.requested",
+        project: projectId,
+      },
       { type: "evaluation.deep.requested", project: projectId },
       { type: "evaluation.deep.scan", project: projectId },
       { type: "evaluation.project.review.requested", project: projectId },
