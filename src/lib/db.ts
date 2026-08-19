@@ -38,9 +38,11 @@ function detectRuntime(): Runtime {
 
 // ── Bun adapter ────────────────────────────────────────────────────────
 
-function openBun(path: string): SqliteDb {
-  const { Database } = require("bun:sqlite") as { Database: new (path: string) => BunDatabase };
-  const db = new Database(path);
+function openBun(path: string, readonly = false): SqliteDb {
+  const { Database } = require("bun:sqlite") as {
+    Database: new (path: string, options?: { readonly?: boolean; create?: boolean }) => BunDatabase;
+  };
+  const db = new Database(path, readonly ? { readonly: true, create: false } : undefined);
   return {
     exec(sql: string) {
       db.exec(sql);
@@ -81,9 +83,11 @@ interface BunDatabase {
 
 // ── Node adapter ───────────────────────────────────────────────────────
 
-function openNode(path: string): SqliteDb {
-  const { DatabaseSync } = require("node:sqlite") as { DatabaseSync: new (path: string) => NodeDatabase };
-  const db = new DatabaseSync(path);
+function openNode(path: string, readonly = false): SqliteDb {
+  const { DatabaseSync } = require("node:sqlite") as {
+    DatabaseSync: new (path: string, options?: { readOnly?: boolean }) => NodeDatabase;
+  };
+  const db = new DatabaseSync(path, readonly ? { readOnly: true } : undefined);
   return {
     exec(sql: string) {
       db.exec(sql);
@@ -129,4 +133,9 @@ const runtime = detectRuntime();
 
 export function openDatabase(path: string): SqliteDb {
   return runtime === "bun" ? openBun(path) : openNode(path);
+}
+
+/** Open an existing database without creation or write capability. */
+export function openReadOnlyDatabase(path: string): SqliteDb {
+  return runtime === "bun" ? openBun(path, true) : openNode(path, true);
 }
