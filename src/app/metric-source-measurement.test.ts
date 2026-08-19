@@ -10,6 +10,8 @@ import {
   attachMetricSourceMeasurement,
   type MetricSourceMeasurementRuntime,
   STALE_ACTIVE_SOURCE_QUERY,
+  SUBSCRIBER_FAILED_COUNT_METRIC_ID,
+  SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
 } from "./metric-source-measurement.js";
 
 describe("source-query metric measurement", () => {
@@ -23,6 +25,117 @@ describe("source-query metric measurement", () => {
     applyDbSchema(getDb(persistDir));
     attachEventPersistence({ bus, persistDir });
     measurement = attachMetricSourceMeasurement({ bus, persistDir });
+  });
+
+  it("preserves live alert calibration while restoring the subscriber failure source", () => {
+    const db = getDb(persistDir);
+    db.run(
+      `UPDATE metrics
+       SET owner = 'tech-lead', threshold = 7, priority = 'P1',
+           config = '{"alert":{"mode":"consecutive_failures","count":4}}'
+       WHERE id = ?`,
+      [SUBSCRIBER_FAILED_COUNT_METRIC_ID],
+    );
+
+    attachMetricSourceMeasurement({ bus, persistDir });
+
+    expect(
+      db
+        .prepare(
+          "SELECT owner, threshold, priority, config, source_query, measure_interval FROM metrics WHERE id = ?",
+        )
+        .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+    ).toEqual({
+      owner: "tech-lead",
+      threshold: 7,
+      priority: "P1",
+      config: '{"alert":{"mode":"consecutive_failures","count":4}}',
+      source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
+      measure_interval: 300_000,
+    });
+  });
+
+  it("persists, measures, and alerts on the rolling subscriber failure source without hiding malformed targets", async () => {
+    const db = getDb(persistDir);
+    expect(
+      db
+        .prepare("SELECT owner, source_query FROM metrics WHERE id = ?")
+        .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+    ).toEqual({
+      owner: "may",
+      source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
+    });
+
+    db.run(
+      `INSERT INTO events (event_type, source, owner, data, timestamp)
+       VALUES ('subscriber.failed', 'event-bus', 'agent:may', ?, ?)`,
+      [JSON.stringify({ originalEventType: "task.wake", error: "aged out" }), Date.now() - 3_610_000],
+    );
+    bus.emit({
+      type: "subscriber.failed",
+      source: "event-bus",
+      owner: "agent:may",
+      data: {
+        originalEventType: "task.wake",
+        error: "Malformed exact task target",
+        target: { project: "may-agent" },
+      },
+    });
+    bus.emit({
+      type: "subscriber.failed",
+      source: "event-bus",
+      owner: "agent:may",
+      data: {
+        originalEventType: "task.wake",
+        error: "Unroutable exact task target",
+        target: { project: "may-agent", taskId: "missing" },
+      },
+    });
+    for (const error of ["genuine handler failure", "genuine delivery failure"]) {
+      bus.emit({
+        type: "subscriber.failed",
+        source: "event-bus",
+        owner: "agent:may",
+        data: { originalEventType: "app.input.requested", error },
+      });
+    }
+    bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      data: { correlation: "subscriber-failed-source-golden-trace-1" },
+    });
+    await measurement.idle();
+    const trigger = bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      data: { correlation: "subscriber-failed-source-golden-trace-2" },
+    });
+    const triggerEventId = trigger[EVENT_ROW_ID]!;
+    await measurement.idle();
+
+    expect(
+      db.prepare("SELECT current FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+    ).toEqual({ current: 4 });
+    expect(
+      db
+        .prepare(
+          "SELECT value, measured_by, note FROM metric_snapshots WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
+        )
+        .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+    ).toEqual({
+      value: 4,
+      measured_by: "runtime:metric-source-query",
+      note: `source-query; trigger-event:${triggerEventId}`,
+    });
+    expect(
+      db
+        .prepare(
+          "SELECT alert_type, resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
+        )
+        .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+    ).toEqual({ alert_type: "consecutive_failures", resolved_at: null });
   });
 
   it("turns a measurement trigger into a correlated stored sample and alert recovery", async () => {
@@ -176,6 +289,7 @@ describe("source-query metric measurement", () => {
       "INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, 1, ?, 'fixture')",
     );
 
+    insertSnapshot.run(SUBSCRIBER_FAILED_COUNT_METRIC_ID, now - 60_000);
     insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
     insertSnapshot.run("query.fresh", now - 60_000);
     insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);

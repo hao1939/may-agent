@@ -5,6 +5,11 @@ import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } fro
 import { getDb } from "../lib/db/connection.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
+export const SUBSCRIBER_FAILED_COUNT_METRIC_ID = "infra.bus.subscriber-failed-count-1h";
+export const SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY = `SELECT COUNT(*) AS value
+FROM events
+WHERE event_type = 'subscriber.failed'
+  AND timestamp >= (strftime('%s','now') * 1000 - 3600000)`;
 export const STALE_ACTIVE_METRIC_ID = "metric.stale-active-count";
 export const STALE_ACTIVE_SOURCE_QUERY = `SELECT COUNT(*) AS value
 FROM metrics m
@@ -244,7 +249,48 @@ export function attachMetricSourceMeasurement(options: {
   persistDir: string;
 }): MetricSourceMeasurementRuntime {
   const db = getDb(options.persistDir);
-  createMetricService({ getDb: () => db }).define({
+  const metricService = createMetricService({ getDb: () => db });
+  const subscriberFailureSource = {
+    source: "rolling one-hour subscriber.failed event count",
+    sourceQuery: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
+    measureInterval: 300_000,
+    description:
+      "Counts every durable subscriber.failed event in the rolling hour, including malformed or unroutable exact-task failures.",
+  };
+  const existingSubscriberFailureMetric = db
+    .prepare("SELECT id FROM metrics WHERE id = ?")
+    .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID);
+  if (!existingSubscriberFailureMetric) {
+    metricService.define({
+      id: SUBSCRIBER_FAILED_COUNT_METRIC_ID,
+      name: "Event bus subscriber failures (1h)",
+      owner: "may",
+      type: "health",
+      target: 0,
+      threshold: 3,
+      unit: "count",
+      priority: "P2",
+      status: "active",
+      ...subscriberFailureSource,
+      alertOp: ">",
+      speed: "fast",
+      config: { alert: { mode: "consecutive_failures", count: 2 } },
+    });
+  } else {
+    db.run(
+      `UPDATE metrics
+       SET source = ?, source_query = ?, measure_interval = ?, description = ?
+       WHERE id = ?`,
+      [
+        subscriberFailureSource.source,
+        subscriberFailureSource.sourceQuery,
+        subscriberFailureSource.measureInterval,
+        subscriberFailureSource.description,
+        SUBSCRIBER_FAILED_COUNT_METRIC_ID,
+      ],
+    );
+  }
+  metricService.define({
     id: STALE_ACTIVE_METRIC_ID,
     name: "Stale cadence-bound active metrics",
     owner: "may",
