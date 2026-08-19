@@ -516,7 +516,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         type: "session.steer.requested",
         source,
         owner: normalizeEventOwner(opts.interfaceAgent),
-        data: { sessionId: target.sessionId, message, context },
+        target: { sessionId: target.sessionId },
+        data: { message, context },
         ...(receivedTrace ? { trace: receivedTrace } : {}),
       });
       return;
@@ -572,7 +573,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       source: "telegram",
       owner: normalizeEventOwner(opts.interfaceAgent),
       urgency: "high",
-      data: { sessionId },
+      target: { sessionId },
+      data: {},
     } as any);
   }
 

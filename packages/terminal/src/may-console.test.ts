@@ -330,7 +330,8 @@ describe("May Console", () => {
     child.stdin.write("/steer s_worker use the smaller plan\n");
     await waitFor(() => frames.some((frame) => frame.type === "session.steer.requested"));
     expect(frames.find((frame) => frame.type === "session.steer.requested")).toMatchObject({
-      data: { sessionId: "s_worker_123", message: "use the smaller plan" },
+      target: { sessionId: "s_worker_123" },
+      data: { message: "use the smaller plan" },
     });
 
     child.stdin.write("/watch s_worker\n");

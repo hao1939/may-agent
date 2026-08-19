@@ -671,8 +671,8 @@ function emitSourceSessionUpdate(
     type: "session.steer.requested",
     source: "cli-task-runner",
     owner: record.sourceOwner,
+    target: { sessionId: record.sourceSessionId },
     data: {
-      sessionId: record.sourceSessionId,
       message: lines.join("\n"),
     },
   } as any);

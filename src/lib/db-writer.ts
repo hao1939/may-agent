@@ -622,7 +622,14 @@ export class DbWriter {
       if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
         (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
       }
-      const correlation = eventCorrelation(persistedPayload);
+      const envelope = event as AgentEvent & { target?: unknown };
+      const target =
+        envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
+          ? (envelope.target as Record<string, unknown>)
+          : {};
+      // The canonical envelope target is routing authority. Persist it in the
+      // indexed correlation columns without copying it into event.data.
+      const correlation = eventCorrelation({ ...persistedPayload, ...target });
       const idempotencyKey =
         typeof persistedPayload.idempotencyKey === "string" ? persistedPayload.idempotencyKey.trim() : "";
       const trustedIngressSource = ingressSource(event, source);

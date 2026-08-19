@@ -107,7 +107,12 @@ function canonicalShortcutEvent(
   eventType: string,
   frame: Record<string, unknown>,
   data: Record<string, unknown>,
-  defaults: { source?: string; owner?: unknown; urgency?: string } = {},
+  defaults: {
+    source?: string;
+    owner?: unknown;
+    urgency?: string;
+    target?: EventTarget;
+  } = {},
 ): SocketFrame {
   return socketEvent(
     originalCommand,
@@ -115,6 +120,7 @@ function canonicalShortcutEvent(
       source: shortcutSource(frame, defaults.source ?? "socket"),
       owner: shortcutOwner(frame, defaults.owner ?? "may"),
       ...(defaults.urgency ? { urgency: defaults.urgency } : {}),
+      ...(defaults.target ? { target: defaults.target } : {}),
       data,
     }),
   );
@@ -156,7 +162,13 @@ function normalizeHumanShortcutFrame(cmdType: string, frame: Record<string, unkn
       const message = shortcutMessage(frame);
       if (!sessionId) return { kind: "error", command: cmdType, message: "steer requires string field 'sessionId'" };
       if (!message) return { kind: "error", command: cmdType, message: "steer requires string field 'message'" };
-      return canonicalShortcutEvent(cmdType, "session.steer.requested", frame, { sessionId, message });
+      return canonicalShortcutEvent(
+        cmdType,
+        "session.steer.requested",
+        frame,
+        { message },
+        { target: { sessionId } },
+      );
     }
     case "session.cancel.requested": {
       if (isRecord(frame.data)) return socketEvent(cmdType, frame);
@@ -172,11 +184,8 @@ function normalizeHumanShortcutFrame(cmdType: string, frame: Record<string, unkn
         cmdType,
         "session.cancel.requested",
         frame,
-        {
-          sessionId,
-          ...(reason ? { reason } : {}),
-        },
-        { urgency: "high" },
+        { ...(reason ? { reason } : {}) },
+        { urgency: "high", target: { sessionId } },
       );
     }
     case "cancel_all": {

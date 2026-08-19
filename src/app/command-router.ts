@@ -385,7 +385,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const lower = message.toLowerCase();
     if (lower === "cancel") {
       if (sessionId) {
-        bus.emit({ type: "session.cancel.requested", source, owner: String(eventOwner), data: { sessionId } } as any);
+        bus.emit({
+          type: "session.cancel.requested",
+          source,
+          owner: String(eventOwner),
+          target: { sessionId },
+          data: {},
+        } as any);
       } else {
         bus.emit({
           type: "human.input.rejected",
@@ -416,7 +422,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         type: "session.steer.requested",
         source,
         owner: String(eventOwner),
-        data: { sessionId, message: delivered, context },
+        target: { sessionId },
+        data: { message: delivered, context },
       } as any);
       return accepted("session-steer");
     }
@@ -627,12 +634,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         return handleChatStart(event);
       case "session.steer.requested": {
         const data = eventData(event);
-        return handleSteer(data.sessionId, data.message, eventSource(event), event)
+        const target: Record<string, unknown> = isRecord(event) && isRecord(event.target) ? event.target : {};
+        return handleSteer(target.sessionId, data.message, eventSource(event), event)
           ? accepted("session-steer")
           : undefined;
       }
       case "session.cancel.requested": {
-        const sessionId = nonEmptyString(eventData(event).sessionId);
+        const target: Record<string, unknown> = isRecord(event) && isRecord(event.target) ? event.target : {};
+        const sessionId = nonEmptyString(target.sessionId);
         if (!sessionId) return;
         manager.cancel(sessionId);
         return accepted("session-cancel");
