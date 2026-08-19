@@ -12,6 +12,7 @@ import {
   ownerTaskSessionMatchesTaskId,
   representedWaitCoveredFrontierDisposition,
   specLoopRepresentationAuthority,
+  taskState,
   terminalOwnerAttemptHasExpiredLease,
   terminalSessionCompletionGapLooksHealthy,
   workflowDispatchRecentStartLooksHealthy,
@@ -507,6 +508,74 @@ describe("workflowDispatchRecentStartLooksHealthy", () => {
         gapGraceMs: 300000,
       }),
     ).toBeFalse();
+  });
+});
+
+describe("projected task phase assignment consumption", () => {
+  it("normalizes string state, string status, then projected phase without treating resource status objects as state", () => {
+    expect(
+      taskState({ state: "waiting", status: "running", phase: "running" }),
+    ).toBe("blocked");
+    expect(taskState({ status: "accepted", phase: "running" })).toBe("done");
+    expect(taskState({ status: { phase: "waiting" }, phase: "running" })).toBe(
+      "active",
+    );
+    expect(taskState({ status: { phase: "running" } })).toBe("backlog");
+  });
+
+  it("treats a projected phase=running assignment with its canonical attempt and healthy workflow session as consumed", () => {
+    const taskId = "domain/projected-running";
+    const attemptId = "attempt-projected-running";
+    const view = composeTaskTreeMetricView(
+      {
+        root_task_id: "project",
+        tasks: {
+          project: { id: "project", children: [taskId] },
+          [taskId]: {
+            id: taskId,
+            phase: "running",
+            status: { phase: "running", currentAttemptId: attemptId },
+            trace: { current_attempt_id: attemptId },
+            children: [],
+          },
+        },
+      },
+      {
+        resources: {
+          [taskId]: { status: { currentAttemptId: attemptId } },
+        },
+        attempts: {
+          [attemptId]: {
+            metadata: { id: attemptId },
+            taskId,
+            state: "running",
+          },
+        },
+      },
+    );
+    const task = view.tasks?.[taskId];
+
+    expect(taskState(task)).toBe("active");
+    expect(activeTaskAttemptId(task)).toBe(attemptId);
+    expect(
+      assignmentStillLooksUnconsumed({
+        taskState: taskState(task),
+        currentAttemptId: activeTaskAttemptId(task),
+        assignmentAttemptId: attemptId,
+        hasHealthyWorkflowSession: true,
+      }),
+    ).toBeFalse();
+  });
+
+  it("keeps an actually mismatched projected assignment visible", () => {
+    expect(
+      assignmentStillLooksUnconsumed({
+        taskState: taskState({ phase: "running" }),
+        currentAttemptId: "attempt-current",
+        assignmentAttemptId: "attempt-stale",
+        hasHealthyWorkflowSession: true,
+      }),
+    ).toBeTrue();
   });
 });
 

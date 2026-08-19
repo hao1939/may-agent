@@ -587,8 +587,15 @@ function loadTaskTree(): TaskTree {
   return readTaskTree(runtimeTaskTreeConfig());
 }
 
-function taskState(task: TaskNode): string {
-  const raw = task.state ?? task.status ?? "backlog";
+export function taskState(task: TaskNode): string {
+  const raw =
+    typeof task.state === "string"
+      ? task.state
+      : typeof task.status === "string"
+        ? task.status
+        : typeof task.phase === "string"
+          ? task.phase
+          : "backlog";
   if (raw === "accepted") return "done";
   if (raw === "ready" || raw === "proposed") return "backlog";
   if (raw === "superseded" || raw === "cancelled") return "done";
