@@ -166,6 +166,7 @@ export type TaskCompletionReceipt = {
   priority?: "P0" | "P1" | "P2" | "P3";
   handler: string;
   summary: string;
+  response?: string;
   evidence: string[];
   acceptanceBasis: AppTaskAcceptanceBasis;
   failureFingerprints: string[];
@@ -482,10 +483,7 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   );
   renameSync(projectionTempPath, projectionPath);
 
-  if (
-    existingLifecycle !== null &&
-    existingLifecycle !== normalizedLifecycle(tree.project_lifecycle)
-  ) {
+  if (existingLifecycle !== null && existingLifecycle !== normalizedLifecycle(tree.project_lifecycle)) {
     const from = existingLifecycle;
     const to = normalizedLifecycle(tree.project_lifecycle);
     appendTaskTreeJournal(config, {
@@ -764,6 +762,11 @@ function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string,
 function compactHistoricalAttemptTriggers(tree: TaskTree): void {
   const attempts = Object.values(tree.attempts ?? {});
   for (const attempt of attempts) {
+    for (const entry of attempt.events ?? []) {
+      if (JSON.stringify(entry.event).length > 16_384) {
+        entry.event = compactAttemptTrigger(entry.event);
+      }
+    }
     if (!attempt.trigger || attempt.state === "running") continue;
     if (JSON.stringify(attempt.trigger).length <= 16_384) continue;
     attempt.trigger = compactAttemptTrigger(attempt.trigger);
@@ -772,6 +775,12 @@ function compactHistoricalAttemptTriggers(tree: TaskTree): void {
 
 function compactPendingTaskTriggers(tree: TaskTree): void {
   for (const trigger of Object.values(tree.taskTriggers ?? {})) {
+    for (const entry of trigger.events ?? []) {
+      const entryEventId = Number(entry.event?.eventId);
+      if (Number.isInteger(entryEventId) && entryEventId > 0 && JSON.stringify(entry.event).length > 16_384) {
+        entry.event = compactAttemptTrigger(entry.event);
+      }
+    }
     const eventId = Number(trigger.event?.eventId);
     if (!Number.isInteger(eventId) || eventId <= 0) continue;
     if (JSON.stringify(trigger.event).length <= 16_384) continue;
@@ -1031,10 +1040,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
 }
 
 /** Rebuild the disposable read projection without mutating canonical task state. */
-export function refreshAppTaskTreeProjection(
-  config: TaskStateConfig,
-  options: { ifStaleOnly?: boolean } = {},
-): string {
+export function refreshAppTaskTreeProjection(config: TaskStateConfig, options: { ifStaleOnly?: boolean } = {}): string {
   return withTaskStateLock(config, () => {
     const projectionPath = projectRuntimePaths(config.appDir).taskTreePath;
     if (options.ifStaleOnly) {

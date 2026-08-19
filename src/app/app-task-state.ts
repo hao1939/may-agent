@@ -1,5 +1,10 @@
 import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
 
+export type AppTaskTriggerEvent = {
+  event: Record<string, unknown>;
+  observedAt: string;
+};
+
 /** Host-private persisted Condition state. */
 export type AppTaskCondition = {
   metadata: {
@@ -40,6 +45,7 @@ export type AppTaskResource = {
     phase: "pending" | "running" | "converged" | "waiting" | "attention";
     currentAttemptId?: string;
     summary?: string;
+    response?: string;
     evidence?: string[];
     conditionIds?: string[];
     updatedAt: string;
@@ -68,6 +74,11 @@ export type AppTaskAttempt = {
   runtimeId: string;
   state: "running" | "completed" | "failed" | "interrupted";
   reason: string;
+  /** Ordered event batch presented to this attempt. */
+  events?: AppTaskTriggerEvent[];
+  /** More linked events remained pending when this attempt was claimed. */
+  eventsTruncated?: boolean;
+  /** Compatibility projection of the most relevant event in events. */
   trigger?: Record<string, unknown>;
   startedAt: string;
   finishedAt?: string;
@@ -83,6 +94,9 @@ export type AppTaskTrigger = {
   taskId: string;
   taskGeneration: number;
   resourceVersion: number;
+  /** Ordered events not yet included in an accepted reconciliation result. */
+  events?: AppTaskTriggerEvent[];
+  /** Compatibility projection for state written before event batches. */
   event: Record<string, unknown>;
   observedAt: string;
 };

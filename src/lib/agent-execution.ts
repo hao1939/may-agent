@@ -65,7 +65,7 @@ const CHAT_TOOL_DENYLIST = new Set([
   "write",
 ]);
 
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status"]);
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status", "tasks"]);
 
 const DEPUTY_TOOL_ALLOWLIST = new Set([
   "agents",
@@ -76,6 +76,7 @@ const DEPUTY_TOOL_ALLOWLIST = new Set([
   "run_cli_agent",
   "scrape_webpage",
   "system_status",
+  "tasks",
 ]);
 
 // An App owner must return durable ownership changes through its fenced

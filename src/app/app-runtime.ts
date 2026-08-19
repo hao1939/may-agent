@@ -8,9 +8,9 @@ import { createMetricService } from "../lib/metrics.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
-import { createRuntimeAppRead } from "./app-read.js";
+import { createRuntimeAppRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import type { TaskListOptions, TaskView } from "@may-agent/sdk";
 import { createAppTaskCapability } from "./app-task-capability.js";
-import { createAppAnalysisCapability } from "./app-analysis-capability.js";
 import { readAppConversationResource } from "./app-inbox-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
@@ -207,36 +207,24 @@ export async function runAppRuntime(opts: {
 
   const appTasks = createAppTaskCapability({
     bus,
-    getDb: () => getDb(opts.persistDir),
     runtime: appTaskOptions,
-  });
-  const appAnalysis = createAppAnalysisCapability({
-    bus,
-    persistDir: opts.persistDir,
-    projectRoot: opts.projectRoot,
   });
   const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
 
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
     db: getDb(opts.persistDir),
-    manager,
     bus,
     maxConcurrentRequests: configuredHostConcurrency,
-    runOwner: (work, context) =>
-      context.appId === "may" && context.humanOrigin ? hostCapacity.runForeground(work) : hostCapacity.run(work),
     attachTask: appTasks.attach,
-    attachAnalysis: appAnalysis.attach,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     readDependency: (input) =>
-      input.dependency.kind === "analysis"
-        ? Promise.resolve(appAnalysis.read(input.dependency.id))
-        : appTasks.readDependency({
-            appDir: input.appDir,
-            dependency: { kind: input.dependency.kind, id: input.dependency.id },
-          }),
+      appTasks.readDependency({
+        appDir: input.appDir,
+        dependency: input.dependency,
+      }),
     observerContext: (appId, appDir) => {
       const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;
       const projectDir = definition?.workspace?.localPath ? resolve(appDir, definition.workspace.localPath) : appDir;
@@ -343,18 +331,22 @@ export async function runAppRuntime(opts: {
       manager.getSessionSummary(sessionId).status !== "unknown" ||
       Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
   });
-  appInboxRuntime.setEventPublisher((input, source) =>
-    events.publish(input, {
-      source: `app:${source.id}`,
-      inputSource: source,
-    }),
-  );
   const admitAppInput = createAppInputAdmission({ events });
   const projectActions = createProjectActionAccess({
     events,
     getRuntime: () => appInboxRuntime,
     admit: admitAppInput,
   });
+  const appTaskPaths = (appId: string) => {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const entry = appRegistry.snapshot().entries.find((candidate) => candidate.definition.id === normalized);
+    if (!entry) throw new Error(`App ${appId} is not loaded`);
+    const projectDir = entry.definition.workspace?.localPath
+      ? resolve(entry.appDir, entry.definition.workspace.localPath)
+      : entry.appDir;
+    return { appDir: entry.appDir, projectDir };
+  };
+  const taskStatuses = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention", "done"]);
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
@@ -366,14 +358,24 @@ export async function runAppRuntime(opts: {
     admitAppInput,
     getAppConversation: (appId, conversationId, options) =>
       readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
+    listAppTasks: (appId, options) => {
+      const status = options?.status?.map((value) => {
+        if (!taskStatuses.has(value as TaskView["status"])) throw new Error(`Invalid Task status: ${value}`);
+        return value as TaskView["status"];
+      });
+      return listRuntimeTaskViews(
+        { executionPaths: appTaskPaths(appId) },
+        {
+          ...(status ? { status } : {}),
+          ...(options?.limit === undefined ? {} : { limit: options.limit }),
+          ...(options?.cursor ? { cursor: options.cursor } : {}),
+        } satisfies TaskListOptions,
+      );
+    },
+    getAppTask: (appId, taskId) => readRuntimeTaskView({ executionPaths: appTaskPaths(appId) }, taskId),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });
-  // The inbox starts before ingress, but its outbox waits until every enabled
-  // human transport is attached. This prevents a restart-time response from
-  // being marked attempted before any channel can observe it.
-  appInboxRuntime?.enableDelivery();
-
   function emitPrompt(): void {
     bus.emit({ type: "prompt", message: interfaceAgent, channel: "chat" });
     if (process.stdin.isTTY) {

@@ -16,7 +16,22 @@ export type TaskView = {
   generation: number;
   outcome: string;
   summary?: string;
+  response?: string;
   evidence?: string[];
+};
+
+export type TaskListOptions = {
+  /** Exact phases to include. Omitted means every phase. */
+  status?: TaskView["status"][];
+  /** Bounded page size. Runtime caps this at 100. */
+  limit?: number;
+  /** Opaque continuation returned by the previous page. */
+  cursor?: string;
+};
+
+export type TaskPage = {
+  items: TaskView[];
+  nextCursor?: string;
 };
 
 export type ExecutionView = {
@@ -79,6 +94,11 @@ export type AgentCallOptions = {
 /** Bounded stable projections. It intentionally has no list or SQL escape hatch. */
 export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
+  tasks: {
+    list(options?: TaskListOptions): Promise<TaskPage>;
+    get(taskId: string): Promise<TaskView | null>;
+  };
+  /** @deprecated Use tasks.get(taskId). */
   task(taskId: string): Promise<TaskView | null>;
   execution(executionId: string): Promise<ExecutionView | null>;
   metric(metricId: string): Promise<MetricView | null>;
@@ -143,6 +163,23 @@ export type TaskReconciliationChild = {
   completedAt?: string;
 };
 
+/** One durable event linked to the task before this attempt was claimed. */
+export type TaskReconciliationEvent = {
+  /** Host event identity. Optional only while legacy trigger state is migrated. */
+  eventId?: number;
+  observedAt: string;
+  event: AppEvent<Record<string, unknown>>;
+};
+
+/** Ordered, bounded work input that this reconciliation result will observe. */
+export type TaskReconciliationEvents = {
+  items: TaskReconciliationEvent[];
+  /** Highest durable event identity in items, when every item has one. */
+  throughEventId?: number;
+  /** More linked events remain pending for the same task. */
+  truncated: boolean;
+};
+
 /** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
 export type TaskReconciliationContext<TInput = unknown> = {
   appId: string;
@@ -166,6 +203,8 @@ export type TaskReconciliationContext<TInput = unknown> = {
     live: TaskReconciliationChild[];
     truncated: boolean;
   };
+  events: TaskReconciliationEvents;
+  /** @deprecated Compatibility projection of the most relevant event in events. */
   trigger?: AppEvent<Record<string, unknown>>;
 };
 

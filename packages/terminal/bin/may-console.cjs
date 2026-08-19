@@ -31,7 +31,6 @@ const pendingInputLines = [];
 const knownSessions = new Map();
 const sessionsWithText = new Set();
 const renderedConversationMessages = new Set();
-const renderedDeliveryOperations = new Set();
 let lastConversationSequence = Date.now();
 let lastWork = [];
 const pendingConversationReads = [];
@@ -440,7 +439,6 @@ function subscribe(mode = watchMode) {
     type: "subscribe",
     sessions: watchSessions(),
     conversations: [conversationId],
-    deliveryChannel: source,
   });
 }
 
@@ -577,37 +575,6 @@ function handleEvent(event) {
     return;
   }
 
-  // A delivery channel is already an exact routing decision. Session stream
-  // filters must not hide a response and then leave its durable work unresolved.
-  if (event.type === "app.response.delivery.requested") {
-    const data = flatPayload(event);
-    if (data.channel !== source || typeof data.text !== "string") return;
-    if (typeof data.operationId === "string") {
-      renderedDeliveryOperations.add(data.operationId);
-      renderedConversationMessages.add(`delivery:${data.operationId}`);
-    }
-    const identity = [data.operationId, data.appInboxItemId, data.appInboxRequestId, data.sessionId];
-    printResponseText(data.text, () => {
-      if (!identity.every((value) => typeof value === "string" && value.length > 0)) return;
-      sendFrame({
-        type: "channel.delivery.completed",
-        source,
-        owner: "app:may",
-        target: { human: true },
-        data: {
-          channel: source,
-          sessionId: data.sessionId,
-          resultEventType: event.type,
-          operationId: data.operationId,
-          appInboxItemId: data.appInboxItemId,
-          appInboxRequestId: data.appInboxRequestId,
-          idempotencyKey: `${source}-delivery:${data.operationId}`,
-        },
-      });
-    });
-    return;
-  }
-
   if (!shouldShowSessionEvent(event)) return;
   const data = flatPayload(event);
   switch (event.type) {
@@ -710,7 +677,6 @@ function connectSocket() {
         type: "subscribe",
         sessions: watchSessions(),
         conversations: [conversationId],
-        deliveryChannel: source,
       },
       { silent: true },
     );

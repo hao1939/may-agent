@@ -1,6 +1,6 @@
-import type { AppRead, ExecutionView, MetricView, TaskView } from "@may-agent/sdk/app";
+import type { AppRead, ExecutionView, MetricView, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
-import { readTaskState, type TaskStateConfig } from "./app-task-store.js";
+import { readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";
@@ -32,32 +32,76 @@ export function readRuntimeTaskView(
   taskId: string,
 ): TaskView | null {
   if (!opts.executionPaths) return null;
-  try {
-    const tree = readTaskState(taskConfig(opts.executionPaths));
-    const receipt = tree.receipts?.[taskId];
-    if (receipt) {
-      return {
-        id: taskId,
-        status: "done",
-        generation: receipt.metadata.generation,
-        outcome: receipt.outcome,
-        summary: receipt.summary,
-        evidence: receipt.evidence,
-      };
-    }
-    const resource = tree.resources?.[taskId];
-    if (!resource) return null;
+  const tree = readTaskState(taskConfig(opts.executionPaths));
+  return taskView(tree, taskId);
+}
+
+function taskView(tree: TaskTree, taskId: string): TaskView | null {
+  const receipt = tree.receipts?.[taskId];
+  if (receipt) {
     return {
       id: taskId,
-      status: resource.status.phase === "converged" ? "done" : resource.status.phase,
-      generation: resource.metadata.generation,
-      outcome: resource.spec.outcome,
-      summary: resource.status.summary,
-      evidence: resource.status.evidence,
+      status: "done",
+      generation: receipt.metadata.generation,
+      outcome: receipt.outcome,
+      summary: receipt.summary,
+      response: receipt.response,
+      evidence: receipt.evidence,
     };
-  } catch {
-    return null;
   }
+  const resource = tree.resources?.[taskId];
+  if (!resource) return null;
+  return {
+    id: taskId,
+    status: resource.status.phase === "converged" ? "done" : resource.status.phase,
+    generation: resource.metadata.generation,
+    outcome: resource.spec.outcome,
+    summary: resource.status.summary,
+    response: resource.status.response,
+    evidence: resource.status.evidence,
+  };
+}
+
+function encodeTaskCursor(taskId: string): string {
+  return Buffer.from(taskId, "utf8").toString("base64url");
+}
+
+function decodeTaskCursor(cursor: string): string {
+  try {
+    const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+    if (!decoded || encodeTaskCursor(decoded) !== cursor) throw new Error("non-canonical cursor");
+    return decoded;
+  } catch {
+    throw new Error("Invalid Task cursor");
+  }
+}
+
+export function listRuntimeTaskViews(
+  opts: Pick<RuntimeAppReadOptions, "executionPaths">,
+  options: TaskListOptions = {},
+): TaskPage {
+  if (!opts.executionPaths) return { items: [] };
+  const limit = options.limit ?? 50;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    throw new Error("Task list limit must be an integer between 1 and 100");
+  }
+  const validStatuses = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention", "done"]);
+  if (options.status?.some((status) => !validStatuses.has(status))) {
+    throw new Error("Invalid Task status filter");
+  }
+  const statuses = options.status ? new Set(options.status) : null;
+  const after = options.cursor === undefined ? null : decodeTaskCursor(options.cursor);
+  const tree = readTaskState(taskConfig(opts.executionPaths));
+  const ids = [...new Set([...Object.keys(tree.resources ?? {}), ...Object.keys(tree.receipts ?? {})])].sort();
+  const visible = ids
+    .filter((id) => after === null || id > after)
+    .map((id) => taskView(tree, id))
+    .filter((task): task is TaskView => Boolean(task && (!statuses || statuses.has(task.status))));
+  const page = visible.slice(0, limit);
+  return {
+    items: page,
+    ...(visible.length > limit && page.length > 0 ? { nextCursor: encodeTaskCursor(page.at(-1)!.id) } : {}),
+  };
 }
 
 export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
@@ -87,13 +131,18 @@ function metricView(metrics: MetricService, id: string): MetricView | null {
 
 /** Runtime-owned implementation of the SDK's bounded read projections. */
 export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
+  const getTask = async (taskId: string) => readRuntimeTaskView(opts, taskId);
   return {
     async appResult(itemId) {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;
     },
-    async task(taskId) {
-      return readRuntimeTaskView(opts, taskId);
+    tasks: {
+      async list(options) {
+        return listRuntimeTaskViews(opts, options);
+      },
+      get: getTask,
     },
+    task: getTask,
     async execution(executionId) {
       return readRuntimeExecutionView(opts, executionId);
     },

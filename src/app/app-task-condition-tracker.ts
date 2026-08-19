@@ -31,6 +31,15 @@ function stableValue(value: unknown): unknown {
   );
 }
 
+function sameEvent(left: Record<string, unknown>, right: Record<string, unknown>): boolean {
+  const leftId = Number(left.eventId);
+  const rightId = Number(right.eventId);
+  if (Number.isSafeInteger(leftId) && leftId > 0 && Number.isSafeInteger(rightId) && rightId > 0) {
+    return leftId === rightId;
+  }
+  return JSON.stringify(stableValue(left)) === JSON.stringify(stableValue(right));
+}
+
 function isCondition(value: unknown): value is AppTaskCondition {
   if (!isRecord(value) || !isRecord(value.metadata) || !isRecord(value.spec) || !isRecord(value.status)) {
     return false;
@@ -250,7 +259,7 @@ function applyConditionEvent(
     if (!matches(condition, event)) continue;
     const waitingResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
-        resource.status.phase === "waiting" &&
+        (resource.status.phase === "waiting" || resource.status.phase === "running") &&
         resource.status.conditionIds?.includes(id) &&
         (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
     );
@@ -269,6 +278,9 @@ function applyConditionEvent(
     for (const resource of waitingResources) {
       const taskId = resource.metadata.id;
       if (eventWakes.has(taskId)) continue;
+      const pending = tree.taskTriggers?.[taskId];
+      const pendingEvents = pending?.events?.length ? pending.events : pending?.event ? [{ event: pending.event }] : [];
+      if (pendingEvents.some((entry) => sameEvent(entry.event, event))) continue;
       eventWakes.set(taskId, {
         conditionId: id,
         taskId,
@@ -280,13 +292,22 @@ function applyConditionEvent(
     const resource = tree.resources?.[wake.taskId];
     if (!resource) continue;
     const previous = tree.taskTriggers?.[wake.taskId];
+    const priorEvents = previous?.events?.length
+      ? previous.events
+      : previous?.event
+        ? [{ event: previous.event, observedAt: previous.observedAt }]
+        : [];
+    const events = priorEvents.some((entry) => sameEvent(entry.event, event))
+      ? priorEvents
+      : [...priorEvents, { event: structuredClone(event), observedAt: now }];
     tree.taskTriggers = {
       ...(tree.taskTriggers ?? {}),
       [wake.taskId]: {
         taskId: wake.taskId,
         taskGeneration: resource.metadata.generation,
         resourceVersion: (previous?.resourceVersion ?? 0) + 1,
-        event: structuredClone(event),
+        events,
+        event: structuredClone(previous?.event ?? event),
         observedAt: now,
       },
     };
