@@ -16,8 +16,8 @@ typed input -> bounded workflow -> agent/helper steps -> ExecutionResult
 ```
 
 A workflow is not durable work ownership, a scheduler, an event handler, or a
-suspended business process. The enclosing App inbox request or task owns the
-outcome. A workflow run owns only one bounded execution attempt.
+suspended business process. The enclosing task owns the outcome. A workflow run
+owns only one bounded execution attempt.
 
 ## Skill and workflow boundary
 
@@ -218,11 +218,11 @@ workflow pass -> return typed waiting result + exact Conditions -> run ends
 later fact    -> exact task wake -> new reconciliation pass
 ```
 
-For addressed App work:
+For a cross-App dependency:
 
 ```text
-owner pass -> delegate/attach dependency -> run ends
-child result -> parent inbox wake -> new owner pass
+task pass -> return typed child dependency -> run ends
+child result -> parent task wake -> new reconciliation pass
 ```
 
 The next pass receives current durable state through its typed request or
@@ -275,8 +275,8 @@ For task-owned work:
 
 `ctx.events.emit` publishes observed or produced facts. The workflow cannot
 assume publication means another owner accepted work. Any actionable consumer
-must be declared by the destination App as a subscription, task subscription,
-or exact target.
+must be declared by the destination App as an input subscription, exact task
+target, or matching Condition.
 
 Where a domain mutation and its resulting fact must be atomic, use an explicit
 domain adapter/outbox capability owned by the Host. Do not emulate
@@ -300,7 +300,7 @@ derive repository, App, agent, or persistent-state roots from process cwd.
 
 For isolated Git work, the host owns worktree creation, base revision, branch
 lineage, cleanup, and recovery. A workflow returns verified evidence and clean
-disposition; it does not create a parallel workspace registry or select random
+result; it does not create a parallel workspace registry or select random
 branches. Retries for one task generation preserve the recorded lineage.
 
 Shared ledgers, observation state, and maintenance migrations do not belong in

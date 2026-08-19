@@ -1,20 +1,25 @@
 # Agent App Contract
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. The canonical host owns App Inbox and
-the optional host-private App task runtime through this contract.
+**Implementation status:** Every current App uses Task reconciliation as its
+only policy execution path. Request storage correlates Task results without a
+second owner or delivery loop. Scoped Task list/get reads are implemented
+across the SDK, agent tool, control socket, and HTTP.
 
 An Agent App is one durable address with one accountable owner. Keep the mental
-model to two concepts:
+model to one work object and three responsibilities:
 
 ```text
-Host = persist, schedule, run, recover, deliver
-App  = define meaning, policy, desired outcomes, acceptance
+Task    = the durable desired and observed App work
+Event   = durable new information that may create or wake that work
+Infra   = ingress, persistence, scheduling, capacity, and delivery
+Runtime = task lifecycle, execution, scoped capabilities, and recovery
+App     = resolve inputs to tasks and reconcile those tasks
 ```
 
-Agents and workflows are bounded code an App may ask the Host to run. Events,
-requests, tasks, and facts are durable records the Host stores. They are useful names,
-but they do not add more owners or layers to the model.
+Agents and workflows are bounded capabilities an App may use while reconciling
+a task. Events and caller requests are supporting records managed by Infra or
+Runtime. “Fact” is only the meaning of an Event that reports an observation.
 
 See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for task reconciliation, and
@@ -27,35 +32,60 @@ deletion sequence is recorded in
 Use this plain rule:
 
 ```text
-someone expects one answer               -> request
-an outcome may need several tries         -> task
-something happened but creates no work    -> fact
+someone expects one answer            -> Host request linked to an App task
+an App must make an outcome true       -> task
+something happened but creates no work -> fact
 ```
 
-Every input or fact first enters as an event. The App decides which linked
-request or task, if any, that event creates.
-In code, a request is stored in the App inbox, and task policy is exposed as a
-`TaskIntent` resolver. Those are implementation names, not more layers.
+Every input or fact first enters as an event. The Host records caller
+correlation when needed, and the App decides which task the admitted input
+creates, revises, attaches to, or wakes. In code, a request is stored in the App
+inbox and App policy resolves `TaskIntent`. The inbox never runs a second owner
+loop.
 
-Human input, App delegation, an action, a schedule, or a subscribed fact may
-create a request. A metric, provider observation, lifecycle fact, or scheduled
-wake normally remains a fact unless the App explicitly turns it into work.
+Human input, a cross-App dependency, an action, a schedule, or a subscribed
+fact may create a caller request and task. A metric, provider observation,
+lifecycle fact, or scheduled wake normally remains a fact unless the App
+explicitly turns it into work.
 
-One fact may intentionally be observed or acted on by several Apps, but within
-one App it never matches both an App subscription and a task subscription. If
-an independently correlated request also needs desired-state convergence, its
-inbox disposition may attach the task after request admission. Exact stored
-Condition wakes are additive because their tasks already own the work.
-
-For durable autonomous work, the visible controller loop is:
+An action is not stored work. It is a named and validated request template:
 
 ```text
-fact -> TaskIntent -> task -> workflow or owner -> result or Condition
-                       ^                              |
-                       +---------- reconcile --------+
+invoke action(name, parameters)
+  -> validate parameters
+  -> translate to App input
+  -> admit one App request
 ```
 
-- `TaskIntent` records the latest desired outcome and exact trigger.
+After admission, callers track the request identity and result. The action has
+no status, owner, retry, or completion state of its own.
+
+One fact may intentionally be observed by several Apps, but within one App it
+has one route: observation only, translation to typed task input, or an exact
+task/Condition wake. Exact stored Condition wakes are additive because their
+tasks already own the work.
+
+An actionable event is not merely a queue hint. Runtime stores its link to the
+task before enqueueing the stable task ID. Reconciliation receives a bounded,
+ordered batch of events not yet accepted by that task. Accepting a result
+advances the task's event checkpoint through that batch in the same state
+transition. Events that arrive during the attempt remain pending and cause a
+later attempt. Queue coalescing may reduce execution pressure, but it never
+replaces or consumes these durable event links.
+
+The only App work loop is:
+
+```text
+typed input -> TaskIntent -> task <--- durable event
+                              |             ^
+                              v             |
+                       workflow or owner    |
+                              |             |
+                              +-- result ---+
+```
+
+- `TaskIntent` records the latest desired outcome; Runtime separately records
+  the ordered events that declared or woke it.
 - A task preserves desired and observed state across bounded attempts.
 - A workflow applies reusable experience; otherwise the accountable owner uses
   judgment.
@@ -63,8 +93,7 @@ fact -> TaskIntent -> task -> workflow or owner -> result or Condition
   before work can continue.
 - Queue coalescing happens only after the latest desired intent and trigger are
   persisted.
-
-Apps without durable autonomous work do not attach the task capability.
+- A simple request follows the same loop and converges in its first attempt.
 
 ## Package layout
 
@@ -98,12 +127,9 @@ export default defineApp({
   version: 1,
   owner: "sample-owner",
   inputSchema,
-  inbox: { batch: "single", maxConcurrent: 2 },
 
-  route(request) {
-    // Pure deterministic request disposition, or null for owner judgment.
-    return routeRequest(request);
-  },
+  // Pure mapping from admitted domain input to existing or desired task state.
+  task: resolveTask,
 
   subscriptions: [
     {
@@ -128,15 +154,6 @@ export default defineApp({
   observations: ["provider.snapshot.recorded"],
   observers: [providerObserver],
 
-  tasks: {
-    attach: true,
-    subscriptions: taskSelectors,
-    resolve: resolveTaskIntent,
-    validateAction,
-    maxConcurrent: 2,
-    resyncIntervalMs: 60_000,
-  },
-
   actions: {
     review: {
       description: "Request one correlated review.",
@@ -149,50 +166,44 @@ export default defineApp({
 });
 ```
 
-Only identity, owner, version, and input schema are fundamental. Inbox tuning,
-subscriptions, observation-only selectors, schedules, observers, actions,
-workspace policy, and task
-integration are optional capabilities hosted by the same runtime.
+Identity, owner, version, input schema, and task resolution form the App
+contract. Subscriptions, observation-only selectors, schedules, observers,
+commands, workspace policy, agents, and workflows are optional capabilities
+hosted by the runtime. They feed or help reconcile tasks; they do not add App
+work loops.
 
 `app.ts` is also the sole App composition boundary. App-local modules may be
 imported normally, but no conventional `services/` directory, live service
 export, or second loader grants autonomous behavior. Another App's outcome is
-requested through typed delegation; shared facts cross through declared event
-routes.
+requested through a typed Runtime-managed task dependency; shared facts cross
+through declared event routes.
 
 ## Addressed work
 
-Every App automatically has a durable inbox and owner dispatch. An admitted
-request carries a stable identity, source, typed input, optional parent, and
-optional dependency observation. Host-private rows, claims, leases, channel
-metadata, and persistence handles never enter App code.
+Every App automatically has Host-owned request correlation and task execution.
+An admitted request carries a stable identity, source, and typed input. The
+Host calls the App's pure task resolver, persists the existing or desired task
+attachment, and schedules only that task. Host-private rows, claims, leases,
+channel metadata, and persistence handles never enter App code.
 
 Addressed ingress uses a required `app.input.requested` event. Acceptance means
-the Host created or found exactly one durable inbox turn and linked it to the
-event ID. For ordinary addressed work that turn is the request. For May human
-conversation, the owner may instead link a feedback turn to one represented
-unfinished request and apply its next disposition immediately. The root
-request—not the opening event or later feedback message—retains mutable status
-and result state.
+the Host created or found exactly one durable request and linked it to the
+event and its task. The request waits for that task's accepted result; it never
+invokes an owner independently. The result may include an optional caller-facing
+`response`; its `summary` remains concise operational state for task views and
+recovery. Apps put no channel delivery state into either field.
 
-The optional pure `route(request)` policy may return the same disposition
-vocabulary as the owner:
+There is no App disposition lifecycle. Immediate completion means the task
+converged in one attempt. Delegation, analysis, agent calls, workflows, and
+human waits are capabilities or dependencies used by the task attempt. Their
+runtime records do not replace the task.
 
-- `complete`: finish this exact request with a correlated result;
-- `delegate`: ask the Host to publish a child App-input event and create its
-  linked request; or
-- `task`: attach this request to an existing task or desired `TaskIntent`.
-
-The canonical May App additionally has a `continue` disposition. It names one
-active request present in the bounded Conversation and wraps one normal
-`complete`, `delegate`, or `analyze` disposition. The Host fences the
-target to May, the same Conversation, and unfinished human work; then it applies
-the wrapped disposition in the current owner attempt. This capability is not a
-general inbox mutation API and is unavailable to project Apps.
-
-Returning `null` asks the owner for one bounded judgment. An inbox item remains
-the authority while it waits on a child App, task, or session. It is not
-replaced by an event pair, delivery operation, or copied task record.
+May feedback about unfinished work becomes a small input task. During ordinary
+reconciliation, May may return a typed revision, wake, or dependency for the
+referenced task. Exact structured references can wake the target directly. This
+does not require a special `continue` disposition, semantic judgment during
+admission, or a second work loop. The root request—not the opening event or a
+later feedback message—retains caller correlation and result delivery.
 
 A dependency wake means “re-read and decide,” not only success. Completion,
 failure, interruption, task attention, and a missing formerly linked task all
@@ -200,45 +211,55 @@ wake the exact requester. The Host re-observes stored task waits after restart
 and during ordinary resync, so a missed event cannot turn a reviewable failure
 into permanent waiting.
 
-The `may` App owns ordinary human conversation and its semantic result. It may
-answer directly or delegate to another App and review the child result. Console
-and Telegram independently render the resulting Conversation message; their
-delivery state is not part of May's work. The App has no schedules, observers,
-or task attachment, so conversational ownership cannot become a background
-project controller.
+The task result shape for child App work is intentionally small:
+
+```ts
+dependencies: [{ id: "review", appId: "evaluation", input: { kind, data } }];
+```
+
+`id` is stable within the parent task generation. Runtime owns the derived
+request identity, idempotency, completion Condition, and result Event. The App
+does not emit `app.input.requested`, wait on a delivery receipt, or query the
+target App directly.
+
+The `may` App owns ordinary human conversation and reconciles each human task.
+It may converge in one attempt or use another App, analysis, agent, or workflow
+as a bounded capability. Console and Telegram independently render the
+resulting Conversation message; their delivery state is Host concern, not part
+of May's task outcome.
 
 ## Events and subscriptions
 
 Events carry requests or facts into the Host. Required event types create one
-linked responsibility; record-only facts may wake zero or more declared routes.
+linked responsibility; record-only fact Events may wake zero or more declared
+routes.
 Events do not own mutable work or directly launch an agent.
 
-Top-level App `subscriptions` are intentionally rare. Each has a stable ID, an
-event selector, and a pure `toInput(event)` translator. A non-null result
-creates one independently correlated App inbox request. The host validates the
-input and persists it with an idempotency key derived from App, subscription,
-and event identity before acknowledging delivery.
+App `subscriptions` are intentionally rare. Each has a stable ID, an event
+selector, and a pure `toInput(event)` translator. A non-null result enters the
+same task resolver as addressed input. The Host adds caller correlation only
+when the source expects a result. A fact carrying an explicit task target
+bypasses broad resolution and wakes only that task.
 
-`tasks.subscriptions` select facts that deterministically declare or revise
-desired task work. The pure `tasks.resolve(event)` returns one `TaskIntent` or
-`null`; it cannot execute work or mutate runtime state. A fact carrying an
-explicit task target bypasses broad resolution and wakes only that task.
-
-There is no `inbox.accepts`, implicit fallback from task subscriptions to the
-inbox, generic `events` route, or imperative `onEvent` execution path.
+There is no separate inbox subscription versus task subscription, generic
+`events` route, or imperative `onEvent` execution path.
 
 An App may declare exact `observations` selectors for reviewed facts that
 intentionally create no work. After actionable route evaluation selects no
-inbox item, TaskIntent, exact wake, or Condition wake, the host records a
-terminal no-op against the installed registry generation. The core EventBus
-does not contain an application event-name catalog.
+TaskIntent, exact wake, or Condition wake, the Host records a terminal no-op
+against the installed registry generation. The core EventBus does not contain
+an application event-name catalog.
 
-## Actions, schedules, and observers
+## Request entrypoints, schedules, and observers
 
-An action is discoverable typed ingress. The Host validates action input,
-translates it through `toInput`, and publishes `app.input.requested`. An action
-cannot invent another actionable event as a shortcut around correlated
-admission.
+The SDK property is named `actions` for compatibility. Each entry is a
+discoverable typed request entrypoint. The Host validates its input, translates
+it through `toInput`, and publishes `app.input.requested`. It returns the
+created or deduplicated request identity. An action cannot invent another
+actionable event as a shortcut around correlated admission.
+
+Human interfaces render actions as plain App commands such as “Review App” or
+“Explore now,” not as a separate resource list or event emitter.
 
 A schedule declares exactly one destination:
 
@@ -247,13 +268,13 @@ A schedule declares exactly one destination:
 - `{ event }` publishes a fact through the shared scheduler and does not replay
   missed facts.
 
-Use an input schedule only when each due slot deserves its own disposition.
-Use an event schedule when time merely wakes deterministic desired task work.
+Use an input schedule when each due slot declares task intent. Use an event
+schedule when time merely records a fact or wakes an exact existing task.
 
 An observer is a bounded deterministic adapter for external state:
 
 ```text
-provider state -> observer -> semantic fact -> subscription, task, or projection
+provider state -> observer -> semantic fact -> input, exact wake, or projection
 ```
 
 It receives capability-scoped read and logging ports and returns facts for the
@@ -262,12 +283,12 @@ know inbox or task storage, or mutate runtime state. Legacy watchers migrate to
 observers, workflow inputs, or explicit offline maintenance according to their
 actual responsibility.
 
-## Task capability
+## Task reconciliation
 
-Attaching tasks installs the shared reconciler as an internal App capability.
-The App supplies typed intent, validation policy, workflow inputs, and results;
-the host owns storage, generations, attempts, leases, queues, workspace
-allocation, result admission, recovery, and projections.
+The shared task reconciler is the App runtime. The App supplies typed intent,
+domain judgment, workflow inputs, acceptance, and results; the Host owns
+storage, generations, attempts, leases, queues, workspace allocation, result
+admission, recovery, and projections.
 
 Task ownership resolves from the task, nearest explicit ancestor, then App
 owner. The resolved owner must be runnable:
@@ -290,9 +311,9 @@ specification.
 
 The process-wide App registry validates and publishes one atomic generation of
 canonical definitions. A failed reload leaves the previous generation active.
-Only the long-running host attaches schedules, observers, inbox dispatch, and
-task controllers; direct, Gym, and read-only processes reuse agent/workflow
-execution without becoming competing reconcilers.
+Only the long-running Host attaches schedules, observers, request correlation,
+and task controllers; direct, Gym, and read-only processes reuse
+agent/workflow execution without becoming competing reconcilers.
 
 The host owns:
 
@@ -302,10 +323,10 @@ The host owns:
 - workspace allocation and portable path resolution; and
 - generic operational metrics and traces.
 
-Apps own domain meaning, input schemas, pure routing and correlation policy,
-observer interpretation, workflows, and domain metrics. Apps never receive raw
-SQL, unrestricted task storage, global runtime paths, scheduler handles, or
-recovery APIs.
+Apps own domain meaning, input schemas, pure task resolution, reconciliation,
+acceptance, observer interpretation, workflows, and domain metrics. Apps never
+receive raw SQL, request/delivery state, unrestricted task storage, global
+runtime paths, scheduler handles, or recovery APIs.
 
 When task reconciliation is paused, the Host admits input and keeps schedules,
 observers, and declared event routes active, but starts no new task attempts.
@@ -330,21 +351,47 @@ evidence.
 
 Metrics observe the loop. Host metrics describe Host health; App metrics
 describe domain outcomes. A metric breach is a fact that may wake a task or,
-when an independent disposition is genuinely required, create a subscribed App
-request. It is never an alternate work authority.
+when a new outcome is genuinely required, declare or revise a task through the
+App input path. It is never an alternate work authority.
+
+## Migration progress
+
+The code moves to this model in one direction while preserving restartable
+work:
+
+1. **Done:** add the pure `task(input)` contract and a Runtime admission method
+   that atomically links each caller request to its task before any App attempt.
+2. **Done:** route actions, input schedules, subscriptions, and human messages through
+   that method; keep exact task and Condition wakes direct.
+3. **Done for current Apps:** run owner/workflow judgment only from the task controller. Make request
+   storage observe accepted task results for completion and delivery.
+4. **Done:** replace `complete`, `task`, `delegate`, `analyze`, and May
+   `continue` dispositions with first-attempt convergence, typed task changes,
+   and bounded Runtime dependency capabilities.
+5. **Done:** port every current App manifest to the one Task contract.
+   The request owner worker, separate execution concurrency, delivery gate, and
+   compatibility SDK types are removed.
+6. **Done:** expose bounded Task list/get reads through the shared scoped SDK,
+   agent tool, control socket, and HTTP adapters. Admission, restart,
+   concurrency, dependency, and Conversation projection behavior have focused
+   regression proof.
+
+At every step there remains one authoritative task and at most one App
+execution path for newly migrated input. Compatibility may translate old
+declarations at load time, but it must not run both paths for the same input.
 
 ## Integrity invariants
 
 1. One App has one `defineApp` declaration, one registry identity, and one
    accountable owner.
-2. Every addressed request has one authoritative inbox item and one correlated
-   terminal result.
-3. Every durable desired outcome has one authoritative task identity.
+2. Every addressed request has one authoritative Host record, one linked task,
+   and one correlated terminal result.
+3. Every App-owned outcome has one authoritative task identity.
 4. Events, metrics, logs, and projections never become work authorities.
 5. Every actionable fact has exactly one canonical route unless two distinct
    durable obligations are explicitly declared and tested.
-6. App subscriptions create correlated requests; task subscriptions resolve
-   desired task intent; observation-only facts create neither.
+6. App subscriptions translate facts to the same typed task-input path;
+   observation-only facts create no task.
 7. Task intent and trigger evidence are persisted before queue coalescing.
 8. Loading or reloading an App cannot itself start model work, and failed reload
    cannot publish a partial generation.
@@ -358,7 +405,7 @@ request. It is never an alternate work authority.
 14. The public authoring surface contains no `defineProjectApp`,
     `@may-agent/sdk/legacy`, owner-inbox fallback, or imperative event execution.
 
-Focused verification covers request admission and delivery, delegation,
-subscription idempotency, input and event schedules, task resolution and exact
-wakes, restart/reload recovery, Conditions, bounded concurrency, and removal of
-dual legacy/canonical consumption.
+Focused verification covers request-to-task admission and delivery,
+cross-App dependencies, subscription idempotency, input and event schedules,
+task resolution and exact wakes, restart/reload recovery, Conditions, bounded
+concurrency, and removal of the separate inbox owner loop.

@@ -31,7 +31,7 @@ Waiting and standing work
   exact Conditions and converged maintain resources
 
 Structure and review
-  task tree | selected task | recent completion activity
+  tasks | selected task | optional relationship tree | recent completions
 
 Diagnostics and trace
   metrics | events | sessions | reports | blind spots
@@ -58,8 +58,8 @@ Completed `achieve` resources leave the live graph. They appear only as bounded
 completion activity or trace evidence. `Review` is a human action or project
 posture, not a task phase.
 
-Structural groups explain containment. They appear in the tree, never in work
-lanes, readiness, or capacity counts.
+Structural groups explain containment. They may appear in a relationship tree,
+never in work lanes, readiness, or capacity counts.
 
 ## Shared task projection and server read model
 
@@ -87,7 +87,7 @@ missing fields. Unknown stays unknown.
 `.state/tasks/state.json` remains canonical. `.state/tasks/tree.json` is a
 compact disposable projection, not a second authority or a history archive.
 
-## Task board and tree
+## Tasks view
 
 Cards lead with human purpose, followed by task identity and machine state.
 Each executable card shows:
@@ -105,9 +105,10 @@ The default ordering is attention, running, ready, pending, waiting, then
 healthy standing. Waiting resources may be grouped by Condition type and
 subject. Healthy standing resources are collapsed by default.
 
-The tree explains decomposition and ownership, not scheduling. It shows groups
-and resources with descendant phase counts. Selecting a row opens the same
-task review surface as selecting a card.
+An optional tree layout explains decomposition and ownership, not scheduling.
+It shows the same tasks and groups with descendant phase counts; it is not a
+separate read model or resource. Selecting a row opens the same task detail as
+selecting a card.
 
 ## Selected task review
 

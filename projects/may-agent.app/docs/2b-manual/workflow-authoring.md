@@ -62,22 +62,23 @@ the current run.
 
 The stable capabilities are:
 
-| Capability | Purpose |
-| --- | --- |
-| `ctx.input` | App-owned typed workflow input |
-| `ctx.reconciliation` | Exact task generation and bounded child/trigger facts when a task owns the run |
-| `ctx.read.appResult(id)` | Read one completed App result |
-| `ctx.read.task(id)` | Read one bounded task projection |
-| `ctx.read.execution(id)` | Read one bounded execution projection |
-| `ctx.read.metric(id)` | Read one metric projection |
-| `ctx.agents.call(agent, task, options?)` | Run and await one bounded agent execution |
-| `ctx.workflows.run(name, input)` | Run and await one nested workflow |
-| `ctx.events.emit(event)` | Publish a fact after successful bounded work |
-| `ctx.metrics.record(...)` | Record a domain metric definition/sample |
-| `ctx.workspace` | App/task-scoped source and output paths when granted |
-| `ctx.log` | Structured diagnostic logging |
-| `ctx.done(summary, output?)` | Return one successful bounded result |
-| `ctx.blocked(reason, evidence?)` | Return one local terminal blocker |
+| Capability                               | Purpose                                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------ |
+| `ctx.input`                              | App-owned typed workflow input                                                 |
+| `ctx.reconciliation`                     | Exact task generation and bounded child/trigger facts when a task owns the run |
+| `ctx.read.appResult(id)`                 | Read one completed App result                                                  |
+| `ctx.read.tasks.get(id)`                 | Read one bounded current-App task resource                                     |
+| `ctx.read.tasks.list(options)`           | List one bounded page of current-App task summaries                            |
+| `ctx.read.execution(id)`                 | Read one bounded execution projection                                          |
+| `ctx.read.metric(id)`                    | Read one metric projection                                                     |
+| `ctx.agents.call(agent, task, options?)` | Run and await one bounded agent execution                                      |
+| `ctx.workflows.run(name, input)`         | Run and await one nested workflow                                              |
+| `ctx.events.emit(event)`                 | Publish a fact after successful bounded work                                   |
+| `ctx.metrics.record(...)`                | Record a domain metric definition/sample                                       |
+| `ctx.workspace`                          | App/task-scoped source and output paths when granted                           |
+| `ctx.log`                                | Structured diagnostic logging                                                  |
+| `ctx.done(summary, output?)`             | Return one successful bounded result                                           |
+| `ctx.blocked(reason, evidence?)`         | Return one local terminal blocker                                              |
 
 The context intentionally excludes raw SQL, global queries, task storage,
 queues, leases, scheduler handles, session steering, human delivery, and
@@ -132,7 +133,7 @@ return ctx.done("Desired state converged", {
 });
 ```
 
-Return task actions and Conditions in the typed result. Do not edit task-state
+Return task changes through the compatibility `actions` field and Conditions in the typed result. Do not edit task-state
 files, write projections, acquire task locks, or emit assignment/completion
 events.
 
@@ -148,8 +149,8 @@ provider callback, another App, process restart, or long-running external fact.
 Use the owning durable authority:
 
 ```text
-addressed outcome -> parent App request delegates -> exact child App result
-desired task work -> task returns waiting -> exact Condition/external fact
+cross-App outcome -> task returns typed dependency -> exact child App task result
+external fact     -> task returns waiting -> exact Condition/external fact
 ```
 
 The parent request/task persists the dependency before the current bounded run
@@ -203,7 +204,7 @@ await ctx.events.emit({
 ```
 
 Publishing a fact does not address an owner or guarantee a reply. An App
-subscription, task subscription, exact task target, or Condition must own any
+input subscription, exact task target, or Condition must own any
 actionable continuation.
 
 Metrics are observations, not desired state:
@@ -241,18 +242,19 @@ repeated convergence across runs.
 
 A workflow cannot create a durable cross-App dependency by emitting
 `escalation.created`, addressing an owner string, or sending a message. Return
-compact evidence to the owning App/task. That boundary delegates one typed
-child request to the accountable App and waits on its exact result.
+compact evidence and one typed dependency request in the owning task result.
+The Runtime resolves the accountable child App task and wakes the parent on its
+exact result.
 
-Human attention is a child request to the `may` App or an exact human Condition
-on the source task. May owns channel policy and correlated delivery.
+Human attention is a child `may` task dependency or an exact human Condition on
+the source task. May owns channel policy and correlated delivery.
 
 ## Shared Mechanics
 
 Shared workflow loading is not supported. If multiple Apps need a pure
 mechanism, extract an ordinary shared module. If another App owns the judgment
-or outcome, delegate to that App. Do not import another App's workflow or expose
-it as a live service.
+or outcome, request a typed dependency on that App. Do not import another App's
+workflow or expose it as a live service.
 
 ## Guards
 
@@ -285,14 +287,14 @@ test("returns one bounded result", async () => {
 ```
 
 Test task workflows with an exact `reconciliation` fixture. Assert emitted
-facts, metric calls, child actions, Conditions, evidence, and terminal state.
+facts, metric calls, child task changes, Conditions, evidence, and terminal state.
 
 ## Integrity Checklist
 
 - The workflow has one owner and one typed input.
 - Every call is bounded to the current run.
 - Every path returns `ctx.done(...)` or `ctx.blocked(...)`.
-- Durable waits use App dependencies or task Conditions.
+- Durable waits use task dependencies or Conditions.
 - Task mutation is returned as typed output, never performed directly.
-- Cross-App outcomes use delegation; events remain facts.
+- Cross-App outcomes use typed task dependencies; events remain facts.
 - Tests use scoped fake capabilities and require no global runtime.

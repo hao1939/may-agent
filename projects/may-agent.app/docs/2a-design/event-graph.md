@@ -100,7 +100,7 @@ Deterministic controls instead emit one exact `session.steer.requested`,
 `session.cancel.requested`, `project.approval.submitted`, or
 `runtime.*.requested` child. An explicit project-comment API or UI may persist
 `project.comment.created` directly as its receipt and trace root; its declared
-App subscription then admits correlated inbox work.
+App subscription then admits correlated input and a linked task.
 
 A persistent direct-agent chat session is an execution container, not a trace
 or May request. Each direct-agent turn starts a new trace even when it reuses
@@ -132,13 +132,13 @@ does not by itself mean the project goal is complete or that the human is
 satisfied. The graph derives progressively stronger answers from existing
 events and projections:
 
-| Question | Evidence |
-|---|---|
-| Was it handled? | A responsible domain consumer or queryable owner route accepted the intent. |
-| Was work started? | A child session, workflow, task transition, or explicit rejection/no-op exists. |
-| Was the intent completed? | A terminal event has a closure link to the opening intent. |
+| Question                         | Evidence                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------- |
+| Was it handled?                  | A responsible domain consumer or queryable owner route accepted the intent.                  |
+| Was work started?                | A child session, workflow, task transition, or explicit rejection/no-op exists.              |
+| Was the intent completed?        | A terminal event has a closure link to the opening intent.                                   |
 | Did a surface render the result? | Adapter/provider evidence, when available; this is operational and does not gate the result. |
-| Did the human confirm it? | A later human reply explicitly accepts, approves, corrects, or continues the result. |
+| Did the human confirm it?        | A later human reply explicitly accepts, approves, corrects, or continues the result.         |
 
 Most conversational turns finish when the App result is persisted. Approval
 gates and explicit human decisions require a later correlated human message.
@@ -207,8 +207,8 @@ The key parent path is the structural path, not every parent event. Show parent
 nodes when they explain a hierarchy, branch, ownership, or work-scope change:
 
 - boundary entry: human input, timer, metric breach, API request, callback;
-- ownership change: App request admitted/delegated, task attached, or bounded
-  execution delegated to an agent/workflow;
+- ownership change: request-to-task admission, cross-App task dependency, or
+  bounded execution delegated to an agent/workflow;
 - work-scope change: project task assigned, workflow started, session started,
   CLI task started, escalation created;
 - branch or merge: one event emits multiple follow-ups, closes another chain,
@@ -265,13 +265,13 @@ type EventTraceLink = {
 
 Meaning:
 
-| Field | Meaning |
-|-------|---------|
-| `traceId` | Groups events that belong to the same chain. Use `event:<rootEventId>` when the root event id is known. |
-| `parentEventId` | Direct parent event. This is the main event-to-event line. |
-| `links` | Related events that are not the direct parent. |
-| `links[].type = "reference"` | The event uses another event as context or evidence. |
-| `links[].type = "closure"` | The event closes another event. |
+| Field                        | Meaning                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `traceId`                    | Groups events that belong to the same chain. Use `event:<rootEventId>` when the root event id is known. |
+| `parentEventId`              | Direct parent event. This is the main event-to-event line.                                              |
+| `links`                      | Related events that are not the direct parent.                                                          |
+| `links[].type = "reference"` | The event uses another event as context or evidence.                                                    |
+| `links[].type = "closure"`   | The event closes another event.                                                                         |
 
 This follows the common tracing shape: one trace id, parent relationship for the
 main chain, and links for non-parent relationships.
@@ -436,8 +436,10 @@ data, so it belongs beside `type`, `source`, `target`, and `owner`.
 Target shape:
 
 ```typescript
-type EventEnvelope<TData extends Record<string, unknown> = Record<string, unknown>> = {
-  id?: number;          // assigned by the event store
+type EventEnvelope<
+  TData extends Record<string, unknown> = Record<string, unknown>,
+> = {
+  id?: number; // assigned by the event store
   type: string;
   source?: string;
   target?: Record<string, unknown>;
@@ -526,15 +528,15 @@ escalation.resolved links to escalation.created with type=closure
 The current SQLite DB already contains valuable operational history. The trace
 model must reuse it rather than replacing it.
 
-| Table | Role in the graph | How to use it |
-|-------|-------------------|---------------|
-| `events` | Canonical event nodes | Keep append-only. Add trace metadata in side tables, not by rewriting event payloads. |
-| `event_pair_runs` | Retained lifecycle projection | Backfill parent/closure edges for session, handler, CLI-task, and escalation lifecycles. Historical project-task and owner-inbox rows are read-only compatibility evidence, never live work authority. |
-| `sessions` | Execution span projection | Link session events and detail nodes by `sessionId`; do not duplicate full transcripts into event payloads. |
-| `workflow_runs` | Workflow span projection | Link handler/workflow/session events by `workflowRunId`, `parentWorkflowRunId`, and `projectId`. |
-| `notification_messages` | Transport projection | Link Telegram/Web delivery records to the event that caused the notification and to the human reply that followed. |
-| `metrics`, `metric_alerts`, `metric_snapshots` | Metric signal projection | Link `metric.breach`, `metric.recovered`, alert rows, App/task dispositions, and follow-up evidence. |
-| `session_digests`, `evaluations`, `guard.triggered` events | Detail evidence | Expose as detail nodes or side-panel evidence without dropping them from the graph. |
+| Table                                                      | Role in the graph             | How to use it                                                                                                                                                                                          |
+| ---------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `events`                                                   | Canonical event nodes         | Keep append-only. Add trace metadata in side tables, not by rewriting event payloads.                                                                                                                  |
+| `event_pair_runs`                                          | Retained lifecycle projection | Backfill parent/closure edges for session, handler, CLI-task, and escalation lifecycles. Historical project-task and owner-inbox rows are read-only compatibility evidence, never live work authority. |
+| `sessions`                                                 | Execution span projection     | Link session events and detail nodes by `sessionId`; do not duplicate full transcripts into event payloads.                                                                                            |
+| `workflow_runs`                                            | Workflow span projection      | Link handler/workflow/session events by `workflowRunId`, `parentWorkflowRunId`, and `projectId`.                                                                                                       |
+| `notification_messages`                                    | Transport projection          | Link Telegram/Web delivery records to the event that caused the notification and to the human reply that followed.                                                                                     |
+| `metrics`, `metric_alerts`, `metric_snapshots`             | Metric signal projection      | Link `metric.breach`, `metric.recovered`, alert rows, App/task dispositions, and follow-up evidence.                                                                                                   |
+| `session_digests`, `evaluations`, `guard.triggered` events | Detail evidence               | Expose as detail nodes or side-panel evidence without dropping them from the graph.                                                                                                                    |
 
 The migration rule is additive:
 
@@ -573,16 +575,16 @@ event without known parent -> trace_id = event:<event_id>
 
 Then apply stronger relations:
 
-| Existing evidence | Backfill action |
-|-------------------|-----------------|
-| `event_pair_runs.open_event_id` and `close_event_id` | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
-| Payload has `openEventId` / `open_event_id` | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise. |
-| Same `sessionId` | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace. |
-| Same `workflowRunId` | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace. |
-| Same `taskId` plus `attemptId` | Link reconciliation start/result events, the owner or workflow session, and any retained historical task-attempt records. |
-| Same `metricId` / `alertId` | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events. |
-| `notification_messages.telegram_msg_id` and reply context | Link notification delivery to `message.created`; link `human.input.received` to the message it replied to. |
-| Legacy `escalationId` | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity. |
+| Existing evidence                                         | Backfill action                                                                                                                                                                             |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `event_pair_runs.open_event_id` and `close_event_id`      | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
+| Payload has `openEventId` / `open_event_id`               | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise.                                                        |
+| Same `sessionId`                                          | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace.                                        |
+| Same `workflowRunId`                                      | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace.                                                                                |
+| Same `taskId` plus `attemptId`                            | Link reconciliation start/result events, the owner or workflow session, and any retained historical task-attempt records.                                                                   |
+| Same `metricId` / `alertId`                               | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events.                                                                                          |
+| `notification_messages.telegram_msg_id` and reply context | Link notification delivery to `message.created`; link `human.input.received` to the message it replied to.                                                                                  |
+| Legacy `escalationId`                                     | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity.                                                        |
 
 Backfill should not invent domain outcomes. If a historical escalation pair has
 no closer, the graph shows it as an open compatibility chain; it does not create
@@ -685,10 +687,10 @@ available, the graph endpoint projects them into the complete graph.
 
 Use `visibility`:
 
-| Visibility | Display role | Examples |
-|------------|------------------|----------|
-| `default` | primary event | `app.dependency.completed`, `project.task.reconciled`, `message.created`, `workflow.completed` |
-| `detail` | supporting evidence, still shown | `llm.turn.completed`, `tool.call.completed`, `context.read` |
+| Visibility | Display role                     | Examples                                                                                       |
+| ---------- | -------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `default`  | primary event                    | `app.dependency.completed`, `project.task.reconciled`, `message.created`, `workflow.completed` |
+| `detail`   | supporting evidence, still shown | `llm.turn.completed`, `tool.call.completed`, `context.read`                                    |
 
 Do not store full prompts or large tool output as graph node payloads. Store
 compact attributes and references:
@@ -742,13 +744,13 @@ conversation.message.created
 
 The trace should make review concrete:
 
-| Question | Trace answer |
-|----------|--------------|
-| Did the event reach its declared route? | Event delivery records show the selected App inbox/task/exact-wake/observation disposition. |
-| Did May receive the human reply? | A human `conversation.message.created` exists with its reply/context anchor and linked May request. |
+| Question                                   | Trace answer                                                                                                |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Did the event reach its declared route?    | Event delivery records show input-to-task admission, exact wake, or observation.                            |
+| Did May receive the human reply?           | A human `conversation.message.created` exists with its reply/context anchor and linked May request.         |
 | Did May close the human-attention request? | The exact May App child has a correlated persisted result; adapter delivery is a separate operational edge. |
-| Did the source consume the result? | Its dependency is completed and the exact parent App request/task resumed. |
-| Did the LLM/tool fail? | Detail nodes show missing or failed `tool.call.completed`. |
+| Did the source consume the result?         | Its dependency is completed and the exact parent App request/task resumed.                                  |
+| Did the LLM/tool fail?                     | Detail nodes show missing or failed `tool.call.completed`.                                                  |
 
 Broken chains should be visible without guessing:
 
@@ -853,9 +855,9 @@ graph model in the browser.
 
 ## Non-Goals
 
-- Do not add a second request/commitment lifecycle. The canonical App inbox
-  request owns addressed work; the root event, trace, and graph only explain
-  its cause and linked evidence.
+- Do not add a second request/commitment lifecycle. The canonical task owns App
+  work; its linked request correlates caller delivery, and the root event,
+  trace, and graph only explain cause and evidence.
 - Do not replace task trees, metrics, sessions, or workflow run records.
 - Do not make the event trace a workflow engine.
 - Do not store every token or large tool output in event rows.

@@ -1,9 +1,10 @@
 # HTTP API And Web UI Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Bounded reads and controls use the shared event
-publication/read path. Compatibility endpoints are thin event constructors and
-cannot create alternate work authority.
+**Implementation status:** Controls use the shared event publication path.
+Canonical App-ID Task list/get routes are implemented as daemon-read adapters.
+The default project UI still uses older path-based project endpoints and a
+generated projection while it migrates.
 
 ## Purpose
 
@@ -55,8 +56,29 @@ traces, agents and executions, projects/tasks, metrics/alerts, delivery, and
 terminal transport. The executable server route table remains the endpoint
 catalog.
 
-The server may use internal stores to build these projections. The browser
-cannot write inferred state back or become a reconciler.
+Canonical App task reads use stable identities rather than filesystem-like
+project paths:
+
+```text
+GET /api/apps/:appId/tasks
+GET /api/apps/:appId/tasks/:taskId
+```
+
+The collection is bounded and filtered; the detail is exact and includes a
+bounded reconciliation timeline. Their responses use the shared resource
+shape (`kind`, `metadata`, `spec`, and `status`) returned by in-process and
+agent-tool reads. HTTP is only scope and transport binding, not a separate read
+model. Existing path-based project task reads are compatibility adapters over
+the same service. Neither form permits task mutation.
+
+Resource APIs share `get`/`list`, identity, pagination, and error conventions,
+but they remain typed by resource kind. The out-of-process HTTP adapter asks
+the daemon's resource reader through the control socket; it does not reopen
+task files and rebuild another model. There is no generic HTTP CRUD endpoint
+that accepts arbitrary kinds or mutations.
+
+Other Host-owned read models may use their canonical stores directly. The
+browser cannot write inferred state back or become a reconciler.
 
 ## Write boundary
 
@@ -73,15 +95,15 @@ those meanings.
 
 Examples:
 
-| Human intent | Canonical path |
-| --- | --- |
-| May conversation adapter | Publish human `conversation.message.created` for `Conversation may:primary` |
-| Explicitly steer/cancel session | Publish an exact required session event |
-| Comment on project | Publish `project.comment.created`; declared App subscription may admit a correlated request |
-| Invoke App action | Discover schema, validate, call `toInput`, admit App request |
-| Submit approval | Update exact owning task/Condition through typed control |
-| Reload/restart/shutdown | Publish a required Host-control event |
-| Publish provider/lifecycle fact | Publish a record-only event |
+| Human intent                    | Canonical path                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------- |
+| May conversation adapter        | Publish human `conversation.message.created` for `Conversation may:primary`                 |
+| Explicitly steer/cancel session | Publish an exact required session event                                                     |
+| Comment on project              | Publish `project.comment.created`; declared App subscription may admit input and a task     |
+| Invoke App action               | Discover schema, validate, call `toInput`, admit input and its linked request/task           |
+| Submit approval                 | Update exact owning task/Condition through typed control                                    |
+| Reload/restart/shutdown         | Publish a required Host-control event                                                       |
+| Publish provider/lifecycle fact | Publish a record-only event                                                                 |
 
 `POST /api/events` accepts an explicit allowlist of request, fact, and control
 types with type-specific schemas. Callers supply `type`, `target`, `data`, and
@@ -103,13 +125,12 @@ comment -> fact -> declared subscription -> App input
 action  -> validate declared schema -> App input
 ```
 
-A comment may instead feed a task subscription when its semantics are a
-deterministic changed fact. This classification belongs to the loaded App and
-must have one actionable authority.
+A deterministic changed fact may instead wake an exact task or Condition. This
+classification belongs to the loaded App and must have one actionable path.
 
-Actions never emit an actionable semantic event as a shortcut. The host admits
-the translated input and returns its App request identity. The App may complete,
-delegate, or attach a task.
+Actions never emit an actionable semantic event as a shortcut. The Host admits
+the translated input, resolves its task, and returns the linked request and
+task identities.
 
 Generic project pages consume shared read models. Domain panels may present
 deeper facts/artifacts but cannot query private SQL, read task files, or infer

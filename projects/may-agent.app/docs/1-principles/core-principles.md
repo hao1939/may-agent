@@ -19,21 +19,27 @@ make App code manage leases, retries, delivery bookkeeping, or database rows.
 ## 2. Events carry input and facts
 
 An event is the small interface for something that happened. A declared route
-may turn it into an independently correlated App request, revise or wake a
-task, or merely observe it. A record-only fact is still valid when nobody needs
-to act.
+may translate it to App input, wake an exact task or Condition, or merely
+observe it. Caller correlation is added only when someone expects a result. A
+record-only fact is still valid when nobody needs to act.
 
 Required input is accepted only by its explicit route. There is no generic
 owner fallback for an unknown target or unhandled fact.
 
 See [events.md](../2a-design/events.md).
 
-## 3. Durable work has an explicit owner
+## 3. Requests own delivery; tasks own App work
 
-An App inbox item owns one independently correlated result. A task optionally
-owns desired-state identity that must converge across bounded attempts. A
-session, workflow, event, metric, queue entry, or delivery receipt never
-becomes a second work lifecycle.
+The Host keeps one request when a caller expects a correlated result. The App
+handles that responsibility by reconciling one task. Simple work converges in
+one bounded attempt; difficult, waiting, decomposed, or maintained work keeps
+the same task across attempts. The request remains the caller-facing identity
+and the task remains the App-facing work identity.
+
+An App action is only a named, validated way to create a request. A task tree is
+only a read-only arrangement of tasks by their declared relationships. Neither
+is another work lifecycle or state authority. A session, workflow, event,
+metric, queue entry, or delivery receipt is not one either.
 
 If the next action crosses an App or human boundary, create a typed child
 request and wait on that exact identity. Escalation is an explicit handoff, not
@@ -57,22 +63,27 @@ See [sessions.md](../2a-design/sessions.md) and
 First decide what is owned:
 
 ```text
-one independently correlated result            -> App inbox item
-desired state across repeated bounded attempts -> task
-changed or observed state                       -> fact
+caller expects a correlated result -> Host request linked to an App task
+App must make an outcome true       -> task
+changed or observed state only      -> fact
 ```
 
 Then decide how one bounded attempt runs:
 
-| Need | Smallest suitable mechanism |
-| --- | --- |
-| Deterministic calculation or adapter | TypeScript helper |
-| Context-dependent judgment | Agent, optionally guided by a skill |
-| Stable ordering, branching, limits, or verification | Workflow |
-| Mechanical detection | Observer, guard, or metric |
+| Need                                                | Smallest suitable mechanism         |
+| --------------------------------------------------- | ----------------------------------- |
+| Deterministic calculation or adapter                | TypeScript helper                   |
+| Context-dependent judgment                          | Agent, optionally guided by a skill |
+| Stable ordering, branching, limits, or verification | Workflow                            |
+| Mechanical detection                                | Observer, guard, or metric          |
 
-Asynchrony, restart survival, importance, or frequency alone do not require a
-task or workflow.
+Every actionable App input becomes or wakes a task. Asynchrony, importance, or
+frequency do not require a workflow or another work mechanism.
+
+An App becomes more powerful by adding domain policy, acceptance checks,
+learned workflows, and bounded capabilities available during reconciliation.
+Those extensions must not add App-owned storage, workers, schedulers, retries,
+recovery, or delivery paths.
 
 ## 6. Evidence before complexity
 

@@ -56,9 +56,9 @@ with a visible error on the `session.idle` event.
 
 This persistent-chat policy applies to direct agent chat. Ordinary May Console
 and Telegram input publishes one human `conversation.message.created`: one
-linked May request owns one App inbox item, and each owner pass uses a bounded
-job session. A restart may replace that session without replacing or replaying
-the opening event or human request. See [Human Control
+linked May request correlates one May task, and each reconciliation attempt uses
+a bounded job session. A restart may replace that session without replacing or
+replaying the opening event, request, or task. See [Human Control
 Surfaces](human-control-surfaces.md).
 
 ## Chat Turn Causality
@@ -110,6 +110,7 @@ a substitute for the trace.
 ## Persistence
 
 Sessions persist to:
+
 1. **Disk** (`meta.json`, `session.jsonl`, and terminal `result.json`) — full
    task, conversation, and result artifacts
 2. **SQLite** (`sessions` table) — bounded lifecycle/lineage projection, task
@@ -197,6 +198,7 @@ See `events.md` → "Data Retention" for the full retention table.
 
 `autoClose` controls lifecycle state only. It never controls filesystem
 location and is not a user-facing concept:
+
 - Chat sessions use `autoClose: "never"` → successful turns become `idle`
 - Job/call sessions use `autoClose: "immediate"` → completion becomes terminal
 

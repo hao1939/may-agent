@@ -8,12 +8,12 @@
     "id": "may-agent",
     "path": "../may-agent"
   },
-  "goal": "Drive the May-agent platform through one canonical Agent App: keep runtime contracts, App inbox/task execution, persistence, SDK, shared UI, and App conventions coherent, tested, and reusable.",
+  "goal": "Drive the May-agent platform through one canonical Agent App: keep event-driven task reconciliation, persistence, Runtime capabilities, SDK, shared UI, and App conventions coherent, tested, and reusable.",
   "strategy": [
     "Keep platform design and principles in this app's docs/ tree.",
-    "Use the App inbox for addressed obligations and the optional task capability for durable desired-state convergence; never edit host-private task persistence directly.",
+    "Resolve every addressed input to one durable task; use events as persisted new information that creates or wakes work, and never edit host-private task persistence directly.",
     "Use ../may-agent as the portable domain/runtime code workspace.",
-    "Route human steering through typed App input and translate facts into explicit App subscriptions, task intents, exact wakes, or observation-only dispositions.",
+    "Route human steering through typed App input and translate facts into explicit task input, exact task or Condition wakes, or observation-only records.",
     "Before claiming platform health, inspect bounded App/task projections, open alerts, recent failures, stale project state, evaluator findings, and communication failures.",
     "Keep runtime scratch in .state/ and fold durable decisions back into docs, tasks, or code."
   ]

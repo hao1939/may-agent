@@ -1,9 +1,10 @@
 # Escalation
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through App delegation and exact
-task/human Conditions. Historical event-pair and source-session records are
-read-only evidence, not work authority.
+**Implementation status:** Exact task/human Conditions and typed Runtime-managed
+cross-App Task dependencies are implemented. Request dispositions are removed.
+Historical event-pair and source-session records are read-only evidence, not
+work authority.
 
 ## Purpose
 
@@ -14,55 +15,60 @@ source obligation
   -> current owner proves it cannot perform the required next action
   -> child request addressed to the owner who can decide or act
   -> source waits on that exact child result
-  -> source owner applies the disposition
+  -> source task reconciles the result
 ```
 
 Escalation is not a synonym for failure, waiting, retry, attention, or workflow
-blocking. It does not create a special work authority. The child App inbox item
-owns the requested disposition; the source App request or task remains the
-authority for the original outcome.
+blocking. It does not create a special work authority. The destination task
+owns the requested outcome; the source task remains the authority for the
+original outcome. Runtime request records correlate the dependency and result.
 
 ## Boundary test
 
-| Situation | Correct representation |
-| --- | --- |
-| Another useful repair remains inside the same owner's scope | Continue the bounded workflow or reconcile the same task |
-| Reusable workflow needs App-owner judgment | Return `needs-owner` for the same task |
-| Bounded execution cannot continue safely | Return `blocked` evidence; owning boundary decides next state |
-| Known external fact will change later | Persist an exact task Condition |
-| Another App must decide or act | Delegate a child App request |
-| Human approval or private judgment is required | Delegate to May/human attention and wait on its exact result/Condition |
-| Agent attempt was incomplete | Honest execution result; not escalation by itself |
+| Situation                                                   | Correct representation                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------- |
+| Another useful repair remains inside the same owner's scope | Continue the bounded workflow or reconcile the same task      |
+| Reusable workflow needs App-owner judgment                  | Return `needs-owner` for the same task                        |
+| Bounded execution cannot continue safely                    | Return `blocked` evidence; owning boundary decides next state |
+| Known external fact will change later                       | Persist an exact task Condition                               |
+| Another App must decide or act                              | Create a typed cross-App task dependency                      |
+| Human approval or private judgment is required              | Create a May task dependency or exact human Condition         |
+| Agent attempt was incomplete                                | Honest execution result; not escalation by itself             |
 
 The current owner, not the Host, decides that a blocker crosses an
 ownership boundary.
 
 ## App-to-App escalation
 
-When an addressed App request discovers that another App owns the next action,
-it returns a normal delegation disposition with typed escalation input:
+When a task discovers that another App owns the next action, its reconciliation
+result requests one typed Runtime-managed dependency:
 
 ```ts
-return {
-  type: "delegate",
-  appId: "release-governance",
-  input: {
-    kind: "approval-request",
-    data: {
-      requestedAction: "Approve, adjust, or reject the rollout.",
-      reason: "Production policy requires an independent decision.",
-      evidence: ["verification/report.json"],
-      severity: "P1",
-      correlationKey: "sample:production-rollout:v4",
+return ctx.done("Waiting for release governance", {
+  state: "waiting",
+  dependencies: [
+    {
+      id: "release-governance-v4",
+      appId: "release-governance",
+      input: {
+        kind: "approval-request",
+        data: {
+          requestedAction: "Approve, adjust, or reject the rollout.",
+          reason: "Production policy requires an independent decision.",
+          evidence: ["verification/report.json"],
+          severity: "P1",
+          correlationKey: "sample:production-rollout:v4",
+        },
+      },
     },
-  },
-};
+  ],
+});
 ```
 
-The host creates the child inbox item and records the parent's dependency
-before waking the destination. The destination returns one correlated
-`AppResult`. The parent wakes, reviews the result, and decides how it changes
-the original obligation.
+The Runtime resolves the destination task and records the parent dependency and
+caller correlation before waking it. The destination task produces one
+correlated result. The parent wakes, reviews the result, and decides how it
+changes the original obligation.
 
 Creating the child is progress, not resolution. The parent cannot complete
 merely because another owner accepted the request.
@@ -74,12 +80,13 @@ returns evidence and either:
 
 - an exact Condition for a known external fact or approval;
 - `needs-owner` when the same App owner must choose the next action; or
-- a typed result that asks the App owner to establish a child App dependency.
+- a typed dependency in the reconciliation result that establishes a child App
+  request.
 
 The host links the child request or approval operation back to the exact task
 generation. Its completion publishes/wakes the corresponding exact Condition
-or task target. The task reconciler then observes current state and applies the
-disposition; it does not infer task completion from the child result.
+or task target. The task reconciler then observes current state and decides its
+own result; it does not infer task completion from the child result.
 
 The implementation must not hide this relationship in a workflow prompt,
 source-session resume record, or generic event owner field.
@@ -94,13 +101,14 @@ domain App/task
   -> typed child request to May with question, evidence, choices, and urgency
   -> May decides whether/how to contact the human
   -> channel delivery and reply remain correlated to the May request
-  -> May returns one child App result
-  -> source obligation resumes
+  -> May's task returns one accepted result
+  -> source task resumes
 ```
 
 Naming a human role does not grant a domain App direct access to Telegram or a
 browser session. May may clarify, reject, deduplicate, or deliver according to
-human preferences, but it must return a disposition to the source request.
+human preferences, but its task must return an accepted result to the source
+task.
 
 An actionable human ask includes:
 
@@ -115,17 +123,17 @@ An actionable human ask includes:
 Do not paste an entire transcript when exact artifacts, task IDs, or execution
 IDs identify the evidence.
 
-## Delivery, disposition, and completion
+## Delivery, result, and completion
 
 These states remain separate:
 
-| State | Meaning |
-| --- | --- |
-| Child admitted | Destination App durably owns the request |
-| Notification delivered | The human-facing message reached its channel |
-| Child result | Destination owner returned a disposition |
-| Source resumed | Original App/task observed and applied that result |
-| Source complete | Original owner verified its own outcome |
+| State                  | Meaning                                             |
+| ---------------------- | --------------------------------------------------- |
+| Child admitted         | Destination task durably owns the requested outcome |
+| Notification delivered | The human-facing message reached its channel        |
+| Child result           | Destination task returned an accepted result        |
+| Source resumed         | Original task observed and applied that result      |
+| Source complete        | Original owner verified its own outcome             |
 
 Events and traces may record all five transitions for audit. They do not own
 the lifecycle or replace the parent/child inbox and task links.
@@ -151,9 +159,9 @@ return ctx.done("phase completed", output);
 return ctx.blocked("cannot continue locally", evidence);
 ```
 
-`ctx.blocked` is local and synchronous. It does not escalate, delegate, start a
-new owner session, or keep the workflow open. The App/task boundary decides
-whether to retry, wait, request same-owner judgment, delegate across Apps, or
+`ctx.blocked` is local and synchronous. It does not escalate, start a new owner
+session, or keep the workflow open. The task reconciler decides whether to
+retry, wait, request same-owner judgment, create a cross-App dependency, or
 stop.
 
 ## Health and audit
@@ -179,7 +187,7 @@ legacy pairs or source-session resume ownership.
 - The destination is an App address, not an owner string fallback.
 - The child request states one exact action/decision and compact evidence.
 - Parent/child linkage is durable before the child is woken.
-- Delivery, destination disposition, source resume, and source completion remain
+- Delivery, destination result, source resume, and source completion remain
   distinct.
 - The source owner applies the child result before claiming completion.
 - Local workflow blocking never escalates automatically.

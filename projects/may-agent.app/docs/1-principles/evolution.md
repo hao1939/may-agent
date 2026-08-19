@@ -45,9 +45,9 @@ Runtime mechanisms are selected by control need, not maturity level:
 | Cross-owner blocker                                         | Escalation                            | Receiving owner                        |
 
 These mechanisms compose. They do not supersede one another. An App schedule
-may admit an inbox request or publish a fact that wakes a task; that durable
-owner may run a workflow. A workflow may call an agent with a skill, a guard may
-observe the workflow, and a tool may supply a deterministic capability.
+may admit task input or publish a fact that wakes a task; that task may run a
+workflow. A workflow may call an agent with a skill, a guard may observe the
+workflow, and a tool may supply a deterministic capability.
 
 ## Promotion Tests
 

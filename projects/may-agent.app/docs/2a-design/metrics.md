@@ -129,13 +129,13 @@ maintenance, and compaction are Host maintenance, not metric work; see
 
 Useful categories include:
 
-| Category | Question |
-| --- | --- |
-| Host | Are admission, persistence, scheduling, and recovery operating? |
-| Execution | Are bounded attempts starting, finishing, and recovering honestly? |
-| Domain | Is an owned external or project fact outside its expected range? |
-| Outcome | Is completed work producing the intended effect? |
-| Meta-metric | Is measurement stale, pinned, noisy, or structurally invalid? |
+| Category    | Question                                                           |
+| ----------- | ------------------------------------------------------------------ |
+| Host        | Are admission, persistence, scheduling, and recovery operating?    |
+| Execution   | Are bounded attempts starting, finishing, and recovering honestly? |
+| Domain      | Is an owned external or project fact outside its expected range?   |
+| Outcome     | Is completed work producing the intended effect?                   |
+| Meta-metric | Is measurement stale, pinned, noisy, or structurally invalid?      |
 
 Activity is not impact, and an all-green view is not proof that useful work is
 happening. Confirm domain conclusions with project facts, task Conditions,
@@ -149,7 +149,7 @@ the sequence simple:
 
 1. verify the source and freshness;
 2. inspect the owning project's current evidence;
-3. choose one concrete disposition;
+3. choose one concrete response;
 4. record the action or reason; and
 5. resolve the alert only when the stated recovery evidence exists.
 

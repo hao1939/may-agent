@@ -1,8 +1,7 @@
 # Authoring Agent App task handlers
 
-An Agent App has one `app.ts` declaration and one accountable owner. Ordinary
-addressed requests enter its Inbox. Only deterministic desired outcomes enter
-its optional task reconciler.
+An Agent App has one `app.ts` declaration, one accountable owner, and one task
+reconciler. Every actionable input resolves to or wakes a task.
 
 ## App manifest
 
@@ -18,25 +17,18 @@ export default defineApp({
     data: Type.Unknown(),
   }),
   workspace: { kind: "local", localPath: "../example" },
-  tasks: {
-    attach: true,
-    subscriptions: [
-      { type: "example.requested", target: { project: "example" } },
-    ],
-    maxConcurrent: 2,
-    resolve(event) {
-      const requestId = String(event.data.requestId ?? "");
-      if (!requestId) return null;
-      return {
-        id: `request/${requestId}`,
-        parentId: "project",
-        outcome: "Handle the request.",
-        acceptance: ["The requested outcome is evidenced."],
-        mode: "achieve",
-        workflow: "handle-request",
-        input: { requestId },
-      };
-    },
+  task(input) {
+    const requestId = String(input.data.requestId ?? "");
+    if (!requestId) return null;
+    return {
+      id: `request/${requestId}`,
+      parentId: "project",
+      outcome: "Handle the request.",
+      acceptance: ["The requested outcome is evidenced."],
+      mode: "achieve",
+      workflow: "handle-request",
+      input,
+    };
   },
 });
 ```
@@ -61,14 +53,15 @@ Every handler returns one envelope:
   state: "converged" | "waiting" | "needs-owner";
   summary: string;
   evidence: string[];
-  actions?: TaskAction[];
+  actions?: TaskAction[]; // compatibility name for task changes
   conditions?: Condition[];
+  dependencies?: AppTaskDependency[];
 }
 ```
 
 - `converged` means the current generation satisfies its acceptance criteria.
 - `waiting` must carry exact typed Conditions or leave at least one live direct
-  child after its actions are admitted.
+  child or cross-App dependency after its changes are admitted.
 - `needs-owner` deliberately hands the task to its accountable owner.
 
 For an unresolved human request, give its external Condition a bounded review
@@ -93,12 +86,14 @@ handles any human-facing follow-through separately.
 The selected handler may be a direct owner agent or an owner-owned workflow.
 It may use supplied tools and skills; a workflow may also run bounded agent
 steps. Those capabilities may access a database behind an explicit tool or SDK
-boundary. The handler must not edit task storage, acknowledge inbox delivery,
+boundary. The handler must not edit task storage, acknowledge caller delivery,
 or implement controller retries/recovery. Those are infrastructure duties.
 
-## Actions and safety
+## Task changes and safety
 
-Actions create, update, close, or unblock resources. Updates use
+Task changes create, update, close, or unblock task resources. The SDK field
+and type remain `actions` and `TaskAction` during compatibility migration.
+Updates use
 `expectedGeneration`; the reconciler checks generation and resource version,
 then commits task state, receipts, Conditions, and dependent wakeups atomically.
 
@@ -120,14 +115,14 @@ a node has no independently reconcilable outcome. An achieve task cannot close
 while it still contains live child tasks.
 
 A running handler must not close or unblock its own task. It may return one
-`update-task` action for that task only when current evidence proves the
-desired execution intent itself must change; that action must be the sole
-action, advance the generation, finish the current attempt, and queue the same
+`update-task` change for that task only when current evidence proves the
+desired execution intent itself must change; that change must be the sole
+change, advance the generation, finish the current attempt, and queue the same
 task again. A no-op or mixed self-update is rejected. Broad reprioritization,
 duplicate cleanup, and unrelated-branch changes belong to a bounded
 owner-review pass.
 
-Resolver observations and admitted task actions use the same fenced mutation
+Resolver observations and admitted task changes use the same fenced mutation
 path. Task ID prefixes carry no authority semantics; add a pure App
 `validateAction` rule only when the domain requires a stricter mutation
 boundary.
@@ -144,8 +139,7 @@ A handler is a small infrastructure adapter. It may translate, observe,
 persist, or dispatch bounded work. It must not become a second task scheduler,
 task-state writer, domain owner, or learned process.
 
-- Does every addressed request enter the App Inbox, or exactly one task when it
-  is a deterministic desired outcome?
+- Does every actionable input resolve to or wake exactly one task?
 - Is reusable judgment implemented under its owning agent?
 - Does any watcher know task IDs or mutate task resources?
 - Can recovery start from durable state without replaying a synthetic scheduler

@@ -6,10 +6,9 @@ eventually handled. An App is a domain capability, not another daemon.
 The routing rule is deliberately small:
 
 ```text
-independent addressed obligation -> Inbox
-deterministic desired outcome     -> TaskIntent
-exact task target or Condition    -> exact task wake
-otherwise                         -> observation
+actionable App input           -> TaskIntent
+exact task target or Condition -> exact task wake
+otherwise                      -> observation
 ```
 
 An App has one declaration, `app.ts`, and uses one public SDK entry point,
@@ -49,63 +48,68 @@ export default defineApp({
     kind: Type.String(),
     data: Type.Unknown(),
   }),
+  task(input) {
+    return {
+      id: `input/${input.kind}`,
+      parentId: "project",
+      outcome: `Handle ${input.kind}`,
+      acceptance: ["The requested outcome is evidenced."],
+      mode: "achieve",
+      input,
+    };
+  },
   workspace: { kind: "local", localPath: "../example" },
 });
 ```
 
-This owner-only App is valid. Requests are durable Inbox items. The runtime
-claims them, calls the owner, and records the returned disposition.
+This owner-handled App is valid. Requests are caller correlation records; only
+the linked task invokes the owner.
 
-## 3. Add deterministic routing sparingly
+## 3. Refine task identity and intent
 
-`route` is pure policy for an App request. Return `null` whenever owner judgment
-is needed.
+`task` is pure policy for validated App input. It selects the stable task that
+owns the work; owner judgment happens while reconciling that task.
 
 ```ts
-route(request) {
-  if (request.input.kind !== "refresh-known-cache") return null;
+task(input) {
   return {
-    type: "complete",
-    summary: "The requested cache is already current.",
+    id: `input/${input.kind}`,
+    parentId: "project",
+    outcome: `Handle ${input.kind}`,
+    acceptance: ["The requested outcome is evidenced."],
+    mode: "achieve",
+    input,
   };
 }
 ```
 
-The other dispositions delegate to another App or attach the request to an
-existing/desired durable task. They do not execute work inside the router.
+The resolver never executes work. Simple work still follows this path and can
+converge during the task's first attempt.
 
-## 4. Add task reconciliation only for durable desired outcomes
+## 4. Map repeated input to a standing task
 
 ```ts
-tasks: {
-  attach: true,
-  subscriptions: [
-    { type: "example.source.changed", target: { project: "example" } },
-  ],
-  maxConcurrent: 2,
-  resolve(event) {
-    const revision = String(event.data.revision ?? "");
-    if (!revision) return null;
-    return {
-      id: "inspect-source",
-      parentId: "project",
-      outcome: "Inspect the current source and retain useful evidence.",
-      acceptance: ["Current source evidence justifies the disposition."],
-      mode: "maintain",
-      workflow: "inspect-source",
-      input: { revision },
-    };
-  },
+task(input) {
+  const revision = String(input.data.revision ?? "");
+  if (!revision) return null;
+  return {
+    id: "inspect-source",
+    parentId: "project",
+    outcome: "Inspect the current source and retain useful evidence.",
+    acceptance: ["Current source evidence justifies the disposition."],
+    mode: "maintain",
+    workflow: "inspect-source",
+    input,
+  };
 },
 ```
 
 The resolver is deterministic and cheap. It may identify desired work; it may
 not inspect external state, invoke an agent, or mutate storage. Returning
-`null` means the event remains an observation, not an implicit owner request.
+`null` means the validated input is explicitly non-actionable.
 
-Exact task targets and matching Conditions wake only that task. They are
-additive to an independently addressed Inbox obligation, but a single App may
-not claim the same event as both a new Inbox item and a new TaskIntent.
+Exact task targets and matching Conditions wake only that task. A single fact
+must not both resolve a new task and wake an existing one in the same App.
 
 ## 5. Add ingress without creating another authority
 
@@ -148,8 +152,8 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
 ```
 
 Use scoped `ctx.read`, `ctx.workspace`, agent/workflow calls, events, and
-metrics. Return task actions and exact Conditions; never open task storage or
-implement retries in App code.
+metrics. Return task changes through the compatibility `actions` field and
+exact Conditions; never open task storage or implement retries in App code.
 
 ## 7. Verify
 

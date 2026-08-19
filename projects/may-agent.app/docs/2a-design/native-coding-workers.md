@@ -10,11 +10,10 @@ agents such as Codex CLI and Claude Code. These tools are not terminal tabs,
 project owners, App requests, or tasks. They are worker runtimes behind the
 event system.
 
-Canonical App owners cannot call `run_cli_agent` directly. The App-owner tool
-policy excludes asynchronous work outside the fenced disposition. An App owner
-that needs native-worker evidence must obtain and review it inside one bounded
-awaited agent/workflow call, or return durable ownership as an App delegation
-or task disposition before its attempt ends.
+A Task owner may call `run_cli_agent` inside its bounded attempt and must await
+and review the result before returning. If the native work must outlive that
+attempt, it belongs to a durable Task or cross-App dependency instead of a
+detached CLI process.
 
 ## Mental Model
 
@@ -49,7 +48,7 @@ work.
 
 The native worker result is not automatically accepted as truth. It is evidence
 for the bounded caller. The owning App still judges whether the answer is good
-enough and expresses any durable follow-up through its disposition.
+enough and expresses any durable follow-up through its task result.
 
 When the purpose is a second or third opinion, independence matters:
 
@@ -352,11 +351,11 @@ ends.
 
 The CLI task state describes the worker process, not the project outcome.
 
-| Event                | Meaning                                                                           | Owner response                                                      |
-| -------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `cli.task.started`   | The runner accepted the request and spawned the native process.                   | Usually observe only.                                               |
-| `cli.task.completed` | The native worker produced a usable result artifact.                              | Review the result and decide whether the original work is resolved. |
-| `cli.task.failed`    | The native worker could not produce a usable result.                              | Retry, adjust prompt/config, or handle the failure directly.        |
+| Event                | Meaning                                                                               | Owner response                                                             |
+| -------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `cli.task.started`   | The runner accepted the request and spawned the native process.                       | Usually observe only.                                                      |
+| `cli.task.completed` | The native worker produced a usable result artifact.                                  | Review the result and decide whether the original work is resolved.        |
+| `cli.task.failed`    | The native worker could not produce a usable result.                                  | Retry, adjust prompt/config, or handle the failure directly.               |
 | `cli.task.orphaned`  | Runtime restarted while the native worker was running, so process ownership was lost. | Inspect artifacts/session id, then resume or retry from an owning attempt. |
 
 The runner owns the deadline. Once it expires, the task fails as `timeout`
@@ -543,9 +542,9 @@ these enter the May App first:
 - "delegate this investigation"
 - "let Claude try a patch"
 
-May may answer directly or delegate the outcome to the accountable App. That
-App may use a bounded awaited worker call as implementation capacity; it cannot
-turn `run_cli_agent` into an asynchronous ownership path.
+May's task may converge directly or request the outcome from the accountable
+App task. That App may use a bounded awaited worker call as implementation
+capacity; it cannot turn `run_cli_agent` into an asynchronous ownership path.
 
 ## Open Design Gaps
 

@@ -16,9 +16,11 @@ executions. It answers:
 - what work and evidence exist;
 - what should wake the owner next.
 
-Projects do not replace events, sessions, workflows, or task trees. The project
-holds durable intent and posture; those other records represent signals,
-execution, orchestration, and decomposition.
+Projects do not replace events, sessions, workflows, or tasks. The project
+holds durable intent and posture; tasks own all App work, while the other
+records represent signals and bounded execution. Parent/dependency
+relationships may be rendered as a task tree, but that tree is not another
+record.
 
 See [system-model.md](system-model.md) for the whole-system model and
 [agent-app.md](agent-app.md) for the executable app contract.
@@ -104,12 +106,12 @@ change.
 
 Project posture is not task execution state:
 
-| Layer                | Vocabulary                                                                   |
-| -------------------- | ---------------------------------------------------------------------------- |
-| Project posture      | `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed` |
-| Task resource phase  | `pending`, `running`, `waiting`, `attention`, `converged`                    |
+| Layer                | Vocabulary                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| Project posture      | `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed`           |
+| Task resource phase  | `pending`, `running`, `waiting`, `attention`, `converged`                              |
 | Readiness projection | ready, dependency-blocked, condition-blocked, capacity-blocked, paused, not-applicable |
-| Worker/session claim | success, partial, blocked, failure plus evidence                             |
+| Worker/session claim | success, partial, blocked, failure plus evidence                                       |
 
 A blocked worker is evidence, not proof that the task or project must become
 blocked. The owner may retry, split, repair, replace, verify, wait, or escalate.
@@ -122,22 +124,19 @@ not duplicate its node schema or transition rules in project documents.
 The normal project loop is:
 
 ```text
-addressed request
-  -> App inbox -> direct result, delegation, or task attachment
-
-changed fact/metric/completion
-  -> task subscription resolves zero or one desired task
+input/fact/schedule
+  -> App policy resolves or wakes exactly one desired task
   -> deduplicating app queue receives the task key
   -> controller reads current task, dependencies, and Conditions
   -> resolved owner runs directly or applies an owner-owned workflow
   -> structured result says converged, waiting, or needs owner
-  -> runtime atomically applies actions and observed status
+  -> runtime atomically applies task changes and observed status
   -> completion receipt closes finite work and wakes dependents
 ```
 
-An owner pass must leave a machine-readable disposition:
+An owner pass must leave a machine-readable result:
 
-- open task-tree work exists;
+- open task work exists;
 - project posture records an exact wait/review/pause/terminal reason;
 - or an external escalation records the requested action and resume context.
 
@@ -185,9 +184,9 @@ judgment.
 
 Human comments that require a distinct response enter through a declared App
 subscription and become correlated App inputs. Structured UI actions validate
-their schema and translate directly to App input. A human-originated fact that
-deterministically revises desired work may instead use a task subscription, but
-human input never bypasses the resolved owner to mutate task meaning.
+their schema and translate directly to App input. Both use the same
+input-to-task resolver; human input never bypasses the resolved owner to mutate
+task meaning.
 
 The caller supplies project intent, not an execution plan. It may name the
 desired outcome, current evidence, constraints, and proof, but it does not
@@ -197,8 +196,8 @@ mapping is already declared by the app may wake domain work directly. This is
 an app/runtime contract; May does not need to know how the app implements the
 choice.
 
-The UI should confirm that steering was accepted, then show the later owner,
-task, escalation, or no-op disposition.
+The UI should confirm that steering was accepted, then show the linked task and
+its later result or exact wait reason.
 
 ## Historical Material
 

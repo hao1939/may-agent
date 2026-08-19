@@ -12,18 +12,19 @@ plane and does not invent browser-only lifecycle state.
 
 The UI serves three human roles:
 
-| Role | Primary question |
-| --- | --- |
-| Watcher | Is the system alive, moving, and failing visibly? |
-| Steerer | Which owner/session/project should receive this intent? |
+| Role         | Primary question                                               |
+| ------------ | -------------------------------------------------------------- |
+| Watcher      | Is the system alive, moving, and failing visibly?              |
+| Steerer      | Which owner/session/project should receive this intent?        |
 | Investigator | What event, evidence, decision, or state explains the outcome? |
 
 ## Product Model
 
 The UI renders the objects defined in [system-model.md](system-model.md):
 
-- projects and task trees are durable work context;
-- App inbox items show addressed requests and their correlated dependencies;
+- projects and tasks are durable work context; a tree is only an optional task
+  layout;
+- requests show caller correlation, linked tasks, and delivery state;
 - events and traces show signals and causality;
 - sessions and workflow runs show execution attempts;
 - metrics and alerts show measured signals needing judgment;
@@ -55,19 +56,19 @@ copies of the default platform UI. See
 
 The platform uses real browser paths and `history.pushState`:
 
-| Route | Purpose |
-| --- | --- |
-| `/` | Live owner/project/agent/metric overview |
-| `/agents` and `/agents/:name` | Agent identity, context, projects, sessions, chat |
-| `/projects` and `/projects/:id` | Project readout and steering |
-| `/projects/:id/tasks` | Task reconciliation board, tree, and selected-task review |
-| `/projects/:id/functions` | Declared project actions |
-| `/metrics` and `/metrics/:id` | Metric/alert detail and evidence |
-| `/sessions/:id` | Transcript, result, lineage, tools, and steering |
-| `/events` and `/events/:eventId` | Event list, delivery health, and trace graph |
-| `/learning` | Evaluation and learning readouts |
-| `/knowledge` | Searchable durable knowledge |
-| `/terminal` | Browser terminal profiles |
+| Route                            | Purpose                                                         |
+| -------------------------------- | --------------------------------------------------------------- |
+| `/`                              | Live owner/project/agent/metric overview                        |
+| `/agents` and `/agents/:name`    | Agent identity, context, projects, sessions, chat               |
+| `/projects` and `/projects/:id`  | Project readout and steering                                    |
+| `/projects/:id/tasks`            | Task list, optional relationship tree, and selected-task detail |
+| `/projects/:id/functions`        | Declared App commands that create requests                      |
+| `/metrics` and `/metrics/:id`    | Metric/alert detail and evidence                                |
+| `/sessions/:id`                  | Transcript, result, lineage, tools, and steering                |
+| `/events` and `/events/:eventId` | Event list, delivery health, and trace graph                    |
+| `/learning`                      | Evaluation and learning readouts                                |
+| `/knowledge`                     | Searchable durable knowledge                                    |
+| `/terminal`                      | Browser terminal profiles                                       |
 
 Legacy hash routes are ingress aliases only. New links and docs use real paths.
 The HTTP adapter serves `index.html` for platform client routes while keeping
@@ -102,7 +103,7 @@ Liveness uses existing facts:
 - recent project owner/workflow/session activity;
 - active and recently changed projects;
 - open metric alerts;
-- event delivery, App inbox, task, and human-delivery health;
+- event delivery, request, task, and human-delivery health;
 - recent messages and human-result delivery;
 - standalone heartbeat activity where heartbeats are enabled.
 
@@ -116,8 +117,8 @@ The default project page owns the generic control readout:
 
 - identity, owner, goal, posture, and last movement;
 - one primary bottleneck or next fact to inspect;
-- task board/tree and selected-task detail;
-- metrics, sessions, events, declared actions, and domain UI link;
+- task list, optional relationship tree, and selected-task detail;
+- metrics, sessions, events, declared App commands, and domain UI link;
 - structured steering with an honest async receipt.
 
 Browser inference stays light. Stable project/task classifications belong in a
@@ -157,32 +158,32 @@ edges or infer completion from delivery.
 Every mutation/control affordance constructs an allowlisted `EventInput` and
 uses the shared `publish` operation. Examples:
 
-| Human intent | Canonical path |
-| --- | --- |
-| Future May chat | Human `conversation.message.created` on `Conversation may:primary` -> fenced May App request |
-| Steer an active session | Required exact session event linked to its May request when applicable |
-| Comment/steer project | Publish `project.comment.created`; the declared App subscription admits one correlated Agent App request |
-| Invoke declared App action | Discover schema, validate input, translate and admit the App input |
-| Cancel session | `session.cancel.requested` |
-| Submit approval | `project.approval.submitted` or owning typed approval event |
-| Runtime restart/reload | `runtime.*.requested` |
+| Human intent                | Canonical path                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Future May chat             | Human `conversation.message.created` on `Conversation may:primary` -> fenced May App request             |
+| Steer an active session     | Required exact session event linked to its May request when applicable                                   |
+| Comment/steer project       | Publish `project.comment.created`; the declared App subscription admits one correlated Agent App request |
+| Invoke declared App command | Discover its action schema, validate input, translate and admit one App request                          |
+| Cancel session              | `session.cancel.requested`                                                                               |
+| Submit approval             | `project.approval.submitted` or owning typed approval event                                              |
+| Runtime restart/reload      | `runtime.*.requested`                                                                                    |
 
 The UI confirms “accepted/queued” only after the request, task trigger, or
 control operation is durably correlated. Completion appears later in the
 owning App request, task, delivery operation, escalation, metric, or runtime
 result. Never show “done” merely because an HTTP POST returned successfully.
 
-Project/task actions include the selected project id, task id, visible raw
-fact, expected owner response, and relevant evidence. They do not mutate task
-meaning directly.
+Project/task commands include the selected project id, task id, visible raw
+fact, expected owner response, and relevant evidence. They create an App
+request and do not mutate task meaning directly.
 
 ## Data Planes
 
-| Plane | Purpose |
-| --- | --- |
-| Live socket/read model | Current activity and incremental updates |
-| Historical read APIs | Bounded queries over persisted events, sessions, metrics, and project state |
-| Steering POST/control | `publish(EventInput)` with an honest durable receipt |
+| Plane                  | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| Live socket/read model | Current activity and incremental updates                                    |
+| Historical read APIs   | Bounded queries over persisted events, sessions, metrics, and project state |
+| Steering POST/control  | `publish(EventInput)` with an honest durable receipt                        |
 
 The UI should prefer event-driven updates. Polling is an explicit fallback for
 a surface that lacks a live feed, not a hidden second source of state.
@@ -192,9 +193,9 @@ a surface that lacks a live feed, not a hidden second source of state.
 - Show when data was measured or last moved.
 - Distinguish known, inferred, missing, and stale facts.
 - Preserve raw facts beside system hints.
-- Surface unhandled facts, failed App admission, stale inbox/dependency waits,
+- Surface unhandled facts, failed task admission, stale request/dependency waits,
   failed sessions, delivery uncertainty, and missing coverage.
-- Keep the operator's submitted intent visible until a typed disposition
+- Keep the operator's submitted intent visible until an accepted task result
   arrives or the system reports a failure.
 - Do not turn an empty metric panel into a healthy verdict.
 

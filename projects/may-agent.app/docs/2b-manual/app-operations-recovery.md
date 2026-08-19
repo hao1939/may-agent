@@ -1,16 +1,16 @@
 # Agent App operations and recovery
 
-The durable App Inbox and task state are authoritative. Events trigger review;
-they are not work queues to replay manually.
+Durable request correlation and task state are authoritative. Tasks own App
+work; events trigger review and are not work queues to replay manually.
 
 ## Normal restart
 
 Restart the daemon normally. Startup:
 
 1. loads and validates every `app.ts` into one immutable registry snapshot;
-2. prepares Inbox routes and optional task controllers from that same snapshot;
+2. prepares input routes and the task controller from that same snapshot;
 3. republishes the generation only after every consumer accepts it;
-4. reclaims expired Inbox leases and rescans unfinished items;
+4. repairs request correlation and rescans unfinished tasks;
 5. recovers task attempts from their persisted task/session fences;
 6. enables outward delivery after transports are attached.
 
@@ -31,17 +31,16 @@ Check that:
 - referenced workflows exist under the resolved owner;
 - the configured workspace is available.
 
-## Unfinished Inbox item
+## Unfinished request
 
-Inspect the item, its owner execution, exact dependency, and delivery record.
-An item may legitimately be pending, handling, or waiting on one App, task, or
-session dependency. Recovery must preserve its request id, source, input,
-idempotency key, and dependency.
+Inspect the request, linked task, exact dependency, and delivery record. The
+request may remain open while its task is pending, running, waiting, or in
+attention. Recovery must preserve its request id, source, input, idempotency
+key, and task link; only the task controller may restart App work.
 
-If an owner execution died, allow lease recovery to reclaim the item. If its
-dependency completed while the daemon was offline, startup rescan will wake the
-same item. Do not insert another Inbox row or mark the original complete by
-hand.
+If a task attempt died, allow lease recovery to reclaim it. If its dependency
+completed while the daemon was offline, startup rescan will wake the same task.
+Do not insert another request row or mark the original complete by hand.
 
 ## Task recovery
 

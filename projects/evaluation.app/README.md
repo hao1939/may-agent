@@ -67,6 +67,9 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 - `criteria/scoring.md` — scoring methodology
 - `criteria/versions/` — criteria version snapshots
 - `design/project-app-evaluation.md` — project/app evaluation design
+- `design/task-native-documentation-and-behavior-review.md` — proposed
+  task-native extension for regular documentation and behavior review; not yet
+  current behavior
 - `reports/` — retained project-health summaries and facts
 
 ## Layout

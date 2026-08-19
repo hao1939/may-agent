@@ -2,32 +2,34 @@
 
 **Design status:** Accepted.
 **Implementation status:** Core reconciliation, generation fencing, Conditions,
-parent/child work, recovery, and bounded concurrency are implemented. Some
-pressure/drain guarantees remain partial.
+parent/child work, recovery, bounded concurrency, and App-scoped Task list/get
+reads are implemented. Some pressure/drain guarantees and richer diagnostic
+detail remain partial.
 
-The task engine is an optional Host attachment for Apps that own desired state
-across repeated bounded attempts. Read [agent-app.md](agent-app.md) first.
+The task engine is the single Host execution path for App-owned work. Read
+[agent-app.md](agent-app.md) first.
 
-## When a task is appropriate
+## One App work path
 
-Use an App inbox item when the App owes one independently correlated result.
-Attach a task only when an outcome needs stable desired-state identity for one
-or more of these reasons:
+The Host stores a request when a caller expects a result. The App does not
+reconcile that inbox record directly; it resolves the input to a task and
+reconciles the task. The Host completes and delivers the request from the
+accepted task result.
 
-- repeated reconciliation against current evidence;
-- several inputs revise or wake the same outcome;
-- an exact external Condition must be observed later;
-- independently tracked decomposition or dependencies are needed; or
-- the outcome is maintained over time.
+Every actionable App input therefore creates, revises, attaches to, or wakes a
+task. A simple task converges on its first bounded attempt and leaves a compact
+receipt. The same resource naturally supports repeated reconciliation, exact
+waits, decomposition, dependencies, and maintenance without selecting another
+work mechanism.
 
-Asynchrony, audit, importance, and restart survival alone do not require a
-task. The inbox already persists a request across restart. Facts with no owned
-result or desired-state change remain facts.
+Facts with no owned outcome or desired-state change remain facts and do not
+enter the App. Sessions, workflows, analyses, and child App calls are bounded
+capabilities used while reconciling a task; none is another App lifecycle.
 
 ## Mental model
 
 ```text
-App policy declares or revises TaskIntent
+App input declares, revises, attaches to, or wakes TaskIntent
   -> Host persists canonical task state
   -> queue receives (appId, taskId)
   -> worker rereads and claims the current generation
@@ -44,14 +46,118 @@ tree as a queue.
 The queue is an in-memory hint. The persisted task, trigger, Condition, and
 attempt state are sufficient to recover it.
 
+## Task and task view
+
+A task is the resource. It has one stable `(appId, taskId)` identity, desired
+outcome, current observation, and acceptance evidence.
+
+Tasks may name a parent for decomposition and dependencies for ordering. A UI
+may arrange those relationships as a tree, but the tree is not another
+resource:
+
+```text
+parent task
+  -> child task A
+  -> child task B
+```
+
+The Host schedules task IDs from canonical task state. It never schedules a
+tree, restores state from a tree, or treats tree placement as ownership.
+Humans normally encounter a task through the App request that depends on it;
+the task view supplies progress and diagnostic detail while the request remains
+the promised result.
+
+## Resource read interface
+
+Tasks use the same small resource-read shape inside and outside an App. There
+is one transport-neutral service backed by canonical task state:
+
+```text
+tasks.list({ appId, status?, limit?, cursor? })
+  -> bounded TaskPage
+
+tasks.get({ appId, taskId })
+  -> TaskView or not-found
+```
+
+The current shared `TaskView` is deliberately small:
+
+```text
+{ id, status, generation, outcome, summary?, response?, evidence? }
+```
+
+The list form returns bounded views from live resources and immutable completed
+receipts. It accepts exact status filters, a capped page size, and an opaque
+continuation token. Omitting status includes every phase.
+
+The get form returns the same projection for one exact ID or not-found. Richer
+Conditions, dependencies, direct children, attempt, and activity detail may be
+added later without creating another authority or transport-specific model.
+
+The contract is shared; only scope binding and transport differ:
+
+- a workflow or observer receives the same reader already bound to its current
+  App;
+- an agent `tasks` tool supplies the current App-attempt scope;
+- the daemon control socket carries those read operations for out-of-process
+  adapters;
+- HTTP binds the scope through `GET /api/apps/:appId/tasks` and
+  `GET /api/apps/:appId/tasks/:taskId`; and
+- the UI uses the HTTP adapter and renders the returned resources.
+
+There is no separate HTTP read model, agent task model, or SDK task model.
+Adapters translate argument placement but return the same `TaskView` and page.
+
+Exact absence returns not-found. Invalid limits or continuation tokens are
+caller errors. HTTP maps absence to 404 and invalid reads to a 400 response;
+SDK, socket, and agent callers receive the same underlying Runtime result or
+error text.
+
+App-scoped execution may read only its own App unless the Host explicitly
+grants a system-level read scope. List results are capped and paginated. Reads
+never expose task storage paths, SQL, leases, or mutation handles, and they
+never use `.state/tasks/tree.json` as authority.
+
+This common resource shape does not imply a universal CRUD service. Task,
+request, conversation, and execution APIs may share `get`/`list`, identity,
+pagination, and error conventions while retaining typed filters and details.
+The event stream is the change notification: consumers observe a relevant
+event and reread current resource state. The read API does not add a second
+watch cursor or delivery guarantee.
+
+There is deliberately no generic task write API. A caller asks the accountable
+App for an outcome, optionally naming the observed task. App policy then keeps,
+revises, wakes, decomposes, or closes it through the normal input-to-task path
+or reconciliation result. Inside an attempt, task changes remain
+generation-fenced and atomically admitted with the result.
+
+## Implementation progress
+
+1. **Done:** define `TaskView`, `TaskPage`, and `TaskListOptions` once in the SDK.
+2. **Done:** build one Host reader over the loaded App registry and canonical
+   task state.
+3. **Done:** bind it to the current App as `ctx.read.tasks`; retain
+   `ctx.read.task(id)` only as a temporary exact-read alias.
+4. **Done:** expose the same reader to agents through one read-only `tasks` tool.
+   App-local agents receive their App scope; a broader scope must be explicitly
+   injected by the Host and cannot be requested by tool arguments.
+5. **Done:** carry list/get over the daemon control socket and App-ID HTTP
+   routes as thin adapters.
+6. **Remaining:** migrate the default UI and point old path-based project
+   endpoints at the shared reader, then remove
+   them and their `tree.json` read-model dependency after callers migrate.
+
+Each step uses the same contract fixtures. Do not first implement separate SDK,
+tool, socket, and HTTP models and try to reconcile them later.
+
 ## Authority
 
-| Surface | Role |
-| --- | --- |
+| Surface                   | Role                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------ |
 | `.state/tasks/state.json` | Sole mutable authority for tasks, Conditions, attempts, triggers, and receipts |
-| `.state/tasks/tree.json` | Disposable human/UI projection |
-| `tasks/seed.json` | Initial desired state for a new App |
-| `project.json` | Authored project configuration, never rewritten by task operations |
+| `.state/tasks/tree.json`  | Disposable human/UI projection                                                 |
+| `tasks/seed.json`         | Initial desired state for a new App                                            |
+| `project.json`            | Authored project configuration, never rewritten by task operations             |
 
 `tree.json` may be regenerated and must never restore canonical state. Task
 state retains the bounded detail needed for reconciliation and recovery;
@@ -74,19 +180,19 @@ only when the task ID, generation, resource version/claim, and attempt still
 match. A stale result applies no mutation.
 
 There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
-App policy validates which actions may revise a task; the generic engine uses
-one admission path for all task IDs.
+App policy validates which task changes may revise a task; the generic engine
+uses one admission path for all task IDs.
 
 ## Controller
 
-An App with tasks has one logical controller and one deduplicating key queue.
-An App without tasks has neither. The controller may:
+Each App has one logical controller and one deduplicating key queue. The
+controller may:
 
 - deduplicate and prioritize task keys;
 - derive readiness from dependencies and exact Conditions;
 - claim at most one current attempt per key;
 - resolve the declared owner and optional workflow;
-- validate and apply one result/action batch atomically;
+- validate and apply one result/task-change batch atomically;
 - reject stale results; and
 - repair bounded delivery and execution state after restart.
 
@@ -113,12 +219,14 @@ owner.
 
 A workflow may explicitly return `needs-owner` after exhausting its bounded,
 safe moves. That creates at most one sequential owner attempt for the same
-task. Cross-owner work is a typed App delegation/escalation, not
+task. Cross-owner work is a typed Runtime-managed task dependency, not
 `needs-owner`.
 
 ## Result contract
 
-The SDK schema and runtime admission use one result shape:
+The SDK schema and runtime admission use one result shape. The current SDK
+field and type are named `actions` and `TaskAction`; conceptually these are
+task changes, not App actions or human commands:
 
 ```ts
 type HandlerResult =
@@ -146,7 +254,7 @@ Creating follow-up work does not complete the current task. Required
 decomposition creates direct children and returns `waiting`; independent later
 work may be a successor only after the current outcome is actually accepted.
 
-Actions and the result apply in one transaction. Races against a newer
+Task changes and the result apply in one transaction. Races against a newer
 generation or already-advanced target are treated as stale and retried from
 current state, not converted into partial mutation or misleading attention.
 
@@ -187,14 +295,34 @@ storage or invoke an agent. The generic Condition tracker atomically updates
 the Condition, stores the triggering event, and returns the affected task IDs
 to enqueue.
 
+## Event input and checkpoints
+
+Each task retains ordered links to actionable events until an accepted
+reconciliation has observed them. Claiming a task moves only a bounded prefix
+into the attempt; it does not acknowledge that prefix. Result admission records
+the attempt result and advances the task event checkpoint atomically. Events
+linked during the attempt remain pending, so both `maintain` and `achieve`
+tasks run again before becoming quiet or terminal.
+
+A newer desired task generation may explicitly supersede pending links fenced
+to the older specification. Their causal events remain in the event store and
+the generation transition records the supersession; they are not replayed as
+if they targeted the new specification.
+
+The durable event store remains the event authority. Task state keeps the
+event identities, routing relationship, and a bounded snapshot needed for
+recovery; it does not copy an unbounded event log. A missing referenced event
+is an explicit integrity error, never an empty trigger. Synthetic recovery or
+controller reasons are attempt metadata rather than fabricated domain events.
+
 `reviewAfterMs` is a bounded supervision checkpoint, never proof that the
 Condition became true. Repeated unchanged reviews are capped; after the final
 review the task remains on its exact event-driven wait rather than becoming a
 polling loop. Provider observation time and monotonic source revision, when
 available, prevent known older facts from replacing newer Condition state.
 
-Human approval or action uses an explicit May/human request plus a Condition
-on its exact disposition. The reply becomes evidence for the next attempt; it
+Human approval or action uses an explicit May task dependency or a Condition on
+its exact accepted result. The reply becomes evidence for the next attempt; it
 does not itself prove the task outcome.
 
 ## Modes and phases
@@ -221,7 +349,7 @@ containment only. Dependencies provide ordering. All use the same App
 controller.
 
 ```text
-parent returns waiting + child actions
+parent returns waiting + child task changes
   -> parent wait and children commit atomically
   -> children run within normal App capacity
   -> meaningful child transition stores a parent trigger
@@ -232,6 +360,13 @@ The parent consumes no attempt slot while waiting. Only live direct children
 form its decomposition frontier. Child completion does not automatically prove
 parent completion; the parent judges aggregate acceptance. Missing parents,
 self-parenting, and cycles are rejected.
+
+Cross-App work uses the same rule without placing a foreign Task in the local
+tree. A waiting result declares a typed child App dependency. Runtime admits a
+deterministic child request, represents the wait as an exact Condition, and
+wakes the parent with the accepted child result Event. The target App owns and
+reconciles its Task; the requesting App owns only its parent Task and final
+acceptance decision.
 
 ## Outputs and workspaces
 
@@ -286,11 +421,12 @@ Tests and audits must prove:
 2. Queue entries contain IDs and stale readers claim current canonical state.
 3. At most one current attempt exists per `(appId, taskId)`.
 4. Condition update and trigger persistence are atomic.
-5. Result/action admission is atomic and stale results apply nothing.
+5. Result/task-change admission is atomic and stale results apply nothing.
 6. Completion has an explicit acceptance basis.
 7. Parent waits and child creation commit together; meaningful child changes
    durably wake the same parent.
 8. Pause/restart/pressure retain work without inventing another attempt.
 9. Direct owner and workflow-nested sessions remain correlated to the current
    task generation and obsolete sessions cannot complete it.
-10. Apps without desired-state reconciliation work without this engine.
+10. Every App-owned execution uses this engine; only direct non-App execution
+    such as CLI experiments and Gym may run without an App task.

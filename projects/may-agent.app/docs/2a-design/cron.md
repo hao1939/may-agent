@@ -108,9 +108,10 @@ desired task work:
 }
 ```
 
-The shared event runtime persists the fact. A declared task subscription may
-resolve it to `TaskIntent`; otherwise it remains observation only. No inbox item
-or owner session is manufactured. Event schedules do not replay missed facts.
+The shared event runtime persists the fact. A declared input translator may
+resolve it to `TaskIntent`, or an exact target may wake its task; otherwise it
+remains observation only. No caller request or owner session is manufactured.
+Event schedules do not replay missed facts.
 
 ## Observers
 
@@ -178,14 +179,14 @@ one execution authority for each duty.
 | Timed responsibility                                          | Canonical declaration                             |
 | ------------------------------------------------------------- | ------------------------------------------------- |
 | Every due slot requires independent judgment/result           | Input schedule                                    |
-| Time wakes one standing desired outcome                       | Event schedule -> task subscription               |
+| Time wakes one standing desired outcome                       | Event schedule -> exact task/Condition            |
 | Time publishes a diagnostic/lifecycle fact                    | Event schedule -> observation only                |
 | Time must first read an external provider                     | Observer -> facts                                 |
 | Time inspects Runtime-owned ledgers or repairs host mechanics | Host-private scheduled maintenance handler        |
 | Time repairs generic runtime mechanics                        | Internal runtime maintenance, not an App schedule |
 
 A scheduled “owner request” that deterministically selects the same standing
-task is a task-wake event, not an inbox input. Conversely, a real periodic
+task is a task-wake event, not caller input. Conversely, a real periodic
 review whose result must be tracked independently is an input schedule even if
 the source is the system rather than a human.
 
@@ -257,8 +258,8 @@ normal App/task/observation classification; it is not a second scheduler.
 
 - One shared scheduler owns timer mechanics for all canonical Apps.
 - Every App schedule has exactly one input or event destination.
-- Input schedules create correlated inbox obligations; event schedules create
-  facts and no callerless inbox items.
+- Input schedules create correlated requests and tasks; event schedules create
+  facts and no callerless requests.
 - Observers return facts and never launch model work or mutate durable state.
 - Timer/task coalescing happens only after current intent and trigger evidence
   are durable.

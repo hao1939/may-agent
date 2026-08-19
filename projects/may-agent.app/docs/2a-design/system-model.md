@@ -1,29 +1,92 @@
 # System Model
 
 **Design status:** Accepted.
-**Implementation status:** Implemented.
+**Implementation status:** The single App work path is implemented: every
+installed App resolves admitted input to a Task, and only Task reconciliation
+executes App policy. Scoped Task list/get reads are implemented in the SDK,
+agent tool, control socket, and HTTP adapter.
 
-May-agent has two primary concepts:
+May-agent has one App work object, one durable source of change, and three
+responsibility areas:
 
 ```text
-Host = persist, schedule, run, recover, deliver
-App  = define meaning, policy, desired outcomes, acceptance
+Task    = the durable desired and observed App work
+Event   = durable new information that may create or wake that work
+Infra   = ingress, persistence, scheduling, capacity, and delivery
+Runtime = task lifecycle, execution, scoped capabilities, and recovery
+App     = resolve inputs to tasks and reconcile those tasks
 ```
 
-Everything else is either data owned by one side or code used to do one of
-those jobs. “Runtime” means the Host implementation. “SDK” means the typed
-boundary between an App and the Host. Neither is a third owner.
+Infra and Runtime are responsibility boundaries inside the Host, not separately
+discovered services or additional domain owners. The SDK is the typed boundary
+through which a task attempt receives Runtime capabilities.
 
-## Words to remember
+The practical test is deliberately plain:
 
-Only **Host** and **App** are architectural concepts. Five ordinary record
-names are useful when reading code:
+| Part    | One question it answers                                                       |
+| ------- | ----------------------------------------------------------------------------- |
+| Event   | What meaningful new information arrived?                                      |
+| Infra   | How does input, state, time, capacity, and output move?                       |
+| Runtime | Which tasks does the event wake, which attempt runs, and what did it observe? |
+| App     | Given this task and its unobserved events, what should happen next?           |
+
+The App/Runtime boundary is one conceptual function:
+
+```text
+reconcile(task context + bounded capabilities) -> task result
+```
+
+Everything before that call is admission or preparation. Everything after it
+is validation, persistence, wake scheduling, recovery, or delivery.
+
+## Public mental model
+
+The ordinary interaction model has four nouns:
+
+- an **App** owns a responsibility;
+- an **event** is durable new information that can create or wake work;
+- a **request** is the Host's record that a caller still needs a result;
+- a **task** is the work an App reconciles toward an accepted outcome.
+
+```text
+human or caller
+  -> Host event and request
+  -> App task
+  -> event-driven bounded reconciliation attempts
+  -> accepted result
+  -> Host projection to the caller
+```
+
+The request remains the caller-facing identity. The task is the App-facing work
+identity. Simple work converges in one attempt; hard or recurring work uses the
+same loop for as many bounded attempts as needed. A request may attach to an
+existing stable task, and a task may outlive any one caller request.
+
+Two common words are deliberately not resources:
+
+- an **action** is a named, schema-validated request entrypoint; invoking it
+  creates an App request and the action has no status or lifecycle of its own;
+- a **task tree** is a read-only presentation of tasks using their parent and
+  dependency relationships; it does not own, schedule, or mutate work.
+
+Humans normally talk to May or invoke a named App command and then track the
+request. They inspect a related task only when they need progress or diagnostic
+detail.
+
+## Implementation words
+
+Infra, Runtime, and App explain responsibility. Four ordinary record names are
+useful when reading code:
 
 - an **event** is input or change that durably entered the Host;
-- a **request** is an input that still needs a result;
-- a **task** is an outcome that may take several tries;
-- a **fact** is something that happened; and
+- a **request** correlates a caller that still needs a result;
+- a **task** is all App work, whether it takes one attempt or several;
 - an **attempt** is one agent or workflow run.
+
+“Request” and “fact” can also describe what an Event means. They are not two
+more transport types: a request Event asks for responsibility; a fact Event
+reports something that happened. Only a caller request becomes a separate
+mutable correlation record because the Host must later attach its result.
 
 These are stored records, not services or layers. Inbox, queue, lease,
 controller, reconciler, session, trace, and projection are implementation
@@ -34,17 +97,19 @@ owns the work.
 
 ```text
 event
-  -> Host stores it
+  -> Host stores it before routing
   -> event type selects an explicit route
-  -> Host stores any resulting request, task, or control operation
-  -> App says what domain work means
-  -> Host runs one bounded attempt
-  -> App accepts, waits, delegates, or asks for another attempt
+  -> Host stores any caller request or control operation
+  -> App input resolves one task, or the event wakes an exact existing task
+  -> Runtime durably links the event to that task
+  -> Host runs one bounded reconciliation attempt with the task's unobserved events
+  -> App converges, waits, decomposes, or asks for another attempt
+  -> Runtime atomically accepts the result and advances the event checkpoint
   -> Host recovers unfinished work and delivers the result
 ```
 
 The Host never invents domain work. An App never implements persistence,
-queues, retries, leases, recovery, or delivery.
+queues, retries, leases, recovery, request tracking, or delivery.
 
 ## Host
 
@@ -69,25 +134,25 @@ domain policy or start App-owned model work directly.
 An App owns meaning:
 
 - the address and input schema for its requests;
-- which facts matter and how they become typed inputs or task intent;
-- which simple requests can complete without model judgment;
+- which facts matter and how they become typed inputs or exact wakes;
+- how an admitted input identifies desired task state;
 - which owner, agent, or workflow performs a bounded attempt;
-- the desired outcome and acceptance criteria for durable tasks;
-- what evidence is enough to finish, wait, delegate, or continue; and
+- the desired outcome and acceptance criteria for tasks;
+- what evidence is enough to converge, wait, decompose, or continue; and
 - domain-specific reads, actions, and observations.
 
 An App is ordinary source code plus its domain files. It does not own a daemon,
 database, event loop, scheduler, or recovery worker.
 
-## One try or several tries
+An App becomes more capable by learning better task policy, workflows,
+acceptance checks, and bounded capability calls. A new capability lets one task
+attempt do something new; it does not give the App a new lifecycle, worker,
+store, retry loop, scheduler, or delivery path. This keeps capability growth
+independent from architectural complexity.
 
-A simple request should finish directly:
+## One task loop
 
-```text
-request -> pure App decision or one owner attempt -> result
-```
-
-Use a task only when the desired outcome must survive more than one try:
+Every App uses the same loop:
 
 ```text
 desired outcome
@@ -96,23 +161,28 @@ desired outcome
   -> accept as converged, wait for a named fact, or try again later
 ```
 
-The task is durable; the agent session and workflow run are not. A restart may
-create a new attempt, but it must keep the same request or task identity.
+For simple work, the first observation and attempt converge immediately. The
+task is still the same resource and leaves a compact receipt. The agent session
+and workflow run are bounded attempts, not alternate work. A restart may create
+a new attempt, but it keeps the same request and task identities.
 
 ## Stored records
 
-| Record | Meaning | Owner |
-| --- | --- | --- |
-| Event | Input or change that crossed the Host boundary | Host |
-| App request | One addressed input still owed a correlated result | Host storage, App policy |
-| Task | One desired outcome that may need repeated attempts | Host storage, App policy |
-| Fact | Something observed that may wake declared work | Host storage |
-| Attempt | One bounded agent or workflow execution | Host |
-| Result | The App's accepted outcome and evidence | App |
-| Delivery | Proof that a result was sent or observed | Host |
+| Record      | Meaning                                              | Owner                    |
+| ----------- | ---------------------------------------------------- | ------------------------ |
+| Event       | Durable new information that may create or wake work | Host                     |
+| App request | One caller still owed a correlated result            | Host                     |
+| Task        | One desired outcome reconciled by an App             | Host storage, App policy |
+| Attempt     | One bounded agent or workflow execution              | Host                     |
+| Result      | Accepted status, caller response, and evidence       | App                      |
+| Delivery    | Optional transport evidence for an external send     | Host                     |
 
 Queues, leases, traces, metrics, sessions, and projections support these
 records. They never become alternate work owners.
+
+The App inbox is the Host's request-correlation store. It does not execute a
+second App work loop or gate completion on a transport receipt. `/work` and equivalent human views
+list May requests, not tasks or queue entries.
 
 `Conversation may:primary` is one such projection. It reconstructs shared human
 context and work views from messages, May App requests, dependencies, and
@@ -126,7 +196,7 @@ request's semantic completion.
 - A human `conversation.message.created` event adds shared May Conversation
   context and creates one fenced May App request.
 - An addressed `app.input.requested` event creates one durable App request.
-- A declared subscription translates a fact into an App request or task intent.
+- A declared subscription translates a fact into typed input and then one task.
 - An exact task target wakes only that task.
 - A schedule creates an input or publishes a fact.
 - An observer reads external state and returns facts.
@@ -136,11 +206,28 @@ Record-only facts remain valid with no consumer. Required event types must have
 one semantic route that durably accepts responsibility. The Host never guesses
 an owner or starts an agent because an event was not handled.
 
-## Waiting and delegation
+## Waiting and cross-App dependencies
 
-An App request may depend on one child App request, task, or session.
-The Host stores that link before starting the child and wakes the parent when
-the exact dependency finishes.
+A task result may request a typed child App outcome with a stable local ID,
+target App, and typed input. Runtime derives one deterministic child request
+ID, publishes that request durably, and installs an exact completion Condition
+on the parent. The child App resolves its input to its own Task. Its accepted
+result returns as an ordinary Event containing summary, response, and evidence;
+the parent reconciles again and decides its own outcome.
+
+Dependency completion is one durable Event, not a private callback. The Host
+may use that same Event to wake a correlated request and every exact matching
+Task Condition. One consumer must not stop the Event from reaching the others.
+
+Retries reuse the same child request ID. If the process stops between request
+admission and parent deferral, attempt recovery repeats the idempotent command;
+if the child finished before the Condition was installed, persisted-event
+replay closes the race. No App polls another App's store or owns a second loop.
+
+An accepted task result separates `summary` from `response`. `summary` explains
+the task state to operators and future attempts. `response` is the optional
+semantic answer owed to an addressed caller. Infra projects the response back
+to every linked request; delivery wording and receipts do not enter App policy.
 
 A task waits on named conditions derived from facts. Workflows do not sleep in
 the background or keep durable business state in local variables.

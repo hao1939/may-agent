@@ -13,6 +13,15 @@ socket shortcuts remain compatibility ingress.
 Human surfaces are adapters over system resources. They own interaction and
 presentation, not work state or meaning.
 
+The human vocabulary is deliberately small:
+
+- talk to May or invoke a plain App command;
+- track the resulting work item, which is an App request;
+- open a related task only for progress or diagnostic detail.
+
+Humans do not operate action lifecycles or task trees. Commands are typed
+request entrypoints, and a tree is only one possible task layout.
+
 For May conversation:
 
 ```text
@@ -47,11 +56,11 @@ Required data is:
 - the raw human `text`;
 - optional `replyTo` and channel delivery metadata.
 
-The Host durably admits one fenced May App inbox turn from the human message.
-May decides during that turn whether the message starts new work or continues
-one referenced active request. Retrying the same adapter message returns the
-original receipt. Opening a surface, reconnecting, reading status, or rendering
-a view creates no human work.
+The Host durably admits one fenced May request and task from the human message.
+May decides during reconciliation whether it starts independent work or returns
+a typed revision/dependency for represented active work. Retrying the same
+adapter message returns the original receipt. Opening a surface, reconnecting,
+reading status, or rendering a view creates no human work.
 
 State-changing controls use their existing typed events, such as
 `session.steer.requested`, `session.cancel.requested`, project App actions, and
@@ -120,29 +129,33 @@ Work views are projections, not objects with another lifecycle:
 - completed work includes its bounded result;
 - one exact work read includes that request's full result.
 
-A human message is conversation input, not automatically a new commitment. If
-May determines that it is feedback about an active request represented in the
-bounded Conversation, May may apply one ordinary disposition to that request in
-the same owner turn. The Host fences the target to the same App and
-Conversation. The new message remains durable context, but it is linked to the
-existing request and omitted from `/work` and `/work all` as a separate item.
+If a request depends on a task, work detail may show the task ID, outcome,
+phase, summary, and a link to its exact task view. The task does not replace the
+work item and must not appear as a second human commitment.
+
+A human message is Conversation input and deterministically resolves to a small
+May task. If May determines during reconciliation that it is feedback about
+active work represented in the bounded Conversation, May returns a typed
+revision, wake, or dependency for that work. The Host fences the target to the
+same App and Conversation. The new message remains durable context, but it may
+be presented as feedback rather than a second independent `/work` item.
 
 ```text
-human feedback + bounded Conversation
-  -> May selects referenced request
-  -> Host fences that unfinished request
-  -> complete, delegate, or analyze it now
-  -> keep the original request ID
+human feedback -> deterministic May input task
+  -> reconciliation reads bounded Conversation
+  -> May selects referenced task
+  -> Runtime fences and applies the typed revision/wake/dependency
+  -> keep caller correlation linked to the input task and accepted result
 ```
 
-This is not a selected-work mode and does not add another May cycle. A later
-reconciliation is needed only when the disposition attaches genuinely
-asynchronous work. Sessions, children, tasks, and analyses may be replaced;
-the original human request remains the commitment.
+This is not a selected-work mode and does not add another work loop. A later
+reconciliation is needed only when the task remains unconverged. Sessions,
+children, and analyses may be replaced; the task remains the work identity and
+the original human request remains caller correlation.
 
-The human request remains the work identity. A session, task, child App, or
-analysis is only a resource used to fulfil it and may be replaced across
-attempts. Each projected item therefore carries only the current bounded
+The task remains the work identity. A request correlates the human and result;
+a session, child App task, or analysis is a resource used to fulfil it and may
+be replaced across attempts. Each projected item therefore carries the current bounded
 links: its most recent `executor`, when known, and exact `dependency`, when it
 is waiting. Historical attempts remain discoverable by `requestId`; they are
 not copied into Conversation.
@@ -218,15 +231,15 @@ conversation adapters, and do not require this Conversation contract.
 
 ## Presentation and restart
 
-- Inbound human acceptance requires durable App admission.
-- Persisting May's result completes work and makes the result a shared
+- Inbound human acceptance requires durable request-to-task admission.
+- Persisting the accepted May task result completes its request and makes the result a shared
   Conversation message immediately.
 - Console and Telegram listen for `conversation.updated`, reread the resource,
   and render unseen messages independently. Their acknowledgements do not feed
   back into work state.
 - Provider delivery failures may be inspected operationally, but are not shown
   as May's answer and do not change `/work` status.
-- Restart reconstructs the Conversation from durable events, App inbox items,
+- Restart reconstructs the Conversation from durable events, requests, tasks,
   dependencies, and results.
 - Correctness never depends on a mutable persistent May chat session or an
   adapter receipt.

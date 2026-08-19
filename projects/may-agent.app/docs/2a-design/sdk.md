@@ -1,17 +1,20 @@
 # May-Agent SDK
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. The package contains only stable App,
-task, bounded workflow/guard, and testing authoring contracts.
+**Implementation status:** Every current App uses `task(input)` and Task
+reconciliation, and the request-disposition surface has been removed. The
+shared bounded Task collection is exposed as `read.tasks.list/get`; the former
+exact `read.task(id)` call remains only as a compatibility alias.
 
 `@may-agent/sdk` is the narrow boundary between an App and the Host. It
 describes meaning, inputs, results, facts, and desired work; it does not expose
 Host storage or execution mechanics.
 
 ```text
-App definition -> pure policy and capability declarations
-workflow       -> bounded input + scoped capabilities -> ExecutionResult
-Host           -> admission, storage, delivery, execution, and recovery
+App definition -> input-to-task policy + task reconciliation
+workflow       -> one bounded task step using scoped capabilities
+Runtime        -> task lifecycle, execution, reads, retries, and recovery
+Host           -> ingress, persistence, scheduling, capacity, and delivery
 ```
 
 See [Agent App Contract](agent-app.md) and
@@ -22,25 +25,26 @@ See [Agent App Contract](agent-app.md) and
 The root package exports:
 
 - `defineApp`, `Type`, and App declaration types;
-- `AppInput`, `AppRequest`, `AppDisposition`, and `AppResult`;
+- `AppInput`, `TaskIntent`, task reconciliation results, and `AppResult`;
 - `AppEvent`, `EventSelector`, and pure selector matching;
 - input/event schedules, subscriptions, observation-only selectors, observers,
   actions, and workspace policy;
-- optional task policy, `TaskIntent`, `TaskAction`, Conditions, reconciliation
-  and verification results; and
+- task policy, `TaskAction`, Conditions, reconciliation and verification
+  results; and
 - bounded workflow, read, logging, metric, and execution contracts.
 
 It does not export raw SQL, task-state files and locks, scheduler handles,
-global runtime paths, queue/lease/recovery APIs, prompt packets, or a generic
-owner-inbox/event handler context.
+global runtime paths, queue/lease/recovery APIs, prompt packets, request
+dispositions, or a generic event handler context.
 
 The Host's generic `publish/get/subscribe` interface is also not an SDK
-capability. Apps keep narrow typed operations:
+capability. Apps use only narrow typed capabilities during a task attempt:
 
-- return a `delegate` disposition and let the Host publish the child App input;
-- return facts from observers;
-- use fact-only `ctx.events.emit` inside a bounded workflow; and
-- return results/intents for Host admission.
+- call an agent or bounded workflow;
+- read scoped resources;
+- request a typed cross-App dependency when the outcome crosses ownership;
+- emit facts or record metrics; and
+- return the task's observed state, evidence, and desired changes.
 
 All reach the same persistence path after the App boundary accepts them, but
 App code cannot forge provenance, control sessions, or publish arbitrary
@@ -58,36 +62,43 @@ defineApp({
   version: 1,
   owner,
   inputSchema,
-  route,
+  task,
   subscriptions,
   observations,
-  inbox,
   schedules,
   observers,
   actions,
   workspace,
-  tasks,
 });
 ```
 
 The declaration is data and pure policy. Importing it cannot start sessions,
 register global handlers, write storage, or inspect runtime state.
 
-### Request policy
+### Task resolution
 
-`route(request)` receives an immutable author-visible `AppRequest` and returns
-`complete`, `delegate`, `task`, or `null`. `null` asks the App owner for one
-bounded judgment. The request exposes typed input and a bounded dependency
-observation, never its database row, claim, lease, channel, or delivery fields.
+`task(input)` is pure policy. It receives one validated App input and returns
+the stable existing task reference or desired `TaskIntent` that owns the work.
+The Runtime persists the link before waking the task. The App never handles the
+Host request record, delivery state, claim, lease, channel, or retry metadata.
 
-### Fact policy
+The resolver must not call an agent, inspect mutable context, or guess semantic
+references. When free-form input such as human feedback needs judgment, it
+creates a stable input task first. That task's ordinary reconciliation may then
+return a typed revision, wake, or dependency for the referenced work. Exact
+structured task references may wake their task directly.
 
-A top-level subscription combines a stable ID, selector, and pure
-`toInput(event)` translator. It explicitly creates a correlated App request.
+This rule has no fast-path exception. A simple input resolves to a task whose
+first bounded attempt can converge immediately. A hard input resolves to a task
+that may require later attempts, Conditions, child tasks, or owner judgment.
 
-`tasks.subscriptions` combines selectors with pure `resolve(event)` policy. It
-returns the latest `TaskIntent` or `null`; the Host persists it before waking
-the task reconciler.
+### Fact Event policy
+
+A subscription combines a stable ID, selector, and pure `toInput(event)`
+translator. The translated input uses the same `task(input)` resolver as every
+other App input. A fact that already identifies a task or satisfies one of its
+Conditions wakes that task directly; it does not pass through a second
+subscription or execution model.
 
 No SDK callback receives a generic mutable event context. App policy cannot
 launch an agent or workflow while deciding how a fact routes.
@@ -96,13 +107,13 @@ launch an agent or workflow while deciding how a fact routes.
 
 An App schedule contains exactly one of:
 
-- `input`, which the Host turns into a correlated `app.input.requested` event
-  with optional catch-up; or
+- `input`, which the Host admits through the same input-to-task path, with
+  optional catch-up; or
 - `event`, for a fact published by the Host scheduler.
 
-An observer receives only `ObserverContext` and returns facts for the host to
+An observer receives only `ObserverContext` and returns facts for the Host to
 publish after a successful run. An action validates parameters and translates
-them to App input.
+them to App input. Neither can run App work directly.
 
 ## Workflow contract
 
@@ -111,7 +122,7 @@ App-owned workflows receive one typed input and scoped capabilities:
 ```ts
 type WorkflowContext<TInput> = {
   input: TInput;
-  reconciliation?: TaskReconciliationContext<TInput>;
+  reconciliation: TaskReconciliationContext<TInput>;
   read: AppRead;
   agents: {
     call(agent: string, task: string): Promise<ExecutionResult>;
@@ -135,29 +146,51 @@ type WorkflowContext<TInput> = {
 The workflow input is App-owned. The Host carries it across the execution
 boundary without parsing prompts or reconstructing it from global task state.
 
-When a task owns the attempt, `reconciliation` supplies bounded current facts:
+For App-owned work, `reconciliation` supplies bounded current facts:
 App/task identity, generation, owner, mode, outcome, acceptance, typed input,
 live/completed child views, a bounded snapshot of other live App tasks for
-frontier-health review, and the exact triggering event. Snapshot entries carry
+frontier-health review, and the ordered unobserved event batch that drove this
+attempt. Snapshot entries carry
 typed status, category, readiness, Conditions, and bounded attempt evidence;
 the current task is omitted, the list is capped at 64, and `truncated` makes an
 incomplete view explicit. This is not a listing API and does not expose the
-task tree, mutation handles, queue, or task files.
+task tree, mutation handles, queue, or task files. The field remains optional
+in the current compatibility type only so direct non-App workflow execution can
+reuse the bounded workflow runner; an App task attempt must always receive it.
 
-`read` contains exact bounded lookups only:
+The event batch has `items`, `throughEventId`, and `truncated`. `items` are
+ordered by durable event identity. `throughEventId` is the highest event in the
+presented batch, not a caller-controlled acknowledgment. Runtime advances the
+task checkpoint only when it accepts the reconciliation result. A failed,
+interrupted, rejected, or stale result observes nothing. Compatibility may
+also expose the final item as singular `trigger` while Apps migrate, but new
+App code reads `events`.
+
+`read` contains exact bounded projections. Ordinary resources use one
+collection shape: bounded `list` plus exact `get`. The runtime binds task reads
+to the current App:
 
 ```ts
 type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
-  task(taskId: string): Promise<TaskView | null>;
+  tasks: {
+    list(options?: TaskListOptions): Promise<TaskPage>;
+    get(taskId: string): Promise<TaskView | null>;
+  };
   execution(executionId: string): Promise<ExecutionView | null>;
   metric(metricId: string): Promise<MetricView | null>;
 };
 ```
 
-There is no unrestricted list/query surface and no database escape hatch.
-Genuine new read requirements become narrow typed projections with explicit
-scope and tests.
+The current shared `TaskView` contains `id`, `status`, `generation`, `outcome`,
+and bounded summary, response, and evidence fields. SDK, HTTP, socket, and the
+agent tool return that same projection. The current `task(taskId)` method is a
+compatibility alias during migration.
+
+There is no unrestricted or cross-App query surface and no database escape
+hatch. Lists use typed filters, hard page caps, and opaque continuation tokens.
+Genuine new read requirements become narrow resource projections with explicit
+scope and shared contract tests.
 
 ### Host-private maintenance is not an SDK extension
 
@@ -187,12 +220,12 @@ type ExecutionResult<T = unknown> = {
 };
 ```
 
-`done` and `blocked` end the current bounded workflow run. They do not complete
-an App request or task by themselves. The calling App/task boundary validates
-and admits the result.
+`done` and `blocked` end the current bounded workflow run. They do not mutate or
+complete a task by themselves. The Runtime validates the result against the
+owning task and App acceptance policy before admitting it.
 
-A durable wait is represented by an App dependency or task Condition, not by
-holding a workflow open or resuming it as a hidden controller.
+A durable wait is represented by a task dependency or Condition, not by holding
+a workflow open or resuming it as a hidden controller.
 
 ## Task contracts
 
@@ -216,19 +249,45 @@ type TaskIntent = {
 ```
 
 One fenced reconciliation attempt returns a typed state, summary, evidence,
-optional desired task actions, and Conditions. Runtime admission validates
-generation, action scope, Conditions, and verification evidence before any
-mutation becomes authoritative.
+optional caller-facing response, task changes, Conditions, and typed cross-App
+dependencies. The
+current compatibility field and type are `actions` and `TaskAction`; they mean
+task changes, not App commands or a separate action lifecycle. Runtime
+admission validates generation, change scope, Conditions, dependencies, and
+verification evidence before any mutation becomes authoritative.
 
-Apps may supply pure action validation and bounded verification policy. They do
-not save task state, acquire locks, edit projections, or manufacture attempts.
+`summary` describes the task decision for operators and later reconciliation.
+`response` is optional semantic content for callers linked to the task. Runtime
+stores it with the accepted task result and Infra projects it to those requests;
+an App never names console, Telegram, web, or delivery receipts in the result.
 
-## Facts and metrics
+A cross-App dependency is valid only with `state: "waiting"`:
 
-`ctx.events.emit` publishes facts only. It cannot address an App request,
-attach a task, or directly schedule another workflow. If a published fact is
-actionable, the destination App must declare a subscription, task subscription,
-or exact target.
+```ts
+type TaskAppDependency = {
+  id: string; // stable within this task generation
+  appId: string;
+  input: AppInput;
+};
+```
+
+Runtime derives the child request ID from the parent App, task generation,
+dependency ID, target App, and input. It admits the request idempotently and
+adds the exact completion Condition. The completion Event is part of a later
+`reconciliation.events` batch, including the child summary, optional response,
+and evidence. Changing target or input meaning requires a new dependency ID or
+parent task generation; there is no imperative `delegate()` capability.
+
+Apps may supply pure task-change validation and bounded verification policy.
+They do not save task state, acquire locks, edit projections, or manufacture
+attempts.
+
+## Fact Events and metrics
+
+`ctx.events.emit` publishes facts only. It cannot attach a task or directly
+schedule another workflow. If a published fact is actionable, the destination
+App must translate it to input, or the fact must identify an exact task or
+Condition to wake.
 
 `ctx.metrics.record` records a domain sample. Thresholding, hysteresis,
 deduplication, storage, and Host health metrics belong to the Host. A
@@ -255,6 +314,7 @@ serve different boundaries:
 | Run a reusable bounded workflow                | workflow tool                | `ctx.workflows.run`        |
 | Publish a fact                                 | event tool where authorized  | `ctx.events.emit`          |
 | Record a domain sample                         | metric tool where authorized | `ctx.metrics.record`       |
+| Read this App's Tasks                          | `tasks` list/get              | `ctx.read.tasks.list/get`  |
 | Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |
 
 Background forks, session steering, cancellation, process control, and human
@@ -263,8 +323,8 @@ are not generic workflow SDK methods.
 
 ## Extension rule
 
-Extend the SDK only when an App responsibility cannot be expressed through the
-existing semantic contracts:
+Extend the SDK only when a task cannot be reconciled through the existing
+semantic contracts:
 
 1. identify the exact App-owned question;
 2. add the narrowest typed capability or projection answering it;
@@ -272,23 +332,28 @@ existing semantic contracts:
 4. prove scope, restart behavior, and idempotency; and
 5. avoid generic list, query, command, path, or database escape hatches.
 
-App growth should normally add schemas, pure policy, observers, workflows, or
-domain projections—not runtime APIs.
+App growth should normally add input schemas, task policy, acceptance rules,
+workflows, or domain projections—not another lifecycle. A capability may make
+one task attempt more capable; it must not give the App storage ownership,
+background loops, scheduling, retries, recovery, or delivery mechanics.
 
 The SDK does not expose `defineService`, a service locator, or generic
 `provides`/`inject` composition. App-local pure code is an ordinary module
-import. Cross-App work uses typed delegation, and cross-App facts use declared
-subscriptions. Runtime subsystem composition remains host-private.
+import. Cross-App work is requested as a typed Runtime-owned dependency in the
+task result, and cross-App facts use declared subscriptions. Runtime subsystem
+composition remains Host-private.
 
 ## Integrity checklist
 
 - The root package is the only authoring entry point.
 - App definitions are pure to import and validate.
+- Every actionable App input resolves to or wakes exactly one task.
+- Task reconciliation is the only App work loop.
 - Workflow input is typed and never reconstructed from prompt text.
 - Every capability is bounded to one semantic responsibility.
 - Reads are exact typed projections; writes are expressed as typed results or
   facts.
-- Execution results are bounded claims admitted by the owning App/task.
+- Execution results are bounded claims admitted against the owning task.
 - No App/workflow receives raw SQL, global paths, task storage, scheduler,
   queue, lease, delivery, or recovery access.
 - Host-private maintenance handlers remain outside the public SDK and cannot

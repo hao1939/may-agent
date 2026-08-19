@@ -1,14 +1,18 @@
 # Architecture
 
 **Design status:** Accepted.
-**Implementation status:** Implemented.
+**Implementation status:** The canonical path is implemented for every current
+App. Request storage correlates and delivers Task results; it does not execute
+App policy. An unused compatibility implementation for older App definitions
+remains to be removed.
 
 Read [system-model.md](system-model.md) first. The architecture follows one
 split:
 
 ```text
-Host = persist, schedule, run, recover, deliver
-App  = define meaning, policy, desired outcomes, acceptance
+Infra   = ingress, persistence, scheduling, capacity, and delivery
+Runtime = task lifecycle, execution, scoped capabilities, and recovery
+App     = resolve inputs to tasks and reconcile those tasks
 ```
 
 ## Composition
@@ -19,10 +23,10 @@ generation of Apps, and wires the Host parts directly.
 ```text
 app-runtime.ts
   -> App registry
-  -> request store and workers
+  -> request correlation and delivery store
   -> fact store and declared routes
   -> scheduler and observers
-  -> optional task workers
+  -> task controller
   -> bounded agent/workflow execution
   -> delivery adapters
 ```
@@ -53,19 +57,20 @@ projects/<id>.app/
 `app.ts` is the only App manifest. There is no parallel inbox manifest,
 ProjectApp manifest, App-specific daemon, or App-specific scheduler.
 
-## Request path
+## One App work path
 
 ```text
 input
-  -> Host validates and stores an App request
-  -> App route completes, delegates, or attaches a task
-  -> Host runs bounded work when needed
-  -> App accepts the result
-  -> Host stores and delivers it
+  -> Host validates ingress and stores caller correlation when needed
+  -> Runtime resolves, creates, revises, or wakes one task
+  -> App reconciles that task in one bounded attempt
+  -> Runtime validates and persists task state
+  -> Host schedules another wake or delivers the accepted result
 ```
 
-The request remains the identity of the obligation. A session or trace can
-explain an attempt but cannot replace the request.
+The request remains the caller's correlation and delivery identity. The task
+is the App's work identity. A session or trace can explain an attempt but
+cannot replace either record.
 
 ## Task path
 
@@ -89,10 +94,10 @@ workflow absent  = run that owner once
 Missing workflows become visible attention. The Host does not silently choose
 another owner.
 
-## Facts and schedules
+## Events and schedules
 
-Facts are stored observations. They become work only through an App's declared
-subscription or exact task target.
+Fact Events are stored observations. They become work only through an App's
+declared input translator, exact task target, or matching Task Condition.
 
 Schedules either admit an App input or publish a fact. Observers read external
 state and publish facts. Neither starts an agent directly.
@@ -106,9 +111,8 @@ or mutate App task state.
 All agent and workflow calls use one bounded execution implementation. Direct
 CLI and Gym calls reuse it without starting App hosting.
 
-One `HostCapacity` object limits App request owner runs and task attempts.
-Request and task workers use it directly; each App may declare a smaller local
-limit.
+One `HostCapacity` object limits task attempts. Each App may declare a smaller
+local limit. Request correlation and delivery do not run a second App worker.
 
 ## Startup and reload
 
@@ -117,7 +121,7 @@ open storage
   -> load and validate Apps
   -> prepare all routes
   -> publish one complete generation
-  -> recover retained requests and tasks
+  -> recover retained request correlations and tasks
   -> open external ingress
 ```
 
@@ -126,16 +130,16 @@ dispatch and preserves unfinished work.
 
 ## Code map
 
-| Responsibility | Code |
-| --- | --- |
-| Host composition | `src/app/app-runtime.ts`, `daemon*.ts` |
-| App contract | `packages/sdk/src/app.ts`, `task.ts` |
-| App loading | `src/app/app-registry.ts`, `src/app/loader/` |
-| Requests | `src/app/app-inbox-host.ts`, `app-inbox-runtime.ts` |
-| Tasks | `src/app/app-task-runtime.ts`, `app-task-controller.ts`, `app-task-store.ts` |
-| Facts | `src/app/event-bus.ts` |
-| Execution | `src/lib/agent-execution.ts`, `manager.ts`, workflow runner files |
-| Delivery and interfaces | `src/app/transport/`, `src/app/http/`, `packages/webui/` |
+| Responsibility                   | Code                                                                         |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| Host composition                 | `src/app/app-runtime.ts`, `daemon*.ts`                                       |
+| App contract                     | `packages/sdk/src/app.ts`, `task.ts`                                         |
+| App loading                      | `src/app/app-registry.ts`, `src/app/loader/`                                 |
+| Request correlation and delivery | `src/app/app-inbox-host.ts`, `app-inbox-runtime.ts`                          |
+| Tasks                            | `src/app/app-task-runtime.ts`, `app-task-controller.ts`, `app-task-store.ts` |
+| Events                           | `src/app/event-bus.ts`                                                       |
+| Execution                        | `src/lib/agent-execution.ts`, `manager.ts`, workflow runner files            |
+| Delivery and interfaces          | `src/app/transport/`, `src/app/http/`, `packages/webui/`                     |
 
 ## Dependency rule
 

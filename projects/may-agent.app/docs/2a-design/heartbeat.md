@@ -2,7 +2,7 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for standalone global-agent duties.
-Agent Apps use canonical schedules, observers, inbox inputs, and task wakes.
+Agent Apps use canonical schedules, observers, task inputs, and exact wakes.
 
 ## Purpose
 
@@ -24,21 +24,22 @@ or task.
 Use a standalone heartbeat only when an agent has a standing responsibility
 that no Agent App owns.
 
-| Owner type                 | Recurring review mechanism                                                |
-| -------------------------- | ------------------------------------------------------------------------- |
-| Standalone global agent    | `agents/<name>/workflows/<name>-heartbeat.ts`                             |
-| Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts`       |
-| Host mechanics             | Host-private schedule/handler; facts route any domain judgment |
+| Owner type                 | Recurring review mechanism                                          |
+| -------------------------- | ------------------------------------------------------------------- |
+| Standalone global agent    | `agents/<name>/workflows/<name>-heartbeat.ts`                       |
+| Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts` |
+| Host mechanics             | Host-private schedule/handler; facts route any domain judgment      |
 
 Do not run both a standalone heartbeat and an Agent App cadence for the same
 responsibility. App-local agents set `"heartbeat": false`. A workflow whose
 name contains `heartbeat` may remain as ordinary App-owned workflow code, but
-only a canonical App input/task route may invoke it autonomously.
+only the canonical App input-to-task path may invoke it autonomously.
 
 A host-private operations-health handler is not an App-local agent heartbeat.
 It performs bounded deterministic inspection of Runtime-owned ledgers and
 publishes evidence/facts. If owner judgment is required, the fact enters the
-canonical App route; the handler does not start or resume the owner directly.
+canonical App input-to-task path; the handler does not start or resume the owner
+directly.
 
 ## Work Context
 
@@ -86,11 +87,11 @@ schedule, not a standalone agent heartbeat or event-owned lifecycle:
 ```text
 app schedule
   -> correlated App input { reason: "scheduled-owner-review" }
-  -> inbox disposition or attached standing task
+  -> resolve or revise one standing task
 ```
 
 If time only refreshes deterministic desired work, the schedule instead emits
-one fact addressed to an exact task or selected by a task subscription. The
+one fact addressed to an exact task or matching Condition. The
 schedule never dispatches an owner session directly or creates another work
 authority.
 

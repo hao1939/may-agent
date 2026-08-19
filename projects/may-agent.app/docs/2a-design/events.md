@@ -1,22 +1,26 @@
-# Events, Delivery, And App Inboxes
+# Events, Delivery, And Task Admission
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. `publish`, `get`, and `subscribe` share
-the persistence-first event path; App input links to its durable request, and
-owner-event-pair work lifecycles are retired.
+**Implementation status:** Event persistence, request-to-Task admission, exact
+wakes, Condition wakes, and ordered per-attempt Event batches are implemented.
+All current Apps use that single path; request dispositions have been removed.
 
 ## Purpose
 
-An event records input or change that crossed the Host boundary. It may ask one
-route to accept responsibility or report a fact for zero or more consumers.
+An event records input or change that crossed the Host boundary. It may carry
+actionable App input or report a fact for zero or more consumers.
+
+Request and fact are semantic roles of this same Event interface, not separate
+transport or storage APIs. A caller request additionally creates a correlation
+record because a later result is owed; a fact does not create another resource.
 
 ```text
-publish(event) -> validate -> persist -> route -> persist linked responsibility -> receipt
+publish(event) -> validate -> persist -> resolve/wake task -> receipt
 ```
 
-The event ID is the root correlation identity. An event does not replace mutable
-work state: addressed work lives in an App request, durable desired work lives
-in a task, and exact controls link to their owning session or operation.
+The event ID is the root causal identity. An event does not replace mutable work
+state: an App task owns the work, a request correlates a caller and delivery,
+and exact controls link to their owning session or operation.
 
 Read [system-model.md](system-model.md) for the relationship among requests,
 tasks, facts, and execution; [agent-app.md](agent-app.md) for authoring routes;
@@ -55,8 +59,8 @@ inside the route chosen by `type`; it does not grant arbitrary control.
 task, session, delivery, or operation identity. Neither state means domain work
 is complete. `get` returns that bounded view again from durable state.
 
-App code still uses typed SDK events, dispositions, and capabilities. It never
-receives this Host interface or the raw EventBus.
+App code still uses typed SDK inputs, task results, facts, and capabilities. It
+never receives this Host interface or the raw EventBus.
 
 ## Delivery contracts
 
@@ -83,54 +87,59 @@ event and identity.
 The host matches only declared routes:
 
 ```text
-App subscription  -> pure toInput(event) -> correlated App inbox request
-task subscription -> pure resolve(event) -> persisted TaskIntent and trigger
+App subscription -> pure toInput(event) -> shared input-to-task resolution
 exact task target -> wake that task identity
+matching Condition -> wake the task that owns that Condition
 no actionable route -> retain a valid record-only fact
 ```
 
-An App subscription has a stable subscription ID and creates a request only
-when its translator returns a valid input. The idempotency key derives from App,
-subscription, and event identity.
+An App subscription has a stable ID and produces input only when its translator
+returns a valid value. The Runtime passes that input through the App's one task
+resolver, persists the resulting task intent and an ordered task-event link,
+then coalesces the stable task ID in its queue. A targeted task or Condition
+wake stores the same kind of link without running broad resolution.
 
-A task subscription declares or revises desired state. The host persists the
-latest intent and exact trigger before coalescing the stable task ID in its
-queue. A targeted task wake does not run broad resolution.
+The task-event link is durable work input, not a scheduling hint. Every claim
+receives a bounded ordered batch of linked events after the task's accepted
+checkpoint. Result admission advances that checkpoint through the presented
+batch atomically with task state. Events arriving during an attempt remain
+pending. If more events are linked than fit one batch, `truncated` is explicit
+and the remainder drives later attempts. The controller queue may contain only
+one copy of the task ID without losing any linked event.
 
-The same fact may reach several Apps, but one App never derives both an inbox
-item and a new or refreshed TaskIntent from it. If an independently correlated
-request also needs convergence, its inbox disposition may attach a task after
-admission. Exact stored Condition wakes remain additive because they wake work
-that already has durable ownership.
+The same fact may reach several Apps, but within each App it takes exactly one
+path: translate to one task, wake one exact task, or remain observation-only.
+There is no separate request disposition or task-subscription work model.
 
 There is no target-first owner fallback, `inbox.accepts`, arbitrary `onEvent`
 execution, or generic rule that turns an unhandled fact into owner work.
 
-## Addressed requests
+## Addressed input and caller requests
 
 Addressed input uses one standard required event:
 
 ```text
 app.input.requested target.appId=<app>
   -> validate App input
-  -> create or find one durable App request
-  -> return the request link
+  -> create or find caller correlation when a caller expects a result
+  -> resolve and persist one App task link
+  -> return the request and task links
 ```
 
 - non-conversation callers may publish this event for the `may` App;
-- App delegation creates a child App inbox item;
+- a typed cross-App dependency creates a child request and linked task;
 - an App action translates validated parameters to App input;
 - an input schedule creates a time-correlated App input; and
-- an App subscription translates a fact into an independent request only when
-  that fact genuinely requires its own disposition.
+- an App subscription translates a fact into input only when that fact
+  genuinely requires work.
 
 An unknown App address is rejected before a receipt exists. It does not fall
 back to a generic owner inbox or May.
 
-The inbox item persists `pending -> handling -> done`, with claims, lease
-fencing, dependency links, restart recovery, and delivery correlation owned by
-the host. The App sees only its typed request and dependency observation. It
-returns `complete`, `delegate`, or `task`.
+The request persists caller correlation, dependency links, result, restart
+recovery, and delivery state. It does not execute App policy. The App sees the
+typed task context and returns only reconciliation evidence and desired task
+changes.
 
 May human adapters use a more expressive required event:
 
@@ -154,8 +163,7 @@ not whether resulting work finished. The durable acknowledgement point is:
 
 | Route                       | Accepted after                                                 |
 | --------------------------- | -------------------------------------------------------------- |
-| App subscription            | translated input is validated and inbox admission is durable   |
-| Task subscription           | resolved intent and exact trigger are durable                  |
+| App subscription            | translated input, task intent, and exact trigger are durable   |
 | Exact task target           | task wake/trigger is durably correlated                        |
 | Human/channel adapter       | adapter accepts the outbound delivery operation                |
 | Observation-only projection | projection explicitly accepts responsibility for that evidence |
@@ -165,8 +173,8 @@ Logging, UI tailing, passive metrics, database writing, and unrelated broad
 subscribers do not count as semantic acceptance.
 
 For asynchronous work, accepted means “the correct durable owner now has it,”
-not “finished.” Completion remains in the App inbox item, task resource,
-delivery operation, or other owning domain record.
+not "finished." Completion remains in the task resource and its linked caller
+request or delivery operation.
 
 Record-only facts with no consumer remain valid observations. A required event
 without durable acceptance remains visible for recovery. Invalid or unknown
@@ -178,14 +186,14 @@ Requests and delivery operations carry their own durable correlation instead of
 opening event pairs:
 
 ```text
-May request -> child App request -> optional task -> child result
-            -> May review -> persisted result -> May completion
+May request -> May task -> child App request/task -> child result
+            -> May review -> persisted result -> request completion
                                       -> Conversation update
                                       -> adapters render independently
 ```
 
-An App parent waits on the exact child App, task, or session identity. A task
-waits on exact Conditions. A persisted May result completes the semantic
+An App task waits on the exact child App task, task, or session identity. A task
+waits on exact Conditions. A persisted May result completes the linked caller
 request and enters Conversation; channel adapters may render it independently.
 Events provide causal evidence and wakes along those relationships; they do
 not recreate the relationships as opener/closer pairs.
@@ -203,8 +211,8 @@ for audit but cannot replace inbox/task/delivery completion.
 conversation.message.created target.appId=may
   conversationId=may:primary
   author.kind=human
-  -> linked May inbox request
-  -> direct result or child App dependency
+  -> linked May request and task
+  -> first-attempt result or child App task dependency
   -> May result review
   -> May request done
   -> persisted Conversation result
@@ -213,10 +221,11 @@ conversation.message.created target.appId=may
 
 The Conversation is a bounded read model reconstructed from messages, admitted
 requests, dependencies, and persisted results. It is not another database or
-work owner. Each admitted human turn has its own request identity. Reply anchors
-and channel coordinates add context; they do not decide which unfinished
-request owns the response. Adapter delivery attempts and receipts are
-operational evidence only and never gate Conversation content or May work.
+work owner. Each admitted human turn has its own request identity linked to the
+task that owns the App work. Reply anchors and channel coordinates add context;
+they do not decide which unfinished task owns the response. Adapter delivery
+attempts and receipts are operational evidence only and never gate Conversation
+content or May work.
 
 `conversation.updated` is an internal record-only resource notification emitted
 after the Conversation projection can durably expose a new message. Adapters
@@ -250,7 +259,8 @@ event-owner fallback.
 
 - `project.comment.created` and `project.owner.requested` may be explicit App
   subscriptions when the App owes a distinct result;
-- domain/provider observations feed task subscriptions or projections;
+- domain/provider observations feed App input translators, exact task wakes, or
+  projections;
 - task reconciliation lifecycle events are evidence, not scheduling commands;
 - an event with `target.taskId` is an exact wake; and
 - typed App actions create App input rather than publishing an actionable event
@@ -336,8 +346,8 @@ Detailed procedures live in
 
 - Every published event has a canonical typed envelope.
 - Every fact-to-work transition is explicitly declared and idempotent.
-- App subscriptions create correlated requests; task subscriptions persist
-  desired intent; exact task targets wake only the named task.
+- App subscriptions translate facts through the shared input-to-task resolver;
+  exact task targets wake only the named task.
 - Passive observers never satisfy semantic delivery.
 - Event acceptance never implies request/task/domain completion.
 - No unhandled fact falls back to a generic owner inbox.

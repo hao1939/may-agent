@@ -12,9 +12,9 @@ project goal + signal
   -> completion, exact wait, attention, or next work
 ```
 
-Apps organize work. Agents judge and act. Workflows preserve a repeatable
-method after experience justifies one. Infrastructure schedules, delivers,
-persists, reconciles, and recovers without deciding domain meaning.
+Apps reconcile tasks. Agents judge and act. Workflows preserve a repeatable
+method after experience justifies one. Infra and Runtime schedule, deliver,
+persist, execute, and recover without deciding domain meaning.
 
 The human boundary has one additional, strict convention:
 
@@ -25,6 +25,11 @@ proof. One bounded, audited break-glass attempt is the exception. The complete
 ingress, routing, closure, and recovery contract is in
 [Message Lifecycle](../2a-design/message-lifecycle.md).
 
+One human or caller request identifies one promised result. The Host links it
+to the task the accountable App reconciles. The request is caller correlation;
+the task is the App work identity. A UI may lay related tasks out as a tree,
+but the tree is only a view of task relationships.
+
 ## Roles
 
 | Piece                    | Role                                                                   |
@@ -32,7 +37,7 @@ ingress, routing, closure, and recovery contract is in
 | Project                  | Durable goal, accountable owner, posture, strategy, and domain context |
 | Event or schedule        | Signal that something changed or should be reconsidered                |
 | Metric                   | Measurement that may need judgment; never a decision by itself         |
-| Task resource            | Optional durable desired and observed work state                       |
+| Task resource            | Durable desired and observed App work state                            |
 | Condition                | Exact external fact required before a task can continue                |
 | Agent                    | Independently runnable capability and judgment                         |
 | Workflow                 | Agent-owned reusable ordered process                                   |
@@ -45,8 +50,8 @@ or session result into a second task/project lifecycle.
 ## Default project loop
 
 ```text
-semantic event, Condition observation, human comment, or resync
-  -> app resolves zero or one stable task intent
+addressed input, semantic fact, Condition observation, or resync
+  -> app resolves or wakes one stable task
   -> controller queues only the task ID
   -> worker claims the latest canonical generation
   -> explicitly bound workflow or resolved owner runs
@@ -54,9 +59,9 @@ semantic event, Condition observation, human comment, or resync
   -> achieve receipt, maintain convergence, exact Condition wait, or attention
 ```
 
-The task attachment is optional. An app may only organize an owner, domain
-context, schedules, events, or actions. Direct and Gym runs use the same agent
-capability without task infrastructure.
+This is the only App work loop. A simple task may converge during its first
+bounded attempt. Agents and Gym may still run independently for direct
+experiments, but once work is owned by an App it uses the App task reconciler.
 
 ## The task loop
 
@@ -125,7 +130,7 @@ workflow unavailable    -> attention until the binding is repaired
 ```
 
 When that owner judgment changes the desired work, the owner may return one
-`update-task` action for the task currently being reconciled. The update must
+`update-task` change for the task currently being reconciled. The update must
 change the task generation. That result completes only the current attempt:
 the task remains live and the controller immediately reconciles its new
 generation through the resolved workflow. It is not task completion and does
@@ -185,16 +190,16 @@ task remains live and sleeps after convergence until a real wake arrives.
 
 Use the smallest mechanism that matches the need:
 
-| Need                                  | Mechanism                                |
-| ------------------------------------- | ---------------------------------------- |
-| Novel bounded judgment or action      | Direct owner/agent session               |
-| Situational reusable guidance         | Skill                                    |
-| Repeatable ordered process            | Workflow                                 |
-| Durable goal and decomposition        | Project app plus optional task resources |
-| Exact external wait                   | Condition plus watcher/event             |
-| Time-based wake                       | Schedule/Cron event                      |
-| Mechanical observation or translation | Handler, watcher, metric, or projection  |
-| Cross-owner required action           | Explicit escalation                      |
+| Need                                  | Mechanism                               |
+| ------------------------------------- | --------------------------------------- |
+| Novel bounded judgment or action      | Direct owner/agent session              |
+| Situational reusable guidance         | Skill                                   |
+| Repeatable ordered process            | Workflow                                |
+| Durable App outcome and decomposition | App task resource                       |
+| Exact external wait                   | Condition plus watcher/event            |
+| Time-based wake                       | Schedule/Cron event                     |
+| Mechanical observation or translation | Handler, watcher, metric, or projection |
+| Cross-owner required action           | Explicit escalation                     |
 
 More frequent work does not need a new controller. Loops, focus plans, and
 one-off tasks use the same app controller when durable task state is useful.
@@ -220,7 +225,8 @@ instead of a second heartbeat-driven project loop.
 ## Invariants
 
 1. Signals wake judgment; they do not decide project truth.
-2. Task trees explain containment and dependency; they do not schedule work.
+2. A task tree is only an optional layout of containment and dependency; it is
+   not a resource or scheduler.
 3. Queues carry stable IDs, never copied task specifications.
 4. Owners remain accountable even when they delegate a workflow.
 5. Workflows are learned processes, not mandatory wrappers around agent work.

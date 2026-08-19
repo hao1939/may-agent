@@ -17,17 +17,17 @@ escalation lifecycle, or completion rule.
 human Telegram message
   -> normalize chat/topic/message/reply identity
   -> Conversation may:primary
-  -> one fenced May App request
-  -> direct answer or typed child App delegation
+  -> one fenced May request linked to one May task
+  -> first-attempt answer or typed child App task dependency
   -> May review
   -> persisted result in Conversation
   -> Telegram independently renders unseen messages
 ```
 
-The May App inbox item owns the human request. The Conversation provides shared
-durable context across Telegram and Console. Telegram chat/topic/message IDs,
-traces, sessions, notification rows, and reply anchors are delivery or context
-evidence only.
+The May task owns the work; the Host request correlates the human turn and
+result. The Conversation provides shared durable context across Telegram and
+Console. Telegram chat/topic/message IDs, traces, sessions, notification rows,
+and reply anchors are delivery or context evidence only.
 
 ## Responsibilities
 
@@ -55,8 +55,9 @@ It does not:
 - retry uncertain sends blindly; or
 - turn a notification into durable work.
 
-May owns conversation, clarification, delegation, human preferences, and final
-reply wording. Domain Apps own project meaning and durable desired outcomes.
+May owns conversation, clarification, cross-App task dependencies, human
+preferences, and final reply wording. Domain Apps own project meaning and
+durable desired outcomes.
 
 ## Inbound Admission
 
@@ -133,15 +134,15 @@ unfinished May request
 Do not replay the last prompt or steer an unrelated current session. Session
 loss cannot lose, duplicate, or complete the May request.
 
-## Direct Answers And Delegation
+## Answers And Cross-App Dependencies
 
-May may answer directly or delegate one typed child request to the accountable
-App. When delegating:
+May's task may converge in one attempt or request one typed child outcome from
+the accountable App. In the latter case:
 
 - the child request is persisted before it is woken;
-- the parent May item waits on that exact child ID;
-- the child App may complete directly or attach its own task;
-- the child result wakes the parent through the canonical dependency path; and
+- the parent May task waits on that exact child task ID;
+- the child App reconciles its task;
+- the child result wakes the parent task through the canonical dependency path; and
 - May reviews the result before producing the human-facing response.
 
 An agent message, owner label, `escalation.created` event, or source-session
@@ -182,13 +183,13 @@ persisted Conversation message
 
 Keep semantic result and transport certainty separate:
 
-| State | Meaning |
-| --- | --- |
+| State            | Meaning                                                                |
+| ---------------- | ---------------------------------------------------------------------- |
 | May result ready | Semantic work is terminal and the content is readable from any adapter |
-| Delivery pending | No provider attempt has reached a terminal policy state |
-| Delivered | Provider evidence confirms the message |
-| Failed | Retry policy may safely continue or the failure is terminal |
-| Uncertain | The send may have succeeded; blind retry could duplicate it |
+| Delivery pending | No provider attempt has reached a terminal policy state                |
+| Delivered        | Provider evidence confirms the message                                 |
+| Failed           | Retry policy may safely continue or the failure is terminal            |
+| Uncertain        | The send may have succeeded; blind retry could duplicate it            |
 
 Delivery state is operational adapter state. It never reopens, delays, or
 changes the May result. For an uncertain send, inspect provider/channel state
@@ -277,7 +278,7 @@ Telegram integration tests prove:
 - reply anchors add context while each inbound message keeps its own request;
 - ambiguous references clarify instead of guessing;
 - persisted direct answers close semantic work without delivery evidence;
-- delegated child completion wakes and resumes the exact May parent;
+- child task completion wakes and resumes the exact May parent task;
 - restart during May handling or delivery preserves identity;
 - original session loss creates a fresh session for the same request;
 - proactive attention is one May child request, not an event-pair lifecycle;

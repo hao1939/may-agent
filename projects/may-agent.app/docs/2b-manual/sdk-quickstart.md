@@ -1,6 +1,6 @@
 # SDK Quick Reference
 
-`@may-agent/sdk` is the stable authoring boundary for Agent Apps, bounded
+`@may-agent/sdk` is the stable authoring boundary for Agent Apps, bounded task
 workflows, task policy, guards, and tests. It is not a runtime service object.
 There is no `ctx.sdk`, database handle, queue, scheduler, service locator, or
 legacy entry point.
@@ -10,19 +10,20 @@ See [SDK](../2a-design/sdk.md) and
 
 ## Choose The Right Primitive
 
-| Need | Use |
-| --- | --- |
-| Address one App and require a result | App input/admission or typed App delegation |
-| Expose repeated typed ingress | `defineApp({ actions: ... })` with `toInput` |
-| React to a changed fact with a disposition | App `subscription` -> correlated inbox input |
-| Declare/revise deterministic desired work | `tasks.subscription` -> `TaskIntent` |
-| Wake one existing task | Exact event target or matching task Condition |
-| Run one bounded agent step | `ctx.agents.call(...)` |
-| Run one bounded reusable workflow | `ctx.workflows.run(...)` |
-| Publish a fact | `ctx.events.emit(...)` |
-| Record a domain metric sample | `ctx.metrics.record(...)` |
-| Read an exact runtime projection | `ctx.read.appResult/task/execution/metric(...)` |
-| Wait durably | App dependency or task Condition, never an open workflow |
+| Need                                      | Use                                                          |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| Address one App and require a result      | typed App input; Runtime links its request to one task       |
+| Expose repeated typed ingress             | `defineApp({ actions: ... })` with `toInput`                 |
+| React to a changed fact                   | App `subscription` -> typed input -> task resolver           |
+| Declare/revise deterministic desired work | `task(input)` -> `TaskIntent`                                |
+| Wake one existing task                    | exact event target or matching task Condition                |
+| Run one bounded agent step                | `ctx.agents.call(...)`                                       |
+| Run one bounded reusable workflow         | `ctx.workflows.run(...)`                                     |
+| Publish a fact                            | `ctx.events.emit(...)`                                       |
+| Record a domain metric sample             | `ctx.metrics.record(...)`                                    |
+| Read an exact runtime projection          | `ctx.read.appResult/execution/metric(...)` or resource `get` |
+| Inspect current App tasks                 | bounded `ctx.read.tasks.list/get` resource capability        |
+| Wait durably                              | task dependency or Condition, never an open workflow         |
 
 ## Define One App
 
@@ -41,11 +42,15 @@ export default defineApp({
   version: 1,
   owner: "sample-owner",
   inputSchema,
-  route(request) {
-    if (request.input.data.subject === "ping") {
-      return { type: "complete", response: "pong" };
-    }
-    return null; // one bounded owner judgment
+  task(input) {
+    return {
+      id: `review/${input.data.subject}`,
+      parentId: "root",
+      outcome: `Review ${input.data.subject}`,
+      acceptance: ["A supported answer is recorded"],
+      mode: "achieve",
+      input,
+    };
   },
 });
 ```
@@ -54,34 +59,25 @@ Importing an App definition is pure. It cannot start sessions, attach timers,
 write state, or publish facts. The host validates and attaches the complete App
 registry generation.
 
-## App Dispositions
+## Input Resolves To A Task
 
-An addressed request returns exactly one disposition:
+Every actionable App input resolves to one stable existing task or desired
+`TaskIntent`:
 
 ```ts
-{ type: "complete", response: "Done", evidence: ["report.json"] }
-
 {
-  type: "delegate",
-  appId: "release-governance",
-  input: { kind: "approval", data: { changeId: "v4" } },
-}
-
-{
-  type: "task",
-  task: {
-    id: "review/v4",
-    parentId: "root",
-    outcome: "Review change v4",
-    acceptance: ["A verdict and evidence are recorded"],
-    mode: "achieve",
-  },
+  id: "review/v4",
+  parentId: "root",
+  outcome: "Review change v4",
+  acceptance: ["A verdict and evidence are recorded"],
+  mode: "achieve",
 }
 ```
 
-The parent inbox item remains authoritative while waiting for a delegated App
-or attached task. Do not represent that wait with an event pair, owner label,
-message, or mutable session.
+There is no direct-completion or delegation disposition beside this path. A
+simple answer converges in its first bounded reconciliation attempt. A
+cross-App outcome becomes a typed Runtime-managed task dependency. The Host
+request remains only the caller's correlation and delivery record.
 
 ## Workflow Context
 
@@ -115,7 +111,7 @@ export async function execute(
 Available capabilities are intentionally narrow:
 
 - `ctx.input`
-- optional `ctx.reconciliation`
+- required `ctx.reconciliation` for App-owned work
 - exact `ctx.read` projections
 - `ctx.agents.call(...)`
 - `ctx.workflows.run(...)`
@@ -132,8 +128,9 @@ desired input, trigger, owner, and bounded live/completed child views. It does
 not expose the global task tree or mutation handles.
 
 A task workflow returns an `ExecutionResult` whose output is admitted as a
-typed reconciliation result. Return task actions and Conditions in that output;
-do not write task files or emit parallel task-completion events.
+typed reconciliation result. Return task changes through the compatibility
+`actions` field plus Conditions in that output; do not write task files or emit
+parallel task-completion events.
 
 ```ts
 return ctx.done("Waiting for rollout approval", {
@@ -146,30 +143,38 @@ return ctx.done("Waiting for rollout approval", {
 ```
 
 Use `needs-owner` only for exceptional judgment by the same App owner. When
-another App owns the next decision, the App boundary establishes a typed child
-delegation. Human attention is a child request to the `may` App or an exact
-human Condition owned by the source task.
+another App owns the next decision, use the Runtime's typed cross-App dependency
+capability. Human attention is a linked `may` task dependency or an exact human
+Condition owned by the source task.
 
 ## Facts Are Not Requests
 
 `ctx.events.emit(...)` publishes a fact. It does not directly launch an agent,
 address an owner, attach a task, or guarantee a reply. An actionable destination
-must declare an App subscription, task subscription, exact task target, or
-matching Condition.
+must declare an App subscription that produces input, an exact task target, or
+a matching Condition.
 
 Typed App actions translate validated parameters directly to App input. They do
 not emit an actionable event as an admission shortcut.
 
 ## Reads And Writes
 
-Use exact reads only:
+Use bounded reads only:
 
 ```ts
 await ctx.read.appResult(itemId);
-await ctx.read.task(taskId);
+await ctx.read.tasks.get(taskId);
+await ctx.read.tasks.list({ phase: ["attention"] });
 await ctx.read.execution(executionId);
 await ctx.read.metric(metricId);
 ```
+
+`ctx.read.task(taskId)` remains a temporary exact-read compatibility alias.
+
+A task-bound workflow already receives its task and bounded direct-child views
+in `ctx.reconciliation`; it should not list tasks merely to rediscover that
+context. Agents, tools, observers, and owner workflows that genuinely need a
+project overview use the shared bounded task list, scoped to the current App.
 
 There is no raw SQL, `sdk.query`, `sdk.commands`, `getDb()`, global list/query,
 or task-store escape hatch. A recurring legitimate need becomes the narrowest
@@ -202,9 +207,11 @@ daemon or a database.
 - Import authoring contracts from `@may-agent/sdk`; testing helpers come from
   `@may-agent/sdk/testing`.
 - Keep App definitions pure and use one `app.ts` entry point.
-- Keep workflows bounded; durable waits belong to App dependencies or task
+- Keep workflows bounded; durable waits belong to task dependencies or
   Conditions.
-- Use typed delegation for cross-App outcomes and events for facts.
+- Use typed Runtime-managed dependencies for cross-App outcomes and events for
+  facts.
+- Keep task reconciliation as the only App work loop.
 - Return structured results; never mutate inbox/task/runtime storage directly.
 - Do not add a legacy SDK entry point, service locator, generic runtime context,
   or implementation export.

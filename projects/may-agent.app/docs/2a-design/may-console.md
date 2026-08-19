@@ -24,8 +24,8 @@ The daemon owns event routing and execution. Apps own durable work.
 human text
   -> may-console
   -> Conversation may:primary
-  -> one bounded May turn
-  -> direct answer or app-owned continuation
+  -> one May request and task
+  -> one or more bounded reconciliation attempts
   -> later material update, decision, or verified closeout
 ```
 
@@ -72,19 +72,20 @@ change where bare text goes.
 ```text
 browser or terminal
   -> may-console process
-    -> daemon Unix socket
+      -> daemon Unix socket
       -> Event Interface
-        -> May App inbox or explicit session control
+        -> May task admission or explicit session control
 ```
 
-| Layer | Responsibility |
-|---|---|
-| `may-console` | Readline, command parsing, quiet event rendering, reconnect |
-| daemon socket | Framing, read controls, durable intent ingress |
-| Event Interface | Persist and route one validated event |
-| May App inbox | Fence each human message and reconcile it with shared Conversation context |
-| app owner | Accept, reconcile, wait for, and close durable work |
-| execution manager | Run, steer, cancel, resume, and persist session attempts |
+| Layer               | Responsibility                                              |
+| ------------------- | ----------------------------------------------------------- |
+| `may-console`       | Readline, command parsing, quiet event rendering, reconnect |
+| daemon socket       | Framing, read controls, durable intent ingress              |
+| Event Interface     | Persist and route one validated event                       |
+| App request store   | Fence each human message and correlate its eventual result  |
+| May task controller | Reconcile the task with shared Conversation context         |
+| May task policy     | Judge, act, wait, and accept task outcomes                  |
+| execution manager   | Run, steer, cancel, resume, and persist session attempts    |
 
 The console never calls execution-manager methods directly.
 
@@ -92,18 +93,22 @@ The console never calls execution-manager methods directly.
 
 The socket path comes from:
 
-| Input | Meaning |
-|---|---|
-| `STATE_DIR` | State root, default `/app/.state` |
-| `DAEMON_INSTANCE` or `INSTANCE` | Instance, default `background` |
-| `DAEMON_AGENT` | Interface agent, default `may` |
+| Input                           | Meaning                           |
+| ------------------------------- | --------------------------------- |
+| `STATE_DIR`                     | State root, default `/app/.state` |
+| `DAEMON_INSTANCE` or `INSTANCE` | Instance, default `background`    |
+| `DAEMON_AGENT`                  | Interface agent, default `may`    |
 
 On connection, the console subscribes for May delivery, reads status, and
 restores the bounded Conversation resource, including its active-work
 projection. All three operations are passive:
 
 ```json
-{ "type": "subscribe", "sessions": [], "conversations": ["may:primary"], "deliveryChannel": "may-console" }
+{
+  "type": "subscribe",
+  "sessions": [],
+  "conversations": ["may:primary"]
+}
 ```
 
 ```json
@@ -111,7 +116,11 @@ projection. All three operations are passive:
 ```
 
 ```json
-{ "type": "app.conversation.get", "appId": "may", "conversationId": "may:primary" }
+{
+  "type": "app.conversation.get",
+  "appId": "may",
+  "conversationId": "may:primary"
+}
 ```
 
 Bounded May turns are separate execution sessions. Normal mode subscribes only
@@ -139,11 +148,11 @@ conversation:
 ```
 
 The event does not contain a session target. The Event Interface persists it;
-the App runtime admits exactly one fenced May inbox request; and May reconciles
-that request with the shared Conversation. A short answer may return during
-that turn. If an App accepts durable work, the May turn may finish while the
-App continues. Later progress or closeout does not depend on resuming the same
-May session.
+the Runtime admits exactly one fenced May request and linked task; and May
+reconciles that task with the shared Conversation. A short answer may converge
+during the first attempt. If another App owns durable work, the May task waits
+on that child task. Later progress or closeout does not depend on resuming the
+same May session.
 
 The console does not print the transport-level `ok` receipt in normal mode.
 That receipt proves admission, not useful conversational progress. May's
@@ -172,26 +181,26 @@ unambiguous match. Unknown or ambiguous IDs fail locally.
 
 ## Commands
 
-| Command | Behavior |
-|---|---|
-| `/help` | Print local help |
-| `/status` | Read compact daemon status |
-| `/sessions` | List known execution sessions |
-| `/work` | Show active May work |
-| `/work all` | Show all May work, newest first |
-| `/work N` | Show item `N` from the last work list, including its result |
-| `/watch may` | Return to the quiet May view |
-| `/watch all` | Show all subscribed runtime events |
-| `/watch <sessionId>` | Show one session without changing input routing |
-| `/steer <sessionId> <message>` | Explicitly steer one session |
-| `/cancel <sessionId>` | Explicitly cancel one session |
-| `/cancel all` | Explicitly cancel all running sessions |
-| `/debug` | Toggle compact session and tool details |
-| `/raw` | Toggle raw JSON rendering |
-| `/reload` | Request runtime reload |
-| `/restart` | Request runtime restart |
-| `/shell` | Leave May Console for an interactive shell |
-| `/exit` | Close the console |
+| Command                        | Behavior                                                    |
+| ------------------------------ | ----------------------------------------------------------- |
+| `/help`                        | Print local help                                            |
+| `/status`                      | Read compact daemon status                                  |
+| `/sessions`                    | List known execution sessions                               |
+| `/work`                        | Show active May work                                        |
+| `/work all`                    | Show all May work, newest first                             |
+| `/work N`                      | Show item `N` from the last work list, including its result |
+| `/watch may`                   | Return to the quiet May view                                |
+| `/watch all`                   | Show all subscribed runtime events                          |
+| `/watch <sessionId>`           | Show one session without changing input routing             |
+| `/steer <sessionId> <message>` | Explicitly steer one session                                |
+| `/cancel <sessionId>`          | Explicitly cancel one session                               |
+| `/cancel all`                  | Explicitly cancel all running sessions                      |
+| `/debug`                       | Toggle compact session and tool details                     |
+| `/raw`                         | Toggle raw JSON rendering                                   |
+| `/reload`                      | Request runtime reload                                      |
+| `/restart`                     | Request runtime restart                                     |
+| `/shell`                       | Leave May Console for an interactive shell                  |
+| `/exit`                        | Close the console                                           |
 
 `/use`, `/may`, and `/new` remain harmless compatibility guidance only. They
 never create a sticky input target. Commands require `/`; the word `status` in
@@ -235,16 +244,16 @@ already rendered locally, so it suppresses its own echoes without hiding a turn
 from another Console process. This is presentation-only and does not append an
 echo message.
 
-| Event | Normal rendering |
-|---|---|
-| `connected` | One connection line |
-| `ok` for `publish` | Hidden transport bookkeeping |
-| `status` | Requested session table |
-| May `text` | Stream response text |
-| May `session.end` | Fallback summary, or visible failure |
-| `message.created` to the human | Human-directed message |
-| unrelated session/tool/info event | Hidden |
-| unknown | Hidden unless raw mode is on |
+| Event                             | Normal rendering                     |
+| --------------------------------- | ------------------------------------ |
+| `connected`                       | One connection line                  |
+| `ok` for `publish`                | Hidden transport bookkeeping         |
+| `status`                          | Requested session table              |
+| May `text`                        | Stream response text                 |
+| May `session.end`                 | Fallback summary, or visible failure |
+| `message.created` to the human    | Human-directed message               |
+| unrelated session/tool/info event | Hidden                               |
+| unknown                           | Hidden unless raw mode is on         |
 
 The renderer coordinates with readline so asynchronous output does not corrupt
 the current input line.
