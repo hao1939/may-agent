@@ -7,6 +7,14 @@ export const WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD = 24;
 export const WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS = 300_000;
 export const RESPONSES_STREAM_TERMINAL_ERROR = "OpenAI Responses stream ended before a terminal response event";
 
+export function validateOperationAllowance(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
+    throw new TypeError("operationAllowance must be a finite positive integer");
+  }
+  return value;
+}
+
 export function shouldAttemptWorkflowFinishRecovery(reason: string | undefined): boolean {
   if (!reason) return false;
   return (
@@ -20,9 +28,13 @@ export function shouldRequestBoundedWorkflowFinish(
   requireFinish: boolean,
   toolCalls: number,
   alreadyRequested: boolean,
-  timing?: { admittedTimeoutMs?: number; elapsedMs?: number },
+  timing?: { admittedTimeoutMs?: number; elapsedMs?: number; operationAllowance?: number },
 ): boolean {
-  if (!requireFinish || alreadyRequested || toolCalls < WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD) return false;
+  const operationAllowance = validateOperationAllowance(timing?.operationAllowance);
+  const threshold = operationAllowance ?? WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD;
+  if (!requireFinish || alreadyRequested || toolCalls < threshold) return false;
+  // An explicit allowance is the operation boundary. Timeout only governs elapsed runtime.
+  if (operationAllowance !== undefined) return true;
   const admittedTimeoutMs = timing?.admittedTimeoutMs;
   if (admittedTimeoutMs === undefined || admittedTimeoutMs <= WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS) return true;
   return Math.max(0, timing?.elapsedMs ?? 0) >= admittedTimeoutMs - WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS;

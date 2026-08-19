@@ -9,6 +9,7 @@ import {
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
   shouldRequestBoundedWorkflowFinish,
+  validateOperationAllowance,
   workflowFinishRecoveryPrompt,
 } from "./workflow-finish-recovery.js";
 
@@ -211,5 +212,30 @@ describe("workflow finish recovery", () => {
         elapsedMs: 1,
       }),
     ).toBe(true);
+  });
+
+  it("enforces an explicit allowance above 25 independently of timeout", () => {
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, 49, false, {
+        operationAllowance: 50,
+        admittedTimeoutMs: 60_000,
+        elapsedMs: 59_999,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, 50, false, {
+        operationAllowance: 50,
+        admittedTimeoutMs: 900_000,
+        elapsedMs: 1,
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects invalid and non-finite operation allowances", () => {
+    for (const value of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => validateOperationAllowance(value)).toThrow("finite positive integer");
+    }
+    expect(validateOperationAllowance(50)).toBe(50);
+    expect(validateOperationAllowance(undefined)).toBeUndefined();
   });
 });

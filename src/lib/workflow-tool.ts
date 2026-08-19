@@ -23,6 +23,7 @@ import type {
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 import { appOwnerReviewEvent } from "../app/app-input-event.js";
+import { validateOperationAllowance } from "./workflow-finish-recovery.js";
 // ── In-memory workflow types (used during execution) ────────────────────
 
 /** In-memory record of a workflow execution. */
@@ -1171,6 +1172,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       stepOpts?: WorkflowAgentOptions,
     ): Promise<TaskResult> => {
       assertExecutionActive();
+      validateOperationAllowance(stepOpts?.operationAllowance);
       // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
       // where they'd produce the confusing "Agent \"undefined\" not registered" error.
       // This can happen when workflows use ctx.agent on a binary compiled before the agent field was added.
@@ -1264,6 +1266,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               manager.resumeSession(sid, effectiveTask, {
                 source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
                 timeoutMs: stepOpts?.timeoutMs,
+                operationAllowance: stepOpts?.operationAllowance,
                 suppressBenignRaceEvent: true,
                 requireFinish: true,
                 outputSchema: stepOpts?.schema,
@@ -1286,6 +1289,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
               kind: "call",
               timeoutMs: stepOpts?.timeoutMs,
+              operationAllowance: stepOpts?.operationAllowance,
               trace: resolveTrace(),
               skill: stepOpts?.skill,
               requireFinish: true,
@@ -1310,6 +1314,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           recoveryOwner: opts.recoveryOwner,
           stepLabel: agentName,
           timeout: stepOpts?.timeoutMs,
+          operationAllowance: stepOpts?.operationAllowance,
           trace: resolveTrace(),
           skill: stepOpts?.skill,
           requireFinish: true,

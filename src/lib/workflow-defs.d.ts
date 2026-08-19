@@ -41,6 +41,7 @@ interface TaskResult {
 type WorkflowAgentOptions<S extends import("@earendil-works/pi-ai").TSchema = import("@earendil-works/pi-ai").TSchema> =
   {
     timeoutMs?: number;
+    operationAllowance?: number;
     source?: string;
     tools?: "full" | "readonly";
     skill?: string;
