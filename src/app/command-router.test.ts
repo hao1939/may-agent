@@ -273,7 +273,12 @@ describe("command router", () => {
           context: { explicitSessionControl: true },
         },
       } as any);
-      f.bus.emit({ type: "session.cancel.requested", source: "web-ui", data: { sessionId: "s_chat" } } as any);
+      f.bus.emit({
+        type: "session.cancel.requested",
+        source: "web-ui",
+        target: { sessionId: "s_chat" },
+        data: {},
+      } as any);
 
       expect(f.sent).toHaveLength(1);
       expect(f.sent[0]).toMatchObject({
@@ -294,7 +299,8 @@ describe("command router", () => {
         type: "session.cancel.requested",
         source: "recovery",
         owner: "agent:may",
-        data: { sessionId: "s_chat" },
+        target: { sessionId: "s_chat" },
+        data: {},
       } as any;
       Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true });
 

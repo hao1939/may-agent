@@ -3773,7 +3773,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       source: "web-ui",
       owner: "agent:may",
       urgency: "high",
-      data: { sessionId },
+      target: { sessionId },
+      data: {},
     });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId });

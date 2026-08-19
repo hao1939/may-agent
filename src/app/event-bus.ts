@@ -74,18 +74,19 @@ export type AgentCommand =
       type: "session.steer.requested";
       source: string;
       owner: string;
-      data: { sessionId: string; message: string; context?: Record<string, unknown> };
+      target: { sessionId: string };
+      data: { message: string; context?: Record<string, unknown> };
     }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }
-  | { type: "session.cancel.requested"; sessionId: string; source?: string }
   | {
       type: "session.cancel.requested";
       source: string;
       owner: string;
       urgency?: string;
-      data: { sessionId: string; reason?: string };
+      target: { sessionId: string };
+      data: { reason?: string };
     }
   | { type: "session.cancel_all.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }
   | {

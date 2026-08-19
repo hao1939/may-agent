@@ -197,7 +197,8 @@ describe("socket frame normalization", () => {
         source: "web-ui",
         owner: "agent:may",
         urgency: "high",
-        data: { sessionId: "s_1" },
+        target: { sessionId: "s_1" },
+        data: {},
       },
     });
     expect(normalizeSocketFrame({ type: "input", message: "hello", source: "socket" })).toEqual({
@@ -221,7 +222,8 @@ describe("socket frame normalization", () => {
         type: "session.steer.requested",
         source: "web-ui",
         owner: "agent:may",
-        data: { sessionId: "s_1", message: "continue" },
+        target: { sessionId: "s_1" },
+        data: { message: "continue" },
       },
     });
     expect(normalizeSocketFrame({ type: "cancel_all", source: "web-ui" })).toEqual({

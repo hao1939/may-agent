@@ -606,7 +606,12 @@ function sendChat() {
   if (currentSessionId) {
     // Steer the selected session (works for running, idle, and — via 3b
     // cold-resume — done/error/interrupted sessions too).
-    sendIntent('session.steer.requested', currentSessionAgent(), { sessionId: currentSessionId, message: msg });
+    sendIntent(
+      'session.steer.requested',
+      currentSessionAgent(),
+      { message: msg },
+      { target: { sessionId: currentSessionId } },
+    );
   } else if (currentAgentChat) {
     // Telegram-style: agent chat with no session yet. POST spawns one.
     const newParam = forceNewAgentChat ? '?new=true' : '';

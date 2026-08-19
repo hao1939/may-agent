@@ -134,16 +134,18 @@ describe("event-native: events table", () => {
       type: "session.steer.requested",
       source: "telegram",
       owner: "agent:may",
-      data: { sessionId: "s_trace", message: "continue" },
+      target: { sessionId: "s_trace" },
+      data: { message: "continue" },
     } as any);
 
     const rows = db.prepare(
-      "SELECT event_type, source, data FROM events ORDER BY id ASC",
-    ).all() as Array<{ event_type: string; source: string | null; data: string }>;
+      "SELECT event_type, source, session_id, data FROM events ORDER BY id ASC",
+    ).all() as Array<{ event_type: string; source: string | null; session_id: string | null; data: string }>;
 
     expect(rows.map((row) => row.event_type)).toEqual(["runtime.reload.requested", "session.cancel_all.requested", "session.steer.requested"]);
     expect(rows.map((row) => row.source)).toEqual(["telegram", "telegram", "telegram"]);
-    expect(JSON.parse(rows[2].data)).toMatchObject({ sessionId: "s_trace", message: "continue" });
+    expect(rows[2].session_id).toBe("s_trace");
+    expect(JSON.parse(rows[2].data)).toEqual({ message: "continue" });
   });
 
   it("persists canonical event envelopes with only event.data in the data column", () => {
