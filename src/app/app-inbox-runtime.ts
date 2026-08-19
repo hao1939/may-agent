@@ -569,12 +569,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const queuedAdmissionCommands = new Map<string, { eventId: number; appId: string; event?: AgentEvent }>();
-  let admissionImmediate: ReturnType<typeof setImmediate> | null = null;
+  let admissionTimer: ReturnType<typeof setTimeout> | null = null;
 
   const scheduleAdmissionPump = (): void => {
-    if (closed || admissionImmediate || queuedAdmissionCommands.size === 0) return;
-    admissionImmediate = setImmediate(() => {
-      admissionImmediate = null;
+    if (closed || admissionTimer || queuedAdmissionCommands.size === 0) return;
+    admissionTimer = setTimeout(() => {
+      admissionTimer = null;
       if (closed) return;
       const next = queuedAdmissionCommands.entries().next().value;
       if (!next) return;
@@ -969,8 +969,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (closed) return;
       closed = true;
       clearInterval(timer);
-      if (admissionImmediate) clearImmediate(admissionImmediate);
-      admissionImmediate = null;
+      if (admissionTimer) clearTimeout(admissionTimer);
+      admissionTimer = null;
       observerRuntime.close();
       unsubscribe();
       pending.length = 0;

@@ -96,23 +96,27 @@ export class AppTaskController {
   private pump(): void {
     if (this.closed) return;
     if (this.options.capacity) {
-      while (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) {
-        const release = this.options.capacity.tryAcquire();
-        if (!release) {
-          this.waitForCapacity();
-          return;
-        }
-        const taskId = this.queue.take();
-        if (!taskId) {
-          release();
-          return;
-        }
-        this.run(taskId, release);
+      if (this.queue.pendingCount === 0 || this.queue.runningCount >= this.queue.maxConcurrent) return;
+      const release = this.options.capacity.tryAcquire();
+      if (!release) {
+        this.waitForCapacity();
+        return;
       }
+      const taskId = this.queue.take();
+      if (!taskId) {
+        release();
+        return;
+      }
+      this.run(taskId, release);
+      // Reconciliation has a synchronous state-claim prefix. Fill available
+      // concurrency on later loop turns so readiness I/O can run between claims.
+      if (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) this.schedulePump();
       return;
     }
-    let taskId: string | null;
-    while ((taskId = this.queue.take())) this.run(taskId);
+    const taskId = this.queue.take();
+    if (!taskId) return;
+    this.run(taskId);
+    if (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) this.schedulePump();
   }
 
   private waitForCapacity(): void {
