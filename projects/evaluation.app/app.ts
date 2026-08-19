@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 import {
   Type,
   defineApp,
-  type AppDisposition,
   type AppEvent,
   type AppInput,
-  type AppRequest,
+  type AppTaskAttachment,
+  type AppTaskInput,
   type TaskIntent,
 } from "@may-agent/sdk";
 import {
@@ -390,30 +390,30 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
   }
 }
 
-export function routeEvaluationRequest(
-  request: Readonly<AppRequest>,
-): AppDisposition | null {
-  if (request.dependency) {
-    if (request.dependency.status === "done") {
-      return {
-        type: "complete",
-        summary:
-          request.dependency.summary ?? `${request.input.kind} completed`,
-        evidence: request.dependency.evidence,
-      };
-    }
-    return null;
-  }
-  if (request.input.kind === "message") return null;
-  if (request.input.kind === "canary-probe") {
-    return {
-      type: "delegate",
-      appId: "evaluation-canary-worker",
-      input: { kind: "probe", data: request.input.data },
-    };
-  }
-  const intent = taskIntentForInput(request.input);
-  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+export function taskForEvaluationInput(
+  admitted: Readonly<AppTaskInput>,
+): AppTaskAttachment {
+  const configured = taskIntentForInput(admitted.input);
+  if (configured) return { kind: "desired", intent: configured };
+  const taskId = safeTaskIdPart(admitted.id);
+  return {
+    kind: "desired",
+    intent: {
+      id: `input/${taskId}`,
+      parentId: "evaluator-reliability",
+      outcome: `Interpret and handle admitted evaluation input ${admitted.input.kind}.`,
+      acceptance: [
+        "The evaluator returns an evidence-backed result and a caller response when one is owed.",
+      ],
+      mode: "achieve",
+      owner: "evaluator",
+      input: {
+        kind: admitted.input.kind,
+        data: record(admitted.input.data),
+      },
+      priority: "P1",
+    },
+  };
 }
 
 function eventInput(
@@ -507,7 +507,7 @@ const app = defineApp({
     "Independent session and App auditing with evidence-backed owner and human reporting.",
   inputSchema: evaluationInputSchema,
   inbox: { batch: "single", maxConcurrent: 5 },
-  route: routeEvaluationRequest,
+  task: taskForEvaluationInput,
   workspace: { kind: "local", localPath: "." },
   subscriptions: [
     {
@@ -581,7 +581,7 @@ const app = defineApp({
   actions: {
     "app-inbox-canary": {
       description:
-        "Submit one manual probe through canonical App delegation and delivery.",
+        "Submit one manual probe through canonical task admission and delivery.",
       inputSchema: evaluationCanaryDataSchema,
       toInput: (data) => ({ kind: "canary-probe", data }),
     },
@@ -626,7 +626,6 @@ const app = defineApp({
     },
   },
   tasks: {
-    attach: true,
     subscriptions: [
       "session.end",
       { type: "evaluation.session.requested", project: projectId },

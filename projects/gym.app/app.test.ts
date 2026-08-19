@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import type { AppDependencyObservation, AppEvent, AppInput } from "@may-agent/sdk";
+import type { AppEvent, AppInput, AppTaskInput } from "@may-agent/sdk";
 import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
-import gymApp, { resolveGymTask, routeGymRequest } from "./app.ts";
+import gymApp, { resolveGymTask, taskForGymInput } from "./app.ts";
 
 function event(
   type: string,
@@ -17,32 +17,37 @@ function event(
   };
 }
 
-function request(input: AppInput, dependency?: AppDependencyObservation) {
+function admitted(input: AppInput): AppTaskInput {
   return {
     id: "request-1",
     source: { kind: "system" as const, id: "test" },
     input,
-    ...(dependency ? { dependency } : {}),
   };
 }
 
 describe("canonical Gym App", () => {
   test("keeps May conversational while Gym owns standing operations", () => {
     const mayConfig = JSON.parse(
-      readFileSync(new URL("../../agents/may/agent.json", import.meta.url), "utf8"),
+      readFileSync(
+        new URL("../../agents/may/agent.json", import.meta.url),
+        "utf8",
+      ),
     ) as { tools: string[] };
 
     expect(mayConfig.tools).not.toContain("cron");
-    expect(existsSync(new URL("../../agents/may/cron.json", import.meta.url))).toBe(false);
+    expect(
+      existsSync(new URL("../../agents/may/cron.json", import.meta.url)),
+    ).toBe(false);
     expect(gymApp).toMatchObject({
       id: "gym",
       version: 1,
       owner: "gym",
       workspace: { kind: "local", localPath: "../gym" },
       inbox: { batch: "single", maxConcurrent: 2 },
-      tasks: { attach: true, maxConcurrent: 2 },
+      tasks: { maxConcurrent: 2 },
     });
-    expect(gymApp.route).toBe(routeGymRequest);
+    expect(gymApp.task).toBe(taskForGymInput);
+    expect(gymApp.route).toBeUndefined();
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
     expect(gymApp.tasks?.subscriptions).toHaveLength(12);
     expect(gymApp.tasks?.subscriptions).toContainEqual({
@@ -107,8 +112,12 @@ describe("canonical Gym App", () => {
       ]),
     );
     expect(gymApp.schedules).toHaveLength(3);
-    expect(gymApp.schedules.some(({ id }) => id.includes("telegram"))).toBe(false);
-    expect(gymApp.tasks?.subscriptions).not.toContain("gym.telegram.field-review.requested");
+    expect(gymApp.schedules.some(({ id }) => id.includes("telegram"))).toBe(
+      false,
+    );
+    expect(gymApp.tasks?.subscriptions).not.toContain(
+      "gym.telegram.field-review.requested",
+    );
   });
 
   test("translates actions into canonical App inputs", () => {
@@ -123,15 +132,21 @@ describe("canonical Gym App", () => {
       kind: "improve-may",
       data: { reason: "manual" },
     });
-    expect(gymApp.actions["run-regression"]?.toInput({ scenario: "s1" })).toEqual({
+    expect(
+      gymApp.actions["run-regression"]?.toInput({ scenario: "s1" }),
+    ).toEqual({
       kind: "run-regression",
       data: { scenario: "s1" },
     });
-    expect(gymApp.actions["report-incident"]?.toInput({ sessionId: "s1" })).toEqual({
+    expect(
+      gymApp.actions["report-incident"]?.toInput({ sessionId: "s1" }),
+    ).toEqual({
       kind: "report-incident",
       data: { reason: "manual", sessionId: "s1" },
     });
-    expect(gymApp.actions["collect-codex-learning"]?.toInput({ maxBatches: 1 })).toEqual({
+    expect(
+      gymApp.actions["collect-codex-learning"]?.toInput({ maxBatches: 1 }),
+    ).toEqual({
       kind: "collect-codex-learning",
       data: {
         reason: "manual-backfill",
@@ -139,7 +154,9 @@ describe("canonical Gym App", () => {
         maxBatches: 1,
       },
     });
-    expect(gymApp.actions["review-telegram-field"]?.toInput({ batchSize: 40 })).toEqual({
+    expect(
+      gymApp.actions["review-telegram-field"]?.toInput({ batchSize: 40 }),
+    ).toEqual({
       kind: "review-telegram-field",
       data: { reason: "manual-field-review", batchSize: 40 },
     });
@@ -150,46 +167,29 @@ describe("canonical Gym App", () => {
     expect(ownerConfig.tools).toEqual(["read-only", "finish"]);
   });
 
-  test("delegates Telegram field review to Evaluation", () => {
+  test("models Telegram field review as one task with a typed Evaluation dependency", () => {
     expect(
-      routeGymRequest(
-        request({
+      taskForGymInput(
+        admitted({
           kind: "review-telegram-field",
           data: { reason: "manual-field-review", batchSize: 40 },
         }),
       ),
-    ).toEqual({
-      type: "delegate",
-      appId: "evaluation",
-      input: {
-        kind: "deep-scan",
-        data: {
-          reason: "manual-field-review",
-          requestedBy: "gym",
-          batchSize: 40,
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "input/request-1",
+        input: {
+          dependency: {
+            id: "evaluation-review",
+            appId: "evaluation",
+            input: {
+              kind: "deep-scan",
+              data: { requestedBy: "gym", batchSize: 40 },
+            },
+          },
         },
       },
-    });
-  });
-
-  test("completes an inbox request only after its exact dependency converges", () => {
-    expect(
-      routeGymRequest(
-        request(
-          { kind: "improve-may", data: {} },
-          {
-            kind: "task",
-            id: "improve/may",
-            status: "done",
-            summary: "May campaign reconciled",
-            evidence: ["run:verified"],
-          },
-        ),
-      ),
-    ).toEqual({
-      type: "complete",
-      summary: "May campaign reconciled",
-      evidence: ["run:verified"],
     });
   });
 });
@@ -197,10 +197,14 @@ describe("canonical Gym App", () => {
 describe("Gym task reconciliation", () => {
   test("reconciles design alignment through one stable owner task", () => {
     const first = resolveGymTask(
-      event("gym.design-alignment.requested", { reason: "daily-design-alignment-review" }),
+      event("gym.design-alignment.requested", {
+        reason: "daily-design-alignment-review",
+      }),
     );
     const next = resolveGymTask(
-      event("gym.design-alignment.requested", { reason: "daily-design-alignment-review" }),
+      event("gym.design-alignment.requested", {
+        reason: "daily-design-alignment-review",
+      }),
     );
 
     expect(first).toEqual(next);
@@ -232,7 +236,9 @@ describe("Gym task reconciliation", () => {
       "learning/codex-sessions",
       "runtime/design-alignment-review",
     ]);
-    expect(next.map((intent) => intent?.id)).toEqual(first.map((intent) => intent?.id));
+    expect(next.map((intent) => intent?.id)).toEqual(
+      first.map((intent) => intent?.id),
+    );
     expect(new Set(first.map((intent) => intent?.id)).size).toBe(3);
   });
 
@@ -259,13 +265,17 @@ describe("Gym task reconciliation", () => {
   });
 
   test("represents invalid migration recovery as one finite resource", () => {
-    expect(resolveGymTask(event("gym.resource-migration.requested"))).toMatchObject({
+    expect(
+      resolveGymTask(event("gym.resource-migration.requested")),
+    ).toMatchObject({
       id: "runtime/unified-resource-migration-v3",
       mode: "achieve",
       workflow: "unified-resource-migration",
       input: { migration: "unified-resource-v3" },
       priority: "P0",
-      acceptance: [expect.stringContaining("No standing runtime resource is mutated")],
+      acceptance: [
+        expect.stringContaining("No standing runtime resource is mutated"),
+      ],
     });
   });
 
@@ -352,27 +362,31 @@ describe("Gym task reconciliation", () => {
       workflow: "regression-run",
       input: { benchmark: "may-alignment" },
     });
-    expect(resolveGymTask(event("gym.regression.requested", { benchmark: "may-alignment" }))).toBeNull();
+    expect(
+      resolveGymTask(
+        event("gym.regression.requested", { benchmark: "may-alignment" }),
+      ),
+    ).toBeNull();
   });
 
   test("routes owner comments through the inbox rather than task fact admission", () => {
-    const subscription = gymApp.subscriptions?.find(({ id }) => id === "project-comment");
+    const subscription = gymApp.subscriptions?.find(
+      ({ id }) => id === "project-comment",
+    );
     if (!subscription) throw new Error("missing project-comment subscription");
     const input = subscription.toInput(
       event("project.comment.created", {
-        comment: "Review the current training loop and decide what should happen next.",
+        comment:
+          "Review the current training loop and decide what should happen next.",
       }),
     );
     expect(input).toMatchObject({ kind: "owner-review" });
-    expect(routeGymRequest(request(input!))).toMatchObject({
-      type: "task",
-      task: {
-        kind: "desired",
-        intent: {
-          id: "runtime/owner-review",
-          mode: "maintain",
-          owner: "gym",
-        },
+    expect(taskForGymInput(admitted(input!))).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "runtime/owner-review",
+        mode: "maintain",
+        owner: "gym",
       },
     });
   });
@@ -380,7 +394,10 @@ describe("Gym task reconciliation", () => {
   test("reconciles typed improvement wakes into one maintain task", () => {
     for (const fact of [
       event("gym.improvement.requested", { reason: "manual", trials: 3 }),
-      event("agent.revision.changed", { agent: "may", revision: "sha256:revision" }),
+      event("agent.revision.changed", {
+        agent: "may",
+        revision: "sha256:revision",
+      }),
       event("project.approval.submitted", {
         taskId: "improve/may",
         approvalId: "approval-303",
@@ -394,7 +411,9 @@ describe("Gym task reconciliation", () => {
       });
     }
     expect(
-      resolveGymTask(event("project.approval.submitted", { taskId: "another/task" })),
+      resolveGymTask(
+        event("project.approval.submitted", { taskId: "another/task" }),
+      ),
     ).toBeNull();
   });
 
@@ -408,7 +427,10 @@ describe("Gym task reconciliation", () => {
       }),
     );
     const revision = resolveGymTask(
-      event("agent.revision.changed", { agent: "may", revision: "sha256:new-may" }),
+      event("agent.revision.changed", {
+        agent: "may",
+        revision: "sha256:new-may",
+      }),
     );
     expect(focused).toEqual(revision);
     expect(focused?.input).toEqual({ agent: "may", curriculumDrain: true });
@@ -429,7 +451,11 @@ describe("Gym task reconciliation", () => {
     });
     expect(
       resolveGymTask(
-        event("metric.breach", { metricId: "aks.task-timeout-rate" }, { owner: "agent:app-ops" }),
+        event(
+          "metric.breach",
+          { metricId: "aks.task-timeout-rate" },
+          { owner: "agent:app-ops" },
+        ),
       ),
     ).toBeNull();
   });

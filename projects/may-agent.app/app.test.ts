@@ -7,7 +7,7 @@ import app, {
   PLATFORM_METRIC_INTERVAL_MS,
   PLATFORM_REVIEW_INTERVAL_MS,
   resolveMayAgentTask,
-  routeMayAgentRequest,
+  taskForMayAgentInput,
   taskInputForEvent,
 } from "./app.ts";
 
@@ -19,12 +19,11 @@ function event(
   return { type, data, ...extra };
 }
 
-function request(input: AppInput, dependency?: Record<string, unknown>) {
+function admittedInput(input: AppInput) {
   return {
     id: "request-1",
     source: { kind: "system" as const, id: "test" },
     input,
-    ...(dependency ? { dependency: dependency as never } : {}),
   };
 }
 
@@ -35,9 +34,10 @@ describe("canonical may-agent platform App", () => {
       version: 1,
       owner: "may",
       inbox: { batch: "single", maxConcurrent: 2 },
-      tasks: { attach: true, maxConcurrent: 2 },
+      tasks: { maxConcurrent: 2 },
     });
-    expect(app.route).toBe(routeMayAgentRequest);
+    expect(app.task).toBe(taskForMayAgentInput);
+    expect(app.route).toBeUndefined();
     expect(app.tasks?.resolve).toBe(resolveMayAgentTask);
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "project-comment",
@@ -101,23 +101,15 @@ describe("may-agent task routing", () => {
     expect(resolveMayAgentTask(event("project.ops_digest.tick"))).toBeNull();
   });
 
-  it("turns a Host recovery fact into one App-owned task", () => {
+  it("keeps mechanical session recovery and one-time state migration in Runtime", () => {
     expect(
       resolveMayAgentTask(
-        event("session.recovery.requested", {
-          sessionId: "s_failed/17",
-          agent: "dev",
-          action: "requeue",
-          task: "fix the bug",
-        }),
+        event("session.recovery.requested", { sessionId: "s_failed/17" }),
       ),
-    ).toMatchObject({
-      id: "runtime/session-recovery/s_failed-17",
-      parentId: "platform-system-review-feedback-loop",
-      mode: "achieve",
-      workflow: "session-recovery",
-      input: { sessionId: "s_failed/17", action: "requeue" },
-    });
+    ).toBeNull();
+    expect(
+      resolveMayAgentTask(event("may-agent.resource-migration.requested")),
+    ).toBeNull();
   });
 
   it("filters recovered, deferred, and foreign metric observations", () => {
@@ -154,33 +146,14 @@ describe("may-agent task routing", () => {
     expect(taskInputForEvent(event("metric.recovered"))).toBeNull();
   });
 
-  it("keeps an addressed request open until its exact task converges", () => {
+  it("maps addressed input directly to its stable task", () => {
     expect(
-      routeMayAgentRequest(
-        request({ kind: "owner-review", data: { reason: "manual" } }),
+      taskForMayAgentInput(
+        admittedInput({ kind: "owner-review", data: { reason: "manual" } }),
       ),
     ).toMatchObject({
-      type: "task",
-      task: { kind: "desired", intent: { id: OWNER_REVIEW_TASK_ID } },
-    });
-    expect(
-      routeMayAgentRequest(
-        request(
-          { kind: "owner-review", data: { reason: "manual" } },
-          {
-            kind: "task",
-            id: OWNER_REVIEW_TASK_ID,
-            status: "done",
-            summary: "Platform reviewed",
-            evidence: ["review:current"],
-          },
-        ),
-      ),
-    ).toEqual({
-      type: "complete",
-      summary: "Platform reviewed",
-      response: undefined,
-      evidence: ["review:current"],
+      kind: "desired",
+      intent: { id: OWNER_REVIEW_TASK_ID },
     });
   });
 });

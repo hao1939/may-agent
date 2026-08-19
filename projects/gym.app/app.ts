@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 import {
   Type,
   defineApp,
-  type AppDisposition,
   type AppEvent,
   type AppInput,
-  type AppRequest,
+  type AppTaskAttachment,
+  type AppTaskInput,
   type EventSelector,
   type TaskIntent,
 } from "@may-agent/sdk";
@@ -424,7 +424,7 @@ function gymInput(
   return { kind, data: params(data) };
 }
 
-function taskForGymInput(
+function gymTaskIntentForInput(
   input: AppInput,
   requestId: string,
 ): TaskIntent | null {
@@ -440,41 +440,54 @@ function taskForGymInput(
       return resolveGymTask(gymEvent("gym.incident.detected", data));
     case "collect-codex-learning":
       return resolveGymTask(gymEvent("gym.codex.learning.requested", data));
+    case "review-telegram-field":
+      return {
+        id: `input/${requestId.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        parentId: "regression-assurance",
+        outcome:
+          "Obtain an independent Evaluation review of the requested Telegram field evidence, consider its result, and answer the caller.",
+        acceptance: [
+          "The evaluation App result is present in the task event evidence.",
+          "The accepted result explains the finding and includes a caller-facing response.",
+        ],
+        mode: "achieve",
+        owner: "gym",
+        input: {
+          ...data,
+          dependency: {
+            id: "evaluation-review",
+            appId: "evaluation",
+            input: {
+              kind: "deep-scan",
+              data: {
+                reason: "gym-telegram-field-review",
+                requestedBy: "gym",
+                ...params(input.data),
+              },
+            },
+          },
+        },
+        priority: "P1",
+      };
     default:
       return null;
   }
 }
 
-export function routeGymRequest(
-  request: Readonly<AppRequest>,
-): AppDisposition | null {
-  if (request.dependency) {
-    return request.dependency.status === "done"
-      ? {
-          type: "complete",
-          summary:
-            request.dependency.summary ?? `${request.input.kind} completed`,
-          response: request.dependency.response,
-          evidence: request.dependency.evidence,
-        }
-      : null;
-  }
-  if (request.input.kind === "review-telegram-field") {
-    return {
-      type: "delegate",
-      appId: "evaluation",
-      input: {
-        kind: "deep-scan",
-        data: {
-          reason: "gym-telegram-field-review",
-          requestedBy: "gym",
-          ...params(request.input.data),
-        },
-      },
-    };
-  }
-  const intent = taskForGymInput(request.input, request.id);
-  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+export function taskForGymInput(
+  admitted: Readonly<AppTaskInput>,
+): AppTaskAttachment {
+  const intent = gymTaskIntentForInput(admitted.input, admitted.id) ?? {
+    id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+    parentId: "gym-system",
+    outcome: `Interpret and handle admitted Gym input ${admitted.input.kind}.`,
+    acceptance: ["The Gym owner returns an evidence-backed accepted result."],
+    mode: "achieve" as const,
+    owner: "gym",
+    input: { kind: admitted.input.kind, data: params(admitted.input.data) },
+    priority: "P1" as const,
+  };
+  return { kind: "desired", intent };
 }
 
 const gymTaskSubscriptions: EventSelector[] = [
@@ -504,7 +517,7 @@ export default defineApp({
   },
   inputSchema: gymInputSchema,
   inbox: { batch: "single", maxConcurrent: 2 },
-  route: routeGymRequest,
+  task: taskForGymInput,
   subscriptions: [
     {
       id: "project-comment",
@@ -553,7 +566,6 @@ export default defineApp({
   ],
 
   tasks: {
-    attach: true,
     maxConcurrent: 2,
     subscriptions: [...gymTaskSubscriptions],
     resolve: resolveGymTask,

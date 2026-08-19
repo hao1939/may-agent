@@ -1,4 +1,11 @@
-import { Type, defineApp, type AppEvent, type AppInput } from "@may-agent/sdk";
+import {
+  Type,
+  defineApp,
+  type AppEvent,
+  type AppInput,
+  type AppTaskAttachment,
+  type AppTaskInput,
+} from "@may-agent/sdk";
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 
@@ -42,6 +49,11 @@ function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function taskIdPart(value: unknown): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return normalized.replace(/[^a-zA-Z0-9._-]+/g, "-") || "input";
+}
+
 function requiredText(
   data: Record<string, unknown>,
   field: string,
@@ -68,6 +80,41 @@ export function evaluationHumanDecisionInput(
   };
 }
 
+export function taskForMayInput(
+  admitted: Readonly<AppTaskInput>,
+): AppTaskAttachment {
+  const data = record(admitted.input.data);
+  const decisionKey =
+    admitted.input.kind === "human-decision" ? taskIdPart(data.dedupeKey) : "";
+  const taskId = decisionKey
+    ? `decision/${decisionKey}`
+    : `conversation/${taskIdPart(admitted.id)}`;
+  return {
+    kind: "desired",
+    intent: {
+      id: taskId,
+      parentId: "may",
+      outcome:
+        admitted.input.kind === "human-decision"
+          ? "Handle the explicit human-decision obligation and return the useful outcome."
+          : "Understand and fulfill the human request, then answer naturally.",
+      acceptance: [
+        "The request is handled as far as current capabilities allow.",
+        "The accepted result contains a direct caller-facing response or an exact evidenced wait.",
+      ],
+      mode: "achieve",
+      owner: "may",
+      input: {
+        kind: admitted.input.kind,
+        data,
+        source: admitted.source,
+      },
+      priority: "P0",
+      category: "conversation",
+    },
+  };
+}
+
 export default defineApp({
   id: "may",
   version: 1,
@@ -76,6 +123,8 @@ export default defineApp({
     "Conversation App for durable human requests and explicit human-decision obligations.",
   inputSchema: mayInputSchema,
   inbox: { batch: "single" },
+  task: taskForMayInput,
+  tasks: { maxConcurrent: 8 },
   subscriptions: [
     {
       id: "evaluation-human-decision",

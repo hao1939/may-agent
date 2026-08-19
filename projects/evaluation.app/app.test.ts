@@ -4,9 +4,10 @@ import {
   matchesEventSelector,
   type AppEvent,
   type AppInput,
+  type AppTaskInput,
 } from "@may-agent/sdk";
 import app, {
-  routeEvaluationRequest,
+  taskForEvaluationInput,
   taskInputForEvent,
   taskIntentForEvent,
   taskIntentForInput,
@@ -30,12 +31,11 @@ function event(
   return { type, data, ...extra };
 }
 
-function request(input: AppInput, dependency?: Record<string, unknown>) {
+function admitted(input: AppInput): AppTaskInput {
   return {
     id: "request-1",
     source: { kind: "system" as const, id: "test" },
     input,
-    ...(dependency ? { dependency: dependency as never } : {}),
   };
 }
 
@@ -46,9 +46,10 @@ describe("canonical evaluation App", () => {
       version: 1,
       owner: "evaluator",
       inbox: { batch: "single", maxConcurrent: 5 },
-      tasks: { attach: true, maxConcurrent: 5 },
+      tasks: { maxConcurrent: 5 },
     });
-    expect(app.route).toBe(routeEvaluationRequest);
+    expect(app.task).toBe(taskForEvaluationInput);
+    expect(app.route).toBeUndefined();
     expect(app.tasks?.resolve).toBe(taskIntentForEvent);
     expect(app.tasks?.subscriptions).not.toBeEmpty();
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
@@ -97,64 +98,42 @@ describe("canonical evaluation App", () => {
     expect(app.actions?.["review-project-app"]).toBeUndefined();
   });
 
-  test("handles configured work by policy and leaves human messages to owner judgment", () => {
+  test("resolves every admitted input to one task", () => {
     expect(
-      routeEvaluationRequest(
-        request({
+      taskForEvaluationInput(
+        admitted({
           kind: "message",
           data: { message: "Please inspect the result" },
         }),
       ),
-    ).toBeNull();
+    ).toMatchObject({
+      kind: "desired",
+      intent: { id: "input/request-1", mode: "achieve", owner: "evaluator" },
+    });
 
     expect(
-      routeEvaluationRequest(
-        request({
+      taskForEvaluationInput(
+        admitted({
           kind: "canary-probe",
           data: { prompt: "Report the canary result" },
         }),
       ),
-    ).toEqual({
-      type: "delegate",
-      appId: "evaluation-canary-worker",
-      input: { kind: "probe", data: { prompt: "Report the canary result" } },
+    ).toMatchObject({
+      kind: "desired",
+      intent: { id: "input/request-1", mode: "achieve", owner: "evaluator" },
     });
 
     expect(
-      routeEvaluationRequest(
-        request({ kind: "aftermath-scan", data: { reason: "scheduled" } }),
+      taskForEvaluationInput(
+        admitted({ kind: "aftermath-scan", data: { reason: "scheduled" } }),
       ),
     ).toMatchObject({
-      type: "task",
-      task: {
-        kind: "desired",
-        intent: {
-          id: "runtime/aftermath-backfill",
-          mode: "maintain",
-          workflow: "evaluator-aftermath",
-        },
+      kind: "desired",
+      intent: {
+        id: "runtime/aftermath-backfill",
+        mode: "maintain",
+        workflow: "evaluator-aftermath",
       },
-    });
-  });
-
-  test("completes the inbox request only after its exact dependency converges", () => {
-    expect(
-      routeEvaluationRequest(
-        request(
-          { kind: "owner-review", data: { reason: "metric.breach" } },
-          {
-            kind: "task",
-            id: "runtime/owner-review",
-            status: "done",
-            summary: "Metric evidence reviewed",
-            evidence: ["metric:reviewed"],
-          },
-        ),
-      ),
-    ).toEqual({
-      type: "complete",
-      summary: "Metric evidence reviewed",
-      evidence: ["metric:reviewed"],
     });
   });
 });

@@ -1,10 +1,10 @@
 import {
   Type,
   defineApp,
-  type AppDisposition,
   type AppEvent,
   type AppInput,
-  type AppRequest,
+  type AppTaskAttachment,
+  type AppTaskInput,
   type TaskIntent,
 } from "@may-agent/sdk";
 
@@ -18,7 +18,7 @@ export const PLATFORM_METRIC_INTERVAL_MS = 300_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
 const platformInputSchema = Type.Union(
-  ["owner-review", "resource-migration", "session-recovery"].map((kind) =>
+  ["owner-review"].map((kind) =>
     Type.Object(
       { kind: Type.Literal(kind), data: detailsSchema },
       { additionalProperties: false },
@@ -67,39 +67,6 @@ function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
 
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   switch (input.kind) {
-    case "session-recovery": {
-      const data = record(input.data);
-      const sessionId = stringValue(data.sessionId);
-      if (!sessionId) return null;
-      const taskId = sessionId.replace(/[^a-zA-Z0-9._-]+/g, "-");
-      return {
-        id: `runtime/session-recovery/${taskId}`,
-        parentId: "platform-system-review-feedback-loop",
-        outcome: `Resolve failed session ${sessionId} through the owning App.`,
-        acceptance: [
-          "The classified recovery is attempted once and records either terminal evidence or an explicit owner decision.",
-        ],
-        mode: "achieve",
-        workflow: "session-recovery",
-        input: data,
-        priority: "P1",
-      };
-    }
-    case "resource-migration":
-      return {
-        id: "runtime/unified-resource-migration-v1",
-        parentId: "project",
-        outcome:
-          "Retire the fixed set of pre-contract May Agent task resources whose outcomes are now implemented or superseded.",
-        acceptance: [
-          "Only the named version-1 legacy resources are closed, dependent work before its dependency, and every closure leaves a completion receipt.",
-          "The unresolved evidence-archive secret-redaction task remains live until its archive-wide guarantee is proven.",
-        ],
-        mode: "achieve",
-        workflow: "unified-resource-migration",
-        input: { migration: "unified-resource-v1" },
-        priority: "P0",
-      };
     case "owner-review":
       return {
         id: OWNER_REVIEW_TASK_ID,
@@ -124,10 +91,6 @@ export function taskInputForEvent(
 ): AppInput | null {
   const data = eventData(event);
   switch (event.type) {
-    case "session.recovery.requested":
-      return { kind: "session-recovery", data };
-    case "may-agent.resource-migration.requested":
-      return { kind: "resource-migration", data };
     case "project.tick":
       return platformOwnerReview("scheduled-project-review", data);
     case "project.tasks.ready":
@@ -158,22 +121,22 @@ export function resolveMayAgentTask(
   return input ? taskIntentForInput(input) : null;
 }
 
-export function routeMayAgentRequest(
-  request: Readonly<AppRequest>,
-): AppDisposition | null {
-  if (request.dependency) {
-    return request.dependency.status === "done"
-      ? {
-          type: "complete",
-          summary:
-            request.dependency.summary ?? `${request.input.kind} completed`,
-          response: request.dependency.response,
-          evidence: request.dependency.evidence,
-        }
-      : null;
-  }
-  const intent = taskIntentForInput(request.input);
-  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+export function taskForMayAgentInput(
+  admitted: Readonly<AppTaskInput>,
+): AppTaskAttachment {
+  const intent = taskIntentForInput(admitted.input) ?? {
+    id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+    parentId: "platform-system-review-feedback-loop",
+    outcome: `Interpret and handle admitted may-agent input ${admitted.input.kind}.`,
+    acceptance: [
+      "The accountable platform owner returns an evidence-backed result or revises the same task to the exact required platform outcome.",
+    ],
+    mode: "achieve" as const,
+    owner: projectOwnerAgent,
+    input: { kind: admitted.input.kind, data: record(admitted.input.data) },
+    priority: "P1" as const,
+  };
+  return { kind: "desired", intent };
 }
 
 function scheduledEvent(
@@ -195,7 +158,7 @@ const app = defineApp({
     "May-agent platform App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
   inbox: { batch: "single", maxConcurrent: 2 },
-  route: routeMayAgentRequest,
+  task: taskForMayAgentInput,
   workspace: { kind: "local", localPath: "../may-agent" },
   subscriptions: [
     {
@@ -268,10 +231,7 @@ const app = defineApp({
     },
   },
   tasks: {
-    attach: true,
     subscriptions: [
-      { type: "session.recovery.requested", project: projectId },
-      { type: "may-agent.resource-migration.requested", project: projectId },
       { type: "project.tick", project: projectId },
       { type: "project.tasks.ready", project: projectId },
       "metric.breach",

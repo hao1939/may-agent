@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
+import {
+  matchesEventSelector,
+  type AppEvent,
+  type AppTaskInput,
+} from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import app, { evaluationHumanDecisionInput } from "./app.ts";
+import app, { evaluationHumanDecisionInput, taskForMayInput } from "./app.ts";
 
 function decisionEvent(
   overrides: Partial<AppEvent<Record<string, unknown>>> = {},
@@ -30,14 +34,59 @@ describe("canonical May conversation App", () => {
       version: 1,
       owner: "may",
       inbox: { batch: "single" },
+      tasks: { maxConcurrent: 8 },
     });
+    expect(app.task).toBe(taskForMayInput);
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "evaluation-human-decision",
     ]);
-    expect(app).not.toHaveProperty("tasks");
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
+  });
+
+  test("resolves conversation and decision input to stable May-owned tasks", () => {
+    const admitted = (
+      input: AppTaskInput["input"],
+      id: string,
+    ): AppTaskInput => ({
+      id,
+      source: { kind: "human", id: "operator" },
+      input,
+    });
+    expect(
+      taskForMayInput(
+        admitted(
+          { kind: "message", data: { message: "Review the latest state" } },
+          "conversation-request-1",
+        ),
+      ),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "conversation/conversation-request-1",
+        parentId: "may",
+        owner: "may",
+        category: "conversation",
+      },
+    });
+    expect(
+      taskForMayInput(
+        admitted(
+          {
+            kind: "human-decision",
+            data: {
+              message: "Approve rollout",
+              dedupeKey: "evaluation:session-1:rollout",
+            },
+          },
+          "request-2",
+        ),
+      ),
+    ).toMatchObject({
+      kind: "desired",
+      intent: { id: "decision/evaluation-session-1-rollout" },
+    });
   });
 
   test("accepts ordinary human messages through the same App schema", () => {

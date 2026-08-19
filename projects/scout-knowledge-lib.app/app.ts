@@ -1,10 +1,10 @@
 import {
   Type,
   defineApp,
-  type AppDisposition,
   type AppEvent,
   type AppInput,
-  type AppRequest,
+  type AppTaskAttachment,
+  type AppTaskInput,
   type TaskIntent,
 } from "@may-agent/sdk";
 import { xhsCredentialObserver } from "./watchers/xhs-credential.js";
@@ -188,7 +188,7 @@ function scoutInput(kind: AppInput["kind"], data: unknown): AppInput {
   return { kind, data: eventParams(data) };
 }
 
-function taskForScoutInput(input: AppInput): TaskIntent | null {
+function intentForScoutInput(input: AppInput): TaskIntent | null {
   const data = eventParams(input.data);
   switch (input.kind) {
     case "owner-review":
@@ -214,22 +214,25 @@ function taskForScoutInput(input: AppInput): TaskIntent | null {
   }
 }
 
-export function routeScoutRequest(
-  request: Readonly<AppRequest>,
-): AppDisposition | null {
-  if (request.dependency) {
-    return request.dependency.status === "done"
-      ? {
-          type: "complete",
-          summary:
-            request.dependency.summary ?? `${request.input.kind} completed`,
-          response: request.dependency.response,
-          evidence: request.dependency.evidence,
-        }
-      : null;
-  }
-  const intent = taskForScoutInput(request.input);
-  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+export function taskForScoutInput(
+  admitted: Readonly<AppTaskInput>,
+): AppTaskAttachment {
+  const intent = intentForScoutInput(admitted.input) ?? {
+    id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+    parentId: "library-operations",
+    outcome: `Interpret and handle admitted Scout input ${admitted.input.kind}.`,
+    acceptance: [
+      "Scout returns an evidence-backed result or revises this same task to the exact library outcome.",
+    ],
+    mode: "achieve" as const,
+    owner: "scout",
+    input: {
+      kind: admitted.input.kind,
+      data: eventParams(admitted.input.data),
+    },
+    priority: "P1" as const,
+  };
+  return { kind: "desired", intent };
 }
 
 export default defineApp({
@@ -244,7 +247,7 @@ export default defineApp({
   },
   inputSchema: scoutInputSchema,
   inbox: { batch: "single", maxConcurrent: 1 },
-  route: routeScoutRequest,
+  task: taskForScoutInput,
   subscriptions: [
     {
       id: "project-comment",
@@ -348,7 +351,6 @@ export default defineApp({
   ],
 
   tasks: {
-    attach: true,
     maxConcurrent: 1,
     subscriptions: [
       { type: "scout.explore", project: projectId },

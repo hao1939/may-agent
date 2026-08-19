@@ -1,0 +1,13 @@
+{
+  "root_task_id": "evaluation-canary-worker",
+  "groups": {
+    "evaluation-canary-worker": {
+      "id": "evaluation-canary-worker",
+      "parent_id": null,
+      "state": "backlog",
+      "owner": "evaluator",
+      "children": []
+    }
+  },
+  "resources": {}
+}
