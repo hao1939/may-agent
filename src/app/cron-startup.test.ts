@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { Type } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,7 +23,7 @@ function session(appDir: string, source: string, recoveryOwner?: string): Persis
 describe("cron startup recovery", () => {
   it("runs installed App task recovery before generic stale-session resumption", () => {
     const source = readFileSync(new URL("./cron-startup.ts", import.meta.url), "utf8");
-    const recoveryImport = source.indexOf('import { recoverInstalledAppTasks } from "./app-task-runtime.js";');
+    const recoveryImport = source.indexOf('recoverInstalledAppTasks } from "./app-task-runtime.js";');
     const recoveryCall = source.indexOf(
       "const claimedAppTaskSessionIds = options.claimedAppTaskSessionIds ?? recoverInstalledAppTasks(bus);",
     );
@@ -53,8 +54,11 @@ describe("cron startup recovery", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-active-task-app-"));
     try {
       for (const sessionId of ["s_1786376766268_235", "s_1786376881309_240"]) {
+        const persisted = session(appDir, "workflow:task-handler", "app-task-reconciler");
+        persisted.task +=
+          '\n\n## Reconciliation Task\n```json\n{"appId":"sample","taskId":"work/legacy","generation":1}\n```';
         expect(
-          shouldResumeStartupSession(sessionId, session(appDir, "workflow:task-handler", "app-task-reconciler")),
+          shouldResumeStartupSession(sessionId, persisted),
         ).toEqual({
           resume: false,
           reason: "Task-bound project session was not claimed by App task recovery during startup",
@@ -65,14 +69,40 @@ describe("cron startup recovery", () => {
     }
   });
 
+  it("resumes an unbound typed owner-review workflow without losing its decision contract", () => {
+    const appDir = mkdtempSync(join(tmpdir(), "may-owner-review-app-"));
+    try {
+      const outputSchema = Type.Object({
+        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
+        summary: Type.String({ minLength: 1 }),
+        evidence: Type.Array(Type.String({ minLength: 1 })),
+      });
+      const persisted: PersistedSession = {
+        ...session(appDir, "workflow:platform-owner-review", "project-app-task-reconciler"),
+        taskId: null,
+        projectTaskId: null,
+        requireFinish: true,
+        outputSchema,
+      };
+
+      expect(shouldResumeStartupSession("owner-review-session", persisted)).toEqual({ resume: true });
+      expect({ requireFinish: persisted.requireFinish, outputSchema: persisted.outputSchema }).toEqual({
+        requireFinish: true,
+        outputSchema,
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   it("lets the App inbox fence and replace an interrupted owner attempt", () => {
     expect(shouldResumeStartupSession("app-owner-session", session("/tmp/evaluation.app", "app-inbox-owner"))).toEqual({
       resume: false,
-      reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
+      reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
     });
     expect(shouldResumeStartupSession("human-app-owner", session("/tmp/may.app", "telegram", "app-inbox"))).toEqual({
       resume: false,
-      reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
+      reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
     });
   });
 
