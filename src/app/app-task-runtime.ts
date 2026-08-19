@@ -1916,6 +1916,14 @@ async function reconcileTask(input: {
     owner: primary.owner,
   });
 
+  // Claiming a task rewrites the canonical state plus its disposable route and
+  // read projections. On large retained trees that synchronous durability
+  // boundary is substantial. Yield before owner/workflow association can
+  // perform another state rewrite, so HTTP readiness and accepted event
+  // ingress get an observable turn inside one reconciliation (not merely
+  // between separate claims).
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
   const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
   let taskWorkspace: PreparedTaskWorkspace | undefined;
   let workspaceFinalized = false;
