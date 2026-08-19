@@ -101,8 +101,9 @@ function eventIdentity(event: AgentEvent): string | undefined {
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
   const taskId = typeof event.target?.taskId === "string" ? event.target.taskId.trim() : "";
   if (!taskId) return null;
-  const data = event.data;
-  const selectedAppId = [event.target?.appId, event.target?.project, data.appId, data.project, data.projectId].find(
+  // Exact-task routing authority is entirely in the canonical envelope target.
+  // App/project identities in data remain correlation and lifecycle evidence.
+  const selectedAppId = [event.target?.appId, event.target?.project].find(
     (value) => typeof value === "string" && value.trim(),
   );
   const appId = typeof selectedAppId === "string" ? selectedAppId.trim() : "";

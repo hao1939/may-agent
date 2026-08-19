@@ -232,6 +232,37 @@ describe("App inbox runtime", () => {
     expect(task.attached).toEqual([`probe/${row.id}`]);
   });
 
+  it("keeps an explicit malformed exact-task target visible as subscriber failure", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const failures: Array<Record<string, unknown>> = [];
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failures.push(event.data as Record<string, unknown>);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      target: { taskId: "missing-app-target" },
+      data: { appId: "correlation-only" },
+    });
+
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatchObject({
+      originalEventType: "trigger.metrics-snapshot",
+      error: expect.stringContaining("has no canonical App identity"),
+    });
+    expect(task.attached).toEqual([]);
+  });
+
   it("emits one Conversation update when human work changes", async () => {
     const mayDir = join(root, "may.app");
     mkdirSync(mayDir, { recursive: true });

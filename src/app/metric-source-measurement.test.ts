@@ -53,7 +53,10 @@ describe("source-query metric measurement", () => {
       type: "trigger.metrics-snapshot",
       source: "control-socket",
       owner: "agent:may",
-      data: { reason: "golden-trace" },
+      data: {
+        reason: "golden-trace",
+        taskId: "reconcile-stale-active-metric-contract-20260818",
+      },
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
 
