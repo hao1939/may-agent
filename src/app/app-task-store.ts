@@ -793,14 +793,13 @@ function compactPendingTaskTriggers(tree: TaskTree): void {
 }
 
 function canonicalTaskStateForWrite(tree: TaskTree): Record<string, unknown> {
-  const state = JSON.parse(JSON.stringify(tree)) as Record<string, unknown>;
-  const canonical = state as unknown as TaskTree;
-  compactHistoricalReceipts(canonical);
-  compactHistoricalAttemptTriggers(canonical);
-  compactPendingTaskTriggers(canonical);
-  delete state.tasks;
-  delete state.active_task_id;
-  delete state.active_task_ids;
+  // Historical compaction is the canonical in-memory shape too. Keeping a
+  // second, more detailed copy until the next disk read made every state write
+  // clone and parse the complete (often tens-of-megabytes) task tree first.
+  compactHistoricalReceipts(tree);
+  compactHistoricalAttemptTriggers(tree);
+  compactPendingTaskTriggers(tree);
+  const { tasks: _tasks, active_task_id: _activeTaskId, active_task_ids: _activeTaskIds, ...state } = tree;
   return state;
 }
 
