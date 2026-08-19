@@ -143,6 +143,34 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("yields between synchronous claim prefixes while filling concurrency", async () => {
+    let markerRan = false;
+    const starts: Array<{ taskId: string; markerRan: boolean }> = [];
+    const controller = new AppTaskController({
+      maxConcurrent: 3,
+      async reconcile(taskId) {
+        starts.push({ taskId, markerRan });
+        const until = performance.now() + 20;
+        while (performance.now() < until) {
+          // Model a large task-tree claim before the reconciler's first await.
+        }
+        await Bun.sleep(1);
+      },
+    });
+    controller.enqueue("one");
+    controller.enqueue("two");
+    controller.enqueue("three");
+    setTimeout(() => {
+      markerRan = true;
+    }, 0);
+
+    await waitUntil(() => starts.length === 3 && controller.snapshot().running.length === 0);
+    expect(starts.map((entry) => entry.taskId).sort()).toEqual(["one", "three", "two"]);
+    expect(starts[0]?.markerRan).toBeFalse();
+    expect(starts.slice(1).every((entry) => entry.markerRan)).toBeTrue();
+    controller.close();
+  });
+
   it("yields to the event loop between shared-capacity handoffs", async () => {
     const capacity = new HostCapacity(1);
     const started: string[] = [];
