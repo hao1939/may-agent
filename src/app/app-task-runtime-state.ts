@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 export type ProjectRuntimePaths = {
@@ -97,6 +97,27 @@ export function projectRuntimePaths(appDir: string, canonicalProjectsRoot?: stri
     journalPath: join(stateDir, "journal.jsonl"),
     migrationLogPath: join(stateDir, "runtime-state-migrations.jsonl"),
   };
+}
+
+/** Read the canonical top-level lifecycle without parsing the potentially large task tree. */
+export function readTaskStateLifecycle(appDir: string): string {
+  const path = projectRuntimePaths(appDir).taskStatePath;
+  let fd: number | undefined;
+  try {
+    fd = openSync(path, "r");
+    // canonicalTaskStateForWrite places project_lifecycle in the small header,
+    // before conditions/resources/history. Keep the generation watcher bounded.
+    const buffer = Buffer.allocUnsafe(4 * 1024);
+    const bytesRead = readSync(fd, buffer, 0, buffer.length, 0);
+    const header = buffer.toString("utf8", 0, bytesRead);
+    const encoded = header.match(/^  "project_lifecycle":\s*("(?:\\.|[^"\\])*")\s*,?$/m)?.[1];
+    const lifecycle = encoded ? JSON.parse(encoded) : "";
+    return typeof lifecycle === "string" ? lifecycle.trim() : "";
+  } catch {
+    return "";
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
 }
 
 export function ensureTaskState(appDir: string, canonicalProjectsRoot?: string): EnsureTaskStateResult {
