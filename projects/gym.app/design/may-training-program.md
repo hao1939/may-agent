@@ -22,27 +22,28 @@ timer or domain event
   -> converge, wait on an exact condition, or emit another wake
 ```
 
-Each task is a Kubernetes-style resource:
+Each task is a durable resource:
 
 - its specification says what outcome must remain true;
 - its status says what is currently known;
 - events and timers wake it when relevant facts change;
 - its owner chooses what the new evidence means;
 - its workflow applies reusable operational experience; and
-- the project controller persists the result and reconciles again when needed.
+- the Host persists the result and reconciles again when needed.
 
-The task tree shows scope, ownership, and decomposition. It does not schedule
-work. There is no central Gym pipeline or scheduler task.
+Task resources hold the desired and observed state. Their generated tree shows
+scope, ownership, and decomposition; it does not schedule work. There is no
+central Gym pipeline or scheduler task.
 
 ## Responsibilities
 
-| Part                                     | Responsibility                                                                                                 |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Gym runner (`projects/gym`)              | Benchmark definitions, execution, comparisons, and immutable run evidence                                      |
-| Gym App (`projects/gym.app`)             | Resources, event routing, workflows, checkpoints, and autonomous progress                                      |
-| Gym owner agent (`gym`)                  | Goal and priority judgment, classification, evidence review, and authority boundaries                          |
-| Implementation agent (`gym-implementer`) | One isolated candidate artifact within the writable scope it receives                                          |
-| May-agent infrastructure                 | Event delivery, timers, task persistence, Conditions, attempt fencing, recovery, metrics, and human escalation |
+| Part                                     | Responsibility                                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Gym runner (`projects/gym`)              | Benchmark definitions, execution, comparisons, and immutable run evidence                                        |
+| Gym App (`projects/gym.app`)             | Resources, event routing, workflows, checkpoints, and autonomous progress                                        |
+| Gym owner agent (`gym`)                  | Goal and priority judgment, classification, evidence review, and authority boundaries                            |
+| Implementation agent (`gym-implementer`) | One isolated candidate artifact within the writable scope it receives                                            |
+| May-agent Host                           | Event delivery, timers, task persistence, Conditions, attempt fencing, recovery, metrics, and delivery mechanics |
 
 The Gym owner is read-only. It judges evidence but does not edit the artifact it
 judges. The implementation agent may edit only the isolated candidate or
@@ -61,7 +62,7 @@ the same task identity.
 | Resource                          | Typical wake                                                    | Desired outcome                                                          |
 | --------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `improve/may`                     | daily refill, human request, May metric, approval, May revision | May remains on the best approved behavior                                |
-| `runtime/evaluation-intake`       | `evaluation.reviewed`                                           | Reviewed May evaluations are classified and filed                        |
+| `runtime/evaluation-intake`       | `evaluation.recorded`                                           | Durable May evaluations are classified and filed                         |
 | `learning/codex-sessions`         | hourly timer                                                    | Strong reusable Hao intent is collected as candidate learning evidence   |
 | `learning/telegram-field-review`  | daily timer                                                     | Real deputy conversations produce only strong reusable learning signals  |
 | `runtime/design-alignment-review` | daily timer or explicit request                                 | Accepted Gym and May promises remain aligned with code and live evidence |
@@ -91,12 +92,12 @@ Every Gym workflow follows the same rules:
 6. Converge, wait on an exact Condition, ask the owner for judgment, or emit a
    continuation wake.
 
-Project-app task-owner prompts have a strict finalization contract. Once the
+App task-owner prompts have a strict finalization contract. Once the
 current evidence supports `converged` or `waiting`, the owner must call
 `finish()` exactly once as the final action. It must not end with prose, empty
 text, or any non-tool final answer. The `finish()` payload includes
 `result.state` exactly as `converged` or `waiting`, cites evidence, and includes
-`actions: []` when no task-tree mutation is needed. It includes `conditions`
+`actions: []` when no task-resource change is needed. It includes `conditions`
 only for exact observable waits. When the Reconciliation Task payload embeds
 live direct children, the owner cites that embedded child state instead of
 probing or guessing task-resource storage paths.
@@ -258,7 +259,7 @@ isolated construction, revision, and verification. It asks Hao only when:
 ```text
 verified artifact
   -> project.approval.requested
-  -> message.created
+  -> human notification carrying the exact approval identity
   -> Hao replies
   -> project.approval.submitted
   -> the exact Condition wakes improve/may
@@ -320,7 +321,7 @@ workflow may invoke the CLI and preserves its resulting run pointer.
 
 - Tasks hold desired and observed state; workflows hold reusable process.
 - Events wake work and carry facts; they are not jobs.
-- The task tree explains scope and ownership; it does not schedule.
+- The generated task tree explains scope and ownership; it does not schedule.
 - Event-resolved `runtime/*` resources are reconciler-owned. Handler actions do
   not create, update, close, or unblock them; a later event may reconcile that
   same resource through the app resolver.

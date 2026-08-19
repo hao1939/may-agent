@@ -58,10 +58,11 @@ supported, needs revision, conflicts, or belongs outside deputy learning.
 Intake never changes May or benchmark truth directly.
 
 Events wake reconciliation. Each incident, regression request, and review
-request resolves to stable task intent. The task tree records ownership,
-attempts, and outcomes; it does not schedule work. Known tasks bind to the
-existing Gym workflows, while an unavailable or blocked workflow falls back to
-the Gym owner review workflow.
+request resolves to stable task intent. Task resources hold desired and observed
+state; the generated tree only presents their ownership and relationships.
+Known tasks bind to existing Gym workflows. An unavailable named workflow stays
+visible in `attention` until its binding is repaired; the Host never silently
+substitutes the owner or another workflow.
 
 A daily design-alignment event also wakes one stable, read-only Gym owner task.
 It compares accepted May/Gym promises with implementation and recent runtime

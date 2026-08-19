@@ -1,10 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import { emitGymEvent, gymAppRoot, gymEvent } from "./lib/context";
@@ -12,7 +7,7 @@ import { extractTrigger, safeKey } from "./lib/trigger";
 
 export const name = "evaluation-intake";
 export const description =
-  "Preserve the reviewed May evaluation that triggered this canonical task attempt.";
+  "Preserve the durable May evaluation fact that triggered this canonical task attempt.";
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -27,13 +22,8 @@ function writeJsonAtomic(path: string, value: unknown): void {
   renameSync(temporaryPath, path);
 }
 
-function evaluationIdentity(
-  details: Record<string, unknown>,
-): string {
-  const raw =
-    details.reviewSessionId ??
-    details.sessionId ??
-    details.id;
+function evaluationIdentity(details: Record<string, unknown>): string {
+  const raw = details.reviewSessionId ?? details.sessionId ?? details.id;
   const fallback = createHash("sha256")
     .update(JSON.stringify(details))
     .digest("hex")
@@ -101,12 +91,15 @@ function writeIncident(
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const appDir = gymAppRoot(ctx);
   const trigger = extractTrigger(ctx);
-  if (!trigger || trigger.type !== "evaluation.reviewed") {
-    return ctx.blocked("Evaluation intake requires its canonical evaluation.reviewed trigger");
+  if (!trigger || trigger.type !== "evaluation.recorded") {
+    return ctx.blocked(
+      "Evaluation intake requires its canonical evaluation.recorded trigger",
+    );
   }
   const data = record(trigger.data);
   const details = {
     ...record(trigger.target),
+    ...record(data.evaluation),
     ...data,
     ...record(data.params),
   };

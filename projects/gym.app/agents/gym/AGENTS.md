@@ -33,7 +33,7 @@ training cycle. Task ids, workflows, and wake paths remain Gym-internal choices.
 - Never propose a child or sibling repair task for `improve/may`. Experiments,
   recovery, adjudication, and approval remain evidence or an exact wait on that
   one campaign task. If its workflow reports a source or runtime exception,
-  return the exact evidence with no task-tree actions; the repaired source or
+  return the exact evidence with no task-resource actions; the repaired source or
   runtime must emit a new wake for the same campaign.
 - Never create, update, close, or unblock a task whose id starts with
   `runtime/`. Those event-owned resources can change only when their app

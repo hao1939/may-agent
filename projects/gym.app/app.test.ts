@@ -439,22 +439,26 @@ describe("Gym evaluation frontier", () => {
   test("routes all May evaluations to one stable task", () => {
     const failure = resolveGymTask(
       event(
-        "evaluation.reviewed",
+        "evaluation.recorded",
         {
-          agent: "may",
-          lane: "needs_triage",
-          reviewedVerdict: "needs_improvement",
-          sessionId: "s_bad_may_run",
+          evaluation: {
+            agent: "may",
+            lane: "needs_triage",
+            verdict: "needs_improvement",
+            sessionId: "s_bad_may_run",
+          },
         },
         { source: "evaluator-aftermath" },
       ),
     );
     const success = resolveGymTask(
-      event("evaluation.reviewed", {
-        agent: "may",
-        lane: "success_candidate",
-        reviewedVerdict: "good",
-        sessionId: "s_good_may_run",
+      event("evaluation.recorded", {
+        evaluation: {
+          agent: "may",
+          lane: "success_candidate",
+          verdict: "good",
+          sessionId: "s_good_may_run",
+        },
       }),
     );
     expect(failure).toMatchObject({
@@ -469,10 +473,26 @@ describe("Gym evaluation frontier", () => {
   test("ignores non-May evaluations", () => {
     expect(
       resolveGymTask(
-        event("evaluation.reviewed", {
-          agent: "coder",
-          lane: "needs_triage",
-          reviewedVerdict: "needs_improvement",
+        event("evaluation.recorded", {
+          evaluation: {
+            agent: "coder",
+            lane: "needs_triage",
+            verdict: "needs_improvement",
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  test("ignores structured skips because they contain no behavior evidence", () => {
+    expect(
+      resolveGymTask(
+        event("evaluation.recorded", {
+          evaluation: {
+            agent: "may",
+            verdict: "skipped",
+            sessionId: "s_missing_evidence",
+          },
         }),
       ),
     ).toBeNull();

@@ -17,7 +17,7 @@ function task(data: Record<string, unknown>): string {
     "```",
     "## Trigger Event",
     "```json",
-    JSON.stringify({ type: "evaluation.reviewed", data }),
+    JSON.stringify({ type: "evaluation.recorded", data: { evaluation: data } }),
     "```",
   ].join("\n");
 }
@@ -70,7 +70,9 @@ describe("evaluation-intake", () => {
         join(appDir, ".state", "learning", "evidence", "session-bad.json"),
       ),
     ).toBe(true);
-    expect(existsSync(join(appDir, ".state", "incidents", "session-bad.json"))).toBe(true);
+    expect(
+      existsSync(join(appDir, ".state", "incidents", "session-bad.json")),
+    ).toBe(true);
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.review.requested",
@@ -89,7 +91,11 @@ describe("evaluation-intake", () => {
     await execute(
       canonicalGymTestContext({
         projectsRoot,
-        task: task({ agent: "may", sessionId: "current-event", reviewedVerdict: "pass" }),
+        task: task({
+          agent: "may",
+          sessionId: "current-event",
+          reviewedVerdict: "pass",
+        }),
       }),
     );
 
@@ -136,7 +142,9 @@ describe("evaluation-intake", () => {
           ),
         ),
       ).toMatchObject({ polarity: "positive" });
-      expect(existsSync(join(appDir, ".state", "incidents", `${sessionId}.json`))).toBe(false);
+      expect(
+        existsSync(join(appDir, ".state", "incidents", `${sessionId}.json`)),
+      ).toBe(false);
     }
     expect(emitted).toEqual([]);
   });

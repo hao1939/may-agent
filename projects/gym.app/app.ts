@@ -25,6 +25,7 @@ function eventDetails(event: Record<string, unknown>): Record<string, unknown> {
   const data = params(event.data);
   return {
     ...params(event.target),
+    ...params(data.evaluation),
     ...data,
     ...selected(event, ["action", "owner", "source", "urgency"]),
   };
@@ -54,7 +55,11 @@ function improvementRequested(
 }
 
 function isMayEvaluation(event: Record<string, unknown>): boolean {
-  return String(eventDetails(event).agent ?? "").toLowerCase() === "may";
+  const details = eventDetails(event);
+  return (
+    String(details.agent ?? "").toLowerCase() === "may" &&
+    String(details.verdict ?? "").toLowerCase() !== "skipped"
+  );
 }
 
 function codexLearningRequested(
@@ -162,7 +167,7 @@ export function resolveGymTask(
   const details = eventDetails(event);
 
   switch (event.type) {
-    case "evaluation.reviewed":
+    case "evaluation.recorded":
       return isMayEvaluation(event)
         ? {
             id: "runtime/evaluation-intake",
@@ -473,7 +478,7 @@ export function routeGymRequest(
 }
 
 const gymTaskSubscriptions: EventSelector[] = [
-  { type: "evaluation.reviewed", agents: ["may"] },
+  "evaluation.recorded",
   "gym.incident.detected",
   "gym.learning.evidence.observed",
   "gym.codex.learning.requested",
