@@ -7,6 +7,22 @@ import { runDbMaintenancePass } from "./maintenance.js";
 import { isApprovalNotificationResolved } from "./notifications.js";
 
 describe("bounded DB maintenance", () => {
+  it("keeps WAL checkpoint work on the maintenance path", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-checkpoint-"));
+    try {
+      const db = getDb(persistDir);
+      expect(db.prepare("PRAGMA wal_autocheckpoint").get()).toEqual({ wal_autocheckpoint: 0 });
+      db.run(
+        `INSERT INTO sessions (sessionId, agent, task, status, startedAt)
+         VALUES ('checkpoint-fixture', 'dev', 'task', 'done', 1)`,
+      );
+
+      expect(runDbMaintenancePass(persistDir, { now: Date.now(), batchSize: 1 }).checkpoint).toBe("ok");
+    } finally {
+      closeDb(persistDir);
+    }
+  });
+
   it("deletes at most one batch and preserves active sessions", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-"));
     const now = 40 * 86_400_000;
