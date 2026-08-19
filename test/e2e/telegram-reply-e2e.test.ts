@@ -1119,7 +1119,8 @@ describe("telegram reply e2e", () => {
         source: "telegram",
         owner: "agent:may",
         urgency: "high",
-        data: { sessionId: "s_active_telegram" },
+        target: { sessionId: "s_active_telegram" },
+        data: {},
       });
       expect(events).toContainEqual({
         type: "runtime.reload.requested",

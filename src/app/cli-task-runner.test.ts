@@ -145,7 +145,7 @@ describe("CLI task runner", () => {
       expect(structured.summary).toContain("cli worker completed");
       expect(structured.evidenceRefs).toContain(payload.resultPath);
       const steer = events.find((event) => event.type === "session.steer.requested") as any;
-      expect(steer?.data?.sessionId).toBe("chat-1");
+      expect(steer?.target?.sessionId).toBe("chat-1");
       expect(steer?.data?.message).toContain("CLI task");
       expect(steer?.data?.message).toContain(payload.resultPath);
       expect(steer?.data?.message).toContain(payload.structuredResultPath);

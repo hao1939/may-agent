@@ -163,6 +163,7 @@ function canonicalFrame(type, data = {}, opts = {}) {
     source,
     owner,
     ...(opts.urgency ? { urgency: opts.urgency } : {}),
+    ...(opts.target ? { target: opts.target } : {}),
     data,
   };
 }
@@ -417,11 +418,11 @@ function renderConversation(messages) {
 }
 
 function steerFrame(sessionId, message) {
-  return canonicalFrame("session.steer.requested", { sessionId, message });
+  return canonicalFrame("session.steer.requested", { message }, { target: { sessionId } });
 }
 
 function cancelFrame(sessionId) {
-  return canonicalFrame("session.cancel.requested", { sessionId }, { urgency: "high" });
+  return canonicalFrame("session.cancel.requested", {}, { urgency: "high", target: { sessionId } });
 }
 
 function cancelAllFrame() {
