@@ -215,6 +215,7 @@ export async function runAppRuntime(opts: {
     registry: appRegistry,
     db: getDb(opts.persistDir),
     bus,
+    persistDir: opts.persistDir,
     maxConcurrentRequests: configuredHostConcurrency,
     attachTask: appTasks.attach,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>

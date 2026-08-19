@@ -213,6 +213,20 @@ export function getAppEventAdmissionPlan(db: SqliteDb, eventId: number): AppEven
   };
 }
 
+/** Pending plans are the durable queue for App event admission. */
+export function listPendingAppEventAdmissionPlans(db: SqliteDb): AppEventAdmissionPlan[] {
+  return db
+    .prepare(
+      `SELECT event_id
+       FROM app_event_admission_plans
+       WHERE status = 'pending'
+       ORDER BY created_at, event_id`,
+    )
+    .all()
+    .map((row) => getAppEventAdmissionPlan(db, requiredPositiveInteger(row.event_id, "event_id")))
+    .filter((plan): plan is AppEventAdmissionPlan => plan !== null);
+}
+
 export function createAppEventAdmissionPlan(
   db: SqliteDb,
   input: {
