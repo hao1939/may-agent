@@ -385,24 +385,35 @@ export class AppInboxHost {
     };
     if (!this.#readDependency) return outcome;
     const wokenApps = new Set<string>();
+    const waitsByApp = new Map<string, AppInboxItem[]>();
     for (const item of listAppInboxDependencyWaits(this.#db, "task")) {
-      const dependency = item.waitingOn;
-      if (!dependency || dependency.kind !== "task") continue;
-      const taskDependency = { kind: "task", id: dependency.id } as const;
-      try {
-        const observed = (await this.#observeDependency(item.appId, taskDependency)) ?? {
-          ...taskDependency,
-          status: "unknown" as const,
-        };
-        if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
-        const woken = wakeAppInboxItemsWaitingOn(this.#db, taskDependency, this.#now());
-        if (woken > 0) {
-          outcome.woken += woken;
-          wokenApps.add(item.appId);
+      const waits = waitsByApp.get(item.appId) ?? [];
+      waits.push(item);
+      waitsByApp.set(item.appId, waits);
+    }
+    for (const waits of waitsByApp.values()) {
+      for (const item of waits) {
+        const dependency = item.waitingOn;
+        if (!dependency || dependency.kind !== "task") continue;
+        const taskDependency = { kind: "task", id: dependency.id } as const;
+        try {
+          const observed = (await this.#observeDependency(item.appId, taskDependency)) ?? {
+            ...taskDependency,
+            status: "unknown" as const,
+          };
+          if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
+          const woken = wakeAppInboxItemsWaitingOn(this.#db, taskDependency, this.#now());
+          if (woken > 0) {
+            outcome.woken += woken;
+            wokenApps.add(item.appId);
+          }
+        } catch (error) {
+          outcome.errors.push(`Wait ${item.id} task ${taskDependency.id}: ${errorMessage(error)}`);
         }
-      } catch (error) {
-        outcome.errors.push(`Wait ${item.id} task ${taskDependency.id}: ${errorMessage(error)}`);
       }
+      // Each App may own a multi-megabyte canonical Task resource. Let HTTP,
+      // event admission, and other Apps run between bounded per-App reads.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
     outcome.wokenAppIds = [...wokenApps].sort();
     return outcome;
