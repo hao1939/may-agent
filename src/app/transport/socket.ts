@@ -39,7 +39,7 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function legacyEventInput(event: Record<string, unknown> & { type: string }): EventInput {
+export function legacyEventInput(event: Record<string, unknown> & { type: string }): EventInput {
   const canonicalData = event.data;
   const data =
     canonicalData && typeof canonicalData === "object" && !Array.isArray(canonicalData)
@@ -53,10 +53,12 @@ function legacyEventInput(event: Record<string, unknown> & { type: string }): Ev
     event.target && typeof event.target === "object" && !Array.isArray(event.target)
       ? (event.target as Record<string, unknown>)
       : {};
+  // Only the canonical envelope target is routing authority. Legacy flat/data
+  // identities are correlation and lifecycle evidence, not implicit addresses.
   const target = {
-    appId: text(rawTarget.appId) ?? text(data.appId),
-    taskId: text(rawTarget.taskId) ?? text(data.taskId),
-    sessionId: text(rawTarget.sessionId) ?? text(data.sessionId),
+    appId: text(rawTarget.appId),
+    taskId: text(rawTarget.taskId),
+    sessionId: text(rawTarget.sessionId),
   };
   const idempotencyKey = text(data.idempotencyKey);
   return {
