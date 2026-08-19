@@ -436,7 +436,7 @@ export class DbWriter {
   private persistDir: string;
   private deliveryTrackingStartedAt = Date.now();
   private reconciledUnhandledAdmissionPlans = false;
-  private lastHousekeepingAt = 0;
+  private lastHousekeepingAt = Date.now();
   private housekeepingIntervalMs: number;
 
   constructor(persistDir: string, opts: { housekeepingIntervalMs?: number } = {}) {

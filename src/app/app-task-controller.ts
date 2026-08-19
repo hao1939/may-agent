@@ -1,6 +1,31 @@
 import { AppTaskQueue, type AppTaskQueueOptions } from "././app-task-queue.js";
 import type { HostCapacity } from "./host-capacity.js";
 
+const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
+let hostPumpScheduled = false;
+
+function armHostPump(): void {
+  if (hostPumpScheduled) return;
+  hostPumpScheduled = true;
+  setTimeout(() => {
+    hostPumpScheduled = false;
+    hostPumpQueue.shift()?.pump();
+    if (hostPumpQueue.length > 0) armHostPump();
+  }, 0);
+}
+
+/** Run one App's synchronous claim prefix per event-loop turn across the Host. */
+function scheduleHostPump(owner: object, pump: () => void): void {
+  hostPumpQueue.push({ owner, pump });
+  armHostPump();
+}
+
+function cancelHostPumps(owner: object): void {
+  for (let index = hostPumpQueue.length - 1; index >= 0; index--) {
+    if (hostPumpQueue[index]?.owner === owner) hostPumpQueue.splice(index, 1);
+  }
+}
+
 export type AppTaskControllerOptions = {
   maxConcurrent: number;
   /** Shared Host capacity. App-local limits still apply independently. */
@@ -66,6 +91,7 @@ export class AppTaskController {
 
   close(): void {
     this.closed = true;
+    cancelHostPumps(this);
     this.cancelCapacityWait?.();
     this.cancelCapacityWait = undefined;
     this.waitingForCapacity = false;
@@ -87,10 +113,10 @@ export class AppTaskController {
     if (this.scheduled || this.closed || !this.startReady) return;
     this.scheduled = true;
     // A ready-work chain must not monopolize the event loop between tasks.
-    setTimeout(() => {
+    scheduleHostPump(this, () => {
       this.scheduled = false;
       this.pump();
-    }, 0);
+    });
   }
 
   private pump(): void {
