@@ -48,7 +48,7 @@ import {
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
-import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
+import { loadProjectReadModel, projectRuntimePaths, readTaskStateLifecycle } from "./app-task-runtime-state.js";
 import { cacheTaskStateReads, readTaskState, refreshAppTaskTreeProjection } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
@@ -3306,15 +3306,7 @@ function hashRuntimeTsFiles(runtimeDir: string): string[] {
 }
 
 function appLifecycle(appDir: string): string {
-  try {
-    const paths = projectRuntimePaths(appDir);
-    const tree = JSON.parse(readFileSync(paths.taskStatePath, "utf8")) as {
-      project_lifecycle?: unknown;
-    };
-    return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : "";
-  } catch {
-    return "";
-  }
+  return readTaskStateLifecycle(appDir);
 }
 
 export function appTaskHostFingerprint(projectsRoot: string): string {
