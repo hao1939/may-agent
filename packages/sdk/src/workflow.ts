@@ -87,6 +87,8 @@ export type WorkflowMetricCapability = {
 export type AgentCallOptions = {
   sessionId?: string;
   timeoutMs?: number;
+  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  operationAllowance?: number;
   /** Exact source classification persisted on the execution session. */
   source?: string;
 };

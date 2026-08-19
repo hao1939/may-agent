@@ -42,6 +42,7 @@ import {
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
   shouldRequestBoundedWorkflowFinish,
+  validateOperationAllowance,
   workflowFinishRecoveryPrompt,
 } from "./workflow-finish-recovery.js";
 import {
@@ -125,6 +126,8 @@ export interface RunOptions {
   skill?: string;
   /** Require the agent to terminate through finish(); used by workflow steps. */
   requireFinish?: boolean;
+  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  operationAllowance?: number;
   /** Caller-defined schema for the required finish().result payload. */
   outputSchema?: TSchema;
   /** Restrict the supplied capabilities for this session. */
@@ -166,6 +169,7 @@ interface ActiveSession {
   promptTask?: string;
   loadedSkillHashes: Set<string>;
   requireFinish: boolean;
+  operationAllowance?: number;
   outputSchema?: TSchema;
   tools?: AgentTool[];
   toolPolicy: ToolPolicy;
@@ -363,6 +367,7 @@ export class SubagentManager {
       timeoutMs?: number;
       trace?: EventTrace;
       requireFinish?: boolean;
+      operationAllowance?: number;
       outputSchema?: TSchema;
       toolPolicy?: ToolPolicy;
       executionRoot?: string;
@@ -432,6 +437,7 @@ export class SubagentManager {
         resumeMessages,
         trace: opts.trace,
         requireFinish: opts.requireFinish ?? meta.requireFinish,
+        operationAllowance: opts.operationAllowance ?? meta.operationAllowance,
         outputSchema: opts.outputSchema ?? meta.outputSchema,
         toolPolicy: opts.toolPolicy ?? meta.toolPolicy,
         executionRoot: opts.executionRoot ?? meta.executionRoot,
@@ -491,6 +497,7 @@ export class SubagentManager {
     const autoClose = opts?.autoClose ?? "immediate";
     const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
     const requestedStructuredCompletion = opts?.requireFinish === true || opts?.outputSchema !== undefined;
+    const operationAllowance = validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
     if (requestedStructuredCompletion && persistentChat) {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
@@ -610,6 +617,7 @@ export class SubagentManager {
       promptTask: prepared.prompt,
       loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
       requireFinish,
+      operationAllowance,
       outputSchema,
       tools: prepared.tools,
       toolPolicy,
@@ -645,6 +653,7 @@ export class SubagentManager {
       autoClose,
       orderId: opts?.orderId ?? existingMeta?.orderId,
       requireFinish,
+      operationAllowance: operationAllowance ?? existingMeta?.operationAllowance,
       outputSchema: outputSchema ?? existingMeta?.outputSchema,
       toolPolicy,
       executionRoot: opts?.executionRoot ?? existingMeta?.executionRoot,
@@ -876,6 +885,7 @@ export class SubagentManager {
       trace?: EventTrace;
       skill?: string;
       requireFinish?: boolean;
+      operationAllowance?: number;
       outputSchema?: TSchema;
       toolPolicy?: ToolPolicy;
       executionRoot?: string;
@@ -905,6 +915,7 @@ export class SubagentManager {
       trace: opts?.trace,
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
+      operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
@@ -928,6 +939,7 @@ export class SubagentManager {
       trace?: EventTrace;
       skill?: string;
       requireFinish?: boolean;
+      operationAllowance?: number;
       outputSchema?: TSchema;
       toolPolicy?: ToolPolicy;
       executionRoot?: string;
@@ -945,6 +957,7 @@ export class SubagentManager {
       trace: opts?.trace,
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
+      operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
@@ -1112,6 +1125,7 @@ export class SubagentManager {
       suppressBenignRaceEvent?: boolean;
       trace?: EventTrace;
       requireFinish?: boolean;
+      operationAllowance?: number;
       outputSchema?: TSchema;
       toolPolicy?: ToolPolicy;
     },
@@ -1164,6 +1178,7 @@ export class SubagentManager {
       timeoutMs: opts?.timeoutMs,
       trace: opts?.trace,
       requireFinish: opts?.requireFinish,
+      operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
       toolPolicy: opts?.toolPolicy,
     });
@@ -2244,6 +2259,7 @@ export class SubagentManager {
               {
                 admittedTimeoutMs: session.admittedTimeoutMs,
                 elapsedMs: Date.now() - session.startedAt,
+                operationAllowance: session.operationAllowance,
               },
             )
           ) {

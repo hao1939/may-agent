@@ -76,6 +76,8 @@ export type WorkflowResult =
 
 export interface WorkflowAgentOptions<S extends TSchema = TSchema> {
   timeoutMs?: number;
+  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  operationAllowance?: number;
   /** Exact source classification persisted on the step session. */
   source?: string;
   /** Restrict this agent step to observation tools plus finish(). */
