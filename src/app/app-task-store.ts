@@ -695,7 +695,11 @@ function compactHistoricalReceipts(tree: TaskTree): void {
   }
 
   const keepFull = new Set<string>();
-  for (const group of byParent.values()) {
+  for (const [parentId, group] of byParent) {
+    // A receipted parent cannot reconcile from child detail again; its own
+    // receipt is the durable summary. Parent absence alone is not enough:
+    // imported historical receipts may not include their parent resource.
+    if (tree.receipts?.[parentId]) continue;
     group
       .sort(
         (left, right) =>

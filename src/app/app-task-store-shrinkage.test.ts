@@ -420,6 +420,52 @@ describe("saveTaskState shrinkage guard", () => {
     expect(readTaskState(config).receipts?.["completed-0"]?.compactedDetailSha256).toBe(digest);
   });
 
+  it("compacts child detail once its parent is represented by a terminal receipt", () => {
+    const config = makeConfig();
+    const tree = makeTree(5);
+    tree.receipts = {
+      parent: {
+        metadata: { id: "parent", generation: 1, resourceVersion: 1 },
+        specHash: "parent-hash",
+        parentId: "task-0",
+        outcome: "Parent complete",
+        acceptance: ["done"],
+        owner: "app-owner",
+        handler: "owner:app-owner",
+        summary: "Parent completed",
+        evidence: ["parent-proof"],
+        acceptanceBasis: { method: "owner-judgment", evidence: ["parent-proof"] },
+        failureFingerprints: [],
+        completedAt: new Date().toISOString(),
+      },
+      child: {
+        metadata: { id: "child", generation: 1, resourceVersion: 1 },
+        specHash: "child-hash",
+        parentId: "parent",
+        outcome: "Child outcome",
+        acceptance: ["child accepted"],
+        owner: "app-owner",
+        handler: "owner:app-owner",
+        summary: "Child completed",
+        evidence: ["large child detail"],
+        acceptanceBasis: { method: "owner-judgment", evidence: ["large child detail"] },
+        failureFingerprints: [],
+        completedAt: new Date().toISOString(),
+      },
+    };
+
+    saveTaskState(config, tree);
+
+    expect(readTaskState(config).receipts?.child).toMatchObject({
+      metadata: { id: "child" },
+      summary: "Child completed",
+      acceptance: [],
+      evidence: [],
+      acceptanceBasis: { evidence: [] },
+      compactedDetailSha256: expect.any(String),
+    });
+  });
+
   it("compacts terminal triggers while preserving running inputs", () => {
     const config = makeConfig();
     const tree = makeTree(5);
