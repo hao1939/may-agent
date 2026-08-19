@@ -697,6 +697,113 @@ describe("canonical App task runtime", () => {
     expect(readTaskState(config).resources?.["work/resumable"]?.status.phase).toBe("running");
   });
 
+  it("yields readiness inside one large reconciliation after claim persistence", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const retainedEvidence = "x".repeat(4 * 1024 * 1024);
+    const seeded = readTaskState(config);
+    seeded.receipts = {
+      historical: {
+        metadata: { id: "historical", generation: 1, resourceVersion: 1 },
+        specHash: "historical",
+        parentId: "operations",
+        outcome: "Preserve retained evidence",
+        acceptance: ["Evidence remains immutable"],
+        owner: "sample-owner",
+        handler: "owner:sample-owner",
+        summary: "Historical receipt",
+        evidence: [retainedEvidence],
+        acceptanceBasis: { method: "owner-judgment", evidence: ["historical"] },
+        failureFingerprints: [],
+        completedAt: "2026-08-19T00:00:00.000Z",
+      },
+    };
+    saveTaskState(config, seeded);
+
+    let readinessTurnObserved = false;
+    let ownerObservedReadinessTurn: boolean | undefined;
+    let ownerCalls = 0;
+    bus.subscribe((event) => {
+      if (event.type !== "project.task.reconcile.started" || event.data.taskId !== "work/large-state") return;
+      setTimeout(() => {
+        readinessTurnObserved = true;
+      }, 0);
+    });
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      manager: {
+        hasAgent: () => true,
+        async callAgent() {
+          ownerCalls += 1;
+          ownerObservedReadinessTurn = readinessTurnObserved;
+          return {
+            sessionId: "large-state-owner",
+            status: "done",
+            structuredResult: {
+              state: "waiting",
+              summary: "Waiting on an exact external fact",
+              evidence: ["large-state-owner-dispatched"],
+              actions: [],
+              conditions: [
+                {
+                  id: "large-state-proof",
+                  type: "project.state",
+                  subject: "project:sample",
+                  expected: { field: "ready", equals: true },
+                },
+              ],
+            },
+            lastAssistantText: "Waiting on an exact external fact",
+            messages: [],
+            duration: "0s",
+            outputDir: "",
+          };
+        },
+      } as never,
+      appRegistrySnapshot: {
+        id: "boot:large-state-yield",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/large-state",
+          parentId: "operations",
+          outcome: "Reconcile one task without starving readiness",
+          acceptance: ["Readiness gets a turn after durable claim persistence"],
+          mode: "achieve",
+          owner: "sample-owner",
+        },
+      },
+      idempotencyKey: "attach:large-state",
+      request: {
+        id: "request-large-state",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    const deadline = Date.now() + 2_000;
+    while (ownerCalls === 0 && Date.now() < deadline) await Bun.sleep(5);
+    expect(ownerCalls).toBe(1);
+    expect(ownerObservedReadinessTurn).toBe(true);
+    expect(readTaskState(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
+  });
+
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
     const f = fixture();
     const bus = eventBus();
