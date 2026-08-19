@@ -470,6 +470,7 @@ describe("May Console", () => {
     child.stdin.write("/work 1\n");
     await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get" && !frame.workRequestId));
     expect(frames.some((frame) => frame.workRequestId)).toBe(false);
+    await waitFor(() => output.includes("[waiting for May; input queued]"));
     expect(output).toContain("[waiting for May; input queued]");
 
     client?.write(`${JSON.stringify({ type: "ok", command: "app.conversation.get", conversation })}\n`);
