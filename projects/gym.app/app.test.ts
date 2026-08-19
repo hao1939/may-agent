@@ -49,7 +49,7 @@ describe("canonical Gym App", () => {
     expect(gymApp.task).toBe(taskForGymInput);
     expect(gymApp.route).toBeUndefined();
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.subscriptions).toHaveLength(12);
+    expect(gymApp.tasks?.subscriptions).toHaveLength(11);
     expect(gymApp.tasks?.subscriptions).toContainEqual({
       type: "project.approval.submitted",
       project: "gym",
@@ -214,9 +214,9 @@ describe("Gym task reconciliation", () => {
       owner: "gym",
       priority: "P2",
       acceptance: expect.arrayContaining([
-        expect.stringContaining("latest accepted design"),
-        expect.stringContaining("stable resource identity"),
-        expect.stringContaining("fresh fingerprint-scoped evidence"),
+        expect.stringContaining("latest accepted May behavior"),
+        expect.stringContaining("observed sessions"),
+        expect.stringContaining("owning App"),
       ]),
     });
     expect(first).not.toHaveProperty("workflow");
@@ -261,21 +261,6 @@ describe("Gym task reconciliation", () => {
         batchSize: 200,
         maxBatches: 1,
       },
-    });
-  });
-
-  test("represents invalid migration recovery as one finite resource", () => {
-    expect(
-      resolveGymTask(event("gym.resource-migration.requested")),
-    ).toMatchObject({
-      id: "runtime/unified-resource-migration-v3",
-      mode: "achieve",
-      workflow: "unified-resource-migration",
-      input: { migration: "unified-resource-v3" },
-      priority: "P0",
-      acceptance: [
-        expect.stringContaining("No standing runtime resource is mutated"),
-      ],
     });
   });
 

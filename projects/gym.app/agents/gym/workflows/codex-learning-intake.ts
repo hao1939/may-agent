@@ -202,7 +202,11 @@ interface Catalog {
 }
 
 type DesignAlignment =
-  "supported" | "revise" | "conflict" | "out-of-scope" | "needs-human";
+  | "supported"
+  | "revise"
+  | "conflict"
+  | "out-of-scope"
+  | "needs-human";
 
 type RecommendedUse =
   | "lesson-evidence"
@@ -235,6 +239,38 @@ interface DesignReviewAttempt {
   error?: string;
   evidence?: string[];
 }
+
+type DesignReviewValidationDiagnostic =
+  | {
+      code: "omitted-candidate" | "duplicate-candidate";
+      field: "reviews[].candidateId";
+      candidate_id: string;
+      row_indexes?: number[];
+    }
+  | {
+      code: "unknown-candidate";
+      field: "reviews[].candidateId";
+      row_index: number;
+      value_sha256: string;
+    }
+  | {
+      code: "invalid-source-reference";
+      field: "reviews[].sourceRefs[]";
+      row_index: number;
+      source_index: number;
+      candidate_id?: string;
+      value_sha256: string;
+      reason: "unlisted-path" | "invalid-anchor";
+    };
+
+interface CandidateDesignReviewValidation {
+  reviews: CandidateDesignReview[] | null;
+  diagnostics: DesignReviewValidationDiagnostic[];
+}
+
+type DesignReviewValidationDisposition =
+  | "not-validated-call-failed"
+  | "structurally-invalid";
 
 interface Checkpoint {
   schema_version: 1;
@@ -511,49 +547,135 @@ function catalogFingerprint(preferences: CatalogPreference[]): string {
   return sha256(JSON.stringify(preferences));
 }
 
-function candidateDesignReviews(
+function candidateDesignReviewValidation(
   value: unknown,
   preferences: CatalogPreference[],
   sources: string[],
-): CandidateDesignReview[] | null {
+): CandidateDesignReviewValidation {
   const expected = new Set(preferences.map((item) => item.id));
   const allowedSources = new Set(sources);
   const reviews = Array.isArray(record(value).reviews)
     ? (record(value).reviews as unknown[])
     : [];
-  const parsed = reviews.flatMap((candidate) => {
+  const diagnostics: DesignReviewValidationDiagnostic[] = [];
+  const parsed: CandidateDesignReview[] = [];
+  const rowsByCandidate = new Map<string, number[]>();
+
+  reviews.forEach((candidate, rowIndex) => {
     const review = record(candidate);
     const candidateId = String(review.candidateId ?? "");
+    if (!expected.has(candidateId)) {
+      diagnostics.push({
+        code: "unknown-candidate",
+        field: "reviews[].candidateId",
+        row_index: rowIndex,
+        value_sha256: sha256(candidateId),
+      });
+      return;
+    }
+    const rows = rowsByCandidate.get(candidateId) ?? [];
+    rows.push(rowIndex);
+    rowsByCandidate.set(candidateId, rows);
+
     const sourceRefs = Array.isArray(review.sourceRefs)
       ? [...new Set(review.sourceRefs.map(String))]
       : [];
-    if (
-      !expected.has(candidateId) ||
-      sourceRefs.some(
-        (reference) => !validSourceReference(reference, allowedSources),
-      )
-    ) {
-      return [];
-    }
-    return [
-      {
-        candidateId,
-        alignment: String(review.alignment) as DesignAlignment,
-        rationale: String(review.rationale).trim(),
-        sourceRefs,
-        recommendedUse: String(review.recommendedUse) as RecommendedUse,
-      },
-    ];
+    let invalidSource = false;
+    sourceRefs.forEach((reference, sourceIndex) => {
+      if (validSourceReference(reference, allowedSources)) return;
+      invalidSource = true;
+      const [path] = reference.split("#", 1);
+      diagnostics.push({
+        code: "invalid-source-reference",
+        field: "reviews[].sourceRefs[]",
+        row_index: rowIndex,
+        source_index: sourceIndex,
+        candidate_id: candidateId,
+        value_sha256: sha256(reference),
+        reason: allowedSources.has(path) ? "invalid-anchor" : "unlisted-path",
+      });
+    });
+    if (invalidSource) return;
+    parsed.push({
+      candidateId,
+      alignment: String(review.alignment) as DesignAlignment,
+      rationale: String(review.rationale).trim(),
+      sourceRefs,
+      recommendedUse: String(review.recommendedUse) as RecommendedUse,
+    });
   });
-  const returned = new Set(parsed.map((item) => item.candidateId));
-  if (
-    parsed.length !== preferences.length ||
-    returned.size !== preferences.length ||
-    [...expected].some((id) => !returned.has(id))
-  ) {
-    return null;
+
+  for (const candidateId of expected) {
+    const rowIndexes = rowsByCandidate.get(candidateId) ?? [];
+    if (!rowIndexes.length) {
+      diagnostics.push({
+        code: "omitted-candidate",
+        field: "reviews[].candidateId",
+        candidate_id: candidateId,
+      });
+    } else if (rowIndexes.length > 1) {
+      diagnostics.push({
+        code: "duplicate-candidate",
+        field: "reviews[].candidateId",
+        candidate_id: candidateId,
+        row_indexes: rowIndexes,
+      });
+    }
   }
-  return parsed;
+
+  return {
+    reviews: diagnostics.length ? null : parsed,
+    diagnostics,
+  };
+}
+
+function candidateDesignReviews(
+  value: unknown,
+  preferences: CatalogPreference[],
+  sources: string[],
+): CandidateDesignReview[] | null {
+  return candidateDesignReviewValidation(value, preferences, sources).reviews;
+}
+
+function persistDesignReviewFailure(
+  runPath: string,
+  runId: string,
+  reviewInputPath: string,
+  result: { status: string; sessionId: string; structuredResult?: unknown },
+  validationDisposition: DesignReviewValidationDisposition,
+  validationDiagnostics: DesignReviewValidationDiagnostic[],
+  now: string,
+): string[] {
+  const inputSnapshotPath = runPath.replace(
+    /\.json$/,
+    ".design-review-input.json",
+  );
+  const input = readFileSync(reviewInputPath, "utf8");
+  mkdirSync(dirname(inputSnapshotPath), { recursive: true });
+  writeFileSync(inputSnapshotPath, input);
+  writeJson(runPath, {
+    schema_version: 1,
+    run_id: runId,
+    status: "failed",
+    phase: "design-review",
+    session_id: result.sessionId,
+    call_status: result.status,
+    validation_disposition: validationDisposition,
+    ...(validationDisposition === "structurally-invalid"
+      ? {
+          rejected_output_sha256: sha256(
+            JSON.stringify(result.structuredResult ?? null),
+          ),
+          validation_diagnostics: validationDiagnostics,
+        }
+      : {}),
+    input_snapshot: {
+      path: inputSnapshotPath,
+      sha256: sha256(input),
+    },
+    failed_at: now,
+  });
+  return [runPath, inputSnapshotPath];
 }
 
 async function reviewLearningMaterials(
@@ -562,6 +684,8 @@ async function reviewLearningMaterials(
   designSources: string[],
   reviewPath: string,
   scratchDir: string,
+  runPath: string,
+  runId: string,
   now: string,
 ): Promise<DesignReviewAttempt> {
   if (!preferences.length) return { review: null, changed: false };
@@ -588,7 +712,8 @@ async function reviewLearningMaterials(
 
   const reviewInputPath = join(scratchDir, "design-review.json");
   writeJson(reviewInputPath, { designSources, preferences });
-  const result = await callGymAgent(ctx,
+  const result = await callGymAgent(
+    ctx,
     "gym",
     designReviewPrompt(reviewInputPath),
     {
@@ -596,23 +721,36 @@ async function reviewLearningMaterials(
       timeoutMs: 900_000,
     },
   );
-  const reviews = result.structuredResult
-    ? candidateDesignReviews(
+  const validation = result.structuredResult
+    ? candidateDesignReviewValidation(
         result.structuredResult,
         preferences,
         designSources,
       )
-    : null;
+    : { reviews: null, diagnostics: [] };
+  const reviews = validation.reviews;
   if (
     result.status === "error" ||
     result.status === "interrupted" ||
     !reviews
   ) {
+    const validationDisposition =
+      result.status === "done"
+        ? "structurally-invalid"
+        : "not-validated-call-failed";
     return {
       review: null,
       changed: false,
       error: "Codex learning design review failed; no checkpoint advanced.",
-      evidence: [result.sessionId, reviewInputPath],
+      evidence: persistDesignReviewFailure(
+        runPath,
+        runId,
+        reviewInputPath,
+        result,
+        validationDisposition,
+        validation.diagnostics,
+        now,
+      ),
     };
   }
   return {
@@ -707,6 +845,8 @@ export async function runCodexLearningIntake(
         designSources,
         designReviewPath,
         scratchDir,
+        runPath,
+        runId,
         now,
       );
       if (designReview.error) {
@@ -764,10 +904,15 @@ export async function runCodexLearningIntake(
           previousAssistant: boundedText(turn.previousAssistant, 1_600),
         })),
       );
-      const result = await callGymAgent(ctx, "gym", extractionPrompt(batchPath), {
-        schema: signalSchema,
-        timeoutMs: 900_000,
-      });
+      const result = await callGymAgent(
+        ctx,
+        "gym",
+        extractionPrompt(batchPath),
+        {
+          schema: signalSchema,
+          timeoutMs: 900_000,
+        },
+      );
       if (
         result.status === "error" ||
         result.status === "interrupted" ||
@@ -803,7 +948,8 @@ export async function runCodexLearningIntake(
         existingCatalog,
         newEvidence: rows,
       });
-      const result = await callGymAgent(ctx,
+      const result = await callGymAgent(
+        ctx,
         "gym",
         consolidationPrompt(consolidationPath),
         {
@@ -842,6 +988,8 @@ export async function runCodexLearningIntake(
       designSources,
       designReviewPath,
       scratchDir,
+      runPath,
+      runId,
       now,
     );
     if (designReview.error) {

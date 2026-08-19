@@ -65,9 +65,10 @@ visible in `attention` until its binding is repaired; the Host never silently
 substitutes the owner or another workflow.
 
 A daily design-alignment event also wakes one stable, read-only Gym owner task.
-It compares accepted May/Gym promises with implementation and recent runtime
-evidence, stays quiet when aligned, and proposes the smallest evidence-backed
-repair when it finds a real gap.
+It compares accepted May behavior, benchmark truth, and deputy-learning
+curriculum with observed sessions and Gym evidence. It stays quiet when aligned
+and proposes the smallest domain repair when it finds a real gap. Host,
+scheduling, delivery, or runtime defects are reported to their owning App.
 
 ## Actions
 

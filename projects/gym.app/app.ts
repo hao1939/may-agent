@@ -196,34 +196,18 @@ export function resolveGymTask(
         id: "runtime/design-alignment-review",
         parentId: "review-proposals",
         outcome:
-          "Keep Gym and May behavior aligned with their accepted design, and propose the smallest evidence-backed repair when they drift.",
+          "Keep observable May behavior, Gym benchmark truth, and the accepted deputy-learning curriculum aligned.",
         acceptance: [
-          "Establish the latest accepted design and approved change lineage before comparing it with implementation; older approved artifacts are historical evidence, not desired state when a newer accepted revision supersedes them.",
-          "Check the newest improve/may task, result, relevant trigger, approval or revision identity, and run evidence as well as the implementation; source code and tests alone cannot prove alignment.",
-          "Explicitly verify wake delivery, stable resource identity, resource-local checkpoint coherence, fresh fingerprint-scoped evidence after evaluator changes, the correct consumer benchmark and cases, exact approval boundaries, and continuation or truthful exhaustion.",
-          "Mark each promise aligned, drifted, or inconclusive with exact evidence; never call an intentional newer accepted change drift, and never turn missing live proof into an aligned result.",
+          "Establish the latest accepted May behavior, benchmark truth, and curriculum before comparing them with observed sessions and current Gym evidence.",
+          "Mark each behavioral promise aligned, drifted, or inconclusive with exact evidence; never turn missing live proof into an aligned result.",
           "An aligned review records a quiet evidence-backed no-op; speculation is discarded.",
-          "For at most three real gaps, identify the root cause, impact, smallest repair, proof needed, and any exact human approval boundary.",
+          "For at most three real gaps, propose the smallest benchmark, curriculum, or May-behavior repair and its proof or approval boundary.",
+          "Runtime, Host, scheduling, and delivery defects are reported to their owning App instead of being repaired by Gym.",
           "The review never changes benchmark truth or production May without exact artifact approval.",
         ],
         mode: "maintain",
         owner: "gym",
         priority: "P2",
-      };
-    case "gym.resource-migration.requested":
-      return {
-        id: "runtime/unified-resource-migration-v3",
-        parentId: "review-proposals",
-        outcome:
-          "Cancel the invalid resource-retirement attempt while preserving Gym's standing owner-review and design-alignment responsibilities.",
-        acceptance: [
-          "No standing runtime resource is mutated, and this one-time migration carrier records the correction before it converges.",
-        ],
-        mode: "achieve",
-        workflow: "unified-resource-migration",
-        input: { migration: "unified-resource-v3" },
-        outputs: [],
-        priority: "P0",
       };
     case "gym.improvement.requested":
     case "agent.revision.changed":
@@ -496,7 +480,6 @@ const gymTaskSubscriptions: EventSelector[] = [
   "gym.learning.evidence.observed",
   "gym.codex.learning.requested",
   "gym.design-alignment.requested",
-  "gym.resource-migration.requested",
   "gym.regression.requested",
   "gym.review.requested",
   "gym.improvement.requested",

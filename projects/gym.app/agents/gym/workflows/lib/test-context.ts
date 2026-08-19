@@ -17,6 +17,7 @@ export type GymTestContextInput = Record<string, unknown> & {
   task?: string;
   projectsRoot?: string;
   appDir?: string;
+  read?: WorkflowContext["read"];
   runAgent?: (
     agent: string,
     task: string,
@@ -50,6 +51,10 @@ export function canonicalGymTestContext(
     input: {},
     read: input.read ?? {
       appResult: async () => null,
+      tasks: {
+        list: async () => ({ items: [] }),
+        get: async () => null,
+      },
       task: async () => null,
       execution: async () => null,
       metric: async () => null,
@@ -182,6 +187,17 @@ export function canonicalGymTestContext(
           ? (rawTaskSnapshot.live as never[])
           : [],
         truncated: rawTaskSnapshot.truncated === true,
+      },
+      events: {
+        items: trigger
+          ? [
+              {
+                observedAt: "2026-01-01T00:00:00.000Z",
+                event: trigger,
+              },
+            ]
+          : [],
+        truncated: false,
       },
       ...(trigger ? { trigger } : {}),
     };
