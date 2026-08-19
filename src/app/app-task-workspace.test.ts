@@ -29,9 +29,29 @@ afterEach(() => {
 });
 
 describe("project task workspace", () => {
-  it("reuses one deterministic worktree for retries of the same task generation", () => {
+  it("keeps the event loop available while Git prepares the worktree", async () => {
     const f = fixture();
-    const first = prepareAppTaskWorkspace({
+    let controlTurnObserved = false;
+    setTimeout(() => {
+      controlTurnObserved = true;
+    }, 0);
+
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "nonblocking-prepare",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+
+    expect(controlTurnObserved).toBe(true);
+    await finalizeAppTaskWorkspace(prepared, "failed");
+  });
+
+  it("reuses one deterministic worktree for retries of the same task generation", async () => {
+    const f = fixture();
+    const first = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "domain/example",
@@ -41,7 +61,7 @@ describe("project task workspace", () => {
     });
     writeFileSync(join(first.metadata.path, "unfinished.txt"), "recover me\n");
 
-    const retry = prepareAppTaskWorkspace({
+    const retry = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "domain/example",
@@ -53,12 +73,12 @@ describe("project task workspace", () => {
 
     expect(retry.metadata.path).toBe(first.metadata.path);
     expect(retry.metadata.branch).toBe(first.metadata.branch);
-    expect(finalizeAppTaskWorkspace(retry, "failed").metadata.disposition).toBe("retained-for-recovery");
+    expect((await finalizeAppTaskWorkspace(retry, "failed")).metadata.disposition).toBe("retained-for-recovery");
   });
 
-  it("returns an interrupted rebase on the exact task branch to the same task", () => {
+  it("returns an interrupted rebase on the exact task branch to the same task", async () => {
     const f = fixture();
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "interrupted-rebase",
@@ -68,7 +88,7 @@ describe("project task workspace", () => {
     });
     git(prepared.metadata.path, "checkout", "--detach");
 
-    expect(() =>
+    await expect(
       prepareAppTaskWorkspace({
         repoDir: f.repo,
         workspaceRoot: f.worktrees,
@@ -78,13 +98,13 @@ describe("project task workspace", () => {
         refreshRemote: false,
         previous: prepared.metadata,
       }),
-    ).toThrow("registered to detached HEAD");
+    ).rejects.toThrow("registered to detached HEAD");
 
     const rebaseDir = git(prepared.metadata.path, "rev-parse", "--git-path", "rebase-merge");
     mkdirSync(rebaseDir, { recursive: true });
     writeFileSync(join(rebaseDir, "head-name"), `refs/heads/${prepared.metadata.branch}\n`);
 
-    const recovered = prepareAppTaskWorkspace({
+    const recovered = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "interrupted-rebase",
@@ -100,9 +120,9 @@ describe("project task workspace", () => {
     });
   });
 
-  it("removes a clean no-change worktree and its empty task branch", () => {
+  it("removes a clean no-change worktree and its empty task branch", async () => {
     const f = fixture();
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "no-change",
@@ -111,15 +131,15 @@ describe("project task workspace", () => {
       refreshRemote: false,
     });
 
-    const finalized = finalizeAppTaskWorkspace(prepared, "accepted");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
     expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
   });
 
-  it("retains a clean committed branch but refuses task completion before integration", () => {
+  it("retains a clean committed branch but refuses task completion before integration", async () => {
     const f = fixture();
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "publishable-change",
@@ -131,7 +151,7 @@ describe("project task workspace", () => {
     git(prepared.metadata.path, "add", "change.txt");
     git(prepared.metadata.path, "commit", "-m", "change");
 
-    const finalized = finalizeAppTaskWorkspace(prepared, "accepted");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
     expect(finalized).toMatchObject({
       ok: false,
@@ -141,9 +161,9 @@ describe("project task workspace", () => {
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
   });
 
-  it("allows a clean committed branch to remain while the task waits for integration", () => {
+  it("allows a clean committed branch to remain while the task waits for integration", async () => {
     const f = fixture();
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "waiting-change",
@@ -155,20 +175,20 @@ describe("project task workspace", () => {
     git(prepared.metadata.path, "add", "change.txt");
     git(prepared.metadata.path, "commit", "-m", "change");
 
-    const finalized = finalizeAppTaskWorkspace(prepared, "waiting");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "waiting");
 
     expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "branch-retained" } });
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
   });
 
-  it("restores a cleaned waiting branch from origin instead of a newer base head", () => {
+  it("restores a cleaned waiting branch from origin instead of a newer base head", async () => {
     const f = fixture();
     const remote = join(f.root, "remote.git");
     execFileSync("git", ["init", "--bare", remote]);
     git(f.repo, "remote", "add", "origin", remote);
     git(f.repo, "push", "-u", "origin", "dev");
 
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "waiting-live-proof",
@@ -178,7 +198,7 @@ describe("project task workspace", () => {
     const testedCommit = prepared.metadata.headCommit;
     git(prepared.metadata.path, "push", "-u", "origin", prepared.metadata.branch);
 
-    const finalized = finalizeAppTaskWorkspace(prepared, "waiting");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "waiting");
     expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
 
@@ -188,7 +208,7 @@ describe("project task workspace", () => {
     git(f.repo, "push", "origin", "dev");
     const advancedBase = git(f.repo, "rev-parse", "HEAD");
 
-    const retry = prepareAppTaskWorkspace({
+    const retry = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "waiting-live-proof",
@@ -201,9 +221,9 @@ describe("project task workspace", () => {
     expect(retry.metadata.headCommit).not.toBe(advancedBase);
   });
 
-  it("removes the task branch after its commit reaches the base branch", () => {
+  it("removes the task branch after its commit reaches the base branch", async () => {
     const f = fixture();
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "integrated-change",
@@ -216,15 +236,15 @@ describe("project task workspace", () => {
     git(prepared.metadata.path, "commit", "-m", "change");
     git(f.repo, "merge", "--ff-only", prepared.metadata.branch);
 
-    const finalized = finalizeAppTaskWorkspace(prepared, "accepted");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
     expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
   });
 
-  it("refuses to close accepted work that still has uncommitted files", () => {
+  it("refuses to close accepted work that still has uncommitted files", async () => {
     const f = fixture();
-    const prepared = prepareAppTaskWorkspace({
+    const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
       taskId: "dirty-change",
@@ -234,7 +254,7 @@ describe("project task workspace", () => {
     });
     writeFileSync(join(prepared.metadata.path, "dirty.txt"), "not committed\n");
 
-    const finalized = finalizeAppTaskWorkspace(prepared, "accepted");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
     expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "retained-for-recovery" } });
   });
