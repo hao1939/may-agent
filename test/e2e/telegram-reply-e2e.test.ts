@@ -6,6 +6,7 @@ import { EventBus } from "../../src/app/event-bus.js";
 import {
   associateAppInboxClaimSession,
   claimAppInboxItem,
+  completeAppInboxClaim,
   createAppInboxItem,
   stageAppInboxClaimDelivery,
 } from "../../src/app/app-inbox-store.js";
@@ -245,7 +246,7 @@ describe("telegram reply e2e", () => {
     bot.close();
   });
 
-  it("delivers a May response to the exact originating chat and topic", async () => {
+  it("mirrors a May Conversation result to the exact originating chat and topic", async () => {
     process.env.TELEGRAM_CHAT_ID = "111,222";
     const sentMessages: Array<Record<string, unknown>> = [];
     let getUpdatesCount = 0;
@@ -281,24 +282,33 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
     await waitFor(() => expect(input).toBeTruthy());
 
+    const db = getDb(persistDir);
+    createAppInboxItem(db, {
+      id: "item-80",
+      appId: "may",
+      source: { kind: "human", id: input.data.author.id },
+      input: { kind: "message", data: { message: "Review this" } },
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "telegram",
+      channelTargetId: input.data.metadata.channelTargetId,
+      channelThreadId: input.data.metadata.channelThreadId,
+      channelMessageId: input.data.metadata.channelMessageId,
+      now: 1,
+    });
+    const claim = claimAppInboxItem(db, "item-80", "test", 1_000, 2);
+    if (!claim) throw new Error("expected May request claim");
+    completeAppInboxClaim(
+      db,
+      claim,
+      { summary: "Reviewed.", response: "Reviewed.", evidence: ["test:accepted"] },
+      3,
+    );
     bus.emit({
-      type: "app.response.delivery.requested",
+      type: "conversation.updated",
       source: "app-inbox",
       owner: "app:may",
-      target: { human: true },
-      data: {
-        appId: "may",
-        operationId: "delivery-80",
-        appInboxItemId: "item-80",
-        appInboxRequestId: "request-80",
-        sessionId: "session-80",
-        channel: "telegram",
-        channelTargetId: input.data.metadata.channelTargetId,
-        channelThreadId: input.data.metadata.channelThreadId,
-        channelMessageId: input.data.metadata.channelMessageId,
-        conversationId: "may:primary",
-        text: "Reviewed.",
-      },
+      data: { appId: "may", conversationId: "may:primary" },
     });
 
     await waitFor(() => expect(sentMessages).toHaveLength(1));

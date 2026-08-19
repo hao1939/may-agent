@@ -58,8 +58,11 @@ export function validateAppDefinition(definition: unknown): string[] {
   if (app.version !== 1) errors.push(`App ${appId} must declare version 1`);
   if (!nonEmpty(app.owner)) errors.push(`App ${appId} owner must be a non-empty string`);
   if (!record(app.inputSchema)) errors.push(`App ${appId} inputSchema must be an object schema`);
-  if (app.route !== undefined && typeof app.route !== "function") {
-    errors.push(`App ${appId} route must be a function`);
+  if (app.task !== undefined && typeof app.task !== "function") {
+    errors.push(`App ${appId} task must be a function`);
+  }
+  if (typeof app.task === "function" && !record(app.tasks)) {
+    errors.push(`App ${appId} task requires a tasks policy`);
   }
 
   if (app.inbox !== undefined) {
@@ -189,7 +192,6 @@ export function validateAppDefinition(definition: unknown): string[] {
     const tasks = record(app.tasks);
     if (!tasks) errors.push(`App ${appId} tasks must be an object`);
     else {
-      if (tasks.attach !== undefined && tasks.attach !== true) errors.push(`App ${appId} tasks attach must be true`);
       if (tasks.maxConcurrent !== undefined && !positiveInteger(tasks.maxConcurrent)) {
         errors.push(`App ${appId} task maxConcurrent must be a positive safe integer`);
       }

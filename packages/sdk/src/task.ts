@@ -1,4 +1,5 @@
 import type { AppEvent } from "./event.js";
+import type { AppInput } from "./app.js";
 
 export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
@@ -30,6 +31,14 @@ export type Condition = {
 };
 
 export type TaskReconcileState = "converged" | "waiting" | "needs-owner";
+
+/** One child App outcome required by the current task. */
+export type TaskAppDependency = {
+  /** Stable name within this task generation. */
+  id: string;
+  appId: string;
+  input: AppInput;
+};
 
 /** Desired task-tree mutations returned by one fenced reconciliation attempt. */
 export type TaskAction =
@@ -80,9 +89,13 @@ export type TaskAction =
 export type TaskReconcileResult = {
   state: TaskReconcileState;
   summary: string;
+  /** Caller-facing semantic answer, when this task fulfills an addressed request. */
+  response?: string;
   evidence: string[];
   actions?: TaskAction[];
   conditions?: Condition[];
+  /** Runtime-admitted child App requests. Valid only while waiting. */
+  dependencies?: TaskAppDependency[];
 };
 
 export type TaskAcceptanceBasis = {

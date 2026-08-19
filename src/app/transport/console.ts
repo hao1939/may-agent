@@ -47,27 +47,6 @@ export function attachConsoleUI(
 
   // ── Bus channel (domain events) ───────────────────────────────────────
   bus.subscribe((event) => {
-    if (event.type === "app.response.delivery.requested") {
-      const delivery = eventData(event);
-      if (delivery.channel !== "console") return;
-      console.log(String(delivery.text ?? ""));
-      bus.emit({
-        type: "channel.delivery.completed",
-        source: "console",
-        owner: "agent:may",
-        target: { human: true },
-        data: {
-          channel: "console",
-          sessionId: delivery.sessionId,
-          resultEventType: event.type,
-          operationId: delivery.operationId,
-          appInboxItemId: delivery.appInboxItemId,
-          appInboxRequestId: delivery.appInboxRequestId,
-        },
-      } as any);
-      onResponseDelivered?.();
-      return;
-    }
     const primarySid = getPrimarySessionId?.() ?? null;
 
     // Quiet console: only show primary session + human-directed messages

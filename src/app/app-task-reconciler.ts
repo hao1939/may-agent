@@ -27,6 +27,7 @@ import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
   AppTaskResource as AppTaskResource,
+  AppTaskTriggerEvent,
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
 import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
@@ -35,6 +36,7 @@ import { applyAppTaskConditionEvent } from "./app-task-condition-tracker.js";
 
 export const APP_TASK_RECOVERY_OWNER = "app-task-reconciler";
 const MAX_UNCHANGED_CONDITION_REVIEWS = 3;
+const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
 
 export type AppTaskClaim = {
   kind: "claimed";
@@ -47,6 +49,9 @@ export type AppTaskClaim = {
   handler: string;
   mode: "achieve" | "maintain";
   intent: AppTaskIntent;
+  events: AppTaskTriggerEvent[];
+  eventsTruncated: boolean;
+  /** Compatibility projection of the most relevant event in events. */
   trigger?: Record<string, unknown>;
   declaredOutputPaths: string[];
   supersededSessionIds?: string[];
@@ -119,6 +124,8 @@ export function isAppTaskActionStaleError(error: unknown): error is AppTaskActio
 export type AppTaskAttemptRecovery = {
   taskId: string;
   intent: AppTaskIntent;
+  events?: AppTaskTriggerEvent[];
+  eventsTruncated?: boolean;
   trigger?: Record<string, unknown>;
   sessionId?: string;
   taskGeneration: number;
@@ -214,6 +221,73 @@ function preferredTaskTrigger(
     return previous;
   }
   return taskTriggerPriority(incoming, taskOwner) >= taskTriggerPriority(previous, taskOwner) ? incoming : previous;
+}
+
+function taskTriggerEvents(trigger: {
+  event: Record<string, unknown>;
+  events?: AppTaskTriggerEvent[];
+  observedAt?: string;
+}): AppTaskTriggerEvent[] {
+  if (trigger.events?.length) return trigger.events;
+  return [{ event: trigger.event, observedAt: trigger.observedAt ?? new Date(0).toISOString() }];
+}
+
+function taskEventIdentity(event: Record<string, unknown>): string {
+  const eventId = Number(event.eventId);
+  if (Number.isSafeInteger(eventId) && eventId > 0) return `event:${eventId}`;
+  return `legacy:${createHash("sha256")
+    .update(JSON.stringify(stableValue(event)))
+    .digest("hex")}`;
+}
+
+function appendTaskTriggerEvent(
+  events: AppTaskTriggerEvent[],
+  event: Record<string, unknown>,
+  observedAt: string,
+): AppTaskTriggerEvent[] {
+  const identity = taskEventIdentity(event);
+  if (events.some((entry) => taskEventIdentity(entry.event) === identity)) return events;
+  return [...events, { event: structuredClone(event), observedAt }];
+}
+
+function preferredTriggerFromEvents(events: AppTaskTriggerEvent[], taskOwner: string): Record<string, unknown> {
+  const [first, ...rest] = events;
+  if (!first) throw new Error("Task trigger event batch cannot be empty");
+  return rest.reduce((preferred, entry) => preferredTaskTrigger(preferred, entry.event, taskOwner), first.event);
+}
+
+function restoreAttemptEvents(
+  tree: TaskTree,
+  taskId: string,
+  resource: AppTaskResource,
+  attempt: AppTaskAttempt,
+  observedAt: string,
+): boolean {
+  const attemptEvents = attempt.events?.length
+    ? attempt.events
+    : attempt.trigger
+      ? [{ event: attempt.trigger, observedAt: attempt.startedAt }]
+      : [];
+  if (attemptEvents.length === 0) return false;
+  const previous = tree.taskTriggers?.[taskId];
+  const combined = [...attemptEvents];
+  for (const entry of previous ? taskTriggerEvents(previous) : []) {
+    const next = appendTaskTriggerEvent(combined, entry.event, entry.observedAt);
+    combined.splice(0, combined.length, ...next);
+  }
+  const owner = attempt.owner || resource.spec.owner || "";
+  tree.taskTriggers = {
+    ...(tree.taskTriggers ?? {}),
+    [taskId]: {
+      taskId,
+      taskGeneration: resource.metadata.generation,
+      resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+      event: structuredClone(preferredTriggerFromEvents(combined, owner)),
+      events: structuredClone(combined),
+      observedAt,
+    },
+  };
+  return true;
 }
 
 function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
@@ -754,6 +828,18 @@ function unlinkTaskConditions(tree: TaskTree, task: TaskNode): void {
   pruneUnlinkedConditions(tree);
 }
 
+function unlinkSatisfiedTaskConditions(tree: TaskTree, task: TaskNode): void {
+  const resource = tree.resources?.[task.id];
+  if (!resource?.status.conditionIds?.length) return;
+  const remaining = resource.status.conditionIds.filter((id) => {
+    const condition = tree.conditions?.[id];
+    return !isAppTaskCondition(condition) || condition.status.state !== "true";
+  });
+  if (remaining.length === resource.status.conditionIds.length) return;
+  touchResource(resource, { conditionIds: remaining });
+  pruneUnlinkedConditions(tree);
+}
+
 function materializeWaitingConditions(
   tree: TaskTree,
   task: TaskNode,
@@ -865,6 +951,8 @@ export function recoverableAppTaskAttempts(
         {
           taskId: resource.metadata.id,
           intent: resourceIntent(resource),
+          ...(attempt.events?.length ? { events: structuredClone(attempt.events) } : {}),
+          ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
           ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
           ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
           taskGeneration: resource.metadata.generation,
@@ -915,6 +1003,14 @@ export function terminalOwnerSessionAppTaskClaim(
       handler: attempt.handler,
       mode: intent.mode,
       intent,
+      events: structuredClone(
+        attempt.events?.length
+          ? attempt.events
+          : attempt.trigger
+            ? [{ event: attempt.trigger, observedAt: attempt.startedAt }]
+            : [],
+      ),
+      eventsTruncated: Boolean(attempt.eventsTruncated),
       ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
       declaredOutputPaths: [],
     };
@@ -946,6 +1042,8 @@ export function expiredOwnerSessionAppTaskAttempt(
     return {
       taskId,
       intent: resourceIntent(resource),
+      ...(attempt.events?.length ? { events: structuredClone(attempt.events) } : {}),
+      ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
       ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
       sessionId: attempt.sessionId,
       taskGeneration: resource.metadata.generation,
@@ -988,18 +1086,7 @@ export function releaseInterruptedAppTaskAttempt(
     const now = new Date().toISOString();
     const recoveredSummary = `${summary}; retrying from current task evidence`;
     const sessionIds = attempt.sessionId ? [attempt.sessionId] : [];
-    if (attempt.trigger && !tree.taskTriggers?.[taskId]) {
-      tree.taskTriggers = {
-        ...(tree.taskTriggers ?? {}),
-        [taskId]: {
-          taskId,
-          taskGeneration: resource.metadata.generation,
-          resourceVersion: 1,
-          event: structuredClone(attempt.trigger),
-          observedAt: now,
-        },
-      };
-    }
+    restoreAttemptEvents(tree, taskId, resource, attempt, now);
     finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = "previous-runtime-attempt-requeued";
@@ -1061,18 +1148,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
 
     const now = new Date(nowMs).toISOString();
     const recoveredSummary = `${summary}; terminal owner session ${recovery.sessionId} (${recovery.terminalStatus}) cannot return this expired attempt; retrying from current task evidence`;
-    if (attempt.trigger && !tree.taskTriggers?.[recovery.taskId]) {
-      tree.taskTriggers = {
-        ...(tree.taskTriggers ?? {}),
-        [recovery.taskId]: {
-          taskId: recovery.taskId,
-          taskGeneration: resource.metadata.generation,
-          resourceVersion: 1,
-          event: structuredClone(attempt.trigger),
-          observedAt: now,
-        },
-      };
-    }
+    restoreAttemptEvents(tree, recovery.taskId, resource, attempt, now);
     finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = "terminal-owner-session-expired-lease-requeued";
@@ -1116,18 +1192,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
 
     const now = new Date().toISOString();
     const recoveredSummary = `${summary}; retrying the same task from current evidence`;
-    if (attempt.trigger && !tree.taskTriggers?.[binding.taskId]) {
-      tree.taskTriggers = {
-        ...(tree.taskTriggers ?? {}),
-        [binding.taskId]: {
-          taskId: binding.taskId,
-          taskGeneration: resource.metadata.generation,
-          resourceVersion: 1,
-          event: structuredClone(attempt.trigger),
-          observedAt: now,
-        },
-      };
-    }
+    restoreAttemptEvents(tree, binding.taskId, resource, attempt, now);
     finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = "late-terminal-workflow-result-requeued";
@@ -1492,6 +1557,9 @@ export function observeAppTaskIntent(
     const task = upsertTask(tree, resource, owner);
     if (generation > previousGeneration) {
       pruneUnlinkedConditions(tree);
+      // A new desired generation supersedes pending wakes that were fenced to
+      // the older specification. The event store retains their causal history;
+      // only the old task-generation link is retired.
       if (tree.taskTriggers) delete tree.taskTriggers[task.id];
     }
     const suppressTrigger =
@@ -1502,13 +1570,19 @@ export function observeAppTaskIntent(
       !triggerOverridesWait(input.trigger);
     if (input.trigger && !suppressTrigger) {
       const previousTrigger = tree.taskTriggers?.[task.id];
-      const event = preferredTaskTrigger(previousTrigger?.event, input.trigger, owner);
+      const events = appendTaskTriggerEvent(
+        previousTrigger ? taskTriggerEvents(previousTrigger) : [],
+        input.trigger,
+        now,
+      );
+      const event = preferredTriggerFromEvents(events, owner);
       tree.taskTriggers = {
         ...(tree.taskTriggers ?? {}),
         [task.id]: {
           taskId: task.id,
           taskGeneration: generation,
           resourceVersion: (previousTrigger?.resourceVersion ?? 0) + 1,
+          events,
           event: structuredClone(event),
           observedAt: now,
         },
@@ -1764,15 +1838,18 @@ export function recordAppTaskTrigger(
       return { kind: "waiting" };
     }
     const previous = tree.taskTriggers?.[taskId];
-    const next = preferredTaskTrigger(previous?.event, event, task.owner ?? resource.spec.owner ?? "");
+    const observedAt = new Date().toISOString();
+    const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, observedAt);
+    const next = preferredTriggerFromEvents(events, task.owner ?? resource.spec.owner ?? "");
     tree.taskTriggers = {
       ...(tree.taskTriggers ?? {}),
       [taskId]: {
         taskId,
         taskGeneration: resource.metadata.generation,
         resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+        events,
         event: structuredClone(next),
-        observedAt: new Date().toISOString(),
+        observedAt,
       },
     };
     saveTaskState(config, tree);
@@ -2149,28 +2226,9 @@ export function releaseHandlerExecutionFailedAppTask(
       summary,
       conditionIds: [],
     });
-    if (attempt.trigger) {
-      const previous = tree.taskTriggers?.[taskId];
-      // Preserve an explicit wake or owner comment recorded after this failed
-      // attempt. Restoring the attempt trigger here would erase the exact
-      // steering needed to change approach on retry.
-      if (previous) {
-        syncTaskProjection(task, resource, attempt.owner);
-        refreshActiveTaskProjection(tree);
-        saveTaskState(config, tree);
-        return true;
-      }
-      tree.taskTriggers = {
-        ...(tree.taskTriggers ?? {}),
-        [taskId]: {
-          taskId,
-          taskGeneration: resource.metadata.generation,
-          resourceVersion: 1,
-          event: structuredClone(attempt.trigger),
-          observedAt: evidence.observedAt,
-        },
-      };
-    }
+    // Replay the unaccepted attempt batch before any newer event that arrived
+    // after the failed attempt; neither source may erase the other.
+    restoreAttemptEvents(tree, taskId, resource, attempt, evidence.observedAt);
     syncTaskProjection(task, resource, attempt.owner);
     refreshActiveTaskProjection(tree);
     saveTaskState(config, tree);
@@ -2299,6 +2357,20 @@ export function claimObservedAppTask(
     );
     const supersededSessionIds = new Set<string>();
     const pendingTrigger = tree.taskTriggers?.[task.id];
+    const previousUnacceptedEvents =
+      previousAttempt && previousAttempt.state !== "completed"
+        ? previousAttempt.events?.length
+          ? previousAttempt.events
+          : previousAttempt.trigger
+            ? [{ event: previousAttempt.trigger, observedAt: previousAttempt.startedAt }]
+            : []
+        : [];
+    let pendingEvents = [...previousUnacceptedEvents];
+    for (const entry of pendingTrigger ? taskTriggerEvents(pendingTrigger) : []) {
+      pendingEvents = appendTaskTriggerEvent(pendingEvents, entry.event, entry.observedAt);
+    }
+    const claimedEvents = pendingEvents.slice(0, MAX_TASK_EVENTS_PER_ATTEMPT);
+    const remainingEvents = pendingEvents.slice(MAX_TASK_EVENTS_PER_ATTEMPT);
     const hasTrigger = Boolean(pendingTrigger?.event ?? previousAttempt?.trigger);
     if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
       const now = new Date().toISOString();
@@ -2393,7 +2465,10 @@ export function claimObservedAppTask(
     }
 
     if (resource.status.phase === "waiting" && hasSatisfiedCondition) {
-      unlinkTaskConditions(tree, task);
+      // Consume only the Conditions represented by this attempt. Other waits
+      // stay linked while it runs so a later matching fact can still find the
+      // task and remain pending for the next attempt.
+      unlinkSatisfiedTaskConditions(tree, task);
     }
 
     const generation = resource.metadata.generation;
@@ -2404,7 +2479,7 @@ export function claimObservedAppTask(
       finishAttempt(tree, resource, "interrupted", "Previous runtime attempt was superseded during recovery", now);
     }
     const trigger =
-      pendingTrigger?.event ??
+      (claimedEvents.length > 0 ? preferredTriggerFromEvents(claimedEvents, owner) : undefined) ??
       previousAttempt?.trigger ??
       (missedCheckpointConditionIds.length > 0
         ? {
@@ -2434,11 +2509,24 @@ export function claimObservedAppTask(
       state: "running",
       reason:
         missedCheckpointConditionIds.length > 0 ? "condition-review-checkpoint-missed" : (input.reason ?? "event"),
+      ...(claimedEvents.length > 0 ? { events: structuredClone(claimedEvents) } : {}),
+      ...(remainingEvents.length > 0 ? { eventsTruncated: true } : {}),
       ...(trigger ? { trigger } : {}),
       startedAt: now,
     };
     tree.attempts = { ...(tree.attempts ?? {}), [attemptId]: attempt };
-    if (tree.taskTriggers) delete tree.taskTriggers[task.id];
+    if (tree.taskTriggers) {
+      if (remainingEvents.length > 0 && pendingTrigger) {
+        tree.taskTriggers[task.id] = {
+          ...pendingTrigger,
+          event: structuredClone(preferredTriggerFromEvents(remainingEvents, owner)),
+          events: structuredClone(remainingEvents),
+          observedAt: remainingEvents[remainingEvents.length - 1]!.observedAt,
+        };
+      } else {
+        delete tree.taskTriggers[task.id];
+      }
+    }
     touchResource(resource, {
       phase: "running",
       observedGeneration: generation - 1,
@@ -2458,6 +2546,8 @@ export function claimObservedAppTask(
       handler,
       mode: intent.mode,
       intent: structuredClone(intent),
+      events: structuredClone(claimedEvents),
+      eventsTruncated: remainingEvents.length > 0,
       ...(trigger ? { trigger: structuredClone(trigger) } : {}),
       declaredOutputPaths,
       ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
@@ -2616,9 +2706,7 @@ export function claimFreshAppTaskSessionForStartup(
   nowMs = Date.now(),
   sessionActivity?: AttemptSessionActivity,
 ): boolean {
-  return claimFreshAppTaskSessionsForStartup(config, [
-    { binding, sessionId, nowMs, sessionActivity },
-  ]).has(sessionId);
+  return claimFreshAppTaskSessionsForStartup(config, [{ binding, sessionId, nowMs, sessionActivity }]).has(sessionId);
 }
 
 /** Attach the launched owner-session id and initial lease to the current attempt. */
@@ -3190,9 +3278,6 @@ function recordExecutableParentTrigger(
   const parent = tree.resources?.[parentTaskId];
   if (!parent) return undefined;
   const previous = tree.taskTriggers?.[parentTaskId];
-  // The parent is already runnable; never overwrite an independently admitted
-  // trigger merely because one of its children also changed state.
-  if (previous?.event) return parentTaskId;
   const event: Record<string, unknown> = {
     type: "project.task.child-transitioned",
     source: APP_TASK_RECOVERY_OWNER,
@@ -3203,13 +3288,15 @@ function recordExecutableParentTrigger(
     summary,
     evidence: [...(evidence ?? [])],
   };
+  const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, now);
   tree.taskTriggers = {
     ...(tree.taskTriggers ?? {}),
     [parentTaskId]: {
       taskId: parentTaskId,
       taskGeneration: parent.metadata.generation,
       resourceVersion: (previous?.resourceVersion ?? 0) + 1,
-      event,
+      events,
+      event: structuredClone(preferredTriggerFromEvents(events, parent.spec.owner ?? "")),
       observedAt: now,
     },
   };
@@ -3221,6 +3308,7 @@ export function completeAppTask(
   claim: AppTaskClaim,
   input: {
     summary: string;
+    response?: string;
     evidence?: string[];
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
@@ -3296,29 +3384,37 @@ export function completeAppTask(
           ? [action.taskId]
           : [],
     );
+    const pendingSelfTrigger = Boolean(tree.taskTriggers?.[task.id]?.event);
     const satisfiedTaskIds = [
-      ...(claim.mode === "achieve" ? [task.id] : []),
+      ...(claim.mode === "achieve" && !pendingSelfTrigger ? [task.id] : []),
       ...actions.filter((action) => action.kind === "close-task").map((action) => action.taskId),
     ];
-    const parentTaskId = recordExecutableParentTrigger(tree, task, "converged", input.summary, input.evidence, now);
-    const pendingSelfTrigger = Boolean(tree.taskTriggers?.[task.id]?.event);
+    const parentTaskId =
+      claim.mode === "maintain" || !pendingSelfTrigger
+        ? recordExecutableParentTrigger(tree, task, "converged", input.summary, input.evidence, now)
+        : undefined;
     const maintainHasLiveChildren = claim.mode === "maintain" && liveChildren.length > 0;
     const dependentTaskIds = [
       ...new Set([
         ...reconcileActionTaskIds,
-        ...(claim.mode === "maintain" && pendingSelfTrigger ? [task.id] : []),
+        ...(pendingSelfTrigger ? [task.id] : []),
         ...(parentTaskId ? [parentTaskId] : []),
         ...Object.values(tree.resources ?? {})
           .filter((candidate) => candidate.spec.dependsOn?.some((id) => satisfiedTaskIds.includes(id)))
           .map((candidate) => candidate.metadata.id),
       ]),
     ];
-    if (claim.mode === "maintain") {
+    if (claim.mode === "maintain" || pendingSelfTrigger) {
       touchResource(resource, {
-        phase: pendingSelfTrigger ? "pending" : maintainHasLiveChildren ? "waiting" : "converged",
+        phase: pendingSelfTrigger
+          ? "pending"
+          : claim.mode === "maintain" && maintainHasLiveChildren
+            ? "waiting"
+            : "converged",
         observedGeneration: claim.generation,
         currentAttemptId: undefined,
         summary: input.summary,
+        response: input.response,
         evidence: [...(input.evidence ?? [])],
         conditionIds: [],
       });
@@ -3350,6 +3446,7 @@ export function completeAppTask(
           ...(intent.priority ? { priority: intent.priority } : {}),
           handler: claim.handler,
           summary: input.summary,
+          ...(input.response ? { response: input.response } : {}),
           evidence: [...(input.evidence ?? [])],
           acceptanceBasis: structuredClone(acceptanceBasis),
           failureFingerprints,
@@ -3371,7 +3468,7 @@ export function completeAppTask(
       actionsApplied,
       dependentTaskIds,
       supersededSessionIds,
-      ...(claim.mode === "maintain" && (pendingSelfTrigger || maintainHasLiveChildren)
+      ...(pendingSelfTrigger || (claim.mode === "maintain" && maintainHasLiveChildren)
         ? { taskContinues: true as const }
         : {}),
     };
@@ -3404,7 +3501,9 @@ export function deferAppTask(
     const waitsForChildren =
       liveChildTaskIds(tree, task).length > 0 ||
       actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);
-    const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
+    const pendingTriggerRecord = tree.taskTriggers?.[task.id];
+    const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
+    const pendingTrigger = pendingTriggerRecord?.event;
     if (
       input.disposition === "waiting" &&
       !conditions?.length &&
@@ -3455,9 +3554,30 @@ export function deferAppTask(
     // the wait the attempt just installed instead of replaying it blindly. A
     // matching semantic observation wakes the task again; an unrelated stale
     // pulse is consumed. Explicit human/override triggers still bypass the wait.
-    if (pendingTrigger && !triggerOverridesWait(pendingTrigger)) {
+    if (pendingEvents.length > 0) {
       delete tree.taskTriggers![task.id];
-      applyAppTaskConditionEvent(tree, pendingTrigger);
+      for (const entry of pendingEvents.filter(({ event }) => !triggerOverridesWait(event))) {
+        applyAppTaskConditionEvent(tree, entry.event);
+      }
+      for (const entry of pendingEvents.filter(({ event }) => triggerOverridesWait(event))) {
+        const previous = tree.taskTriggers?.[task.id];
+        const events = appendTaskTriggerEvent(
+          previous ? taskTriggerEvents(previous) : [],
+          entry.event,
+          entry.observedAt,
+        );
+        tree.taskTriggers = {
+          ...(tree.taskTriggers ?? {}),
+          [task.id]: {
+            taskId: task.id,
+            taskGeneration: resource.metadata.generation,
+            resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+            event: structuredClone(preferredTriggerFromEvents(events, claim.owner)),
+            events,
+            observedAt: entry.observedAt,
+          },
+        };
+      }
     }
     syncTaskProjection(task, resource, claim.owner);
     refreshActiveTaskProjection(tree);

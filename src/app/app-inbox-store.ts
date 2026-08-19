@@ -362,6 +362,9 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
             ...(typeof metadata.channel === "string" && metadata.channel.trim()
               ? { channel: metadata.channel.trim() }
               : {}),
+            ...(typeof metadata.channelTargetId === "string" && metadata.channelTargetId.trim()
+              ? { channelTargetId: metadata.channelTargetId.trim() }
+              : {}),
             ...(typeof metadata.channelThreadId === "string" && metadata.channelThreadId.trim()
               ? { channelThreadId: metadata.channelThreadId.trim() }
               : {}),
@@ -428,6 +431,9 @@ export function listAppConversationMessages(
         ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
         metadata: {
           ...(item.channel ? { channel: item.channel } : {}),
+          ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
+          ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
+          ...(item.channelMessageId ? { channelMessageId: item.channelMessageId } : {}),
           requestId: item.id,
         },
         createdAt: item.createdAt,
@@ -442,7 +448,13 @@ export function listAppConversationMessages(
       sequence,
       author: { kind: "agent", id: appId },
       text: boundedConversationText(resultText),
-      metadata: { ...(item.channel ? { channel: item.channel } : {}), requestId: item.id },
+      metadata: {
+        ...(item.channel ? { channel: item.channel } : {}),
+        ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
+        ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
+        ...(item.channelMessageId ? { channelMessageId: item.channelMessageId } : {}),
+        requestId: item.id,
+      },
       createdAt: item.completedAt ?? item.updatedAt,
     });
   }

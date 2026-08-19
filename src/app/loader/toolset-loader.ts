@@ -22,6 +22,7 @@ import { Cron } from "../cron.js";
 import type { AgentConfig } from "./agent-config.js";
 import { listConfiguredAgentNames } from "./agent-discovery.js";
 import { loadAgentLocalTools } from "./agent-local-tools.js";
+import { createAppTaskReadTool } from "../app-task-read-tool.js";
 
 export interface ToolsetLoaderOptions {
   agentsRoot: string;
@@ -276,6 +277,16 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
   }
 
   tools.push(...(await loadLocalTools(config.name, agentDir, opts)));
+  tools.push(
+    createAppTaskReadTool({
+      bus,
+      appId: () => {
+        const sessionId = opts.getAgentSessionId(config.name);
+        const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
+        return session?.source === "app-task-owner" ? session.projectId : undefined;
+      },
+    }),
+  );
   return tools;
 }
 

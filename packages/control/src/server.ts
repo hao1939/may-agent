@@ -44,12 +44,16 @@ export interface AttachControlSocketOptions {
     conversationId: string,
     options?: { limit?: number; allWork?: boolean; workRequestId?: string },
   ) => unknown;
+  listAppTasks?: (
+    appId: string,
+    options?: { status?: string[]; limit?: number; cursor?: string },
+  ) => unknown;
+  getAppTask?: (appId: string, taskId: string) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
   };
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
-  onDelivered?: (event: ControlEvent, clientCount: number) => void;
   onInfo?: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
   agentName: string;
@@ -68,7 +72,6 @@ interface ClientState {
   conversations: Set<string>;
   chatMode: boolean;
   subscribed: boolean;
-  deliveryChannel?: string;
 }
 
 export const CONTROL_SOCKET_LIMITS = {
@@ -148,9 +151,6 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.subscribed) return false;
   const data = eventPayload(event);
-  if (event.type === "app.response.delivery.requested") {
-    return typeof data.channel === "string" && client.deliveryChannel === data.channel;
-  }
   if (event.type === "conversation.updated") {
     return typeof data.conversationId === "string" && client.conversations.has(data.conversationId);
   }
@@ -175,9 +175,10 @@ export interface ControlSocketCoreOptions {
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
+  listAppTasks?: AttachControlSocketOptions["listAppTasks"];
+  getAppTask?: AttachControlSocketOptions["getAppTask"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
-  onDelivered?: (event: ControlEvent, clientCount: number) => void;
   agentName: string;
   instance: string;
 }
@@ -195,10 +196,11 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getEvent,
     admitAppInput,
     getAppConversation,
+    listAppTasks,
+    getAppTask,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
-    onDelivered,
     agentName,
     instance,
   } = opts;
@@ -220,16 +222,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 
   function broadcast(event: ControlEvent): void {
     const data = eventPayload(event);
-    const socketDelivery =
-      event.type === "app.response.delivery.requested" &&
-      typeof data.channel === "string" &&
-      [...clients.values()].some((client) => client.deliveryChannel === data.channel);
-    if (clients.size === 0) {
-      if (event.type === "app.response.delivery.requested" && data.channel === "may-console") {
-        onDelivered?.(event, 0);
-      }
-      return;
-    }
+    if (clients.size === 0) return;
 
     const chatSid = getSessionId();
     for (const client of clients.values()) {
@@ -256,7 +249,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     }
 
     let line: string | undefined;
-    let delivered = 0;
     for (const [sock, client] of clients) {
       if (!shouldForward(client, event)) continue;
       try {
@@ -266,19 +258,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           sock.destroy(new Error("Control socket client is too slow"));
           continue;
         }
-        if (sock.write(line)) delivered++;
-        else if (sock.writableLength <= CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) delivered++;
+        sock.write(line);
       } catch {
         clients.delete(sock);
       }
-    }
-    if (
-      (event.type === "app.response.delivery.requested" &&
-        delivered === 0 &&
-        (socketDelivery || data.channel === "may-console")) ||
-      (delivered > 0 && (event.type === "session.idle" || event.type === "session.end"))
-    ) {
-      onDelivered?.(event, delivered);
     }
   }
 
@@ -359,15 +342,13 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = frame.sessions;
           const conversations = frame.conversations;
-          const deliveryChannel = frame.deliveryChannel;
           const client = clients.get(socket);
           if (
             client &&
             Array.isArray(sessions) &&
             sessions.every((session) => typeof session === "string") &&
             (conversations === undefined ||
-              (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim()))) &&
-            (deliveryChannel === undefined || (typeof deliveryChannel === "string" && deliveryChannel.trim()))
+              (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim())))
           ) {
             if (sessions.includes("*")) {
               client.filter = null;
@@ -380,7 +361,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               client.filter = new Set(sessions);
               client.chatMode = false;
             }
-            client.deliveryChannel = typeof deliveryChannel === "string" ? deliveryChannel.trim() : undefined;
             client.conversations = new Set(
               Array.isArray(conversations) ? conversations.map((id) => String(id).trim()) : [],
             );
@@ -397,7 +377,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
                       (!Array.isArray(conversations) ||
                         !conversations.every((id) => typeof id === "string" && id.trim()))
                     ? "conversations must be an array of non-empty strings"
-                    : "deliveryChannel must be a non-empty string",
+                    : "invalid subscription",
             });
           }
           continue;
@@ -608,6 +588,78 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "app.tasks.list") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          if (!appId || !listAppTasks) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId ? "appId is required" : "App Task reads are unavailable",
+            });
+            continue;
+          }
+          try {
+            if (
+              frame.status !== undefined &&
+              (!Array.isArray(frame.status) ||
+                !frame.status.every((value) => typeof value === "string" && Boolean(value.trim())))
+            ) {
+              throw new Error("status must be an array of non-empty strings");
+            }
+            const status = frame.status as string[] | undefined;
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              appId,
+              tasks: listAppTasks(appId, {
+                ...(status ? { status } : {}),
+                ...(frame.limit === undefined ? {} : { limit: Number(frame.limit) }),
+                ...(typeof frame.cursor === "string" && frame.cursor.trim() ? { cursor: frame.cursor.trim() } : {}),
+              }),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "app.task.get") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
+          if (!appId || !taskId || !getAppTask) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId
+                ? "appId is required"
+                : !taskId
+                  ? "taskId is required"
+                  : "App Task reads are unavailable",
+            });
+            continue;
+          }
+          try {
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              appId,
+              taskId,
+              task: getAppTask(appId, taskId),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "project.actions.describe") {
           const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
           if (!projectId || !describeProjectActions) {
@@ -709,7 +761,6 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     publishEvent,
     getEvent,
     subscribeEvents,
-    onDelivered,
     onInfo,
     agentName,
     instance,
@@ -734,10 +785,11 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getEvent,
     admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
+    listAppTasks: opts.listAppTasks,
+    getAppTask: opts.getAppTask,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,
-    onDelivered,
     agentName,
     instance,
   });

@@ -520,6 +520,47 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("lists and gets App-scoped Tasks without exposing storage paths", async () => {
+    const task = {
+      id: "review/docs",
+      status: "waiting",
+      generation: 2,
+      outcome: "Review the docs",
+      summary: "Waiting for evidence",
+    };
+    const core = createCore({
+      listAppTasks: (appId, options) => {
+        expect({ appId, options }).toEqual({
+          appId: "evaluation",
+          options: { status: ["waiting"], limit: 10, cursor: "next-page" },
+        });
+        return { items: [task] };
+      },
+      getAppTask: (appId, taskId) => {
+        expect({ appId, taskId }).toEqual({ appId: "evaluation", taskId: "review/docs" });
+        return task;
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.tasks.list",
+        appId: "evaluation",
+        status: ["waiting"],
+        limit: 10,
+        cursor: "next-page",
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "app.tasks.list", tasks: { items: [task] } });
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.get",
+        appId: "evaluation",
+        taskId: "review/docs",
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "app.task.get", task });
+    expect(core.emitted).toEqual([]);
+  });
+
   it("discovers and invokes project action shortcuts", async () => {
     const core = createCore({
       describeProjectActions: (projectId) => [
@@ -624,34 +665,6 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
-  it("supports delivery-only subscriptions without forwarding session traffic", async () => {
-    const core = createCore();
-    const stream = (core.endpoint as () => Duplex)();
-    await nextFrame(stream);
-
-    stream.write(JSON.stringify({ type: "subscribe", sessions: [], deliveryChannel: "may-console" }) + "\n");
-    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
-
-    core.getBroadcast()?.({ type: "text", sessionId: "s_busy", agent: "worker", text: "skip" });
-    const response = {
-      type: "app.response.delivery.requested",
-      source: "app-inbox",
-      owner: "app:may",
-      data: {
-        channel: "may-console",
-        sessionId: "s_may",
-        operationId: "app-delivery:item-delivery-only:1",
-        appInboxItemId: "item-delivery-only",
-        appInboxRequestId: "app-inbox-human:item-delivery-only",
-        text: "Done.",
-      },
-    };
-    core.getBroadcast()?.(response);
-
-    await expect(nextFrame(stream)).resolves.toEqual(response);
-    stream.destroy();
-  });
-
   it("forwards updates only for watched Conversation resources", async () => {
     const core = createCore();
     const stream = (core.endpoint as () => Duplex)();
@@ -676,100 +689,6 @@ describe("control socket protocol", () => {
 
     await expect(nextFrame(stream)).resolves.toEqual(update);
     stream.destroy();
-  });
-
-  it("forwards a Web App inbox response without treating socket observation as delivery", async () => {
-    const delivered: Array<{ event: ControlEvent; count: number }> = [];
-    const core = createCore({
-      onDelivered: (event, count) => delivered.push({ event, count }),
-      emitEvent: (event) => {
-        core.emitted.push(event);
-        return { eventId: 81 };
-      },
-    });
-    const stream = (core.endpoint as () => Duplex)();
-    await nextFrame(stream);
-    stream.write(JSON.stringify({ type: "subscribe", sessions: ["legacy-chat"], deliveryChannel: "web-ui" }) + "\n");
-    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
-    const response = {
-      type: "app.response.delivery.requested",
-      source: "app-inbox",
-      owner: "app:may",
-      data: {
-        channel: "web-ui",
-        sessionId: "bounded-owner-session",
-        operationId: "app-delivery:item-1:1",
-        appInboxItemId: "item-1",
-        appInboxRequestId: "app-inbox-human:item-1",
-        text: "Done.",
-      },
-    };
-
-    core.getBroadcast()?.(response);
-
-    await expect(nextFrame(stream)).resolves.toEqual(response);
-    expect(delivered).toEqual([]);
-
-    const acknowledgement = {
-      type: "channel.delivery.completed",
-      source: "web-ui",
-      owner: "app:may",
-      target: { human: true },
-      data: {
-        channel: "web-ui",
-        sessionId: "bounded-owner-session",
-        resultEventType: "app.response.delivery.requested",
-        operationId: "app-delivery:item-1:1",
-        appInboxItemId: "item-1",
-        appInboxRequestId: "app-inbox-human:item-1",
-        idempotencyKey: "web-ui-delivery:app-delivery:item-1:1",
-      },
-    };
-    await expect(sendSocketCommand(core.endpoint, acknowledgement)).resolves.toEqual({
-      type: "ok",
-      command: "channel.delivery.completed",
-      eventId: 81,
-    });
-    expect(core.emitted).toEqual([acknowledgement]);
-    stream.destroy();
-  });
-
-  it("reports an App response that had no subscribed socket client", () => {
-    const forwarded: Array<{ event: ControlEvent; count: number }> = [];
-    const core = createCore({
-      onDelivered: (event, count) => forwarded.push({ event, count }),
-    });
-    const response: ControlEvent = {
-      type: "app.response.delivery.requested",
-      source: "app-inbox",
-      owner: "app:may",
-      data: {
-        channel: "may-console",
-        operationId: "app-progress:item-1:analysis-1",
-        appInboxItemId: "item-1",
-        appInboxRequestId: "app-inbox-human:item-1",
-        sessionId: "session-1",
-        text: "I’ll check this.",
-      },
-    };
-
-    core.getBroadcast()?.(response);
-
-    expect(forwarded).toEqual([{ event: response, count: 0 }]);
-  });
-
-  it("does not claim delivery availability for another transport", () => {
-    const forwarded: Array<{ event: ControlEvent; count: number }> = [];
-    const core = createCore({
-      onDelivered: (event, count) => forwarded.push({ event, count }),
-    });
-
-    core.getBroadcast()?.({
-      type: "app.response.delivery.requested",
-      data: { channel: "telegram", operationId: "telegram-delivery" },
-    });
-
-    expect(forwarded).toEqual([]);
   });
 
   it("rejects subscription filters containing non-string session ids", async () => {

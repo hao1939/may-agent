@@ -34,6 +34,8 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "event.get",
   "app.input.admit",
   "app.conversation.get",
+  "app.tasks.list",
+  "app.task.get",
   "project.actions.describe",
   "project.action.invoke",
 ]);
@@ -48,6 +50,8 @@ export type SocketFrame =
         | "event.get"
         | "app.input.admit"
         | "app.conversation.get"
+        | "app.tasks.list"
+        | "app.task.get"
         | "project.actions.describe"
         | "project.action.invoke";
       frame: Record<string, unknown>;
@@ -260,6 +264,9 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "publish"
         | "event.get"
         | "app.input.admit"
+        | "app.conversation.get"
+        | "app.tasks.list"
+        | "app.task.get"
         | "project.actions.describe"
         | "project.action.invoke",
       frame,

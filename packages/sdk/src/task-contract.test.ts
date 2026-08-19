@@ -4,6 +4,74 @@ import { admitTaskReconcileResult, admitTaskVerificationResult } from "./task-co
 const workflowOptions = { allowNeedsOwner: true, defaultParentId: "app-root" };
 
 describe("project task handler contract", () => {
+  it("preserves a caller response separately from task summary", () => {
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "Conversation request answered",
+          response: "Here is the answer the caller asked for.",
+          evidence: ["request:conversation-1"],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: true,
+      result: {
+        state: "converged",
+        summary: "Conversation request answered",
+        response: "Here is the answer the caller asked for.",
+        evidence: ["request:conversation-1"],
+        actions: [],
+      },
+    });
+    expect(
+      admitTaskReconcileResult(
+        { state: "converged", summary: "Answered", response: "   ", evidence: [] },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "response must be a non-empty string" });
+  });
+
+  it("admits typed child App dependencies only while waiting", () => {
+    const dependency = {
+      id: "review",
+      appId: "evaluation",
+      input: { kind: "deep-scan", data: { reason: "caller-review" } },
+    };
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "waiting",
+          summary: "Waiting for independent review",
+          evidence: ["dependency:evaluation/review"],
+          dependencies: [dependency],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: true,
+      result: {
+        state: "waiting",
+        summary: "Waiting for independent review",
+        evidence: ["dependency:evaluation/review"],
+        actions: [],
+        dependencies: [dependency],
+      },
+    });
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "Invalid early completion",
+          evidence: [],
+          dependencies: [dependency],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "dependencies are valid only for waiting" });
+  });
+
   it("applies convention defaults to a finite create action", () => {
     const admitted = admitTaskReconcileResult(
       {
