@@ -1803,10 +1803,10 @@ export function readAppTaskTrigger(config: TaskStateConfig, taskId: string): Rec
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const pending = tree.taskTriggers?.[taskId];
-    if (pending) return pending.event;
+    if (pending) return structuredClone(pending.event);
     const resource = tree.resources?.[taskId];
     const attempt = resource ? currentResourceAttempt(tree, resource) : null;
-    return attempt?.trigger;
+    return attempt?.trigger ? structuredClone(attempt.trigger) : undefined;
   });
 }
 
@@ -1815,7 +1815,10 @@ export function readPendingAppTaskTrigger(
   config: TaskStateConfig,
   taskId: string,
 ): Record<string, unknown> | undefined {
-  return withTaskStateLock(config, () => readTaskState(config).taskTriggers?.[taskId]?.event);
+  return withTaskStateLock(config, () => {
+    const event = readTaskState(config).taskTriggers?.[taskId]?.event;
+    return event ? structuredClone(event) : undefined;
+  });
 }
 
 /** Persist a wake observation for an existing task without resubmitting desired state. */
@@ -2715,6 +2718,7 @@ export function recordAppTaskAttemptSession(config: TaskStateConfig, claim: AppT
     const tree = readTaskState(config);
     const match = matchingTask(tree, claim);
     if (!match) return false;
+    if (match.attempt.sessionId === sessionId && match.attempt.lease) return true;
     match.attempt.metadata.resourceVersion += 1;
     match.attempt.sessionId = sessionId;
     refreshAttemptLease(match.attempt, sessionId);
