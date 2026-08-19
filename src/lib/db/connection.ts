@@ -53,6 +53,10 @@ export function getDb(persistDir: string): SqliteDb {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
+  // Checkpointing belongs to the dedicated maintenance process. SQLite's
+  // default per-connection auto-checkpoint can otherwise run a multi-page
+  // checkpoint on the daemon's synchronous event-persistence commit path.
+  db.exec("PRAGMA wal_autocheckpoint = 0");
   applyDbSchema(db);
 
   dbCache.set(persistDir, db);
