@@ -1,5 +1,6 @@
-import { execFileSync } from "node:child_process";
+import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
 import { createMetricService } from "../lib/metrics.js";
+import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
 
@@ -87,8 +88,17 @@ export function batchableProjectMetricCommand(
   return match ? { scriptPath: match[1]!, metricId: match[2]! } : null;
 }
 
-function executeCommand(command: string): CommandSample | null {
-  const stdout = execFileSync("/bin/sh", ["-lc", command], {
+function execFileText(file: string, args: string[], options: ExecFileOptionsWithStringEncoding): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, options, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout);
+    });
+  });
+}
+
+async function executeCommand(command: string): Promise<CommandSample | null> {
+  const stdout = await execFileText("/bin/sh", ["-lc", command], {
     cwd: "/app",
     encoding: "utf8",
     timeout: 120_000,
@@ -97,10 +107,10 @@ function executeCommand(command: string): CommandSample | null {
   return parseCommandOutput(stdout);
 }
 
-function executeBatches(rows: SourceMetric[]): {
+async function executeBatches(rows: SourceMetric[]): Promise<{
   samples: Map<string, CommandSample>;
   handled: Set<string>;
-} {
+}> {
   const groups = new Map<string, Array<{ rowId: string; metricId: string }>>();
   for (const row of rows) {
     if (!row.source_command) continue;
@@ -117,7 +127,7 @@ function executeBatches(rows: SourceMetric[]): {
     if (group.length < 2) continue;
     for (const item of group) handled.add(item.rowId);
     try {
-      const stdout = execFileSync(
+      const stdout = await execFileText(
         "bun",
         [scriptPath, "--batch-json", ...group.map((item) => item.metricId)],
         {
@@ -146,12 +156,12 @@ function executeBatches(rows: SourceMetric[]): {
  * executes that accepted definition, records the correlated real observation,
  * and asks MetricService to apply the existing alert lifecycle.
  */
-export function measureSourceMetrics(options: {
+export async function measureSourceMetrics(options: {
   bus: EventBus;
   persistDir: string;
   triggerEventId?: number;
   measuredAt?: number;
-}): { measured: string[]; skipped: string[] } {
+}): Promise<{ measured: string[]; skipped: string[] }> {
   const db = getDb(options.persistDir);
   const metrics = createMetricService({
     getDb: () => db,
@@ -179,7 +189,7 @@ export function measureSourceMetrics(options: {
   const commandNote = options.triggerEventId
     ? `source-command; trigger-event:${options.triggerEventId}`
     : "source-command";
-  const batches = executeBatches(rows);
+  const batches = await executeBatches(rows);
 
   for (const row of rows) {
     try {
@@ -200,7 +210,7 @@ export function measureSourceMetrics(options: {
         note = commandNote;
         sample = batches.samples.get(row.id) ?? null;
         if (!sample && !batches.handled.has(row.id)) {
-          sample = executeCommand(row.source_command);
+          sample = await executeCommand(row.source_command);
         }
       }
       if (!sample) {
@@ -225,10 +235,14 @@ export function measureSourceMetrics(options: {
 
 export const measureSourceQueryMetrics = measureSourceMetrics;
 
+export type MetricSourceMeasurementRuntime = {
+  idle(): Promise<void>;
+};
+
 export function attachMetricSourceMeasurement(options: {
   bus: EventBus;
   persistDir: string;
-}): void {
+}): MetricSourceMeasurementRuntime {
   const db = getDb(options.persistDir);
   createMetricService({ getDb: () => db }).define({
     id: STALE_ACTIVE_METRIC_ID,
@@ -249,13 +263,36 @@ export function attachMetricSourceMeasurement(options: {
       "Counts active metrics with an explicit positive measure interval that missed at least two expected samples, with a 15-minute minimum grace window.",
   });
 
+  let pending: { triggerEventId?: number; measuredAt: number } | undefined;
+  let drain: Promise<void> | undefined;
+
+  const schedule = (request: { triggerEventId?: number; measuredAt: number }) => {
+    // Metrics are observations. If snapshots arrive faster than their source
+    // commands finish, one latest observation is sufficient.
+    pending = request;
+    if (drain) return;
+    drain = (async () => {
+      while (pending) {
+        const current = pending;
+        pending = undefined;
+        await measureSourceMetrics({ ...options, ...current });
+      }
+    })()
+      .catch((error) => {
+        log("warn", `[metrics] source measurement failed: ${error instanceof Error ? error.message : String(error)}`);
+      })
+      .finally(() => {
+        drain = undefined;
+        if (pending) schedule(pending);
+      });
+  };
+
   options.bus.subscribe((event): DeliveryResult | void => {
     if ((event as { type: string }).type !== METRIC_SOURCE_MEASUREMENT_EVENT) return;
     const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[
       EVENT_ROW_ID
     ];
-    const result = measureSourceMetrics({
-      ...options,
+    schedule({
       triggerEventId,
       measuredAt: Date.now(),
     });
@@ -263,7 +300,13 @@ export function attachMetricSourceMeasurement(options: {
       accepted: true,
       by: "runtime:metric-source-measurement",
       route: "direct",
-      note: `measured ${result.measured.length} source-defined metric(s); skipped ${result.skipped.length}`,
+      note: "source-defined metric observation scheduled",
     };
   });
+
+  return {
+    async idle() {
+      while (drain) await drain;
+    },
+  };
 }
