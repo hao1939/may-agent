@@ -775,69 +775,6 @@ describe("canonical App task runtime", () => {
     });
   });
 
-  it("returns fresh task-session fences from the initial recovery pass", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    const persistDir = join(f.root, ".state");
-    const runtimeOptions = {
-      ...options(f, bus),
-      persistDir,
-      manager: { hasAgent: () => true, hasActiveSession: () => false } as never,
-      appRegistrySnapshot: {
-        id: "boot:fresh-session",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    };
-    await installAppTaskRuntimes(runtimeOptions);
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      owner: "sample-owner",
-      maxConcurrent: 1,
-    });
-    observeAppTaskIntent(config, {
-      intent: {
-        id: "work/resumable",
-        parentId: "operations",
-        outcome: "Resume exact task session",
-        acceptance: ["Session is fenced once"],
-        mode: "achieve",
-        owner: "sample-owner",
-      },
-      appOwner: "sample-owner",
-    });
-    const claim = claimObservedAppTask(config, {
-      taskId: "work/resumable",
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
-      reason: "test",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    expect(recordAppTaskAttemptSession(config, claim, "session-resumable")).toBe(true);
-    const previousRuntimeTree = readTaskState(config);
-    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
-    if (!previousAttempt?.lease) throw new Error("expected leased attempt");
-    previousAttempt.runtimeId = "previous-runtime";
-    previousAttempt.lease.runtimeId = "previous-runtime";
-    saveTaskState(config, previousRuntimeTree);
-    writeSessionMeta(persistDir, "session-resumable", {
-      agent: "sample-owner",
-      task: "resume",
-      status: "running",
-      startedAt: Date.now(),
-      source: "app-task-owner",
-      projectId: "sample",
-      recoveryOwner: "app-task-reconciler",
-      kind: "call",
-    });
-
-    const recovered = await installAppTaskRuntimes(runtimeOptions, { includeFreshLeases: true });
-
-    expect(recovered.claimedSessionIds).toEqual(new Set(["session-resumable"]));
-    expect(readTaskState(config).resources?.["work/resumable"]?.status.phase).toBe("running");
-  });
-
   it("yields readiness inside one large reconciliation after claim persistence", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -943,6 +880,69 @@ describe("canonical App task runtime", () => {
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
     expect(readTaskState(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
+  });
+
+  it("returns fresh task-session fences from the initial recovery pass", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, ".state");
+    const runtimeOptions = {
+      ...options(f, bus),
+      persistDir,
+      manager: { hasAgent: () => true, hasActiveSession: () => false } as never,
+      appRegistrySnapshot: {
+        id: "boot:fresh-session",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    };
+    await installAppTaskRuntimes(runtimeOptions);
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/resumable",
+        parentId: "operations",
+        outcome: "Resume exact task session",
+        acceptance: ["Session is fenced once"],
+        mode: "achieve",
+        owner: "sample-owner",
+      },
+      appOwner: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/resumable",
+      appOwner: "sample-owner",
+      handler: "owner:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(recordAppTaskAttemptSession(config, claim, "session-resumable")).toBe(true);
+    const previousRuntimeTree = readTaskState(config);
+    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
+    if (!previousAttempt?.lease) throw new Error("expected leased attempt");
+    previousAttempt.runtimeId = "previous-runtime";
+    previousAttempt.lease.runtimeId = "previous-runtime";
+    saveTaskState(config, previousRuntimeTree);
+    writeSessionMeta(persistDir, "session-resumable", {
+      agent: "sample-owner",
+      task: "resume",
+      status: "running",
+      startedAt: Date.now(),
+      source: "app-task-owner",
+      projectId: "sample",
+      recoveryOwner: "app-task-reconciler",
+      kind: "call",
+    });
+
+    const recovered = await installAppTaskRuntimes(runtimeOptions, { includeFreshLeases: true });
+
+    expect(recovered.claimedSessionIds).toEqual(new Set(["session-resumable"]));
+    expect(readTaskState(config).resources?.["work/resumable"]?.status.phase).toBe("running");
   });
 
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
