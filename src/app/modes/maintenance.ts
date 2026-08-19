@@ -10,6 +10,7 @@ const LIVENESS_RESTART_COOLDOWN_MS = 10 * 60_000;
 const LIVENESS_PROBE_TIMEOUT_MS = 5_000;
 const LIVENESS_ACTIVE_WORK_GRACE_MS = 30 * 60_000;
 const LIVENESS_HEARTBEAT_FRESH_MS = 150_000;
+const MAINTENANCE_STARTUP_DELAY_MS = 2 * 60_000;
 
 export type RuntimeLivenessState = {
   consecutiveFailures: number;
@@ -115,10 +116,33 @@ function parseIntervalMs(argv: string[]): number {
   return Number.isFinite(value) ? Math.max(60_000, value) : 60 * 60 * 1_000;
 }
 
+function parseStartupDelayMs(argv: string[]): number {
+  const index = argv.indexOf("--maintenance-startup-delay-ms");
+  const value = index >= 0 ? Number(argv[index + 1]) : MAINTENANCE_STARTUP_DELAY_MS;
+  return Number.isFinite(value) ? Math.max(0, value) : MAINTENANCE_STARTUP_DELAY_MS;
+}
+
+async function waitForDelay(delayMs: number, stopped: () => boolean): Promise<void> {
+  if (delayMs <= 0 || stopped()) return;
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      clearInterval(poll);
+      resolve();
+    }, delayMs);
+    const poll = setInterval(() => {
+      if (!stopped()) return;
+      clearInterval(poll);
+      clearTimeout(timer);
+      resolve();
+    }, 250);
+  });
+}
+
 export async function runMaintenanceMode(opts: { persistDir: string; argv?: string[] }): Promise<void> {
   const argv = opts.argv ?? process.argv;
   const once = argv.includes("--maintenance-once");
   const intervalMs = parseIntervalMs(argv);
+  const startupDelayMs = parseStartupDelayMs(argv);
   let stopping = false;
   let livenessRunning = false;
   const livenessNotBefore = Date.now() + LIVENESS_STARTUP_GRACE_MS;
@@ -166,7 +190,9 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
       }, LIVENESS_INTERVAL_MS);
 
   try {
+    if (!once) await waitForDelay(startupDelayMs, () => stopping);
     do {
+      if (stopping) break;
       const startedAt = Date.now();
       try {
         const result = runDbMaintenancePass(opts.persistDir);
@@ -189,18 +215,7 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
         );
       }
       if (once || stopping) break;
-      await new Promise<void>((resolve) => {
-        const timer = setTimeout(() => {
-          clearInterval(poll);
-          resolve();
-        }, intervalMs);
-        const poll = setInterval(() => {
-          if (!stopping) return;
-          clearInterval(poll);
-          clearTimeout(timer);
-          resolve();
-        }, 250);
-      });
+      await waitForDelay(intervalMs, () => stopping);
     } while (!stopping);
   } finally {
     if (livenessTimer) clearInterval(livenessTimer);

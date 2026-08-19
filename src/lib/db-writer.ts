@@ -44,6 +44,7 @@ const DURABLE_COMMAND_EVENTS = new Set([
 
 const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
 const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
+const DEFAULT_HOUSEKEEPING_INTERVAL_MS = 30_000;
 // Task assignment pairs use a longer TTL because project tasks legitimately
 // take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
 // batches (e.g. 150 alpha-project tasks) to orphan simultaneously and breach
@@ -435,10 +436,13 @@ export class DbWriter {
   private persistDir: string;
   private deliveryTrackingStartedAt = Date.now();
   private reconciledUnhandledAdmissionPlans = false;
+  private lastHousekeepingAt = 0;
+  private housekeepingIntervalMs: number;
 
-  constructor(persistDir: string) {
+  constructor(persistDir: string, opts: { housekeepingIntervalMs?: number } = {}) {
     this.persistDir = persistDir;
     this.db = getDb(persistDir);
+    this.housekeepingIntervalMs = Math.max(0, opts.housekeepingIntervalMs ?? DEFAULT_HOUSEKEEPING_INTERVAL_MS);
   }
 
   /** Subscribe this writer to an EventBus. */
@@ -614,8 +618,7 @@ export class DbWriter {
     project?: () => void,
   ): number | null {
     const timestamp = Date.now();
-    this.sweepStalePairs(timestamp);
-    this.sweepUnacceptedEvents(timestamp);
+    this.runDueHousekeeping(timestamp);
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
@@ -900,6 +903,13 @@ export class DbWriter {
         persistEventClosure(this.db, closeEventId, Number(row.open_event_id), pair.name, closedAt);
       }
     }
+  }
+
+  private runDueHousekeeping(now: number): void {
+    if (now - this.lastHousekeepingAt < this.housekeepingIntervalMs) return;
+    this.lastHousekeepingAt = now;
+    this.sweepStalePairs(now);
+    this.sweepUnacceptedEvents(now);
   }
 
   private sweepStalePairs(now: number): void {
