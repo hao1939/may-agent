@@ -23,7 +23,11 @@ import {
   scenarioNormalizationTaskId,
   standingLoopDefinitions,
 } from "../../../task-loops.ts";
-import { withCurrentOriginDevSnapshot } from "../../app-ops/workflows/lib/origin-dev-snapshot.ts";
+import { withCurrentOriginDevSnapshotAsync } from "../../app-ops/workflows/lib/origin-dev-snapshot.ts";
+import {
+  drainOwnedCommand,
+  runOwnedCommand,
+} from "../../app-ops/workflows/lib/owned-command.ts";
 import {
   directCarrierQualityIssues,
   type InventoryRowRecord,
@@ -176,6 +180,8 @@ type ReceiptRecord = {
 
 const frontierTaskId = scenarioNormalizationTaskId;
 const maxWorkflowEvidenceEntries = 32;
+const repositoryCheckTimeoutMs = 10 * 60_000;
+const maxRepositoryCheckOutputChars = 16 * 1024 * 1024;
 
 function digest(value: string, length = 10): string {
   return createHash("sha256").update(value).digest("hex").slice(0, length);
@@ -245,11 +251,12 @@ function boundedRepositoryCheckOutput(stdout: string, stderr: string): string {
   return lines.slice(-40).join(" | ").slice(0, 8_000);
 }
 
-export function runRequiredRepositoryCheck(
+export async function runRequiredRepositoryCheck(
   projectDir: string,
   worktreeDir: string,
   command: string,
-): { status: number | null; evidence: string[] } {
+  ownerFile = join(tmpdir(), `may-normalization-check-${process.pid}.json`),
+): Promise<{ status: number | null; evidence: string[] }> {
   if (command !== "bun run check") {
     return {
       status: null,
@@ -287,14 +294,20 @@ export function runRequiredRepositoryCheck(
       const bunTempDir = join(tmpdir(), "aks-rp-e2e-bun-install");
       const bunCacheDir = join(bunTempDir, "cache");
       mkdirSync(bunCacheDir, { recursive: true });
-      const setup = run("bun", ["install", "--frozen-lockfile"], worktreeDir, {
-        TMPDIR: bunTempDir,
-        BUN_INSTALL_CACHE_DIR: bunCacheDir,
+      const setup = await runOwnedCommand({
+        command: "bun",
+        args: ["install", "--frozen-lockfile"],
+        cwd: worktreeDir,
+        ownerFile,
+        env: { TMPDIR: bunTempDir, BUN_INSTALL_CACHE_DIR: bunCacheDir },
+        timeoutMs: repositoryCheckTimeoutMs,
+        maxOutputChars: maxRepositoryCheckOutputChars,
       });
       evidence.push(
         `repository-check-setup-command:${setupCommand}`,
         `repository-check-setup-status:${setup.status === 0 ? "passed" : "failed"}`,
         `repository-check-setup-exit:${setup.status ?? "spawn-error"}`,
+        ...(setup.timedOut ? ["repository-check-setup-timeout:true"] : []),
       );
       if (setup.status !== 0) {
         evidence.push(
@@ -311,8 +324,14 @@ export function runRequiredRepositoryCheck(
   const nodePath = [projectNodeModules, process.env.NODE_PATH]
     .filter((value): value is string => Boolean(value))
     .join(delimiter);
-  const result = run("bun", ["run", "check"], worktreeDir, {
-    NODE_PATH: nodePath,
+  const result = await runOwnedCommand({
+    command: "bun",
+    args: ["run", "check"],
+    cwd: worktreeDir,
+    ownerFile,
+    env: { NODE_PATH: nodePath },
+    timeoutMs: repositoryCheckTimeoutMs,
+    maxOutputChars: maxRepositoryCheckOutputChars,
   });
   return {
     status: result.status,
@@ -320,6 +339,7 @@ export function runRequiredRepositoryCheck(
       ...evidence,
       `repository-check-status:${result.status === 0 ? "passed" : "failed"}`,
       `repository-check-exit:${result.status ?? "spawn-error"}`,
+      ...(result.timedOut ? ["repository-check-timeout:true"] : []),
       ...(result.status === 0
         ? []
         : [
@@ -342,6 +362,18 @@ function resolveProjectDir(ctx: WorkflowContext): string {
   return projectDir;
 }
 
+function repositoryCheckOwnerFile(
+  ctx: WorkflowContext,
+  projectDir: string,
+): string {
+  return join(
+    ctx.workspace?.appRoot ?? projectDir,
+    ".state",
+    "owned-commands",
+    "normalize-scenario-frontier-repository-check.json",
+  );
+}
+
 function desiredRunnableMin(ctx: WorkflowContext): number {
   const fallback = 3;
   const raw = ctx.reconciliation?.trigger?.data.desiredRunnableLeaves;
@@ -354,9 +386,12 @@ function desiredRunnableMin(ctx: WorkflowContext): number {
 
 function withCleanOriginDev<T>(
   projectDir: string,
-  fn: (worktreeDir: string, source: "origin/dev" | "project-dir") => T,
-): T {
-  return withCurrentOriginDevSnapshot(projectDir, ({ dir, source }) =>
+  fn: (
+    worktreeDir: string,
+    source: "origin/dev" | "project-dir",
+  ) => Promise<T> | T,
+): Promise<T> {
+  return withCurrentOriginDevSnapshotAsync(projectDir, ({ dir, source }) =>
     fn(dir, source),
   );
 }
@@ -2051,13 +2086,9 @@ function qualityRowContractRepairs(
         return false;
       }
       if (
-        ![
-          "active",
-          "running",
-          "pending",
-          "runnable",
-          "backlog",
-        ].includes(node.state)
+        !["active", "running", "pending", "runnable", "backlog"].includes(
+          node.state,
+        )
       ) {
         return false;
       }
@@ -2110,6 +2141,11 @@ function capEvidence<Row>(
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const projectDir = resolveProjectDir(ctx);
+  const checkOwnerFile = repositoryCheckOwnerFile(ctx, projectDir);
+  // A replacement iteration must retire the exact pre-restart check before it
+  // reads or acts on the new snapshot. The workflow remains sequential while
+  // unrelated daemon work continues normally.
+  await drainOwnedCommand(checkOwnerFile);
   const maxLeaves =
     standingLoopDefinitions[scenarioNormalizationTaskId].frontierLimit;
   const minRunnableLeaves = desiredRunnableMin(ctx);
@@ -2117,7 +2153,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
   const completedIds = completedTaskIds(ctx.reconciliation);
 
-  return withCleanOriginDev(projectDir, (worktreeDir, source) => {
+  return withCleanOriginDev(projectDir, async (worktreeDir, source) => {
     const {
       report,
       activeSpecCount,
@@ -2210,10 +2246,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       }
       const repositoryCheckCommand = requiredRepositoryCheckCommand(ctx);
       if (fileLayoutOnlyComplete && repositoryCheckCommand) {
-        const repositoryCheck = runRequiredRepositoryCheck(
+        const repositoryCheck = await runRequiredRepositoryCheck(
           projectDir,
           worktreeDir,
           repositoryCheckCommand,
+          checkOwnerFile,
         );
         if (repositoryCheck.status !== 0) {
           const summary = `Scenario frontier is structurally complete on ${source} ${originDevCommit}, but the required full repository check failed. Return the exact current check evidence to aks-explorer for an in-scope repair; do not converge from strict inventory alone.`;

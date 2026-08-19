@@ -29,26 +29,29 @@ describe("AKS standing-loop convention", () => {
       selectorCount: 82,
       orderedSelectorSha256:
         "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
-      sourceCommit: "bcfcd9496fe0399bb63c69d430e6612de4a32342",
+      sourceCommit: "e4ff9bf37076baf8f3fd01810a04d02f05717c60",
+      generationSourceCommit: "54621f8dec0034373a79aba534876a356aef2c78",
+      integratedSourceCommit: "e4ff9bf37076baf8f3fd01810a04d02f05717c60",
       planPath:
-        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-plan-20260815.json",
+        "evidence/pipelines/master-validation-current-origin-54621f8d-feature-journey-plan-20260818.json",
       planSha256:
-        "637c33a46c632797be110098b5b564de79aac362bb3ed40b8ec3e6249e1cc1d6",
+        "c925ca85bf17e985489d3793f3f69a765241dd5256c6d12586a173866a931cec",
       proofMatrixPath:
-        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-proof-matrix-20260815.md",
+        "evidence/pipelines/master-validation-current-origin-54621f8d-feature-journey-proof-matrix-20260818.md",
       proofMatrixSha256:
-        "2b551cf6842127862a2b26eb43a45a65e9a6db2321661fd83c4cf77feef092cc",
+        "1775b8744ed3cba06f22c98895edbbb1ee36fca83e976180054ecca26f9c55ce",
       physicalBaselineClusterBirths: 93,
-      physicalClusterBirthsNeeded: 47,
-      physicalClusterBirthsSaved: 46,
-      physicalClusterBirthSavingsRate: 0.4946236559139785,
-      safeguardGetCount: 50,
-      terminalRouteCount: 9,
+      physicalClusterBirthsNeeded: 50,
+      physicalClusterBirthsSaved: 43,
+      physicalClusterBirthSavingsRate: 0.46236559139784944,
+      safeguardGetCount: 45,
+      runnableSpecCount: 72,
+      terminalRouteCount: 10,
+      physicalBoundaryCount: 49,
       materialization: "ready",
-      projectedMinutes: 59.132466667,
-      semanticLowerBoundBirths: 21,
-      semanticCliqueSpecCount: 12,
-      semanticCliqueEdgeCount: 66,
+      projectedMinutes: 59.9427,
+      semanticLowerBoundBirths: 22,
+      semanticEdgeCount: 1247,
       historicalDisprovedAspiration: {
         maximumPhysicalClusterBirths: 16,
         minimumPhysicalClusterBirthsSaved: 64,
@@ -92,25 +95,35 @@ describe("AKS standing-loop convention", () => {
     expect(definition.workflow).toBeUndefined();
     expect(definition.outcome).toContain("82-selector");
     expect(definition.outcome).toContain("93 baseline physical cluster births");
-    expect(definition.outcome).toContain("47 planned births");
-    expect(definition.outcome).toContain("saving 46 (49.46236559139785%)");
+    expect(definition.outcome).toContain("50 planned births");
+    expect(definition.outcome).toContain("saving 43 (46.236559139784944%)");
     expect(acceptance).toContain("one natural cross-feature journey");
     expect(acceptance).toContain("immutable-property conflict");
     expect(acceptance).toContain(
-      "origin/dev@bcfcd9496fe0399bb63c69d430e6612de4a32342",
+      "origin/dev@54621f8dec0034373a79aba534876a356aef2c78",
     );
-    expect(acceptance).toContain("exactly 59.132466667 projected minutes");
-    expect(acceptance).toContain("50 safeguard GETs");
-    expect(acceptance).toContain("nine terminal routes");
+    expect(acceptance).toContain(
+      "origin/dev@e4ff9bf37076baf8f3fd01810a04d02f05717c60",
+    );
+    expect(acceptance).toContain("exactly 59.9427 projected minutes");
+    expect(acceptance).toContain("45 safeguard GETs");
+    expect(acceptance).toContain("72 runnable specs");
+    expect(acceptance).toContain("ten terminal routes");
+    expect(acceptance).toContain("49 physical boundaries");
     expect(acceptance).toContain("historically disproved aspiration");
-    expect(acceptance).toContain("12-spec/66-edge semantic clique");
-    expect(acceptance).toContain("lower bound of 21 physical births");
-    expect(acceptance).toContain("integrated 47-birth safe-Pareto fallback");
+    expect(acceptance).toContain("1,247 unique semantic edges");
+    expect(acceptance).toContain("weighted semantic floor is 22 births");
+    expect(acceptance).toContain("integrated 50-birth safe-Pareto fallback");
     expect(acceptance).toContain("authority-artifact drift");
     expect(acceptance).toContain("integrated-source drift");
     expect(acceptance).toContain("Never remove, relabel, ignore, or weaken");
+    expect(acceptance).toContain("immutable-property split");
     expect(acceptance).toContain("at most three actionable direct children");
     expect(acceptance).toContain("at most three compact Azure DevOps runs");
+    expect(acceptance).toContain("do not queue Azure for declaration adoption");
+    expect(acceptance).toContain(
+      "exact-source staging per-spec and cleanup proof",
+    );
   });
 
   test("keeps repository skill quality as one safe maintain task", () => {

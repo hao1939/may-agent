@@ -11,11 +11,7 @@ import {
 import { basename, dirname, isAbsolute, join, relative } from "node:path";
 
 export type FeatureCompactStatus =
-  | "pending"
-  | "running"
-  | "done"
-  | "blocked"
-  | "error";
+  "pending" | "running" | "done" | "blocked" | "error";
 
 export type FeatureCompactRecord = {
   featureKey: string;

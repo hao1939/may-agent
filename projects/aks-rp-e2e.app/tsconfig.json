@@ -26,5 +26,11 @@
     "watchers/**/*.ts",
     "types/**/*.d.ts"
   ],
-  "exclude": ["**/*.test.ts", "archive/**", ".state/**", "node_modules/**"]
+  "exclude": [
+    "**/*.test.ts",
+    "agents/**/workspace/**",
+    "archive/**",
+    ".state/**",
+    "node_modules/**"
+  ]
 }

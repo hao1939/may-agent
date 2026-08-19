@@ -22,7 +22,6 @@ type WorkspaceIntegrityObservation = {
     prunable: number;
     taskWorktrees: number;
     unownedDirty: number;
-    workspaceBytes: number;
   };
   anomalies: Array<{ path: string; kind: string }>;
 };
@@ -73,12 +72,6 @@ async function worktrees(repoDir: string): Promise<Worktree[]> {
     });
 }
 
-async function directoryBytes(path: string): Promise<number> {
-  const result = await command("du", ["-sk", path]);
-  const kib = Number(result.stdout.split(/\s+/)[0]);
-  return Number.isFinite(kib) ? kib * 1024 : 0;
-}
-
 function normalizePath(path: string): string {
   return resolve(path).replace(/\/+$/, "");
 }
@@ -126,13 +119,12 @@ export async function observeWorkspaceIntegrity(
       }
     }
   }
-  const [branchResult, headResult, expectedHeadResult, statusResult, bytes] =
+  const [branchResult, headResult, expectedHeadResult, statusResult] =
     await Promise.all([
       git(repoDir, ["branch", "--show-current"]),
       git(repoDir, ["rev-parse", "HEAD"]),
       git(repoDir, ["rev-parse", "origin/dev"]),
       git(repoDir, ["status", "--porcelain=v1", "--untracked-files=all"]),
-      directoryBytes("/app/worktrees/aks-rp-e2e"),
     ]);
   const branch = branchResult.stdout;
   const head = headResult.stdout;
@@ -153,13 +145,12 @@ export async function observeWorkspaceIntegrity(
     prunable,
     taskWorktrees: taskPaths.size,
     unownedDirty,
-    workspaceBytes: bytes,
   };
   const fingerprint = createHash("sha256")
     .update(
       JSON.stringify({
         canonical,
-        counts: { ...counts, workspaceBytes: undefined },
+        counts,
         anomalies,
       }),
     )

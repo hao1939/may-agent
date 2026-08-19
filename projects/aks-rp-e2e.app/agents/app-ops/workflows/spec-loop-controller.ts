@@ -150,13 +150,24 @@ function representedTaskIdsForSpec(
   for (const taskId of collectReferencedTaskIds(spec)) {
     if (represented(graph, taskId)) representedTaskIds.add(taskId);
   }
+  const revision = workRevision(spec);
   for (const [taskId, task] of Object.entries(graph.tasks ?? {})) {
-    if (
-      represented(graph, taskId) &&
-      ((task.input?.loopId === specLoopTaskId &&
+    const matchesSpec =
+      (task.input?.loopId === specLoopTaskId &&
         task.input?.workKey === specId) ||
-        (task.input?.loopTaskId === specLoopTaskId &&
-          task.input?.specId === specId))
+      (task.input?.loopTaskId === specLoopTaskId &&
+        task.input?.specId === specId);
+    if (!matchesSpec) continue;
+
+    // A completion receipt is immutable desired-state history. When it is for
+    // the exact current work revision, keep the row represented even if a
+    // bounded completion projection omitted an older deterministic receipt.
+    // This also preserves any coexisting live suffixed holder rather than
+    // falling through to creation of the already-completed stable id.
+    if (
+      represented(graph, taskId) ||
+      (representedTaskState(graph, taskId) === "done" &&
+        task.input?.workRevision === revision)
     ) {
       representedTaskIds.add(taskId);
     }
@@ -164,10 +175,7 @@ function representedTaskIdsForSpec(
   return [...representedTaskIds];
 }
 
-function representationReview(
-  graph: Graph,
-  spec: SpecLoopSpecState,
-) {
+function representationReview(graph: Graph, spec: SpecLoopSpecState) {
   const taskIds = [...collectReferencedTaskIds(spec)].sort();
   if (taskIds.length === 0) return undefined;
   return {
@@ -330,9 +338,13 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     })),
     effectiveFrontierLimit,
   );
-  const actionBudget = accounting.available;
-  const candidateActions: TaskAction[] = remaining
-    .filter(([specId]) => (representedBySpec.get(specId) ?? []).length === 0)
+  const controllerActionLimit = 16;
+  const actionBudget = Math.min(accounting.available, controllerActionLimit);
+  const holderless = remaining.filter(
+    ([specId]) => (representedBySpec.get(specId) ?? []).length === 0,
+  );
+  const candidateActions: TaskAction[] = holderless
+    .slice(0, actionBudget)
     .map(([specId, spec]) => {
       if (hasStructuredDisposition(spec)) {
         const reviewedRepresentation = representationReview(graph, spec);
@@ -398,34 +410,17 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       };
     });
 
-  // Declare every holderless row so the controller can see complete coverage,
-  // but keep only the available frontier slots immediately actionable. Each
-  // overflow leaf extends one dependency lane, so completing a gate releases
-  // at most one replacement instead of waking the entire overflow at once.
-  const dependencyTails = [...accounting.actionableTaskIds];
-  let immediateSlots = actionBudget;
-  let nextDependencyLane = 0;
-  const actions: TaskAction[] = candidateActions.map((action) => {
-    if (action.kind !== "create-task") return action;
-    if (immediateSlots > 0) {
-      immediateSlots -= 1;
-      dependencyTails.push(action.id);
-      return action;
-    }
-    const lane = nextDependencyLane % dependencyTails.length;
-    nextDependencyLane += 1;
-    const dependencyId = dependencyTails[lane];
-    dependencyTails[lane] = action.id;
-    return {
-      ...action,
-      dependsOn: [dependencyId],
-    };
-  });
-  const summary = `Spec loop ${loopTaskId} has ${remaining.length} nonterminal spec(s): declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
+  // The ledger remains the complete representation of unfinished work. Declare
+  // only rows that fit the current actionable frontier; direct-child completion
+  // wakes the standing loop and deterministically selects the next sorted slice.
+  // Exact waits stay represented but do not consume actionable capacity.
+  const actions = candidateActions;
+  const summary = `Spec loop ${loopTaskId} has ${remaining.length} nonterminal spec(s): selected ${actions.length} of ${holderless.length} holderless row(s) for ${actionBudget} available frontier slot(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} exact-revision completion receipt(s).`;
   const resultState =
     actions.length > 0 ||
     accounting.actionableTaskIds.length > 0 ||
-    accounting.waitingTaskIds.length > 0
+    accounting.waitingTaskIds.length > 0 ||
+    accounting.terminalTaskIds.length > 0
       ? "converged"
       : "needs-owner";
   if (resultState === "needs-owner") {

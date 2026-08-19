@@ -9,6 +9,11 @@ export type OriginDevSnapshot = {
   commit: string | null;
 };
 
+type PreparedOriginDevSnapshot = {
+  snapshot: OriginDevSnapshot;
+  cleanup: () => void;
+};
+
 function git(projectDir: string, args: string[]) {
   return spawnSync("git", args, {
     cwd: projectDir,
@@ -23,16 +28,18 @@ function commitAt(dir: string): string | null {
   return commit || null;
 }
 
-export function withCurrentOriginDevSnapshot<T>(
+function prepareCurrentOriginDevSnapshot(
   projectDir: string,
-  fn: (snapshot: OriginDevSnapshot) => T,
-): T {
+): PreparedOriginDevSnapshot {
   if (git(projectDir, ["rev-parse", "--verify", "origin/dev"]).status !== 0) {
-    return fn({
-      dir: projectDir,
-      source: "project-dir",
-      commit: commitAt(projectDir),
-    });
+    return {
+      snapshot: {
+        dir: projectDir,
+        source: "project-dir",
+        commit: commitAt(projectDir),
+      },
+      cleanup: () => {},
+    };
   }
 
   const dir = mkdtempSync(join(tmpdir(), "aks-origin-dev-snapshot-"));
@@ -45,17 +52,45 @@ export function withCurrentOriginDevSnapshot<T>(
   ]);
   if (add.status !== 0) {
     rmSync(dir, { recursive: true, force: true });
-    return fn({
-      dir: projectDir,
-      source: "project-dir",
-      commit: commitAt(projectDir),
-    });
+    return {
+      snapshot: {
+        dir: projectDir,
+        source: "project-dir",
+        commit: commitAt(projectDir),
+      },
+      cleanup: () => {},
+    };
   }
 
+  return {
+    snapshot: { dir, source: "origin/dev", commit: commitAt(dir) },
+    cleanup: () => {
+      git(projectDir, ["worktree", "remove", "--force", dir]);
+      rmSync(dir, { recursive: true, force: true });
+    },
+  };
+}
+
+export function withCurrentOriginDevSnapshot<T>(
+  projectDir: string,
+  fn: (snapshot: OriginDevSnapshot) => T,
+): T {
+  const prepared = prepareCurrentOriginDevSnapshot(projectDir);
   try {
-    return fn({ dir, source: "origin/dev", commit: commitAt(dir) });
+    return fn(prepared.snapshot);
   } finally {
-    git(projectDir, ["worktree", "remove", "--force", dir]);
-    rmSync(dir, { recursive: true, force: true });
+    prepared.cleanup();
+  }
+}
+
+export async function withCurrentOriginDevSnapshotAsync<T>(
+  projectDir: string,
+  fn: (snapshot: OriginDevSnapshot) => Promise<T> | T,
+): Promise<T> {
+  const prepared = prepareCurrentOriginDevSnapshot(projectDir);
+  try {
+    return await fn(prepared.snapshot);
+  } finally {
+    prepared.cleanup();
   }
 }

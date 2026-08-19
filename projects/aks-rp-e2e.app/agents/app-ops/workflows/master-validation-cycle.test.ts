@@ -518,6 +518,43 @@ describe("master-validation cycle", () => {
     });
   });
 
+  test("routes terminal artifact gaps to app operations instead of spec admission", () => {
+    expect(
+      resolveAksTask({
+        type: "pipeline.failure.observed",
+        target: { project: "aks-rp-e2e" },
+        data: {
+          pipelineRunId: "177034721",
+          specId: "pipeline.master-validation.artifact-materialization",
+          sliceId: "artifact-materialization",
+          status: "error",
+          category: "terminal_artifact_unavailable",
+          reason: "advertised artifact could not be materialized",
+          failureFingerprint: "artifact-fingerprint",
+          artifactPath: "ado://build/177034721/artifacts",
+          sourceBranch: "refs/heads/fix/master-validation-run",
+          sourceCommit: "candidate123",
+        },
+      }),
+    ).toMatchObject({
+      id: "ops/master-validation-evidence-carrier/177034721-artifact-materialization",
+      parentId: "group/app-operations",
+      owner: "app-ops",
+      category: "ops",
+      input: {
+        watcherIncidentId:
+          "pipeline.master-validation.artifact-materialization",
+        pipelineRunId: "177034721",
+      },
+      acceptance: [
+        expect.stringContaining("terminal build"),
+        expect.stringContaining("watcher-generated pipeline incident"),
+        expect.stringContaining("manual cancellation"),
+        expect.stringContaining("unchanged retry"),
+      ],
+    });
+  });
+
   test("routes an aggregate no-verdict failure as pipeline repair", () => {
     expect(
       resolveAksTask({

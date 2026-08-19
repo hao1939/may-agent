@@ -2,15 +2,16 @@ import { describe, expect, test } from "bun:test";
 import {
   matchesEventSelector,
   type AppEvent,
-  type AppRequest,
+  type AppTaskInput,
 } from "@may-agent/sdk";
 import {
   default as app,
+  canonicalAksObservations,
   canonicalAksSubscriptions,
   canonicalAksTaskSelectors,
   inputForAksEvent,
   resolveCanonicalAksTask,
-  routeCanonicalAksRequest,
+  taskForCanonicalAksInput,
 } from "./app.js";
 import {
   featureCompactLoopTaskId,
@@ -187,38 +188,104 @@ describe("AKS canonical route ledger", () => {
         id: `request-${kind}`,
         source: { kind: "human", id: "hao" },
         input: { kind, data },
-      }) as AppRequest;
+      }) as AppTaskInput;
 
-    expect(routeCanonicalAksRequest(request("owner-review"))).toMatchObject({
-      type: "task",
-      task: { kind: "desired", intent: { id: "runtime/owner-review" } },
+    expect(taskForCanonicalAksInput(request("owner-review"))).toMatchObject({
+      kind: "desired",
+      intent: { id: "runtime/owner-review" },
     });
     expect(
-      routeCanonicalAksRequest(
+      taskForCanonicalAksInput(
+        request("owner-review", {
+          params: {
+            outcome: "Repair this exact current request.",
+            constraints: ["Preserve existing tasks."],
+            requiredProof: ["Return live proof."],
+          },
+        }),
+      ),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "ops/app-request/request-owner-review",
+        mode: "achieve",
+        outcome: "Repair this exact current request.",
+        acceptance: ["Preserve existing tasks.", "Return live proof."],
+      },
+    });
+    expect(
+      taskForCanonicalAksInput(
         request("task-control", {
           action: "spec-loop",
           taskId: "spec-loop",
         }),
       ),
     ).toMatchObject({
-      type: "task",
-      task: { kind: "desired", intent: { id: specLoopTaskId } },
+      kind: "desired",
+      intent: { id: specLoopTaskId },
     });
-    expect(routeCanonicalAksRequest(request("approval-decision"))).toBeNull();
     expect(
-      routeCanonicalAksRequest(
+      taskForCanonicalAksInput(
+        request("problem-investigation", {
+          params: {
+            reason: "repair-current-watcher-taxonomy",
+            outcome: "Repair the current watcher taxonomy.",
+          },
+        }),
+      ),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "runtime/problem-solver/repair-current-watcher-taxonomy",
+        input: {
+          problemKey: "repair-current-watcher-taxonomy",
+          requestedOutcome: "Repair the current watcher taxonomy.",
+        },
+      },
+    });
+    expect(
+      taskForCanonicalAksInput(request("approval-decision")),
+    ).toMatchObject({
+      kind: "desired",
+      intent: { id: "ops/app-request/request-approval-decision" },
+    });
+    expect(
+      taskForCanonicalAksInput(
         request("approval-decision", {
           content:
             "Decision: approve\nApproval id: approval-1\nWait id: wait-1\nProject: aks-rp-e2e\nFeature path: feature/path",
         }),
       ),
     ).toMatchObject({
-      type: "task",
-      task: {
-        kind: "desired",
-        intent: { workflow: "approval-decision" },
-      },
+      kind: "desired",
+      intent: { workflow: "approval-decision" },
     });
+  });
+
+  test("declares the six watcher pairs as source-fenced observations", () => {
+    const expected = [
+      ["aks-pipeline-watcher", "pipeline-run.state"],
+      ["aks-pipeline-watcher", "pipeline.spec.observed"],
+      ["aks-pipeline-watcher", "pipeline-artifact.available"],
+      ["aks-pipeline-watcher", "pipeline.completed"],
+      ["aks-repo-ref-watcher", "aks.repo-ref.observed"],
+      ["aks-repo-ref-watcher", "aks.repo-ref.changed"],
+    ];
+    expect(
+      expected.map(([source, type]) =>
+        canonicalAksObservations.some((selector) =>
+          matchesEventSelector(selector, event(type, {}, { source })),
+        ),
+      ),
+    ).toEqual([true, true, true, true, true, true]);
+    expect(
+      canonicalAksObservations.some((selector) =>
+        matchesEventSelector(
+          selector,
+          event("pipeline-run.state", {}, { source: "unexpected-watcher" }),
+        ),
+      ),
+    ).toBeFalse();
   });
 
   test("exports only the canonical App hosting surface", () => {
@@ -234,6 +301,8 @@ describe("AKS canonical route ledger", () => {
     ]);
     expect(app.tasks?.subscriptions).toBe(canonicalAksTaskSelectors);
     expect(app.tasks?.resolve).toBe(resolveCanonicalAksTask);
+    expect(app.task).toBe(taskForCanonicalAksInput);
+    expect(app.route).toBeUndefined();
   });
 
   test("uses direct task wakes and inbox inputs instead of check-event hops", () => {

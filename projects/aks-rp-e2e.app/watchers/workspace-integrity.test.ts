@@ -43,6 +43,7 @@ describe("workspace integrity watcher", () => {
       dirty: 1,
       unownedDirty: 1,
     });
+    expect(observation.counts).not.toHaveProperty("workspaceBytes");
     expect(observation.anomalies).toContainEqual({
       path: recovery,
       kind: "unowned-dirty",

@@ -884,6 +884,12 @@ describe("domain task execution", () => {
 
       expect(prompt).toContain(fixture.workspaceDir);
       expect(prompt).toContain("Do not create another branch or worktree");
+      expect(prompt).toContain(
+        "A close target must have zero live children at that moment",
+      );
+      expect(prompt).toContain(
+        "reconcile the actual bottom-most live descendant first",
+      );
       expect(prompt).toContain("subject project:aks-rp-e2e");
       expect(prompt).toContain('specId: "<spec id>"');
       expect(result).toMatchObject({

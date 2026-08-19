@@ -214,12 +214,14 @@ function context(
           ...(typeof spec.owner === "string" || typeof task.owner === "string"
             ? { owner: String(spec.owner ?? task.owner) }
             : {}),
-          ...(typeof spec.workflow === "string" || typeof task.workflow === "string"
+          ...(typeof spec.workflow === "string" ||
+          typeof task.workflow === "string"
             ? { workflow: String(spec.workflow ?? task.workflow) }
             : {}),
           input: spec.input ?? task.input ?? {},
           priority: spec.priority ?? task.priority,
-          ...(typeof spec.category === "string" || typeof task.category === "string"
+          ...(typeof spec.category === "string" ||
+          typeof task.category === "string"
             ? { category: String(spec.category ?? task.category) }
             : {}),
           ...(task.readiness && typeof task.readiness === "object"
@@ -243,7 +245,9 @@ function context(
                   type: String(spec.type ?? "fixture.condition"),
                   subject: String(spec.subject ?? `task:${taskId}`),
                   expected: spec.expected ?? { state: "completed" },
-                  ...(typeof spec.owner === "string" ? { owner: spec.owner } : {}),
+                  ...(typeof spec.owner === "string"
+                    ? { owner: spec.owner }
+                    : {}),
                 },
               ];
             },
@@ -3073,10 +3077,11 @@ describe("normalize scenario frontier workflow", () => {
       }),
     );
 
-    const result = runRequiredRepositoryCheck(
+    const result = await runRequiredRepositoryCheck(
       projectDir,
       snapshotDir,
       "bun run check",
+      join(root, "repository-check-owner.json"),
     );
 
     expect(result.status).toBe(0);
@@ -3133,10 +3138,11 @@ describe("normalize scenario frontier workflow", () => {
       force: true,
     });
 
-    const result = runRequiredRepositoryCheck(
+    const result = await runRequiredRepositoryCheck(
       projectDir,
       snapshotDir,
       "bun run check",
+      join(root, "repository-check-owner.json"),
     );
 
     expect(result.status).toBe(0);
@@ -3148,6 +3154,36 @@ describe("normalize scenario frontier workflow", () => {
         "repository-check-status:passed",
       ]),
     );
+  });
+
+  test("keeps the daemon event loop responsive while the repository check runs", async () => {
+    const root = await mkdtemp(join(tmpdir(), "scenario-check-responsive-"));
+    const projectDir = join(root, "project");
+    let controlTimerFired = false;
+    await mkdir(projectDir, { recursive: true });
+    await writeFile(
+      join(projectDir, "package.json"),
+      JSON.stringify({
+        name: "scenario-check-responsive",
+        scripts: { check: 'bun -e "await Bun.sleep(150)"' },
+      }),
+    );
+    const controlTimer = setTimeout(() => {
+      controlTimerFired = true;
+    }, 20);
+    try {
+      const result = await runRequiredRepositoryCheck(
+        projectDir,
+        projectDir,
+        "bun run check",
+        join(root, "repository-check-owner.json"),
+      );
+      expect(result.status).toBe(0);
+      expect(controlTimerFired).toBe(true);
+    } finally {
+      clearTimeout(controlTimer);
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   test("retries an attention leaf on the same task after workflow execution failed", async () => {

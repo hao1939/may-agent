@@ -399,14 +399,11 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
     expect(result.output.state).toBe("converged");
-    expect(result.output.actions).toHaveLength(5);
-    expect(result.output.actions.slice(0, 4)).toSatisfy(
+    expect(result.output.actions).toHaveLength(4);
+    expect(result.output.actions).toSatisfy(
       (actions: Array<Record<string, unknown>>) =>
         actions.every((action) => action.dependsOn === undefined),
     );
-    expect(result.output.actions[4].dependsOn).toEqual([
-      "spec/verify-spec-one",
-    ]);
   });
 
   test("keeps refilling when an exact wait covers another spec", async () => {
@@ -474,20 +471,13 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
     expect(result.output.state).toBe("converged");
-    expect(result.output.actions).toHaveLength(9);
-    expect(
-      result.output.actions.filter(
-        (action: Record<string, unknown>) => action.dependsOn === undefined,
-      ),
-    ).toHaveLength(4);
-    expect(
-      result.output.actions.filter(
-        (action: Record<string, unknown>) => action.dependsOn !== undefined,
-      ),
-    ).toHaveLength(5);
+    expect(result.output.actions).toHaveLength(4);
+    expect(result.output.actions).toSatisfy((actions: Array<any>) =>
+      actions.every((action) => action.dependsOn === undefined),
+    );
   });
 
-  test("represents every holderless row while dependency-gating overflow at a full frontier", async () => {
+  test("keeps holderless ledger rows queued when the actionable frontier is full", async () => {
     const representedSpecs = ["one", "two", "three", "four", "five"];
     const specs = Object.fromEntries(
       [...representedSpecs, "six", "seven", "reviewed"].map((name) => [
@@ -534,23 +524,89 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
     expect(result.output.state).toBe("converged");
-    expect(result.output.actions).toHaveLength(3);
+    expect(result.output.actions).toEqual([]);
+    expect(result.output.summary).toContain(
+      "selected 0 of 3 holderless row(s) for 0 available frontier slot(s)",
+    );
+  });
+
+  test("bounds a hundreds-row ledger and continues deterministically after a child transition", async () => {
+    const specs = Object.fromEntries(
+      Array.from({ length: 300 }, (_, index) => {
+        const specId = `spec.case-${String(index + 1).padStart(3, "0")}`;
+        return [
+          specId,
+          {
+            status: "pending",
+            attempts: 0,
+            lastRunId: null,
+            lastResultPath: null,
+            lastPrUrl: null,
+            updatedAt: "2026-07-19T00:00:00Z",
+          },
+        ];
+      }),
+    );
+    const ws = await workspace({
+      specs,
+      tasks: {
+        "holder-case-001": {
+          id: "holder-case-001",
+          phase: "running",
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: "spec.case-001",
+          },
+        },
+        "wait-case-002": {
+          id: "wait-case-002",
+          phase: "waiting",
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: "spec.case-002",
+          },
+        },
+      },
+    });
+
+    const first = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    const firstSpecIds = first.output.actions.map(
+      (action: any) => action.input.specId,
+    );
+    expect(firstSpecIds).toEqual([
+      "spec.case-003",
+      "spec.case-004",
+      "spec.case-005",
+      "spec.case-006",
+    ]);
+    expect(first.output.actions.length).toBeLessThanOrEqual(5);
+    expect(first.output.actions.length).toBeLessThanOrEqual(16);
+    expect(firstSpecIds).not.toContain("spec.case-001");
+    expect(firstSpecIds).not.toContain("spec.case-002");
+
+    const statePath = join(ws.appDir, ".state", "spec-loop", "state.json");
+    const state = JSON.parse(await readFile(statePath, "utf8"));
+    for (const specId of firstSpecIds) {
+      state.specs[specId] = {
+        ...state.specs[specId],
+        status: "pass",
+        lastRunId: `completed-${specId}`,
+        updatedAt: "2026-07-20T00:00:00Z",
+      };
+    }
+    await writeFile(statePath, JSON.stringify(state));
+
+    const second = (await execute(context(ws.appDir, ws.projectDir))) as any;
     expect(
-      result.output.actions.map((action: any) => action.input.specId),
-    ).toEqual(["spec.reviewed", "spec.seven", "spec.six"]);
-    expect(result.output.actions).toSatisfy((actions: Array<any>) =>
-      actions.every(
-        (action) =>
-          action.parentId === "aks-spec-verification-loop" &&
-          action.owner === "aks-explorer" &&
-          action.dependsOn?.length === 1 &&
-          action.dependsOn[0].startsWith("holder-"),
-      ),
-    );
-    expect(result.output.actions[0].workflow).toBe("domain-task-execution");
-    expect(result.output.actions.slice(1)).toSatisfy((actions: Array<any>) =>
-      actions.every((action) => action.workflow === "spec-live-reconciliation"),
-    );
+      second.output.actions.map((action: any) => action.input.specId),
+    ).toEqual([
+      "spec.case-007",
+      "spec.case-008",
+      "spec.case-009",
+      "spec.case-010",
+    ]);
+    expect(second.output.actions.length).toBeLessThanOrEqual(5);
+    expect(second.output.actions.length).toBeLessThanOrEqual(16);
   });
 
   test("replaces an attention-only holder with bounded runnable work", async () => {
@@ -842,6 +898,87 @@ describe("spec loop reconciliation workflow", () => {
     );
     expect(acceptance).toContain(
       "marked not-a-current-direct-child-or-receipt in representationReview as stale history",
+    );
+  });
+
+  test("preserves a live suffixed holder when the immutable stable id already completed", async () => {
+    const specId = "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease";
+    const baseId =
+      "spec/verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-338c423d16";
+    const liveHolderId = `${baseId}-86cda5b4ed`;
+    const spec = {
+      status: "pending",
+      attempts: 0,
+      lastRunId: null,
+      updatedAt: "2026-08-18T10:00:00Z",
+      inputFingerprint: "current-revision",
+    };
+    const taskInput = {
+      loopId: "aks-spec-verification-loop",
+      workKey: specId,
+      specId,
+      workRevision: "338c423d16",
+    };
+    const ws = await workspace({
+      specs: { [specId]: spec },
+      tasks: {
+        [liveHolderId]: {
+          id: liveHolderId,
+          phase: "waiting",
+          input: taskInput,
+        },
+      },
+      receipts: {
+        [baseId]: {
+          taskId: baseId,
+          input: taskInput,
+          completedAt: "2026-08-18T09:00:00Z",
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output).toMatchObject({ state: "converged", actions: [] });
+    expect(result.output.summary).toContain("1 waiting");
+    expect(result.output.actions).not.toContainEqual(
+      expect.objectContaining({ id: baseId }),
+    );
+  });
+
+  test("treats an exact-revision completion receipt as represented when an older receipt is outside the bounded projection", async () => {
+    const specId = "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease";
+    const completedHolderId =
+      "spec/verify-spec-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-338c423d16-86cda5b4ed";
+    const ws = await workspace({
+      specs: {
+        [specId]: {
+          status: "pending",
+          attempts: 0,
+          lastRunId: null,
+          updatedAt: "2026-08-18T10:00:00Z",
+          inputFingerprint: "current-revision",
+        },
+      },
+      receipts: {
+        [completedHolderId]: {
+          taskId: completedHolderId,
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: specId,
+            specId,
+            workRevision: "338c423d16",
+          },
+          completedAt: "2026-08-18T10:43:39Z",
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output).toMatchObject({ state: "converged", actions: [] });
+    expect(result.output.summary).toContain(
+      "1 exact-revision completion receipt",
     );
   });
 

@@ -3,11 +3,11 @@ import {
   Type,
   defineApp,
   matchesEventSelector as matchesCanonicalEventSelector,
-  type AppDisposition,
   type AppEvent,
   type AppEventSubscription,
   type AppInput,
-  type AppRequest,
+  type AppTaskAttachment,
+  type AppTaskInput,
   type EventSelector as CanonicalEventSelector,
   type TaskIntent,
   type TaskAction,
@@ -189,6 +189,35 @@ export const canonicalAksSubscriptions: AppEventSubscription[] = [
   },
 ];
 
+/**
+ * Watcher facts that are intentionally observational after exact task,
+ * Condition, and App routes have had the first opportunity to consume them.
+ * Source constraints keep unknown producers visible as unexpected signals.
+ */
+export const canonicalAksObservations: CanonicalEventSelector[] = [
+  ...[
+    "pipeline-run.state",
+    "pipeline.spec.observed",
+    "pipeline-artifact.available",
+    "pipeline.completed",
+  ].map(
+    (type) =>
+      ({
+        type,
+        project: projectId,
+        source: "aks-pipeline-watcher",
+      }) as CanonicalEventSelector,
+  ),
+  ...["aks.repo-ref.observed", "aks.repo-ref.changed"].map(
+    (type) =>
+      ({
+        type,
+        project: projectId,
+        source: "aks-repo-ref-watcher",
+      }) as CanonicalEventSelector,
+  ),
+];
+
 function targetTaskId(event: AppTaskEvent): string {
   const details = eventDetails(event);
   const direct = details.taskId ?? details.task_id;
@@ -235,6 +264,16 @@ function safeTaskIdPart(value: string, fallback: string): string {
 
 function masterValidationFailureTaskId(specId: string): string {
   return `domain/master-validation-failure/${safeTaskIdPart(specId, "spec")}`;
+}
+
+function masterValidationEvidenceCarrierTaskId(
+  pipelineRunId: string,
+  sliceId: string,
+): string {
+  return `ops/master-validation-evidence-carrier/${safeTaskIdPart(
+    `${pipelineRunId}-${sliceId}`,
+    "pipeline-artifact",
+  )}`;
 }
 
 const masterValidationCycleIntervalMs = 21_600_000;
@@ -354,6 +393,39 @@ export function resolveAksTask(
     );
     if (!specId || !failureFingerprint) return null;
     const failureCategory = stringDetail(details, "category");
+    const pipelineRunId = stringDetail(details, "pipelineRunId", "runId");
+    const sliceId = stringDetail(details, "sliceId");
+    if (failureCategory === "terminal_artifact_unavailable") {
+      return {
+        id: masterValidationEvidenceCarrierTaskId(pipelineRunId, sliceId),
+        parentId: "group/app-operations",
+        outcome: `Reconcile the terminal evidence-carrier gap for master-validation run ${pipelineRunId || "unknown"} without treating its watcher incident identifier as an executable repository spec.`,
+        acceptance: [
+          "Inspect the exact terminal build, timeline/log, and available artifact facts before deciding whether the gap is cancellation, app observation failure, repository pipeline failure, or a product/spec result.",
+          "Never send a watcher-generated pipeline incident identifier through spec-catalog or live-spec admission.",
+          "A manual cancellation or other terminal attempt disposition is recorded without inventing a source repair; a concrete repository or product defect is routed as the smallest exact domain task with the real selected spec or campaign scope.",
+          "Leave one truthful disposition for the affected run and do not queue an unchanged retry from evidence-carrier absence alone.",
+        ],
+        mode: "achieve",
+        owner: "app-ops",
+        input: {
+          validationTaskId: masterValidationCycleTaskId,
+          pipelineRunId,
+          sourceBranch: stringDetail(details, "sourceBranch") || "main",
+          sourceCommit: stringDetail(details, "sourceCommit", "sourceVersion"),
+          sliceId,
+          status: stringDetail(details, "status"),
+          category: failureCategory,
+          reason: stringDetail(details, "reason"),
+          artifactName: stringDetail(details, "artifactName"),
+          artifactPath: stringDetail(details, "artifactPath"),
+          watcherIncidentId: specId,
+          failureFingerprint,
+        },
+        priority: "P0",
+        category: "ops",
+      };
+    }
     const pipelineFailure =
       failureCategory === "pipeline_failure" || specId.startsWith("pipeline.");
     return {
@@ -515,8 +587,11 @@ export function resolveAksTask(
         details,
         "problemKey",
         "problem_key",
+        "correlationKey",
+        "correlation_key",
         "taskId",
         "task_id",
+        "reason",
       );
       const affectedTaskId =
         taskId || stringDetail(details, "taskId", "task_id") || null;
@@ -531,7 +606,18 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "problem-solver",
-        input: { problemKey, targetTaskId: affectedTaskId },
+        input: {
+          problemKey,
+          targetTaskId: affectedTaskId,
+          requestedOutcome: stringDetail(details, "outcome") || null,
+          constraints: Array.isArray(details.constraints)
+            ? details.constraints
+            : [],
+          requiredProof: Array.isArray(details.requiredProof)
+            ? details.requiredProof
+            : [],
+          requestContext: details,
+        },
         priority: "P1",
       };
     }
@@ -731,25 +817,54 @@ function taskIntentForAksInput(input: AppInput): TaskIntent | null {
   }
 }
 
-export function routeCanonicalAksRequest(
-  request: Readonly<AppRequest>,
-): AppDisposition | null {
-  if (request.dependency) {
-    return request.dependency.status === "done"
-      ? {
-          type: "complete",
-          summary:
-            request.dependency.summary ??
-            `${request.input.kind} completed through ${request.dependency.id}`,
-          response: request.dependency.response,
-          evidence: request.dependency.evidence,
-        }
-      : null;
+function requestedOwnerWorkIntent(
+  admitted: Readonly<AppTaskInput>,
+): TaskIntent | null {
+  if (admitted.input.kind !== "owner-review") return null;
+  const data = isRecord(admitted.input.data) ? admitted.input.data : {};
+  const params = recordDetail(data, "params") ?? {};
+  const outcome = stringDetail(params, "outcome");
+  if (!outcome) return null;
+  const requestedAcceptance = [
+    ...(Array.isArray(params.constraints) ? params.constraints : []),
+    ...(Array.isArray(params.requiredProof) ? params.requiredProof : []),
+  ].filter(
+    (value): value is string =>
+      typeof value === "string" && Boolean(value.trim()),
+  );
+  return {
+    id: `ops/app-request/${safeTaskIdPart(admitted.id, "owner-work")}`,
+    parentId: "group/app-operations",
+    outcome,
+    acceptance: requestedAcceptance.length
+      ? requestedAcceptance
+      : [
+          "Return a terminal result with exact change and verification evidence.",
+        ],
+    mode: "achieve",
+    owner: "app-ops",
+    input: {
+      requestId: admitted.id,
+      source: admitted.source,
+      ...data,
+      params,
+    },
+    priority: "P0",
+    category: "ops",
+  };
+}
+
+export function taskForCanonicalAksInput(
+  admitted: Readonly<AppTaskInput>,
+): AppTaskAttachment {
+  const requestedWork = requestedOwnerWorkIntent(admitted);
+  if (requestedWork) {
+    return { kind: "desired", intent: requestedWork };
   }
-  const intent = taskIntentForAksInput(request.input);
+  const intent = taskIntentForAksInput(admitted.input);
   if (intent?.workflow === "approval-decision") {
     const sourceMessageEventId = Number(
-      request.source.id.replace(/^event:/, ""),
+      admitted.source.id.replace(/^event:/, ""),
     );
     intent.input = {
       ...(intent.input ?? {}),
@@ -758,7 +873,27 @@ export function routeCanonicalAksRequest(
         : {}),
     };
   }
-  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+  return {
+    kind: "desired",
+    intent: intent ?? {
+      id: `ops/app-request/${safeTaskIdPart(admitted.id, "input")}`,
+      parentId: "group/app-operations",
+      outcome: `Interpret and handle admitted AKS input ${admitted.input.kind}.`,
+      acceptance: [
+        "The app-ops owner returns an evidence-backed result or an exact observable wait.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      input: {
+        requestId: admitted.id,
+        source: admitted.source,
+        kind: admitted.input.kind,
+        data: isRecord(admitted.input.data) ? admitted.input.data : {},
+      },
+      priority: "P0",
+      category: "ops",
+    },
+  };
 }
 
 function actionParams(value: unknown): Record<string, unknown> {
@@ -815,13 +950,14 @@ const app = defineApp({
     "AKS RP E2E feature knowledge, spec verification, and project reconciliation.",
   inputSchema: aksInputSchema,
   inbox: { batch: "single", maxConcurrent: appOpsSupportConcurrent },
-  route: routeCanonicalAksRequest,
+  task: taskForCanonicalAksInput,
   workspace: {
     kind: "git",
     localPath: "../aks-rp-e2e",
     branch: "dev",
   },
   subscriptions: canonicalAksSubscriptions,
+  observations: canonicalAksObservations,
   observers: aksObservers,
   schedules: [
     {
@@ -1005,7 +1141,6 @@ const app = defineApp({
     },
   },
   tasks: {
-    attach: true,
     subscriptions: canonicalAksTaskSelectors,
     resolve: resolveCanonicalAksTask,
     validateAction: validateAksTaskAction,

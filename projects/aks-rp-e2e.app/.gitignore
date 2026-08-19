@@ -19,6 +19,7 @@ workspace/
 # Runtime evidence stays local. Durable conclusions belong in design, code,
 # tests, or the domain repository rather than dated app-run artifacts.
 /evidence/
+/artifacts/
 
 # Bounded repair/migration helpers are disposable once their conclusion is
 # represented by maintained code or documentation.
