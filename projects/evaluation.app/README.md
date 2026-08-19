@@ -21,8 +21,8 @@ project/app sample -> collect evidence -> evaluate -> report -> deliver
 Three audit lanes, one bounded coverage observation, and one derived feedback
 projection are implemented:
 
-1. **Session aftermath** — exact event-driven evaluation of completed sessions,
-   plus one bounded backfill candidate every seven minutes
+1. **Session aftermath** — exact event-driven evaluation of eligible completed
+   sessions
 2. **Deep eval** — explicit LLM-powered evaluation for selected sessions
 3. **Project/app audit** — delta-gated, independent review of target progress,
    risks, waits, recovery behavior, and escalation quality
@@ -41,10 +41,15 @@ event -> short-lived achieve task or standing maintain task
 ```
 
 Session and explicit deep evaluations use short-lived tasks so independent
-events can run concurrently. Pipeline monitoring, backfill, owner review, and
-per-project audits use standing tasks that converge and wait for the next
-event. Completed short-lived tasks are removed from the live graph after their
-results are absorbed.
+events can run concurrently. Pipeline monitoring, owner review, and per-project
+audits use standing tasks that converge and wait for the next event. Completed
+short-lived tasks are removed from the live graph after their results are
+absorbed.
+
+Historical aftermath tasks are recovered through the same exact
+`evaluation.session.requested` event and stable session-derived task id. A
+recovery operation replays bounded batches; it never deletes evaluation or task
+state, and an already evaluated session returns the normal `existing` result.
 
 ## Responsibility Boundary
 
@@ -87,50 +92,21 @@ bun run check       # syntax, typecheck, formatting, and tests
 bun run bundle      # build the app manifest and local workflows
 ```
 
-## Shared-inbox canary
-
-After deploying the matching May-agent runtime change, submit one isolated
-probe and inspect its authoritative inbox result:
-
-```sh
-key="evaluation-canary-$(date +%s)"
-curl -X POST http://localhost:8080/api/projects/evaluation/actions/app-inbox-canary \
-  -H 'content-type: application/json' \
-  -d "{\"input\":{\"prompt\":\"Return a concise canary result.\"},\"idempotencyKey\":\"$key\"}"
-curl "http://localhost:8080/api/app-inbox?appId=evaluation-canary&idempotencyKey=$key"
-```
-
-The item should move `pending -> handling -> done` and retain its owner session
-and structured result. Reusing the key must not create or run a second item.
-
-Then pass the completed item id to the manual capability-scoped workflow:
-
-```sh
-curl -X POST http://localhost:8080/api/projects/evaluation/actions/app-runtime-canary \
-  -H 'content-type: application/json' \
-  -d '{"input":{"itemId":"app_..."}}'
-```
-
-This workflow imports only `@may-agent/sdk/app`. It reads the bounded App
-result projection and emits an observation; it has no database, queue, task
-store, or global-path capability.
-
 The app manifest in `app.ts` owns schedules, event-to-task correlation,
 workflow bindings, and bounded owner judgment.
-Session aftermath runs only for `session.end`, bounded backfill, or explicit
+Session aftermath runs only for eligible `session.end` or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
 evaluator-owned metric facts wake the stable owner-review task directly.
 
 ### Canonical session aftermath
 
-One bounded evaluator call selects and judges at most one session. Exact
-`session.end` and manual requests carry `sessionId` through canonical task input;
-the standing backfill call selects one uncovered terminal session through the
-read-only `query_db` tool. The workflow itself receives no SQL, global runtime
-path, prompt-packet, or task-store capability.
+One bounded evaluator call judges exactly one session. Eligible `session.end`
+and manual requests carry `sessionId` through canonical task input. The
+workflow itself receives no SQL, global runtime path, prompt-packet, or
+task-store capability.
 
-The evaluator returns one validated `evaluation`, `skip`, `existing`, or `none`
-result. The workflow emits `evaluation.recorded`; the runtime atomically
+The evaluator returns one validated `evaluation`, `skip`, or `existing` result.
+The workflow emits `evaluation.recorded`; the runtime atomically
 persists that fact and its `evaluations` read-model projection. Owner findings
 use `project.owner.requested`, and only concrete human decisions use
 `evaluation.human_decision.requested` through the May App.

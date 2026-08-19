@@ -3,7 +3,6 @@ import type { AppEvent, ExecutionResult } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   AFTERMATH_VERSION,
-  aftermathContinuationEvent,
   buildAftermathTask,
   evaluationRecordedFact,
   execute,
@@ -48,13 +47,11 @@ const finding: AftermathFinding = {
 function reconciliation(input: AftermathInput) {
   return {
     appId: "evaluation",
-    taskId: input.sessionId
-      ? `runtime/session-aftermath/${input.sessionId}`
-      : "runtime/aftermath-backfill",
+    taskId: `runtime/session-aftermath/${input.sessionId || "missing"}`,
     generation: 4,
     resourceVersion: 8,
     owner: "evaluator",
-    mode: input.sessionId ? ("achieve" as const) : ("maintain" as const),
+    mode: "achieve" as const,
     outcome: "Evaluate terminal sessions.",
     acceptance: ["One durable evaluation or structured skip exists."],
     input,
@@ -99,7 +96,6 @@ describe("canonical evaluator aftermath", () => {
           kind: "evaluation",
           evaluation,
           findings: [finding],
-          backlogRemaining: true,
         },
         "s_source",
       ),
@@ -107,7 +103,6 @@ describe("canonical evaluator aftermath", () => {
       kind: "evaluation",
       evaluation,
       findings: [finding],
-      backlogRemaining: true,
     });
   });
 
@@ -116,7 +111,6 @@ describe("canonical evaluator aftermath", () => {
       kind: "evaluation" as const,
       evaluation,
       findings: [],
-      backlogRemaining: false,
     };
     expect(parseAftermathOutcome({ result: expected }, "s_source")).toEqual(
       expected,
@@ -136,7 +130,6 @@ describe("canonical evaluator aftermath", () => {
           kind: "evaluation",
           evaluation: { ...evaluation, sessionId: "s_other" },
           findings: [],
-          backlogRemaining: false,
         },
         "s_source",
       ),
@@ -157,7 +150,7 @@ describe("canonical evaluator aftermath", () => {
     ).toBeNull();
   });
 
-  test("accepts existing, skip, and empty-frontier outcomes", () => {
+  test("accepts existing and structured skip outcomes", () => {
     expect(
       parseAftermathOutcome(
         {
@@ -180,12 +173,9 @@ describe("canonical evaluator aftermath", () => {
         sessionId: "s_skip",
         agent: "coder",
         reason: "runtime duplicate-resume carrier",
-        backlogRemaining: true,
       }),
-    ).toMatchObject({ kind: "skip", backlogRemaining: true });
-    expect(
-      parseAftermathOutcome({ noCandidate: true, reason: "frontier current" }),
-    ).toEqual({ kind: "none", reason: "frontier current" });
+    ).toMatchObject({ kind: "skip", sessionId: "s_skip" });
+    expect(parseAftermathOutcome({ noCandidate: true })).toBeNull();
   });
 
   test("builds an exact-session prompt without legacy prompt parsing or mutation authority", () => {
@@ -197,14 +187,6 @@ describe("canonical evaluator aftermath", () => {
       "Do not edit files, write the database, send messages",
     );
     expect(prompt).toContain("finish().result");
-  });
-
-  test("builds a one-candidate frontier prompt with explicit priority and continuation evidence", () => {
-    const prompt = buildAftermathTask();
-    expect(prompt).toContain("select at most one eligible terminal session");
-    expect(prompt).toContain("Prioritize failed/interrupted sessions");
-    expect(prompt).toContain("recent 3h window");
-    expect(prompt).toContain("set backlogRemaining");
   });
 
   test("publishes the complete durable evaluation projection fact", () => {
@@ -259,7 +241,6 @@ describe("canonical evaluator aftermath", () => {
       kind: "evaluation",
       evaluation,
       findings: [finding],
-      backlogRemaining: true,
     };
     const result = await execute(
       context(
@@ -289,7 +270,6 @@ describe("canonical evaluator aftermath", () => {
       sessionId: "s_skip",
       agent: "coder",
       reason: "duplicate runtime carrier",
-      backlogRemaining: false,
     };
     const result = await execute(
       context({ sessionId: "s_skip" }, skip, events),
@@ -305,40 +285,7 @@ describe("canonical evaluator aftermath", () => {
     });
   });
 
-  test("emits one compact continuation only for a standing frontier with backlog", async () => {
-    const events: AppEvent[] = [];
-    const result = await execute(
-      context(
-        { scope: "session-aftermath-frontier" },
-        {
-          kind: "evaluation",
-          evaluation,
-          findings: [],
-          backlogRemaining: true,
-        },
-        events,
-      ),
-    );
-    expect(result.status).toBe("done");
-    expect(events.map((event) => event.type)).toEqual([
-      "evaluation.recorded",
-      "evaluation.aftermath.scan",
-    ]);
-    expect(events[1]).toEqual(aftermathContinuationEvent("s_source"));
-  });
-
-  test("converges a current frontier and an already-recorded exact session without side effects", async () => {
-    const frontierEvents: AppEvent[] = [];
-    const frontier = await execute(
-      context(
-        { scope: "session-aftermath-frontier" },
-        { kind: "none", reason: "No eligible terminal session." },
-        frontierEvents,
-      ),
-    );
-    expect(frontier.status).toBe("done");
-    expect(frontierEvents).toEqual([]);
-
+  test("converges an already-recorded exact session without side effects", async () => {
     const existingEvents: AppEvent[] = [];
     const existing = await execute(
       context(
@@ -349,6 +296,14 @@ describe("canonical evaluator aftermath", () => {
     );
     expect(existing.status).toBe("done");
     expect(existingEvents).toEqual([]);
+  });
+
+  test("rejects reconciliation without an exact session", async () => {
+    const events: AppEvent[] = [];
+    const result = await execute(context({}, undefined, events));
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("requires an exact sessionId");
+    expect(events).toEqual([]);
   });
 
   test("blocks incomplete review execution and emits no target or human request", async () => {

@@ -17,7 +17,6 @@
   },
   "include": [
     "app.ts",
-    "canary-contract.ts",
     "agents/evaluator/workflows/**/*.ts",
     "watchers/**/*.ts"
   ],

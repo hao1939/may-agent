@@ -25,12 +25,12 @@ evaluation fact  -> task resolver -> task reconciliation
 Periodic background work follows the same fact path: App event schedules emit
 typed wake facts instead of manufacturing callerless inbox items.
 
-Automatic `session.end` facts resolve directly to exact per-session tasks and
-never create inbox items. Those independent tasks use Evaluation's declared
-task concurrency. Explicit per-session actions use the same task identity but
-remain addressed App inputs so their caller can receive the result of the exact
-attached task. The standing frontier is only the scheduled restart/backlog
-fallback.
+Eligible `session.end` facts resolve directly to exact per-session tasks and
+never create inbox items. Failed or interrupted sessions, May sessions, and
+direct sessions are eligible. Successful workflow-internal sessions remain
+durable facts unless explicitly requested; auditing every internal call would
+create work without adding proportional evidence. Explicit per-session actions
+use the same task identity and always remain eligible.
 
 ## Stable Responsibilities
 
@@ -44,7 +44,7 @@ of the app. They use `mode: "maintain"`:
 | `project-app-audit`        | Every watched app has a current independent health assessment.                                                                      |
 | `finding-delivery`         | Actionable findings reach owners and useful human decisions without duplicates.                                                     |
 | `evaluator-reliability`    | Structural parent for evaluation's bounded reliability responsibilities; it reflects child state without starting an owner session. |
-| `pipeline-health`          | Structural parent for pipeline observation and the aftermath frontier; changed anomaly signals wake explicit review work instead.   |
+| `pipeline-health`          | Structural parent for coverage observation; changed anomaly signals wake explicit review work instead.                              |
 | `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.                                                                  |
 | `drift-detection`          | Comparable cohorts expose meaningful quality drift without speculative work.                                                        |
 | `system-integrity`         | Evaluator-local state, routing, ownership, and reports remain internally consistent.                                                |
@@ -57,35 +57,32 @@ after their result is absorbed.
 
 `app.ts` maps known events to task intent:
 
-| Task key                              | Mode       | Handler                                 | Convergence                                                                                                                                                                                                           |
-| ------------------------------------- | ---------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`                   | The highest-priority eligible missing evaluation is recorded (failed/interrupted first, then done sessions inside the recent 3h coverage window, then older done backlog); the same task continues while more remain. |
-| `runtime/aftermath-coverage-snapshot` | `achieve`  | `evaluator-aftermath-coverage-snapshot` | One fresh trailing-3h eligible/evaluated count and coverage metric sample is persisted.                                                                                                                               |
-| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`                   | An explicitly requested session has a durable evaluation or structured skip.                                                                                                                                          |
-| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`                   | The requested session has one workflow-traced deep judgment.                                                                                                                                                          |
-| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                                                                                                |
-| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection`        | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                                                                                                |
-| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`              | The target fingerprint is current and any due report/feedback is persisted.                                                                                                                                           |
-| `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`                   | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op.                                                                     |
+| Task key                              | Mode       | Handler                                 | Convergence                                                                                                                                       |
+| ------------------------------------- | ---------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime/aftermath-coverage-snapshot` | `achieve`  | `evaluator-aftermath-coverage-snapshot` | One fresh trailing-3h eligible/evaluated count and coverage metric sample is persisted.                                                           |
+| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`                   | An eligible or explicitly requested session has a durable evaluation or structured skip.                                                          |
+| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`                   | The requested session has one workflow-traced deep judgment.                                                                                      |
+| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                            |
+| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection`        | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                            |
+| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`              | The target fingerprint is current and any due report/feedback is persisted.                                                                       |
+| `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`                   | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op. |
 
 Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.
 Only stable configuration belongs in a `maintain` task input. This prevents a
 metric timestamp or manual review reason from creating a new task generation.
 
-For automatic aftermath, `session.end` resolves directly to the exact
-`runtime/session-aftermath/<session>` task. Independent session tasks can use
-the App's declared task concurrency instead of serializing behind a standing
-scan. The scheduled `evaluation.aftermath.scan` task remains the restart-safe
-fallback: its bounded evaluator call selects at most one uncovered session and
-emits the same compact wake while more remain. Durable `evaluation.recorded`
-facts and their runtime projection hold automatic evaluation history; task
-resources hold only desired work and bounded receipts.
+For automatic aftermath, each eligible `session.end` resolves directly to the
+exact `runtime/session-aftermath/<session>` task. Independent session tasks use
+the App's declared concurrency. Durable Event delivery is the recovery path;
+there is no second scanner competing to evaluate the same session. Durable
+`evaluation.recorded` facts and their runtime projection hold evaluation
+history; task resources hold only desired work and bounded receipts.
 
 ## Historical Aftermath Migration
 
-The automatic per-session frontier migration completed in August 2026 and its
-one-time mutation command has been retired. Do not bulk-delete
+The automatic per-session migration completed in August 2026 and its one-time
+mutation command has been retired. Do not bulk-delete
 `runtime/session-aftermath/<session>` state: those IDs now represent legitimate
 explicit evaluation requests and their immutable receipts. Any future stored
 task-state migration must use the versioned runtime maintenance boundary with

@@ -8,10 +8,6 @@ import {
   type AppTaskInput,
   type TaskIntent,
 } from "@may-agent/sdk";
-import {
-  evaluationAppRuntimeCanarySchema,
-  evaluationCanaryDataSchema,
-} from "./canary-contract.js";
 
 const projectId = "evaluation";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
@@ -54,17 +50,6 @@ const evaluationInputSchema = Type.Union([
     { additionalProperties: false },
   ),
   Type.Object(
-    { kind: Type.Literal("canary-probe"), data: evaluationCanaryDataSchema },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("runtime-canary"),
-      data: evaluationAppRuntimeCanarySchema,
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
     { kind: Type.Literal("evaluate-session"), data: sessionSchema },
     { additionalProperties: false },
   ),
@@ -99,12 +84,11 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  ...["aftermath-scan", "aftermath-coverage-snapshot", "deep-scan"].map(
-    (kind) =>
-      Type.Object(
-        { kind: Type.Literal(kind), data: detailsSchema },
-        { additionalProperties: false },
-      ),
+  ...["aftermath-coverage-snapshot", "deep-scan"].map((kind) =>
+    Type.Object(
+      { kind: Type.Literal(kind), data: detailsSchema },
+      { additionalProperties: false },
+    ),
   ),
 ]);
 
@@ -240,22 +224,6 @@ function ownerMessageInput(
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   const data = record(input.data);
   switch (input.kind) {
-    case "runtime-canary": {
-      const itemId = stringValue(data.itemId);
-      if (!itemId) return null;
-      return {
-        id: `runtime/app-inbox-canary/${safeTaskIdPart(itemId)}`,
-        parentId: "evaluator-reliability",
-        outcome: `Verify the capability-scoped runtime against completed App inbox item ${itemId}.`,
-        acceptance: [
-          "The workflow reads the exact item through AppRead and publishes one canary observation without using host internals.",
-        ],
-        mode: "achieve",
-        workflow: "evaluation-app-runtime-canary",
-        input: { itemId },
-        priority: "P2",
-      };
-    }
     case "evaluate-session": {
       const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;
@@ -273,21 +241,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         priority: "P1",
       };
     }
-    case "aftermath-scan":
-      return {
-        id: "runtime/aftermath-backfill",
-        parentId: "pipeline-health",
-        outcome:
-          "Keep the eligible terminal-session evaluation frontier current, prioritizing failed sessions and the recent 3h coverage window before stale done-session backlog.",
-        acceptance: [
-          "The highest-priority eligible unevaluated session receives its normal aftermath evaluation.",
-          "The workflow records whether the frontier is current or emits one compact continuation wake.",
-        ],
-        mode: "maintain",
-        workflow: "evaluator-aftermath",
-        input: { scope: "session-aftermath-frontier" },
-        priority: "P1",
-      };
     case "aftermath-coverage-snapshot":
       return {
         id: "runtime/aftermath-coverage-snapshot",
@@ -428,9 +381,17 @@ export function taskInputForEvent(
 ): AppInput | null {
   switch (event.type) {
     case "session.end": {
-      const agent = stringValue(eventData(event).agent);
+      const data = eventData(event);
+      const agent = stringValue(data.agent);
       const sessionId = eventSessionId(event);
-      return agent === "evaluator" || agent === "judge" || !sessionId
+      const status = stringValue(data.status ?? data.outcome);
+      const workflowRunId = stringValue(data.workflowRunId);
+      const routineWorkflowSession =
+        status === "done" && agent !== "may" && Boolean(workflowRunId);
+      return agent === "evaluator" ||
+        agent === "judge" ||
+        !sessionId ||
+        routineWorkflowSession
         ? null
         : {
             kind: "evaluate-session",
@@ -446,8 +407,6 @@ export function taskInputForEvent(
           }
         : null;
     }
-    case "evaluation.aftermath.scan":
-      return eventInput("aftermath-scan", event);
     case "evaluation.aftermath.coverage_snapshot.requested":
       return eventInput("aftermath-coverage-snapshot", event);
     case "evaluation.deep.requested": {
@@ -460,10 +419,6 @@ export function taskInputForEvent(
       return eventInput("deep-scan", event);
     case "evaluation.project.review.requested":
       return projectReviewInput(eventData(event));
-    case "evaluation.app_runtime_canary.requested": {
-      const itemId = stringValue(eventData(event).itemId);
-      return itemId ? { kind: "runtime-canary", data: { itemId } } : null;
-    }
     case "evaluation.tick":
       return eventInput("owner-review", event);
     case "evaluation.review_failed":
@@ -529,7 +484,6 @@ const app = defineApp({
     },
   ],
   observations: [
-    "evaluation.app_runtime_canary.observed",
     "evaluation.deep_dispatched",
     "evaluation.deep_failed",
     "evaluation.owner_review_started",
@@ -547,15 +501,6 @@ const app = defineApp({
       event: {
         type: "evaluation.tick",
         data: { reason: "owner-heartbeat" },
-        target: { appId: projectId, project: projectId },
-      },
-    },
-    {
-      id: "session-aftermath-scan",
-      intervalMs: 420_000,
-      event: {
-        type: "evaluation.aftermath.scan",
-        data: { reason: "scheduled" },
         target: { appId: projectId, project: projectId },
       },
     },
@@ -579,18 +524,6 @@ const app = defineApp({
     })),
   ],
   actions: {
-    "app-inbox-canary": {
-      description:
-        "Submit one manual probe through canonical task admission and delivery.",
-      inputSchema: evaluationCanaryDataSchema,
-      toInput: (data) => ({ kind: "canary-probe", data }),
-    },
-    "app-runtime-canary": {
-      description:
-        "Run the capability-scoped workflow against one completed App inbox probe.",
-      inputSchema: evaluationAppRuntimeCanarySchema,
-      toInput: (data) => ({ kind: "runtime-canary", data }),
-    },
     "evaluate-session": {
       description: "Evaluate a specific session by sessionId.",
       inputSchema: sessionSchema,
@@ -629,7 +562,6 @@ const app = defineApp({
     subscriptions: [
       "session.end",
       { type: "evaluation.session.requested", project: projectId },
-      { type: "evaluation.aftermath.scan", project: projectId },
       {
         type: "evaluation.aftermath.coverage_snapshot.requested",
         project: projectId,
@@ -637,10 +569,6 @@ const app = defineApp({
       { type: "evaluation.deep.requested", project: projectId },
       { type: "evaluation.deep.scan", project: projectId },
       { type: "evaluation.project.review.requested", project: projectId },
-      {
-        type: "evaluation.app_runtime_canary.requested",
-        project: projectId,
-      },
       { type: "evaluation.tick", project: projectId },
       "evaluation.review_failed",
       "metric.breach",

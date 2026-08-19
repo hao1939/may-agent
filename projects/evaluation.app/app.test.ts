@@ -70,18 +70,6 @@ describe("canonical evaluation App", () => {
 
   test("keeps canonical App-input actions without a legacy project-review alias", () => {
     expect(
-      app.actions?.["app-inbox-canary"]?.toInput?.({ prompt: "Probe" }),
-    ).toEqual({
-      kind: "canary-probe",
-      data: { prompt: "Probe" },
-    });
-    expect(
-      app.actions?.["app-runtime-canary"]?.toInput?.({ itemId: "probe-1" }),
-    ).toEqual({
-      kind: "runtime-canary",
-      data: { itemId: "probe-1" },
-    });
-    expect(
       app.actions?.["evaluate-session"]?.toInput?.({ sessionId: "s-1" }),
     ).toEqual({
       kind: "evaluate-session",
@@ -109,31 +97,6 @@ describe("canonical evaluation App", () => {
     ).toMatchObject({
       kind: "desired",
       intent: { id: "input/request-1", mode: "achieve", owner: "evaluator" },
-    });
-
-    expect(
-      taskForEvaluationInput(
-        admitted({
-          kind: "canary-probe",
-          data: { prompt: "Report the canary result" },
-        }),
-      ),
-    ).toMatchObject({
-      kind: "desired",
-      intent: { id: "input/request-1", mode: "achieve", owner: "evaluator" },
-    });
-
-    expect(
-      taskForEvaluationInput(
-        admitted({ kind: "aftermath-scan", data: { reason: "scheduled" } }),
-      ),
-    ).toMatchObject({
-      kind: "desired",
-      intent: {
-        id: "runtime/aftermath-backfill",
-        mode: "maintain",
-        workflow: "evaluator-aftermath",
-      },
     });
   });
 });
@@ -207,6 +170,36 @@ describe("evaluation fact admission", () => {
         ),
       ).toBeNull();
     }
+    expect(
+      taskIntentForEvent(
+        event("session.end", {
+          sessionId: "s-routine-workflow",
+          agent: "gym",
+          status: "done",
+          workflowRunId: "wr-1",
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      taskIntentForEvent(
+        event("session.end", {
+          sessionId: "s-failed-workflow",
+          agent: "gym",
+          status: "error",
+          workflowRunId: "wr-1",
+        }),
+      ),
+    ).toMatchObject({ input: { sessionId: "s-failed-workflow" } });
+    expect(
+      taskIntentForEvent(
+        event("session.end", {
+          sessionId: "s-may-workflow",
+          agent: "may",
+          status: "done",
+          workflowRunId: "wr-2",
+        }),
+      ),
+    ).toMatchObject({ input: { sessionId: "s-may-workflow" } });
   });
 
   test("admits only evaluation-owned metric changes", () => {

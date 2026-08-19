@@ -6,7 +6,7 @@ import type {
 
 export const name = "evaluator-aftermath";
 export const description =
-  "Select and evaluate at most one terminal session, persist one durable fact, and route bounded findings.";
+  "Evaluate one exact terminal session, persist one durable fact, and route bounded findings.";
 export const AFTERMATH_VERSION = 14;
 
 const VERDICTS = new Set([
@@ -27,7 +27,6 @@ const HUMAN_ACTIONS = new Set([
 
 export type AftermathInput = {
   sessionId?: string;
-  scope?: string;
 };
 
 export type AftermathEvaluation = {
@@ -61,7 +60,6 @@ export type AftermathFinding = {
 };
 
 export type AftermathOutcome =
-  | { kind: "none"; reason: string }
   | {
       kind: "existing";
       sessionId: string;
@@ -73,13 +71,11 @@ export type AftermathOutcome =
       sessionId: string;
       agent: string;
       reason: string;
-      backlogRemaining: boolean;
     }
   | {
       kind: "evaluation";
       evaluation: AftermathEvaluation;
       findings: AftermathFinding[];
-      backlogRemaining: boolean;
     };
 
 function record(value: unknown): Record<string, unknown> {
@@ -248,13 +244,6 @@ export function parseAftermathOutcome(
     ? record(root.outcome)
     : root;
   const kind = text(raw.kind).toLowerCase();
-  if (kind === "none" || raw.noCandidate === true) {
-    return {
-      kind: "none",
-      reason:
-        text(raw.reason) || "No eligible terminal session needs evaluation.",
-    };
-  }
   if (kind === "existing") {
     const id = sessionId(raw.sessionId ?? raw.session_id);
     const verdict = text(raw.verdict);
@@ -290,7 +279,6 @@ export function parseAftermathOutcome(
       sessionId: id,
       agent,
       reason,
-      backlogRemaining: raw.backlogRemaining === true,
     };
   }
   if (kind !== "evaluation") return null;
@@ -312,25 +300,16 @@ export function parseAftermathOutcome(
     kind: "evaluation",
     evaluation,
     findings: findings.slice(0, 10),
-    backlogRemaining: raw.backlogRemaining === true,
   };
 }
 
-export function buildAftermathTask(requestedSessionId = ""): string {
-  const selection = requestedSessionId
-    ? [
-        `Evaluate exactly session ${requestedSessionId}; never substitute another session.`,
-        "Use query_db to read its sessions row and any existing evaluations row.",
-        "If an adequate evaluation already exists, return kind=existing with its exact sessionId and verdict.",
-        "If the row cannot be evaluated for a deterministic reason, return kind=skip with the exact agent and reason.",
-      ]
-    : [
-        "Use query_db to select at most one eligible terminal session with no evaluations row.",
-        "Eligible statuses are done, error, and interrupted; exclude evaluator and judge.",
-        "Prioritize failed/interrupted sessions, then missing evaluations from the recent 3h window, then older done-session backlog.",
-        "After evaluating or skipping it, query whether another eligible row remains and set backlogRemaining.",
-        "If none exists, return kind=none and a concrete reason.",
-      ];
+export function buildAftermathTask(requestedSessionId: string): string {
+  const selection = [
+    `Evaluate exactly session ${requestedSessionId}; never substitute another session.`,
+    "Use query_db to read its sessions row and any existing evaluations row.",
+    "If an adequate evaluation already exists, return kind=existing with its exact sessionId and verdict.",
+    "If the row cannot be evaluated for a deterministic reason, return kind=skip with the exact agent and reason.",
+  ];
   return [
     `[session-aftermath v${AFTERMATH_VERSION}] Perform one bounded, independent evaluation.`,
     ...selection,
@@ -348,7 +327,7 @@ export function buildAftermathTask(requestedSessionId = ""): string {
       {
         kind: "evaluation",
         evaluation: {
-          sessionId: requestedSessionId || "selected-session-id",
+          sessionId: requestedSessionId,
           agent: "agent-name",
           quality: 0.7,
           efficiency: 0.7,
@@ -377,14 +356,12 @@ export function buildAftermathTask(requestedSessionId = ""): string {
               "none | watch | decide | approve | provide-input",
           },
         ],
-        backlogRemaining: false,
       },
       null,
       2,
     ),
-    "Skip result: { kind: 'skip', sessionId, agent, reason, backlogRemaining }.",
+    "Skip result: { kind: 'skip', sessionId, agent, reason }.",
     "Existing result: { kind: 'existing', sessionId, verdict, createdAt }.",
-    "Empty frontier: { kind: 'none', reason }.",
   ].join("\n");
 }
 
@@ -495,14 +472,6 @@ export function humanDecisionEvent(
   };
 }
 
-export function aftermathContinuationEvent(processedSessionId: string) {
-  return {
-    type: "evaluation.aftermath.scan",
-    data: { reason: "backlog-remains", processedSessionId },
-    target: { appId: "evaluation", project: "evaluation" },
-  };
-}
-
 function reconciled(
   summary: string,
   evidence: string[] = [],
@@ -520,7 +489,6 @@ async function reviewFailed(
     data: {
       source: name,
       requestedSessionId: sessionId(ctx.input?.sessionId) || undefined,
-      scope: text(ctx.input?.scope) || undefined,
       executionId: execution.id,
       status: execution.status,
       summary: execution.summary,
@@ -543,11 +511,8 @@ export async function execute(
     );
   }
   const requestedSessionId = sessionId(ctx.input?.sessionId);
-  const standing = ctx.input?.scope === "session-aftermath-frontier";
-  if (!requestedSessionId && !standing) {
-    return ctx.blocked(
-      "evaluator-aftermath requires an exact sessionId or the standing aftermath frontier scope",
-    );
+  if (!requestedSessionId) {
+    return ctx.blocked("evaluator-aftermath requires an exact sessionId");
   }
 
   const execution = await ctx.agents.call(
@@ -571,22 +536,6 @@ export async function execute(
       ctx,
       execution,
       `Evaluator execution ${execution.id} returned no valid aftermath result.`,
-    );
-  }
-  if (outcome.kind === "none") {
-    if (requestedSessionId) {
-      return reviewFailed(
-        ctx,
-        execution,
-        `Evaluator found no result for explicitly requested session ${requestedSessionId}: ${outcome.reason}`,
-      );
-    }
-    return ctx.done(
-      outcome.reason,
-      reconciled(outcome.reason, [
-        `execution:${execution.id}`,
-        "aftermath-frontier:current",
-      ]),
     );
   }
   if (outcome.kind === "existing") {
@@ -622,9 +571,6 @@ export async function execute(
     }
   }
 
-  if (outcome.backlogRemaining && standing) {
-    await ctx.events.emit(aftermathContinuationEvent(evaluatedSessionId));
-  }
   const summary =
     outcome.kind === "skip"
       ? `Recorded structured skip for ${outcome.sessionId}: ${outcome.reason}.`
@@ -634,9 +580,6 @@ export async function execute(
     reconciled(summary, [
       `execution:${execution.id}`,
       `evaluated-session:${evaluatedSessionId}`,
-      ...(outcome.backlogRemaining && standing
-        ? ["aftermath-frontier:continuation-emitted"]
-        : []),
     ]),
   );
 }
