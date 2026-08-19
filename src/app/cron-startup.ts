@@ -5,8 +5,7 @@ import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOp
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
-import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
-import { recoverInstalledAppTasks } from "./app-task-runtime.js";
+import { parseAppTaskSessionBinding, recoverInstalledAppTasks } from "./app-task-runtime.js";
 
 const LEGACY_APP_INBOX_RECOVERY_OWNER = "app-inbox";
 
@@ -47,13 +46,16 @@ export function shouldResumeStartupSession(
       reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
     };
   }
+  if (claimedAppTaskSessionIds.has(sessionId)) return { resume: true };
+  // recoveryOwner names the recovery runtime; it does not by itself bind a
+  // workflow call to a task resource.
   if (
-    session.recoveryOwner === APP_TASK_RECOVERY_OWNER ||
-    session.recoveryOwner === "project-app-task-reconciler" ||
+    (typeof session.taskId === "string" && session.taskId.trim()) ||
+    (typeof session.projectTaskId === "string" && session.projectTaskId.trim()) ||
+    parseAppTaskSessionBinding(session.task) ||
     session.source === "app-task-owner" ||
     session.source === "project-app-task-owner"
   ) {
-    if (claimedAppTaskSessionIds.has(sessionId)) return { resume: true };
     return {
       resume: false,
       reason: "Task-bound project session was not claimed by App task recovery during startup",

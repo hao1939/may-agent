@@ -55,6 +55,9 @@ export interface PersistedSession {
   channelMessageId?: number;
   /** Project ID linking this session to a persisted project. */
   projectId?: string;
+  /** Explicit task bindings retained by older task runtimes. */
+  taskId?: string | null;
+  projectTaskId?: string | null;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
   detached?: boolean;
