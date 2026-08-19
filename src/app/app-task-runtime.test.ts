@@ -22,6 +22,7 @@ import {
   installAppTaskRuntimes,
   planCanonicalOwnerResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
+  projectAppTaskChildPromptContext,
   projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
   rejectConvergedDirectOwnerResidue,
@@ -198,6 +199,68 @@ describe("canonical direct-owner residue cleanup", () => {
     writeFileSync(worktree, "mutation-capable output\n");
     expect(finishCanonicalOwnerResidueGuard(null)).toEqual([]);
     expect(readFileSync(worktree, "utf8")).toBe("mutation-capable output\n");
+  });
+});
+
+describe("App Task owner prompt context", () => {
+  it("keeps parent prompts bounded while preserving child identity and state", () => {
+    const hiddenDetail = "exact-child-detail-" + "x".repeat(8_000);
+    const context: Parameters<typeof projectAppTaskChildPromptContext>[0] = {
+      live: Array.from({ length: 16 }, (_, index) => ({
+        taskId: `live-${index}`,
+        parentId: "parent",
+        generation: 1,
+        phase: "waiting",
+        outcome: `Resolve child ${index} ${"o".repeat(800)}`,
+        owner: "sample-owner",
+        input: { hiddenDetail },
+        conditions: [
+          {
+            id: `condition-${index}`,
+            type: "external.state",
+            subject: `child:${index}`,
+            expected: { hiddenDetail },
+          },
+        ],
+        readiness: {
+          state: "condition-blocked",
+          reason: `Waiting for child ${index} ${"r".repeat(800)}`,
+          relatedTaskIds: [`condition-${index}`],
+        },
+        hasLiveChildren: false,
+        summary: `Still waiting ${"s".repeat(800)}`,
+        evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
+      })),
+      completed: Array.from({ length: 8 }, (_, index) => ({
+        taskId: `done-${index}`,
+        parentId: "parent",
+        generation: 1,
+        outcome: `Complete child ${index} ${"o".repeat(800)}`,
+        owner: "sample-owner",
+        input: { hiddenDetail },
+        conditions: [],
+        hasLiveChildren: false,
+        summary: `Completed ${"s".repeat(800)}`,
+        evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
+        completedAt: "2026-08-20T00:00:00.000Z",
+      })),
+    };
+
+    const projected = projectAppTaskChildPromptContext(context);
+    const encoded = JSON.stringify(projected);
+
+    expect(encoded.length).toBeLessThan(40_000);
+    expect(encoded).not.toContain("exact-child-detail");
+    expect(encoded).not.toContain("external.state");
+    expect(projected.live[0]).toMatchObject({
+      taskId: "live-0",
+      generation: 1,
+      phase: "waiting",
+    });
+    expect(projected.completed[0]).toMatchObject({
+      taskId: "done-0",
+      generation: 1,
+    });
   });
 });
 
