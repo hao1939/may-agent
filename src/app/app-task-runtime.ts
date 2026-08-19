@@ -1991,10 +1991,10 @@ async function reconcileTask(input: {
   const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
   let taskWorkspace: PreparedTaskWorkspace | undefined;
   let workspaceFinalized = false;
-  const finalizeWorkspace = (outcome: "accepted" | "waiting" | "failed") => {
+  const finalizeWorkspace = async (outcome: "accepted" | "waiting" | "failed") => {
     if (!taskWorkspace || workspaceFinalized) return { ok: true as const };
     try {
-      const finalized = finalizeAppTaskWorkspace(taskWorkspace, outcome);
+      const finalized = await finalizeAppTaskWorkspace(taskWorkspace, outcome);
       workspaceFinalized = true;
       recordAppTaskAttemptWorkspace(config, primary, finalized.metadata);
       return finalized;
@@ -2031,7 +2031,7 @@ async function reconcileTask(input: {
               attempt.workspace?.kind === "task-worktree",
           )
           .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
-        taskWorkspace = prepareAppTaskWorkspace({
+        taskWorkspace = await prepareAppTaskWorkspace({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
           taskId: primary.taskId,
@@ -2160,7 +2160,7 @@ async function reconcileTask(input: {
         workflowRunId: primaryResult.runId,
       });
     } else {
-      const finalized = finalizeWorkspace("accepted");
+      const finalized = await finalizeWorkspace("accepted");
       if (!finalized.ok) {
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
@@ -2235,7 +2235,7 @@ async function reconcileTask(input: {
   }
 
   if (primaryHandlerResult.state === "waiting") {
-    const finalized = finalizeWorkspace("waiting");
+    const finalized = await finalizeWorkspace("waiting");
     if (!finalized.ok) {
       primaryHandlerResult.state = "error";
       primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
@@ -2318,7 +2318,7 @@ async function reconcileTask(input: {
     }
   }
 
-  finalizeWorkspace("failed");
+  await finalizeWorkspace("failed");
 
   const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
   const attention = markAppTaskAttention(config, primary, {
@@ -3051,7 +3051,7 @@ async function requeueRepairedAppTaskHandlers(
         continue;
       }
       try {
-        prepareAppTaskWorkspace({
+        await prepareAppTaskWorkspace({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
           taskId: candidate.taskId,

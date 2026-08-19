@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import type { AppTaskWorkspace as AppTaskWorkspace } from "./app-task-state.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };
@@ -17,22 +18,45 @@ export type FinalizedTaskWorkspace = {
   reason?: string;
 };
 
-function git(repoDir: string, args: string[], allowFailure = false): GitResult {
-  const result = spawnSync("git", ["-C", repoDir, ...args], {
-    encoding: "utf8",
-    maxBuffer: 16 * 1024 * 1024,
-    timeout: 120_000,
+function git(repoDir: string, args: string[], allowFailure = false): Promise<GitResult> {
+  return new Promise((resolveResult, reject) => {
+    execFile(
+      "git",
+      ["-C", repoDir, ...args],
+      { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, timeout: 120_000 },
+      (error, stdout, stderr) => {
+        const status = error ? (typeof error.code === "number" ? error.code : 1) : 0;
+        const output = {
+          status,
+          stdout: stdout.trim(),
+          stderr: (stderr || error?.message || "").trim(),
+        };
+        if (!allowFailure && status !== 0) {
+          reject(new Error(`git ${args.join(" ")} failed in ${repoDir}: ${output.stderr || output.stdout}`));
+          return;
+        }
+        resolveResult(output);
+      },
+    );
   });
-  const status = result.status ?? 1;
-  const output = {
-    status,
-    stdout: result.stdout?.trim() ?? "",
-    stderr: (result.stderr || result.error?.message || "").trim(),
-  };
-  if (!allowFailure && status !== 0) {
-    throw new Error(`git ${args.join(" ")} failed in ${repoDir}: ${output.stderr || output.stdout}`);
+}
+
+const repoOperations = new Map<string, Promise<void>>();
+
+async function withRepoOperation<T>(repoDir: string, operation: () => Promise<T>): Promise<T> {
+  const previous = repoOperations.get(repoDir) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolveCurrent) => {
+    release = resolveCurrent;
+  });
+  repoOperations.set(repoDir, current);
+  await previous;
+  try {
+    return await operation();
+  } finally {
+    release();
+    if (repoOperations.get(repoDir) === current) repoOperations.delete(repoDir);
   }
-  return output;
 }
 
 function safePart(value: string): string {
@@ -50,8 +74,8 @@ function identity(taskId: string, generation: number): { leaf: string; branch: s
   return { leaf, branch: `task/${leaf}` };
 }
 
-function worktreeEntries(repoDir: string): Array<{ path: string; branch?: string; head?: string }> {
-  const output = git(repoDir, ["worktree", "list", "--porcelain"]).stdout;
+async function worktreeEntries(repoDir: string): Promise<Array<{ path: string; branch?: string; head?: string }>> {
+  const output = (await git(repoDir, ["worktree", "list", "--porcelain"])).stdout;
   if (!output) return [];
   return output.split(/\n\n+/).flatMap((block) => {
     const fields = Object.fromEntries(
@@ -65,33 +89,33 @@ function worktreeEntries(repoDir: string): Array<{ path: string; branch?: string
   });
 }
 
-function refExists(repoDir: string, ref: string): boolean {
-  return git(repoDir, ["show-ref", "--verify", "--quiet", ref], true).status === 0;
+async function refExists(repoDir: string, ref: string): Promise<boolean> {
+  return (await git(repoDir, ["show-ref", "--verify", "--quiet", ref], true)).status === 0;
 }
 
-function remoteExists(repoDir: string, remote: string): boolean {
-  return git(repoDir, ["remote", "get-url", remote], true).status === 0;
+async function remoteExists(repoDir: string, remote: string): Promise<boolean> {
+  return (await git(repoDir, ["remote", "get-url", remote], true)).status === 0;
 }
 
-function headAt(path: string): string {
-  return git(path, ["rev-parse", "HEAD"]).stdout;
+async function headAt(path: string): Promise<string> {
+  return (await git(path, ["rev-parse", "HEAD"])).stdout;
 }
 
-function interruptedOperationBranch(path: string): string | undefined {
+async function interruptedOperationBranch(path: string): Promise<string | undefined> {
   for (const marker of ["rebase-merge/head-name", "rebase-apply/head-name"]) {
-    const markerPath = resolve(path, git(path, ["rev-parse", "--git-path", marker]).stdout);
+    const markerPath = resolve(path, (await git(path, ["rev-parse", "--git-path", marker])).stdout);
     if (!existsSync(markerPath)) continue;
-    const branch = readFileSync(markerPath, "utf8").trim();
+    const branch = (await readFile(markerPath, "utf8")).trim();
     if (branch) return branch;
   }
   return undefined;
 }
 
-function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): boolean {
+async function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): Promise<boolean> {
   return (
     metadata.headCommit === metadata.baseCommit ||
-    git(repoDir, ["diff", "--quiet", metadata.baseCommit, metadata.headCommit], true).status === 0 ||
-    git(repoDir, ["merge-base", "--is-ancestor", metadata.headCommit, metadata.baseRef], true).status === 0
+    (await git(repoDir, ["diff", "--quiet", metadata.baseCommit, metadata.headCommit], true)).status === 0 ||
+    (await git(repoDir, ["merge-base", "--is-ancestor", metadata.headCommit, metadata.baseRef], true)).status === 0
   );
 }
 
@@ -103,7 +127,7 @@ function unintegratedResult(metadata: AppTaskWorkspace): FinalizedTaskWorkspace 
   };
 }
 
-export function prepareAppTaskWorkspace(input: {
+export async function prepareAppTaskWorkspace(input: {
   repoDir: string;
   workspaceRoot: string;
   taskId: string;
@@ -111,138 +135,142 @@ export function prepareAppTaskWorkspace(input: {
   baseBranch: string;
   refreshRemote?: boolean;
   previous?: AppTaskWorkspace;
-}): PreparedTaskWorkspace {
-  const repoDir = realpathSync(input.repoDir);
-  if (git(repoDir, ["rev-parse", "--is-inside-work-tree"]).stdout !== "true") {
-    throw new Error(`Task workspace requires a Git worktree: ${repoDir}`);
-  }
-
-  const { leaf, branch } = identity(input.taskId, input.generation);
-  const path = resolve(join(input.workspaceRoot, leaf));
-  const remote = "origin";
-  const hasRemote = remoteExists(repoDir, remote);
-  if (hasRemote && input.refreshRemote !== false) {
-    git(repoDir, ["fetch", "--prune", remote, input.baseBranch]);
-    git(repoDir, ["fetch", remote, `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`], true);
-  }
-  const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
-  const remoteTaskRef = `refs/remotes/${remote}/${branch}`;
-  const localRef = `refs/heads/${input.baseBranch}`;
-  const baseRef = refExists(repoDir, remoteRef)
-    ? `${remote}/${input.baseBranch}`
-    : refExists(repoDir, localRef)
-      ? input.baseBranch
-      : "HEAD";
-  const currentBaseCommit = git(repoDir, ["rev-parse", baseRef]).stdout;
-
-  let entries = worktreeEntries(repoDir);
-  let registered = entries.find((entry) => entry.path === path);
-  if (registered && !existsSync(path)) {
-    git(repoDir, ["worktree", "prune"]);
-    entries = worktreeEntries(repoDir);
-    registered = entries.find((entry) => entry.path === path);
-  }
-
-  const branchRef = `refs/heads/${branch}`;
-  const branchExists = refExists(repoDir, branchRef);
-  const remoteTaskBranchExists = refExists(repoDir, remoteTaskRef);
-  const branchRegistration = entries.find((entry) => entry.branch === branchRef && entry.path !== path);
-  if (branchRegistration) {
-    throw new Error(`Task branch ${branch} is already checked out at ${branchRegistration.path}`);
-  }
-
-  if (registered) {
-    const interruptedBranch = registered.branch ? undefined : interruptedOperationBranch(path);
-    if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
-      throw new Error(
-        `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
-      );
+}): Promise<PreparedTaskWorkspace> {
+  const repoDir = await realpath(input.repoDir);
+  return withRepoOperation(repoDir, async () => {
+    if ((await git(repoDir, ["rev-parse", "--is-inside-work-tree"])).stdout !== "true") {
+      throw new Error(`Task workspace requires a Git worktree: ${repoDir}`);
     }
-  } else {
-    if (existsSync(path)) {
-      throw new Error(`Task workspace path exists but is not a registered Git worktree: ${path}`);
+
+    const { leaf, branch } = identity(input.taskId, input.generation);
+    const path = resolve(join(input.workspaceRoot, leaf));
+    const remote = "origin";
+    const hasRemote = await remoteExists(repoDir, remote);
+    if (hasRemote && input.refreshRemote !== false) {
+      await git(repoDir, ["fetch", "--prune", remote, input.baseBranch]);
+      await git(repoDir, ["fetch", remote, `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`], true);
     }
-    mkdirSync(dirname(path), { recursive: true });
-    if (branchExists) git(repoDir, ["worktree", "add", path, branch]);
-    else {
-      git(repoDir, [
-        "worktree",
-        "add",
-        "-b",
-        branch,
+    const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
+    const remoteTaskRef = `refs/remotes/${remote}/${branch}`;
+    const localRef = `refs/heads/${input.baseBranch}`;
+    const baseRef = (await refExists(repoDir, remoteRef))
+      ? `${remote}/${input.baseBranch}`
+      : (await refExists(repoDir, localRef))
+        ? input.baseBranch
+        : "HEAD";
+    const currentBaseCommit = (await git(repoDir, ["rev-parse", baseRef])).stdout;
+
+    let entries = await worktreeEntries(repoDir);
+    let registered = entries.find((entry) => entry.path === path);
+    if (registered && !existsSync(path)) {
+      await git(repoDir, ["worktree", "prune"]);
+      entries = await worktreeEntries(repoDir);
+      registered = entries.find((entry) => entry.path === path);
+    }
+
+    const branchRef = `refs/heads/${branch}`;
+    const branchExists = await refExists(repoDir, branchRef);
+    const remoteTaskBranchExists = await refExists(repoDir, remoteTaskRef);
+    const branchRegistration = entries.find((entry) => entry.branch === branchRef && entry.path !== path);
+    if (branchRegistration) {
+      throw new Error(`Task branch ${branch} is already checked out at ${branchRegistration.path}`);
+    }
+
+    if (registered) {
+      const interruptedBranch = registered.branch ? undefined : await interruptedOperationBranch(path);
+      if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
+        throw new Error(
+          `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
+        );
+      }
+    } else {
+      if (existsSync(path)) {
+        throw new Error(`Task workspace path exists but is not a registered Git worktree: ${path}`);
+      }
+      await mkdir(dirname(path), { recursive: true });
+      if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
+      else {
+        await git(repoDir, [
+          "worktree",
+          "add",
+          "-b",
+          branch,
+          path,
+          remoteTaskBranchExists ? `${remote}/${branch}` : currentBaseCommit,
+        ]);
+      }
+    }
+
+    const headCommit = await headAt(path);
+    const baseCommit =
+      input.previous?.branch === branch && input.previous.baseCommit
+        ? input.previous.baseCommit
+        : branchExists || remoteTaskBranchExists
+          ? (await git(repoDir, ["merge-base", headCommit, currentBaseCommit])).stdout || currentBaseCommit
+          : currentBaseCommit;
+    return {
+      repoDir,
+      metadata: {
+        kind: "task-worktree",
         path,
-        remoteTaskBranchExists ? `${remote}/${branch}` : currentBaseCommit,
-      ]);
-    }
-  }
-
-  const headCommit = headAt(path);
-  const baseCommit =
-    input.previous?.branch === branch && input.previous.baseCommit
-      ? input.previous.baseCommit
-      : branchExists || remoteTaskBranchExists
-        ? git(repoDir, ["merge-base", headCommit, currentBaseCommit]).stdout || currentBaseCommit
-        : currentBaseCommit;
-  return {
-    repoDir,
-    metadata: {
-      kind: "task-worktree",
-      path,
-      baseRef,
-      baseCommit,
-      branch,
-      headCommit,
-      disposition: "active",
-    },
-  };
+        baseRef,
+        baseCommit,
+        branch,
+        headCommit,
+        disposition: "active",
+      },
+    };
+  });
 }
 
-export function finalizeAppTaskWorkspace(
+export async function finalizeAppTaskWorkspace(
   prepared: PreparedTaskWorkspace,
   outcome: "accepted" | "waiting" | "failed",
-): FinalizedTaskWorkspace {
+): Promise<FinalizedTaskWorkspace> {
   const { repoDir } = prepared;
-  const metadata = { ...prepared.metadata };
-  if (!existsSync(metadata.path)) {
-    const branchRef = `refs/heads/${metadata.branch}`;
-    if (!refExists(repoDir, branchRef)) {
-      metadata.disposition = "removed";
+  return withRepoOperation(repoDir, async () => {
+    const metadata = { ...prepared.metadata };
+    if (!existsSync(metadata.path)) {
+      const branchRef = `refs/heads/${metadata.branch}`;
+      if (!(await refExists(repoDir, branchRef))) {
+        metadata.disposition = "removed";
+        return { ok: true, metadata };
+      }
+      metadata.headCommit = (await git(repoDir, ["rev-parse", branchRef])).stdout;
+      if (await isIntegrated(repoDir, metadata)) {
+        await git(repoDir, ["branch", "-D", metadata.branch]);
+        metadata.disposition = "removed";
+        return { ok: true, metadata };
+      }
+      metadata.disposition = "branch-retained";
+      if (outcome === "accepted") return unintegratedResult(metadata);
       return { ok: true, metadata };
     }
-    metadata.headCommit = git(repoDir, ["rev-parse", branchRef]).stdout;
-    if (isIntegrated(repoDir, metadata)) {
-      git(repoDir, ["branch", "-D", metadata.branch]);
-      metadata.disposition = "removed";
+
+    metadata.headCommit = await headAt(metadata.path);
+    const dirty = (await git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"])).stdout;
+    if (dirty) {
+      metadata.disposition = "retained-for-recovery";
+      return {
+        ok: outcome === "failed",
+        metadata,
+        reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}`,
+      };
+    }
+    if (outcome === "failed") {
+      metadata.disposition = "retained-for-recovery";
       return { ok: true, metadata };
     }
-    metadata.disposition = "branch-retained";
-    if (outcome === "accepted") return unintegratedResult(metadata);
-    return { ok: true, metadata };
-  }
 
-  metadata.headCommit = headAt(metadata.path);
-  const dirty = git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"]).stdout;
-  if (dirty) {
-    metadata.disposition = "retained-for-recovery";
-    return {
-      ok: outcome === "failed",
-      metadata,
-      reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}`,
-    };
-  }
-  if (outcome === "failed") {
-    metadata.disposition = "retained-for-recovery";
+    const integrated = await isIntegrated(repoDir, metadata);
+    await git(repoDir, ["worktree", "remove", metadata.path]);
+    if (integrated && (await refExists(repoDir, `refs/heads/${metadata.branch}`))) {
+      await git(repoDir, ["branch", "-D", metadata.branch]);
+      metadata.disposition = "removed";
+    } else {
+      metadata.disposition = "branch-retained";
+    }
+    if (outcome === "accepted" && !integrated) return unintegratedResult(metadata);
     return { ok: true, metadata };
-  }
-
-  const integrated = isIntegrated(repoDir, metadata);
-  git(repoDir, ["worktree", "remove", metadata.path]);
-  if (integrated && refExists(repoDir, `refs/heads/${metadata.branch}`)) {
-    git(repoDir, ["branch", "-D", metadata.branch]);
-    metadata.disposition = "removed";
-  } else {
-    metadata.disposition = "branch-retained";
-  }
-  if (outcome === "accepted" && !integrated) return unintegratedResult(metadata);
-  return { ok: true, metadata };
+  });
 }
