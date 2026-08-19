@@ -3150,9 +3150,14 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           ? (() => {
               const sessionId = event.sessionId.trim();
               const scope = readAppTaskSessionScope(opts.persistDir, sessionId);
+              const eventAppId = firstNonEmptyString(
+                event.projectId,
+                isRecord(event.data) ? event.data.projectId : undefined,
+              )?.replace(/\.app$/, "");
               return {
                 owner: event.agent.trim(),
                 sessionId,
+                appId: scope.binding?.appId ?? eventAppId ?? null,
                 observedAt: new Date(typeof event.timestamp === "number" ? event.timestamp : Date.now()).toISOString(),
                 binding: scope.binding,
                 workflowRunId: firstNonEmptyString(
@@ -3168,6 +3173,12 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
         if (descriptor.reconciliationPaused) continue;
         const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
         if (successfulOwner && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
+          // A terminal task session can repair only attempts in its own App.
+          // Avoid synchronously loading every unrelated App's task tree on each
+          // session.end; large canonical trees otherwise block control traffic.
+          // Legacy sessions with no binding or project identity keep the
+          // conservative all-App scan used before project scoping existed.
+          if (successfulOwner.appId && successfulOwner.appId !== descriptor.id) continue;
           const config = appTaskConfig(descriptor);
           if (
             successfulOwner.binding?.appId === descriptor.id &&
