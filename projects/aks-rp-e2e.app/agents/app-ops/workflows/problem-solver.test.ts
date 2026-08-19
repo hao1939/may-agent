@@ -266,6 +266,55 @@ describe("problem solver", () => {
     });
   });
 
+  test("reconciles an admitted problem from task input regardless of request wrapper", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        taskInput: {
+          problemKey: "live-proof-aks-taxonomy",
+          targetTaskId: "runtime/owner-review",
+          requestedOutcome: "Return terminal routing proof.",
+        },
+        trigger: {
+          type: "app.task.requested",
+          taskId: "runtime/problem-solver/live-proof-aks-taxonomy",
+          problemKey: "stale-wrapper-key",
+          affectedTasks: ["stale-wrapper-task"],
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "ROOT_CAUSE: admitted request wrapper\nACTION_TAKEN: inspected task input\nVERIFICATION: exact task identity retained\nPLANNER_NEXT: consume the result\nPROBLEM_RESULT: resolved",
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        evidence: [
+          "problem-solver:live-proof-aks-taxonomy:project.problem.resolved",
+          "event:project.problem.resolved",
+        ],
+      },
+    });
+    expect(dispatched[0]).toMatchObject({
+      type: "project.problem.resolved",
+      payload: {
+        problemKey: "live-proof-aks-taxonomy",
+        affectedTasks: ["runtime/owner-review"],
+      },
+    });
+  });
+
   test("does not infer resolved problem result from fixed-and-verified prose", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const dispatched: Array<{

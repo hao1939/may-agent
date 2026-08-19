@@ -80,7 +80,7 @@ the common base, but conformance and operational health are different things:
 | Gym        |        Aligned | Stable learning resources reconcile through the shared controller; legacy residue is retired.                      |
 | Evaluation |        Aligned | Finite audits leave receipts and sustained backlog advances through shared capacity.                               |
 | May Agent  |        Aligned | Stable maintain resources remain, obsolete tasks are retired, and one truthful finite attention task is preserved. |
-| AKS        |        Aligned | Projection-only reconciliation results, generic parent/Condition wakeup, and bounded finite live-history cleanup.   |
+| AKS        |        Aligned | Projection-only reconciliation results, generic parent/Condition wakeup, and bounded finite live-history cleanup.  |
 
 The migration therefore converged on one framework rather than an AKS-specific
 rewrite. Scout remains the small reference shape; the other apps prove that
@@ -367,14 +367,14 @@ the migration. Scout and Evaluation previously had test files that their
 `check` commands did not execute; their checks now include those existing test
 suites by convention.
 
-| Proof                              | Result                                                         |
-| ---------------------------------- | -------------------------------------------------------------- |
-| Shared cross-app conformance       | 3 tests pass: stable timer identity, stable semantic-event identity, and no scheduling from reconciliation results |
-| Scout app check                    | syntax, types, format, and 61 tests pass                       |
-| Gym app check                      | syntax, types, format, and 74 tests pass                       |
-| Evaluation app check               | syntax, types, format, and 83 tests pass                       |
-| May Agent app check                | syntax, types, format, and 25 tests pass                       |
-| AKS app check                      | syntax, types, format, 512 app tests, 2 workflow-input tests, and current bundle verification pass |
+| Proof                        | Result                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Shared cross-app conformance | 3 tests pass: stable timer identity, stable semantic-event identity, and no scheduling from reconciliation results |
+| Scout app check              | syntax, types, format, and 61 tests pass                                                                           |
+| Gym app check                | syntax, types, format, and 74 tests pass                                                                           |
+| Evaluation app check         | syntax, types, format, and 83 tests pass                                                                           |
+| May Agent app check          | syntax, types, format, and 25 tests pass                                                                           |
+| AKS app check                | syntax, types, format, 512 app tests, 2 workflow-input tests, and current bundle verification pass                 |
 
 The hosted event trace also proves current runtime use rather than only source
 shape:
@@ -383,9 +383,9 @@ shape:
   `credential.state` observation reconciled the same `explore-xhs` resource.
 - Gym's refill event reconciled `improve/may`; repeated improvement wakes reuse
   that resource while its resource-local training checkpoint advances.
-- Evaluation's periodic `evaluation.aftermath.scan` reconciled
-  `runtime/aftermath-backfill`, while target review events reconciled stable
-  per-project audit resources.
+- Evaluation's eligible `session.end` facts reconcile exact per-session tasks,
+  while target review events reconcile stable per-project audit resources. A
+  competing periodic aftermath scanner is no longer part of the design.
 - May Agent's ops-health and daily-digest timers reconciled their two stable
   runtime resources independently.
 - AKS's direct loop pulse reconciled the named standing loop, while pipeline

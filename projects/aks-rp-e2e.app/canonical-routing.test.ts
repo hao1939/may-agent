@@ -305,7 +305,7 @@ describe("AKS canonical route ledger", () => {
     expect(app.route).toBeUndefined();
   });
 
-  test("uses direct task wakes and inbox inputs instead of check-event hops", () => {
+  test("uses direct task events instead of scheduled inbox requests", () => {
     const schedules = Object.fromEntries(
       (app.schedules ?? []).map((schedule) => [schedule.id, schedule]),
     );
@@ -327,14 +327,16 @@ describe("AKS canonical route ledger", () => {
         schedule && "event" in schedule ? schedule.event.target?.appId : null,
       ).toBe(projectId);
     }
-    expect(
-      schedules["regular-learning"] &&
-        "input" in schedules["regular-learning"]!,
-    ).toBe(true);
-    expect(
-      schedules["app-ops-heartbeat"] &&
-        "input" in schedules["app-ops-heartbeat"]!,
-    ).toBe(true);
+    for (const id of ["regular-learning", "app-ops-heartbeat"]) {
+      const schedule = schedules[id];
+      expect(
+        schedule && "event" in schedule ? schedule.event : null,
+      ).toMatchObject({
+        type: "project.owner.review.requested",
+        target: { appId: projectId, project: projectId },
+      });
+      expect(schedule && "input" in schedule).toBe(false);
+    }
     expect(JSON.stringify(app.schedules)).not.toContain(".check");
   });
 

@@ -77,7 +77,7 @@ function git(projectDir: string, ...args: string[]): string {
   }).trim();
 }
 
-function context(appDir: string, projectDir: string) {
+function context(appDir: string, projectDir: string, resourceVersion = 1) {
   const read = (name: string) =>
     JSON.parse(
       readFileSync(join(appDir, ".state", "tasks", name), "utf8"),
@@ -136,7 +136,7 @@ function context(appDir: string, projectDir: string) {
       appId: "aks-rp-e2e",
       taskId: "aks-spec-verification-loop",
       generation: 1,
-      resourceVersion: 1,
+      resourceVersion,
       owner: "app-ops",
       mode: "maintain",
       outcome: "Maintain spec verification",
@@ -879,7 +879,6 @@ describe("spec loop reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            id: "spec/repair-verify-spec-reviewed-disposition-representation-73475cb40a",
             parentId: "aks-spec-verification-loop",
             owner: "aks-explorer",
             workflow: "domain-task-execution",
@@ -888,6 +887,9 @@ describe("spec loop reconciliation workflow", () => {
         ],
       },
     });
+    expect(result.output.actions[0].id).toStartWith(
+      "spec/repair-verify-spec-reviewed-disposition-representation-73475cb40a-",
+    );
     expect(result.output.actions[0].outcome).toContain(
       "structured reviewed disposition",
     );
@@ -1020,6 +1022,43 @@ describe("spec loop reconciliation workflow", () => {
     });
     expect(result.output.actions[0].id).toStartWith(`${baseId}-`);
     expect(result.output.actions[0].id).not.toBe(baseId);
+  });
+
+  test("changes a repair identity with the bounded parent projection even when an omitted receipt is invisible", async () => {
+    const baseId =
+      "spec/repair-verify-spec-reviewed-disposition-representation-73475cb40a";
+    const ws = await workspace({
+      specs: {
+        "spec.reviewed": {
+          status: "pending",
+          taskId: null,
+          attempts: 1,
+          lastRunId: "42",
+          lastResultPath: "result.json",
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+          review: {
+            classification: "reviewed_nonlive_source_grounded_wait",
+            reviewedAt: "2026-07-19T00:00:00Z",
+          },
+          successorDisposition: "reviewed_nonlive_source_grounded_wait",
+          successorEvidencePath: "evidence/archive/spec-reviewed.md",
+          resumeCondition:
+            "Resume only after the reviewed execution posture changes.",
+          terminalDisposition: false,
+        },
+      },
+    });
+
+    const first = (await execute(context(ws.appDir, ws.projectDir, 41))) as any;
+    const second = (await execute(
+      context(ws.appDir, ws.projectDir, 42),
+    )) as any;
+
+    expect(first.output.actions[0].id).toStartWith(`${baseId}-`);
+    expect(second.output.actions[0].id).toStartWith(`${baseId}-`);
+    expect(first.output.actions[0].id).not.toBe(baseId);
+    expect(second.output.actions[0].id).not.toBe(first.output.actions[0].id);
   });
 
   test("imports newer project mirror rows before deciding reviewed disposition repair work", async () => {

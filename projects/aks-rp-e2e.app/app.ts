@@ -278,6 +278,7 @@ function masterValidationEvidenceCarrierTaskId(
 
 const masterValidationCycleIntervalMs = 21_600_000;
 const ownerReviewEventTypes = new Set([
+  "project.owner.review.requested",
   "project.owner.requested",
   "project.comment.created",
   "project.approval.submitted",
@@ -332,6 +333,7 @@ function ownerReviewTaskIntent(event: AppTaskEvent): TaskIntent {
  * already the complete routing decision.
  */
 export const canonicalAksTaskSelectors: CanonicalEventSelector[] = [
+  { type: "project.owner.review.requested", project: projectId },
   {
     type: "aks.waiting-frontier-retirement.requested",
     project: projectId,
@@ -942,6 +944,18 @@ function scheduledTaskWake(
   };
 }
 
+function scheduledOwnerReviewWake(
+  reason: string,
+  params: Record<string, unknown>,
+): AppEvent<Record<string, unknown>> {
+  return {
+    type: "project.owner.review.requested",
+    source: "aks-rp-e2e-app",
+    target: { appId: projectId, project: projectId },
+    data: { project: projectId, reason, params },
+  };
+}
+
 const app = defineApp({
   id: projectId,
   version: 1,
@@ -972,11 +986,10 @@ const app = defineApp({
     {
       id: "regular-learning",
       intervalMs: 3_600_000,
-      input: ownerReviewInput("scheduled-learning", {
+      event: scheduledOwnerReviewWake("scheduled-learning", {
         lane: "learning",
         maxConcurrent: domainPolicyMaxConcurrent,
       }),
-      catchUp: "latest",
     },
     {
       id: "durable-spec-loop-pulse",
@@ -1017,12 +1030,11 @@ const app = defineApp({
     {
       id: "app-ops-heartbeat",
       intervalMs: 14_400_000,
-      input: ownerReviewInput("app-ops-heartbeat", {
+      event: scheduledOwnerReviewWake("app-ops-heartbeat", {
         maxConcurrent: domainPolicyMaxConcurrent,
         instruction:
           "Review missed project motion opportunities that fixed schedules and metrics did not catch; take one bounded useful step or record an exact evidence-backed no-op.",
       }),
-      catchUp: "latest",
     },
   ],
   actions: {

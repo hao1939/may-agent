@@ -202,10 +202,14 @@ function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 10);
 }
 
-function ensureFreshTaskId(baseId: string, historicalIds: string[]): string {
+function ensureFreshTaskId(
+  baseId: string,
+  historicalIds: string[],
+  projectionScope?: string,
+): string {
   const occupied = new Set(historicalIds);
-  if (!occupied.has(baseId)) return baseId;
-  const seed = [...occupied].sort().join(":");
+  if (!projectionScope && !occupied.has(baseId)) return baseId;
+  const seed = [projectionScope ?? "occupied", ...occupied].sort().join(":");
   for (let attempt = 1; attempt < 1000; attempt += 1) {
     const candidate = `${baseId}-${digest(`${seed}:${attempt}`)}`;
     if (!occupied.has(candidate)) return candidate;
@@ -348,9 +352,16 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     .map(([specId, spec]) => {
       if (hasStructuredDisposition(spec)) {
         const reviewedRepresentation = representationReview(graph, spec);
+        // Completion receipts are immutable and the runtime intentionally
+        // bounds the parent's completed-child projection. Never reuse the
+        // deterministic repair base merely because an older receipt fell out
+        // of this projection; bind a collision-safe identity to this exact
+        // parent projection instead. A rejected batch advances resourceVersion,
+        // so the next bounded attempt cannot repeat the same hidden collision.
         const taskId = ensureFreshTaskId(
           dispositionRepairId(specId, spec),
           historicalIds,
+          `repair-projection:${ctx.reconciliation?.generation ?? 0}:${ctx.reconciliation?.resourceVersion ?? 0}`,
         );
         return {
           kind: "create-task",

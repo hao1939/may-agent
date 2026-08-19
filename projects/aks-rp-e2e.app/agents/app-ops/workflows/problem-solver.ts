@@ -70,9 +70,9 @@ function problemKeyFromTrigger(
   taskInput?: Record<string, unknown> | null,
 ) {
   return (
+    taskInputString(taskInput ?? null, "problemKey", "problem_key") ||
     triggerString(trigger, "problemKey") ||
     triggerString(trigger, "problem_key") ||
-    taskInputString(taskInput ?? null, "problemKey", "problem_key") ||
     triggerString(trigger, "taskId") ||
     triggerString(trigger, "task_id") ||
     `problem_${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}`
@@ -230,13 +230,13 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const trigger = parseTriggerEvent(ctx);
   const taskInput = problemSolverTaskInput(ctx);
   const agent = field(ctx, "owner") ?? field(ctx, "agent") ?? "aks-explorer";
-  const recoveredFromTaskTick =
-    trigger?.type === "project.task.tick" &&
-    Boolean(taskInput && Object.keys(taskInput).length > 0);
+  const hasAdmittedProblem = Boolean(
+    taskInputString(taskInput, "problemKey", "problem_key"),
+  );
 
   if (
     trigger?.type !== "project.problem.investigation.requested" &&
-    !recoveredFromTaskTick
+    !hasAdmittedProblem
   ) {
     const summary = `Problem solver ignored trigger ${String(trigger?.type ?? "unknown")}; use project.problem.investigation.requested.`;
     return finishProblemSolver(ctx, {
@@ -247,14 +247,18 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   }
 
   const problemKey = problemKeyFromTrigger(trigger, taskInput);
-  const affectedTaskFromTrigger = recoveredFromTaskTick
-    ? []
-    : [triggerString(trigger, "taskId"), triggerString(trigger, "task_id")];
+  const affectedTaskFromTrigger =
+    trigger?.type === "project.problem.investigation.requested"
+      ? [
+          ...stringList(triggerValue(trigger, "affectedTasks")),
+          ...stringList(triggerValue(trigger, "affected_tasks")),
+          triggerString(trigger, "taskId"),
+          triggerString(trigger, "task_id"),
+        ]
+      : [];
   const affectedTasks = [
     ...new Set(
       [
-        ...stringList(triggerValue(trigger, "affectedTasks")),
-        ...stringList(triggerValue(trigger, "affected_tasks")),
         ...stringList(taskInput?.affectedTasks),
         ...stringList(taskInput?.affected_tasks),
         ...affectedTaskFromTrigger,

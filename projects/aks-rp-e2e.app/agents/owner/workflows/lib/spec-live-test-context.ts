@@ -41,6 +41,7 @@ export function createSpecLiveTestContext(
         live: options.liveChildren ?? [],
         completed: options.completedChildren ?? [],
       },
+      events: { items: [], truncated: false },
       taskSnapshot: { live: [], truncated: false },
       ...(options.trigger ? { trigger: options.trigger } : {}),
     },
