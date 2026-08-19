@@ -37,24 +37,19 @@ describe("app runtime startup order", () => {
     expect(source).toContain("else if (CONSOLE_ENABLED && process.stdin.isTTY)");
   });
 
-  it("enables App delivery only after human transports are attached", () => {
+  it("does not couple Task completion to a transport delivery gate", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    const telegram = source.indexOf("telegramBot = TELEGRAM_ENABLED");
-    const externalIngress = source.indexOf("await startInterfaceRuntime(");
-    const delivery = source.indexOf("appInboxRuntime?.enableDelivery()");
-
-    expect(delivery).toBeGreaterThan(telegram);
-    expect(delivery).toBeGreaterThan(externalIngress);
+    expect(source).not.toContain("enableDelivery");
+    expect(source).not.toContain("setEventPublisher");
   });
 
-  it("runs App owners through the Host capacity directly", () => {
+  it("uses configured Host capacity without an App-owner execution path", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).toContain("const hostCapacity = new HostCapacity");
     expect(source).toContain("process.env.MAY_HOST_MAX_CONCURRENT ?? 4");
     expect(source).toContain("maxConcurrentRequests: configuredHostConcurrency");
-    expect(source).toContain('context.appId === "may" && context.humanOrigin');
-    expect(source).toContain("hostCapacity.runForeground(work)");
-    expect(source).not.toContain("runOwner: appTasks.runOwner");
+    expect(source).not.toContain("runOwner:");
+    expect(source).not.toContain("createManagerAppOwnerInvoker");
   });
 
   it("publishes inbox and canonical task routes in one registry transaction", () => {

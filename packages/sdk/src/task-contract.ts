@@ -1,6 +1,13 @@
 import { Type } from "typebox";
 import { Check, Errors } from "typebox/value";
-import type { Condition, TaskAction, TaskMode, TaskReconcileResult, TaskVerificationResult } from "./task.js";
+import type {
+  Condition,
+  TaskAction,
+  TaskAppDependency,
+  TaskMode,
+  TaskReconcileResult,
+  TaskVerificationResult,
+} from "./task.js";
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 
@@ -86,9 +93,23 @@ export const conditionSchema = Type.Object(
 
 const resultFields = {
   summary: nonEmptyStringSchema,
+  response: Type.Optional(nonEmptyStringSchema),
   evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
+  dependencies: Type.Optional(
+    Type.Array(
+      Type.Object(
+        {
+          id: nonEmptyStringSchema,
+          appId: nonEmptyStringSchema,
+          input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
+        },
+        { additionalProperties: false },
+      ),
+      { maxItems: 8 },
+    ),
+  ),
 };
 
 /** Model-output schema for a resolved owner. */
@@ -389,8 +410,13 @@ export function admitTaskReconcileResult(
 
   if (output.state === "needs-owner") {
     if (!options.allowNeedsOwner) return { ok: false, error: "a resolved owner cannot return needs-owner" };
-    if (output.actions !== undefined || output.conditions !== undefined) {
-      return { ok: false, error: "needs-owner cannot include actions or Conditions" };
+    if (
+      output.response !== undefined ||
+      output.actions !== undefined ||
+      output.conditions !== undefined ||
+      output.dependencies !== undefined
+    ) {
+      return { ok: false, error: "needs-owner cannot include response, actions, Conditions, or dependencies" };
     }
     if (!Check(taskReconcileResultSchema, output)) {
       const first = [...Errors(taskReconcileResultSchema, output)][0];
@@ -408,6 +434,8 @@ export function admitTaskReconcileResult(
     return { ok: false, error: "state must be converged, waiting, or needs-owner" };
   }
   const admittedOutput = output as Record<string, unknown>;
+  const response = optionalString(admittedOutput, "response");
+  if (!response.ok) return { ok: false, error: "response must be a non-empty string" };
 
   const rawActions = admittedOutput.actions ?? [];
   if (!Array.isArray(rawActions)) return { ok: false, error: "actions must be an array" };
@@ -431,6 +459,32 @@ export function admitTaskReconcileResult(
   if (output.state !== "waiting" && conditions.length > 0) {
     return { ok: false, error: "Conditions are valid only for waiting" };
   }
+  const rawDependencies = admittedOutput.dependencies ?? [];
+  if (!Array.isArray(rawDependencies)) return { ok: false, error: "dependencies must be an array" };
+  if (rawDependencies.length > 8) return { ok: false, error: "dependencies exceed the 8-entry limit" };
+  const dependencies: TaskAppDependency[] = [];
+  const dependencyIds = new Set<string>();
+  for (let index = 0; index < rawDependencies.length; index += 1) {
+    const dependency = rawDependencies[index];
+    if (!isRecord(dependency)) return { ok: false, error: `dependencies[${index}] must be an object` };
+    const id = normalizedString(dependency.id);
+    const appId = normalizedString(dependency.appId);
+    if (!id) return { ok: false, error: `dependencies[${index}].id must be a non-empty string` };
+    if (!appId) return { ok: false, error: `dependencies[${index}].appId must be a non-empty string` };
+    if (dependencyIds.has(id)) return { ok: false, error: `dependencies contains duplicate id ${id}` };
+    if (!isRecord(dependency.input) || !nonEmptyString(dependency.input.kind) || !("data" in dependency.input)) {
+      return { ok: false, error: `dependencies[${index}].input must contain kind and data` };
+    }
+    dependencyIds.add(id);
+    dependencies.push({
+      id,
+      appId,
+      input: { kind: dependency.input.kind.trim(), data: structuredClone(dependency.input.data) },
+    });
+  }
+  if (output.state !== "waiting" && dependencies.length > 0) {
+    return { ok: false, error: "dependencies are valid only for waiting" };
+  }
   if (!Check(taskReconcileResultSchema, output)) {
     const first = [...Errors(taskReconcileResultSchema, output)][0];
     return {
@@ -444,9 +498,11 @@ export function admitTaskReconcileResult(
     result: {
       state: output.state,
       summary: output.summary.trim(),
+      ...(response.value ? { response: response.value } : {}),
       evidence,
       actions,
       ...(conditions.length > 0 ? { conditions } : {}),
+      ...(dependencies.length > 0 ? { dependencies } : {}),
     },
   };
 }

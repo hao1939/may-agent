@@ -272,6 +272,7 @@ export type SystemEvent =
       source?: string;
       owner: string;
       data: {
+        requestId?: string;
         appId: string;
         input: { kind: string; data: unknown };
         source?: { kind: "human" | "app" | "system"; id: string };
@@ -290,7 +291,14 @@ export type SystemEvent =
       type: "app.dependency.completed";
       source?: string;
       owner: string;
-      data: { kind: "app" | "task" | "session"; id: string };
+      data: {
+        kind: "app" | "task" | "session";
+        id: string;
+        status?: string;
+        summary?: string;
+        response?: string;
+        evidence?: string[];
+      };
     }
   | {
       /** Wake-only observation; the requester re-reads exact dependency state. */
@@ -298,26 +306,6 @@ export type SystemEvent =
       source?: string;
       owner: string;
       data: { kind: "app" | "task" | "session"; id: string };
-    }
-  | {
-      type: "app.response.delivery.requested";
-      source: "app-inbox";
-      owner: string;
-      target: { human: true } | { agent: string };
-      data: {
-        appId: string;
-        operationId: string;
-        appInboxItemId: string;
-        appInboxRequestId: string;
-        deliveryKind?: "progress" | "final";
-        sessionId: string;
-        channel: string;
-        channelTargetId?: string;
-        channelThreadId?: string;
-        channelMessageId?: number;
-        conversationId?: string;
-        text: string;
-      };
     }
   | {
       type: "channel.delivery.completed" | "channel.delivery.failed";

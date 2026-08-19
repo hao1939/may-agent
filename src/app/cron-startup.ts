@@ -7,7 +7,8 @@ import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
 import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
 import { recoverInstalledAppTasks } from "./app-task-runtime.js";
-import { APP_INBOX_RECOVERY_OWNER } from "./app-inbox-host.js";
+
+const LEGACY_APP_INBOX_RECOVERY_OWNER = "app-inbox";
 
 export interface CronRuntimeOptions {
   manager: SubagentManager;
@@ -40,10 +41,10 @@ export function shouldResumeStartupSession(
   session: PersistedSession,
   claimedAppTaskSessionIds: ReadonlySet<string> = new Set(),
 ): { resume: true } | { resume: false; reason?: string } {
-  if (session.recoveryOwner === APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
+  if (session.recoveryOwner === LEGACY_APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
       resume: false,
-      reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
+      reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
     };
   }
   if (

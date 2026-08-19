@@ -11,7 +11,16 @@ describe("canonical App definition validation", () => {
       version: 1,
       owner: "evaluator",
       inputSchema,
-      route: () => null,
+      task: ({ id, input }) => ({
+        kind: "desired",
+        intent: {
+          id: `input/${id}`,
+          parentId: "evaluation",
+          outcome: `Handle ${input.kind}`,
+          acceptance: ["Input handled"],
+          mode: "achieve",
+        },
+      }),
       inbox: { batch: "single", maxConcurrent: 2 },
       subscriptions: [
         {
@@ -46,7 +55,6 @@ describe("canonical App definition validation", () => {
       },
       workspace: { kind: "local", localPath: "." },
       tasks: {
-        attach: true,
         subscriptions: ["evaluation.task.requested"],
         resolve: () => null,
         maxConcurrent: 2,
@@ -57,14 +65,13 @@ describe("canonical App definition validation", () => {
     expect(validateAppDefinition(definition)).toEqual([]);
   });
 
-  it("rejects ambiguous and incomplete canonical routes", () => {
+  it("rejects malformed canonical declarations", () => {
     expect(
       validateAppDefinition({
         id: "broken",
         version: 1,
         owner: "owner",
         inputSchema: {},
-        route: "owner",
         subscriptions: [
           { id: "same", event: "one" },
           { id: "same", event: {}, toInput() {} },
@@ -91,7 +98,6 @@ describe("canonical App definition validation", () => {
     ).toEqual(
       expect.arrayContaining([
         "App broken subscription id is duplicated: same",
-        "App broken route must be a function",
         "App broken subscription same requires toInput",
         "App broken subscription same requires a valid event selector",
         "App broken observations must contain valid event selectors",
@@ -104,5 +110,17 @@ describe("canonical App definition validation", () => {
         "App broken task subscriptions require resolve",
       ]),
     );
+  });
+
+  it("requires Task policy whenever input resolves to a Task", () => {
+    expect(
+      validateAppDefinition({
+        id: "missing-task-policy",
+        version: 1,
+        owner: "owner",
+        inputSchema,
+        task: () => ({ kind: "existing", taskId: "work/current" }),
+      }),
+    ).toContain("App missing-task-policy task requires a tasks policy");
   });
 });

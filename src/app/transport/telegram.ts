@@ -128,6 +128,7 @@ function formatWorkRef(ref: AppWorkView["executor"]): string | undefined {
 
 function renderTelegramConversationMessage(message: AppConversationMessage): string {
   const channel = message.metadata?.channel?.trim() || "another surface";
+  if (channel === "telegram" && message.author.kind === "agent") return message.text;
   const surface = channel === "may-console" ? "Console" : channel;
   const speaker =
     message.author.kind === "human"
@@ -235,10 +236,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         renderedConversationMessages.add(message.id);
         continue;
       }
-      if (!pendingChatId) return;
-      const delivered = await sendMessage(pendingChatId, renderTelegramConversationMessage(message), undefined, {
+      const targetChatId = message.metadata?.channelTargetId ?? pendingChatId;
+      if (!targetChatId) return;
+      const threadId = message.metadata?.channelThreadId;
+      const delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
         eventType: "conversation.mirror",
         agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
+        ...(threadId && /^[1-9]\d*$/.test(threadId) ? { messageThreadId: Number(threadId) } : {}),
+        ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
         data: JSON.stringify({
           direction: "mirror",
           conversationId: sharedConversationId,

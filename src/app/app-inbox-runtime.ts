@@ -7,16 +7,13 @@ import {
   type ObserverContext,
   type TaskIntent,
 } from "@may-agent/sdk";
-import type { EventInput, EventReceipt } from "../../packages/control/src/protocol.js";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import {
   AppInboxHost,
-  type AppAnalysisAttacher,
   type AppInboxReconcileResult,
   type AppTaskAttacher,
 } from "./app-inbox-host.js";
-import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
   completeAppEventAdmissionPlan,
@@ -41,18 +38,14 @@ export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
-  setEventPublisher(publish: (input: EventInput, source: AppInputSource) => EventReceipt): void;
-  enableDelivery(): void;
   reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
 };
 
 export type StartAppInboxRuntimeOptions = {
   registry: AppRegistry;
   db: SqliteDb;
-  manager: AppOwnerManager;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
-  attachAnalysis?: AppAnalysisAttacher;
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -65,9 +58,8 @@ export type StartAppInboxRuntimeOptions = {
   readDependency?: (input: {
     appId: string;
     appDir: string;
-    dependency: { kind: "task" | "session" | "analysis"; id: string };
+    dependency: { kind: "task"; id: string };
   }) => Promise<AppDependencyObservation | null>;
-  runOwner?: <T>(work: () => Promise<T>, context: { appId: string; humanOrigin: boolean }) => Promise<T>;
   /** Maximum request batches the Host may process at once. */
   maxConcurrentRequests?: number;
   scanIntervalMs?: number;
@@ -183,11 +175,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   if (loaded.some((entry) => (entry.definition.observers?.length ?? 0) > 0) && !options.observerContext) {
     throw new Error("Canonical App observers require an observer context factory");
   }
-  for (const { definition } of loaded) {
-    if (!options.manager.hasAgent(definition.owner)) {
-      throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
-    }
-  }
   let appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
   const attachTask: AppTaskAttacher | undefined = options.attachTask
     ? async (input) => {
@@ -197,7 +184,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     : undefined;
 
-  const invokeOwner = createManagerAppOwnerInvoker(options.manager);
   const notifyConversationUpdated = (appId: string, conversationId?: string): void => {
     const normalizedAppId = appId.trim();
     const normalizedConversationId = conversationId?.trim();
@@ -212,15 +198,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
-    invokeOwner: options.runOwner
-      ? (input) =>
-          options.runOwner!(() => invokeOwner(input), {
-            appId: input.app.id,
-            humanOrigin: input.requests.some((request) => request.source.kind === "human"),
-          })
-      : invokeOwner,
     attachTask,
-    attachAnalysis: options.attachAnalysis,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
@@ -232,8 +210,23 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     retryAfterMs: options.retryAfterMs,
     maxBatchSize: options.maxBatchSize,
     onConversationChanged: notifyConversationUpdated,
+    onRequestCompleted(item, result) {
+      if (item.source.kind !== "app") return;
+      options.bus.emit({
+        type: "app.dependency.completed",
+        source: `app-inbox:${item.appId}`,
+        owner: `app:${item.source.id}`,
+        data: {
+          kind: "app",
+          id: item.id,
+          status: "done",
+          summary: result.summary,
+          ...(result.response ? { response: result.response } : {}),
+          ...(result.evidence ? { evidence: result.evidence } : {}),
+        },
+      });
+    },
   });
-  host.recoverDeliveries();
   const active = new Map<string, number>();
   const dirty = new Set<string>();
   const pending: string[] = [];
@@ -243,8 +236,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("App request concurrency must be a positive safe integer");
   }
   let closed = false;
-  let deliveryEnabled = false;
-  let dispatchingDelivery = false;
   const now = options.now ?? Date.now;
   const observerRuntime = createAppObserverRuntime({
     bus: options.bus,
@@ -255,37 +246,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
   });
   observerRuntime.replace(loaded);
-  let publishEvent: ((input: EventInput, source: AppInputSource) => EventReceipt) | undefined;
-  let publishingDelegations = false;
-  const publishPendingDelegations = (): void => {
-    if (!publishEvent || publishingDelegations) return;
-    publishingDelegations = true;
-    try {
-      for (const delegation of host.pendingDelegations()) {
-        try {
-          const receipt = publishEvent(
-            {
-              type: "app.input.requested",
-              target: { appId: delegation.appId },
-              data: { input: delegation.input, parentId: delegation.parentId },
-              idempotencyKey: delegation.idempotencyKey,
-            },
-            delegation.source,
-          );
-          if (receipt.delivery !== "accepted") {
-            throw new Error(`event ${receipt.eventId} remains ${receipt.delivery}`);
-          }
-        } catch (error) {
-          options.bus.emit({
-            type: "info",
-            message: `[app-inbox:delegation] ${error instanceof Error ? error.message : String(error)}`,
-          });
-        }
-      }
-    } finally {
-      publishingDelegations = false;
-    }
-  };
   const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
 
   const refreshScheduleActivations = (): void => {
@@ -316,59 +276,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
   refreshScheduleActivations();
-
-  const pumpDeliveries = (): void => {
-    if (closed || !deliveryEnabled || dispatchingDelivery) return;
-    dispatchingDelivery = true;
-    try {
-      for (;;) {
-        const dispatch = host.claimDelivery();
-        if (!dispatch) break;
-        const { delivery, item, text } = dispatch;
-        try {
-          options.bus.emit({
-            type: "app.response.delivery.requested",
-            source: "app-inbox",
-            owner: `app:${item.appId}`,
-            target: delivery.channel.startsWith("agent:")
-              ? { agent: delivery.channel.slice("agent:".length) }
-              : { human: true },
-            data: {
-              appId: item.appId,
-              operationId: delivery.operationId,
-              appInboxItemId: delivery.itemId,
-              appInboxRequestId: delivery.requestId,
-              deliveryKind: delivery.kind,
-              sessionId: delivery.sessionId,
-              channel: delivery.channel,
-              channelTargetId: item.channelTargetId,
-              channelThreadId: item.channelThreadId,
-              channelMessageId: item.channelMessageId,
-              conversationId: item.conversationId,
-              text,
-            },
-          });
-        } catch (error) {
-          // Event persistence runs before transport subscribers. If it failed,
-          // no external send started and this outbox operation is safe to retry.
-          host.restoreDelivery(delivery.operationId);
-          throw error;
-        }
-      }
-    } catch (error) {
-      try {
-        options.bus.emit({
-          type: "info",
-          message: `[app-inbox:delivery] ${error instanceof Error ? error.message : String(error)}`,
-        });
-      } catch {
-        // Persistence is already known to be unavailable; avoid turning the
-        // diagnostic path into a second outbox failure.
-      }
-    } finally {
-      dispatchingDelivery = false;
-    }
-  };
 
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
     if (outcome.errors.length === 0) return;
@@ -403,8 +310,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           for (const conversationId of outcome.conversationIds ?? []) {
             notifyConversationUpdated(appId, conversationId);
           }
-          publishPendingDelegations();
-          pumpDeliveries();
         })
         .catch((error) => {
           options.bus.emit({
@@ -438,39 +343,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     pump();
   };
 
-  let sessionRecovery: Promise<void> | null = null;
-  const recoverSessionDependencies = (includeAssociatedClaims = false): Promise<void> => {
-    if (sessionRecovery) return sessionRecovery;
-    const current = host
-      .recoverSessionDependencies({ includeAssociatedClaims })
-      .then((outcome) => {
-        for (const appId of outcome.wokenAppIds) schedule(appId);
-        if (outcome.errors.length > 0) {
-          options.bus.emit({
-            type: "info",
-            message: `[app-inbox:session-recovery] ${outcome.errors.join("; ")}`,
-          });
-        }
-      })
-      .finally(() => {
-        if (sessionRecovery === current) sessionRecovery = null;
-      });
-    sessionRecovery = current;
-    return current;
-  };
-
-  const recoverAnalysisDependencies = (): Promise<void> => {
-    return host.recoverAnalysisDependencies().then((outcome) => {
-      for (const appId of outcome.wokenAppIds) schedule(appId);
-      if (outcome.errors.length > 0) {
-        options.bus.emit({
-          type: "info",
-          message: `[app-inbox:analysis-recovery] ${outcome.errors.join("; ")}`,
-        });
-      }
-    });
-  };
-
   let taskRecovery: Promise<void> | null = null;
   const recoverTaskDependencies = (): Promise<void> => {
     if (taskRecovery) return taskRecovery;
@@ -493,7 +365,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const scanNow = () => {
-    publishPendingDelegations();
     const currentTime = now();
     for (const { definition } of loaded) {
       for (const configuredSchedule of definition.schedules ?? []) {
@@ -538,9 +409,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     for (const appId of host.appIds()) schedule(appId);
     observerRuntime.scanNow();
-    void recoverSessionDependencies();
     void recoverTaskDependencies();
-    pumpDeliveries();
   };
 
   const admissionRouteLabel = (command: AppEventAdmissionCommand): string =>
@@ -628,6 +497,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const routeSnapshot = registrySnapshot;
     const routeGeneration = routeSnapshot.generation;
     const data = eventData(event);
+    let dependencyWakeDelivery: DeliveryResult | undefined;
     const message = addressedAgentMessage(event);
     if (message) {
       const candidates = host.matchingAppIds(message.targetOwner, message.input);
@@ -721,6 +591,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";
       const identity = eventIdentity(event);
       const admitted = host.admit({
+        id: typeof data.requestId === "string" ? data.requestId.trim() || undefined : undefined,
         appId,
         source: inputSource(data.source, identity ?? `event:${event.type}`),
         input: requestedInput(data),
@@ -744,88 +615,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       schedule(admitted.item.appId);
       return { accepted: true, by: `app-inbox:${admitted.item.appId}` };
     }
-    if (event.type === "app.response.delivery.requested") {
-      const channel = typeof data.channel === "string" ? data.channel.trim() : "";
-      const target = channel.startsWith("agent:") ? normalizedAgent(channel.slice("agent:".length)) : undefined;
-      const operationId = typeof data.operationId === "string" ? data.operationId.trim() : "";
-      const itemId = typeof data.appInboxItemId === "string" ? data.appInboxItemId.trim() : "";
-      const requestId = typeof data.appInboxRequestId === "string" ? data.appInboxRequestId.trim() : "";
-      const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
-      const appId = typeof data.appId === "string" ? data.appId.trim() : "";
-      const response = typeof data.text === "string" ? data.text.trim() : "";
-      if (target && operationId && itemId && requestId && sessionId && appId && response) {
-        try {
-          const outbound = options.bus.emit({
-            type: "message.created",
-            source: `app:${appId}`,
-            owner: `agent:${target}`,
-            data: {
-              from: appId,
-              to: target,
-              content: response,
-              intent: "result",
-              priority: "P2",
-              sourceSessionId: sessionId,
-              sourceAppId: appId,
-              appResponseFor: itemId,
-              appDeliveryOperationId: operationId,
-              idempotencyKey: operationId,
-            },
-          });
-          const outboundEventId = Number(outbound[EVENT_ROW_ID]);
-          const outcome = host.recordDelivery({
-            operationId,
-            itemId,
-            requestId,
-            sessionId,
-            channel,
-            status: "delivered",
-            externalMessageId:
-              Number.isSafeInteger(outboundEventId) && outboundEventId > 0 ? String(outboundEventId) : undefined,
-            eventId: Number.isSafeInteger(outboundEventId) && outboundEventId > 0 ? outboundEventId : undefined,
-          });
-          if (!outcome.matched) {
-            throw new Error(`Internal App delivery ${operationId} no longer matches its outbox row`);
-          }
-          if (outcome.completed) scanNow();
-          options.bus.emit({
-            type: "channel.delivery.completed",
-            source: "app-inbox:agent-message",
-            owner: `app:${appId}`,
-            target: { agent: target },
-            data: {
-              channel,
-              sessionId,
-              resultEventType: event.type,
-              operationId,
-              appInboxItemId: itemId,
-              appInboxRequestId: requestId,
-              ...(Number.isSafeInteger(outboundEventId) && outboundEventId > 0
-                ? { externalMessageId: String(outboundEventId) }
-                : {}),
-            },
-          });
-          return { accepted: true, by: `app-inbox:agent-delivery:${itemId}`, route: "direct" };
-        } catch (error) {
-          const retry = setTimeout(() => {
-            if (host.restoreDelivery(operationId)) pumpDeliveries();
-          }, options.retryAfterMs ?? 1_000);
-          retry.unref?.();
-          return {
-            accepted: true,
-            by: `app-inbox:agent-delivery-retry:${itemId}`,
-            route: "direct",
-            note: error instanceof Error ? error.message : String(error),
-          };
-        }
-      }
-    }
     if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
       const kind = data.kind;
       const id = typeof data.id === "string" ? data.id.trim() : "";
       if ((kind === "app" || kind === "task" || kind === "session") && id) {
         if (host.wake({ kind, id }) > 0) scanNow();
-        return { accepted: true, by: "app-inbox:wake" };
+        // One dependency Event may advance both an inbox request and one or
+        // more Tasks. Preserve the direct inbox wake, then continue through
+        // canonical Task-Condition admission below.
+        dependencyWakeDelivery = { accepted: true, by: "app-inbox:wake" };
       }
     }
     if (event.type === "cli.task.completed" || event.type === "cli.task.failed" || event.type === "cli.task.orphaned") {
@@ -836,48 +634,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
       if (sessionId && host.wake({ kind: "session", id: sessionId }) > 0) {
         scanNow();
-      }
-    }
-    if (event.type === "channel.delivery.completed" || event.type === "channel.delivery.failed") {
-      const operationId = typeof data.operationId === "string" ? data.operationId.trim() : "";
-      const itemId = typeof data.appInboxItemId === "string" ? data.appInboxItemId.trim() : "";
-      const requestId = typeof data.appInboxRequestId === "string" ? data.appInboxRequestId.trim() : "";
-      const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
-      const channel = typeof data.channel === "string" ? data.channel.trim() : "";
-      if (operationId && itemId && requestId && sessionId && channel) {
-        if (event.type === "channel.delivery.failed" && data.certainty === "not-delivered") {
-          if (host.restoreDelivery(operationId)) {
-            const retry = setTimeout(pumpDeliveries, options.retryAfterMs ?? 1_000);
-            retry.unref?.();
-          }
-          return { accepted: true, by: `app-inbox:delivery-retry:${itemId}` };
-        }
-        const external = data.externalMessageId;
-        const outcome = host.recordDelivery({
-          operationId,
-          itemId,
-          requestId,
-          sessionId,
-          channel,
-          status:
-            event.type === "channel.delivery.completed"
-              ? "delivered"
-              : data.certainty === "not-delivered"
-                ? "failed"
-                : "uncertain",
-          externalMessageId:
-            typeof external === "string" || typeof external === "number" ? String(external) : undefined,
-          reason: typeof data.reason === "string" ? data.reason : undefined,
-          eventId: Number(eventIdentity(event)?.replace(/^event:/, "")) || undefined,
-        });
-        if (outcome.matched) {
-          if (outcome.completed) scanNow();
-          if (event.type === "channel.delivery.completed") {
-            const item = host.get(itemId);
-            if (item) notifyConversationUpdated(item.appId, item.conversationId);
-          }
-          return { accepted: true, by: `app-inbox:delivery:${itemId}` };
-        }
       }
     }
     const identity = eventIdentity(event);
@@ -1019,14 +775,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         };
       }
     }
+    return dependencyWakeDelivery;
   });
   const scanIntervalMs = options.scanIntervalMs ?? 5_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
     unsubscribe();
     throw new Error("App inbox scanIntervalMs must be positive");
   }
-  await recoverSessionDependencies(true);
-  await recoverAnalysisDependencies();
   await recoverTaskDependencies();
   const timer = setInterval(scanNow, scanIntervalMs);
   timer.unref?.();
@@ -1035,18 +790,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
-    setEventPublisher(publish) {
-      publishEvent = publish;
-      scanNow();
-    },
     async reload(prepare) {
       const previousDefinitions = loaded.map((entry) => entry.definition);
       const next = await options.registry.reload(async (snapshot) => {
-        for (const { definition } of snapshot.entries) {
-          if (!options.manager.hasAgent(definition.owner)) {
-            throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
-          }
-        }
         if (
           snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
           !options.observerContext
@@ -1075,11 +821,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       refreshScheduleActivations();
       scanNow();
       return host.appIds();
-    },
-    enableDelivery() {
-      if (closed || deliveryEnabled) return;
-      deliveryEnabled = true;
-      pumpDeliveries();
     },
     close() {
       if (closed) return;

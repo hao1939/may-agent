@@ -157,34 +157,19 @@ describe("May Console", () => {
                 item.event?.type === "conversation.message.created" &&
                 item.event?.data?.author?.kind === "human",
             ).length;
-            const sessionId = `s_may_turn_${turn}`;
-            if (turn > 1) {
-              socket.write(
-                `${JSON.stringify({
-                  type: "session.start",
-                  data: { sessionId, agent: "may", status: "running", kind: "job", task: "bounded May turn" },
-                })}\n`,
-              );
-            }
-            socket.write(`${JSON.stringify({ type: "text", sessionId, text: `May response ${turn}\n` })}\n`);
+            remoteConversationMessages.push({
+              id: `may-turn-${turn}`,
+              sequence: turn + 2,
+              author: { kind: "agent", id: "may" },
+              text: `May response ${turn}`,
+              metadata: { channel: "may-console" },
+              createdAt: turn + 2,
+            });
             socket.write(
               `${JSON.stringify({
-                type: "session.end",
-                data: { sessionId, agent: "may", status: "done", kind: "job", summary: `May response ${turn}` },
-              })}\n`,
-            );
-            socket.write(
-              `${JSON.stringify({
-                type: "app.response.delivery.requested",
+                type: "conversation.updated",
                 owner: "app:may",
-                data: {
-                  channel: "may-console",
-                  sessionId,
-                  operationId: `app-delivery:item-${turn}:1`,
-                  appInboxItemId: `item-${turn}`,
-                  appInboxRequestId: `app-inbox-human:item-${turn}`,
-                  text: `May response ${turn}`,
-                },
+                data: { appId: "may", conversationId: "may:primary" },
               })}\n`,
             );
           } else {
@@ -233,7 +218,7 @@ describe("May Console", () => {
     );
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
-      deliveryChannel: "may-console",
+      conversations: ["may:primary"],
     });
     expect(output).not.toContain("focused work");
 
@@ -340,18 +325,7 @@ describe("May Console", () => {
     await waitFor(() => output.includes("\nmay> May response 2\n\nyou> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
-    await waitFor(() => frames.some((frame) => frame.type === "channel.delivery.completed"));
-    expect(
-      frames.find((frame) => frame.type === "channel.delivery.completed" && frame.data?.appInboxItemId === "item-2"),
-    ).toMatchObject({
-      source: "may-console",
-      owner: "app:may",
-      data: {
-        channel: "may-console",
-        appInboxItemId: "item-2",
-        appInboxRequestId: "app-inbox-human:item-2",
-      },
-    });
+    expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);
 
     child.stdin.write("/steer s_worker use the smaller plan\n");
     await waitFor(() => frames.some((frame) => frame.type === "session.steer.requested"));
@@ -376,6 +350,7 @@ describe("May Console", () => {
     await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 5);
     expect(frames.filter((frame) => frame.type === "subscribe")[4]?.sessions).toEqual([]);
 
+    const beforeTelegramSync = frames.filter((frame) => frame.type === "app.conversation.get").length;
     remoteConversationMessages.push({
       id: "telegram-human-1",
       sequence: 3,
@@ -392,9 +367,12 @@ describe("May Console", () => {
         data: { appId: "may", conversationId: "may:primary" },
       })}\n`,
     );
-    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 7);
+    await waitFor(
+      () => frames.filter((frame) => frame.type === "app.conversation.get").length === beforeTelegramSync + 1,
+    );
     await waitFor(() => output.includes("\nyou[telegram]> Message sent from Telegram\n\n"));
 
+    const beforeConsoleSync = frames.filter((frame) => frame.type === "app.conversation.get").length;
     remoteConversationMessages.push({
       id: "may-console:another-process:4",
       sequence: 4,
@@ -411,7 +389,9 @@ describe("May Console", () => {
         data: { appId: "may", conversationId: "may:primary" },
       })}\n`,
     );
-    await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 8);
+    await waitFor(
+      () => frames.filter((frame) => frame.type === "app.conversation.get").length === beforeConsoleSync + 1,
+    );
     await waitFor(() => output.includes("\nyou> Message sent from another Console\n\n"));
 
     child.stdin.write("/exit\n");

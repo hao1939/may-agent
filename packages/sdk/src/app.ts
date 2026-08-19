@@ -17,8 +17,12 @@ export type {
   MetricView,
   ObserverContext,
   TaskView,
+  TaskListOptions,
+  TaskPage,
   TaskReconciliationChild,
   TaskReconciliationContext,
+  TaskReconciliationEvent,
+  TaskReconciliationEvents,
   WorkflowContext,
   WorkflowInput,
   WorkflowMetricCapability,
@@ -93,6 +97,7 @@ export type AppConversationMessage = {
   replyTo?: string;
   metadata?: {
     channel?: string;
+    channelTargetId?: string;
     channelThreadId?: string;
     channelMessageId?: number;
     requestId?: string;
@@ -131,43 +136,15 @@ export type AppRequest<TData = unknown> = {
   conversation?: AppConversationResource;
 };
 
+/** Pure, durable identity supplied when an admitted App input is resolved to work. */
+export type AppTaskInput<TData = unknown> = {
+  /** Opaque Host identity for this admitted input; safe for stable free-form task IDs. */
+  id: string;
+  source: AppInputSource;
+  input: AppInput<TData>;
+};
+
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
-
-/** One bounded, non-mutating evidence request owned and reviewed by May. */
-export type AppAnalysisRequest = {
-  tool: "codex" | "claude";
-  question: string;
-  cwd?: string;
-  files?: string[];
-  timeoutMs: number;
-  expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
-};
-
-/** The complete lifecycle vocabulary returned by an App owner. */
-export type AppWorkDisposition =
-  | { type: "complete"; summary: string; response?: string; evidence?: string[] }
-  | {
-      type: "delegate";
-      appId: string;
-      input: AppInput;
-      reviewAfterMs?: number;
-    }
-  | { type: "task"; task: AppTaskAttachment }
-  | { type: "analyze"; analysis: AppAnalysisRequest; acknowledgement?: string };
-
-/**
- * One May conversation turn may advance represented unfinished work directly.
- * The Host fences requestId to May-owned work in the same Conversation.
- */
-export type AppContinueDisposition = {
-  type: "continue";
-  requestId: string;
-  disposition: Exclude<AppWorkDisposition, { type: "task" }>;
-  /** Optional immediate reply for an asynchronous continuation. */
-  response?: string;
-};
-
-export type AppDisposition = AppWorkDisposition | AppContinueDisposition;
 
 export type AppInboxBatchMode = "single" | "coalesce-compatible";
 
@@ -229,8 +206,7 @@ type AppSemanticEventAction<TInputSchema extends TSchema = TSchema> = {
 };
 
 export type AppAction<TInputSchema extends TSchema = TSchema> =
-  | AppInputAction<TInputSchema>
-  | AppSemanticEventAction<TInputSchema>;
+  AppInputAction<TInputSchema> | AppSemanticEventAction<TInputSchema>;
 
 export type AppWorkspace = {
   kind: "git" | "local";
@@ -240,7 +216,6 @@ export type AppWorkspace = {
 
 /** Optional durable-task policy. Mechanics and storage remain host-private. */
 export type AppTaskPolicy = {
-  attach?: true;
   subscriptions?: EventSelector[];
   resolve?: (event: AppEvent<Record<string, unknown>>) => TaskIntent | null;
   validateAction?: (action: TaskAction) => string | null;
@@ -255,11 +230,8 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
   owner: string;
   description?: string;
   inputSchema: TInputSchema;
-  /**
-   * Pure deterministic policy for requests that do not require owner
-   * judgment. Returning null delegates the decision to the owner agent.
-   */
-  route?: (request: Readonly<AppRequest>) => AppDisposition | null;
+  /** Pure mapping from admitted input to the one existing or desired Task that owns it. */
+  task?: (input: Readonly<AppTaskInput>) => AppTaskAttachment;
   subscriptions?: AppEventSubscription[];
   /**
    * Reviewed facts that intentionally create no inbox item or task. The host

@@ -1,6 +1,4 @@
 import type { AppDependencyObservation, TaskIntent } from "@may-agent/sdk";
-import type { SqliteDb } from "../lib/db.js";
-import { readRuntimeExecutionView } from "./app-read.js";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
@@ -34,7 +32,7 @@ export type AppTaskCapability = {
   }): string[];
   readDependency(input: {
     appDir: string;
-    dependency: { kind: "task" | "session"; id: string };
+    dependency: { kind: "task"; id: string };
   }): Promise<AppDependencyObservation | null>;
   publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
   watchGenerations(reload: () => Promise<void>): { close(): void } | null;
@@ -48,7 +46,6 @@ export type AppTaskCapability = {
  */
 export function createAppTaskCapability(options: {
   bus: EventBus;
-  getDb: () => SqliteDb;
   runtime?: AppTaskRuntimeOptions;
 }): AppTaskCapability {
   return {
@@ -73,25 +70,15 @@ export function createAppTaskCapability(options: {
       return startAppTaskRuntimeWatcher(options.runtime, { reload });
     },
     async readDependency({ appDir, dependency }) {
-      if (dependency.kind === "task") {
-        const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
-        return task
-          ? {
-              kind: "task",
-              id: task.id,
-              status: task.status,
-              summary: task.summary,
-              evidence: task.evidence,
-            }
-          : null;
-      }
-      const execution = readRuntimeExecutionView({ getDb: options.getDb }, dependency.id);
-      return execution
+      const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
+      return task
         ? {
-            kind: "session",
-            id: execution.id,
-            status: execution.status === "blocked" ? "waiting" : execution.status,
-            summary: execution.summary,
+            kind: "task",
+            id: task.id,
+            status: task.status,
+            summary: task.summary,
+            response: task.response,
+            evidence: task.evidence,
           }
         : null;
     },

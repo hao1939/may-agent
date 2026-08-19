@@ -550,7 +550,7 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
-  test("delivers only an admitted App inbox outbox request as May's direct Telegram reply", () => {
+  test("does not deliver a legacy App inbox session outside the Conversation mirror", () => {
     let reviews = 0;
     const { bus, sent, outbound } = harness("legacy-chat", async (candidate) => {
       reviews += 1;
@@ -597,46 +597,8 @@ describe("Telegram outbound turn ownership", () => {
       },
     } as any);
 
-    expect(sent).toEqual([]);
-    bus.emit({
-      type: "app.response.delivery.requested",
-      source: "app-inbox",
-      owner: "app:may",
-      target: { human: true },
-      data: {
-        operationId: "app-delivery:app_123:1",
-        appInboxItemId: "app_123",
-        appInboxRequestId: "app-inbox-human:app_123",
-        sessionId: "s_app_inbox_human",
-        channel: "telegram",
-        channelTargetId: "chat-123",
-        channelThreadId: "7",
-        channelMessageId: 701,
-        conversationId,
-        text: "The admitted durable May response is complete.",
-      },
-    });
-
     expect(reviews).toBe(0);
-    expect(sent).toEqual([
-      {
-        text: "The admitted durable May response is complete.",
-        context: expect.objectContaining({
-          eventType: "app.response.delivery.requested",
-          agent: "may",
-          sessionId: "s_app_inbox_human",
-          channelTargetId: "chat-123",
-          channelThreadId: "7",
-          replyToMessageId: 701,
-          conversationId,
-          data: {
-            operationId: "app-delivery:app_123:1",
-            appInboxItemId: "app_123",
-            appInboxRequestId: "app-inbox-human:app_123",
-          },
-        }),
-      },
-    ]);
+    expect(sent).toEqual([]);
     outbound.close();
   });
 

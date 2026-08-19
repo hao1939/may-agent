@@ -9,22 +9,20 @@ describe("console transport", () => {
     console.log = originalLog;
   });
 
-  it("restores the prompt after completing an App response delivery", () => {
+  it("restores the prompt when the primary session reaches a stable boundary", () => {
     const bus = new EventBus();
     const onResponseDelivered = mock(() => {});
     console.log = mock(() => {});
-    attachConsoleUI(bus, () => null, false, onResponseDelivered);
+    attachConsoleUI(bus, () => "session-1", true, onResponseDelivered);
 
     bus.emit({
-      type: "app.response.delivery.requested",
-      source: "app-outbox",
-      owner: "app:may",
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:may",
       data: {
-        channel: "console",
-        text: "done",
-        operationId: "delivery-1",
-        appInboxItemId: 1,
-        appInboxRequestId: "request-1",
+        sessionId: "session-1",
+        agent: "may",
+        status: "done",
       },
     } as any);
 

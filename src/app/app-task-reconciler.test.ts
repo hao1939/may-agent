@@ -278,6 +278,94 @@ describe("App task reconciler state", () => {
     expect(tree.attempts?.[claim.attemptId]?.state).toBe("completed");
   });
 
+  it("keeps an achieve task live until events that arrived during the attempt are reconciled", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "workflow:worker",
+      trigger: { type: "sample.requested", eventId: 100 },
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      recordAppTaskTrigger(config, claim.taskId, {
+        type: "sample.corrected",
+        eventId: 101,
+        data: { correction: "use the revised evidence" },
+      }),
+    ).toEqual({ kind: "recorded" });
+
+    expect(
+      completeAppTask(config, claim, {
+        summary: "Satisfied the outcome observed before the correction",
+        evidence: ["result:initial"],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      dependentTaskIds: [claim.taskId],
+      taskContinues: true,
+    });
+
+    const tree = readTaskState(config);
+    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
+    expect(tree.resources?.[claim.taskId]?.status.phase).toBe("pending");
+    const next = claimObservedAppTask(config, {
+      taskId: claim.taskId,
+      appOwner: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    expect(next).toMatchObject({
+      kind: "claimed",
+      events: [
+        {
+          event: {
+            type: "sample.corrected",
+            eventId: 101,
+          },
+        },
+      ],
+      eventsTruncated: false,
+    });
+  });
+
+  it("claims an ordered bounded event prefix without losing the remaining wakes", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+
+    for (let index = 1; index <= 35; index += 1) {
+      expect(
+        recordAppTaskTrigger(config, first.taskId, {
+          type: "sample.observed",
+          eventId: index,
+          data: { index },
+        }),
+      ).toEqual({ kind: "recorded" });
+    }
+    expect(completeAppTask(config, first, { summary: "Observed the initial state" }).taskContinues).toBe(true);
+
+    const second = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appOwner: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (second.kind !== "claimed") throw new Error("expected second claim");
+    expect(second.events.map((entry) => entry.event.eventId)).toEqual(
+      Array.from({ length: 32 }, (_, index) => index + 1),
+    );
+    expect(second.eventsTruncated).toBe(true);
+    expect(readTaskState(config).taskTriggers?.[first.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
+      33, 34, 35,
+    ]);
+  });
+
   it("rejects a no-op or mixed self-update", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -1457,7 +1545,12 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(completeAppTask(config, claim, { summary: "session evaluated" }).status).toBe("applied");
+    expect(
+      completeAppTask(config, claim, {
+        summary: "session evaluated",
+        response: "The session meets the requested quality bar.",
+      }).status,
+    ).toBe("applied");
     const tree = readTaskState(config);
     expect(tree.tasks[claim.taskId]).toBeUndefined();
     expect(tree.resources?.[claim.taskId]).toBeUndefined();
@@ -1466,6 +1559,7 @@ describe("App task reconciler state", () => {
       metadata: { id: claim.taskId, generation: 1, resourceVersion: 1 },
       handler: "workflow:known-workflow",
       summary: "session evaluated",
+      response: "The session meets the requested quality bar.",
       outcome: "Evaluate session 1",
       workflow: "known-workflow",
       evidence: [],
@@ -3311,11 +3405,72 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("cannot absorb parent-with-live-child while it has live children");
 
-    const tree = readTaskState(config);
-    expect(tree.tasks[parentIntent.id]).toBeTruthy();
-    expect(tree.resources?.[parentIntent.id]).toBeTruthy();
-    expect(tree.receipts?.[parentIntent.id]).toBeUndefined();
-    expect(tree.tasks[childIntent.id]).toBeTruthy();
+    const rejectedTree = readTaskState(config);
+    expect(rejectedTree.tasks[parentIntent.id]).toBeTruthy();
+    expect(rejectedTree.resources?.[parentIntent.id]).toBeTruthy();
+    expect(rejectedTree.receipts?.[parentIntent.id]).toBeUndefined();
+    expect(rejectedTree.tasks[childIntent.id]).toBeTruthy();
+
+    expect(
+      completeAppTask(config, carrier, {
+        summary: "Closed the current bottom-most descendant",
+        evidence: ["review:bottom-most-child"],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: childIntent.id,
+            expectedGeneration: 1,
+            summary: "Bottom-most child complete",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: [`closed ${childIntent.id}`],
+    });
+
+    const afterChild = readTaskState(config);
+    expect(afterChild.tasks[childIntent.id]).toBeUndefined();
+    expect(afterChild.receipts?.[childIntent.id]).toBeDefined();
+    expect(afterChild.tasks[parentIntent.id]).toBeTruthy();
+    expect(afterChild.receipts?.[parentIntent.id]).toBeUndefined();
+
+    const upwardCarrierIntent = {
+      id: "close-upward-carrier",
+      parentId: "operations",
+      outcome: "Reconcile the next ancestor transition",
+      acceptance: ["Only the now-leaf ancestor is closed"],
+      mode: "achieve",
+    } as const;
+    const upwardCarrier = declareAndClaimTask(config, {
+      intent: upwardCarrierIntent,
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (upwardCarrier.kind !== "claimed") {
+      throw new Error("expected upward carrier claim");
+    }
+    expect(
+      completeAppTask(config, upwardCarrier, {
+        summary: "Reconciled the ancestor after its child",
+        evidence: ["review:ancestor-now-leaf"],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: parentIntent.id,
+            expectedGeneration: 1,
+            summary: "Ancestor complete after child transition",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: [`closed ${parentIntent.id}`],
+    });
+
+    const reconciledTree = readTaskState(config);
+    expect(reconciledTree.tasks[parentIntent.id]).toBeUndefined();
+    expect(reconciledTree.receipts?.[parentIntent.id]).toBeDefined();
   });
 
   it("allows a batch to reparent a live child before closing its old parent", () => {
@@ -3578,6 +3733,71 @@ describe("App task reconciler state", () => {
       type: "project.comment.created",
       data: { project: "sample", comment: "Use the exact evidence paths" },
     });
+
+    const recovered = claimObservedAppTask(config, {
+      taskId: claim.taskId,
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+      reason: "execution-recovered",
+    });
+    if (recovered.kind !== "claimed") throw new Error("expected recovered claim");
+    expect(recovered.events.map(({ event }) => event)).toEqual([
+      { type: "project.task.tick", data: { reason: "initial" } },
+      {
+        type: "project.comment.created",
+        data: { project: "sample", comment: "Use the exact evidence paths" },
+      },
+    ]);
+  });
+
+  it("replays a failed attempt batch before every newer pending event", () => {
+    const { config } = fixture();
+    observeAppTaskIntent(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      trigger: { type: "sample.first", eventId: 701 },
+    });
+    expect(
+      recordAppTaskTrigger(config, "pipeline-monitor", {
+        type: "sample.second",
+        eventId: 702,
+      }),
+    ).toEqual({ kind: "recorded" });
+    const claim = claimObservedAppTask(config, {
+      taskId: "pipeline-monitor",
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+      reason: "event",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(claim.events.map(({ event }) => event.eventId)).toEqual([701, 702]);
+    recordAppTaskAttemptSession(config, claim, "failed-batch-session");
+    markAppTaskAttention(config, claim, {
+      summary: "owner execution ended without a decision",
+      reason: "HandlerExecutionFailed",
+    });
+    expect(
+      recordAppTaskTrigger(config, claim.taskId, {
+        type: "sample.third",
+        eventId: 703,
+      }),
+    ).toEqual({ kind: "recorded" });
+
+    expect(
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
+        owner: "branch-owner",
+        sessionId: "new-success",
+        observedAt: "2099-01-01T00:00:00.000Z",
+      }),
+    ).toBe(true);
+    const replay = claimObservedAppTask(config, {
+      taskId: claim.taskId,
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+      reason: "execution-recovered",
+    });
+    if (replay.kind !== "claimed") throw new Error("expected replay claim");
+    expect(replay.events.map(({ event }) => event.eventId)).toEqual([701, 702, 703]);
   });
 
   it("does not revive repeated execution failures from unrelated owner success", () => {
@@ -3782,9 +4002,7 @@ describe("App task reconciler state", () => {
     });
 
     const revised = readTaskState(config).resources?.["runtime/owner-review"];
-    expect(revised?.spec.outcome).toBe(
-      "Keep the platform reviewed from current evidence",
-    );
+    expect(revised?.spec.outcome).toBe("Keep the platform reviewed from current evidence");
     expect(revised?.metadata.generation).toBe(parentClaim.generation + 1);
 
     const nextClaim = claimObservedAppTask(config, {
@@ -4639,6 +4857,78 @@ describe("App task reconciler state", () => {
     expect(resumed).toMatchObject({ kind: "claimed", trigger: completion });
   });
 
+  it("keeps later Condition events pending while an earlier Condition event is reconciling", () => {
+    const { config } = fixture();
+    const initial = declareAndClaimTask(config, {
+      intent: { ...intent("maintain"), id: "work/two-conditions" },
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (initial.kind !== "claimed") throw new Error("expected initial claim");
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      summary: "waiting for either dependency update",
+      conditions: [
+        {
+          id: "dependency:a",
+          type: "project.task.reconciled",
+          subject: "task:dependency-a",
+          expected: "done",
+        },
+        {
+          id: "dependency:b",
+          type: "project.task.reconciled",
+          subject: "task:dependency-b",
+          expected: "done",
+        },
+      ],
+    });
+
+    const firstEvent = {
+      type: "project.task.reconciled",
+      eventId: 801,
+      taskId: "dependency-a",
+      state: "converged",
+    };
+    expect(trackAppTaskConditionEvent(config, firstEvent)).toMatchObject([
+      { conditionId: "dependency:a", taskId: "work/two-conditions" },
+    ]);
+    const first = claimObservedAppTask(config, {
+      taskId: "work/two-conditions",
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "condition:dependency:a",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first Condition claim");
+    expect(first.events.map(({ event }) => event.eventId)).toEqual([801]);
+
+    const secondEvent = {
+      type: "project.task.reconciled",
+      eventId: 802,
+      taskId: "dependency-b",
+      state: "converged",
+    };
+    expect(trackAppTaskConditionEvent(config, secondEvent)).toMatchObject([
+      { conditionId: "dependency:b", taskId: "work/two-conditions" },
+    ]);
+    expect(trackAppTaskConditionEvent(config, secondEvent)).toEqual([]);
+    expect(
+      completeAppTask(config, first, {
+        summary: "observed dependency A",
+        evidence: ["event:801"],
+      }),
+    ).toMatchObject({ status: "applied", taskContinues: true });
+
+    const second = claimObservedAppTask(config, {
+      taskId: "work/two-conditions",
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "condition:dependency:b",
+    });
+    if (second.kind !== "claimed") throw new Error("expected second Condition claim");
+    expect(second.events.map(({ event }) => event.eventId)).toEqual([802]);
+  });
+
   it("keeps a decomposition parent open while applying child task actions", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -4692,6 +4982,59 @@ describe("App task reconciler state", () => {
     expect(tree.tasks["work/child-b"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
     expect(tree.conditions ?? {}).toEqual({});
     expect(listRunnableAppTaskIds(config)).toEqual(expect.arrayContaining(["work/child-a", "work/child-b"]));
+  });
+
+  it("delivers every child transition to the parent in one ordered event batch", () => {
+    const { config } = fixture();
+    const parent = declareAndClaimTask(config, {
+      intent: { ...intent("maintain"), id: "work/parent-batch" },
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (parent.kind !== "claimed") throw new Error("expected parent claim");
+    const child = (id: string) => ({
+      kind: "create-task" as const,
+      id,
+      parentId: parent.taskId,
+      outcome: `Complete ${id}`,
+      acceptance: [`${id} converges`],
+      mode: "achieve" as const,
+      outputs: [],
+      priority: "P2" as const,
+    });
+    expect(
+      deferAppTask(config, parent, {
+        disposition: "waiting",
+        summary: "waiting for both children",
+        evidence: ["decomposition:two-children"],
+        actions: [child("work/child-one"), child("work/child-two")],
+      }),
+    ).toMatchObject({ status: "applied" });
+
+    for (const childTaskId of ["work/child-one", "work/child-two"]) {
+      const childClaim = claimObservedAppTask(config, {
+        taskId: childTaskId,
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+        reason: "child",
+      });
+      if (childClaim.kind !== "claimed") throw new Error(`expected claim for ${childTaskId}`);
+      expect(
+        completeAppTask(config, childClaim, {
+          summary: `${childTaskId} converged`,
+          evidence: [`proof:${childTaskId}`],
+        }),
+      ).toMatchObject({ status: "applied", dependentTaskIds: [parent.taskId] });
+    }
+
+    const resumed = claimObservedAppTask(config, {
+      taskId: parent.taskId,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "children-transitioned",
+    });
+    if (resumed.kind !== "claimed") throw new Error("expected resumed parent claim");
+    expect(resumed.events.map(({ event }) => event.childTaskId)).toEqual(["work/child-one", "work/child-two"]);
   });
 
   it("filters task Conditions by subject and expected state", () => {

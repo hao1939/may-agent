@@ -436,28 +436,6 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     const session = sessionData(event);
     const sessionId = typeof session.sessionId === "string" ? session.sessionId : undefined;
 
-    if (event.type === "app.response.delivery.requested") {
-      if (session.channel !== "telegram") return;
-      const text = typeof session.text === "string" ? session.text.trim() : "";
-      if (!text) return;
-      sendToUser(text, {
-        eventType: "app.response.delivery.requested",
-        agent: opts.interfaceAgent,
-        sessionId,
-        channelTargetId: nonEmptyString(session.channelTargetId),
-        channelThreadId: nonEmptyString(session.channelThreadId),
-        replyToMessageId: numberOrUndefined(session.channelMessageId),
-        conversationId: typeof session.conversationId === "string" ? session.conversationId : undefined,
-        data: {
-          operationId: session.operationId,
-          appInboxItemId: session.appInboxItemId,
-          appInboxRequestId: session.appInboxRequestId,
-          deliveryKind: session.deliveryKind,
-        },
-      });
-      return;
-    }
-
     // Track resolved approvals so stale approval prompts are suppressed.
     if (event.type === "project.approval.submitted" || event.type === "project.approval.resolved") {
       const d = messageData(event);

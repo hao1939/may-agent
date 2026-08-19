@@ -3726,6 +3726,46 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
+  async function daemonRead(frame: Record<string, unknown>): Promise<Record<string, unknown>> {
+    try {
+      return await sendDaemonEvent(conventionSocketPath(), frame, { timeoutMs: 2_000 });
+    } catch (error) {
+      throw new Error(`Daemon read unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async function handleAppTasks(url: URL, appId: string): Promise<Response> {
+    if (!appId) return json({ error: "appId required" }, 400);
+    const status = url.searchParams.getAll("status").filter(Boolean);
+    const limitText = url.searchParams.get("limit");
+    const cursor = url.searchParams.get("cursor")?.trim();
+    try {
+      const response = await daemonRead({
+        type: "app.tasks.list",
+        appId,
+        ...(status.length > 0 ? { status } : {}),
+        ...(limitText === null ? {} : { limit: Number(limitText) }),
+        ...(cursor ? { cursor } : {}),
+      });
+      if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
+      return json(response.tasks ?? { items: [] });
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
+    }
+  }
+
+  async function handleAppTask(appId: string, taskId: string): Promise<Response> {
+    if (!appId) return json({ error: "appId required" }, 400);
+    if (!taskId) return json({ error: "taskId required" }, 400);
+    try {
+      const response = await daemonRead({ type: "app.task.get", appId, taskId });
+      if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
+      return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
+    }
+  }
+
   async function handleSessionCancel(sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
     const result = await sendDaemonFrame({
@@ -4291,6 +4331,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/projects") return handleProjects();
+      const appTaskMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks\/(.+)$/);
+      if (appTaskMatch && req.method === "GET") {
+        return handleAppTask(decodeURIComponent(appTaskMatch[1]), decodeURIComponent(appTaskMatch[2]));
+      }
+      const appTasksMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks$/);
+      if (appTasksMatch && req.method === "GET") return handleAppTasks(url, decodeURIComponent(appTasksMatch[1]));
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
       if (url.pathname === "/api/projects/tasks") return handleProjectTasks(url);

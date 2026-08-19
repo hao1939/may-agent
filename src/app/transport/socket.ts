@@ -27,6 +27,8 @@ export interface SocketUIOptions {
   instance: string;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
+  listAppTasks?: AttachControlSocketOptions["listAppTasks"];
+  getAppTask?: AttachControlSocketOptions["getAppTask"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
@@ -79,41 +81,10 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     describeProjectActions: opts.describeProjectActions,
     admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
+    listAppTasks: opts.listAppTasks,
+    getAppTask: opts.getAppTask,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
-    onDelivered: (event, clientCount) => {
-      const data = event.data && typeof event.data === "object" ? (event.data as Record<string, unknown>) : event;
-      if (event.type === "app.response.delivery.requested") {
-        if (clientCount === 0 && data.channel === "may-console") {
-          opts.publishCompatibilityEvent({
-            type: "channel.delivery.failed",
-            data: {
-              channel: typeof data.channel === "string" ? data.channel : "control-socket",
-              sessionId: data.sessionId,
-              resultEventType: event.type,
-              operationId: data.operationId,
-              appInboxItemId: data.appInboxItemId,
-              appInboxRequestId: data.appInboxRequestId,
-              certainty: "not-delivered",
-              reason: "No subscribed control-socket client was available",
-            },
-          });
-        }
-        return;
-      }
-      opts.publishCompatibilityEvent({
-        type: "channel.delivery.completed",
-        data: {
-          channel: typeof data.channel === "string" ? data.channel : "control-socket",
-          clientCount,
-          sessionId: data.sessionId,
-          resultEventType: event.type,
-          operationId: data.operationId,
-          appInboxItemId: data.appInboxItemId,
-          appInboxRequestId: data.appInboxRequestId,
-        },
-      });
-    },
     onInfo: opts.reportInfo,
     agentName,
     instance,
