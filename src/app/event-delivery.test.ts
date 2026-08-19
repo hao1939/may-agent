@@ -1902,6 +1902,60 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("finds an exact completion-first session through its indexed identity", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const db = getDb(root);
+      const insert = db.prepare(
+        `INSERT INTO events (event_type, source, owner, data, session_id, timestamp)
+         VALUES ('session.end', 'fixture', 'agent:may', ?, ?, ?)`,
+      );
+      const completedSessionId = "s_completion_before_start";
+      db.exec("BEGIN");
+      insert.run(
+        JSON.stringify({ sessionId: completedSessionId, agent: "may", status: "done" }),
+        completedSessionId,
+        Date.now(),
+      );
+      for (let index = 0; index < 201; index++) {
+        const sessionId = `s_decoy_${index}`;
+        insert.run(JSON.stringify({ sessionId, agent: "may", status: "done" }), sessionId, Date.now() + index + 1);
+      }
+      db.exec("COMMIT");
+
+      bus.emit({
+        type: "session.start",
+        source: "fixture",
+        owner: "agent:may",
+        data: {
+          sessionId: completedSessionId,
+          agent: "may",
+          task: "completion-first session",
+          trigger: "fixture",
+          firedAt: Date.now(),
+        },
+      } as any);
+
+      expect(
+        db
+          .prepare(
+            `SELECT status, note
+             FROM event_pair_runs
+             WHERE pair_name = 'session' AND correlation_key = ?`,
+          )
+          .get(completedSessionId),
+      ).toEqual({
+        status: "closed",
+        note: "closed by earlier session.end",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("persists reconciliation observations without inventing a task lifecycle pair", () => {
     const root = tempRoot();
     try {
