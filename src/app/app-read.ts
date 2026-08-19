@@ -1,6 +1,6 @@
 import type { AppRead, ExecutionView, MetricView, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
-import { readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
+import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";
@@ -36,6 +36,15 @@ export function readRuntimeTaskView(
   return taskView(tree, taskId);
 }
 
+/** Reuse one parsed canonical tree across a bounded sequence of Task reads. */
+export function createRuntimeTaskReader(
+  executionPaths: NonNullable<RuntimeAppReadOptions["executionPaths"]>,
+): (taskId: string) => TaskView | null {
+  const config = taskConfig(executionPaths);
+  cacheTaskStateReads(config);
+  return (taskId) => taskView(readTaskState(config), taskId);
+}
+
 function taskView(tree: TaskTree, taskId: string): TaskView | null {
   const receipt = tree.receipts?.[taskId];
   if (receipt) {
@@ -46,7 +55,7 @@ function taskView(tree: TaskTree, taskId: string): TaskView | null {
       outcome: receipt.outcome,
       summary: receipt.summary,
       response: receipt.response,
-      evidence: receipt.evidence,
+      evidence: [...receipt.evidence],
     };
   }
   const resource = tree.resources?.[taskId];
@@ -58,7 +67,7 @@ function taskView(tree: TaskTree, taskId: string): TaskView | null {
     outcome: resource.spec.outcome,
     summary: resource.status.summary,
     response: resource.status.response,
-    evidence: resource.status.evidence,
+    evidence: resource.status.evidence ? [...resource.status.evidence] : undefined,
   };
 }
 
