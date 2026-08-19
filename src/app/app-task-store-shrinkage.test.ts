@@ -197,6 +197,18 @@ describe("saveTaskState shrinkage guard", () => {
     expect(saved.project_lifecycle).toBe("paused");
   });
 
+  it("does not let a cached writer overwrite an external lifecycle pause", () => {
+    const config = makeConfig();
+    writeFileSync(config.statePath, JSON.stringify(makeTree(6, "active")));
+    const cached = readTaskState(config);
+
+    writeFileSync(config.statePath, JSON.stringify(makeTree(6, "paused")));
+
+    expect(() => saveTaskState(config, cached)).toThrow(/lifecycle guard/);
+    const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
+    expect(saved.project_lifecycle).toBe("paused");
+  });
+
   it("changes lifecycle through one locked helper and records the reason", () => {
     const config = makeConfig();
     writeFileSync(config.statePath, JSON.stringify(makeTree(5, "paused")));
@@ -450,12 +462,7 @@ describe("saveTaskState shrinkage guard", () => {
     });
     tree.attempts = {
       old: attempt("old-1", "2026-07-28T00:00:00.000Z", "failed", "old detail".repeat(2_000)),
-      latest: attempt(
-        "latest-2",
-        "2026-07-28T01:00:00.000Z",
-        "failed",
-        "latest recovery detail".repeat(1_000),
-      ),
+      latest: attempt("latest-2", "2026-07-28T01:00:00.000Z", "failed", "latest recovery detail".repeat(1_000)),
       running: {
         ...attempt("running-3", "2026-07-28T02:00:00.000Z", "running", "running detail"),
         taskId: "orphan-running",

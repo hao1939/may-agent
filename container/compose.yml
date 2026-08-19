@@ -37,6 +37,9 @@ services:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
       - MODEL_API_KEY=${MODEL_API_KEY:-not-needed}
+      # Leave one Host lane for interactive May while allowing App work to
+      # make progress across several independent task controllers.
+      - MAY_HOST_MAX_CONCURRENT=${MAY_HOST_MAX_CONCURRENT:-8}
       - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead
       - GIT_CONFIG_COUNT=1
       - GIT_CONFIG_KEY_0=safe.directory

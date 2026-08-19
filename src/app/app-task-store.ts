@@ -398,11 +398,15 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   let existingLifecycle: string | null = null;
   let existingResourceCount: number | null = null;
   if (existsSync(config.statePath)) {
+    const currentState = statSync(config.statePath);
+    const cacheMatchesDisk =
+      cache?.ino === currentState.ino && cache.mtimeMs === currentState.mtimeMs && cache.size === currentState.size;
     if (
       !config.validateMutation &&
       cache?.tree === tree &&
       cache.sourceLifecycle !== undefined &&
-      cache.sourceResourceCount !== undefined
+      cache.sourceResourceCount !== undefined &&
+      cacheMatchesDisk
     ) {
       existingLifecycle = cache.sourceLifecycle;
       existingResourceCount = cache.sourceResourceCount;

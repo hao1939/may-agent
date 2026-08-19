@@ -1141,9 +1141,20 @@ type CanonicalUntrackedResidueGuard = {
   indexPath: string;
   indexData: Buffer;
   indexMode: number;
-  startIdentity: string;
   dirtyTracked: Map<string, ResidueFileSnapshot>;
   untracked: Map<string, ResidueFileSnapshot>;
+};
+
+type PlannedResidueFileRestore = {
+  expected: ResidueFileSnapshot;
+  restore: ResidueFileSnapshot | "index";
+};
+
+export type CanonicalOwnerResidueCleanupPlan = {
+  guard: CanonicalUntrackedResidueGuard;
+  expectedIndexData: Buffer;
+  restoreIndex: boolean;
+  files: Map<string, PlannedResidueFileRestore>;
 };
 
 function gitPathSet(projectDir: string, args: string[]): Set<string> {
@@ -1153,6 +1164,13 @@ function gitPathSet(projectDir: string, args: string[]): Set<string> {
 
 function canonicalUntrackedFiles(projectDir: string): Set<string> {
   return gitPathSet(projectDir, ["ls-files", "--others", "--exclude-standard", "--full-name", "-z"]);
+}
+
+function canonicalDirtyTrackedFiles(projectDir: string): Set<string> {
+  return new Set([
+    ...gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]),
+    ...gitPathSet(projectDir, ["diff", "--cached", "--name-only", "-z"]),
+  ]);
 }
 
 function safeResiduePath(projectDir: string, relativePath: string): string {
@@ -1185,44 +1203,12 @@ function restoreResidueFile(projectDir: string, relativePath: string, snapshot: 
   chmodSync(absolutePath, snapshot.mode);
 }
 
-function residueSnapshotIdentity(
-  status: Buffer,
-  index: Buffer,
-  dirtyTracked: Map<string, ResidueFileSnapshot>,
-  untracked: Map<string, ResidueFileSnapshot>,
-): string {
-  const hash = createHash("sha256");
-  hash.update(status);
-  hash.update(index);
-  const paths = [...new Set([...dirtyTracked.keys(), ...untracked.keys()])].sort();
-  for (const path of paths) {
-    hash.update("\0path\0");
-    hash.update(path);
-    const snapshot = dirtyTracked.get(path) ?? untracked.get(path);
-    if (!snapshot?.exists) {
-      hash.update("\0missing\0");
-    } else if (snapshot.kind === "symlink") {
-      hash.update("\0symlink\0");
-      hash.update(snapshot.target);
-    } else {
-      hash.update("\0file\0");
-      hash.update(String(snapshot.mode));
-      hash.update(snapshot.data);
-    }
-  }
-  return hash.digest("hex");
-}
-
-function canonicalResidueIdentity(projectDir: string, indexPath: string): string {
-  const status = execFileSync("git", ["-C", projectDir, "status", "--porcelain=v1", "-z"]);
-  const index = readFileSync(indexPath);
-  const dirtyTrackedPaths = gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]);
-  const untrackedPaths = canonicalUntrackedFiles(projectDir);
-  const dirtyTracked = new Map(
-    [...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(projectDir, path)] as const),
-  );
-  const untracked = new Map([...untrackedPaths].map((path) => [path, snapshotResidueFile(projectDir, path)] as const));
-  return residueSnapshotIdentity(status, index, dirtyTracked, untracked);
+function residueSnapshotsEqual(left: ResidueFileSnapshot, right: ResidueFileSnapshot): boolean {
+  if (left.exists !== right.exists) return false;
+  if (!left.exists || !right.exists) return true;
+  if (left.kind !== right.kind) return false;
+  if (left.kind === "symlink" && right.kind === "symlink") return left.target === right.target;
+  return left.kind === "file" && right.kind === "file" && left.mode === right.mode && left.data.equals(right.data);
 }
 
 /**
@@ -1243,8 +1229,7 @@ export function beginCanonicalOwnerResidueGuard(paths: AppTaskExecutionPaths): C
       encoding: "utf8",
     }).trim();
     const indexPath = isAbsolute(rawIndexPath) ? rawIndexPath : resolve(paths.projectDir, rawIndexPath);
-    const status = execFileSync("git", ["-C", paths.projectDir, "status", "--porcelain=v1", "-z"]);
-    const dirtyTrackedPaths = gitPathSet(paths.projectDir, ["ls-files", "--modified", "--deleted", "-z"]);
+    const dirtyTrackedPaths = canonicalDirtyTrackedFiles(paths.projectDir);
     const untrackedPaths = canonicalUntrackedFiles(paths.projectDir);
     const indexData = readFileSync(indexPath);
     const dirtyTracked = new Map(
@@ -1258,7 +1243,6 @@ export function beginCanonicalOwnerResidueGuard(paths: AppTaskExecutionPaths): C
       indexPath,
       indexData,
       indexMode: lstatSync(indexPath).mode,
-      startIdentity: residueSnapshotIdentity(status, indexData, dirtyTracked, untracked),
       dirtyTracked,
       untracked,
     };
@@ -1347,30 +1331,67 @@ export function deployReceiptPrompt(projectDir: string, taskId: string): string[
   ];
 }
 
-export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
-  if (!guard) return [];
+export function planCanonicalOwnerResidueCleanup(
+  guard: CanonicalUntrackedResidueGuard | null,
+): CanonicalOwnerResidueCleanupPlan | null {
+  if (!guard || !existsSync(guard.indexPath)) return null;
 
-  // Restoration is safe only while the canonical checkout still has the exact
-  // index, status, and dirty-file bytes captured at attempt start. A concurrent
-  // cleanup, reset, fast-forward, or different dirty transition is authoritative
-  // and must never be overwritten by this attempt's stale snapshot.
-  if (!existsSync(guard.indexPath)) return [];
-  if (canonicalResidueIdentity(guard.projectDir, guard.indexPath) !== guard.startIdentity) return [];
-
-  if (!readFileSync(guard.indexPath).equals(guard.indexData)) {
-    writeFileSync(guard.indexPath, guard.indexData);
-    chmodSync(guard.indexPath, guard.indexMode);
+  const expectedIndexData = readFileSync(guard.indexPath);
+  const dirtyTrackedPaths = canonicalDirtyTrackedFiles(guard.projectDir);
+  const untrackedPaths = canonicalUntrackedFiles(guard.projectDir);
+  const currentPaths = new Set([
+    ...guard.dirtyTracked.keys(),
+    ...guard.untracked.keys(),
+    ...dirtyTrackedPaths,
+    ...untrackedPaths,
+  ]);
+  const files = new Map<string, PlannedResidueFileRestore>();
+  for (const path of currentPaths) {
+    const expected = snapshotResidueFile(guard.projectDir, path);
+    const baseline = guard.dirtyTracked.get(path) ?? guard.untracked.get(path);
+    if (baseline) {
+      if (!residueSnapshotsEqual(expected, baseline)) files.set(path, { expected, restore: baseline });
+    } else if (dirtyTrackedPaths.has(path) || untrackedPaths.has(path)) {
+      files.set(path, { expected, restore: untrackedPaths.has(path) ? { exists: false } : "index" });
+    }
   }
-  execFileSync("git", ["-C", guard.projectDir, "checkout-index", "--all", "--force"]);
-  for (const [relativePath, snapshot] of guard.dirtyTracked) {
-    restoreResidueFile(guard.projectDir, relativePath, snapshot);
-  }
+  return {
+    guard,
+    expectedIndexData,
+    restoreIndex: !expectedIndexData.equals(guard.indexData),
+    files,
+  };
+}
 
-  const created = [...canonicalUntrackedFiles(guard.projectDir)].filter((path) => !guard.untracked.has(path));
-  for (const relativePath of created) {
-    const absolutePath = safeResiduePath(guard.projectDir, relativePath);
-    if (existsSync(absolutePath)) unlinkSync(absolutePath);
-    let parent = dirname(absolutePath);
+function restoreResidueFileFromBaselineIndex(guard: CanonicalUntrackedResidueGuard, relativePath: string): void {
+  const temporaryIndex = `${guard.indexPath}.owner-residue-${process.pid}-${Date.now()}`;
+  try {
+    writeFileSync(temporaryIndex, guard.indexData);
+    chmodSync(temporaryIndex, guard.indexMode);
+    execFileSync("git", ["-C", guard.projectDir, "checkout-index", "--force", "--", relativePath], {
+      env: { ...process.env, GIT_INDEX_FILE: temporaryIndex },
+    });
+  } finally {
+    rmSync(temporaryIndex, { force: true });
+  }
+}
+
+export function applyCanonicalOwnerResidueCleanup(plan: CanonicalOwnerResidueCleanupPlan | null): string[] {
+  if (!plan) return [];
+  const { guard } = plan;
+  const restored: string[] = [];
+
+  for (const [relativePath, filePlan] of plan.files) {
+    const current = snapshotResidueFile(guard.projectDir, relativePath);
+    if (!residueSnapshotsEqual(current, filePlan.expected)) continue;
+    if (filePlan.restore === "index") {
+      restoreResidueFileFromBaselineIndex(guard, relativePath);
+    } else {
+      restoreResidueFile(guard.projectDir, relativePath, filePlan.restore);
+    }
+    restored.push(`file:${relativePath}`);
+    if (filePlan.restore === "index" || filePlan.restore.exists) continue;
+    let parent = dirname(safeResiduePath(guard.projectDir, relativePath));
     while (parent !== guard.projectDir) {
       try {
         rmdirSync(parent);
@@ -1380,10 +1401,34 @@ export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidu
       parent = dirname(parent);
     }
   }
-  for (const [relativePath, snapshot] of guard.untracked) {
-    restoreResidueFile(guard.projectDir, relativePath, snapshot);
+
+  if (
+    plan.restoreIndex &&
+    existsSync(guard.indexPath) &&
+    readFileSync(guard.indexPath).equals(plan.expectedIndexData)
+  ) {
+    writeFileSync(guard.indexPath, guard.indexData);
+    chmodSync(guard.indexPath, guard.indexMode);
+    restored.push("index");
   }
-  return created;
+  return restored;
+}
+
+export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
+  return applyCanonicalOwnerResidueCleanup(planCanonicalOwnerResidueCleanup(guard));
+}
+
+export function rejectConvergedDirectOwnerResidue(
+  result: NormalizedTaskHandlerResult,
+  restored: string[],
+): NormalizedTaskHandlerResult {
+  if (result.state !== "converged" || restored.length === 0) return result;
+  return {
+    state: "error",
+    summary: "Direct-owner convergence was rejected because canonical workspace edits required cleanup",
+    evidence: [...result.evidence, ...restored.map((entry) => `owner-residue-restored:${entry}`)],
+    actions: [],
+  };
 }
 
 async function runTaskOwner(input: {
@@ -1566,28 +1611,33 @@ async function runTaskOwner(input: {
         })()
       : await opts.manager.callAgent(claim.owner, prompt, ownerOptions);
   const residueGuard = beginCanonicalOwnerResidueGuard(input.executionPaths);
+  let restoredOwnerResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchOwner>>;
   try {
     result = await dispatchOwner();
   } finally {
-    finishCanonicalOwnerResidueGuard(residueGuard);
+    const cleanupPlan = planCanonicalOwnerResidueCleanup(residueGuard);
+    restoredOwnerResidue = applyCanonicalOwnerResidueCleanup(cleanupPlan);
   }
   const done = result.status === "done";
-  const handlerResult = normalizeTaskHandlerResult(
-    done ? result.structuredResult : undefined,
-    {
-      type: done ? "done" : "blocked",
-      summary:
-        firstNonEmptyString(result.finishResult?.summary, result.lastAssistantText, result.error) ??
-        `Owner session ${result.sessionId || "unknown"} returned no result`,
-      runId: result.sessionId || null,
-    },
-    {
-      allowNeedsOwner: false,
-      defaultParentId: input.defaultParentId,
-      rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-      validateAction: input.descriptor.app.tasks?.validateAction,
-    },
+  const handlerResult = rejectConvergedDirectOwnerResidue(
+    normalizeTaskHandlerResult(
+      done ? result.structuredResult : undefined,
+      {
+        type: done ? "done" : "blocked",
+        summary:
+          firstNonEmptyString(result.finishResult?.summary, result.lastAssistantText, result.error) ??
+          `Owner session ${result.sessionId || "unknown"} returned no result`,
+        runId: result.sessionId || null,
+      },
+      {
+        allowNeedsOwner: false,
+        defaultParentId: input.defaultParentId,
+        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+        validateAction: input.descriptor.app.tasks?.validateAction,
+      },
+    ),
+    restoredOwnerResidue,
   );
   return {
     handlerResult,
@@ -2684,11 +2734,7 @@ export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; ta
   );
 }
 
-export function listLoadedAppTaskViews(input: {
-  bus: EventBus;
-  appId: string;
-  options?: TaskListOptions;
-}): TaskPage {
+export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage {
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
   );
