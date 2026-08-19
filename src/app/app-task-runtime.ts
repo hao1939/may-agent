@@ -684,7 +684,7 @@ async function runTaskCapability(input: {
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
-        children: input.childContext,
+        children: projectAppTaskChildPromptContext(input.childContext),
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -1547,7 +1547,7 @@ async function runTaskOwner(input: {
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
-        children: input.childContext,
+        children: projectAppTaskChildPromptContext(input.childContext),
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -1634,6 +1634,70 @@ async function runTaskOwner(input: {
     handlerResult,
     runId: result.sessionId || null,
     ...(!done ? { executionFailed: true } : {}),
+  };
+}
+
+const MAX_PROMPT_CHILD_TEXT = 256;
+const MAX_PROMPT_CHILD_EVIDENCE = 2;
+
+function boundedPromptChildText(value: string): string {
+  return value.length <= MAX_PROMPT_CHILD_TEXT ? value : `${value.slice(0, MAX_PROMPT_CHILD_TEXT - 3)}...`;
+}
+
+/**
+ * Keep owner/workflow prompts decision-ready without copying each child Task's
+ * full input and Condition definitions into every parent attempt. Exact child
+ * resources remain available through the scoped Task read API.
+ */
+export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
+  const evidence = (items: string[]) =>
+    items.slice(0, MAX_PROMPT_CHILD_EVIDENCE).map((item) => boundedPromptChildText(item));
+  return {
+    live: context.live.map((child) => ({
+      taskId: child.taskId,
+      generation: child.generation,
+      phase: child.phase,
+      outcome: boundedPromptChildText(child.outcome),
+      ...(child.owner ? { owner: child.owner } : {}),
+      ...(child.workflow ? { workflow: child.workflow } : {}),
+      ...(child.priority ? { priority: child.priority } : {}),
+      ...(child.category ? { category: child.category } : {}),
+      ...(child.dependsOn?.length ? { dependsOn: child.dependsOn } : {}),
+      ...(child.readiness
+        ? {
+            readiness: {
+              ...child.readiness,
+              reason: boundedPromptChildText(child.readiness.reason),
+            },
+          }
+        : {}),
+      ...(child.latestAttempt
+        ? {
+            latestAttempt: {
+              ...child.latestAttempt,
+              ...(child.latestAttempt.failureReason
+                ? { failureReason: boundedPromptChildText(child.latestAttempt.failureReason) }
+                : {}),
+            },
+          }
+        : {}),
+      hasLiveChildren: child.hasLiveChildren,
+      ...(child.updatedAt ? { updatedAt: child.updatedAt } : {}),
+      ...(child.summary ? { summary: boundedPromptChildText(child.summary) } : {}),
+      evidence: evidence(child.evidence),
+    })),
+    completed: context.completed.map((child) => ({
+      taskId: child.taskId,
+      generation: child.generation,
+      outcome: boundedPromptChildText(child.outcome),
+      owner: child.owner,
+      ...(child.workflow ? { workflow: child.workflow } : {}),
+      ...(child.priority ? { priority: child.priority } : {}),
+      summary: boundedPromptChildText(child.summary),
+      evidence: evidence(child.evidence),
+      completedAt: child.completedAt,
+    })),
+    note: "This is a bounded status summary. Use tasks.get for a child's exact input or Conditions.",
   };
 }
 
