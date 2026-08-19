@@ -431,6 +431,16 @@ function closingPairs(eventType: string): PairContract[] {
   return PAIR_CONTRACTS.filter((contract) => contract.closes.includes(eventType));
 }
 
+function pairCorrelationColumn(
+  pair: PairContract,
+): "session_id" | "workflow_run_id" | "escalation_id" | "task_id" | undefined {
+  if (pair.name === "session") return "session_id";
+  if (pair.name === "workflow") return "workflow_run_id";
+  if (pair.name === "escalation") return "escalation_id";
+  if (pair.name === "cli.task" || pair.name === "cli.task.request") return "task_id";
+  return undefined;
+}
+
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
@@ -818,16 +828,25 @@ export class DbWriter {
     const closeTypes = [...pair.closes];
     if (closeTypes.length === 0) return;
     const placeholders = closeTypes.map(() => "?").join(", ");
+    const correlationColumn = pairCorrelationColumn(pair);
     const rows = this.db
       .prepare(
-        `SELECT id, event_type, data, timestamp
-         FROM events
-         WHERE event_type IN (${placeholders})
-           AND id != ?
-         ORDER BY id DESC
-         LIMIT 200`,
+        correlationColumn
+          ? `SELECT id, event_type, data, timestamp
+             FROM events
+             WHERE event_type IN (${placeholders})
+               AND ${correlationColumn} = ?
+               AND id != ?
+             ORDER BY id DESC
+             LIMIT 1`
+          : `SELECT id, event_type, data, timestamp
+             FROM events
+             WHERE event_type IN (${placeholders})
+               AND id != ?
+             ORDER BY id DESC
+             LIMIT 200`,
       )
-      .all(...closeTypes, openEventId) as Array<{
+      .all(...closeTypes, ...(correlationColumn ? [key, openEventId] : [openEventId])) as Array<{
       id?: unknown;
       event_type?: unknown;
       data?: unknown;
@@ -835,8 +854,10 @@ export class DbWriter {
     }>;
     for (const row of rows) {
       const eventType = typeof row.event_type === "string" ? row.event_type : "";
-      const payload = parseStoredEventData(row.data);
-      if (!payload || pair.key(payload) !== key) continue;
+      if (!correlationColumn) {
+        const payload = parseStoredEventData(row.data);
+        if (!payload || pair.key(payload) !== key) continue;
+      }
       const closeEventId = typeof row.id === "number" ? row.id : Number(row.id);
       if (!Number.isFinite(closeEventId) || closeEventId <= 0) return;
       const closeTimestamp = typeof row.timestamp === "number" ? row.timestamp : Number(row.timestamp);
