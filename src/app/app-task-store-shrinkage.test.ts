@@ -412,6 +412,8 @@ describe("saveTaskState shrinkage guard", () => {
     expect(newest?.acceptance).toEqual(["acceptance-33"]);
     expect(newest?.evidence).toEqual(["evidence-33"]);
     expect(newest?.workspace?.headCommit).toBe("head-33");
+    expect(tree.receipts?.["completed-0"]?.compactedDetailSha256).toBe(oldest?.compactedDetailSha256);
+    expect(tree.receipts?.["completed-0"]?.evidence).toEqual([]);
 
     const digest = oldest?.compactedDetailSha256;
     saveTaskState(config, saved);
