@@ -542,32 +542,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
-  /** Exact targets stay synchronous so a bad direct reference fails its caller deterministically. */
-  const dispatchAdmissionPlanNow = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
-    const errors: unknown[] = [];
-    for (const command of plan.commands) {
-      if (command.status !== "pending") continue;
-      try {
-        dispatchAdmissionCommand(plan, command, event);
-      } catch (error) {
-        errors.push(error);
-      }
-    }
-    if (errors.length > 0) {
-      const detail = errors.map((error) => (error instanceof Error ? error.message : String(error))).join("; ");
-      throw new AggregateError(
-        errors,
-        `Canonical event event:${plan.eventId} failed ${errors.length} of ${plan.commands.length} frozen App admission command(s) from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration}): ${detail}`,
-      );
-    }
-    if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
-      throw new Error(
-        `Canonical event event:${plan.eventId} still has pending App admission commands from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
-      );
-    }
-    return admissionPlanDelivery(plan, "admitted durably");
-  };
-
   const queuedAdmissionCommands = new Map<string, { eventId: number; appId: string; event?: AgentEvent }>();
   let admissionTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -786,9 +760,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // must not reclassify it or report the superseded commands as pending.
       if (frozenPlan) {
         if (frozenPlan.status === "superseded") return undefined;
-        return frozenPlan.commands.some((command) => command.kind === "exact-task")
-          ? dispatchAdmissionPlanNow(frozenPlan, event)
-          : queueAdmissionPlan(frozenPlan, event);
+        return queueAdmissionPlan(frozenPlan, event);
       }
 
       const canonical = canonicalAppEvent(event);
@@ -833,7 +805,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           ],
           now: now(),
         });
-        return dispatchAdmissionPlanNow(plan, event);
+        return queueAdmissionPlan(plan, event);
       }
 
       const inboxMatches = host.subscriptionInputs(canonical);
