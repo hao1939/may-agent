@@ -446,6 +446,7 @@ type SpecLoopState = {
       activeAttemptId?: string | null;
       activeTaskSessionId?: string | null;
       heartbeatAt?: string | null;
+      terminalDisposition?: boolean;
       successorDisposition?: string | null;
       resumeCondition?: string | null;
       review?: Record<string, unknown> | null;
@@ -2196,12 +2197,34 @@ export function specLoopRepresentationAuthority(input: {
   const representedSpecIds: string[] = [];
   const unrepresentedSpecIds: string[] = [];
   const waitingTaskIds = new Set<string>();
+  const loopTaskId = input.state.loopTaskId || "aks-spec-verification-loop";
+  const loopTask = input.tree.tasks?.[loopTaskId];
+  const loopPhase = loopTask ? projectionPhase(loopTask) : "";
+  // The standing controller deliberately keeps its complete unfinished ledger
+  // larger than its bounded direct-child frontier. A live controller is the
+  // holder and wake path for those queued rows; child transitions wake it to
+  // select the next slice. Requiring one direct child per row defeats that
+  // contract and reports the bounded backlog itself as an integrity breach.
+  const ledgerRepresentedByController =
+    !!loopTask && ["pending", "running", "waiting"].includes(loopPhase);
 
   for (const [specId, spec] of Object.entries(input.state.specs ?? {})) {
     const status = normalizeSpecStatus(spec.status);
-    if (status === "pass" || status === "done") continue;
+    if (
+      status === "pass" ||
+      status === "done" ||
+      spec.terminalDisposition === true
+    ) {
+      continue;
+    }
 
     nonTerminalSpecCount += 1;
+    if (ledgerRepresentedByController) {
+      representedSpecIds.push(specId);
+      if (loopPhase === "waiting") waitingTaskIds.add(loopTaskId);
+      continue;
+    }
+
     const taskId = exactSpecLoopOwnerTaskId({
       tree: input.tree,
       state: input.state,

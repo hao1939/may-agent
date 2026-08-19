@@ -721,6 +721,53 @@ describe("specLoopRepresentationAuthority", () => {
     });
   });
 
+  it("treats a live standing controller as the holder for its bounded ledger backlog and excludes terminal dispositions", () => {
+    const loopTaskId = "aks-spec-verification-loop";
+    const queuedSpecId = "spec.queued";
+    const terminalSpecId = "spec.terminal";
+    const tree = {
+      tasks: {
+        [loopTaskId]: {
+          id: loopTaskId,
+          children: ["spec/current-slice"],
+          phase: "waiting",
+        },
+      },
+    };
+    const state = {
+      loopTaskId,
+      specs: {
+        [queuedSpecId]: {
+          status: "pending",
+          taskId: null,
+          attempts: 0,
+          lastRunId: null,
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: "2026-08-19T00:00:00.000Z",
+        },
+        [terminalSpecId]: {
+          status: "pending",
+          terminalDisposition: true,
+          attempts: 0,
+          lastRunId: null,
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: "2026-08-19T00:00:00.000Z",
+        },
+      },
+    };
+
+    expect(specLoopRepresentationAuthority({ tree, state })).toEqual({
+      authorityObserved: true,
+      nonTerminalSpecCount: 1,
+      unrepresentedNonTerminalCount: 0,
+      representedSpecIds: [queuedSpecId],
+      unrepresentedSpecIds: [],
+      waitingTaskIds: [loopTaskId],
+    });
+  });
+
   it("excludes projected attention from holder authority while preserving exact waiting holders", () => {
     const loopTaskId = "aks-spec-verification-loop";
     const machinesSpecId = "spec.localdns.topology-machines";
