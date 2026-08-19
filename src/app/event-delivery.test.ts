@@ -33,7 +33,9 @@ function timelineEvents(graph: EventGraphResponse): EventGraphNode[] {
 }
 
 function attachPersistence(bus: EventBus, root: string): void {
-  const writer = new DbWriter(root);
+  // Delivery-expiry tests use millisecond TTLs and explicitly retain the old
+  // sweep-on-next-event behavior. Production rate-limits this housekeeping.
+  const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
 }
@@ -1668,6 +1670,45 @@ describe("event delivery metadata", () => {
           deliveryStatus: "unhandled",
         }),
       ]);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rate-limits delivery housekeeping without delaying event persistence", async () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      const writer = new DbWriter(root, { housekeepingIntervalMs: 500 });
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+
+      bus.emit({ type: "reload", ttl_ms: 1 } as any);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "first", agent: "may", durationMs: 5 },
+      } as any);
+
+      const db = getDb(root);
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
+        delivery_status: "pending",
+      });
+      expect(db.prepare("SELECT id FROM events WHERE event_type = 'handler.completed'").get()).toBeTruthy();
+
+      await new Promise((resolve) => setTimeout(resolve, 550));
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "second", agent: "may", durationMs: 5 },
+      } as any);
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
+        delivery_status: "unhandled",
+      });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
