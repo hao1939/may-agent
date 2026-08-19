@@ -671,6 +671,84 @@ describe("canonical App task runtime", () => {
     expect(readFileSync(config.statePath, "utf8")).toBe(before);
   });
 
+  it("limits successful-session recovery reads to the session's bound App", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, ".state");
+    const foreignAppDir = join(f.projectsRoot, "foreign.app");
+    mkdirSync(join(foreignAppDir, "agents", "foreign-owner"), { recursive: true });
+    mkdirSync(join(foreignAppDir, "tasks"), { recursive: true });
+    writeFileSync(
+      join(foreignAppDir, "tasks", "seed.json"),
+      JSON.stringify({
+        root_task_id: "root",
+        groups: {
+          root: { id: "root", parent_id: null, state: "backlog", owner: "foreign-owner", children: [] },
+        },
+      }),
+    );
+    const foreignDefinition = defineApp({
+      id: "foreign",
+      version: 1,
+      owner: "foreign-owner",
+      inputSchema: Type.Object({}, { additionalProperties: true }),
+      workspace: { kind: "local", localPath: "." },
+      tasks: { subscriptions: [] },
+    });
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: {
+        id: "boot:scoped-session-recovery",
+        generation: 1,
+        entries: [
+          { appDir: f.appDir, definition: definition() },
+          { appDir: foreignAppDir, definition: foreignDefinition },
+        ],
+      },
+    });
+
+    const sessionId = "session-bound-to-sample";
+    writeSessionMeta(persistDir, sessionId, {
+      agent: "sample-owner",
+      task: [
+        "Owner reconciliation",
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({ appId: "sample", taskId: "work/scoped", generation: 1 }),
+        "```",
+      ].join("\n"),
+      status: "done",
+      startedAt: Date.now() - 100,
+      endedAt: Date.now(),
+      source: "app-task-owner",
+      projectId: "sample",
+      kind: "call",
+    });
+
+    const foreignStatePath = join(foreignAppDir, ".state", "tasks", "state.json");
+    const foreignState = readFileSync(foreignStatePath, "utf8");
+    const failures: string[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failures.push(String(event.data.error ?? ""));
+    });
+    writeFileSync(foreignStatePath, "not valid JSON");
+    try {
+      bus.emit({
+        type: "session.end",
+        agent: "sample-owner",
+        sessionId,
+        status: "done",
+        projectId: "sample",
+        data: { sessionId, agent: "sample-owner", status: "done", projectId: "sample" },
+      });
+    } finally {
+      writeFileSync(foreignStatePath, foreignState);
+    }
+
+    expect(failures).toEqual([]);
+  });
+
   it("does not discover or import App definitions independently", async () => {
     const f = fixture();
     const bus = eventBus();
