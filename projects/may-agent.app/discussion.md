@@ -1,8 +1,14 @@
 # Discussion
 
+> Historical operational log. This file is not current design, task, or
+> runtime status authority. Use `README.md`, `app.ts`, and `docs/INDEX.md` for
+> the current contract, and the task UI or a dated verification report for
+> current operation. Preserve this log only as evidence.
+
 ---read @iter0---
 
 ### project-creative-audit - 2026-06-14
+
 **Project creative audit suggestion**
 
 This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.

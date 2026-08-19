@@ -74,6 +74,13 @@ artifacts stay in the portable workspace.
 `project.json.domainProject` is the human/project-state description of the same
 domain relationship. App integrity checks keep them aligned.
 
+`project.json.id` is also the stable project read-model key. New projects
+normally use the sibling directory name (`my-project.app`), but retained
+projects such as `gym`, `evaluation`, and `may` keep their established
+non-suffixed IDs. Routing normalizes an optional `.app` suffix; do not rename a
+live project solely for visual consistency because project rows, links, and
+history are keyed by this value.
+
 ## Project Status
 
 Project status answers one question: should the owner loop push now, wait for a

@@ -107,7 +107,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         outcome:
           "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
         acceptance: [
-          "The owner performs one useful platform step or records an evidence-backed no-op, with task-tree changes proposed as typed actions.",
+          "The owner performs one useful platform step or records an evidence-backed no-op, with task-resource changes proposed as typed actions.",
         ],
         mode: "maintain",
         owner: projectOwnerAgent,
