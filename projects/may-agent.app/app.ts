@@ -11,20 +11,147 @@ import {
 const projectId = "may-agent";
 const projectOwnerAgent = "may";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
+const nonEmptyString = Type.String({ minLength: 1 });
+const stringList = Type.Array(nonEmptyString, { minItems: 1 });
+const platformObligationDataSchema = Type.Object(
+  {
+    outcome: nonEmptyString,
+    constraints: Type.Optional(stringList),
+    acceptance: Type.Optional(stringList),
+  },
+  { additionalProperties: true },
+);
 
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
 export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
 export const PLATFORM_METRIC_INTERVAL_MS = 300_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
-const platformInputSchema = Type.Union(
-  ["owner-review"].map((kind) =>
-    Type.Object(
-      { kind: Type.Literal(kind), data: detailsSchema },
-      { additionalProperties: false },
-    ),
+export const platformInputSchema = Type.Union([
+  Type.Object(
+    { kind: Type.Literal("owner-review"), data: detailsSchema },
+    { additionalProperties: false },
   ),
-);
+  Type.Object(
+    {
+      kind: Type.Literal("runtime-deployment.adjudicate-current-host-state"),
+      data: Type.Intersect([
+        platformObligationDataSchema,
+        Type.Object({ currentEvidence: detailsSchema }),
+      ]),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("runtime-capability-request"),
+      data: Type.Intersect([
+        platformObligationDataSchema,
+        Type.Object({ acceptance: stringList, evidence: stringList }),
+      ]),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("app-deployment-adjudication"),
+      data: Type.Intersect([
+        platformObligationDataSchema,
+        Type.Object({
+          requestingApp: Type.Literal("aks-rp-e2e"),
+          requestingTaskId: nonEmptyString,
+          historicalArtifact: nonEmptyString,
+        }),
+      ]),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("runtime-source-deployment-request"),
+      data: Type.Intersect([
+        platformObligationDataSchema,
+        Type.Object({
+          context: Type.Object(
+            {
+              callerApp: Type.Literal("aks-rp-e2e"),
+              callerTask: nonEmptyString,
+            },
+            { additionalProperties: true },
+          ),
+          acceptance: stringList,
+        }),
+      ]),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("protected-agent-config-repair"),
+      data: Type.Intersect([
+        platformObligationDataSchema,
+        Type.Object({
+          acceptance: stringList,
+          requestCorrelation: Type.Literal("appdep_69d1bbe3d001c5aeec77b979"),
+          targetApp: Type.Literal("evaluation"),
+          targetAgent: Type.Literal("evaluator"),
+          configPath: Type.Literal(
+            "/app/projects/evaluation.app/agents/evaluator/agent.json",
+          ),
+          field: Type.Literal("model"),
+          currentValue: Type.Literal("gpt-5.6-sol"),
+          proposedValue: Type.Literal("claude-opus-5"),
+          credentialMutation: Type.Literal(false),
+          requiresHaoApproval: Type.Literal(true),
+        }),
+      ]),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("contain-external-and-replayed-workspace-writer"),
+      data: Type.Object(
+        {
+          project: Type.Literal("aks-rp-e2e"),
+          sourceTaskId: Type.Literal(
+            "ops/contain-event5648100-mv-speed-live-post-guard-producer-20260819",
+          ),
+          sourceEventId: Type.Literal(5648100),
+          incidentPath: Type.Literal(
+            "/app/worktrees/aks-master-validation-speed",
+          ),
+          staleGitAdminPath: Type.Literal(
+            "/app/.git/worktrees/aks-master-validation-speed",
+          ),
+          externalRootPid: Type.Integer({ minimum: 1 }),
+          observedLiveDescendant: Type.Object(
+            {
+              pid: Type.Integer({ minimum: 1 }),
+              ppid: Type.Integer({ minimum: 1 }),
+              startedAt: nonEmptyString,
+              command: nonEmptyString,
+            },
+            { additionalProperties: false },
+          ),
+          writeSignature: Type.Literal(
+            ".tmp-default-fleet-overlay-*/staging.json",
+          ),
+          sourceConstructor: Type.Literal(
+            "runner/check-default-fleet-overlay.test.ts",
+          ),
+          replayedSessions: stringList,
+          workflowRuns: stringList,
+          workflow: Type.Literal("domain-task-execution"),
+          requiredOutcome: nonEmptyString,
+          evidenceArtifacts: stringList,
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 const deferredMetrics = new Set([
   "project.health.finding-count",
@@ -81,6 +208,45 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         input: { scope: "may-agent-platform" },
         priority: "P1",
       };
+    case "contain-external-and-replayed-workspace-writer": {
+      const data = record(input.data);
+      return {
+        id: "",
+        parentId: "platform-system-review-feedback-loop",
+        outcome: stringValue(data.requiredOutcome),
+        acceptance: [
+          "Return exact process/session/workflow lineage, supported containment operations, fail-closed replay repair proof, and at least 180 seconds of quiescence without changing the incident path or Git metadata.",
+        ],
+        mode: "achieve",
+        owner: projectOwnerAgent,
+        input: { kind: input.kind, data },
+        priority: "P0",
+      };
+    }
+    case "runtime-deployment.adjudicate-current-host-state":
+    case "runtime-capability-request":
+    case "app-deployment-adjudication":
+    case "runtime-source-deployment-request":
+    case "protected-agent-config-repair": {
+      const data = record(input.data);
+      return {
+        id: "",
+        parentId: "platform-system-review-feedback-loop",
+        outcome: stringValue(data.outcome),
+        acceptance: Array.isArray(data.acceptance)
+          ? data.acceptance.filter(
+              (item): item is string =>
+                typeof item === "string" && item.trim().length > 0,
+            )
+          : [
+              "Return a terminal, evidence-backed platform disposition through the supported control plane.",
+            ],
+        mode: "achieve",
+        owner: projectOwnerAgent,
+        input: { kind: input.kind, data },
+        priority: "P1",
+      };
+    }
     default:
       return null;
   }
@@ -124,18 +290,32 @@ export function resolveMayAgentTask(
 export function taskForMayAgentInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
-  const intent = taskIntentForInput(admitted.input) ?? {
-    id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
-    parentId: "platform-system-review-feedback-loop",
-    outcome: `Interpret and handle admitted may-agent input ${admitted.input.kind}.`,
-    acceptance: [
-      "The accountable platform owner returns an evidence-backed result or revises the same task to the exact required platform outcome.",
-    ],
-    mode: "achieve" as const,
-    owner: projectOwnerAgent,
-    input: { kind: admitted.input.kind, data: record(admitted.input.data) },
-    priority: "P1" as const,
-  };
+  if (
+    admitted.input.kind === "protected-agent-config-repair" &&
+    (admitted.source.kind !== "app" || admitted.source.id !== "evaluation")
+  ) {
+    throw new Error(
+      "protected-agent-config-repair is accepted only from App evaluation",
+    );
+  }
+  if (
+    admitted.input.kind === "contain-external-and-replayed-workspace-writer" &&
+    (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
+  ) {
+    throw new Error(
+      "contain-external-and-replayed-workspace-writer is accepted only from App aks-rp-e2e",
+    );
+  }
+  const resolved = taskIntentForInput(admitted.input);
+  if (!resolved) {
+    throw new Error(`Unsupported may-agent input kind: ${admitted.input.kind}`);
+  }
+  const intent = resolved.id
+    ? resolved
+    : {
+        ...resolved,
+        id: `app-request/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+      };
   return { kind: "desired", intent };
 }
 
@@ -191,7 +371,6 @@ const app = defineApp({
     "project.task.handler.unavailable",
     "project.task.reconcile.started",
     "project.task.reconcile.skipped",
-    "project.task.reconciled",
     "project.task.verification.failed",
     "guard.triggered",
     "skill.loaded",
