@@ -11,9 +11,10 @@
  * - .state/human-inputs.jsonl → human correction trends
  */
 
-import { readFileSync, existsSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getEvaluationsSince, getDb } from "../requests.js";
+import { openReadOnlyDatabase, type SqliteDb } from "../db.js";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -63,16 +64,67 @@ interface AttentionItem {
 
 // ── Data loading ─────────────────────────────────────────────────────
 
-/** Load flat-format evaluations (agent, quality, efficiency, verdict) within a time window. */
+function openStatusDb(persistDir: string): SqliteDb | null {
+  const dbPath = join(persistDir, "may.db");
+  if (!existsSync(dbPath)) return null;
+
+  // Even a read-only SQLite connection may create -shm/-wal files beside a
+  // WAL-mode database. Query a private snapshot so an operator probe cannot
+  // mutate the persisted runtime tree.
+  const snapshotDir = mkdtempSync(join(tmpdir(), "may-status-db-"));
+  const snapshotPath = join(snapshotDir, "may.db");
+  try {
+    copyFileSync(dbPath, snapshotPath);
+    for (const suffix of ["-wal", "-shm"]) {
+      const source = dbPath + suffix;
+      if (existsSync(source)) copyFileSync(source, snapshotPath + suffix);
+    }
+    const db = openReadOnlyDatabase(snapshotPath);
+    return {
+      exec: (sql) => db.exec(sql),
+      prepare: (sql) => db.prepare(sql),
+      run: (sql, params) => db.run(sql, params),
+      close: () => {
+        try {
+          db.close();
+        } finally {
+          rmSync(snapshotDir, { recursive: true, force: true });
+        }
+      },
+    };
+  } catch {
+    rmSync(snapshotDir, { recursive: true, force: true });
+    return null;
+  }
+}
+
+/** Load flat-format evaluations without creating, migrating, or journaling the runtime database. */
 function loadEvals(persistDir: string, sinceMs: number): EvalRecord[] {
-  return getEvaluationsSince(persistDir, sinceMs).map((ev) => ({
-    agent: ev.agent,
-    quality: ev.quality,
-    efficiency: ev.efficiency,
-    verdict: ev.verdict,
-    issues: ev.issues,
-    ts: ev.createdAt,
-  }));
+  const db = openStatusDb(persistDir);
+  if (!db) return [];
+  try {
+    const rows = db
+      .prepare("SELECT agent, quality, efficiency, verdict, issues, createdAt FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC")
+      .all(sinceMs) as Record<string, unknown>[];
+    return rows.map((row) => ({
+      agent: row.agent as string,
+      quality: row.quality as number,
+      efficiency: row.efficiency as number,
+      verdict: row.verdict as string,
+      issues: (() => {
+        try {
+          return JSON.parse((row.issues as string | null) || "[]") as string[];
+        } catch {
+          return [];
+        }
+      })(),
+      ts: row.createdAt as number,
+    }));
+  } catch {
+    return [];
+  } finally {
+    db.close();
+  }
 }
 
 /** Load human input counts per day from human-inputs.jsonl. */
@@ -114,7 +166,8 @@ function loadHumanInputCounts(persistDir: string, days: number): number[] {
 
 /** Load process last-fire times from events table (handler.started events). */
 function loadProcessHealth(persistDir: string): ProcessInfo[] {
-  const db = getDb(persistDir);
+  const db = openStatusDb(persistDir);
+  if (!db) return [];
   try {
     return db.prepare(
       `WITH handlers AS (
@@ -142,6 +195,8 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
     ).all() as unknown as ProcessInfo[];
   } catch {
     return [];
+  } finally {
+    db.close();
   }
 }
 
@@ -313,24 +368,28 @@ export function printSystemStatus(persistDir: string, opts?: Partial<StatusOptio
     avgDuration: number | null;
   }> = [];
 
+  const statsDb = openStatusDb(persistDir);
   try {
-    const db = getDb(persistDir);
-    const cutoff = now - DAY;
-    agentStatsRows = db
-      .prepare(
-        `SELECT agent as agentName,
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed,
-                AVG(CASE WHEN endedAt IS NOT NULL AND startedAt IS NOT NULL THEN endedAt - startedAt END) as avgDuration
-         FROM sessions
-         WHERE startedAt > ?
-         GROUP BY agent
-         ORDER BY total DESC`,
-      )
-      .all(cutoff) as unknown as typeof agentStatsRows;
+    if (statsDb) {
+      const cutoff = now - DAY;
+      agentStatsRows = statsDb
+        .prepare(
+          `SELECT agent as agentName,
+                  COUNT(*) as total,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
+                  SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed,
+                  AVG(CASE WHEN endedAt IS NOT NULL AND startedAt IS NOT NULL THEN endedAt - startedAt END) as avgDuration
+           FROM sessions
+           WHERE startedAt > ?
+           GROUP BY agent
+           ORDER BY total DESC`,
+        )
+        .all(cutoff) as unknown as typeof agentStatsRows;
+    }
   } catch {
     // DB unavailable — continue with empty stats
+  } finally {
+    statsDb?.close();
   }
 
   const agentCompletionRates = new Map<string, AgentStats>();
@@ -523,22 +582,24 @@ export function printSystemStatus(persistDir: string, opts?: Partial<StatusOptio
     }
 
     // Coach experiments (from sessions)
+    const coachDb = openStatusDb(persistDir);
     try {
-      const db = getDb(persistDir);
-      const coachExperimentsRow = db
-        .prepare(
+      const coachExperimentsRow = coachDb
+        ?.prepare(
           `SELECT COUNT(*) as total
            FROM sessions
            WHERE agent = 'coach'
              AND task LIKE '%growth-cycle%'
              AND startedAt > ?`,
         )
-        .get(now - WEEK) as { total: number } | null;
+        .get(now - WEEK) as { total: number } | null | undefined;
       if (coachExperimentsRow && coachExperimentsRow.total > 0) {
         lines.push(`  Coach growth cycles (7d): ${coachExperimentsRow.total}`);
       }
     } catch {
       // best-effort
+    } finally {
+      coachDb?.close();
     }
   }
 

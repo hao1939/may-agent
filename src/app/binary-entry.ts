@@ -4,9 +4,9 @@
  * Runs may.ts directly. Process supervision is handled by supervisord
  * (container) or the OS process manager. No internal launcher layer.
  *
- * Compiled binary argv is [binaryPath, arg1, ...] (offset 1).
- * Node/bun dev argv is [runtime, script, arg1, ...] (offset 2).
- * We pad process.argv so may.ts's process.argv.slice(2) works in both modes.
+ * Bun compiled argv is [runtime, binaryPath, arg1, ...] (offset 2), matching
+ * development's [runtime, script, arg1, ...]. Replace only the entry label so
+ * may.ts sees the same operator arguments in both modes.
  */
 
 import { plugin } from "bun";
@@ -27,8 +27,8 @@ async function main() {
     process.exit(1);
   }
 
-  // Normalize argv: pad so process.argv.slice(2) works correctly
-  process.argv = [process.argv[0], "binary-entry.ts", ...process.argv.slice(1)];
+  // Normalize argv without leaking the compiled executable path as an argument.
+  process.argv = [process.argv[0], "binary-entry.ts", ...process.argv.slice(2)];
 
   // Run may.ts directly — no launcher layer
   await import("./may.js");
