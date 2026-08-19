@@ -18,9 +18,17 @@ import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
 
-// Keep informational CLI modes ahead of runtime-root resolution, identity
-// creation, and app startup. In particular, --help must remain read-only: app
-// startup performs stale handler/workflow recovery and may mutate persisted state.
+// Keep informational CLI modes and their syntax validation ahead of runtime-root
+// resolution, identity creation, and app startup. Runtime startup performs stale
+// handler/workflow recovery and may mutate persisted state.
+const operatorArgs = process.argv
+  .slice(1)
+  .filter((arg) => arg !== process.argv[0] && arg !== "binary-entry.ts" && !arg.endsWith("/may.ts"));
+if (operatorArgs[0] === "status") {
+  console.error('Unsupported positional command "status". Use "may-agent --status".');
+  process.exit(2);
+}
+
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`Usage: may-agent [options]
 
