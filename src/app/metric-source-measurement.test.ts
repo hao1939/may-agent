@@ -8,22 +8,24 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID } from "./event-bus.js";
 import {
   attachMetricSourceMeasurement,
+  type MetricSourceMeasurementRuntime,
   STALE_ACTIVE_SOURCE_QUERY,
 } from "./metric-source-measurement.js";
 
 describe("source-query metric measurement", () => {
   let persistDir: string;
   let bus: EventBus;
+  let measurement: MetricSourceMeasurementRuntime;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-metric-source-test-"));
     bus = new EventBus();
     applyDbSchema(getDb(persistDir));
     attachEventPersistence({ bus, persistDir });
-    attachMetricSourceMeasurement({ bus, persistDir });
+    measurement = attachMetricSourceMeasurement({ bus, persistDir });
   });
 
-  it("turns a measurement trigger into a correlated stored sample and alert recovery", () => {
+  it("turns a measurement trigger into a correlated stored sample and alert recovery", async () => {
     const db = getDb(persistDir);
     db.run(
       `INSERT INTO metrics
@@ -59,6 +61,7 @@ describe("source-query metric measurement", () => {
       },
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
+    await measurement.idle();
 
     const metric = db
       .prepare("SELECT current, updated_at FROM metrics WHERE id = ?")
@@ -94,7 +97,7 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("skips stored mutation statements instead of executing them", () => {
+  it("skips stored mutation statements instead of executing them", async () => {
     const db = getDb(persistDir);
     db.run(
       `INSERT INTO metrics
@@ -109,18 +112,19 @@ describe("source-query metric measurement", () => {
       owner: "agent:may",
       data: {},
     });
+    await measurement.idle();
 
     expect(db.prepare("SELECT current FROM metrics WHERE id = 'unsafe.metric'").get()).toEqual({
       current: null,
     });
   });
 
-  it("records real source-command output and preserves its evidence", () => {
+  it("records real source-command output without blocking the daemon event loop", async () => {
     const db = getDb(persistDir);
     const sampler = join(persistDir, "sample.ts");
     writeFileSync(
       sampler,
-      `console.log(JSON.stringify({ value: 7, sampleSize: 3, measuredAt: Date.now(), note: { source: "fixture" } }));\n`,
+      `await Bun.sleep(150); console.log(JSON.stringify({ value: 7, sampleSize: 3, measuredAt: Date.now(), note: { source: "fixture" } }));\n`,
     );
     db.run(
       `INSERT INTO metrics
@@ -129,12 +133,19 @@ describe("source-query metric measurement", () => {
       [`bun ${sampler}`],
     );
 
+    let timerFired = false;
+    setTimeout(() => {
+      timerFired = true;
+    }, 10);
     bus.emit({
       type: "trigger.metrics-snapshot",
       source: "control-socket",
       owner: "agent:may",
       data: { reason: "source-command-golden-trace" },
     });
+    await Bun.sleep(30);
+    expect(timerFired).toBe(true);
+    await measurement.idle();
 
     expect(db.prepare("SELECT current FROM metrics WHERE id = 'command.metric'").get()).toEqual({
       current: 7,
