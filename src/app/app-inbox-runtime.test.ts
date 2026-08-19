@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { AppDependencyObservation } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
+import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "./app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { AppRegistry } from "./app-registry.js";
@@ -232,6 +233,90 @@ describe("App inbox runtime", () => {
     expect(task.attached).toEqual([`probe/${row.id}`]);
   });
 
+  it("accepts a frozen plan before slow Task admission runs", async () => {
+    const bus = persistentBus();
+    let admitted = 0;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      admitTaskEvent: () => {
+        admitted += 1;
+        const until = performance.now() + 75;
+        while (performance.now() < until) {
+          // Simulate the retained task store's large synchronous projection write.
+        }
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      previewTaskEvent: () => ["waiting-task"],
+      scanIntervalMs: 10_000,
+    });
+
+    const startedAt = performance.now();
+    bus.emit({
+      type: "provider.changed",
+      source: "provider",
+      owner: "app:evaluation",
+      data: { project: "evaluation", value: "changed" },
+    });
+    const elapsed = performance.now() - startedAt;
+
+    expect(admitted).toBe(0);
+    expect(elapsed).toBeLessThan(25);
+    await waitUntil(() => admitted === 1);
+    expect(db.prepare("SELECT status FROM app_event_admission_plans WHERE event_id = 1").get()).toEqual({
+      status: "completed",
+    });
+  });
+
+  it("resumes a frozen plan after restart and does not admit it twice", async () => {
+    const eventId = Number(
+      db
+        .prepare(
+          `INSERT INTO events (event_type, source, owner, data, timestamp, delivery_status)
+           VALUES ('provider.changed', 'provider', 'app:evaluation', ?, ?, 'accepted')`,
+        )
+        .run(JSON.stringify({ project: "evaluation", value: "restart" }), Date.now()).lastInsertRowid,
+    );
+    const registry = await loadedRegistry(root);
+    const snapshot = registry.snapshot();
+    createAppEventAdmissionPlan(db, {
+      eventId,
+      registrySnapshotId: snapshot.id,
+      registryGeneration: snapshot.generation,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "task",
+          routeId: "restart-task",
+          intent: null,
+          conditionTaskIds: ["restart-task"],
+        },
+      ],
+    });
+    let admitted = 0;
+    const options = {
+      registry,
+      db,
+      admitTaskEvent: ({ event }: any) => {
+        admitted += 1;
+        expect(Number(event[EVENT_ROW_ID])).toBe(eventId);
+        expect(event.data).toMatchObject({ project: "evaluation", value: "restart" });
+        return { accepted: true as const, by: "test-task", route: "direct" as const };
+      },
+      previewTaskEvent: () => [],
+      scanIntervalMs: 10_000,
+    };
+
+    runtime = await startAppInboxRuntime({ ...options, bus: persistentBus() });
+    await waitUntil(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed");
+    expect(admitted).toBe(1);
+    runtime.close();
+    runtime = await startAppInboxRuntime({ ...options, bus: persistentBus() });
+    await Bun.sleep(20);
+    expect(admitted).toBe(1);
+  });
+
   it("keeps an explicit malformed exact-task target visible as subscriber failure", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
@@ -261,6 +346,40 @@ describe("App inbox runtime", () => {
       error: expect.stringContaining("has no canonical App identity"),
     });
     expect(task.attached).toEqual([]);
+  });
+
+  it("fails an unavailable exact Task target before emit returns", async () => {
+    const bus = persistentBus();
+    const failures: Array<Record<string, unknown>> = [];
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failures.push(event.data as Record<string, unknown>);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      admitTaskEvent: () => undefined,
+      previewTaskEvent: () => [],
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "project.task.tick",
+      source: "test",
+      owner: "app:evaluation",
+      target: { appId: "evaluation", taskId: "missing-task" },
+      data: {},
+    });
+
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatchObject({
+      originalEventType: "project.task.tick",
+      error: expect.stringContaining("did not durably admit frozen missing-task"),
+    });
+    expect(getAppEventAdmissionPlan(db, 1)).toMatchObject({
+      status: "pending",
+      commands: [expect.objectContaining({ appId: "evaluation", status: "pending" })],
+    });
   });
 
   it("emits one Conversation update when human work changes", async () => {

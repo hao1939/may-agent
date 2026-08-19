@@ -8,17 +8,15 @@ import {
   type TaskIntent,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
+import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
-import {
-  AppInboxHost,
-  type AppInboxReconcileResult,
-  type AppTaskAttacher,
-} from "./app-inbox-host.js";
+import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
   getAppEventAdmissionPlan,
+  listPendingAppEventAdmissionPlans,
   markAppEventAdmissionCommandAdmitted,
   recordAppEventAdmissionCommandFailure,
   type AppEventAdmissionCommand,
@@ -68,6 +66,8 @@ export type StartAppInboxRuntimeOptions = {
   maxBatchSize?: number;
   now?: () => number;
   observerContext?: (appId: string, appDir: string) => ObserverContext;
+  /** State root used to restore an oversized event body while resuming a frozen plan. */
+  persistDir?: string;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -96,6 +96,64 @@ function eventRowId(event: AgentEvent): number | undefined {
 function eventIdentity(event: AgentEvent): string | undefined {
   const eventId = eventRowId(event);
   return eventId ? `event:${eventId}` : undefined;
+}
+
+function parseStoredEventData(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Rebuild the immutable event input needed to finish a plan after restart. */
+function loadAdmissionEvent(db: SqliteDb, eventId: number, persistDir?: string): AgentEvent | null {
+  const row = db
+    .prepare(
+      `SELECT event_type, source, owner, data, body_ref, body_sha256, body_bytes,
+              session_id, project_id, task_id, timestamp, urgency, ttl_ms
+       FROM events
+       WHERE id = ?`,
+    )
+    .get(eventId);
+  if (!row || typeof row.event_type !== "string") return null;
+
+  let data = parseStoredEventData(row.data) ?? {};
+  if (persistDir && typeof row.body_ref === "string" && row.body_ref.trim()) {
+    const artifact = readJsonArtifactWithDescriptor<Record<string, unknown>>(persistDir, row.body_ref);
+    if (
+      artifact &&
+      (!row.body_sha256 || artifact.descriptor.sha256 === row.body_sha256) &&
+      (!row.body_bytes || artifact.descriptor.bytes === Number(row.body_bytes))
+    ) {
+      data = artifact.value;
+    }
+  }
+  const appId =
+    typeof data.appId === "string" && data.appId.trim()
+      ? data.appId.trim()
+      : typeof row.project_id === "string" && row.project_id.trim()
+        ? row.project_id.trim()
+        : undefined;
+  const taskId = typeof row.task_id === "string" && row.task_id.trim() ? row.task_id.trim() : undefined;
+  const sessionId = typeof row.session_id === "string" && row.session_id.trim() ? row.session_id.trim() : undefined;
+  const target = { ...(appId ? { appId } : {}), ...(taskId ? { taskId } : {}), ...(sessionId ? { sessionId } : {}) };
+  const event = {
+    type: row.event_type,
+    ...(typeof row.source === "string" ? { source: row.source } : {}),
+    ...(typeof row.owner === "string" ? { owner: row.owner } : {}),
+    ...(Object.keys(target).length > 0 ? { target } : {}),
+    data,
+    ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
+    ...(row.urgency === "low" || row.urgency === "normal" || row.urgency === "high" || row.urgency === "immediate"
+      ? { urgency: row.urgency }
+      : {}),
+    ...(typeof row.ttl_ms === "number" ? { ttl_ms: row.ttl_ms } : {}),
+  } as AgentEvent;
+  Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
+  return event;
 }
 
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
@@ -411,66 +469,87 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     for (const appId of host.appIds()) schedule(appId);
     observerRuntime.scanNow();
     void recoverTaskDependencies();
+    recoverAdmissionPlans();
   };
 
   const admissionRouteLabel = (command: AppEventAdmissionCommand): string =>
     `${command.kind}:${command.appId}/${command.routeId}`;
 
-  const dispatchAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
+  const admissionPlanDelivery = (plan: AppEventAdmissionPlan, note: string): DeliveryResult => ({
+    accepted: true,
+    by: `app-runtime:events:${plan.commands.map(admissionRouteLabel).join(",")}`,
+    route: "direct",
+    note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) ${note}`,
+  });
+
+  const dispatchAdmissionCommand = (
+    plan: AppEventAdmissionPlan,
+    command: AppEventAdmissionCommand,
+    event: AgentEvent,
+  ): void => {
     const identity = `event:${plan.eventId}`;
+    try {
+      const entry = loaded.find(({ definition }) => definition.id === command.appId);
+      if (!entry) {
+        throw new Error(
+          `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+        );
+      }
+      if (command.kind === "inbox") {
+        const admitted = host.admit({
+          appId: command.appId,
+          source: { kind: "system", id: identity },
+          input: command.input,
+          originEventId: plan.eventId,
+          idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
+        });
+        schedule(admitted.item.appId);
+      }
+      if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
+        if (!entry.definition.tasks) {
+          throw new Error(
+            `Frozen ${admissionRouteLabel(command)} for ${identity} names an App without its selected task capability`,
+          );
+        }
+        if (!options.admitTaskEvent) {
+          throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
+        }
+        const delivery = options.admitTaskEvent({
+          appId: command.appId,
+          appDir: entry.appDir,
+          event,
+          intent: command.kind === "task" ? command.intent : null,
+          ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
+          conditionTaskIds: command.conditionTaskIds,
+        });
+        if (!delivery) {
+          throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+        }
+      }
+      markAppEventAdmissionCommandAdmitted(options.db, {
+        eventId: plan.eventId,
+        appId: command.appId,
+        now: now(),
+      });
+    } catch (error) {
+      recordAppEventAdmissionCommandFailure(options.db, {
+        eventId: plan.eventId,
+        appId: command.appId,
+        error,
+        now: now(),
+      });
+      throw error;
+    }
+  };
+
+  /** Exact targets stay synchronous so a bad direct reference fails its caller deterministically. */
+  const dispatchAdmissionPlanNow = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
     const errors: unknown[] = [];
     for (const command of plan.commands) {
       if (command.status !== "pending") continue;
       try {
-        const entry = loaded.find(({ definition }) => definition.id === command.appId);
-        if (!entry) {
-          throw new Error(
-            `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
-          );
-        }
-        if (command.kind === "inbox") {
-          const admitted = host.admit({
-            appId: command.appId,
-            source: { kind: "system", id: identity },
-            input: command.input,
-            originEventId: plan.eventId,
-            idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
-          });
-          schedule(admitted.item.appId);
-        }
-        if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
-          if (!entry.definition.tasks) {
-            throw new Error(
-              `Frozen ${admissionRouteLabel(command)} for ${identity} names an App without its selected task capability`,
-            );
-          }
-          if (!options.admitTaskEvent) {
-            throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
-          }
-          const delivery = options.admitTaskEvent({
-            appId: command.appId,
-            appDir: entry.appDir,
-            event,
-            intent: command.kind === "task" ? command.intent : null,
-            ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
-            conditionTaskIds: command.conditionTaskIds,
-          });
-          if (!delivery) {
-            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
-          }
-        }
-        markAppEventAdmissionCommandAdmitted(options.db, {
-          eventId: plan.eventId,
-          appId: command.appId,
-          now: now(),
-        });
+        dispatchAdmissionCommand(plan, command, event);
       } catch (error) {
-        recordAppEventAdmissionCommandFailure(options.db, {
-          eventId: plan.eventId,
-          appId: command.appId,
-          error,
-          now: now(),
-        });
         errors.push(error);
       }
     }
@@ -478,20 +557,81 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const detail = errors.map((error) => (error instanceof Error ? error.message : String(error))).join("; ");
       throw new AggregateError(
         errors,
-        `Canonical event ${identity} failed ${errors.length} of ${plan.commands.length} frozen App admission command(s) from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration}): ${detail}`,
+        `Canonical event event:${plan.eventId} failed ${errors.length} of ${plan.commands.length} frozen App admission command(s) from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration}): ${detail}`,
       );
     }
     if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
       throw new Error(
-        `Canonical event ${identity} still has pending App admission commands from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+        `Canonical event event:${plan.eventId} still has pending App admission commands from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
       );
     }
-    return {
-      accepted: true,
-      by: `app-runtime:events:${plan.commands.map(admissionRouteLabel).join(",")}`,
-      route: "direct",
-      note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) admitted durably`,
-    };
+    return admissionPlanDelivery(plan, "admitted durably");
+  };
+
+  const queuedAdmissionCommands = new Map<string, { eventId: number; appId: string; event?: AgentEvent }>();
+  let admissionImmediate: ReturnType<typeof setImmediate> | null = null;
+
+  const scheduleAdmissionPump = (): void => {
+    if (closed || admissionImmediate || queuedAdmissionCommands.size === 0) return;
+    admissionImmediate = setImmediate(() => {
+      admissionImmediate = null;
+      if (closed) return;
+      const next = queuedAdmissionCommands.entries().next().value;
+      if (!next) return;
+      const [key, queued] = next;
+      queuedAdmissionCommands.delete(key);
+      const plan = getAppEventAdmissionPlan(options.db, queued.eventId);
+      const command = plan?.commands.find(
+        (candidate) => candidate.appId === queued.appId && candidate.status === "pending",
+      );
+      if (!plan || plan.status !== "pending" || !command) {
+        scheduleAdmissionPump();
+        return;
+      }
+      const event = queued.event ?? loadAdmissionEvent(options.db, queued.eventId, options.persistDir);
+      if (!event) {
+        recordAppEventAdmissionCommandFailure(options.db, {
+          eventId: queued.eventId,
+          appId: command.appId,
+          error: new Error(`Frozen App admission event ${queued.eventId} is unavailable`),
+          now: now(),
+        });
+        scheduleAdmissionPump();
+        return;
+      }
+      try {
+        dispatchAdmissionCommand(plan, command, event);
+        completeAppEventAdmissionPlan(options.db, queued.eventId, now());
+      } catch (error) {
+        options.bus.emit({
+          type: "info",
+          message: `[app-runtime:admission] event:${queued.eventId}/${command.appId}: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      }
+      scheduleAdmissionPump();
+    });
+  };
+
+  const queueAdmissionPlan = (plan: AppEventAdmissionPlan, event?: AgentEvent): DeliveryResult => {
+    if (plan.status === "pending") {
+      for (const command of plan.commands) {
+        if (command.status !== "pending") continue;
+        const key = `${plan.eventId}/${command.appId}`;
+        if (!queuedAdmissionCommands.has(key)) {
+          queuedAdmissionCommands.set(key, {
+            eventId: plan.eventId,
+            appId: command.appId,
+            ...(event ? { event } : {}),
+          });
+        }
+      }
+      scheduleAdmissionPump();
+    }
+    return admissionPlanDelivery(plan, plan.status === "completed" ? "already admitted durably" : "queued durably");
+  };
+
+  const recoverAdmissionPlans = (): void => {
+    for (const plan of listPendingAppEventAdmissionPlans(options.db)) queueAdmissionPlan(plan);
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
@@ -646,7 +786,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // must not reclassify it or report the superseded commands as pending.
       if (frozenPlan) {
         if (frozenPlan.status === "superseded") return undefined;
-        return dispatchAdmissionPlan(frozenPlan, event);
+        return frozenPlan.commands.some((command) => command.kind === "exact-task")
+          ? dispatchAdmissionPlanNow(frozenPlan, event)
+          : queueAdmissionPlan(frozenPlan, event);
       }
 
       const canonical = canonicalAppEvent(event);
@@ -691,7 +833,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           ],
           now: now(),
         });
-        return dispatchAdmissionPlan(plan, event);
+        return dispatchAdmissionPlanNow(plan, event);
       }
 
       const inboxMatches = host.subscriptionInputs(canonical);
@@ -759,7 +901,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           routes,
           now: now(),
         });
-        return dispatchAdmissionPlan(plan, event);
+        return queueAdmissionPlan(plan, event);
       }
 
       const observationApps = loaded
@@ -827,11 +969,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      if (admissionImmediate) clearImmediate(admissionImmediate);
+      admissionImmediate = null;
       observerRuntime.close();
       unsubscribe();
       pending.length = 0;
       queued.clear();
       dirty.clear();
+      queuedAdmissionCommands.clear();
     },
   };
 }
