@@ -34,8 +34,8 @@ queues, retries, recovery, or delivery.
 
 Only Host and App are architectural concepts. These record names are useful:
 
-- **request** — an input that still needs one result;
-- **task** — an outcome that may need several tries;
+- **request** — caller correlation for one promised result;
+- **task** — the App-owned outcome, whether it needs one attempt or several;
 - **fact** — something observed or reported; and
 - **attempt** — one bounded agent or workflow run.
 
@@ -46,13 +46,13 @@ trace, and projection are code or storage details. They do not own work.
 
 The Host has five jobs:
 
-| Job | What it does |
-| --- | --- |
-| Persist | Store requests, tasks, facts, attempts, results, and delivery proof |
-| Schedule | Wake declared work at the right time and limit concurrency |
-| Run | Execute one bounded agent or workflow attempt |
-| Recover | Continue the same unfinished request or task after failure or restart |
-| Deliver | Return the accepted result to its caller or channel |
+| Job      | What it does                                                          |
+| -------- | --------------------------------------------------------------------- |
+| Persist  | Store requests, tasks, facts, attempts, results, and delivery proof   |
+| Schedule | Wake declared work at the right time and limit concurrency            |
+| Run      | Execute one bounded agent or workflow attempt                         |
+| Recover  | Continue the same unfinished request or task after failure or restart |
+| Deliver  | Return the accepted result to its caller or channel                   |
 
 The Host also validates and loads complete App definitions. Reload either
 publishes a complete replacement or keeps the previous definition active.
@@ -70,8 +70,7 @@ launch an App agent, workflow, task, or escalation directly.
 An App defines:
 
 - its address and input schema;
-- how inputs and facts become requests or tasks;
-- which simple requests can finish immediately;
+- how actionable inputs and facts resolve to tasks;
 - which owner or workflow handles bounded work;
 - the desired outcome and acceptance evidence for a task; and
 - domain reads, actions, observations, and metrics.
@@ -79,23 +78,26 @@ An App defines:
 An App is source code and domain files. It has no daemon, database, event loop,
 scheduler, queue, retry worker, or recovery worker of its own.
 
-## Request or task
+## Request and task
 
-Use a request when one input needs one answer:
+When a caller expects an answer, the Host records a request and links it to the
+App task that owns the outcome:
 
 ```text
-request -> pure App decision or one owner run -> accepted result
+request -> App task -> accepted result
 ```
 
-Use a task only when an outcome must survive several tries:
+A simple task may converge on its first bounded attempt. Harder work keeps the
+same task identity across exact waits and later attempts:
 
 ```text
 task -> check current state -> run one bounded attempt
      -> done, wait for an exact fact, ask the owner, or try again
 ```
 
-The request or task remains the durable identity. Sessions and workflow runs
-are attempt evidence and may be replaced after a restart.
+The request remains the caller identity and the task remains the App work
+identity. Sessions and workflow runs are attempt evidence and may be replaced
+after a restart.
 
 ## Facts and time
 

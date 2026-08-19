@@ -8,6 +8,7 @@ const excluded = [
   /^node_modules\//,
   /^shared\/projects\//,
   /^agents\/shared\//,
+  /^agents\/[^/]+\/workspace\//,
   /^projects\//,
   /^\.state\//,
 ];
@@ -35,7 +36,12 @@ const started = Date.now();
 
 for (let i = 0; i < files.length; i += chunkSize) {
   const chunk = files.slice(i, i + chunkSize);
-  const args = ["test", ...chunk.map((file) => `./${file}`), "--timeout", "30000"];
+  const args = [
+    "test",
+    ...chunk.map((file) => `./${file}`),
+    "--timeout",
+    "30000",
+  ];
   const result = spawnSync("bun", args, {
     encoding: "utf-8",
     maxBuffer: 64 * 1024 * 1024,
@@ -48,7 +54,9 @@ for (let i = 0; i < files.length; i += chunkSize) {
 
   const passMatch = output.match(/\n\s*(\d+)\s+pass\b/);
   const expectMatch = output.match(/\n\s*(\d+)\s+expect\(\) calls\b/);
-  const filesMatch = output.match(/Ran\s+\d+\s+tests\s+across\s+(\d+)\s+files?/);
+  const filesMatch = output.match(
+    /Ran\s+\d+\s+tests\s+across\s+(\d+)\s+files?/,
+  );
   totalPass += passMatch ? Number(passMatch[1]) : 0;
   totalExpect += expectMatch ? Number(expectMatch[1]) : 0;
   totalFiles += filesMatch ? Number(filesMatch[1]) : chunk.length;
@@ -57,5 +65,7 @@ for (let i = 0; i < files.length; i += chunkSize) {
 const seconds = ((Date.now() - started) / 1000).toFixed(1);
 console.log(`${totalPass} pass`);
 console.log(`${totalExpect} expect() calls`);
-console.log(`Ran default app health tests across ${totalFiles} files in ${seconds}s`);
+console.log(
+  `Ran default app health tests across ${totalFiles} files in ${seconds}s`,
+);
 process.exit(0);

@@ -25,12 +25,14 @@ function eventDetails(event: Record<string, unknown>): Record<string, unknown> {
   return {
     ...eventParams(event.target),
     ...eventParams(data.params),
-    ...data,
     ...Object.fromEntries(
       Object.entries(event).filter(
         ([key]) => !["data", "target"].includes(key),
       ),
     ),
+    // Canonical event metadata describes the producer. Domain payload fields
+    // such as Scout's research source must remain authoritative.
+    ...data,
   };
 }
 

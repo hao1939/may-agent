@@ -24,6 +24,20 @@ describe("Scout task reconciliation", () => {
     }
   });
 
+  it("keeps the domain research source when the Host stamps a producer source", () => {
+    expect(
+      resolveScoutTask({
+        type: "scout.explore",
+        source: "app:scout-knowledge-lib:schedule:scout-explore-hn",
+        data: { project: "scout-knowledge-lib", source: "hn" },
+      }),
+    ).toMatchObject({
+      id: "explore-hn",
+      workflow: "scout-explore",
+      input: { source: "hn" },
+    });
+  });
+
   it("rejects malformed source exploration instead of creating a task", () => {
     expect(
       resolveScoutTask({ type: "scout.explore", source: "unknown" }),
