@@ -1593,16 +1593,7 @@ async function runTaskOwner(input: {
             timeoutMs: ownerOptions.timeout,
             executionRoot: ownerOptions.executionRoot,
           });
-          recordAppTaskAttemptSession(
-            taskReconciliationConfig({
-              appDir: descriptor.appDir,
-              projectDir: descriptor.projectDir,
-              owner: descriptor.owner,
-              maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-            }),
-            claim,
-            sessionId,
-          );
+          recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, sessionId);
           const waited = await opts.manager.waitFor(sessionId);
           return {
             ...waited,
@@ -1741,12 +1732,7 @@ async function establishTaskAcceptance(input: {
   }
 
   try {
-    const verificationConfig = taskReconciliationConfig({
-      appDir: descriptor.appDir,
-      projectDir: descriptor.projectDir,
-      owner: descriptor.owner,
-      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-    });
+    const verificationConfig = appTaskConfig(descriptor);
     const pendingTrigger = readPendingAppTaskTrigger(verificationConfig, claim.taskId);
     const raw = await capability.verifier.verify(
       {
@@ -1805,12 +1791,7 @@ async function reconcileTask(input: {
 }): Promise<string[]> {
   const { opts, descriptor } = input;
 
-  const config = taskReconciliationConfig({
-    appDir: descriptor.appDir,
-    projectDir: descriptor.projectDir,
-    owner: descriptor.owner,
-    maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-  });
+  const config = appTaskConfig(descriptor);
   const defaultParentId = readTaskState(config).root_task_id;
   if (!defaultParentId) {
     throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
@@ -2522,12 +2503,7 @@ function installConventionTaskControllers(
   for (const descriptor of descriptors) {
     const tasks = descriptor.app.tasks;
     if (!tasks || descriptor.reconciliationPaused) continue;
-    const config = taskReconciliationConfig({
-      appDir: descriptor.appDir,
-      projectDir: descriptor.projectDir,
-      owner: descriptor.owner,
-      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-    });
+    const config = appTaskConfig(descriptor);
     try {
       // Every canonical state save refreshes this disposable projection. On
       // startup, preserve a projection already newer than its source instead
@@ -2631,13 +2607,20 @@ function enqueueAppTask(
   });
 }
 
+const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, ReturnType<typeof taskReconciliationConfig>>();
+
 function appTaskConfig(descriptor: AppTaskRuntimeDescriptor) {
-  return taskReconciliationConfig({
+  const existing = appTaskConfigs.get(descriptor);
+  if (existing) return existing;
+  const config = taskReconciliationConfig({
     appDir: descriptor.appDir,
     projectDir: descriptor.projectDir,
     owner: descriptor.owner,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
   });
+  cacheTaskStateReads(config);
+  appTaskConfigs.set(descriptor, config);
+  return config;
 }
 
 /**
@@ -2796,13 +2779,7 @@ function recoverInterruptedAppTasks(
   for (const descriptor of descriptors) {
     if (!descriptor.app.tasks) continue;
     const controller = controllers.get(descriptor.id);
-    const config = taskReconciliationConfig({
-      appDir: descriptor.appDir,
-      projectDir: descriptor.projectDir,
-      owner: descriptor.owner,
-      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-    });
-    cacheTaskStateReads(config);
+    const config = appTaskConfig(descriptor);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       const released = releaseInterruptedAppTaskAttempt(
         config,
@@ -2989,13 +2966,7 @@ async function requeueRepairedAppTaskHandlers(
   for (const descriptor of descriptors) {
     const controller = controllers.get(descriptor.id);
     if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
-    const config = taskReconciliationConfig({
-      appDir: descriptor.appDir,
-      projectDir: descriptor.projectDir,
-      owner: descriptor.owner,
-      maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-    });
-    cacheTaskStateReads(config);
+    const config = appTaskConfig(descriptor);
     for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.owner)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
@@ -3084,16 +3055,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           (candidate) => candidate.id === sessionBinding.appId,
         );
         if (descriptor?.app.tasks) {
-          const association = associateAppTaskSession(
-            taskReconciliationConfig({
-              appDir: descriptor.appDir,
-              projectDir: descriptor.projectDir,
-              owner: descriptor.owner,
-              maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-            }),
-            sessionBinding,
-            startedSessionId,
-          );
+          const association = associateAppTaskSession(appTaskConfig(descriptor), sessionBinding, startedSessionId);
           if (association.status !== "recorded") {
             interruptSupersededOwnerSession(
               opts,
@@ -3134,12 +3096,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
         if (descriptor.reconciliationPaused) continue;
         const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
         if (successfulOwner && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
-          const config = taskReconciliationConfig({
-            appDir: descriptor.appDir,
-            projectDir: descriptor.projectDir,
-            owner: descriptor.owner,
-            maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
-          });
+          const config = appTaskConfig(descriptor);
           if (
             successfulOwner.binding?.appId === descriptor.id &&
             workflowWasInterruptedByRestart(opts.persistDir, successfulOwner.workflowRunId)

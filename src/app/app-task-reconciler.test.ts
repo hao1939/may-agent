@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
-import { readTaskState, saveTaskState, type TaskStateConfig } from "./app-task-store.js";
+import { cacheTaskStateReads, readTaskState, saveTaskState, type TaskStateConfig } from "./app-task-store.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
   matchingAppTaskConditionTaskIds,
@@ -28,6 +28,7 @@ import {
   readAppTaskIntent,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
+  readPendingAppTaskTrigger,
   readAppTaskTrigger,
   recordAppTaskTrigger,
   pendingAppTaskRecoveryAttention,
@@ -1139,6 +1140,32 @@ describe("App task reconciler state", () => {
     });
 
     expect(readAppTaskTrigger(config, monitor.id)).toEqual(retry);
+  });
+
+  it("returns trigger snapshots that cannot mutate a long-lived cached task tree", () => {
+    const { config } = fixture();
+    cacheTaskStateReads(config);
+    const monitor = intent("maintain");
+    observeAppTaskIntent(config, { intent: monitor, appOwner: "app-owner" });
+    recordAppTaskTrigger(config, monitor.id, {
+      type: "metric.breach",
+      data: { metricId: "may.failure-rate" },
+    });
+
+    const trigger = readAppTaskTrigger(config, monitor.id);
+    const pending = readPendingAppTaskTrigger(config, monitor.id);
+    if (!trigger || !pending) throw new Error("expected trigger snapshots");
+    (trigger.data as Record<string, unknown>).metricId = "mutated-trigger";
+    (pending.data as Record<string, unknown>).metricId = "mutated-pending";
+
+    expect(readAppTaskTrigger(config, monitor.id)).toEqual({
+      type: "metric.breach",
+      data: { metricId: "may.failure-rate" },
+    });
+    expect(readPendingAppTaskTrigger(config, monitor.id)).toEqual({
+      type: "metric.breach",
+      data: { metricId: "may.failure-rate" },
+    });
   });
 
   it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
@@ -2717,7 +2744,11 @@ describe("App task reconciler state", () => {
         "nested-workflow-session",
       ),
     ).toEqual({ status: "recorded", taskId: claim.taskId });
-    expect(readTaskState(config).attempts?.[claim.attemptId].sessionId).toBe("nested-workflow-session");
+    const associated = readTaskState(config).attempts?.[claim.attemptId];
+    expect(associated?.sessionId).toBe("nested-workflow-session");
+    const associatedVersion = associated?.metadata.resourceVersion;
+    expect(recordAppTaskAttemptSession(config, claim, "nested-workflow-session")).toBe(true);
+    expect(readTaskState(config).attempts?.[claim.attemptId].metadata.resourceVersion).toBe(associatedVersion);
 
     const revised: AppTaskIntent = {
       ...original,
