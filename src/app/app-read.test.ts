@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "./app-inbox-store.js";
-import { createRuntimeAppRead } from "./app-read.js";
+import { createRuntimeAppRead, createRuntimeTaskReader } from "./app-read.js";
 import { observeAppTaskIntent, taskReconciliationConfig } from "./app-task-reconciler.js";
 
 describe("App read projections", () => {
@@ -99,5 +99,33 @@ describe("App read projections", () => {
     await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
     await expect(read.tasks.list({ status: ["unknown" as never] })).rejects.toThrow("Invalid Task status filter");
     await expect(read.tasks.list({ cursor: "not-a-cursor" })).rejects.toThrow("Invalid Task cursor");
+  });
+
+  it("reuses one parsed Task resource for a bounded read pass and notices later writes", () => {
+    mkdirSync(join(root, "tasks"), { recursive: true });
+    writeFileSync(
+      join(root, "tasks", "seed.json"),
+      `${JSON.stringify({ groups: { root: { id: "root", parent_id: null } }, resources: {} })}\n`,
+    );
+    const config = taskReconciliationConfig({
+      appDir: root,
+      projectDir: root,
+      owner: "evaluation",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      appOwner: "evaluation",
+      intent: { id: "first", parentId: "root", outcome: "First", acceptance: ["Done"], mode: "achieve" },
+    });
+    const readTask = createRuntimeTaskReader({ appDir: root, projectDir: root });
+
+    expect(readTask("first")?.status).toBe("pending");
+    expect(readTask("missing")).toBeNull();
+
+    observeAppTaskIntent(config, {
+      appOwner: "evaluation",
+      intent: { id: "second", parentId: "root", outcome: "Second", acceptance: ["Done"], mode: "achieve" },
+    });
+    expect(readTask("second")?.status).toBe("pending");
   });
 });
