@@ -6,6 +6,28 @@ import { runMessageMode, runStatusMode } from "./modes/command.js";
 import { runOneshotMode } from "./modes/oneshot.js";
 import { runWorkflowMode } from "./modes/run-workflow.js";
 
+/**
+ * Run client-only control modes before daemon lifecycle ownership is created.
+ * These commands inspect or contact an existing instance; they must never
+ * overwrite that instance's identity record when they exit.
+ */
+export async function runRequestedControlExitMode(opts: {
+  appArgs: AppArgs;
+  agentsRoot: string;
+  persistDir: string;
+}): Promise<number | null> {
+  if (opts.appArgs.statusMode) {
+    await runStatusMode({ persistDir: opts.persistDir, notify: opts.appArgs.notify });
+    return 0;
+  }
+
+  if (opts.appArgs.messageMode) {
+    return runMessageMode({ argv: process.argv, persistDir: opts.persistDir, agentsRoot: opts.agentsRoot });
+  }
+
+  return null;
+}
+
 export async function runRequestedExitMode(opts: {
   appArgs: AppArgs;
   agentsRoot: string;
@@ -22,27 +44,13 @@ export async function runRequestedExitMode(opts: {
     dryRun,
     initialTask,
     interfaceAgent,
-    messageMode,
-    notify,
     oneshotMode,
     oneshotTimeoutMinutes,
     runWorkflow,
     socketEnabled,
-    statusMode,
     telegramEnabled,
     webEnabled,
   } = opts.appArgs;
-
-  if (statusMode) {
-    await runStatusMode({ persistDir: opts.persistDir, notify });
-    process.exit(0);
-  }
-
-  if (messageMode) {
-    process.exit(
-      await runMessageMode({ argv: process.argv, persistDir: opts.persistDir, agentsRoot: opts.agentsRoot }),
-    );
-  }
 
   if (runWorkflow) {
     try {
