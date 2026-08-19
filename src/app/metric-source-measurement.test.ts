@@ -277,6 +277,44 @@ describe("source-query metric measurement", () => {
     });
   });
 
+  it("yields control traffic between synchronously persisted metric observations", async () => {
+    const db = getDb(persistDir);
+    for (const id of ["yield.metric.1", "yield.metric.2"]) {
+      db.run(
+        `INSERT INTO metrics
+           (id, name, type, owner, current, threshold, priority, status, source_query, updated_at, alert_op)
+         VALUES (?, ?, 'gauge', 'may', 0, 0, 'P1', 'active', 'SELECT 1 AS value', 0, '>')`,
+        [id, id],
+      );
+    }
+
+    let breachCount = 0;
+    let controlTurnRan = false;
+    let secondBreachSawControlTurn = false;
+    bus.subscribe((event) => {
+      if (event.type !== "metric.breach") return;
+      breachCount++;
+      if (breachCount === 1) {
+        setImmediate(() => {
+          controlTurnRan = true;
+        });
+      } else if (breachCount === 2) {
+        secondBreachSawControlTurn = controlTurnRan;
+      }
+    });
+
+    bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      data: { reason: "yield-between-observations" },
+    });
+    await measurement.idle();
+
+    expect(breachCount).toBe(2);
+    expect(secondBreachSawControlTurn).toBe(true);
+  });
+
   it("counts only cadence-bound metrics after their freshness allowance", () => {
     const db = getDb(persistDir);
     const now = Date.now();

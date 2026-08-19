@@ -232,6 +232,12 @@ export async function measureSourceMetrics(options: {
       measured.push(row.id);
     } catch {
       skipped.push(row.id);
+    } finally {
+      // Recording and evaluating one observation remains a synchronous durable
+      // boundary. Yield before the next metric so a large snapshot cannot keep
+      // control traffic, including readiness, off the daemon event loop for the
+      // duration of the complete metric collection.
+      await new Promise<void>((resolve) => setImmediate(resolve));
     }
   }
 
