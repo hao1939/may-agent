@@ -439,6 +439,105 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("allows only the calling agent's context root outside cwd and rejects unsafe context inputs", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-agent-context-"));
+    const project = join(root, "projects", "may-agent");
+    const agentDir = join(root, "agents", "may");
+    const otherAgentDir = join(root, "agents", "other");
+    const persistDir = join(root, ".state");
+    mkdirSync(project, { recursive: true });
+    mkdirSync(agentDir, { recursive: true });
+    mkdirSync(otherAgentDir, { recursive: true });
+    writeFileSync(join(agentDir, "AGENTS.md"), "# May\n");
+    writeFileSync(join(otherAgentDir, "AGENTS.md"), "# Other\n");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    let spawnedArgs: string[] = [];
+    bus.subscribe((event) => events.push(event));
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[]) => {
+        spawnedArgs = [command, ...args];
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("authorized", {
+        tool: "codex",
+        mode: "review",
+        prompt: "Review authorized May context.",
+        cwd: project,
+        files: [join(agentDir, "AGENTS.md")],
+      });
+      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
+      expect(spawnedArgs[spawnedArgs.length - 1]).toContain(join(agentDir, "AGENTS.md"));
+      expect(events.some((event) => event.type === "subscriber.failed")).toBe(false);
+
+      const negativeCases: Array<{ taskId: string; source: string; sourceOwner: string; files: unknown }> = [
+        {
+          taskId: "traversal-context",
+          source: "agent:may",
+          sourceOwner: "agent:may",
+          files: ["../../foreign/secret.md"],
+        },
+        {
+          taskId: "foreign-context",
+          source: "agent:may",
+          sourceOwner: "agent:may",
+          files: [join(otherAgentDir, "AGENTS.md")],
+        },
+        {
+          taskId: "malformed-context",
+          source: "agent:may",
+          sourceOwner: "agent:may",
+          files: [42],
+        },
+        {
+          taskId: "unauthorized-context",
+          source: "agent:other",
+          sourceOwner: "agent:may",
+          files: [join(agentDir, "AGENTS.md")],
+        },
+      ];
+      for (const negative of negativeCases) {
+        bus.emit({
+          type: "cli.task.requested",
+          source: negative.source,
+          owner: "runtime:cli-task-runner",
+          data: {
+            taskId: negative.taskId,
+            tool: "codex",
+            mode: "review",
+            cwd: project,
+            sourceOwner: negative.sourceOwner,
+            files: negative.files,
+          },
+        } as any);
+      }
+
+      const failures = events.filter((event) => event.type === "subscriber.failed") as any[];
+      expect(failures).toHaveLength(4);
+      expect(failures.map((failure) => failure.data?.error).join("\n")).toContain("outside authorized context roots");
+      expect(failures.map((failure) => failure.data?.error).join("\n")).toContain("array of non-empty paths");
+      for (const negative of negativeCases) {
+        expect(
+          events.some((event: any) => event.type === "cli.task.started" && event.data?.taskId === negative.taskId),
+        ).toBe(false);
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("passes a requested native resume session to the CLI command", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-resume-"));
     const persistDir = join(root, ".state");
