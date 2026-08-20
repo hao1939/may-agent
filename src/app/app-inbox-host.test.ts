@@ -153,6 +153,84 @@ describe("App inbox host", () => {
     ]);
   });
 
+  it("returns an unrunnable-owner attention result without reattaching the existing Task", async () => {
+    const sourceSessionId = "s_1787048407052_294";
+    const requestId = "app_7ae28c2c-3058-499c-a749-84a4ffa04100";
+    const taskId = "runtime/restore-runnable-owner-for-checkpoint-recovery-repair";
+    const immutableTaskResource = {
+      taskId,
+      generation: 3,
+      resourceVersion: 10,
+      phase: "attention",
+      completionReceipts: ["checkpoint-recovery-proof:immutable"],
+    } as const;
+    const attachments: Array<{ appId: string; taskId: string; idempotencyKey: string }> = [];
+    const completed: Array<{ requestId: string; summary?: string }> = [];
+    let dependencyStatus: "running" | "attention" = "running";
+    const mayApp = defineApp({
+      ...app("may"),
+      task: () => ({ kind: "existing", taskId }),
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [mayApp],
+      attachTask: async ({ appId, attachment, idempotencyKey }) => {
+        const attachedTaskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
+        attachments.push({ appId, taskId: attachedTaskId, idempotencyKey });
+        return { taskId: attachedTaskId };
+      },
+      readDependency: async ({ dependency }) => ({
+        kind: "task",
+        id: dependency.id,
+        status: dependencyStatus,
+        ...(dependencyStatus === "attention"
+          ? {
+              summary: "Resolved owner tech-lead is not a runnable agent",
+              evidence: [
+                `source-session:${sourceSessionId}`,
+                `canonical-task:${immutableTaskResource.taskId}@${immutableTaskResource.generation}/${immutableTaskResource.resourceVersion}`,
+              ],
+            }
+          : {}),
+      }),
+      onRequestCompleted: (item, result) => completed.push({ requestId: item.id, summary: result.summary }),
+    });
+    host.admit({
+      id: requestId,
+      appId: "may",
+      parentId: "app_6e1aea80-892e-4e87-9f9f-14acde1bc40d",
+      source: { kind: "app", id: "may-agent" },
+      input: { kind: "probe", data: { value: sourceSessionId } },
+    });
+
+    await host.reconcileOnce("may");
+    expect(attachments).toEqual([
+      {
+        appId: "may",
+        taskId,
+        idempotencyKey: `task:${requestId}:existing:${taskId}`,
+      },
+    ]);
+    const taskResourceBeforeReview = structuredClone(immutableTaskResource);
+
+    dependencyStatus = "attention";
+    expect(host.wake({ kind: "task", id: taskId })).toBe(1);
+    expect(await host.reconcileOnce("may")).toEqual({ claimed: 1, admitted: 1, released: 0, errors: [] });
+
+    expect(host.get(requestId)).toMatchObject({
+      id: requestId,
+      parentId: "app_6e1aea80-892e-4e87-9f9f-14acde1bc40d",
+      status: "done",
+      result: {
+        summary: "Resolved owner tech-lead is not a runnable agent",
+        evidence: [`source-session:${sourceSessionId}`, `canonical-task:${taskId}@3/10`],
+      },
+    });
+    expect(completed).toEqual([{ requestId, summary: "Resolved owner tech-lead is not a runnable agent" }]);
+    expect(attachments).toHaveLength(1);
+    expect(immutableTaskResource).toEqual(taskResourceBeforeReview);
+  });
+
   it("closes completion-before-link races without creating a second Task", async () => {
     let attachments = 0;
     const host = new AppInboxHost({
