@@ -415,8 +415,6 @@ const app = defineApp({
     "metric.alert_judged",
     "project.task.handler.recovered",
     "project.task.handler.unavailable",
-    "project.task.reconcile.started",
-    "project.task.reconcile.skipped",
     "project.task.verification.failed",
     "guard.triggered",
     "skill.loaded",

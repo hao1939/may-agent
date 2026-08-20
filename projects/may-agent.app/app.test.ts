@@ -53,6 +53,80 @@ describe("canonical may-agent platform App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
+  it("leaves cross-App started, skipped, and ambiguous task facts visible", () => {
+    const observationAccepts = (
+      selector: unknown,
+      candidate: { type: string; source?: string },
+    ): boolean => {
+      if (typeof selector === "string") return selector === candidate.type;
+      if (!selector || typeof selector !== "object") return false;
+      const outer = selector as Record<string, unknown>;
+      const nested =
+        outer.event && typeof outer.event === "object"
+          ? (outer.event as Record<string, unknown>)
+          : outer;
+      const type = nested.type;
+      const source = nested.source;
+      const typeMatches =
+        type === undefined ||
+        type === candidate.type ||
+        (Array.isArray(type) && type.includes(candidate.type));
+      const sourceMatches =
+        source === undefined ||
+        source === candidate.source ||
+        (Array.isArray(source) && source.includes(candidate.source));
+      return typeMatches && sourceMatches;
+    };
+
+    const visibleControls = [
+      {
+        type: "project.task.reconcile.started",
+        source: "app-task:evaluation:task-reconciler",
+        data: { route: "task-controller", attemptId: "r_nonterminal" },
+      },
+      {
+        type: "project.task.reconcile.skipped",
+        source: "app-task:gym:task-reconciler",
+        data: { reason: "attention-required", summary: "timed out" },
+      },
+      {
+        type: "project.task.reconcile.skipped",
+        source: "app-task:aks-rp-e2e:task-reconciler",
+        data: { reason: "children-open", childIds: ["live-child"] },
+      },
+      {
+        type: "project.task.reconcile.skipped",
+        source: "app-task:other:task-reconciler",
+        data: { reason: "failed", error: "owner failed" },
+      },
+      {
+        type: "project.task.reconcile.skipped",
+        source: "app-task:other:task-reconciler",
+        data: { malformed: true },
+      },
+      {
+        type: "project.task.reconcile.started",
+        source: "unknown-source",
+        data: { route: "missing" },
+      },
+      {
+        type: "project.unrelated.fact",
+        source: "app-task:other:task-reconciler",
+        data: { status: "unknown" },
+      },
+    ];
+
+    for (const control of visibleControls) {
+      expect(
+        (app.observations as readonly unknown[]).some((selector) =>
+          observationAccepts(selector, control),
+        ),
+      ).toBeFalse();
+    }
+    expect(app.observations).not.toContain("project.task.reconcile.started");
+    expect(app.observations).not.toContain("project.task.reconcile.skipped");
+  });
+
   it("publishes every periodic background wake as a fact", () => {
     expect(
       app.schedules?.find(({ id }) => id === "platform-review")?.intervalMs,
