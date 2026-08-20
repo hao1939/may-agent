@@ -171,6 +171,66 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
+  test("persists a terminal digest rejection without an addressed-agent review message", async () => {
+    const observed: Array<{ type: string; owner?: string; data?: Record<string, unknown> }> = [];
+    const { bus, sent, outbound } = harness("shared-chat", async () => ({
+      status: "completed",
+      sessionId: "review-scout-digest",
+      disposition: "reject",
+      understoodIntent: "Scout proposes an unsolicited P2 research digest.",
+      reason: "The digest requests no human decision and its findings are already preserved.",
+      nextAction: "Keep the findings in Scout knowledge and stop this unchanged notification.",
+      owner: "scout",
+      evidence: ["The source event is an unsolicited daily digest with durable finding links."],
+      actionTaken: "Classified this exact held candidate for terminal no-send; its findings remain preserved.",
+      closureCondition: "The human.attention.reviewed audit closes this candidate without Telegram delivery.",
+    }));
+    const unsubscribe = bus.subscribe((event: any) => {
+      observed.push({ type: String(event.type), owner: event.owner, data: event.data });
+    });
+    const candidate = {
+      type: "message.created",
+      source: "app:scout-knowledge-lib",
+      owner: "human:operator",
+      data: {
+        from: "scout",
+        to: "human",
+        content: "Scout Daily Digest — bounded regression representative",
+        intent: "daily-digest",
+        priority: "P2",
+      },
+    } as any;
+    Object.defineProperty(candidate, EVENT_ROW_ID, { value: 58_009_933 });
+
+    bus.emit(candidate);
+    await outbound.drain();
+
+    expect(sent).toEqual([]);
+    expect(observed).toContainEqual(
+      expect.objectContaining({
+        type: "human.attention.reviewed",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          sourceEventId: 58_009_933,
+          admitted: false,
+          delivered: false,
+          disposition: "reject",
+          status: "completed",
+        }),
+      }),
+    );
+    expect(
+      observed.some(
+        (event) =>
+          event.type === "message.created" &&
+          event.owner === "agent:scout" &&
+          event.data?.intent === "review-result",
+      ),
+    ).toBe(false);
+    unsubscribe();
+    outbound.close();
+  });
+
   test("delivers May's reviewed text instead of the producer's raw proposal", async () => {
     const reviewed: Array<Record<string, unknown>> = [];
     const { bus, sent, outbound } = harness("shared-chat", async () => ({

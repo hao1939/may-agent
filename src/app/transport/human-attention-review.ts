@@ -116,6 +116,8 @@ function prompt(candidate: HumanAttentionCandidate): string {
     "When a human decision remains, write a complete message of at most 120 words: exact decision, recommendation, why Hao is needed, minimum proof, approve/reject effects, and what May will verify next.",
     "When an accepted useful digest is delivered, state only its useful facts in at most 90 words. Never invent approval choices or a recommendation.",
     "For every non-deliver disposition, omit deliveredMessage, perform one bounded action before finishing, and record actionTaken plus the exact closureCondition.",
+    "A handle or reject may close as a terminal no-send when the exact evidence proves the producer artifact is already preserved and no further domain work remains. In that case, classify the held candidate for the gate's durable human.attention.reviewed audit; do not contact the producer merely to announce the review result.",
+    "Never send review-result or review-disposition through legacy message.created or the message tool to an agent identity. If further owner work is genuinely required, use the accountable canonical App's typed request/dependency path; do not add an agent alias, catch-all consumer, or metric-only suppression.",
     "For route or clarify-producer, name the owner and record reviewAgainWhen. Never claim an action, recovery, or closure without tool evidence.",
     "Candidate:",
     JSON.stringify(candidate, null, 2),
