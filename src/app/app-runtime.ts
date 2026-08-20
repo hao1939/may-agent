@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
-import type { AppInput } from "@may-agent/sdk";
+import type { AppEvent, AppInput } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
@@ -364,16 +364,15 @@ export async function runAppRuntime(opts: {
         if (!taskStatuses.has(value as TaskView["status"])) throw new Error(`Invalid Task status: ${value}`);
         return value as TaskView["status"];
       });
-      return listRuntimeTaskViews(
-        { executionPaths: appTaskPaths(appId) },
-        {
-          ...(status ? { status } : {}),
-          ...(options?.limit === undefined ? {} : { limit: options.limit }),
-          ...(options?.cursor ? { cursor: options.cursor } : {}),
-        } satisfies TaskListOptions,
-      );
+      return listRuntimeTaskViews({ executionPaths: appTaskPaths(appId) }, {
+        ...(status ? { status } : {}),
+        ...(options?.limit === undefined ? {} : { limit: options.limit }),
+        ...(options?.cursor ? { cursor: options.cursor } : {}),
+      } satisfies TaskListOptions);
     },
     getAppTask: (appId, taskId) => readRuntimeTaskView({ executionPaths: appTaskPaths(appId) }, taskId),
+    resolveAppTask: (appId, event) =>
+      appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });

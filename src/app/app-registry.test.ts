@@ -73,6 +73,40 @@ describe("App registry", () => {
     expect(first.snapshot().id).not.toBe(second.snapshot().id);
   });
 
+  it("observes installed tasks.resolve with immutable snapshot identity", async () => {
+    const { root, appPath } = fixture("resolver");
+    writeFileSync(
+      appPath,
+      `export default {
+        id: "resolver",
+        version: 1,
+        owner: "may",
+        inputSchema: { type: "object" },
+        tasks: { resolve: (event) => ({ id: event.data.taskId, outcome: "observe", acceptance: ["done"], input: event.data }) }
+      };\n`,
+    );
+    const registry = new AppRegistry(root);
+    await registry.reload();
+    const snapshot = registry.snapshot();
+
+    const result = registry.resolveInstalledTask("resolver", {
+      type: "project.task.tick",
+      data: { taskId: "full-intent", fields: ["one", "two"] },
+    });
+
+    expect(result).toEqual({
+      snapshot: { id: snapshot.id, generation: 1 },
+      appId: "resolver",
+      intent: {
+        id: "full-intent",
+        outcome: "observe",
+        acceptance: ["done"],
+        input: { taskId: "full-intent", fields: ["one", "two"] },
+      },
+    });
+    expect(registry.snapshot()).toBe(snapshot);
+  });
+
   it("serializes overlapping generation transactions", async () => {
     const { root, appPath } = fixture("initial");
     const registry = new AppRegistry(root);

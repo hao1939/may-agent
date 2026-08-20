@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { AppEvent, TaskIntent } from "@may-agent/sdk";
 import { loadAppDefinitions, type LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistrySnapshot = Readonly<{
@@ -41,6 +42,26 @@ export class AppRegistry {
 
   snapshot(): AppRegistrySnapshot {
     return this.current;
+  }
+
+  resolveInstalledTask(
+    appId: string,
+    event: AppEvent<Record<string, unknown>>,
+  ): {
+    snapshot: { id: string; generation: number };
+    appId: string;
+    intent: TaskIntent | null;
+  } {
+    const snapshot = this.current;
+    const entry = snapshot.entries.find((candidate) => candidate.definition.id === appId);
+    if (!entry) throw new Error(`App ${appId} is not loaded`);
+    const resolver = entry.definition.tasks?.resolve;
+    if (!resolver) throw new Error(`App ${appId} does not declare tasks.resolve`);
+    return {
+      snapshot: { id: snapshot.id, generation: snapshot.generation },
+      appId,
+      intent: resolver(event),
+    };
   }
 
   reload(apply?: (next: AppRegistrySnapshot) => void | Promise<void>): Promise<LoadedAppDefinition[]> {

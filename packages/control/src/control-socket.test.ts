@@ -561,6 +561,40 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("resolves an installed App Task without emitting an event", async () => {
+    const observation = {
+      snapshot: { id: "boot-1:3", generation: 3 },
+      appId: "aks-rp-e2e",
+      intent: { id: "master-validation-compact", input: { fields: ["one", "two"] } },
+    };
+    const core = createCore({
+      resolveAppTask: (appId, event) => {
+        expect({ appId, event }).toEqual({
+          appId: "aks-rp-e2e",
+          event: {
+            type: "project.task.tick",
+            action: "master-validation-compact",
+            data: { taskId: "master-validation-compact" },
+          },
+        });
+        return observation;
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.resolve",
+        appId: "aks-rp-e2e",
+        event: {
+          type: "project.task.tick",
+          action: "master-validation-compact",
+          data: { taskId: "master-validation-compact" },
+        },
+      }),
+    ).resolves.toEqual({ type: "ok", command: "app.task.resolve", ...observation });
+    expect(core.emitted).toEqual([]);
+  });
+
   it("discovers and invokes project action shortcuts", async () => {
     const core = createCore({
       describeProjectActions: (projectId) => [

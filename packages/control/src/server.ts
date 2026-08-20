@@ -44,11 +44,9 @@ export interface AttachControlSocketOptions {
     conversationId: string,
     options?: { limit?: number; allWork?: boolean; workRequestId?: string },
   ) => unknown;
-  listAppTasks?: (
-    appId: string,
-    options?: { status?: string[]; limit?: number; cursor?: string },
-  ) => unknown;
+  listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
+  resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -177,6 +175,7 @@ export interface ControlSocketCoreOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
+  resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   agentName: string;
@@ -198,6 +197,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getAppConversation,
     listAppTasks,
     getAppTask,
+    resolveAppTask,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -634,11 +634,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             writeFrame(socket, {
               type: "error",
               command: normalized.command,
-              message: !appId
-                ? "appId is required"
-                : !taskId
-                  ? "taskId is required"
-                  : "App Task reads are unavailable",
+              message: !appId ? "appId is required" : !taskId ? "taskId is required" : "App Task reads are unavailable",
             });
             continue;
           }
@@ -649,6 +645,37 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               appId,
               taskId,
               task: getAppTask(appId, taskId),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "app.task.resolve") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          const event = frame.event;
+          if (!appId || !event || typeof event !== "object" || Array.isArray(event) || !resolveAppTask) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId
+                ? "appId is required"
+                : !event || typeof event !== "object" || Array.isArray(event)
+                  ? "event must be an object"
+                  : "installed App Task resolution is unavailable",
+            });
+            continue;
+          }
+          try {
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              ...(resolveAppTask(appId, event as Record<string, unknown>) as Record<string, unknown>),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -787,6 +814,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
+    resolveAppTask: opts.resolveAppTask,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,
