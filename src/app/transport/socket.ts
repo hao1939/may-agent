@@ -29,6 +29,7 @@ export interface SocketUIOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
+  resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
@@ -85,6 +86,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
+    resolveAppTask: opts.resolveAppTask,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onInfo: opts.reportInfo,
