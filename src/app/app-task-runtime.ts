@@ -149,6 +149,8 @@ export interface AppTaskRuntimeOptions {
   afterCommit?: (result: { installed: AppTaskRuntimeDescriptor[] }) => void;
   /** Do not execute queued App work until daemon startup has fenced sessions. */
   startAfter?: PromiseLike<void>;
+  /** Override only for deterministic recovery tests. */
+  drainPersistedBashProcessGroups?: typeof drainPersistedSessionBashProcessGroups;
   /**
    * Called when an app-local agent used by the app is not yet registered.
    * The app brings its own agents; this callback registers one from its
@@ -1011,16 +1013,27 @@ function interruptSupersededOwnerSession(
   if (!cleanSessionId) return;
   if (opts.manager.hasActiveSession(cleanSessionId)) {
     opts.manager.cancel(cleanSessionId);
-    return;
+  } else if (hasLiveAppTaskSession(opts, cleanSessionId)) {
+    throw new Error(`Cannot supersede session ${cleanSessionId}: its external owner is still live`);
   }
-  if (hasLiveAppTaskSession(opts, cleanSessionId)) return;
 
   const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
-  if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
 
   // Replacement ownership cannot begin while the superseded exact session's
-  // shell descendants remain live.
-  drainPersistedSessionBashProcessGroups(opts.persistDir!, cleanSessionId);
+  // shell descendants remain live. Drain durable groups even when session meta
+  // is already terminal: a terminal marker cannot prove descendant exit.
+  // An unconfirmed drain preserves the durable session and PGID records and
+  // stops recovery before terminal artifacts, session.end, attempt release,
+  // requeue, or replacement execution.
+  const confirmedDrained = opts.persistDir
+    ? (opts.drainPersistedBashProcessGroups ?? drainPersistedSessionBashProcessGroups)(opts.persistDir, cleanSessionId)
+    : true;
+  if (!confirmedDrained) {
+    throw new Error(
+      `Cannot recover session ${cleanSessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
+    );
+  }
+  if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
 
   // Capture a completed finish call before repairing genuinely pending tool
   // calls: finish() may be the final transcript entry, and synthesizing an
@@ -2853,19 +2866,19 @@ function recoverInterruptedAppTasks(
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
+      if (recovery.sessionId) {
+        interruptSupersededOwnerSession(
+          opts,
+          recovery.sessionId,
+          `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
+          recovery.taskId,
+        );
+      }
       const released = releaseInterruptedAppTaskAttempt(
         config,
         recovery,
         reason ?? `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
       );
-      for (const sessionId of released.sessionIds) {
-        interruptSupersededOwnerSession(
-          opts,
-          sessionId,
-          `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
-          recovery.taskId,
-        );
-      }
       if (released.released && controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, recovery.taskId);
       }

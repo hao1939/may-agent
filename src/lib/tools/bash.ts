@@ -146,17 +146,41 @@ export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
  * Startup recovery has no live child-process handle and is intentionally
  * synchronous. Bound both signal phases before terminal persistence or resume.
  */
-export function drainPersistedSessionBashProcessGroups(persistDir: string, sessionId: string): void {
-	const sleeper = new Int32Array(new SharedArrayBuffer(4));
+export interface PersistedBashProcessGroupDrainOperations {
+	isAlive: (pgid: number) => boolean;
+	signal: (pgid: number, signal: "SIGTERM" | "SIGKILL") => void;
+	wait: (milliseconds: number) => void;
+}
+
+const persistedBashProcessGroupDrainOperations: PersistedBashProcessGroupDrainOperations = {
+	isAlive: processGroupAlive,
+	signal: signalProcessGroup,
+	wait: (milliseconds) => {
+		const sleeper = new Int32Array(new SharedArrayBuffer(4));
+		Atomics.wait(sleeper, 0, 0, milliseconds);
+	},
+};
+
+export function drainPersistedSessionBashProcessGroups(
+	persistDir: string,
+	sessionId: string,
+	operations: PersistedBashProcessGroupDrainOperations = persistedBashProcessGroupDrainOperations,
+): boolean {
+	let confirmedDrained = true;
 	for (const pgid of readSessionBashProcessGroups(persistDir, sessionId)) {
-		if (processGroupAlive(pgid)) signalProcessGroup(pgid, "SIGTERM");
+		if (operations.isAlive(pgid)) operations.signal(pgid, "SIGTERM");
 		let deadline = Date.now() + BASH_PROCESS_GROUP_TERM_GRACE_MS;
-		while (processGroupAlive(pgid) && Date.now() < deadline) Atomics.wait(sleeper, 0, 0, PROCESS_GROUP_POLL_MS);
-		if (processGroupAlive(pgid)) signalProcessGroup(pgid, "SIGKILL");
+		while (operations.isAlive(pgid) && Date.now() < deadline) operations.wait(PROCESS_GROUP_POLL_MS);
+		if (operations.isAlive(pgid)) operations.signal(pgid, "SIGKILL");
 		deadline = Date.now() + BASH_PROCESS_GROUP_KILL_GRACE_MS;
-		while (processGroupAlive(pgid) && Date.now() < deadline) Atomics.wait(sleeper, 0, 0, PROCESS_GROUP_POLL_MS);
-		if (!processGroupAlive(pgid)) removeSessionBashProcessGroup(persistDir, sessionId, pgid);
+		while (operations.isAlive(pgid) && Date.now() < deadline) operations.wait(PROCESS_GROUP_POLL_MS);
+		if (operations.isAlive(pgid)) {
+			confirmedDrained = false;
+			continue;
+		}
+		removeSessionBashProcessGroup(persistDir, sessionId, pgid);
 	}
+	return confirmedDrained;
 }
 
 /**
@@ -216,7 +240,10 @@ export interface BashOperations {
 /**
  * Default bash operations using local shell
  */
-const defaultBashOperations: BashOperations = {
+export function createLocalBashOperations(
+	drainProcessGroup: (pgid: number) => Promise<boolean> = drainBashProcessGroup,
+): BashOperations {
+	return {
 	exec: (command, cwd, { onData, signal, timeout, env, onProcessGroupSpawn, onProcessGroupDrained }) => {
 		return new Promise((resolve, reject) => {
 			if (!existsSync(cwd)) {
@@ -273,8 +300,13 @@ const defaultBashOperations: BashOperations = {
 				if (timeoutHandle) clearTimeout(timeoutHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
 				if (child.pid) {
-					const drained = await drainBashProcessGroup(child.pid);
-					if (drained) onProcessGroupDrained?.(child.pid);
+					const drained = await drainProcessGroup(child.pid);
+					if (!drained) {
+						cleanup();
+						reject(new Error(`bash process group ${child.pid} did not exit after bounded SIGTERM/SIGKILL drain; durable ownership must be recovered before settlement`));
+						return;
+					}
+					onProcessGroupDrained?.(child.pid);
 				}
 				cleanup();
 				if (error) reject(error);
@@ -295,7 +327,10 @@ const defaultBashOperations: BashOperations = {
 			}
 		});
 	},
-};
+	};
+}
+
+const defaultBashOperations = createLocalBashOperations();
 
 // ── Error-time nudges ───────────────────────────────────────────────────
 // When a bash command fails with a recognizable pattern, append an actionable
