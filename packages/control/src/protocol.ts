@@ -36,6 +36,7 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "app.conversation.get",
   "app.tasks.list",
   "app.task.get",
+  "app.task.resolve",
   "project.actions.describe",
   "project.action.invoke",
 ]);
@@ -52,6 +53,7 @@ export type SocketFrame =
         | "app.conversation.get"
         | "app.tasks.list"
         | "app.task.get"
+        | "app.task.resolve"
         | "project.actions.describe"
         | "project.action.invoke";
       frame: Record<string, unknown>;
@@ -162,13 +164,7 @@ function normalizeHumanShortcutFrame(cmdType: string, frame: Record<string, unkn
       const message = shortcutMessage(frame);
       if (!sessionId) return { kind: "error", command: cmdType, message: "steer requires string field 'sessionId'" };
       if (!message) return { kind: "error", command: cmdType, message: "steer requires string field 'message'" };
-      return canonicalShortcutEvent(
-        cmdType,
-        "session.steer.requested",
-        frame,
-        { message },
-        { target: { sessionId } },
-      );
+      return canonicalShortcutEvent(cmdType, "session.steer.requested", frame, { message }, { target: { sessionId } });
     }
     case "session.cancel.requested": {
       if (isRecord(frame.data)) return socketEvent(cmdType, frame);
@@ -276,6 +272,7 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "app.conversation.get"
         | "app.tasks.list"
         | "app.task.get"
+        | "app.task.resolve"
         | "project.actions.describe"
         | "project.action.invoke",
       frame,
