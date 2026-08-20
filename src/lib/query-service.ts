@@ -1,4 +1,6 @@
+import type { AppObservationProjection } from "@may-agent/sdk";
 import type { SqliteDb } from "./db.js";
+import { projectSemanticObservations } from "./semantic-observation-projection.js";
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -158,6 +160,7 @@ export interface QueryAPI {
 
 export interface QueryServiceOptions {
   getDb: () => SqliteDb;
+  observationProjections?: () => readonly AppObservationProjection[];
   defaultLimit?: number;
   maxLimit?: number;
 }
@@ -699,16 +702,25 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          accepted_at as acceptedAt, delivery_route as deliveryRoute,
          delivery_note as deliveryNote, data`;
 
-      const unhandledEvents = db
-        .prepare(
-          `SELECT ${eventColumns}
+      const projectedObservationIds = projectSemanticObservations({
+        db,
+        projections: opts.observationProjections?.(),
+        since,
+        now,
+      });
+      const unhandledEvents = (
+        db
+          .prepare(
+            `SELECT ${eventColumns}
          FROM events
          WHERE delivery_status = 'unhandled'
            AND timestamp >= ?
-         ORDER BY timestamp DESC, id DESC
-         LIMIT ?`,
-        )
-        .all(since, limit) as Record<string, unknown>[];
+         ORDER BY timestamp DESC, id DESC`,
+          )
+          .all(since) as Record<string, unknown>[]
+      )
+        .filter((event) => !projectedObservationIds.has(event.id as number))
+        .slice(0, limit);
 
       const overduePendingEvents = db
         .prepare(

@@ -30,6 +30,17 @@ describe("canonical App definition validation", () => {
         },
       ],
       observations: ["evaluation.reviewed"],
+      observationProjections: [
+        {
+          id: "reviewed-with-result",
+          event: "evaluation.reviewed",
+          evidence: ["evaluation.result.persisted"],
+          classify: (observation, evidence) => ({
+            intentional: evidence.length === 1,
+            evidenceEventIds: [observation.id!, ...evidence.map((event) => event.id!)],
+          }),
+        },
+      ],
       schedules: [
         {
           id: "review",
@@ -77,6 +88,10 @@ describe("canonical App definition validation", () => {
           { id: "same", event: {}, toInput() {} },
         ],
         observations: ["", {}],
+        observationProjections: [
+          { id: "same", event: "", evidence: [{}] },
+          { id: "same", event: "ok", evidence: [], classify: "not-a-function" },
+        ],
         schedules: [
           { id: "tick", intervalMs: 0, input: { kind: "" } },
           { id: "missing-target", intervalMs: 1 },
@@ -101,6 +116,10 @@ describe("canonical App definition validation", () => {
         "App broken subscription same requires toInput",
         "App broken subscription same requires a valid event selector",
         "App broken observations must contain valid event selectors",
+        "App broken observation projection id is duplicated: same",
+        "App broken observation projection requires a valid event selector",
+        "App broken observation projection requires valid evidence selectors",
+        "App broken observation projection requires classify",
         "App broken schedule tick intervalMs must be positive",
         "App broken schedule tick requires a valid App input",
         "App broken schedule missing-target requires exactly one App input or event",

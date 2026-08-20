@@ -101,6 +101,30 @@ export function validateAppDefinition(definition: unknown): string[] {
     }
   }
 
+  if (app.observationProjections !== undefined) {
+    if (!Array.isArray(app.observationProjections)) {
+      errors.push(`App ${appId} observationProjections must be an array`);
+    } else {
+      duplicateIds(app.observationProjections, `App ${appId} observation projection`, errors);
+      for (const value of app.observationProjections) {
+        const projection = record(value);
+        if (!projection || !validSelector(projection.event)) {
+          errors.push(`App ${appId} observation projection requires a valid event selector`);
+        }
+        if (
+          !projection ||
+          !Array.isArray(projection.evidence) ||
+          projection.evidence.some((entry) => !validSelector(entry))
+        ) {
+          errors.push(`App ${appId} observation projection requires valid evidence selectors`);
+        }
+        if (!projection || typeof projection.classify !== "function") {
+          errors.push(`App ${appId} observation projection requires classify`);
+        }
+      }
+    }
+  }
+
   if (app.schedules !== undefined) {
     if (!Array.isArray(app.schedules)) errors.push(`App ${appId} schedules must be an array`);
     else {

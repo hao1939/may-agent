@@ -3,6 +3,8 @@ import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
+import { projectSemanticObservations } from "../lib/semantic-observation-projection.js";
+import type { AppObservationProjection } from "@may-agent/sdk";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
 export const SUBSCRIBER_FAILED_COUNT_METRIC_ID = "infra.bus.subscriber-failed-count-1h";
@@ -11,6 +13,7 @@ FROM events
 WHERE event_type = 'subscriber.failed'
   AND timestamp >= (strftime('%s','now') * 1000 - 3600000)`;
 export const STALE_ACTIVE_METRIC_ID = "metric.stale-active-count";
+export const UNHANDLED_SIGNAL_METRIC_ID = "event.unhandled-signal-count-1h";
 export const STALE_ACTIVE_SOURCE_QUERY = `SELECT COUNT(*) AS value
 FROM metrics m
 WHERE m.status = 'active'
@@ -166,6 +169,7 @@ export async function measureSourceMetrics(options: {
   persistDir: string;
   triggerEventId?: number;
   measuredAt?: number;
+  observationProjections?: readonly AppObservationProjection[];
 }): Promise<{ measured: string[]; skipped: string[] }> {
   const db = getDb(options.persistDir);
   const metrics = createMetricService({
@@ -206,10 +210,29 @@ export async function measureSourceMetrics(options: {
           skipped.push(row.id);
           continue;
         }
-        const value = sourceQueryValue(
-          db.prepare(row.source_query).get() as Record<string, unknown> | null,
-        );
-        if (value != null) sample = { value };
+        if (row.id === UNHANDLED_SIGNAL_METRIC_ID && options.observationProjections?.length) {
+          const since = defaultMeasuredAt - 3_600_000;
+          const projected = projectSemanticObservations({
+            db,
+            projections: options.observationProjections,
+            since,
+            now: defaultMeasuredAt,
+          });
+          const unhandled = db
+            .prepare(
+              `SELECT id FROM events
+               WHERE delivery_status = 'unhandled'
+                 AND event_type != 'channel.delivery.completed'
+                 AND timestamp >= ? AND timestamp <= ?`,
+            )
+            .all(since, defaultMeasuredAt) as Array<{ id: number }>;
+          sample = { value: unhandled.filter((event) => !projected.has(event.id)).length };
+        } else {
+          const value = sourceQueryValue(
+            db.prepare(row.source_query).get() as Record<string, unknown> | null,
+          );
+          if (value != null) sample = { value };
+        }
       } else if (row.source_command) {
         measuredBy = "runtime:metric-source-command";
         note = commandNote;
@@ -253,6 +276,7 @@ export type MetricSourceMeasurementRuntime = {
 export function attachMetricSourceMeasurement(options: {
   bus: EventBus;
   persistDir: string;
+  observationProjections?: readonly AppObservationProjection[];
 }): MetricSourceMeasurementRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });

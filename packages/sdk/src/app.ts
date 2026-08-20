@@ -186,6 +186,36 @@ export type AppObserver = {
   run(context: ObserverContext): Promise<AppEvent[]>;
 };
 
+/** Immutable event evidence supplied to a semantic observation classifier. */
+export type ObservationEvent = AppEvent<Record<string, unknown>> & {
+  id?: number;
+  project?: string;
+  taskId?: string;
+  timestamp: number;
+  deliveryStatus?: string;
+  acceptedBy?: string;
+};
+
+export type ObservationDisposition = {
+  intentional: boolean;
+  evidenceEventIds: number[];
+  stage?: string;
+  reason?: string;
+};
+
+/**
+ * Correlation-gated, read-only observation projection. `event` selects the
+ * candidate and `evidence` bounds the later immutable facts visible to the
+ * classifier. Only an intentional disposition backed by exact event IDs can
+ * remove a candidate from effective unhandled health.
+ */
+export type AppObservationProjection = {
+  id: string;
+  event: EventSelector;
+  evidence: EventSelector[];
+  classify(observation: ObservationEvent, evidence: ObservationEvent[]): ObservationDisposition;
+};
+
 type AppInputAction<TInputSchema extends TSchema = TSchema> = {
   description: string;
   inputSchema: TInputSchema;
@@ -238,6 +268,8 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
    * records a terminal no-op only after all actionable routes are evaluated.
    */
   observations?: EventSelector[];
+  /** Correlation-gated effective-health projections; never mutate event rows. */
+  observationProjections?: AppObservationProjection[];
   inbox?: { batch?: AppInboxBatchMode; maxConcurrent?: number };
   schedules?: AppSchedule[];
   observers?: AppObserver[];
