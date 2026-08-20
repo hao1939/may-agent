@@ -184,9 +184,7 @@ export async function runAppRuntime(opts: {
   const appRegistry = new AppRegistry(opts.projectsRoot);
   await appRegistry.reload();
   setRuntimeObservationProjectionProvider(() =>
-    appRegistry
-      .snapshot()
-      .entries.flatMap((entry) => entry.definition.observationProjections ?? []),
+    appRegistry.snapshot().entries.flatMap((entry) => entry.definition.observationProjections ?? []),
   );
 
   attachDaemonEventSubscribers({
@@ -370,14 +368,11 @@ export async function runAppRuntime(opts: {
         if (!taskStatuses.has(value as TaskView["status"])) throw new Error(`Invalid Task status: ${value}`);
         return value as TaskView["status"];
       });
-      return listRuntimeTaskViews(
-        { executionPaths: appTaskPaths(appId) },
-        {
-          ...(status ? { status } : {}),
-          ...(options?.limit === undefined ? {} : { limit: options.limit }),
-          ...(options?.cursor ? { cursor: options.cursor } : {}),
-        } satisfies TaskListOptions,
-      );
+      return listRuntimeTaskViews({ executionPaths: appTaskPaths(appId) }, {
+        ...(status ? { status } : {}),
+        ...(options?.limit === undefined ? {} : { limit: options.limit }),
+        ...(options?.cursor ? { cursor: options.cursor } : {}),
+      } satisfies TaskListOptions);
     },
     getAppTask: (appId, taskId) => readRuntimeTaskView({ executionPaths: appTaskPaths(appId) }, taskId),
     describeProjectActions: projectActions.describe,

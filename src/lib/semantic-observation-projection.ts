@@ -9,9 +9,7 @@ import type { SqliteDb } from "./db.js";
 let runtimeProjectionProvider: () => readonly AppObservationProjection[] = () => [];
 
 /** Host-only binding to the current immutable App registry generation. */
-export function setRuntimeObservationProjectionProvider(
-  provider: () => readonly AppObservationProjection[],
-): void {
+export function setRuntimeObservationProjectionProvider(provider: () => readonly AppObservationProjection[]): void {
   runtimeProjectionProvider = provider;
 }
 

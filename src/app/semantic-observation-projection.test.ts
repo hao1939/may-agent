@@ -228,9 +228,21 @@ describe("correlation-gated semantic observation projection", () => {
         });
 
       for (const runId of [
-        "good", "absent", "mismatch", "failed", "pending", "wrong-delivery", "waiting", "attention",
-        "nonterminal", "domain-unhandled", "unrelated-task", "duplicate-failure", "duplicate-terminal",
-      ]) candidate(runId);
+        "good",
+        "absent",
+        "mismatch",
+        "failed",
+        "pending",
+        "wrong-delivery",
+        "waiting",
+        "attention",
+        "nonterminal",
+        "domain-unhandled",
+        "unrelated-task",
+        "duplicate-failure",
+        "duplicate-terminal",
+      ])
+        candidate(runId);
       const malformed = candidate("malformed");
       db.run("UPDATE events SET data='{' WHERE id=?", [malformed]);
       candidate("unknown-source", "unknown-watcher");
@@ -282,9 +294,9 @@ describe("correlation-gated semantic observation projection", () => {
       expect([...projected]).toEqual([candidates.get("good")]);
       const query = createQueryService({ getDb: () => db, observationProjections: () => [projection] });
       const visible = new Set(
-        query.eventDeliveryHealth({ now: base + 10_000, lookbackMs: 20_000, limit: 100 }).unhandledEvents.map((event) =>
-          event.id,
-        ),
+        query
+          .eventDeliveryHealth({ now: base + 10_000, lookbackMs: 20_000, limit: 100 })
+          .unhandledEvents.map((event) => event.id),
       );
       for (const id of [...candidates.values(), unrelatedType]) {
         expect(visible.has(id)).toBe(id !== candidates.get("good"));
