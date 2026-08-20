@@ -2,8 +2,13 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readSessionBashProcessGroups } from "../persistence.js";
-import { BASH_PROCESS_GROUP_TERM_GRACE_MS, createBashTool } from "./bash.js";
+import { addSessionBashProcessGroup, readSessionBashProcessGroups } from "../persistence.js";
+import {
+  BASH_PROCESS_GROUP_TERM_GRACE_MS,
+  createBashTool,
+  createLocalBashOperations,
+  drainPersistedSessionBashProcessGroups,
+} from "./bash.js";
 
 const fixtures: string[] = [];
 
@@ -88,4 +93,57 @@ describe("exact-session bash process-group lifecycle", () => {
     await Bun.sleep(100);
     expect(existsSync(mutation)).toBe(false);
   });
+
+  it("returns an explicit undrained result and preserves a persisted PGID after both signal phases", () => {
+    const f = fixture();
+    const signals: string[] = [];
+    addSessionBashProcessGroup(f.persistDir, "persisted-undrained", 424_242);
+
+    const confirmedDrained = drainPersistedSessionBashProcessGroups(f.persistDir, "persisted-undrained", {
+      isAlive: () => true,
+      signal: (_pgid, signal) => signals.push(signal),
+      wait: () => undefined,
+    });
+
+    expect(confirmedDrained).toBe(false);
+    expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
+    expect(readSessionBashProcessGroups(f.persistDir, "persisted-undrained")).toEqual([424_242]);
+  });
+
+  for (const mode of ["normal", "abort", "timeout"] as const) {
+    it(`fails ${mode} settlement closed and preserves the durable sidecar when drain is unconfirmed`, async () => {
+      const f = fixture();
+      const sessionId = `undrained-${mode}`;
+      const controller = new AbortController();
+      const tool = createBashTool(f.root, {
+        defaultTimeout: mode === "timeout" ? 0.05 : 5,
+        operations: createLocalBashOperations(async () => false),
+        processGroupOwner: { persistDir: f.persistDir, sessionId },
+      });
+      const execution = tool.execute(
+        mode,
+        { command: mode === "normal" ? "true" : "sleep 30" },
+        mode === "abort" ? controller.signal : undefined,
+      );
+      if (mode === "abort") {
+        for (
+          let attempt = 0;
+          attempt < 50 && readSessionBashProcessGroups(f.persistDir, sessionId).length === 0;
+          attempt += 1
+        ) {
+          await Bun.sleep(5);
+        }
+        controller.abort();
+      }
+
+      await expect(execution).rejects.toThrow("did not exit after bounded SIGTERM/SIGKILL drain");
+      const pgids = readSessionBashProcessGroups(f.persistDir, sessionId);
+      expect(pgids).toHaveLength(1);
+      try {
+        process.kill(-pgids[0]!, "SIGKILL");
+      } catch {
+        // The normal command has already exited; its durable record remains by design.
+      }
+    });
+  }
 });

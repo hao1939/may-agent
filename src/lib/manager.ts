@@ -1035,11 +1035,21 @@ export class SubagentManager {
 
     const resumed: SessionInfo[] = [];
     const interrupted: SessionInfo[] = [];
+    let hasUndrainedProcessGroups = false;
 
     for (const [sessionId, persisted] of stale) {
       // A resumed or terminal stale session must never overlap descendants from
       // its previous process. Drain only groups persisted by this exact session.
-      drainPersistedSessionBashProcessGroups(this._persistDir, sessionId);
+      // Preserve every durable record and skip all terminal/release/resume work
+      // when exit cannot be confirmed after the bounded signal phases.
+      if (!drainPersistedSessionBashProcessGroups(this._persistDir, sessionId)) {
+        hasUndrainedProcessGroups = true;
+        log(
+          "error",
+          `[manager] Refusing startup recovery for ${sessionId}: durable bash process group remained live after bounded SIGTERM/SIGKILL drain`,
+        );
+        continue;
+      }
 
       if (isHeartbeatSession(persisted) && releaseStaleHeartbeatDispatchLease(this._persistDir, persisted.agent)) {
         log("info", `[manager] Released stale heartbeat dispatch lease for ${persisted.agent} from ${sessionId}`);
@@ -1097,8 +1107,10 @@ export class SubagentManager {
       }
     }
 
-    this.cleanupStaleWorkflowRuns();
-    const releasedOrphanLeases = releaseOrphanedHeartbeatDispatchLeases(this._persistDir, activeSessions);
+    if (!hasUndrainedProcessGroups) this.cleanupStaleWorkflowRuns();
+    const releasedOrphanLeases = hasUndrainedProcessGroups
+      ? []
+      : releaseOrphanedHeartbeatDispatchLeases(this._persistDir, activeSessions);
     for (const agent of releasedOrphanLeases) {
       log("info", `[manager] Released orphaned heartbeat dispatch lease for ${agent}`);
     }
