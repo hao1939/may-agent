@@ -41,7 +41,15 @@ type CliTaskRecord = {
   finishedAt?: string;
   exitCode?: number;
   error?: string;
-  failureCategory?: "timeout" | "permission" | "tool" | "no_output" | "output_schema" | "process" | "orphaned";
+  failureCategory?:
+    | "timeout"
+    | "permission"
+    | "tool"
+    | "no_output"
+    | "output_schema"
+    | "process"
+    | "orphaned"
+    | "admission";
   summary?: string;
 };
 
@@ -79,6 +87,10 @@ function taskDir(persistDir: string, taskId: string): string {
 
 function taskRecordPath(persistDir: string, taskId: string): string {
   return join(taskDir(persistDir, taskId), "task.json");
+}
+
+function taskRequestPath(persistDir: string, taskId: string): string {
+  return join(taskDir(persistDir, taskId), "request.json");
 }
 
 type CliSessionStore = Partial<
@@ -696,6 +708,71 @@ function emitSourceSessionUpdate(
       message: lines.join("\n"),
     },
   } as any);
+}
+
+export function recoverMissingCliTaskRecords(opts: {
+  bus: EventBus;
+  persistDir: string;
+  now?: () => number;
+}): number {
+  const now = opts.now ?? Date.now;
+  const root = join(opts.persistDir, "cli-tasks");
+  if (!existsSync(root)) return 0;
+  let count = 0;
+  for (const taskId of readdirSync(root)) {
+    const recordPath = taskRecordPath(opts.persistDir, taskId);
+    if (existsSync(recordPath)) continue;
+    let request: Partial<CliTaskRecord>;
+    try {
+      request = JSON.parse(readFileSync(taskRequestPath(opts.persistDir, taskId), "utf8")) as Partial<CliTaskRecord>;
+    } catch {
+      continue;
+    }
+    if (
+      request.taskId !== taskId ||
+      (request.tool !== "claude" && request.tool !== "codex") ||
+      typeof request.cwd !== "string" ||
+      typeof request.promptPath !== "string" ||
+      typeof request.resultPath !== "string" ||
+      typeof request.timeoutMs !== "number" ||
+      typeof request.sourceOwner !== "string"
+    ) {
+      continue;
+    }
+    const error = "Runtime recovered an accepted CLI request without a durable runner record";
+    const record: CliTaskRecord = {
+      ...(request as CliTaskRecord),
+      taskId,
+      mode: request.mode === "patch" || request.mode === "review" ? request.mode : "investigate",
+      status: "failed",
+      requestedAt: request.requestedAt ?? iso(now),
+      finishedAt: iso(now),
+      error,
+      failureCategory: "admission",
+      summary: error,
+    };
+    if (!existsSync(record.resultPath)) writeFileSync(record.resultPath, "");
+    writeStructuredResult(record);
+    writeRecord(recordPath, record);
+    opts.bus.emit({
+      type: "cli.task.failed",
+      source: "cli-task-runner",
+      owner: record.sourceOwner,
+      data: {
+        taskId: record.taskId,
+        tool: record.tool,
+        resultPath: record.resultPath,
+        structuredResultPath: record.structuredResultPath,
+        eventsPath: record.eventsPath,
+        error,
+        failureCategory: record.failureCategory,
+        sourceSessionId: record.sourceSessionId,
+      },
+      ...(record.sourceTrace ? { trace: record.sourceTrace } : {}),
+    } as any);
+    count++;
+  }
+  return count;
 }
 
 export function markOrphanedCliTasks(opts: {
