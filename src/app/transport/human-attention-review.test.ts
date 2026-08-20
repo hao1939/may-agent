@@ -55,6 +55,11 @@ test("teaches decision packets and useful digests as different deliveries", asyn
   expect(task).toContain("track both access and diagnostic completion");
   expect(task).toContain("Deliver a later update only when");
   expect(task).toContain("perform one bounded action before finishing");
+  expect(task).toContain("A handle or reject may close as a terminal no-send");
+  expect(task).toContain("do not contact the producer merely to announce the review result");
+  expect(task).toContain("Never send review-result or review-disposition through legacy message.created");
+  expect(task).toContain("accountable canonical App's typed request/dependency path");
+  expect(task).toContain("do not add an agent alias, catch-all consumer, or metric-only suppression");
   expect(task).toContain("A recovered proposal is handle");
   expect(task).toContain("Never contact Hao directly");
   expect(task).toContain("Start from bounded durable evidence");
