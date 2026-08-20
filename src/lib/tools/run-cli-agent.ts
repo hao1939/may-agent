@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -130,34 +130,29 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
 
       mkdirSync(dir, { recursive: true });
       writeFileSync(promptPath, params.prompt);
-      writeFileSync(
-        join(dir, "request.json"),
-        `${JSON.stringify(
-          {
-            taskId,
-            tool: params.tool,
-            mode,
-            cwd,
-            promptPath,
-            resultPath,
-            structuredResultPath,
-            eventsPath,
-            sandbox,
-            timeoutMs,
-            sourceOwner: `agent:${opts.agentName}`,
-            sourceSessionId: opts.getCallerSessionId?.(),
-            resumeSessionId: params.resumeSessionId,
-            reuseSession: params.reuseSession === true,
-            files: params.files,
-            worktree: params.worktree,
-            worktreePolicy: params.worktreePolicy,
-            expectedOutput: params.expectedOutput,
-            requestedAt: new Date().toISOString(),
-          },
-          null,
-          2,
-        )}\n`,
-      );
+      const requestedAt = new Date().toISOString();
+      const request = {
+        taskId,
+        tool: params.tool,
+        mode,
+        cwd,
+        promptPath,
+        resultPath,
+        structuredResultPath,
+        eventsPath,
+        sandbox,
+        timeoutMs,
+        sourceOwner: `agent:${opts.agentName}`,
+        sourceSessionId: opts.getCallerSessionId?.(),
+        resumeSessionId: params.resumeSessionId,
+        reuseSession: params.reuseSession === true,
+        files: params.files,
+        worktree: params.worktree,
+        worktreePolicy: params.worktreePolicy,
+        expectedOutput: params.expectedOutput,
+        requestedAt,
+      };
+      writeFileSync(join(dir, "request.json"), `${JSON.stringify(request, null, 2)}\n`);
 
       const trace = opts.getCallerTrace?.();
       opts.emit?.({
@@ -187,6 +182,59 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
         },
         ...(trace ? { trace } : {}),
       });
+
+      const taskPath = join(dir, "task.json");
+      if (!existsSync(taskPath)) {
+        const error = "CLI task admission failed before a durable runner record was created";
+        const finishedAt = new Date().toISOString();
+        writeFileSync(resultPath, "");
+        writeFileSync(
+          structuredResultPath,
+          `${JSON.stringify(
+            {
+              status: "failed",
+              summary: error,
+              evidenceRefs: [resultPath, eventsPath],
+              error,
+              failureCategory: "admission",
+            },
+            null,
+            2,
+          )}\n`,
+        );
+        writeFileSync(
+          taskPath,
+          `${JSON.stringify(
+            {
+              ...request,
+              status: "failed",
+              finishedAt,
+              error,
+              failureCategory: "admission",
+              summary: error,
+            },
+            null,
+            2,
+          )}\n`,
+        );
+        opts.emit?.({
+          type: "cli.task.failed",
+          source: "run-cli-agent",
+          owner: `agent:${opts.agentName}`,
+          data: {
+            taskId,
+            tool: params.tool,
+            resultPath,
+            structuredResultPath,
+            eventsPath,
+            error,
+            failureCategory: "admission",
+            sourceSessionId: opts.getCallerSessionId?.(),
+          },
+          ...(trace ? { trace } : {}),
+        });
+        return textResult(JSON.stringify({ taskId, status: "failed", error, structuredResultPath, eventsPath }));
+      }
 
       return textResult(
         JSON.stringify({

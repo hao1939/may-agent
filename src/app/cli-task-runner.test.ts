@@ -4,7 +4,11 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { PassThrough } from "node:stream";
-import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
+import {
+  attachCliTaskRunner,
+  markOrphanedCliTasks,
+  recoverMissingCliTaskRecords,
+} from "./cli-task-runner.js";
 import { EventBus, type AgentEvent } from "./event-bus.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { createRunCliAgentTool } from "../lib/tools/run-cli-agent.js";
@@ -155,6 +159,44 @@ describe("CLI task runner", () => {
         .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'cli.task' AND correlation_key = ?")
         .get(payload.taskId) as { status: string } | undefined;
       expect(pair?.status).toBe("closed");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fails admission visibly when no durable CLI runner accepts the request", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-missing-runner-"));
+    const persistDir = join(root, ".state");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+      getCallerSessionId: () => "caller-1",
+    });
+
+    try {
+      const result = await tool.execute("call-missing-runner", {
+        tool: "codex",
+        prompt: "Do not disappear.",
+        cwd: root,
+      });
+      const payload = JSON.parse(result.content[0].text);
+      expect(payload.status).toBe("failed");
+      expect(payload.error).toContain("durable runner record");
+      const directory = join(persistDir, "cli-tasks", payload.taskId);
+      expect(JSON.parse(readFileSync(join(directory, "task.json"), "utf8"))).toMatchObject({
+        status: "failed",
+        failureCategory: "admission",
+      });
+      expect(JSON.parse(readFileSync(join(directory, "result.json"), "utf8"))).toMatchObject({
+        status: "failed",
+        failureCategory: "admission",
+      });
+      expect(events.map((event) => event.type)).toEqual(["cli.task.requested", "cli.task.failed"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -955,6 +997,55 @@ describe("CLI task runner", () => {
       expect(failed.data.failureCategory).toBe("no_output");
       expect(failed.data.error).toContain("completed turn");
       expect(events.some((event) => event.type === "cli.task.completed")).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("recovers an accepted request with no runner artifact exactly once", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-missing-artifact-recovery-"));
+    const persistDir = join(root, ".state");
+    const directory = join(persistDir, "cli-tasks", "cli-accepted-only");
+    mkdirSync(directory, { recursive: true });
+    const promptPath = join(directory, "prompt.md");
+    const resultPath = join(directory, "result.md");
+    writeFileSync(promptPath, "Previously accepted but never admitted");
+    writeFileSync(
+      join(directory, "request.json"),
+      `${JSON.stringify({
+        taskId: "cli-accepted-only",
+        tool: "claude",
+        mode: "patch",
+        cwd: root,
+        promptPath,
+        resultPath,
+        structuredResultPath: join(directory, "result.json"),
+        eventsPath: join(directory, "events.jsonl"),
+        sandbox: "workspace-write",
+        timeoutMs: 600_000,
+        sourceOwner: "agent:may",
+        sourceSessionId: "caller-accepted-only",
+        status: "requested",
+        requestedAt: "2026-08-19T20:25:19.326Z",
+      })}\n`,
+    );
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+
+    try {
+      expect(recoverMissingCliTaskRecords({ bus, persistDir, now: () => 2_000 })).toBe(1);
+      expect(recoverMissingCliTaskRecords({ bus, persistDir, now: () => 3_000 })).toBe(0);
+      expect(JSON.parse(readFileSync(join(directory, "task.json"), "utf8"))).toMatchObject({
+        taskId: "cli-accepted-only",
+        status: "failed",
+        failureCategory: "admission",
+      });
+      expect(JSON.parse(readFileSync(join(directory, "result.json"), "utf8"))).toMatchObject({
+        status: "failed",
+        failureCategory: "admission",
+      });
+      expect(events.filter((event) => event.type === "cli.task.failed")).toHaveLength(1);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
