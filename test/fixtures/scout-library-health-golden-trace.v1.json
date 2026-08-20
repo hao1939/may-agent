@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "contract": "scout.project.library_health.observed",
+  "activationEvidence": {
+    "reuseOnly": true,
+    "livePositiveEventId": 5800284,
+    "loadedSdkIdentity": "32bc02fa80326469a27c43cfe48d197d73305676"
+  },
+  "controls": [
+    {
+      "id": "actionable-positive",
+      "traceId": "golden:scout-library-health:v1:actionable-positive",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:scout",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/app/projects/scout-knowledge-lib.app/.state/library-health-packets.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-actionable-1" }]
+        }
+      },
+      "expected": { "routeCount": 1, "terminal": "done", "visible": true }
+    },
+    {
+      "id": "malformed-payload",
+      "traceId": "golden:scout-library-health:v1:malformed-payload",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:scout",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/tmp/golden-malformed.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "missing-fingerprint" }]
+        }
+      },
+      "expected": { "routeCount": 0, "terminal": "pending", "visible": true }
+    },
+    {
+      "id": "unknown-source",
+      "traceId": "golden:scout-library-health:v1:unknown-source",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:unknown",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/tmp/golden-unknown-source.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-unknown-source-1" }]
+        }
+      },
+      "expected": { "routeCount": 0, "terminal": "pending", "visible": true }
+    },
+    {
+      "id": "unknown-project",
+      "traceId": "golden:scout-library-health:v1:unknown-project",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:scout",
+        "data": {
+          "project": "unknown-project",
+          "packetPath": "/tmp/golden-unknown-project.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-unknown-project-1" }]
+        }
+      },
+      "expected": { "routeCount": 0, "terminal": "pending", "visible": true }
+    },
+    {
+      "id": "absent-consumer",
+      "traceId": "golden:scout-library-health:v1:absent-consumer",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:scout",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/tmp/golden-absent-consumer.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-absent-consumer-1" }]
+        }
+      },
+      "expected": { "routeCount": 0, "terminal": "pending", "visible": true }
+    },
+    {
+      "id": "failed-wake",
+      "traceId": "golden:scout-library-health:v1:failed-wake",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:scout",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/tmp/golden-failed-wake.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-failed-wake-1" }]
+        }
+      },
+      "expected": { "routeCount": 1, "terminal": "pending", "visible": true }
+    },
+    {
+      "id": "nonterminal-domain-result",
+      "traceId": "golden:scout-library-health:v1:nonterminal-domain-result",
+      "event": {
+        "type": "project.library_health.observed",
+        "source": "agent:scout",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/tmp/golden-nonterminal.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-nonterminal-1" }]
+        }
+      },
+      "expected": { "routeCount": 1, "terminal": "waiting", "visible": true }
+    },
+    {
+      "id": "unrelated-signal",
+      "traceId": "golden:scout-library-health:v1:unrelated-signal",
+      "event": {
+        "type": "unrelated.signal",
+        "source": "agent:scout",
+        "data": {
+          "project": "scout-knowledge-lib",
+          "packetPath": "/tmp/golden-unrelated.jsonl",
+          "wakeCount": 1,
+          "wakeSignals": [{ "key": "future:path", "fingerprint": "golden-unrelated-1" }]
+        }
+      },
+      "expected": { "routeCount": 0, "terminal": "pending", "visible": true }
+    }
+  ]
+}
