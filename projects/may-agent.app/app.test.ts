@@ -147,6 +147,34 @@ describe("may-agent task routing", () => {
     expect(taskInputForEvent(event("metric.recovered"))).toBeNull();
   });
 
+  it("golden-traces subscriber-failure alerts to the accountable platform owner task", () => {
+    const sourceFailure = event(
+      "metric.breach",
+      {
+        metricId: "infra.bus.subscriber-failed-count-1h",
+        alertId: 4657,
+        current: 5,
+        message: "Event bus subscriber failures (1h) is above threshold",
+      },
+      { owner: "agent:tech-lead" },
+    );
+
+    expect(taskInputForEvent(sourceFailure)).toMatchObject({
+      kind: "owner-review",
+      data: {
+        reason: "metric-signal",
+        metricId: "infra.bus.subscriber-failed-count-1h",
+        metric: { alertId: 4657, current: 5 },
+      },
+    });
+    expect(resolveMayAgentTask(sourceFailure)).toMatchObject({
+      id: OWNER_REVIEW_TASK_ID,
+      mode: "maintain",
+      owner: "may",
+      input: { scope: "may-agent-platform" },
+    });
+  });
+
   it("maps addressed input directly to its stable task", () => {
     expect(
       taskForMayAgentInput(

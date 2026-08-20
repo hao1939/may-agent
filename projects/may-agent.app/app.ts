@@ -192,6 +192,10 @@ const deferredMetrics = new Set([
   "runtime.stale-running-session-count",
 ]);
 
+const platformRuntimeMetrics = new Set([
+  "infra.bus.subscriber-failed-count-1h",
+]);
+
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -300,7 +304,9 @@ export function taskInputForEvent(
       const metricId = stringValue(
         data.metricId ?? data.metric_id ?? event.target?.metricId,
       );
-      return isPlatformMetric(event) && !deferredMetrics.has(metricId)
+      return (isPlatformMetric(event) ||
+        platformRuntimeMetrics.has(metricId)) &&
+        !deferredMetrics.has(metricId)
         ? platformOwnerReview("metric-signal", {
             metricId,
             metric: data,
