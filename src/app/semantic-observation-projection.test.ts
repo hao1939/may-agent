@@ -6,7 +6,10 @@ import type { AppObservationProjection, ObservationEvent } from "@may-agent/sdk"
 import { applyDbSchema } from "../lib/db/schema.js";
 import { getDb, closeDb } from "../lib/requests.js";
 import { createQueryService } from "../lib/query-service.js";
-import { projectSemanticObservations } from "../lib/semantic-observation-projection.js";
+import {
+  projectSemanticObservations,
+  setRuntimeObservationProjectionProvider,
+} from "../lib/semantic-observation-projection.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID } from "./event-bus.js";
 import { measureSourceMetrics, UNHANDLED_SIGNAL_METRIC_ID } from "./metric-source-measurement.js";
@@ -61,6 +64,7 @@ describe("correlation-gated semantic observation projection", () => {
   it("shares one immutable effective disposition between delivery health and the unhandled metric", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-observation-projection-"));
     try {
+      setRuntimeObservationProjectionProvider(() => [projection]);
       const db = getDb(root);
       applyDbSchema(db);
       const bus = new EventBus();
@@ -153,7 +157,7 @@ describe("correlation-gated semantic observation projection", () => {
       expect([
         ...projectSemanticObservations({ db, projections: [projection], since: base - 100, now: base + 60_000 }),
       ]).toEqual([observation]);
-      const query = createQueryService({ getDb: () => db, observationProjections: () => [projection] });
+      const query = createQueryService({ getDb: () => db });
       const health = query.eventDeliveryHealth({ now: base + 60_000, lookbackMs: 120_000, limit: 20 });
       expect(health.unhandledEvents.map((event) => event.id)).toEqual([unrelated, duplicate, mismatched, malformed]);
 
@@ -171,13 +175,13 @@ describe("correlation-gated semantic observation projection", () => {
         bus,
         persistDir: root,
         measuredAt: base + 60_000,
-        observationProjections: [projection],
       });
       expect(db.prepare("SELECT current FROM metrics WHERE id=?").get(UNHANDLED_SIGNAL_METRIC_ID)).toEqual({
         current: 4,
       });
       expect(db.prepare("SELECT id, delivery_status, accepted_by FROM events ORDER BY id").all()).toEqual(before);
     } finally {
+      setRuntimeObservationProjectionProvider(() => []);
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
     }

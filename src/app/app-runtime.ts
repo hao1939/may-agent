@@ -5,6 +5,7 @@ import type { AppInput } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
+import { setRuntimeObservationProjectionProvider } from "../lib/semantic-observation-projection.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
@@ -182,6 +183,11 @@ export async function runAppRuntime(opts: {
   let appInboxRuntime: AppInboxRuntime | null = null;
   const appRegistry = new AppRegistry(opts.projectsRoot);
   await appRegistry.reload();
+  setRuntimeObservationProjectionProvider(() =>
+    appRegistry
+      .snapshot()
+      .entries.flatMap((entry) => entry.definition.observationProjections ?? []),
+  );
 
   attachDaemonEventSubscribers({
     bus,

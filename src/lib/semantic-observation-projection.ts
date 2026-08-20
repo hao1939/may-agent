@@ -6,6 +6,19 @@ import {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "./db.js";
 
+let runtimeProjectionProvider: () => readonly AppObservationProjection[] = () => [];
+
+/** Host-only binding to the current immutable App registry generation. */
+export function setRuntimeObservationProjectionProvider(
+  provider: () => readonly AppObservationProjection[],
+): void {
+  runtimeProjectionProvider = provider;
+}
+
+export function runtimeObservationProjections(): readonly AppObservationProjection[] {
+  return runtimeProjectionProvider();
+}
+
 type EventRow = {
   id: number;
   event_type: string;
@@ -65,7 +78,8 @@ export function projectSemanticObservations(options: {
   since: number;
   now: number;
 }): ReadonlySet<number> {
-  if (!options.projections?.length) return new Set<number>();
+  const projections = options.projections ?? runtimeObservationProjections();
+  if (!projections.length) return new Set<number>();
   const rows = options.db
     .prepare(
       `SELECT id, event_type, source, owner, timestamp, delivery_status, accepted_by, data
@@ -77,7 +91,7 @@ export function projectSemanticObservations(options: {
   const events = rows.map(observationEvent);
   const accepted = new Set<number>();
 
-  for (const projection of options.projections) {
+  for (const projection of projections) {
     const candidates = events.filter(
       (event) => event.deliveryStatus === "unhandled" && matchesEventSelector(projection.event, selectorEvent(event)),
     );

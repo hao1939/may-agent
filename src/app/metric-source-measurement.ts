@@ -210,7 +210,7 @@ export async function measureSourceMetrics(options: {
           skipped.push(row.id);
           continue;
         }
-        if (row.id === UNHANDLED_SIGNAL_METRIC_ID && options.observationProjections?.length) {
+        if (row.id === UNHANDLED_SIGNAL_METRIC_ID) {
           const since = defaultMeasuredAt - 3_600_000;
           const projected = projectSemanticObservations({
             db,
