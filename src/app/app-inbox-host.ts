@@ -432,14 +432,21 @@ export class AppInboxHost {
       for (const claim of claims) {
         try {
           const request = await this.#authorRequest(claim.item);
-          const changedConversation =
-            request.dependency?.kind === "task" && request.dependency.status === "done"
-              ? this.#completeRequest(claim, {
-                  summary: request.dependency.summary ?? `${request.input.kind} completed`,
-                  response: request.dependency.response,
-                  evidence: request.dependency.evidence,
-                })
-              : await this.#attachRequestTask(app, claim, request);
+          const terminalTaskDependency =
+            request.dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(request.dependency.status)
+              ? request.dependency
+              : undefined;
+          const changedConversation = terminalTaskDependency
+            ? this.#completeRequest(claim, {
+                summary:
+                  terminalTaskDependency.summary ??
+                  (terminalTaskDependency.status === "done"
+                    ? `${request.input.kind} completed`
+                    : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
+                response: terminalTaskDependency.response,
+                evidence: terminalTaskDependency.evidence,
+              })
+            : await this.#attachRequestTask(app, claim, request);
           if (changedConversation) conversationIds.add(changedConversation);
           outcome.admitted += 1;
         } catch (error) {
