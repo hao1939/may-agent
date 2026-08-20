@@ -115,6 +115,9 @@ describe("correlation-gated semantic observation projection", () => {
       failure("good", 10);
       failure("dup", 11);
       failure("dup", 12);
+      expect([
+        ...projectSemanticObservations({ db, projections: [projection], since: base - 100, now: base + 19 }),
+      ]).toEqual([]);
       emit(
         "pipeline.failure.observed",
         "aks-pipeline-watcher",
@@ -174,6 +177,114 @@ describe("correlation-gated semantic observation projection", () => {
         current: 4,
       });
       expect(db.prepare("SELECT id, delivery_status, accepted_by FROM events ORDER BY id").all()).toEqual(before);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps malformed, unmatched, ambiguous, and nonterminal chains visible", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-observation-negative-"));
+    try {
+      const db = getDb(root);
+      applyDbSchema(db);
+      const bus = new EventBus();
+      attachEventPersistence({ bus, persistDir: root });
+      const base = Date.now();
+      let offset = 0;
+      const emit = (type: string, source: string, data: Record<string, unknown>) =>
+        bus.emit({ type, source, owner: "app:alpha-project", data, timestamp: base + offset++ } as any)[EVENT_ROW_ID]!;
+      const candidates = new Map<string, number>();
+      const candidate = (runId: string, source = "aks-pipeline-watcher", projectId = "alpha-project") => {
+        const id = emit("pipeline-artifact.unavailable", source, { project: projectId, pipelineRunId: runId });
+        candidates.set(runId, id);
+        return id;
+      };
+      const failure = (runId: string, status = "accepted", acceptedBy?: string) => {
+        const id = emit("pipeline.failure.observed", "aks-pipeline-watcher", {
+          project: "alpha-project",
+          pipelineRunId: runId,
+          sliceId: "artifact-materialization",
+          category: "terminal_artifact_unavailable",
+        });
+        const carrier = `ops/master-validation-evidence-carrier/${runId}-artifact-materialization`;
+        db.run("UPDATE events SET delivery_status=?, accepted_by=? WHERE id=?", [
+          status,
+          acceptedBy ?? `app-runtime:events:task:alpha-project/${carrier}`,
+          id,
+        ]);
+        return id;
+      };
+      const terminal = (runId: string, disposition = "converged", summary = "No product verdict.", taskId?: string) =>
+        emit("project.task.reconciled", "app-task:alpha-project:task-reconciler", {
+          project: "alpha-project",
+          taskId: taskId ?? `ops/master-validation-evidence-carrier/${runId}-artifact-materialization`,
+          disposition,
+          summary,
+        });
+
+      for (const runId of [
+        "good", "absent", "mismatch", "failed", "pending", "wrong-delivery", "waiting", "attention",
+        "nonterminal", "domain-unhandled", "unrelated-task", "duplicate-failure", "duplicate-terminal",
+      ]) candidate(runId);
+      const malformed = candidate("malformed");
+      db.run("UPDATE events SET data='{' WHERE id=?", [malformed]);
+      candidate("unknown-source", "unknown-watcher");
+      candidate("unknown-project", "aks-pipeline-watcher", "unknown-project");
+      const unrelatedType = emit("other.unhandled", "aks-pipeline-watcher", {
+        project: "alpha-project",
+        pipelineRunId: "unrelated-type",
+      });
+
+      failure("good");
+      terminal("good");
+      failure("different-run");
+      terminal("mismatch");
+      failure("failed", "failed");
+      terminal("failed");
+      failure("pending", "pending");
+      terminal("pending");
+      failure("wrong-delivery", "accepted", "app-runtime:events:task:alpha-project/wrong-carrier");
+      terminal("wrong-delivery");
+      failure("waiting");
+      terminal("waiting", "waiting");
+      failure("attention");
+      terminal("attention", "attention");
+      failure("nonterminal");
+      terminal("nonterminal", "running");
+      failure("domain-unhandled");
+      terminal("domain-unhandled", "converged", "Terminal artifact unavailable; product handling pending.");
+      failure("unrelated-task");
+      terminal("unrelated-task", "converged", "No product verdict.", "ops/unrelated-task");
+      failure("duplicate-failure");
+      failure("duplicate-failure");
+      terminal("duplicate-failure");
+      failure("duplicate-terminal");
+      terminal("duplicate-terminal");
+      terminal("duplicate-terminal");
+
+      db.run(
+        `UPDATE events SET delivery_status='unhandled' WHERE id IN (${[...candidates.values(), unrelatedType]
+          .map(() => "?")
+          .join(",")})`,
+        [...candidates.values(), unrelatedType],
+      );
+      const projected = projectSemanticObservations({
+        db,
+        projections: [projection],
+        since: base - 1,
+        now: base + 10_000,
+      });
+      expect([...projected]).toEqual([candidates.get("good")]);
+      const query = createQueryService({ getDb: () => db, observationProjections: () => [projection] });
+      const visible = new Set(
+        query.eventDeliveryHealth({ now: base + 10_000, lookbackMs: 20_000, limit: 100 }).unhandledEvents.map((event) =>
+          event.id,
+        ),
+      );
+      for (const id of [...candidates.values(), unrelatedType]) {
+        expect(visible.has(id)).toBe(id !== candidates.get("good"));
+      }
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
