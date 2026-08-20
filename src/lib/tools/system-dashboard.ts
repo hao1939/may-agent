@@ -104,7 +104,9 @@ function loadEvals(persistDir: string, sinceMs: number): EvalRecord[] {
   if (!db) return [];
   try {
     const rows = db
-      .prepare("SELECT agent, quality, efficiency, verdict, issues, createdAt FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC")
+      .prepare(
+        "SELECT agent, quality, efficiency, verdict, issues, createdAt FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC",
+      )
       .all(sinceMs) as Record<string, unknown>[];
     return rows.map((row) => ({
       agent: row.agent as string,
@@ -169,8 +171,9 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
   const db = openStatusDb(persistDir);
   if (!db) return [];
   try {
-    return db.prepare(
-      `WITH handlers AS (
+    return db
+      .prepare(
+        `WITH handlers AS (
          SELECT handler AS name, MAX(timestamp) AS lastFire
          FROM events
          WHERE event_type = 'handler.started'
@@ -192,7 +195,8 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
        )
        ORDER BY h.lastFire DESC
        LIMIT 30`,
-    ).all() as unknown as ProcessInfo[];
+      )
+      .all() as unknown as ProcessInfo[];
   } catch {
     return [];
   } finally {

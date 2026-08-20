@@ -58,7 +58,12 @@ function invoke(entry: string, args: string[], stateDir: string) {
   const commandArgs = entry === DEV_ENTRY ? [entry, ...args] : args;
   return spawnSync(command, commandArgs, {
     cwd: PROJECT_ROOT,
-    env: { ...process.env, STATE_DIR: stateDir, INSTANCE: "status-regression" },
+    env: {
+      ...process.env,
+      PROJECT_ROOT,
+      STATE_DIR: stateDir,
+      INSTANCE: "status-regression",
+    },
     encoding: "utf8",
     timeout: 15_000,
   });
