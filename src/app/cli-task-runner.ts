@@ -167,11 +167,31 @@ function safeOptionalPath(root: string, value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? ensureInside(root, value) : undefined;
 }
 
-function safePathList(root: string, value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const paths = value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
-  if (paths.length === 0) return undefined;
-  return paths.map((entry) => ensureInside(root, entry));
+function authorizedAgentContextRoot(projectRoot: string, event: AgentEvent, sourceOwner: string): string | undefined {
+  if ((event as any).source !== sourceOwner) return undefined;
+  const match = /^agent:([a-zA-Z0-9_.-]+)$/.exec(sourceOwner);
+  return match ? join(resolve(projectRoot), "agents", match[1]!) : undefined;
+}
+
+function ensureInsideOneOf(roots: string[], path: string): string {
+  for (const root of roots) {
+    try {
+      return ensureInside(root, path);
+    } catch {
+      // Continue through the finite authorized roots.
+    }
+  }
+  throw new Error(`Path outside authorized context roots: ${path}`);
+}
+
+function safePathList(roots: string[], value: unknown): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new Error("CLI task files must be an array of non-empty paths");
+  if (value.length === 0) return undefined;
+  if (value.some((entry) => typeof entry !== "string" || entry.trim().length === 0)) {
+    throw new Error("CLI task files must be an array of non-empty paths");
+  }
+  return (value as string[]).map((entry) => ensureInsideOneOf(roots, entry));
 }
 
 function summarize(text: string): string {
@@ -782,6 +802,8 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
     const cwd = typeof data.cwd === "string" ? ensureInside(opts.projectRoot, data.cwd) : opts.projectRoot;
     const worktree = safeOptionalPath(dirname(opts.projectRoot), data.worktree);
     const filesRoot = worktree ?? cwd;
+    const agentContextRoot = authorizedAgentContextRoot(opts.projectRoot, event, sourceOwner);
+    const authorizedFileRoots = agentContextRoot ? [filesRoot, agentContextRoot] : [filesRoot];
     const record: CliTaskRecord = existing ?? {
       taskId,
       purpose: data.purpose === "may-analysis" ? "may-analysis" : undefined,
@@ -812,7 +834,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
       sourceTrace: event.trace,
       resumeSessionId: typeof data.resumeSessionId === "string" ? data.resumeSessionId : undefined,
       reuseSession: data.reuseSession === true,
-      files: safePathList(filesRoot, data.files),
+      files: safePathList(authorizedFileRoots, data.files),
       worktree,
       worktreePolicy: data.worktreePolicy === "require" ? "require" : "use-existing",
       expectedOutput:
