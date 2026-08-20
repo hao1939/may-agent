@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
@@ -36,7 +36,12 @@ import {
 } from "./app-task-reconciler.js";
 import { readTaskState, saveTaskState } from "./app-task-store.js";
 import { HostCapacity } from "./host-capacity.js";
-import { writeSessionMeta } from "../lib/persistence.js";
+import {
+  addSessionBashProcessGroup,
+  readSessionBashProcessGroups,
+  readSessionMeta,
+  writeSessionMeta,
+} from "../lib/persistence.js";
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
@@ -943,6 +948,264 @@ describe("canonical App task runtime", () => {
 
     expect(recovered.claimedSessionIds).toEqual(new Set(["session-resumable"]));
     expect(readTaskState(config).resources?.["work/resumable"]?.status.phase).toBe("running");
+  });
+
+  it("drains an orphaned setsid owner's exact process group before replacement recovery", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, ".state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const intent = {
+      id: "work/orphan-owner",
+      parentId: "operations",
+      outcome: "Recover orphan owner session",
+      acceptance: ["Replacement ownership cannot overlap stale process mutation"],
+      mode: "achieve" as const,
+      owner: "sample-owner",
+    };
+    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    const claim = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appOwner: "sample-owner",
+      handler: "owner:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected orphan owner claim");
+    expect(recordAppTaskAttemptSession(config, claim, "owner-old")).toBe(true);
+    const previousRuntimeTree = readTaskState(config);
+    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
+    if (!previousAttempt?.lease) throw new Error("expected leased orphan owner attempt");
+    previousAttempt.runtimeId = "previous-runtime";
+    previousAttempt.lease.runtimeId = "previous-runtime";
+    previousAttempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
+    saveTaskState(config, previousRuntimeTree);
+    writeSessionMeta(persistDir, "owner-old", {
+      agent: "sample-owner",
+      task: "Recover orphan owner session",
+      status: "running",
+      startedAt: Date.now() - 60_000,
+      source: "app-task-owner",
+      projectId: "sample",
+      recoveryOwner: "app-task-reconciler",
+      kind: "call",
+    });
+
+    const staleMutation = join(f.root, "superseded-owner-mutation");
+    const stalePgidPath = join(f.root, "superseded-owner-pgid");
+    const staleCommand = `trap '' TERM; sleep 0.6; printf stale > ${JSON.stringify(staleMutation)}; sleep 30`;
+    const externalReaper = spawn(
+      "/usr/bin/python3",
+      [
+        "-c",
+        [
+          "import os, sys",
+          "pid = os.fork()",
+          "if pid == 0:",
+          "    os.setsid()",
+          "    with open(sys.argv[2], 'w') as pgid_file:",
+          "        pgid_file.write(f'{os.getpid()}\\n')",
+          "    os.execl('/bin/bash', 'bash', '-c', sys.argv[1])",
+          "os.waitpid(pid, 0)",
+        ].join("\n"),
+        staleCommand,
+        stalePgidPath,
+      ],
+      { stdio: "ignore" },
+    );
+    const externalReaperExit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+      externalReaper.once("exit", (code, signal) => resolve({ code, signal }));
+    });
+    const stalePgidDeadline = Date.now() + 2_000;
+    let stalePgid = 0;
+    while (stalePgid <= 0 && Date.now() < stalePgidDeadline) {
+      if (existsSync(stalePgidPath)) stalePgid = Number(readFileSync(stalePgidPath, "utf8").trim());
+      if (stalePgid <= 0) await Bun.sleep(5);
+    }
+    expect(stalePgid).toBeGreaterThan(0);
+    expect(
+      Number(execFileSync("ps", ["-o", "pgid=", "-p", String(externalReaper.pid)], { encoding: "utf8" }).trim()),
+    ).not.toBe(stalePgid);
+    addSessionBashProcessGroup(persistDir, "owner-old", stalePgid);
+    expect(readSessionBashProcessGroups(persistDir, "owner-old")).toEqual([stalePgid]);
+    execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
+
+    let replacementCalls = 0;
+    let preReplacementState:
+      | { groupDead: boolean; pgids: number[]; mutated: boolean; sessionStatus?: string; resultPersisted: boolean }
+      | undefined;
+    try {
+      await installAppTaskRuntimes({
+        ...options(f, bus),
+        persistDir,
+        manager: {
+          hasAgent: () => true,
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("startup recovery should drain the persisted owner session directly");
+          },
+          async callAgent() {
+            let groupDead = true;
+            for (const entry of readdirSync("/proc")) {
+              if (!/^\d+$/.test(entry)) continue;
+              try {
+                const stat = readFileSync(`/proc/${entry}/stat`, "utf8");
+                const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+                if (Number(fields[2]) === stalePgid && fields[0] !== "Z") {
+                  groupDead = false;
+                  break;
+                }
+              } catch {
+                // A process may exit while /proc is being scanned.
+              }
+            }
+            preReplacementState = {
+              groupDead,
+              pgids: readSessionBashProcessGroups(persistDir, "owner-old"),
+              mutated: existsSync(staleMutation),
+              sessionStatus: readSessionMeta(persistDir, "owner-old")?.status,
+              resultPersisted: existsSync(join(persistDir, "sessions", "owner-old", "result.json")),
+            };
+            replacementCalls += 1;
+            return {
+              sessionId: "owner-replacement",
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "replacement owner completed",
+                evidence: ["replacement terminal result"],
+                actions: [],
+              },
+              lastAssistantText: "replacement owner completed",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as never,
+        appRegistrySnapshot: {
+          id: "boot:orphan-owner",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      });
+
+      const replacementDeadline = Date.now() + 2_000;
+      while (replacementCalls === 0 && Date.now() < replacementDeadline) await Bun.sleep(5);
+      expect(replacementCalls).toBe(1);
+      expect(preReplacementState).toEqual({
+        groupDead: true,
+        pgids: [],
+        mutated: false,
+        sessionStatus: "interrupted",
+        resultPersisted: true,
+      });
+
+      const receiptDeadline = Date.now() + 2_000;
+      while (!readTaskState(config).receipts?.[intent.id] && Date.now() < receiptDeadline) await Bun.sleep(5);
+      const terminalReceipt = JSON.stringify(readTaskState(config).receipts?.[intent.id]);
+      expect(terminalReceipt).not.toBeUndefined();
+      expect(await externalReaperExit).toEqual({ code: 0, signal: null });
+      await Bun.sleep(700);
+      expect(existsSync(staleMutation)).toBe(false);
+      expect(JSON.stringify(readTaskState(config).receipts?.[intent.id])).toBe(terminalReceipt);
+    } finally {
+      try {
+        process.kill(-stalePgid, "SIGKILL");
+      } catch {
+        // Recovery already drained the exact orphaned group.
+      }
+      externalReaper.kill("SIGKILL");
+    }
+  });
+
+  it("fails startup recovery closed when a durable owner process group cannot be confirmed drained", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, ".state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const intent = {
+      id: "work/undrained-owner",
+      parentId: "operations",
+      outcome: "Do not overlap an undrained owner",
+      acceptance: ["Recovery remains fenced until exact process-group exit is confirmed"],
+      mode: "achieve" as const,
+      owner: "sample-owner",
+    };
+    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    const claim = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appOwner: "sample-owner",
+      handler: "owner:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected undrained owner claim");
+    expect(recordAppTaskAttemptSession(config, claim, "owner-undrained")).toBe(true);
+    const previousRuntimeTree = readTaskState(config);
+    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
+    if (!previousAttempt?.lease) throw new Error("expected leased undrained attempt");
+    previousAttempt.runtimeId = "previous-runtime";
+    previousAttempt.lease.runtimeId = "previous-runtime";
+    previousAttempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
+    saveTaskState(config, previousRuntimeTree);
+    writeSessionMeta(persistDir, "owner-undrained", {
+      agent: "sample-owner",
+      task: "Do not overlap an undrained owner",
+      status: "running",
+      startedAt: Date.now() - 60_000,
+      source: "app-task-owner",
+      projectId: "sample",
+      recoveryOwner: "app-task-reconciler",
+      kind: "call",
+    });
+    addSessionBashProcessGroup(persistDir, "owner-undrained", 424_242);
+    execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
+
+    let replacementCalls = 0;
+    let sessionEndEvents = 0;
+    bus.subscribe((event) => {
+      if (event.type === "session.end" && event.sessionId === "owner-undrained") sessionEndEvents += 1;
+    });
+    await expect(
+      installAppTaskRuntimes({
+        ...options(f, bus),
+        persistDir,
+        drainPersistedBashProcessGroups: () => false,
+        manager: {
+          hasAgent: () => true,
+          hasActiveSession: () => false,
+          cancel: () => undefined,
+          async callAgent() {
+            replacementCalls += 1;
+            throw new Error("replacement must remain fenced");
+          },
+        } as never,
+        appRegistrySnapshot: {
+          id: "boot:undrained-owner",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      }),
+    ).rejects.toThrow("did not exit after bounded SIGTERM/SIGKILL drain");
+
+    expect(replacementCalls).toBe(0);
+    expect(sessionEndEvents).toBe(0);
+    expect(readSessionMeta(persistDir, "owner-undrained")?.status).toBe("running");
+    expect(existsSync(join(persistDir, "sessions", "owner-undrained", "result.json"))).toBe(false);
+    expect(readSessionBashProcessGroups(persistDir, "owner-undrained")).toEqual([424_242]);
+    const afterRecovery = readTaskState(config);
+    expect(afterRecovery.resources?.[intent.id]?.status.phase).toBe("running");
+    expect(afterRecovery.resources?.[intent.id]?.status.currentAttemptId).toBe(claim.attemptId);
+    expect(afterRecovery.receipts?.[intent.id]).toBeUndefined();
   });
 
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
