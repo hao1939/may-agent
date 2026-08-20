@@ -23,7 +23,13 @@ import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
 // handler/workflow recovery and may mutate persisted state.
 const operatorArgs = process.argv
   .slice(1)
-  .filter((arg) => arg !== process.argv[0] && arg !== "binary-entry.ts" && !arg.endsWith("/may.ts"));
+  .filter(
+    (arg) =>
+      arg !== process.argv[0] &&
+      arg !== "binary-entry.ts" &&
+      !arg.endsWith("/binary-entry.ts") &&
+      !arg.endsWith("/may.ts"),
+  );
 if (operatorArgs[0] === "status") {
   console.error('Unsupported positional command "status". Use "may-agent --status".');
   process.exit(2);

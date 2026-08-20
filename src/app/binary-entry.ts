@@ -4,9 +4,9 @@
  * Runs may.ts directly. Process supervision is handled by supervisord
  * (container) or the OS process manager. No internal launcher layer.
  *
- * Bun compiled argv is [runtime, binaryPath, arg1, ...] (offset 2), matching
- * development's [runtime, script, arg1, ...]. Replace only the entry label so
- * may.ts sees the same operator arguments in both modes.
+ * Bun compiled argv is [runtime, virtualEntry, arg1, ...] (offset 2), matching
+ * development's [runtime, script, arg1, ...]. Replace only the virtual entry
+ * label so may.ts sees the same operator arguments in both modes.
  */
 
 import { plugin } from "bun";
@@ -27,7 +27,7 @@ async function main() {
     process.exit(1);
   }
 
-  // Normalize argv without leaking the compiled executable path as an argument.
+  // Normalize argv without leaking Bun's virtual entry path as an argument.
   process.argv = [process.argv[0], "binary-entry.ts", ...process.argv.slice(2)];
 
   // Run may.ts directly — no launcher layer
