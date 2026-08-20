@@ -217,6 +217,79 @@ describe("may-agent task routing", () => {
     }
   });
 
+  it("golden-traces the rejected status activation request through the exact finite May-agent consumer", () => {
+    const input: AppInput = {
+      kind: "status-readonly-supervisor-activation",
+      data: {
+        outcome:
+          "Adjudicate the superseded status-readonly activation receipt without duplicate deployment, and return terminal activation and live negative-control proof.",
+        acceptance: [
+          "Return a correlated terminal App result with the immutable receipt, loaded artifact, health, targeted wake, duplicate-deploy, and live status evidence.",
+        ],
+        sourceRequestId: "appdep_a403431cd372972301012d47",
+        sourceEventIds: [5799145, 5799146],
+        taskId: "harden-status-invocation-readonly-20260819",
+        correlation: "status-readonly-9f5d4d7f-20260819T2355Z",
+        receipt:
+          "/app/projects/may-agent/.state/deploy-receipts/status-readonly-9f5d4d7f-20260819T2355Z.json",
+        sourceCommit: "9f5d4d7f59143a855a546fd092002e56cf9a4a18",
+        artifactSha:
+          "ef6f641daced640ea8644a9f681147913583c1e042b7a35aa32367f650ba7b02",
+        safetyBounds: [
+          "Do not redeploy or bypass the supervisor.",
+          "Preserve visible failures and reject malformed or unauthorized input.",
+        ],
+        currentEvidence: {
+          loadedSourceCommit: "55e4c37d6ae14f36b8d13daadc490948bbba7cda",
+          loadedArtifactSha:
+            "3601265b29ae015083f12cb93a67f7e7c130e12622be3c56ca733f38eb30fc4c",
+        },
+      },
+    };
+
+    expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(
+      taskForMayAgentInput({
+        id: "status-activation-replacement-1",
+        source: { kind: "app", id: "may-agent" },
+        input,
+      }),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "app-request/status-activation-replacement-1",
+        owner: "may",
+        mode: "achieve",
+        input: {
+          kind: "status-readonly-supervisor-activation",
+          data: {
+            sourceRequestId: "appdep_a403431cd372972301012d47",
+            sourceEventIds: [5799145, 5799146],
+          },
+        },
+      },
+    });
+
+    for (const malformed of [
+      { ...input, kind: "supervisor-activation-required" },
+      { ...input, data: { ...input.data, sourceEventIds: [5799145] } },
+      { ...input, data: { ...input.data, taskId: "other-task" } },
+      { ...input, data: { ...input.data, receipt: "/tmp/receipt.json" } },
+      { ...input, data: { ...input.data, directRestart: true } },
+    ]) {
+      expect(Check(app.inputSchema, malformed)).toBeFalse();
+    }
+    expect(() =>
+      taskForMayAgentInput({
+        id: "status-activation-wrong-source",
+        source: { kind: "system", id: "test" },
+        input,
+      }),
+    ).toThrow(
+      "status-readonly-supervisor-activation is accepted only from App may-agent",
+    );
+  });
+
   it("golden-traces the rejected AKS containment binding to one finite May task", () => {
     const input: AppInput = {
       kind: "contain-external-and-replayed-workspace-writer",

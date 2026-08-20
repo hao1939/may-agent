@@ -110,6 +110,37 @@ export const platformInputSchema = Type.Union([
   ),
   Type.Object(
     {
+      kind: Type.Literal("status-readonly-supervisor-activation"),
+      data: Type.Object(
+        {
+          outcome: nonEmptyString,
+          acceptance: stringList,
+          sourceRequestId: Type.Literal("appdep_a403431cd372972301012d47"),
+          sourceEventIds: Type.Tuple([
+            Type.Literal(5799145),
+            Type.Literal(5799146),
+          ]),
+          taskId: Type.Literal("harden-status-invocation-readonly-20260819"),
+          correlation: Type.Literal("status-readonly-9f5d4d7f-20260819T2355Z"),
+          receipt: Type.Literal(
+            "/app/projects/may-agent/.state/deploy-receipts/status-readonly-9f5d4d7f-20260819T2355Z.json",
+          ),
+          sourceCommit: Type.Literal(
+            "9f5d4d7f59143a855a546fd092002e56cf9a4a18",
+          ),
+          artifactSha: Type.Literal(
+            "ef6f641daced640ea8644a9f681147913583c1e042b7a35aa32367f650ba7b02",
+          ),
+          safetyBounds: stringList,
+          currentEvidence: detailsSchema,
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
       kind: Type.Literal("contain-external-and-replayed-workspace-writer"),
       data: Type.Object(
         {
@@ -227,7 +258,8 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "runtime-capability-request":
     case "app-deployment-adjudication":
     case "runtime-source-deployment-request":
-    case "protected-agent-config-repair": {
+    case "protected-agent-config-repair":
+    case "status-readonly-supervisor-activation": {
       const data = record(input.data);
       return {
         id: "",
@@ -304,6 +336,14 @@ export function taskForMayAgentInput(
   ) {
     throw new Error(
       "contain-external-and-replayed-workspace-writer is accepted only from App aks-rp-e2e",
+    );
+  }
+  if (
+    admitted.input.kind === "status-readonly-supervisor-activation" &&
+    (admitted.source.kind !== "app" || admitted.source.id !== "may-agent")
+  ) {
+    throw new Error(
+      "status-readonly-supervisor-activation is accepted only from App may-agent",
     );
   }
   const resolved = taskIntentForInput(admitted.input);
