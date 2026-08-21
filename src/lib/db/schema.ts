@@ -1,5 +1,5 @@
 import type { SqliteDb } from "../db.js";
-import { TASK_RESOURCE_SCHEMA } from "./task-resource-schema.js";
+import { ensureTaskResourceSchema } from "./task-resource-schema.js";
 
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
@@ -331,6 +331,12 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
 );
 CREATE INDEX IF NOT EXISTS idx_app_inbox_ready
   ON app_inbox_items(app_id, status, available_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_available
+  ON app_inbox_items(available_at, app_id)
+  WHERE status != 'done' AND lease_owner IS NULL AND available_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_app_inbox_expired
+  ON app_inbox_items(lease_expires_at, app_id)
+  WHERE status != 'done' AND lease_expires_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_waiting
   ON app_inbox_items(waiting_on_kind, waiting_on_id, status);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_parent
@@ -557,7 +563,7 @@ export function applyDbSchema(db: SqliteDb): void {
     // reference added to the canonical schema.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec(SCHEMA);
-    db.exec(TASK_RESOURCE_SCHEMA);
+    ensureTaskResourceSchema(db);
     ensureExistingAppInboxDeliveryShape(db);
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);

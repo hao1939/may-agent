@@ -403,6 +403,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   let taskRecovery: Promise<void> | null = null;
+  const dependencyRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
+  let nextDependencyRecoveryAt = 0;
   const recoverTaskDependencies = (): Promise<void> => {
     if (taskRecovery) return taskRecovery;
     const current = host
@@ -418,6 +420,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       })
       .finally(() => {
         if (taskRecovery === current) taskRecovery = null;
+        nextDependencyRecoveryAt = now() + dependencyRecoveryIntervalMs;
       });
     taskRecovery = current;
     return current;
@@ -466,9 +469,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         activation.lastSlot = slot;
       }
     }
-    for (const appId of host.appIds()) schedule(appId);
+    for (const appId of host.readyAppIds()) schedule(appId);
     observerRuntime.scanNow();
-    void recoverTaskDependencies();
+    if (currentTime >= nextDependencyRecoveryAt) void recoverTaskDependencies();
     recoverAdmissionPlans();
   };
 
@@ -734,7 +737,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const kind = data.kind;
       const id = typeof data.id === "string" ? data.id.trim() : "";
       if ((kind === "app" || kind === "task" || kind === "session") && id) {
-        if (host.wake({ kind, id }) > 0) scanNow();
+        for (const appId of host.wakeAppIds({ kind, id })) schedule(appId);
         // One dependency Event may advance both an inbox request and one or
         // more Tasks. Preserve the direct inbox wake, then continue through
         // canonical Task-Condition admission below.
@@ -743,12 +746,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     if (event.type === "cli.task.completed" || event.type === "cli.task.failed" || event.type === "cli.task.orphaned") {
       const analysisId = typeof data.taskId === "string" ? data.taskId.trim() : "";
-      if (analysisId && host.wake({ kind: "analysis", id: analysisId }) > 0) scanNow();
+      if (analysisId) {
+        for (const appId of host.wakeAppIds({ kind: "analysis", id: analysisId })) schedule(appId);
+      }
     }
     if (event.type === "session.end") {
       const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
-      if (sessionId && host.wake({ kind: "session", id: sessionId }) > 0) {
-        scanNow();
+      if (sessionId) {
+        for (const appId of host.wakeAppIds({ kind: "session", id: sessionId })) schedule(appId);
       }
     }
     const identity = eventIdentity(event);
@@ -891,7 +896,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     }
     return dependencyWakeDelivery;
-  });
+  }, { label: "app-inbox-route" });
   const scanIntervalMs = options.scanIntervalMs ?? 5_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
     unsubscribe();

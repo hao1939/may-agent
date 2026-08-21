@@ -1,3 +1,5 @@
+import type { SqliteDb } from "../db.js";
+
 /** Resource-local Task rows share the EventHub database for atomic fenced emission. */
 export const TASK_RESOURCE_SCHEMA = `
 CREATE TABLE IF NOT EXISTS app_task_store_meta (
@@ -44,6 +46,16 @@ CREATE TABLE IF NOT EXISTS app_task_conditions (
   app_id TEXT NOT NULL, condition_id TEXT NOT NULL, state TEXT NOT NULL, condition_json TEXT NOT NULL,
   PRIMARY KEY(app_id, condition_id)
 );
+CREATE INDEX IF NOT EXISTS idx_app_task_conditions_event_type
+  ON app_task_conditions(app_id, json_extract(condition_json, '$.spec.type'));
+CREATE TABLE IF NOT EXISTS app_task_condition_routes (
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL, condition_id TEXT NOT NULL,
+  PRIMARY KEY(app_id, condition_id, task_id),
+  FOREIGN KEY(app_id, task_id) REFERENCES app_tasks(app_id, task_id) ON DELETE CASCADE,
+  FOREIGN KEY(app_id, condition_id) REFERENCES app_task_conditions(app_id, condition_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_app_task_condition_routes_task
+  ON app_task_condition_routes(app_id, task_id, condition_id);
 CREATE TABLE IF NOT EXISTS app_task_receipts (
   app_id TEXT NOT NULL, receipt_id TEXT NOT NULL, parent_id TEXT NOT NULL,
   completed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
@@ -60,3 +72,21 @@ CREATE TABLE IF NOT EXISTS app_task_admissions (
   PRIMARY KEY(app_id, task_id)
 );
 `;
+
+/** Create the resource tables and migrate legacy JSON Condition links once. */
+export function ensureTaskResourceSchema(db: SqliteDb): void {
+  const needsConditionRouteBackfill = !db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_condition_routes'")
+    .get();
+  db.exec(TASK_RESOURCE_SCHEMA);
+  if (!needsConditionRouteBackfill) return;
+  db.exec(`
+    INSERT OR IGNORE INTO app_task_condition_routes(app_id, task_id, condition_id)
+    SELECT t.app_id, t.task_id, linked.value
+    FROM app_tasks t
+    JOIN json_each(t.resource_json, '$.status.conditionIds') linked
+    JOIN app_task_conditions c
+      ON c.app_id = t.app_id AND c.condition_id = linked.value
+    WHERE json_valid(t.resource_json) = 1
+  `);
+}
