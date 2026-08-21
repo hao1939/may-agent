@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import type {
-  TaskReconciliationContext,
-  WorkflowContext,
+import {
+  admitTaskReconcileResult,
+  type TaskReconciliationContext,
+  type WorkflowContext,
 } from "@may-agent/sdk";
 import { execute, normalizeOwnerResult } from "./evaluator-heartbeat.js";
 
@@ -122,8 +123,83 @@ describe("evaluator heartbeat", () => {
     expect(tasks).toHaveLength(1);
     expect(tasks[0]).toContain('"type": "metric.breach"');
     expect(tasks[0]).toContain('"taskId": "pipeline-health"');
+    expect(tasks[0]).toContain(
+      "Every Condition subject must use the canonical typed-subject form <type>:<id>",
+    );
+    expect(tasks[0]).toContain("session:s_123");
     expect(tasks[0]).not.toContain("SELECT ");
     expect(tasks[0]).not.toContain("task-tree.json");
+  });
+
+  test("rejects the prior untyped Condition and admits the corrected aggregate without runtime mutations", () => {
+    const prior = normalizeOwnerResult(
+      {
+        state: "waiting",
+        summary: "Wait for the aftermath session.",
+        evidence: ["aggregate review"],
+        conditions: [
+          {
+            id: "aftermath-finished",
+            type: "session.completed",
+            subject: "s_123",
+            expected: { status: "completed" },
+          },
+        ],
+      },
+      reconciliation(),
+    );
+
+    expect(prior).toMatchObject({ state: "converged", actions: [] });
+    expect(prior.evidence).toContain(
+      "owner-result-rejected:conditions[0].subject must be a typed subject",
+    );
+
+    const corrected = normalizeOwnerResult(
+      {
+        state: "waiting",
+        summary: "Wait for the aftermath session.",
+        evidence: ["aggregate review"],
+        conditions: [
+          {
+            id: "aftermath-finished",
+            type: "session.completed",
+            subject: "session:s_123",
+            expected: { status: "completed" },
+          },
+        ],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "runtime/session-aftermath/s_123",
+            expectedGeneration: 1,
+            summary: "Forbidden direct runtime mutation.",
+          },
+        ],
+      },
+      reconciliation(),
+    );
+
+    expect(corrected).toMatchObject({
+      state: "waiting",
+      conditions: [
+        {
+          id: "aftermath-finished",
+          type: "session.completed",
+          subject: "session:s_123",
+          expected: { status: "completed" },
+        },
+      ],
+      actions: [],
+    });
+    expect(corrected.evidence.join("\n")).toContain(
+      "cannot mutate reconciler-owned task runtime/session-aftermath/s_123",
+    );
+    expect(
+      admitTaskReconcileResult(corrected, {
+        allowNeedsOwner: false,
+        defaultParentId: "runtime/owner-review",
+      }),
+    ).toMatchObject({ ok: true, result: { state: "waiting" } });
   });
 
   test("rejects malformed output as a visible no-op without self-waking the reviewed task", async () => {
