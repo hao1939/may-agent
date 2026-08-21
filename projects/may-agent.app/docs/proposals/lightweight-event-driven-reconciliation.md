@@ -463,6 +463,28 @@ daemon log writes or slow `app-inbox-route` warnings. The live schema held
 1,284 resource Tasks and 151 normalized Condition routes with zero missing
 links. All five retained legacy source files still had their reviewed hashes.
 
+A later active-work sample found a separate execution-boundary cost: one shell
+command produced hundreds of megabytes, wrote a complete capture, and then made
+the Host synchronously replay that capture through transient tool updates while
+also writing a second complete copy. Runtime commit `5faa4d2c` keeps the child
+process's capture as the one complete artifact and lets the Host read only a
+bounded recent tail. A 64 MiB benchmark reduced Host reads from 67.1 MiB to
+138 KiB and removed the second 64 MiB copy while preserving the same bounded
+model result and complete `fullOutputPath`. TypeScript and 19 focused normal,
+timeout, abort, process-group, and large-output tests passed.
+
+The supervisor deployed that commit through receipt
+`bounded-shell-capture-5faa4d2c-20260821`. The loaded artifact SHA-256
+`608d4c7f2f3a6057a9d061eece138d005758ddd0b8278e64f5760099ef95bfb6`
+matched the request, health was `healthy`, the exact platform-owner wake was
+recorded, and `duplicateDeploy` was false. Two subsequent live task commands
+retained complete 160.6 KiB and 165.0 KiB captures while their persisted tool
+results remained about 42 KiB and named the complete files. This proves the
+bounded shell-capture path; it does not prove the overall idle CPU/RSS target.
+Profiling still observes substantial AKS, Git, Azure CLI, and other file-read
+work during active reconciliation, which remains a separate cost audit rather
+than a reason to put scheduling or another queue into the core.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through idle-resource, event-storm, and
