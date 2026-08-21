@@ -6,6 +6,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
 import { parseAppTaskSessionBinding, recoverInstalledAppTasks } from "./app-task-runtime.js";
+import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
 
 const LEGACY_APP_INBOX_RECOVERY_OWNER = "app-inbox";
 
@@ -43,9 +44,8 @@ export function shouldResumeStartupSession(
       reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
     };
   }
-  // recoveryOwner names the recovery runtime; it does not by itself bind a
-  // workflow call to a task resource.
   if (
+    session.recoveryOwner === APP_TASK_RECOVERY_OWNER ||
     (typeof session.taskId === "string" && session.taskId.trim()) ||
     (typeof session.projectTaskId === "string" && session.projectTaskId.trim()) ||
     parseAppTaskSessionBinding(session.task) ||
