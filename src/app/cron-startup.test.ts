@@ -64,6 +64,20 @@ describe("cron startup recovery", () => {
     }
   });
 
+  it("keeps task-owned workflow workers out of generic resume even when their prompt omits the task block", () => {
+    const appDir = mkdtempSync(join(tmpdir(), "may-task-worker-app-"));
+    try {
+      const persisted = session(appDir, "workflow:domain-task-execution", "app-task-reconciler");
+      persisted.task = "Execute the bounded reconciliation task below.\n\n{\"appId\":\"sample\",\"taskId\":\"work\"}";
+      expect(shouldResumeStartupSession("task-worker-session", persisted)).toEqual({
+        resume: false,
+        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   it("resumes an unbound typed owner-review workflow without losing its decision contract", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-owner-review-app-"));
     try {
