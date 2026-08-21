@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import type { AppEvent, ExecutionResult } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
@@ -76,10 +79,21 @@ function context(
   output: unknown,
   events: AppEvent[],
   summary?: string,
+  appRoot?: string,
 ) {
   return createTestAppWorkflowContext({
     input,
     reconciliation: reconciliation(input),
+    ...(appRoot
+      ? {
+          workspace: {
+            appRoot,
+            projectRoot: appRoot,
+            root: appRoot,
+            output: join(appRoot, ".output"),
+          },
+        }
+      : {}),
     callAgent: async () =>
       summary === undefined
         ? agentResult(output)
@@ -391,7 +405,18 @@ describe("canonical evaluator aftermath", () => {
     expect(events.map((event) => event.type)).toEqual([
       "evaluation.review_failed",
     ]);
-    expect(events[0]?.localKey).toBe("review-failed");
+    expect(events[0]).toMatchObject({
+      localKey: "review-failed",
+      data: {
+        requestedSessionId: "s_source",
+        executionId: "s_failed",
+        status: "error",
+        summary: "provider unavailable",
+        failure: "execution-not-done",
+        reason:
+          "Evaluator execution s_failed ended error: provider unavailable",
+      },
+    });
     expect(
       events.some((event) => event.type === "project.owner.requested"),
     ).toBeFalse();
@@ -419,7 +444,12 @@ describe("canonical evaluator aftermath", () => {
         data: expect.objectContaining({
           source: "evaluator-aftermath",
           requestedSessionId: "s_source",
+          executionId: "s_evaluator",
+          status: "done",
+          summary: "bounded evaluation complete",
           failure: "invalid-output",
+          reason:
+            "Evaluator execution s_evaluator returned no valid aftermath result.",
         }),
         target: { appId: "evaluation", project: "evaluation" },
       }),
@@ -453,6 +483,150 @@ describe("canonical evaluator aftermath", () => {
     expect(
       ownerKeys.every((key) => /^owner-finding-[a-f0-9]{16}$/.test(key!)),
     ).toBe(true);
+  });
+
+  test("durably suppresses equivalent cross-session findings while delivering material changes", async () => {
+    const appRoot = mkdtempSync(join(tmpdir(), "aftermath-finding-delivery-"));
+    const firstFinding: AftermathFinding = {
+      targetAppId: "gym",
+      severity: "concern",
+      summary:
+        "Gym emitted a non-canonical Condition subject for a human-approval wait.",
+      message:
+        "Keep the verified Hao approval boundary, but encode future reconciliation waits with a canonical typed subject in exact <type>:<id> form and place the eight scenario filters in expected; the evaluated result used prose in subject, which can make matching unreliable.",
+      evidence: [
+        "session s_1787333775296_667 result.json condition hao-approval-selected-may-app-labels",
+      ],
+      dedupeKey: "gym-noncanonical-wait-condition-subject",
+      requestedHumanAction: "none",
+    };
+    const equivalentFinding: AftermathFinding = {
+      ...firstFinding,
+      summary: "Gym emitted a noncanonical reconciliation Condition subject.",
+      message:
+        "For future waits, preserve the strong human approval request but encode the Condition subject as a stable typed identity in exact <type>:<id> form and place the eight-scenario scope and matching details under expected. Evidence: session s_1787334089441_673 result.json.",
+      evidence: [
+        "artifact:/app/.state/sessions/s_1787334089441_673/result.json#finishParams.result.conditions[0]",
+      ],
+    };
+    const changedFinding: AftermathFinding = {
+      ...firstFinding,
+      severity: "urgent",
+      summary:
+        "Gym approval routing now drops the required verification artifact.",
+      message:
+        "Restore owner routing with the attached artifact and run the Condition matcher regression before approval.",
+      evidence: [
+        "artifact:reports/gym-approval-routing.md",
+        "verification:bun test condition-matcher.test.ts",
+      ],
+      requestedHumanAction: "approve",
+    };
+    const run = async (
+      sessionId: string,
+      deliveredFinding: AftermathFinding,
+      events: AppEvent[],
+    ) =>
+      execute(
+        context(
+          { sessionId },
+          {
+            kind: "evaluation",
+            evaluation: { ...evaluation, sessionId },
+            findings: [deliveredFinding],
+          },
+          events,
+          undefined,
+          appRoot,
+        ),
+      );
+
+    const firstEvents: AppEvent[] = [];
+    const equivalentEvents: AppEvent[] = [];
+    const changedEvents: AppEvent[] = [];
+    const repeatedChangedEvents: AppEvent[] = [];
+    await run("s_1787333775296_667", firstFinding, firstEvents);
+    const equivalentResult = await run(
+      "s_1787334089441_673",
+      equivalentFinding,
+      equivalentEvents,
+    );
+    await run("s_changed", changedFinding, changedEvents);
+    const repeatResult = await run(
+      "s_changed_repeat",
+      changedFinding,
+      repeatedChangedEvents,
+    );
+
+    expect(firstEvents.map((event) => event.type)).toEqual([
+      "evaluation.recorded",
+      "project.owner.requested",
+    ]);
+    expect(equivalentEvents.map((event) => event.type)).toEqual([
+      "evaluation.recorded",
+    ]);
+    expect(equivalentResult.output).toMatchObject({
+      evidence: [
+        "execution:s_evaluator",
+        "evaluated-session:s_1787334089441_673",
+        "finding-delivery-suppressed:gym:gym-noncanonical-wait-condition-subject",
+        expect.stringContaining("finding-delivery-receipt:"),
+      ],
+    });
+    expect(changedEvents.map((event) => event.type)).toEqual([
+      "evaluation.recorded",
+      "project.owner.requested",
+      "evaluation.human_decision.requested",
+    ]);
+    expect(changedEvents[1]).toMatchObject({
+      target: { appId: "gym" },
+      data: {
+        finding: {
+          evidence: [
+            "artifact:reports/gym-approval-routing.md",
+            "verification:bun test condition-matcher.test.ts",
+          ],
+        },
+      },
+    });
+    expect(repeatedChangedEvents.map((event) => event.type)).toEqual([
+      "evaluation.recorded",
+    ]);
+    expect(repeatResult.output).toMatchObject({
+      evidence: [
+        "execution:s_evaluator",
+        "evaluated-session:s_changed_repeat",
+        "finding-delivery-suppressed:gym:gym-noncanonical-wait-condition-subject",
+        expect.stringContaining("finding-delivery-receipt:"),
+      ],
+    });
+
+    const receiptDir = join(appRoot, ".state", "finding-delivery", "receipts");
+    expect(readdirSync(receiptDir)).toHaveLength(1);
+    const receipt = JSON.parse(
+      readFileSync(join(receiptDir, readdirSync(receiptDir)[0]!), "utf8"),
+    );
+    expect(receipt).toMatchObject({
+      disposition: "delivered",
+      stableIdentity: {
+        targetAppId: "gym",
+        dedupeKey: "gym-noncanonical-wait-condition-subject",
+      },
+      variants: [
+        {
+          sourceSessionId: "s_1787333775296_667",
+          requestedHumanAction: "none",
+          artifactAndVerificationContext: firstFinding.evidence,
+        },
+        {
+          sourceSessionId: "s_changed",
+          requestedHumanAction: "approve",
+          artifactAndVerificationContext: changedFinding.evidence,
+          humanDeliveredAt: expect.any(String),
+        },
+      ],
+    });
+    expect(receipt.resolvedAt).toBeUndefined();
   });
 
   test("reuses the exact task-owned identities when one aftermath attempt is delivered again", async () => {

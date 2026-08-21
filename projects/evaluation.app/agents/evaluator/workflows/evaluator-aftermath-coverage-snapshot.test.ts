@@ -3,6 +3,7 @@ import type { ExecutionResult } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   METRIC_ID,
+  buildCoverageTask,
   execute,
   parseCoverageCounts,
 } from "./evaluator-aftermath-coverage-snapshot.ts";
@@ -34,6 +35,12 @@ function agent(output: unknown, summary = "counted"): ExecutionResult {
 }
 
 describe("aftermath coverage snapshot", () => {
+  test("counts only sessions admitted by the App aftermath policy", () => {
+    const task = buildCoverageTask();
+    expect(task).toContain("workflowRunId IS NOT NULL");
+    expect(task).toContain("routineWorkflowSession admission policy");
+  });
+
   test("parses direct and finish-result count envelopes", () => {
     const counts = {
       eligible: 10,
@@ -73,6 +80,7 @@ describe("aftermath coverage snapshot", () => {
     expect(records[0]?.[1]).toBe(0.3);
     expect(records[0]?.[2]).toMatchObject({
       sampleSize: 10,
+      measuredAt: counts.windowEnd,
       measuredBy: "workflow:evaluator-aftermath-coverage-snapshot",
     });
     expect(String((records[0]?.[2] as { note: string }).note)).toContain(

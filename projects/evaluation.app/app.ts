@@ -347,7 +347,18 @@ export function taskForEvaluationInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
   const configured = taskIntentForInput(admitted.input);
-  if (configured) return { kind: "desired", intent: configured };
+  if (configured) {
+    if (admitted.input.kind === "aftermath-coverage-snapshot") {
+      return {
+        kind: "desired",
+        intent: {
+          ...configured,
+          id: `runtime/aftermath-coverage-snapshot/${safeTaskIdPart(admitted.id)}`,
+        },
+      };
+    }
+    return { kind: "desired", intent: configured };
+  }
   const taskId = safeTaskIdPart(admitted.id);
   return {
     kind: "desired",

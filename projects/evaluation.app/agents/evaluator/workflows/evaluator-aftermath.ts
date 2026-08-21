@@ -4,6 +4,10 @@ import type {
   WorkflowContext,
 } from "@may-agent/sdk";
 import { Type } from "typebox";
+import {
+  decideFindingDelivery,
+  recordFindingDelivery,
+} from "./lib/finding-delivery.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "evaluator-aftermath";
@@ -590,7 +594,11 @@ async function reviewFailed(
     data: {
       source: name,
       requestedSessionId: sessionId(ctx.input?.sessionId) || undefined,
+      executionId: execution.id,
+      status: execution.status,
+      summary: text(execution.summary),
       failure,
+      reason: text(reason),
     },
     target: { appId: "evaluation", project: "evaluation" },
   });
@@ -654,6 +662,7 @@ export async function execute(
     outcome.kind === "evaluation"
       ? outcome.evaluation.sessionId
       : outcome.sessionId;
+  const deliveryEvidence: string[] = [];
   if (outcome.kind === "skip") {
     await ctx.events.emit({
       ...skippedEvaluationFact(outcome, execution.id),
@@ -670,17 +679,42 @@ export async function execute(
         targetAppId: finding.targetAppId,
         dedupeKey: finding.dedupeKey,
       };
-      await ctx.events.emit({
-        ...ownerFindingEvent(finding, outcome.evaluation),
-        localKey: taskEmissionKey(
-          ctx,
-          memberEmissionKey("owner-finding", findingIdentity),
-        ),
-      });
+      const appRoot = ctx.workspace?.appRoot;
+      const delivery = appRoot
+        ? decideFindingDelivery(appRoot, finding)
+        : undefined;
+      if (delivery && !delivery.deliver) {
+        deliveryEvidence.push(
+          `finding-delivery-suppressed:${finding.targetAppId}:${finding.dedupeKey}`,
+          `finding-delivery-receipt:${delivery.receiptPath}`,
+        );
+        continue;
+      }
+      if (!delivery || delivery.ownerNeeded) {
+        await ctx.events.emit({
+          ...ownerFindingEvent(finding, outcome.evaluation),
+          localKey: taskEmissionKey(
+            ctx,
+            memberEmissionKey("owner-finding", findingIdentity),
+          ),
+        });
+        if (delivery) {
+          recordFindingDelivery(
+            delivery,
+            finding,
+            outcome.evaluation.sessionId,
+            "owner",
+          );
+          deliveryEvidence.push(
+            `finding-delivery-receipt:${delivery.receiptPath}`,
+          );
+        }
+      }
       if (
-        finding.requestedHumanAction === "decide" ||
-        finding.requestedHumanAction === "approve" ||
-        finding.requestedHumanAction === "provide-input"
+        (!delivery || delivery.humanNeeded) &&
+        (finding.requestedHumanAction === "decide" ||
+          finding.requestedHumanAction === "approve" ||
+          finding.requestedHumanAction === "provide-input")
       ) {
         await ctx.events.emit({
           ...humanDecisionEvent(finding, outcome.evaluation),
@@ -689,6 +723,14 @@ export async function execute(
             memberEmissionKey("human-decision", findingIdentity),
           ),
         });
+        if (delivery) {
+          recordFindingDelivery(
+            delivery,
+            finding,
+            outcome.evaluation.sessionId,
+            "human",
+          );
+        }
       }
     }
   }
@@ -702,6 +744,7 @@ export async function execute(
     reconciled(summary, [
       `execution:${execution.id}`,
       `evaluated-session:${evaluatedSessionId}`,
+      ...deliveryEvidence,
     ]),
   );
 }

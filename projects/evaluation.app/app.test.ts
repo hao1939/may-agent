@@ -99,6 +99,28 @@ describe("canonical evaluation App", () => {
       intent: { id: "input/request-1", mode: "achieve", owner: "evaluator" },
     });
   });
+
+  test("creates an independent aftermath coverage successor for each admitted snapshot request", () => {
+    const first = taskForEvaluationInput(
+      admitted({ kind: "aftermath-coverage-snapshot", data: {} }),
+    );
+    const second = taskForEvaluationInput({
+      ...admitted({ kind: "aftermath-coverage-snapshot", data: {} }),
+      id: "request-2",
+    });
+    expect(first).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "runtime/aftermath-coverage-snapshot/request-1",
+        mode: "achieve",
+        workflow: "evaluator-aftermath-coverage-snapshot",
+      },
+    });
+    expect(second).toMatchObject({
+      kind: "desired",
+      intent: { id: "runtime/aftermath-coverage-snapshot/request-2" },
+    });
+  });
 });
 
 describe("evaluation fact admission", () => {
@@ -456,5 +478,16 @@ describe("evaluation task policy", () => {
         {},
       ),
     ).toStartWith("persistent-task: skip\n\n");
+  });
+
+  test("requires canonical typed subjects for evaluator-owned Conditions", () => {
+    const instructions = readFileSync(
+      new URL("./agents/evaluator/AGENTS.md", import.meta.url),
+      "utf8",
+    );
+    expect(instructions).toContain("exact `<type>:<id>` form");
+    expect(instructions).toContain("event:project.task.child-transitioned");
+    expect(instructions).toContain("Put target filters");
+    expect(instructions).toContain("never use prose");
   });
 });

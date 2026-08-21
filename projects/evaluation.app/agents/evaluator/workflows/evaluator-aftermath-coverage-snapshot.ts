@@ -67,7 +67,7 @@ export function buildCoverageTask(): string {
   return `Compute one read-only aftermath coverage snapshot from the runtime database.
 Use query_db only; do not edit files, write the database, send messages, or change tasks.
 Set windowEnd to the current runtime time (use MAX(lastActivityAt) from sessions if it is newer than wall-clock evidence) and windowStart=windowEnd-${WINDOW_MS}.
-Eligible sessions are rows in sessions with endedAt in [windowStart, windowEnd], terminal status in ('done','failed','interrupted','error'), and agent not in ('evaluator','judge').
+Eligible sessions are rows in sessions with endedAt in [windowStart, windowEnd], terminal status in ('done','failed','interrupted','error'), agent not in ('evaluator','judge'), and NOT (status='done' AND agent!='may' AND workflowRunId IS NOT NULL). The final exclusion must exactly match app.ts routineWorkflowSession admission policy: successful routine workflow sessions are intentionally not admitted for aftermath evaluation.
 Evaluated is the number of those distinct eligible sessionId values present in evaluations.
 Return finish().result as exactly {"eligible":<integer>,"evaluated":<integer>,"windowStart":<epoch-ms>,"windowEnd":<epoch-ms>} and cite the aggregate query in finish evidence.`;
 }
@@ -101,7 +101,10 @@ export async function execute(
     );
   }
   const value = counts.eligible === 0 ? 1 : counts.evaluated / counts.eligible;
-  const measuredAt = Date.now();
+  // The counter's windowEnd is the authoritative instant represented by this
+  // trailing-window sample. Recording a later wall-clock time would place the
+  // metric outside the declared measurement window.
+  const measuredAt = counts.windowEnd;
   const note = JSON.stringify({
     source: "sessions+evaluations",
     eligible: counts.eligible,

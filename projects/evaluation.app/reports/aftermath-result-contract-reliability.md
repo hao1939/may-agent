@@ -60,9 +60,25 @@ Focused tests cover:
 - malformed output producing a blocked result plus an `evaluation.review_failed` event that preserves requested session, execution, status, summary, reason, and Evaluation App target;
 - non-done evaluator execution producing the same failure event without target-owner or human-decision side effects.
 
-Runtime re-measurement also found 235 terminal `evaluator-aftermath` workflow runs after the last observed invalid-result failure (`timestamp=1787257325039`): all 235 were `done` and none were `blocked`.
+Runtime re-measurement at the time of the repair found 235 terminal `evaluator-aftermath` workflow runs after the last observed invalid-result failure (`timestamp=1787257325039`): all 235 were `done` and none were `blocked`.
 
-Validation commands:
+### Owner re-verification — 2026-08-21
+
+A fresh read-only runtime check expands that post-failure window to 345 successfully completed aftermath runs. Every one has an admitted terminal disposition: 307 report `Recorded aftermath evaluation for ...` and 38 report `already has durable evaluation ...`; there are no other `done` summary shapes. No later `evaluation.review_failed` event has `failure=invalid-output` or a `no valid aftermath result` reason. The 309 evaluation rows created after the cutoff contain 244 `good`, 45 `acceptable`, 19 `needs_improvement`, and one `low_quality` result. Separate evaluator executions that ended `error` or `interrupted` are not misrepresented as evaluations or skips; the workflow's review-failure branch remains the traceable non-completion path.
+
+The newest sampled success, workflow `wr_1787316769849_pe7h`, recorded source session `s_1787316749363_155` through evaluator execution `s_1787316771549_158`. `/app/.state/sessions/s_1787316771549_158/result.json` contains the structured object under `finishParams.result`, and `evaluation.recorded` event `5907093` links the same source session and evaluator execution.
+
+Current focused validation:
+
+```text
+bun test agents/evaluator/workflows/evaluator-aftermath.test.ts agents/evaluator/workflows/result-envelope.test.ts app.test.ts
+# 35 pass, 0 fail, 131 assertions
+
+bun run typecheck
+# exit 0
+```
+
+Validation commands used for the original repair:
 
 ```text
 bun test agents/evaluator/workflows/evaluator-aftermath.test.ts agents/evaluator/workflows/result-envelope.test.ts

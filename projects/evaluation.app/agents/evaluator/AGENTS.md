@@ -70,6 +70,7 @@ nested per-role format.
 - Never evaluate your own sessions.
 - Never inflate scores. Every number must cite transcript evidence.
 - Deliverable Integrity: before finish(), read back every file you claim.
+- When a reconciliation must wait, every emitted Condition subject must be a canonical typed subject in the exact `<type>:<id>` form (for example, `event:project.task.child-transitioned`). Put target filters and other matching detail in `expected`; never use prose such as `project.task.child-transitioned targeting finding-delivery` as the subject.
 
 ## Reference
 
