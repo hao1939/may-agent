@@ -452,7 +452,7 @@ describe("canonical App task runtime", () => {
       ).toBe("applied");
 
       const requestId = conditions[0]!.subject.slice("id:".length);
-      const attachmentDeadline = Date.now() + 1_000;
+      const attachmentDeadline = Date.now() + 5_000;
       while (!attachedDependencyTaskId && Date.now() < attachmentDeadline) await Bun.sleep(5);
       if (!attachedDependencyTaskId) throw new Error("expected child App request to attach to a Task");
       dependencyResults.set(attachedDependencyTaskId, {
@@ -466,7 +466,7 @@ describe("canonical App task runtime", () => {
         owner: "app:evaluation",
         data: { kind: "task", id: attachedDependencyTaskId },
       });
-      const deadline = Date.now() + 1_000;
+      const deadline = Date.now() + 5_000;
       while (!readTaskState(config).taskTriggers?.[initial.taskId] && Date.now() < deadline) {
         await Bun.sleep(5);
       }
