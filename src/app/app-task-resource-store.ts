@@ -236,6 +236,9 @@ export class AppTaskResourceStore {
     }
     const ready = new Set(readyTaskIds);
     transaction(this.db, () => {
+      if (this.meta("authority") === "resources") {
+        throw new Error(`Task resource authority for ${this.appId} is already active`);
+      }
       for (const table of [
         "app_task_events",
         "app_task_attempts",
@@ -1040,7 +1043,7 @@ export function importPausedTaskStateToResourceStore(
   config: TaskStateConfig,
   persistDir: string,
   readyTaskIds: Iterable<string> = [],
-  options: { activate?: boolean } = {},
+  options: { activate?: boolean; expectedSourceRevision?: string } = {},
 ): { appId: string; sourceRevision: string; mismatches: string[] } {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
@@ -1054,6 +1057,11 @@ export function importPausedTaskStateToResourceStore(
       );
     }
     const sourceRevision = createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
+    if (options.expectedSourceRevision && sourceRevision !== options.expectedSourceRevision) {
+      throw new Error(
+        `Task resource source revision mismatch: expected ${options.expectedSourceRevision}, found ${sourceRevision}`,
+      );
+    }
     const appId = appIdFor(config, tree);
     const store = AppTaskResourceStore.fromDb(getDb(persistDir), appId);
     store.importPausedSnapshot(tree, sourceRevision, readyTaskIds);
