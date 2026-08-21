@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { getDb } from "../lib/requests.js";
-import { TASK_RESOURCE_SCHEMA } from "../lib/db/task-resource-schema.js";
+import { ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import type { AppTaskAttempt, AppTaskCondition, AppTaskResource, AppTaskTrigger } from "./app-task-state.js";
 import {
   normalizeTaskStateInPlace,
@@ -139,7 +139,7 @@ export class AppTaskResourceStore {
   static fromDb(db: SqliteDb, appId: string): AppTaskResourceStore {
     const normalized = appId.trim().replace(/\.app$/, "");
     if (!normalized) throw new Error("Task resource store requires an App id");
-    db.exec(TASK_RESOURCE_SCHEMA);
+    ensureTaskResourceSchema(db);
     db.prepare(
       "INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', ?)",
     ).run(normalized, String(TASK_RESOURCE_SCHEMA_VERSION));
@@ -228,6 +228,24 @@ export class AppTaskResourceStore {
     );
   }
 
+  /** Refresh only one Task's normalized Condition links. */
+  private putTaskConditionRoutes(resource: AppTaskResource): void {
+    this.db
+      .prepare("DELETE FROM app_task_condition_routes WHERE app_id = ? AND task_id = ?")
+      .run(this.appId, resource.metadata.id);
+    for (const conditionId of new Set(resource.status.conditionIds ?? [])) {
+      this.db
+        .prepare(
+          `INSERT OR IGNORE INTO app_task_condition_routes(app_id, task_id, condition_id)
+           SELECT ?, ?, ?
+           WHERE EXISTS (
+             SELECT 1 FROM app_task_conditions WHERE app_id = ? AND condition_id = ?
+           )`,
+        )
+        .run(this.appId, resource.metadata.id, conditionId, this.appId, conditionId);
+    }
+  }
+
   importPausedSnapshot(treeInput: TaskTree, sourceRevision: string, readyTaskIds: Iterable<string> = []): void {
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
     if (tree.project_lifecycle !== "paused") throw new Error("Task resource import requires project_lifecycle=paused");
@@ -242,6 +260,7 @@ export class AppTaskResourceStore {
       for (const table of [
         "app_task_events",
         "app_task_attempts",
+        "app_task_condition_routes",
         "app_task_conditions",
         "app_task_receipts",
         "app_task_groups",
@@ -289,6 +308,7 @@ export class AppTaskResourceStore {
           "INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, ?, ?)",
         ).run(this.appId, condition.metadata.id, condition.status.state, json(condition));
       }
+      for (const resource of Object.values(tree.resources ?? {})) this.putTaskConditionRoutes(resource);
       for (const receipt of Object.values(tree.receipts ?? {})) {
         this.db.prepare(
           `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
@@ -420,13 +440,12 @@ export class AppTaskResourceStore {
   readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
     const rows = this.db
       .prepare(
-        `SELECT c.condition_id, c.condition_json, t.task_id
+        `SELECT c.condition_id, c.condition_json, linked.task_id
          FROM app_task_conditions c
-         JOIN app_tasks t ON t.app_id = c.app_id
-         JOIN json_each(t.resource_json, '$.status.conditionIds') linked
-           ON linked.value = c.condition_id
+         JOIN app_task_condition_routes linked
+           ON linked.app_id = c.app_id AND linked.condition_id = c.condition_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
-         ORDER BY c.condition_id, t.task_id`,
+         ORDER BY c.condition_id, linked.task_id`,
       )
       .all(this.appId, eventType) as Array<{
       condition_id?: string;
@@ -450,10 +469,10 @@ export class AppTaskResourceStore {
     const ids = conditionIds ? [...new Set([...conditionIds].map((id) => id.trim()).filter(Boolean))] : [];
     const rows = this.db
       .prepare(
-        `SELECT DISTINCT json_extract(c.condition_json, '$.spec.type') AS event_type, t.task_id
+        `SELECT DISTINCT json_extract(c.condition_json, '$.spec.type') AS event_type, linked.task_id
          FROM app_task_conditions c
-         JOIN app_tasks t ON t.app_id = c.app_id
-         JOIN json_each(t.resource_json, '$.status.conditionIds') linked ON linked.value = c.condition_id
+         JOIN app_task_condition_routes linked
+           ON linked.app_id = c.app_id AND linked.condition_id = c.condition_id
          WHERE c.app_id = ? AND c.state <> 'true'
            ${ids.length ? `AND c.condition_id IN (${ids.map(() => "?").join(", ")})` : ""}`,
       )
@@ -758,26 +777,44 @@ export class AppTaskResourceStore {
   ): IndexedTaskCandidatePage {
     const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
     const afterRank = after?.lane === "normal" ? 1 : 0;
+    const afterClause = after
+      ? `AND (
+          CASE lane WHEN 'human' THEN 0 ELSE 1 END > ?
+          OR (CASE lane WHEN 'human' THEN 0 ELSE 1 END = ? AND updated_at > ?)
+          OR (CASE lane WHEN 'human' THEN 0 ELSE 1 END = ? AND updated_at = ? AND task_id > ?)
+        )`
+      : "";
+    const fields = `task_id, lane, ready, changed, next_check_at, lease_until, updated_at,
+      COALESCE(json_extract(resource_json, '$.spec.priority'), 'P2') AS priority`;
+    const branchValues = (dueAt?: number): unknown[] => [
+      this.appId,
+      ...(dueAt === undefined ? [] : [dueAt]),
+      ...(after
+        ? [afterRank, afterRank, after.updatedAt, afterRank, after.updatedAt, after.taskId]
+        : []),
+    ];
     const rows = this.db
       .prepare(
-        `SELECT task_id, lane, ready, changed, next_check_at, lease_until, updated_at,
-                COALESCE(json_extract(resource_json, '$.spec.priority'), 'P2') AS priority
-         FROM app_tasks
-         WHERE app_id = ? AND (ready = 1 OR changed = 1 OR next_check_at <= ? OR lease_until <= ?)
-           ${after ? `AND (
-             CASE lane WHEN 'human' THEN 0 ELSE 1 END > ?
-             OR (CASE lane WHEN 'human' THEN 0 ELSE 1 END = ? AND updated_at > ?)
-             OR (CASE lane WHEN 'human' THEN 0 ELSE 1 END = ? AND updated_at = ? AND task_id > ?)
-           )` : ""}
+        `SELECT * FROM (
+           SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_ready
+             WHERE app_id = ? AND ready = 1 ${afterClause}
+           UNION
+           SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_changed
+             WHERE app_id = ? AND changed = 1 ${afterClause}
+           UNION
+           SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_due
+             WHERE app_id = ? AND next_check_at <= ? ${afterClause}
+           UNION
+           SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_expired
+             WHERE app_id = ? AND lease_until <= ? ${afterClause}
+         )
          ORDER BY CASE lane WHEN 'human' THEN 0 ELSE 1 END, updated_at, task_id LIMIT ?`,
       )
       .all(
-        this.appId,
-        now,
-        now,
-        ...(after
-          ? [afterRank, afterRank, after.updatedAt, afterRank, after.updatedAt, after.taskId]
-          : []),
+        ...branchValues(),
+        ...branchValues(),
+        ...branchValues(now),
+        ...branchValues(now),
         boundedLimit,
       ) as Array<Record<string, unknown>>;
     const items: IndexedTaskCandidate[] = rows.map((row) => ({
@@ -884,6 +921,10 @@ export class AppTaskResourceStore {
       }
 
       for (const taskId of new Set(mutation.deleteTaskIds ?? [])) {
+        this.db.prepare("DELETE FROM app_task_condition_routes WHERE app_id = ? AND task_id = ?").run(
+          this.appId,
+          taskId,
+        );
         this.db.prepare("DELETE FROM app_tasks WHERE app_id = ? AND task_id = ?").run(this.appId, taskId);
       }
       for (const write of mutation.tasks ?? []) {
@@ -938,6 +979,10 @@ export class AppTaskResourceStore {
         }
       }
       for (const conditionId of new Set(mutation.deleteConditionIds ?? [])) {
+        this.db.prepare("DELETE FROM app_task_condition_routes WHERE app_id = ? AND condition_id = ?").run(
+          this.appId,
+          conditionId,
+        );
         this.db.prepare("DELETE FROM app_task_conditions WHERE app_id = ? AND condition_id = ?").run(
           this.appId,
           conditionId,
@@ -950,6 +995,7 @@ export class AppTaskResourceStore {
              state=excluded.state, condition_json=excluded.condition_json`,
         ).run(this.appId, condition.metadata.id, condition.status.state, json(condition));
       }
+      for (const write of mutation.tasks ?? []) this.putTaskConditionRoutes(write.resource);
       for (const receiptId of new Set(mutation.deleteReceiptIds ?? [])) {
         this.db.prepare("DELETE FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?").run(
           this.appId,

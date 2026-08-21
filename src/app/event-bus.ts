@@ -1031,7 +1031,8 @@ export class EventBus {
    * Register an idempotent admission route that must also run when retrying an
    * event persisted before its delivery acceptance was recorded.
    */
-  subscribeDurableRoute(fn: Subscriber): () => void {
+  subscribeDurableRoute(fn: Subscriber, opts?: Pick<SubscribeOptions, "label">): () => void {
+    if (opts?.label?.trim()) this.subscriberLabels.set(fn, opts.label.trim());
     this.durableRouteSubscribers.push(fn);
     return () => {
       this.durableRouteSubscribers = this.durableRouteSubscribers.filter((subscriber) => subscriber !== fn);

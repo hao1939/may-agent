@@ -36,6 +36,9 @@ describe("canonical database schema", () => {
       const admissionCommandColumns = db.prepare("PRAGMA table_info(app_event_admission_commands)").all() as Array<{
         name: string;
       }>;
+      const conditionRouteIndexes = db.prepare("PRAGMA index_list(app_task_condition_routes)").all() as Array<{
+        name: string;
+      }>;
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent_started")).toBe(true);
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent")).toBe(false);
       expect(workflowIndexes.some(({ name }) => name === "idx_wfr_project_started")).toBe(true);
@@ -51,6 +54,8 @@ describe("canonical database schema", () => {
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_idempotency")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_origin_event")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_available")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_expired")).toBe(true);
       const inboxSql = db
         .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'")
         .get() as { sql: string };
@@ -70,6 +75,7 @@ describe("canonical database schema", () => {
       expect(deliveryIndexes.some(({ name }) => name === "idx_app_inbox_delivery_status")).toBe(true);
       expect(admissionPlanColumns.some(({ name }) => name === "registry_snapshot_id")).toBe(true);
       expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
+      expect(conditionRouteIndexes.some(({ name }) => name === "idx_app_task_condition_routes_task")).toBe(true);
       expect(trigger.sql).toContain("OLD.session_id");
       expect(trigger.sql).toContain("i.origin_event_id = OLD.id");
       expect(trigger.sql).not.toContain("json_extract");

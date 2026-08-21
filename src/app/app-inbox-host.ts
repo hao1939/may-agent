@@ -19,7 +19,6 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
-  listAppInboxHealth,
   readAppConversationResource,
   listAppInboxDependencyWaits,
   releaseAppInboxClaim,
@@ -424,7 +423,41 @@ export class AppInboxHost {
 
   readyCount(appId: string): number {
     const app = this.#requiredApp(appId);
-    return listAppInboxHealth(this.#db, { appId: app.id, now: this.#now() })[0]?.ready ?? 0;
+    const now = this.#now();
+    const row = this.#db
+      .prepare(
+        `SELECT 1 AS ready FROM (
+           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_available
+             WHERE app_id = ? AND status != 'done' AND lease_owner IS NULL
+               AND available_at IS NOT NULL AND available_at <= ?
+           UNION ALL
+           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_expired
+             WHERE app_id = ? AND status != 'done'
+               AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?
+         ) LIMIT 1`,
+      )
+      .get(app.id, now, app.id, now);
+    return row ? 1 : 0;
+  }
+
+  /** Apps with claimable inbox work, derived only from ready/expired indexes. */
+  readyAppIds(): string[] {
+    const now = this.#now();
+    const loaded = this.#apps;
+    const rows = this.#db
+      .prepare(
+        `SELECT DISTINCT app_id FROM (
+           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_available
+             WHERE status != 'done' AND lease_owner IS NULL
+               AND available_at IS NOT NULL AND available_at <= ?
+           UNION ALL
+           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_expired
+             WHERE status != 'done'
+               AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?
+         ) ORDER BY app_id`,
+      )
+      .all(now, now) as Array<{ app_id?: unknown }>;
+    return rows.flatMap((row) => (typeof row.app_id === "string" && loaded.has(row.app_id) ? [row.app_id] : []));
   }
 
   maxConcurrent(appId: string): number {
@@ -433,6 +466,34 @@ export class AppInboxHost {
 
   wake(waitingOn: { kind: AppInboxWaitKind; id: string }): number {
     return wakeAppInboxItemsWaitingOn(this.#db, waitingOn, this.#now());
+  }
+
+  /** Wake one exact dependency and return only the Apps that gained ready work. */
+  wakeAppIds(waitingOn: { kind: AppInboxWaitKind; id: string }): string[] {
+    const appIds: string[] = [];
+    const now = this.#now();
+    withTransaction(this.#db, () => {
+      const rows = this.#db
+        .prepare(
+          `SELECT DISTINCT app_id
+           FROM app_inbox_items
+           WHERE status = 'handling'
+             AND lease_owner IS NULL
+             AND waiting_on_kind = ?
+             AND waiting_on_id = ?
+             AND (available_at IS NULL OR available_at > ? OR review_at IS NOT NULL)
+           ORDER BY app_id`,
+        )
+        .all(waitingOn.kind, requiredText(waitingOn.id, "waitingOn.id"), now) as Array<{
+        app_id?: unknown;
+      }>;
+      if (rows.length === 0) return;
+      if (wakeAppInboxItemsWaitingOn(this.#db, waitingOn, now) === 0) return;
+      for (const row of rows) {
+        if (typeof row.app_id === "string" && row.app_id.trim()) appIds.push(row.app_id.trim());
+      }
+    });
+    return appIds;
   }
 
   /** Re-observe task waits so attention or missing tasks cannot wait forever. */
