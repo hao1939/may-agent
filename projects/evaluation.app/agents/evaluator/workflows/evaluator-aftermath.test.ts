@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { AppEvent, ExecutionResult } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { Check } from "typebox/value";
 import {
   AFTERMATH_VERSION,
+  aftermathOutcomeSchema,
   buildAftermathTask,
   evaluationRecordedFact,
   execute,
@@ -144,6 +146,20 @@ describe("canonical evaluator aftermath", () => {
     expect(
       parseAftermathOutcome({
         kind: "evaluation",
+        evaluation: { ...evaluation, overall: { resultDelivered: true } },
+        findings: [],
+      }),
+    ).toBeNull();
+    expect(
+      Check(aftermathOutcomeSchema, {
+        kind: "evaluation",
+        evaluation: { ...evaluation, overall: { resultDelivered: true } },
+        findings: [],
+      }),
+    ).toBe(false);
+    expect(
+      parseAftermathOutcome({
+        kind: "evaluation",
         evaluation,
         findings: [finding, { ...finding, targetAppId: "../bad" }],
       }),
@@ -233,6 +249,46 @@ describe("canonical evaluator aftermath", () => {
       },
       target: { appId: "may", project: "may" },
     });
+  });
+
+  test("requests a schema-valid result for the exact canonical session", async () => {
+    const events: AppEvent[] = [];
+    const outcome = {
+      kind: "evaluation" as const,
+      evaluation,
+      findings: [finding],
+    };
+    let suppliedSchema: unknown;
+    const ctx = createTestAppWorkflowContext({
+      input: { sessionId: "s_source" },
+      reconciliation: reconciliation({ sessionId: "s_source" }),
+      callAgent: async (_agent, prompt, options) => {
+        expect(prompt).toContain("Evaluate exactly session s_source");
+        suppliedSchema = options?.schema;
+        return agentResult(outcome);
+      },
+      emit: async (event) => {
+        events.push(event);
+      },
+    });
+
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        evidence: ["execution:s_evaluator", "evaluated-session:s_source"],
+      },
+    });
+    expect(suppliedSchema).toBe(aftermathOutcomeSchema);
+    expect(Check(aftermathOutcomeSchema, outcome)).toBe(true);
+    expect(Check(aftermathOutcomeSchema, JSON.stringify(outcome))).toBe(false);
+    expect(
+      Check(aftermathOutcomeSchema, {
+        ...outcome,
+        evaluation: { ...evaluation, sessionId: "s_other" },
+      }),
+    ).toBe(true);
+    expect(events[0]?.type).toBe("evaluation.recorded");
   });
 
   test("evaluates an exact session from a finish summary, persists before routing, and returns a typed reconciliation result", async () => {
@@ -336,16 +392,34 @@ describe("canonical evaluator aftermath", () => {
     ).toBeFalse();
   });
 
-  test("blocks malformed output and inputs outside canonical reconciliation", async () => {
+  test("blocks malformed output with a traceable recovery signal", async () => {
     const events: AppEvent[] = [];
     const malformed = await execute(
       context({ sessionId: "s_source" }, { kind: "evaluation" }, events),
     );
-    expect(malformed.status).toBe("blocked");
-    expect(events.map((event) => event.type)).toEqual([
-      "evaluation.review_failed",
+    expect(malformed).toMatchObject({
+      status: "blocked",
+      summary:
+        "Evaluator execution s_evaluator returned no valid aftermath result.",
+    });
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: "evaluation.review_failed",
+        data: expect.objectContaining({
+          source: "evaluator-aftermath",
+          requestedSessionId: "s_source",
+          executionId: "s_evaluator",
+          status: "done",
+          summary: "bounded evaluation complete",
+          reason:
+            "Evaluator execution s_evaluator returned no valid aftermath result.",
+        }),
+        target: { appId: "evaluation", project: "evaluation" },
+      }),
     ]);
+  });
 
+  test("blocks inputs outside canonical reconciliation", async () => {
     const noReconciliation = await execute(
       createTestAppWorkflowContext({
         input: { sessionId: "s_source" },

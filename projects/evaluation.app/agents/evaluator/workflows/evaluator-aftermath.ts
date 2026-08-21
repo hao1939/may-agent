@@ -3,6 +3,7 @@ import type {
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
+import { Type } from "typebox";
 
 export const name = "evaluator-aftermath";
 export const description =
@@ -41,7 +42,11 @@ export type AftermathEvaluation = {
   lane: "routine_ok" | "success_candidate" | "needs_triage";
   reason: string;
   signals: string[];
-  overall: Record<string, unknown>;
+  overall: {
+    resultDelivered: boolean;
+    valueProduced: string;
+    evidence: string[];
+  };
 };
 
 export type AftermathFinding = {
@@ -77,6 +82,93 @@ export type AftermathOutcome =
       evaluation: AftermathEvaluation;
       findings: AftermathFinding[];
     };
+
+const nonEmptyStringSchema = Type.String({ minLength: 1 });
+const boundedStringsSchema = Type.Array(nonEmptyStringSchema, { maxItems: 40 });
+const evaluationSchema = Type.Object(
+  {
+    sessionId: nonEmptyStringSchema,
+    agent: nonEmptyStringSchema,
+    quality: Type.Number({ minimum: 0, maximum: 1 }),
+    efficiency: Type.Number({ minimum: 0, maximum: 1 }),
+    productiveCalls: Type.Integer({ minimum: 0 }),
+    wastedCalls: Type.Integer({ minimum: 0 }),
+    verdict: Type.Union([
+      Type.Literal("good"),
+      Type.Literal("acceptable"),
+      Type.Literal("needs_improvement"),
+      Type.Literal("low_quality"),
+    ]),
+    issues: boundedStringsSchema,
+    lane: Type.Union([
+      Type.Literal("routine_ok"),
+      Type.Literal("success_candidate"),
+      Type.Literal("needs_triage"),
+    ]),
+    reason: nonEmptyStringSchema,
+    signals: boundedStringsSchema,
+    overall: Type.Object(
+      {
+        resultDelivered: Type.Boolean(),
+        valueProduced: nonEmptyStringSchema,
+        evidence: boundedStringsSchema,
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+const findingSchema = Type.Object(
+  {
+    targetAppId: nonEmptyStringSchema,
+    severity: Type.Union([
+      Type.Literal("watch"),
+      Type.Literal("concern"),
+      Type.Literal("urgent"),
+      Type.Literal("blocked-on-human"),
+    ]),
+    summary: nonEmptyStringSchema,
+    message: nonEmptyStringSchema,
+    evidence: Type.Array(nonEmptyStringSchema, { maxItems: 20 }),
+    dedupeKey: nonEmptyStringSchema,
+    requestedHumanAction: Type.Union([
+      Type.Literal("none"),
+      Type.Literal("watch"),
+      Type.Literal("decide"),
+      Type.Literal("approve"),
+      Type.Literal("provide-input"),
+    ]),
+  },
+  { additionalProperties: false },
+);
+export const aftermathOutcomeSchema = Type.Union([
+  Type.Object(
+    {
+      kind: Type.Literal("existing"),
+      sessionId: nonEmptyStringSchema,
+      verdict: nonEmptyStringSchema,
+      createdAt: Type.Optional(Type.Integer({ minimum: 0 })),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("skip"),
+      sessionId: nonEmptyStringSchema,
+      agent: nonEmptyStringSchema,
+      reason: nonEmptyStringSchema,
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("evaluation"),
+      evaluation: evaluationSchema,
+      findings: Type.Array(findingSchema, { maxItems: 20 }),
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -202,7 +294,10 @@ function parseEvaluation(value: unknown): AftermathEvaluation | null {
   const reason = text(raw.reason);
   const issues = strings(raw.issues, 40);
   const signals = strings(raw.signals, 40);
-  const overall = record(raw.overall);
+  const rawOverall = record(raw.overall);
+  const resultDelivered = rawOverall.resultDelivered;
+  const valueProduced = text(rawOverall.valueProduced);
+  const evidence = strings(rawOverall.evidence, 40);
   if (
     !id ||
     !agent ||
@@ -215,7 +310,10 @@ function parseEvaluation(value: unknown): AftermathEvaluation | null {
     !VERDICTS.has(verdict) ||
     !LANES.has(lane) ||
     !reason ||
-    Object.keys(overall).length === 0
+    typeof resultDelivered !== "boolean" ||
+    !valueProduced ||
+    !Array.isArray(rawOverall.evidence) ||
+    evidence.length !== rawOverall.evidence.length
   ) {
     return null;
   }
@@ -231,7 +329,7 @@ function parseEvaluation(value: unknown): AftermathEvaluation | null {
     lane: lane as AftermathEvaluation["lane"],
     reason,
     signals,
-    overall,
+    overall: { resultDelivered, valueProduced, evidence },
   };
 }
 
@@ -518,6 +616,7 @@ export async function execute(
   const execution = await ctx.agents.call(
     "evaluator",
     buildAftermathTask(requestedSessionId),
+    { schema: aftermathOutcomeSchema },
   );
   if (execution.status !== "done") {
     return reviewFailed(

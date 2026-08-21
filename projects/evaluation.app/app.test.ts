@@ -149,6 +149,20 @@ describe("evaluation fact admission", () => {
     expect(
       taskIntentForEvent(
         event("session.end", {
+          sessionId: "s_exact_contract",
+          agent: "may",
+          task: "bounded payload",
+        }),
+      ),
+    ).toMatchObject({
+      id: "runtime/session-aftermath/s_exact_contract",
+      mode: "achieve",
+      workflow: "evaluator-aftermath",
+      input: { sessionId: "s_exact_contract" },
+    });
+    expect(
+      taskIntentForEvent(
+        event("session.end", {
           sessionId: "s/eval:42",
           agent: "may",
           task: "large payload",
@@ -200,6 +214,26 @@ describe("evaluation fact admission", () => {
         }),
       ),
     ).toMatchObject({ input: { sessionId: "s-may-workflow" } });
+  });
+
+  test("rejects unscoped aftermath requests while concrete requests proceed", () => {
+    expect(
+      taskIntentForEvent(event("evaluation.session.requested")),
+    ).toBeNull();
+    expect(
+      taskIntentForInput({ kind: "evaluate-session", data: {} }),
+    ).toBeNull();
+    expect(
+      taskIntentForEvent(
+        event("evaluation.session.requested", {
+          sessionId: "s_concrete_request",
+        }),
+      ),
+    ).toMatchObject({
+      id: "runtime/session-aftermath/s_concrete_request",
+      workflow: "evaluator-aftermath",
+      input: { sessionId: "s_concrete_request" },
+    });
   });
 
   test("admits only evaluation-owned metric changes", () => {

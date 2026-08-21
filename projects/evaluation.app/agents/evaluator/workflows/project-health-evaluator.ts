@@ -13,6 +13,7 @@ import type {
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
+import { Type } from "typebox";
 
 export const name = "project-health-evaluator";
 export const description =
@@ -40,6 +41,49 @@ const VERDICTS = new Set([
   "blocked-on-human",
 ]);
 const OWNER_FEEDBACK_RETRY_MS = 60 * 60_000;
+
+const nonEmptyStringSchema = Type.String({ minLength: 1 });
+export const projectHealthJudgmentSchema = Type.Object(
+  {
+    verdict: Type.Union([
+      Type.Literal("ok"),
+      Type.Literal("watch"),
+      Type.Literal("concern"),
+      Type.Literal("urgent"),
+      Type.Literal("blocked-on-human"),
+    ]),
+    mainConcern: nonEmptyStringSchema,
+    affectedArtifacts: Type.Array(nonEmptyStringSchema, { maxItems: 40 }),
+    recommendedChange: nonEmptyStringSchema,
+    verification: Type.Array(nonEmptyStringSchema, {
+      minItems: 1,
+      maxItems: 40,
+    }),
+    requestedHumanAction: Type.Union([
+      Type.Literal("none"),
+      Type.Literal("watch"),
+      Type.Literal("decide"),
+      Type.Literal("approve"),
+      Type.Literal("provide-input"),
+    ]),
+    notify: Type.Boolean(),
+    dedupeKey: nonEmptyStringSchema,
+    message: nonEmptyStringSchema,
+    observations: Type.Object(
+      {
+        task: nonEmptyStringSchema,
+        metrics: nonEmptyStringSchema,
+        runtime: nonEmptyStringSchema,
+        sourceRevisions: Type.Array(nonEmptyStringSchema, {
+          minItems: 1,
+          maxItems: 40,
+        }),
+      },
+      { additionalProperties: true },
+    ),
+  },
+  { additionalProperties: false },
+);
 
 export type ProjectHealthInput = {
   targetProject: string;
@@ -708,6 +752,7 @@ export async function execute(
       { targetProject, reason },
       ctx.reconciliation.trigger ?? null,
     ),
+    { schema: projectHealthJudgmentSchema },
   );
   const audit = projectHealthJudgmentFromExecution(targetProject, execution);
 

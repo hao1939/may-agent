@@ -1,6 +1,7 @@
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   buildDeepEvaluationTask,
+  deepEvaluationOutcomeSchema,
   parseDeepEvaluationOutcome,
 } from "./lib/deep-evaluation.js";
 
@@ -36,6 +37,7 @@ export async function execute(
   const execution = await ctx.agents.call(
     "evaluator",
     buildDeepEvaluationTask(requestedSessionId),
+    { schema: deepEvaluationOutcomeSchema },
   );
   if (execution.status !== "done") {
     const summary = `Deep evaluator execution ${execution.id} ended ${execution.status}: ${execution.summary}`;
@@ -63,9 +65,24 @@ export async function execute(
   );
   if (!outcome) {
     const summary = requestedSessionId
-      ? `Deep evaluator returned no valid result for ${requestedSessionId}.`
-      : "Deep evaluator returned no valid result.";
-    return ctx.done(summary, result(summary, [`execution:${execution.id}`]));
+      ? `Deep evaluator output for selected session ${requestedSessionId} failed validation.`
+      : "Deep evaluator output failed validation; no explicit noCandidate reason or valid evaluation was preserved.";
+    await ctx.events.emit({
+      type: "evaluation.deep_failed",
+      data: {
+        source: name,
+        executionId: execution.id,
+        status: "invalid-output",
+        summary,
+        ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
+      },
+      target: {
+        appId: "evaluation",
+        executionId: execution.id,
+        ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
+      },
+    });
+    return ctx.blocked(summary, [`execution:${execution.id}`]);
   }
   if (outcome.kind === "none") {
     return ctx.done(
@@ -89,7 +106,7 @@ export async function execute(
     summary,
     result(summary, [
       `execution:${execution.id}`,
-      `evaluated-session:${evaluation.sessionId}`,
+      `recorded-evaluation:${evaluation.sessionId}`,
     ]),
   );
 }

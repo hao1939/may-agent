@@ -13,7 +13,8 @@
     "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json README.md agents/evaluator/AGENTS.md agents/evaluator/workflows/**/*.ts criteria/criteria.md criteria/scoring.md"
   },
   "dependencies": {
-    "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"
+    "@may-agent/sdk": "file:../may-agent/bundle/sdk-current",
+    "typebox": "1.1.38"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

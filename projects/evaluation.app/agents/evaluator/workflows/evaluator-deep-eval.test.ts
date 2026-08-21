@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { Check } from "typebox/value";
 import { execute } from "./evaluator-deep-eval.js";
+import { deepEvaluationOutcomeSchema } from "./lib/deep-evaluation.js";
 
 const evaluation = {
   sessionId: "s_source",
@@ -17,12 +19,14 @@ const evaluation = {
 };
 
 describe("evaluator deep workflow", () => {
-  test("passes typed workflow input to the bounded evaluator execution", async () => {
+  test("passes typed workflow input and a strict result schema to the evaluator", async () => {
     const calls: Array<[string, string]> = [];
+    let suppliedSchema: unknown;
     const ctx = createTestAppWorkflowContext({
       input: { sessionId: "s_source" },
-      callAgent: async (agent, task) => {
+      callAgent: async (agent, task, options) => {
         calls.push([agent, task]);
+        suppliedSchema = options?.schema;
         return {
           id: "s_inner",
           kind: "agent",
@@ -39,6 +43,17 @@ describe("evaluator deep workflow", () => {
     expect(calls[0]?.[0]).toBe("evaluator");
     expect(calls[0]?.[1]).toContain(
       "Evaluate exactly session s_source. Do not substitute another session.",
+    );
+    expect(suppliedSchema).toBe(deepEvaluationOutcomeSchema);
+    expect(Check(deepEvaluationOutcomeSchema, evaluation)).toBe(true);
+    expect(
+      Check(deepEvaluationOutcomeSchema, {
+        noCandidate: true,
+        reason: "Session is unavailable.",
+      }),
+    ).toBe(true);
+    expect(Check(deepEvaluationOutcomeSchema, { noCandidate: true })).toBe(
+      false,
     );
   });
 
@@ -90,7 +105,7 @@ describe("evaluator deep workflow", () => {
     ]);
   });
 
-  test("converges visibly when structured output is missing or invalid", async () => {
+  test("fails visibly when selected-session output is missing or invalid", async () => {
     for (const output of [undefined, { sessionId: "s_source" }]) {
       const events: unknown[] = [];
       const ctx = createTestAppWorkflowContext({
@@ -108,13 +123,22 @@ describe("evaluator deep workflow", () => {
       });
 
       await expect(execute(ctx)).resolves.toMatchObject({
-        status: "done",
-        summary: "Deep evaluator returned no valid result for s_source.",
-        output: { state: "converged", actions: [] },
+        status: "blocked",
+        summary:
+          "Deep evaluator output for selected session s_source failed validation.",
       });
       expect(events.map((event: any) => event.type)).toEqual([
         "evaluation.deep_dispatched",
+        "evaluation.deep_failed",
       ]);
+      expect(events[1]).toMatchObject({
+        data: {
+          executionId: "s_inner",
+          status: "invalid-output",
+          sessionId: "s_source",
+        },
+        target: { sessionId: "s_source" },
+      });
     }
   });
 
@@ -165,7 +189,7 @@ describe("evaluator deep workflow", () => {
       summary: "Recorded deep evaluation for s_source with verdict good.",
       output: {
         state: "converged",
-        evidence: ["execution:s_inner", "evaluated-session:s_source"],
+        evidence: ["execution:s_inner", "recorded-evaluation:s_source"],
         actions: [],
       },
     });

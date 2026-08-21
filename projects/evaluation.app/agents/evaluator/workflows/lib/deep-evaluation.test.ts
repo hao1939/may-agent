@@ -40,13 +40,17 @@ describe("deep evaluation outcome", () => {
     ).toBeNull();
   });
 
-  test("accepts an explicit no-candidate outcome", () => {
+  test("accepts no-candidate only with an explicit non-empty reason", () => {
     expect(
       parseDeepEvaluationOutcome({
         noCandidate: true,
         reason: "No terminal session is eligible.",
       }),
     ).toEqual({ kind: "none", reason: "No terminal session is eligible." });
+    expect(parseDeepEvaluationOutcome({ noCandidate: true })).toBeNull();
+    expect(
+      parseDeepEvaluationOutcome({ noCandidate: true, reason: "   " }),
+    ).toBeNull();
   });
 
   test("builds one bounded review task without runtime paths or artifacts", () => {

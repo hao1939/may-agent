@@ -114,8 +114,11 @@ describe("evaluator heartbeat", () => {
     expect(tasks[0]).not.toContain("task-tree.json");
   });
 
-  test("rejects malformed output as a visible no-op", async () => {
-    const events: Array<{ type: string }> = [];
+  test("rejects malformed output as a visible no-op without self-waking the reviewed task", async () => {
+    const events: Array<{
+      type: string;
+      target?: { appId?: string; taskId?: string };
+    }> = [];
     const ctx = createTestAppWorkflowContext({
       input: { scope: "evaluation.app" },
       reconciliation: reconciliation(),
@@ -127,7 +130,12 @@ describe("evaluator heartbeat", () => {
         output: { state: "waiting", summary: "wait", evidence: [] },
       }),
       emit: async (event) => {
-        events.push(event as { type: string });
+        events.push(
+          event as {
+            type: string;
+            target?: { appId?: string; taskId?: string };
+          },
+        );
       },
     });
 
@@ -142,6 +150,12 @@ describe("evaluator heartbeat", () => {
       "evaluation.owner_review_started",
       "evaluation.owner_reviewed",
     ]);
+    expect(events.every((event) => event.target?.appId === "evaluation")).toBe(
+      true,
+    );
+    expect(events.every((event) => event.target?.taskId === undefined)).toBe(
+      true,
+    );
   });
 
   test("keeps valid direct-child mutations and filters stale or runtime actions", () => {

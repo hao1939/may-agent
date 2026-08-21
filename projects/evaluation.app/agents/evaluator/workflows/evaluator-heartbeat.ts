@@ -182,12 +182,13 @@ export async function execute(
       generation: reconciliation.generation,
       triggerType,
     },
-    target: { appId: "evaluation", taskId: reconciliation.taskId },
+    target: { appId: "evaluation" },
   });
 
   const execution = await ctx.agents.call(
     reconciliation.owner,
     ownerPrompt(ownerPacket(ctx.input, reconciliation)),
+    { schema: taskOwnerResultSchema },
   );
 
   let ownerResult: OwnerResult;
@@ -212,7 +213,6 @@ export async function execute(
       },
       target: {
         appId: "evaluation",
-        taskId: reconciliation.taskId,
         executionId: execution.id,
       },
     });
@@ -233,7 +233,6 @@ export async function execute(
     },
     target: {
       appId: "evaluation",
-      taskId: reconciliation.taskId,
       executionId: execution.id,
     },
   });

@@ -1,3 +1,5 @@
+import { Type } from "typebox";
+
 export type DeepEvaluation = {
   sessionId: string;
   agent: string;
@@ -17,6 +19,47 @@ export type DeepEvaluationOutcome =
   | { kind: "none"; reason: string };
 
 const DEEP_EVAL_VERSION = 1;
+
+const nonEmptyStringSchema = Type.String({ minLength: 1 });
+const evaluationSchema = Type.Object(
+  {
+    sessionId: nonEmptyStringSchema,
+    agent: nonEmptyStringSchema,
+    quality: Type.Number({ minimum: 0, maximum: 1 }),
+    efficiency: Type.Number({ minimum: 0, maximum: 1 }),
+    productiveCalls: Type.Integer({ minimum: 0 }),
+    wastedCalls: Type.Integer({ minimum: 0 }),
+    verdict: Type.Union([
+      Type.Literal("good"),
+      Type.Literal("acceptable"),
+      Type.Literal("needs_improvement"),
+      Type.Literal("low_quality"),
+    ]),
+    issues: Type.Array(Type.String(), { maxItems: 20 }),
+    overall: Type.Object({}, { additionalProperties: true }),
+    usage: Type.Union([
+      Type.Null(),
+      Type.Object({}, { additionalProperties: true }),
+    ]),
+    failureChains: Type.Array(Type.Unknown()),
+  },
+  { additionalProperties: false },
+);
+
+export const deepEvaluationOutcomeSchema = Type.Union([
+  evaluationSchema,
+  Type.Object(
+    { evaluation: evaluationSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      noCandidate: Type.Literal(true),
+      reason: nonEmptyStringSchema,
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -75,13 +118,9 @@ export function parseDeepEvaluationOutcome(
 ): DeepEvaluationOutcome | null {
   const result = parsedRecord(value);
   if (result.noCandidate === true) {
-    const reason = String(
-      result.reason ?? "No eligible session needs deep evaluation.",
-    ).trim();
-    return {
-      kind: "none",
-      reason: reason || "No eligible session needs deep evaluation.",
-    };
+    const reason =
+      typeof result.reason === "string" ? result.reason.trim() : "";
+    return reason ? { kind: "none", reason } : null;
   }
   const candidate = record(result.evaluation ?? result);
   const sessionId = String(candidate.sessionId ?? "").trim();
