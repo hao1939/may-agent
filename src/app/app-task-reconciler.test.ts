@@ -14,7 +14,6 @@ import { AppTaskQueue } from "./app-task-queue.ts";
 import {
   associateAppTaskSession,
   claimObservedAppTask,
-  claimFreshAppTaskSessionForStartup,
   completeAppTask,
   deferAppTask,
   acknowledgeAppTaskRecoveryAttention,
@@ -2274,133 +2273,6 @@ describe("App task reconciler state", () => {
     }
   });
 
-  it("claims only the exact persisted generation and session lease for startup", () => {
-    const exact = fixture();
-    const exactClaim = declareAndClaimTask(exact.config, {
-      intent: intent(),
-      appOwner: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (exactClaim.kind !== "claimed") throw new Error("expected exact claim");
-    expect(recordAppTaskAttemptSession(exact.config, exactClaim, "session-exact")).toBe(true);
-    const exactBefore = readTaskState(exact.config);
-    exactBefore.attempts![exactClaim.attemptId].runtimeId = "previous-runtime";
-    exactBefore.attempts![exactClaim.attemptId].lease!.runtimeId = "previous-runtime";
-    saveTaskState(exact.config, exactBefore);
-
-    expect(
-      claimFreshAppTaskSessionForStartup(
-        exact.config,
-        { taskId: exactClaim.taskId, generation: exactClaim.generation },
-        "session-exact",
-      ),
-    ).toBe(true);
-    expect(
-      claimFreshAppTaskSessionForStartup(
-        exact.config,
-        { taskId: exactClaim.taskId, generation: exactClaim.generation },
-        "session-exact",
-      ),
-    ).toBe(false);
-    const exactAfter = readTaskState(exact.config);
-    expect(Object.values(exactAfter.attempts ?? {}).filter((attempt) => attempt.state === "running")).toHaveLength(1);
-    expect(exactAfter.attempts?.[exactClaim.attemptId]).toMatchObject({
-      sessionId: "session-exact",
-      state: "running",
-      lease: { sessionId: "session-exact" },
-    });
-    expect(exactAfter.resources?.[exactClaim.taskId].status).toMatchObject({
-      phase: "running",
-      currentAttemptId: exactClaim.attemptId,
-    });
-
-    for (const mismatch of ["generation", "session"] as const) {
-      const { config } = fixture();
-      const claim = declareAndClaimTask(config, {
-        intent: intent(),
-        appOwner: "app-owner",
-        handler: "workflow:known-workflow",
-      });
-      if (claim.kind !== "claimed") throw new Error("expected mismatch claim");
-      expect(recordAppTaskAttemptSession(config, claim, `session-${mismatch}`)).toBe(true);
-      const before = readTaskState(config);
-      before.attempts![claim.attemptId].runtimeId = "previous-runtime";
-      before.attempts![claim.attemptId].lease!.runtimeId = "previous-runtime";
-      saveTaskState(config, before);
-
-      expect(
-        claimFreshAppTaskSessionForStartup(
-          config,
-          { taskId: claim.taskId, generation: mismatch === "generation" ? claim.generation + 1 : claim.generation },
-          mismatch === "session" ? "different-session" : `session-${mismatch}`,
-        ),
-      ).toBe(false);
-      expect(readTaskState(config).attempts?.[claim.attemptId]).toEqual(before.attempts?.[claim.attemptId]);
-    }
-  });
-
-  it("uses durable session activity to resume an active task without progress lease rewrites", () => {
-    const { config } = fixture();
-    const claim = declareAndClaimTask(config, {
-      intent: intent(),
-      appOwner: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    expect(recordAppTaskAttemptSession(config, claim, "session-active-at-restart")).toBe(true);
-
-    const before = readTaskState(config);
-    const attempt = before.attempts?.[claim.attemptId];
-    if (!attempt?.lease) throw new Error("expected leased attempt");
-    attempt.runtimeId = "previous-runtime";
-    attempt.lease.runtimeId = "previous-runtime";
-    attempt.lease.lastActivityAt = "2026-08-15T00:00:00.000Z";
-    attempt.lease.expiresAt = "2026-08-15T00:15:00.000Z";
-    saveTaskState(config, before);
-
-    const restartAt = Date.parse("2026-08-18T01:00:00.000Z");
-    expect(
-      claimFreshAppTaskSessionForStartup(
-        config,
-        { taskId: claim.taskId, generation: claim.generation },
-        "session-active-at-restart",
-        restartAt,
-        { sessionId: "session-active-at-restart", lastActivityAt: restartAt - 1_000 },
-      ),
-    ).toBe(true);
-    expect(readTaskState(config).attempts?.[claim.attemptId]).toMatchObject({
-      state: "running",
-      sessionId: "session-active-at-restart",
-      lease: { sessionId: "session-active-at-restart" },
-    });
-
-    const stale = fixture();
-    const staleClaim = declareAndClaimTask(stale.config, {
-      intent: intent(),
-      appOwner: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (staleClaim.kind !== "claimed") throw new Error("expected stale claim");
-    expect(recordAppTaskAttemptSession(stale.config, staleClaim, "session-stale-at-restart")).toBe(true);
-    const staleBefore = readTaskState(stale.config);
-    const staleAttempt = staleBefore.attempts?.[staleClaim.attemptId];
-    if (!staleAttempt?.lease) throw new Error("expected stale leased attempt");
-    staleAttempt.runtimeId = "previous-runtime";
-    staleAttempt.lease.runtimeId = "previous-runtime";
-    staleAttempt.lease.expiresAt = "2026-08-15T00:15:00.000Z";
-    saveTaskState(stale.config, staleBefore);
-    expect(
-      claimFreshAppTaskSessionForStartup(
-        stale.config,
-        { taskId: staleClaim.taskId, generation: staleClaim.generation },
-        "session-stale-at-restart",
-        restartAt,
-        { sessionId: "session-stale-at-restart", lastActivityAt: restartAt - 16 * 60_000 },
-      ),
-    ).toBe(false);
-    expect(readTaskState(stale.config).attempts?.[staleClaim.attemptId]).toEqual(staleAttempt);
-  });
-
   it("consumes a terminal direct-owner result exactly once even while its lease is fresh", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -2561,7 +2433,7 @@ describe("App task reconciler state", () => {
     expect(readTaskState(config).resources?.[claim.taskId].status.phase).toBe("running");
   });
 
-  it("requeues the same task when a restart-interrupted workflow session completes after startup resume", () => {
+  it("requeues the same task when a late workflow result reaches its still-running attempt", () => {
     const { config } = fixture();
     const trigger = {
       type: "project.task.tick",
@@ -2575,18 +2447,6 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected workflow claim");
     expect(recordAppTaskAttemptSession(config, claim, "session-resumed-after-restart")).toBe(true);
-
-    const beforeRestart = readTaskState(config);
-    beforeRestart.attempts![claim.attemptId].runtimeId = "previous-runtime";
-    beforeRestart.attempts![claim.attemptId].lease!.runtimeId = "previous-runtime";
-    saveTaskState(config, beforeRestart);
-    expect(
-      claimFreshAppTaskSessionForStartup(
-        config,
-        { taskId: claim.taskId, generation: claim.generation },
-        "session-resumed-after-restart",
-      ),
-    ).toBe(true);
 
     expect(
       releaseLateTerminalWorkflowAppTaskAttempt(
