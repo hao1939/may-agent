@@ -12,7 +12,9 @@ Restart the daemon normally. Startup:
 3. republishes the generation only after every consumer accepts it;
 4. repairs request correlation and runs bounded indexed recovery for ready,
    changed, due, or expired tasks;
-5. recovers task attempts from their persisted task/session fences;
+5. interrupts stale task execution evidence and requeues the same Task through
+   normal bounded Host capacity; it does not directly resume every old task
+   session outside the dispatcher;
 6. enables outward delivery after transports are attached.
 
 Do not recreate requests, task ticks, or Condition events merely because the

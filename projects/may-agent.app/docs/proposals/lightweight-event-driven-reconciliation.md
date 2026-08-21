@@ -391,18 +391,35 @@ an explicit assertion that the daemon is stopped. It refuses to overwrite an
 already-active resource authority. The operator procedure is documented in
 [Agent App operations and recovery](../2b-manual/app-operations-recovery.md).
 
+The first production canary is now active for `scout-knowledge-lib`. Its seven
+Tasks were imported from paused source revision
+`672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b`,
+shadow-compared, activated, and restarted on resource authority. Repeated
+restart and HTTP task reads left the legacy file at the same revision, size,
+and modification time. Five resource-backed task-list samples completed in
+5-29 ms while background model work saturated the daemon.
+
+That restart exposed one superseded path: fresh task-owned agent sessions were
+claimed and all resumed directly by the generic session manager, bypassing
+Host capacity. Nine expensive sessions could therefore restart together and
+starve control traffic. Runtime commit `be12e5ca` removes that handoff. Startup
+now interrupts the previous execution evidence, preserves the Task, and
+requeues it behind the ordinary human/normal capacity gate. The deployed
+artifact passed the supervisor health gate and restored responsive task reads
+under load.
+
 Foreground reads now load the named task, parent chain, direct children,
 dependencies, linked Conditions and receipts, and a bounded recent-attempt
 window. Resource-backed Task list/get and Condition replay no longer depend on
 `state.json` or an App-wide snapshot.
 
-No current production App has been silently switched. Legacy JSON remains the
-authority until that App completes the cutover. Historical data has not been
-deleted. Remaining work is to cut over test and production Apps one at a time,
-validate real latency and idle-resource targets, extend fenced mid-attempt
-emission beyond direct task-owned workflows only when a concrete agent use
-case needs it, then remove the legacy JSON/resync path after the last reader
-moves.
+Only Scout has completed the guarded production cutover. Legacy JSON remains
+the authority for May, Gym, Evaluation, and AKS until each App completes the
+same procedure. Historical data has not been deleted. Remaining work is to
+hold the canary through idle-resource and due-recovery proof, cut over the
+other Apps one at a time, extend fenced mid-attempt emission beyond direct
+task-owned workflows only when a concrete agent use case needs it, then remove
+the legacy JSON/resync path after the last reader moves.
 
 ### Phase 0: freeze the contract and expose cost
 
