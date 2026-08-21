@@ -13,6 +13,8 @@ export type AppEventTarget = {
 export type AppEvent<TData = unknown> = {
   type: string;
   data: TData;
+  /** Stable within one Task generation; required by the fenced Task emitter. */
+  localKey?: string;
   source?: string;
   owner?: string;
   target?: AppEventTarget;

@@ -21,6 +21,7 @@ import type {
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { writeAppTaskConditionRouteIndex } from "./app-task-condition-index.js";
 import { currentProcessInstance, isProcessInstanceAlive } from "../lib/process-identity.js";
+import type { AppTaskResourceMutation, AppTaskResourceStore } from "./app-task-resource-store.js";
 
 export type TaskNode = {
   id: string;
@@ -216,6 +217,8 @@ export type TaskStateConfig = {
   maxConcurrent: number;
   mutationAuthority?: unknown;
   validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
+  /** Present only after a paused, shadow-compared resource-store cutover. */
+  resourceStore?: AppTaskResourceStore;
 };
 
 type TaskStateReadCache = {
@@ -225,9 +228,11 @@ type TaskStateReadCache = {
   tree?: TaskTree;
   sourceLifecycle?: string;
   sourceResourceCount?: number;
+  resourceRevision?: number;
 };
 
 const taskStateReadCaches = new WeakMap<TaskStateConfig, TaskStateReadCache>();
+const scopedResourceTaskStates = new WeakSet<TaskTree>();
 
 /** Reuse one parsed tree for a short-lived config dedicated to a sequential pass. */
 export function cacheTaskStateReads(config: TaskStateConfig): void {
@@ -289,6 +294,9 @@ function taskStateLockOwnerIsDead(lockPath: string): boolean {
 
 export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T): T {
   const lockPath = `${config.statePath}.lock`;
+  // Resource-backed Apps intentionally have no canonical state.json, but the
+  // short cross-process transition lock still needs its parent directory.
+  ensureDir(dirname(lockPath));
   const waitMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_WAIT_MS", "AKS_RP_E2E_TREE_LOCK_WAIT_MS"], 30_000);
   const staleMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_STALE_MS", "AKS_RP_E2E_TREE_LOCK_STALE_MS"], 2 * 60_000);
   const deadline = Date.now() + waitMs;
@@ -324,7 +332,26 @@ export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T
   }
 }
 
-export function readTaskState(config: TaskStateConfig): TaskTree {
+export function readTaskState(
+  config: TaskStateConfig,
+  scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string> },
+): TaskTree {
+  if (config.resourceStore) {
+    if (scope) {
+      const tree = config.resourceStore.readTaskContext(scope);
+      scopedResourceTaskStates.add(tree);
+      return tree;
+    }
+    const cache = taskStateReadCaches.get(config);
+    const revision = config.resourceStore.revision();
+    if (cache?.tree && cache.resourceRevision === revision) return cache.tree;
+    const tree = config.resourceStore.readSnapshot();
+    if (cache) {
+      cache.tree = tree;
+      cache.resourceRevision = revision;
+    }
+    return tree;
+  }
   const canonicalPath = projectRuntimePaths(config.appDir).taskStatePath;
   if (config.statePath !== canonicalPath) {
     throw new Error(`Task state must be read from canonical state.json: ${canonicalPath}`);
@@ -369,6 +396,8 @@ export type SaveTaskStateOptions = {
    * saves must preserve lifecycle; they cannot silently pause or resume an app.
    */
   projectLifecycleReason?: string;
+  /** Exact resource rows changed by this transition. Required after cutover. */
+  resourceMutation?: AppTaskResourceMutation;
 };
 
 function normalizedLifecycle(value: unknown): string {
@@ -405,6 +434,27 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
     throw new Error(`Task state must be written to canonical state.json: ${runtimePaths.taskStatePath}`);
   }
   normalizeTaskStateInPlace(tree);
+
+  if (config.resourceStore) {
+    if (!options?.resourceMutation) {
+      throw new Error("Resource-backed task state requires an exact resourceMutation");
+    }
+    if (!config.resourceStore.commit(options.resourceMutation)) {
+      throw new Error("Resource-backed task mutation was rejected by a stale fence");
+    }
+    tree.updated_at = new Date().toISOString();
+    const resourceCache = taskStateReadCaches.get(config);
+    if (resourceCache) {
+      if (scopedResourceTaskStates.has(tree)) {
+        resourceCache.tree = undefined;
+        resourceCache.resourceRevision = undefined;
+      } else {
+        resourceCache.tree = tree;
+        resourceCache.resourceRevision = config.resourceStore.revision();
+      }
+    }
+    return;
+  }
 
   const cache = taskStateReadCaches.get(config);
   let existingTree: TaskTree | null = null;
@@ -528,6 +578,20 @@ export function setProjectLifecycle(config: TaskStateConfig, lifecycle: string, 
   const transitionReason = reason.trim();
   if (!nextLifecycle) throw new Error("Project lifecycle must not be empty");
   if (!transitionReason) throw new Error("Project lifecycle change requires a reason");
+
+  if (config.resourceStore) {
+    if (nextLifecycle !== "active" && nextLifecycle !== "paused") {
+      throw new Error(`Resource-backed project lifecycle must be active or paused, found ${nextLifecycle}`);
+    }
+    if (config.resourceStore.projectLifecycle() === nextLifecycle) return;
+    config.resourceStore.setProjectLifecycle(nextLifecycle);
+    const cache = taskStateReadCaches.get(config);
+    if (cache) {
+      cache.tree = undefined;
+      cache.resourceRevision = undefined;
+    }
+    return;
+  }
 
   withTaskStateLock(config, () => {
     const tree = readTaskState(config);

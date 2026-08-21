@@ -13,6 +13,7 @@ export type RuntimeAppReadOptions = {
     appDir: string;
     projectDir: string;
   };
+  taskStateConfig?: TaskStateConfig;
 };
 
 function taskConfig(paths: NonNullable<RuntimeAppReadOptions["executionPaths"]>): TaskStateConfig {
@@ -28,9 +29,15 @@ function taskConfig(paths: NonNullable<RuntimeAppReadOptions["executionPaths"]>)
 }
 
 export function readRuntimeTaskView(
-  opts: Pick<RuntimeAppReadOptions, "executionPaths">,
+  opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
   taskId: string,
 ): TaskView | null {
+  if (opts.taskStateConfig?.resourceStore) {
+    const receipt = opts.taskStateConfig.resourceStore.readReceipt(taskId);
+    if (receipt) return receiptTaskView(receipt);
+    const resource = opts.taskStateConfig.resourceStore.readTask(taskId);
+    return resource ? resourceTaskView(resource) : null;
+  }
   if (!opts.executionPaths) return null;
   const tree = readTaskState(taskConfig(opts.executionPaths));
   return taskView(tree, taskId);
@@ -47,21 +54,27 @@ export function createRuntimeTaskReader(
 
 function taskView(tree: TaskTree, taskId: string): TaskView | null {
   const receipt = tree.receipts?.[taskId];
-  if (receipt) {
-    return {
-      id: taskId,
-      status: "done",
-      generation: receipt.metadata.generation,
-      outcome: receipt.outcome,
-      summary: receipt.summary,
-      response: receipt.response,
-      evidence: [...receipt.evidence],
-    };
-  }
+  if (receipt) return receiptTaskView(receipt);
   const resource = tree.resources?.[taskId];
   if (!resource) return null;
+  return resourceTaskView(resource);
+}
+
+function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
   return {
-    id: taskId,
+    id: receipt.metadata.id,
+    status: "done",
+    generation: receipt.metadata.generation,
+    outcome: receipt.outcome,
+    summary: receipt.summary,
+    response: receipt.response,
+    evidence: [...receipt.evidence],
+  };
+}
+
+function resourceTaskView(resource: NonNullable<TaskTree["resources"]>[string]): TaskView {
+  return {
+    id: resource.metadata.id,
     status: resource.status.phase === "converged" ? "done" : resource.status.phase,
     generation: resource.metadata.generation,
     outcome: resource.spec.outcome,
@@ -86,7 +99,7 @@ function decodeTaskCursor(cursor: string): string {
 }
 
 export function listRuntimeTaskViews(
-  opts: Pick<RuntimeAppReadOptions, "executionPaths">,
+  opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
   options: TaskListOptions = {},
 ): TaskPage {
   if (!opts.executionPaths) return { items: [] };
@@ -100,6 +113,17 @@ export function listRuntimeTaskViews(
   }
   const statuses = options.status ? new Set(options.status) : null;
   const after = options.cursor === undefined ? null : decodeTaskCursor(options.cursor);
+  if (opts.taskStateConfig?.resourceStore) {
+    const ids = opts.taskStateConfig.resourceStore.listTaskIds({ after, statuses, limit: limit + 1 });
+    const pageIds = ids.slice(0, limit);
+    return {
+      items: pageIds.flatMap((id) => {
+        const view = readRuntimeTaskView(opts, id);
+        return view ? [view] : [];
+      }),
+      ...(ids.length > limit && pageIds.length > 0 ? { nextCursor: encodeTaskCursor(pageIds.at(-1)!) } : {}),
+    };
+  }
   const tree = readTaskState(taskConfig(opts.executionPaths));
   const ids = [...new Set([...Object.keys(tree.resources ?? {}), ...Object.keys(tree.receipts ?? {})])].sort();
   const visible = ids

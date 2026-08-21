@@ -56,7 +56,10 @@ import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
-import { AppTaskController } from "./app-task-controller.js";
+import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
+import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { createAppTaskEmitter } from "./app-task-emitter.js";
 import { HostCapacity } from "./host-capacity.js";
 import type { AppTaskQueueOptions } from "./app-task-queue.js";
 import {
@@ -121,6 +124,61 @@ type ProjectReadModel = {
   priority: string | null;
 };
 
+type AppTaskTiming = {
+  dispatch: AppTaskDispatch;
+  claimMs?: number;
+  contextBuildMs?: number;
+  providerStartMs?: number;
+  providerMs?: number;
+  resultPersistenceMs: number;
+  promptBytes?: number;
+  attemptId?: string;
+  generation?: number;
+  outcome?: "completed" | "failed";
+};
+
+type AppTaskExecutionObserver = {
+  providerStarted(promptBytes: number): void;
+  providerFinished(): void;
+};
+
+function publishAppTaskTiming(
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
+  taskId: string,
+  timing: AppTaskTiming,
+): void {
+  const finishedAt = Date.now();
+  const timer = setTimeout(() => {
+    opts.bus.emit({
+      type: "project.task.reconcile.profiled",
+      source: `app-task:${descriptor.id}:observer`,
+      owner: `agent:${descriptor.owner}`,
+      target: { appId: descriptor.id },
+      data: {
+        project: descriptor.id,
+        taskId,
+        attemptId: timing.attemptId,
+        generation: timing.generation,
+        lane: timing.dispatch.lane,
+        enqueuedAt: timing.dispatch.enqueuedAt,
+        startedAt: timing.dispatch.startedAt,
+        finishedAt,
+        readyWaitMs: timing.dispatch.readyWaitMs,
+        claimMs: timing.claimMs,
+        contextBuildMs: timing.contextBuildMs,
+        providerStartMs: timing.providerStartMs,
+        providerMs: timing.providerMs,
+        resultPersistenceMs: timing.resultPersistenceMs,
+        promptBytes: timing.promptBytes,
+        totalMs: Math.max(0, finishedAt - timing.dispatch.startedAt),
+        outcome: timing.outcome,
+      },
+    } as unknown as AgentEvent);
+  }, 0);
+  timer.unref?.();
+}
+
 const APP_TASK_OWNER_TIMEOUT_MS = 15 * 60_000;
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
@@ -131,6 +189,8 @@ export interface AppTaskRuntimeDescriptor {
   owner: string;
   app: AppDefinition;
   reconciliationPaused: boolean;
+  /** Present only when this App has completed the guarded resource-store cutover. */
+  resourceStore?: AppTaskResourceStore;
 }
 
 export interface AppTaskRuntimeOptions {
@@ -660,6 +720,7 @@ async function runTaskCapability(input: {
   taskSnapshot: ReturnType<typeof readAppTaskLiveSnapshot>;
   event?: EventEnvelope;
   fallbackReason?: string;
+  observer?: AppTaskExecutionObserver;
 }): Promise<TaskCapabilityRun> {
   const { opts, descriptor, capability, intent, claim, event } = input;
   const reconciliationEvents = projectAppTaskReconciliationEvents(claim);
@@ -719,6 +780,7 @@ async function runTaskCapability(input: {
     ...(trace ? { trace } : {}),
   } as AgentEvent);
 
+  let providerStarted = false;
   try {
     const runtimeCtx = buildRuntimeCtx({
       bus: opts.bus,
@@ -729,6 +791,8 @@ async function runTaskCapability(input: {
       projectsRoot: opts.projectsRoot,
       agentName,
     });
+    input.observer?.providerStarted(Buffer.byteLength(task));
+    providerStarted = true;
     const { result, runId, verifier } = await runWorkflowDirect({
       workflowName: capability.workflow,
       task,
@@ -745,6 +809,16 @@ async function runTaskCapability(input: {
         generation: claim.generation,
       },
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
+      ...(descriptor.resourceStore
+        ? {
+            taskEmitter: createAppTaskEmitter({
+              bus: opts.bus,
+              appId: descriptor.id,
+              claim,
+              ...(event ? { parentEvent: event as AgentEvent } : {}),
+            }),
+          }
+        : {}),
       trace,
       executionPaths: input.executionPaths,
       workflowInput: intent.input ?? {},
@@ -860,6 +934,8 @@ async function runTaskCapability(input: {
       ...(unavailable ? { unavailable: true } : {}),
       ...(!unavailable ? { executionFailed: true } : {}),
     };
+  } finally {
+    if (providerStarted) input.observer?.providerFinished();
   }
 }
 
@@ -1444,6 +1520,26 @@ export function rejectConvergedDirectOwnerResidue(
   };
 }
 
+export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
+  "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this owner attempt. Decide from it or preserve the exact App/task owner boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
+
+/** Compact owner rules; the finish tool schema enforces field-level detail. */
+export function appTaskOwnerProtocol(appId: string): string {
+  return [
+    `You are the accountable owner for Agent App ${appId}.`,
+    "Perform the next bounded work needed by the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
+    "Finish exactly once with finish().result. The tool schema is authoritative. A successful session without result does not resolve the task.",
+    "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
+    "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
+    "For another App outcome, return a stable dependency { id, appId, input }. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
+    "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
+    "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
+    "After first acceptance-critical evidence, checkpoint a concise summary, next step, and exact artifact/session paths. Refresh only when those facts change, then finish promptly.",
+    "For unresolved human work, give an exact useful response or a bounded wait with reviewAfterMs of at least 60000. Do not expose delivery or Host internals.",
+    DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
+  ].join("\n");
+}
+
 async function runTaskOwner(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
@@ -1455,97 +1551,13 @@ async function runTaskOwner(input: {
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
+  observer?: AppTaskExecutionObserver;
 }): Promise<TaskCapabilityRun> {
   const { opts, descriptor, intent, claim, event } = input;
   const reconciliationEvents = projectAppTaskReconciliationEvents(claim);
   const trace = childEventTrace(event);
   const prompt = [
-    `You are the accountable owner for Agent App ${descriptor.id}.`,
-    "Resolve the task from current evidence and, for achieve tasks, perform the bounded work required by the outcome and acceptance when your tools can do it. Do not edit task-tree storage directly.",
-    "Return your decision through finish().result using state, summary, optional response, evidence, actions, conditions, and dependencies.",
-    "",
-    "## Required final call shape",
-    "Call finish() exactly once as your final action. The session status only says whether the agent turn succeeded; the task decision must be inside result.state.",
-    "A completion without result leaves this task unresolved.",
-    "Converged example:",
-    "```json",
-    JSON.stringify(
-      {
-        status: "success",
-        summary: "Task converged with evidence.",
-        result: {
-          state: "converged",
-          summary: "Task converged with evidence.",
-          response: "The caller-facing answer, when this task fulfills a request.",
-          evidence: ["path/or/run/proof"],
-          actions: [],
-        },
-      },
-      null,
-      2,
-    ),
-    "```",
-    "Waiting example:",
-    "```json",
-    JSON.stringify(
-      {
-        status: "success",
-        summary: "Waiting for an exact observable condition.",
-        result: {
-          state: "waiting",
-          summary: "Waiting for an exact observable condition.",
-          evidence: ["queued pipeline-run:123"],
-          actions: [],
-          conditions: [
-            {
-              id: "pipeline-run:123-completed",
-              type: "pipeline-run.state",
-              subject: "pipeline-run:123",
-              expected: { field: "state", equals: "completed" },
-              reviewAfterMs: 3600000,
-            },
-          ],
-        },
-      },
-      null,
-      2,
-    ),
-    "```",
-    'You are already the resolved owner; do not return state "needs-owner". Decide converged or waiting. Waiting requires exact Conditions or live direct children.',
-    "Valid states for this owner result are exactly: converged or waiting.",
-    "Loss-prevention checkpoint discipline: immediately after gathering the first acceptance-critical evidence, call checkpoint() once with a concise evidence summary, the next bounded step, and exact artifact/session paths a replacement owner needs. Refresh it only when those facts materially change, then call finish() as soon as the decision is supportable.",
-    "Startup recovery exposes the latest durable checkpoint to the replacement prompt. If no checkpoint was persisted, recovery records that absence explicitly; never infer a resumable decision from checkpoint absence.",
-    'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, do that concrete work now and report the evidence. Return "converged" only when this task\'s own outcome and acceptance are satisfied or its contract explicitly accepts the evidenced terminal disposition.',
-    "When different bounded work is required before this task can satisfy acceptance, create that work as a direct child with parentId equal to the current Reconciliation Task taskId and return waiting. A sibling successor does not complete the current task.",
-    "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up. If that successor is required for current acceptance, it is a direct child and the current task remains waiting.",
-    "Use waiting only when there is a real machine-observable wake event or live direct child work. Every authored Condition must be an object with id, type, subject, and expected.",
-    "When this task requires another App-owned outcome, return waiting with dependencies: [{ id, appId, input: { kind, data } }]. Runtime admits the child request and installs its exact completion Condition; do not publish app.input.requested yourself.",
-    "A dependency id is stable within this task generation. Change the task generation or use a new dependency id when the target App or input meaning changes.",
-    "When an unresolved human request depends on a Condition, set reviewAfterMs to a bounded interval of at least 60000. Missing that checkpoint wakes you to review and steer the same task; it does not send a routine human update.",
-    "A condition-review trigger includes reviewAttempt and finalReview. By the final unchanged review, change the approach or leave a proved event-driven blocker without another timer; the controller removes a repeated timer after the third review so an unchanged wait cannot spin forever.",
-    'For a decomposition parent that creates child task actions and cannot yet satisfy its own acceptance, return state "waiting". Infrastructure tracks live direct children and wakes this parent when a child converges or needs attention; do not author task lifecycle Conditions or return "converged" merely because child tasks were declared.',
-    'Conditions belong only to the current task when you return state "waiting". A converged task may create only independent successor work after its own acceptance is already satisfied; put that successor\'s wake facts in its task action input/acceptance and omit top-level conditions.',
-    "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
-    "Do not put blocker prose, resumeCondition, requiredEvidence, allowedChangedFiles, or other human notes directly in conditions. Put that detail in summary/evidence, or create/update a concrete follow-up task.",
-    "If no exact machine-observable Condition exists, do not return waiting. Return converged with exact evidence and supported successor/escalation actions when this carrier is finished; execution errors are reported by the runtime, not as a fourth task state.",
-    "Use actions only for supported task-tree mutations.",
-    "An executable parent relationship expresses decomposition and aggregate ownership. Infrastructure runs children independently and wakes the parent on meaningful child transitions; the parent still decides aggregate acceptance.",
-    "Use dependsOn for execution ordering. Use a structural group when a node has no independently reconcilable outcome.",
-    "Do not close an achieve task while it still contains live child tasks; finish or relocate the represented children first.",
-    "A completed task receipt is immutable. Do not update, unblock, or recreate its task ID; represent correction or renewed work as a new linked task.",
-    "",
-    "Allowed actions:",
-    '- create a task: { kind: "create-task", id, outcome, acceptance, parentId?, mode?, outputs?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
-    '  Defaults: parentId is the app root, mode is "achieve", outputs is [], and priority is "P2".',
-    '  Created task ids must not start with "runtime/"; that namespace is reserved for reconciler-owned event tasks.',
-    '- update a task: { kind: "update-task", taskId, expectedGeneration, parentId?, outcome?, mode?, outputs?, acceptance?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
-    "  Set owner, workflow, or category to null to clear that explicit binding.",
-    '- close a task: { kind: "close-task", taskId, expectedGeneration, summary }',
-    '- unblock a task: { kind: "unblock-task", taskId, expectedGeneration, reason }',
-    'For ordinary owner-handled project/domain work, omit workflow. Do not use workflow: "project"; workflow may only name a real app-local workflow.',
-    "Do not invent action names such as task.dispatch-existing-review, focus.update, noop, or task.batch-priority.",
-    "Do not include an action for the current Reconciliation Task taskId; the controller closes or waits that carrier automatically from your state.",
-    "If no task-tree mutation is needed, return actions: [] and put the explanation in summary/evidence.",
+    appTaskOwnerProtocol(descriptor.id),
     "",
     "## Reconciliation Task",
     "```json",
@@ -1618,8 +1630,10 @@ async function runTaskOwner(input: {
   let restoredOwnerResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchOwner>>;
   try {
+    input.observer?.providerStarted(Buffer.byteLength(prompt));
     result = await dispatchOwner();
   } finally {
+    input.observer?.providerFinished();
     const cleanupPlan = planCanonicalOwnerResidueCleanup(residueGuard);
     restoredOwnerResidue = applyCanonicalOwnerResidueCleanup(cleanupPlan);
   }
@@ -1864,12 +1878,42 @@ async function reconcileTask(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
+  dispatch: AppTaskDispatch;
   reason?: string;
 }): Promise<string[]> {
   const { opts, descriptor } = input;
 
+  const timing: AppTaskTiming = {
+    dispatch: input.dispatch,
+    resultPersistenceMs: 0,
+    outcome: "completed",
+  };
+  let providerStartedAt: number | undefined;
+  const observer: AppTaskExecutionObserver = {
+    providerStarted(promptBytes) {
+      const now = Date.now();
+      timing.promptBytes = promptBytes;
+      timing.providerStartMs = Math.max(0, now - input.dispatch.startedAt);
+      providerStartedAt = now;
+    },
+    providerFinished() {
+      if (providerStartedAt !== undefined) timing.providerMs = Math.max(0, Date.now() - providerStartedAt);
+    },
+  };
+  const persistResult = <T>(operation: () => T): T => {
+    const startedAt = performance.now();
+    try {
+      return operation();
+    } finally {
+      timing.resultPersistenceMs += Math.max(0, performance.now() - startedAt);
+    }
+  };
+
+  try {
+
   const config = appTaskConfig(descriptor);
-  const defaultParentId = readTaskState(config).root_task_id;
+  const claimStartedAt = performance.now();
+  const defaultParentId = config.resourceStore?.rootTaskId() ?? readTaskState(config).root_task_id;
   if (!defaultParentId) {
     throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
   }
@@ -1880,9 +1924,10 @@ async function reconcileTask(input: {
     reason: input.reason ?? "task-controller",
     isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
   });
+  timing.claimMs = Math.max(0, performance.now() - claimStartedAt);
   if (primary.kind !== "claimed") {
     if (primary.kind === "busy") {
-      const active = readTaskState(config).attempts?.[primary.attemptId ?? ""];
+      const active = readTaskState(config, { taskIds: [input.taskId] }).attempts?.[primary.attemptId ?? ""];
       const terminalSession =
         active?.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, active.sessionId) : null;
       if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
@@ -1971,6 +2016,8 @@ async function reconcileTask(input: {
     if (primary.kind === "attention") emitAppTaskDependencyUpdated(opts, descriptor, input.taskId);
     return [];
   }
+  timing.attemptId = primary.attemptId;
+  timing.generation = primary.generation;
   for (const sessionId of primary.supersededSessionIds ?? []) {
     interruptSupersededOwnerSession(
       opts,
@@ -1981,8 +2028,10 @@ async function reconcileTask(input: {
   }
   const intent = primary.intent;
   const event = primary.trigger as EventEnvelope | undefined;
+  const contextStartedAt = performance.now();
   const childContext = readAppTaskChildContext(config, primary.taskId);
   const taskSnapshot = readAppTaskLiveSnapshot(config, primary.taskId);
+  timing.contextBuildMs = Math.max(0, performance.now() - contextStartedAt);
   let executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
   const declaredOutputPaths = primary.declaredOutputPaths;
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
@@ -2036,7 +2085,7 @@ async function reconcileTask(input: {
         if (descriptor.app.workspace?.kind !== "git") {
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
         }
-        const previous = Object.values(readTaskState(config).attempts ?? {})
+        const previous = Object.values(readTaskState(config, { taskIds: [primary.taskId] }).attempts ?? {})
           .filter(
             (attempt) =>
               attempt.taskId === primary.taskId &&
@@ -2097,6 +2146,7 @@ async function reconcileTask(input: {
             }`,
           }
         : {}),
+      observer,
     });
   } else {
     primaryResult = await runTaskOwner({
@@ -2118,6 +2168,7 @@ async function reconcileTask(input: {
             }`,
           }
         : {}),
+      observer,
     });
     if (primary.handoff && intent.workflow) {
       const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
@@ -2182,13 +2233,13 @@ async function reconcileTask(input: {
     }
     if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
       try {
-        const apply = completeAppTask(config, primary, {
+        const apply = persistResult(() => completeAppTask(config, primary, {
           summary: primaryHandlerResult.summary,
           response: primaryHandlerResult.response,
           evidence: primaryHandlerResult.evidence,
           actions: primaryHandlerResult.actions,
           acceptanceBasis,
-        });
+        }));
         const appliedDisposition = apply.taskContinues
           ? primaryHandlerResult.actions.some(
               (action) => action.kind === "update-task" && action.taskId === primary.taskId,
@@ -2278,13 +2329,13 @@ async function reconcileTask(input: {
 
   if (primaryHandlerResult.state === "waiting") {
     try {
-      const apply = deferAppTask(config, primary, {
-        disposition: primaryHandlerResult.state,
+      const apply = persistResult(() => deferAppTask(config, primary, {
+        disposition: "waiting",
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,
         actions: primaryHandlerResult.actions,
         conditions: primaryHandlerResult.conditions,
-      });
+      }));
       interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
       const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -2334,7 +2385,7 @@ async function reconcileTask(input: {
   await finalizeWorkspace("failed");
 
   const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
-  const attention = markAppTaskAttention(config, primary, {
+  const attention = persistResult(() => markAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
     evidence: primaryHandlerResult.evidence,
     reason: primaryResult.unavailable
@@ -2347,7 +2398,7 @@ async function reconcileTask(input: {
             ? "needs-owner"
             : "handler-blocked",
     wakeParent: !ownerHandoff,
-  });
+  }));
   if (attention.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
   if (!ownerHandoff) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -2369,6 +2420,12 @@ async function reconcileTask(input: {
     summary: primaryHandlerResult.summary,
   });
   return [intent.id];
+  } catch (error) {
+    timing.outcome = "failed";
+    throw error;
+  } finally {
+    publishAppTaskTiming(opts, descriptor, input.taskId, timing);
+  }
 }
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, AppTaskRuntimeDescriptor[]>();
@@ -2380,6 +2437,7 @@ function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTa
 }
 
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
+const appTaskRecoverySchedulersByBus = new WeakMap<EventBus, Map<string, AppTaskRecoveryScheduler>>();
 
 function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, note: string): DeliveryResult {
   return {
@@ -2508,11 +2566,12 @@ function replayPersistedConditionEvents(
   input: { conditionIds?: string[] } = {},
 ): string[] {
   if (!opts.persistDir) return [];
-  const tree = readTaskState(config);
+  const resourceScope = config.resourceStore?.readOpenConditionReplayScope(input.conditionIds);
+  const tree = resourceScope ? null : readTaskState(config);
   const relevantIds = input.conditionIds?.length ? new Set(input.conditionIds) : null;
-  const eventTypes = [
+  const eventTypes = resourceScope?.eventTypes ?? [
     ...new Set(
-      Object.entries(tree.conditions ?? {})
+      Object.entries(tree?.conditions ?? {})
         .filter(([id, value]) => (!relevantIds || relevantIds.has(id)) && isOpenProjectCondition(value))
         .map(([, value]) => value.spec.type.trim())
         .filter(Boolean),
@@ -2565,7 +2624,13 @@ function replayPersistedConditionEvents(
     }
   }
 
-  return trackAppTaskConditionEvents(config, events).map((wake) => wake.taskId);
+  if (!resourceScope) return trackAppTaskConditionEvents(config, events).map((wake) => wake.taskId);
+  const allowed = new Set(resourceScope.taskIds);
+  const wakes = events.flatMap((event) => {
+    const taskIds = matchingAppTaskConditionTaskIds(config, event).filter((taskId) => allowed.has(taskId));
+    return trackAppTaskConditionEventForTasks(config, event, taskIds);
+  });
+  return [...new Set(wakes.map((wake) => wake.taskId))];
 }
 
 function installConventionTaskControllers(
@@ -2573,6 +2638,7 @@ function installConventionTaskControllers(
   descriptors: AppTaskRuntimeDescriptor[],
 ): Map<string, AppTaskController> {
   const previousControllers = appTaskControllersByBus.get(opts.bus);
+  for (const scheduler of appTaskRecoverySchedulersByBus.get(opts.bus)?.values() ?? []) scheduler.close();
   for (const controller of previousControllers?.values() ?? []) {
     controller.close();
   }
@@ -2584,6 +2650,7 @@ function installConventionTaskControllers(
       ? Promise.all([previousControllersDrained, opts.startAfter]).then(() => undefined)
       : (previousControllersDrained ?? opts.startAfter);
   const controllers = new Map<string, AppTaskController>();
+  const recoverySchedulers = new Map<string, AppTaskRecoveryScheduler>();
 
   for (const descriptor of descriptors) {
     const tasks = descriptor.app.tasks;
@@ -2593,13 +2660,14 @@ function installConventionTaskControllers(
       // Every canonical state save refreshes this disposable projection. On
       // startup, preserve a projection already newer than its source instead
       // of parsing and serializing the entire historical task tree again.
-      refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
+      if (!config.resourceStore) refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
     } catch (error) {
       opts.bus.emit({
         type: "info",
         message: `[app-task:${descriptor.id}] Could not refresh task read projection: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
+    let recoveryScheduler: AppTaskRecoveryScheduler | undefined;
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
@@ -2608,18 +2676,23 @@ function installConventionTaskControllers(
       // it claim work until every previous controller has drained.
       startAfter,
       maxRetries: 3,
-      resync: {
-        intervalMs: tasks.resyncIntervalMs ?? 60_000,
-        // Installation recovery seeds this queue from the same cached state
-        // pass; reparsing it when the startup gate opens only delays ingress.
-        onStart: false,
-        tasks: () => listRunnableAppTaskQueueEntries(config),
-      },
-      reconcile: async (taskId) => {
+      ...(config.resourceStore
+        ? {}
+        : {
+            resync: {
+              intervalMs: tasks.resyncIntervalMs ?? 60_000,
+              // Installation recovery seeds this queue from the same cached state
+              // pass; reparsing it when the startup gate opens only delays ingress.
+              onStart: false,
+              tasks: () => listRunnableAppTaskQueueEntries(config),
+            },
+          }),
+      reconcile: async (taskId, dispatch) => {
         const dependentTaskIds = await reconcileTask({
           opts,
           descriptor,
           taskId,
+          dispatch,
           reason: "task-controller",
         });
         const dependentEntries = new Map(
@@ -2635,6 +2708,7 @@ function installConventionTaskControllers(
             priority: dependentEntries.get(dependentTaskId)?.options.priority,
           });
         }
+        recoveryScheduler?.stateChanged();
       },
       onError: (taskId, error, willRetry) => {
         opts.bus.emit({
@@ -2651,9 +2725,21 @@ function installConventionTaskControllers(
       },
     });
     controllers.set(descriptor.id, controller);
+    if (config.resourceStore) {
+      recoveryScheduler = new AppTaskRecoveryScheduler({
+        source: config.resourceStore,
+        safetyIntervalMs: tasks.resyncIntervalMs ?? 60_000,
+        enqueue: (taskId, options) => {
+          controller.enqueue(taskId, options);
+        },
+      });
+      recoverySchedulers.set(descriptor.id, recoveryScheduler);
+      recoveryScheduler.start();
+    }
   }
 
   appTaskControllersByBus.set(opts.bus, controllers);
+  appTaskRecoverySchedulersByBus.set(opts.bus, recoverySchedulers);
   return controllers;
 }
 
@@ -2667,6 +2753,8 @@ export async function closeInstalledAppTaskRuntimes(bus: EventBus): Promise<void
   if (!controllers) return;
 
   appTaskControllersByBus.delete(bus);
+  for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.close();
+  appTaskRecoverySchedulersByBus.delete(bus);
   for (const controller of controllers.values()) controller.close();
   await Promise.all([...controllers.values()].map((controller) => controller.whenDrained()));
 
@@ -2702,6 +2790,7 @@ function appTaskConfig(descriptor: AppTaskRuntimeDescriptor) {
     projectDir: descriptor.projectDir,
     owner: descriptor.owner,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
+    resourceStore: descriptor.resourceStore,
   });
   cacheTaskStateReads(config);
   appTaskConfigs.set(descriptor, config);
@@ -2779,7 +2868,9 @@ export function attachLoadedAppTask(input: {
   });
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
-    enqueueAppTask(controller, config, observation.taskId);
+    enqueueAppTask(controller, config, observation.taskId, {
+      lane: input.request.source.kind === "human" ? "human" : "normal",
+    });
   }
   return {
     taskId: observation.taskId,
@@ -2797,7 +2888,10 @@ export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; ta
   );
   if (!descriptor) return null;
   return readRuntimeTaskView(
-    { executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir } },
+    {
+      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
+      taskStateConfig: appTaskConfig(descriptor),
+    },
     input.taskId,
   );
 }
@@ -2808,7 +2902,10 @@ export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; op
   );
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return listRuntimeTaskViews(
-    { executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir } },
+    {
+      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
+      taskStateConfig: appTaskConfig(descriptor),
+    },
     input.options,
   );
 }
@@ -2819,7 +2916,10 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
   );
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return readRuntimeTaskView(
-    { executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir } },
+    {
+      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
+      taskStateConfig: appTaskConfig(descriptor),
+    },
     input.taskId,
   );
 }
@@ -2865,6 +2965,8 @@ function recoverInterruptedAppTasks(
     if (!descriptor.app.tasks) continue;
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
+    const runningRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["running"], 512);
+    const attentionRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       if (recovery.sessionId) {
         interruptSupersededOwnerSession(
@@ -2889,7 +2991,12 @@ function recoverInterruptedAppTasks(
       nowMs: number;
       sessionActivity: { sessionId: string; lastActivityAt: number | null };
     }> = [];
-    for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases)) {
+    for (const recovery of recoverableAppTaskAttempts(
+      config,
+      Date.now(),
+      includeFreshLeases,
+      runningRecoveryTaskIds,
+    )) {
       if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
       }
@@ -2962,13 +3069,13 @@ function recoverInterruptedAppTasks(
       if (claimed.has(candidate.sessionId)) claimedSessionIds.add(candidate.sessionId);
       else releaseRecovery(candidate.recovery);
     }
-    const missingAttemptRepairs = repairRunningAppTasksWithoutAttempt(config);
+    const missingAttemptRepairs = repairRunningAppTasksWithoutAttempt(config, runningRecoveryTaskIds);
     for (const repair of missingAttemptRepairs) {
       if (controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, repair.taskId);
       }
     }
-    const repairs = repairPreviousRuntimeRecoveryAttention(config);
+    const repairs = repairPreviousRuntimeRecoveryAttention(config, attentionRecoveryTaskIds);
     if (repairs.length > 0) {
       opts.bus.emit({
         type: "project.task.recovery.repaired",
@@ -2994,7 +3101,7 @@ function recoverInterruptedAppTasks(
         enqueueAppTask(controller, config, taskId, { front: true });
       }
     }
-    const attentions = pendingAppTaskRecoveryAttention(config);
+    const attentions = pendingAppTaskRecoveryAttention(config, attentionRecoveryTaskIds);
     if (attentions.length > 0 && !descriptor.reconciliationPaused) {
       opts.bus.emit(
         appOwnerReviewEvent({
@@ -3016,7 +3123,7 @@ function recoverInterruptedAppTasks(
       );
       for (const attention of attentions) acknowledgeAppTaskRecoveryAttention(config, attention.taskId);
     }
-    if (controller && !descriptor.reconciliationPaused) {
+    if (controller && !descriptor.reconciliationPaused && !config.resourceStore) {
       for (const entry of listRunnableAppTaskQueueEntries(config)) {
         controller.enqueue(entry.taskId, entry.options);
       }
@@ -3052,7 +3159,8 @@ async function requeueRepairedAppTaskHandlers(
     const controller = controllers.get(descriptor.id);
     if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
     const config = appTaskConfig(descriptor);
-    for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.owner)) {
+    const attentionTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
+    for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.owner, attentionTaskIds)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
       if (
@@ -3093,7 +3201,7 @@ async function requeueRepairedAppTaskHandlers(
         },
       } as unknown as AgentEvent);
     }
-    for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.owner)) {
+    for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.owner, attentionTaskIds)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const key = `${paths.workflowDir}\0${candidate.workflow}`;
       let available = availability.get(key);
@@ -3220,7 +3328,10 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
               } as unknown as AgentEvent);
             }
           }
-          for (const candidate of listHandlerExecutionFailedAppTasks(config)) {
+          for (const candidate of listHandlerExecutionFailedAppTasks(
+            config,
+            config.resourceStore?.listTaskIdsByPhase(["attention"], 512),
+          )) {
             if (candidate.owner !== successfulOwner.owner) continue;
             if (
               !taskRecoverySessionScopesMatch(descriptor.id, opts.persistDir, candidate.sessionId, {
@@ -3294,6 +3405,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
     const id = app.id;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
+    const resourceStore = opts.persistDir ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), id) : null;
     const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
@@ -3301,8 +3413,13 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
       owner: configuredAppOwner(app, appDir),
       app,
       reconciliationPaused: false,
+      ...(resourceStore ? { resourceStore } : {}),
     };
-    descriptor.reconciliationPaused = descriptor.app.tasks ? appLifecycle(descriptor.appDir) === "paused" : false;
+    descriptor.reconciliationPaused = descriptor.app.tasks
+      ? resourceStore
+        ? resourceStore.projectLifecycle() === "paused"
+        : appLifecycle(descriptor.appDir) === "paused"
+      : false;
     validatePreparedAppTaskRuntime(descriptor);
     descriptors.push(descriptor);
   }

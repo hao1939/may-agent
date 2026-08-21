@@ -45,4 +45,21 @@ describe("HostCapacity foreground lane", () => {
 
     expect(order).toEqual(["foreground", "background"]);
   });
+
+  it("supports cancelling a queued foreground acquisition", async () => {
+    const capacity = new HostCapacity(1);
+    const release = capacity.tryAcquireForeground();
+    let started = false;
+    const cancel = capacity.acquireForegroundCancellable(() => {
+      started = true;
+    });
+
+    expect(capacity.snapshot().waiting).toBe(1);
+    cancel();
+    release?.();
+    await Bun.sleep(1);
+
+    expect(started).toBeFalse();
+    expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+  });
 });

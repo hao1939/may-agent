@@ -249,6 +249,7 @@ function applyConditionEvent(
   event: Record<string, unknown>,
   wakes: Map<string, AppTaskConditionWake>,
   allowedTaskIds?: ReadonlySet<string>,
+  changedConditionIds?: Set<string>,
 ): boolean {
   const now = new Date().toISOString();
   let changed = false;
@@ -263,7 +264,10 @@ function applyConditionEvent(
         resource.status.conditionIds?.includes(id) &&
         (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
     );
-    if (allowedTaskIds && waitingResources.length === 0) continue;
+    // Conditions are task-local wait state, not a second event journal. Once
+    // no live waiting/running task owns one, replaying facts into it has no
+    // semantic value and would require an unsafe ownerless write.
+    if (waitingResources.length === 0) continue;
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;
       condition.status = {
@@ -273,6 +277,7 @@ function applyConditionEvent(
         observedAt: now,
         evidence: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
       };
+      changedConditionIds?.add(id);
       changed = true;
     }
     for (const resource of waitingResources) {
@@ -318,6 +323,50 @@ function applyConditionEvent(
   return changed;
 }
 
+function saveConditionMutation(
+  config: TaskStateConfig,
+  tree: TaskTree,
+  wakes: ReadonlyMap<string, AppTaskConditionWake>,
+  changedConditionIds: ReadonlySet<string>,
+): void {
+  const taskIds = new Set<string>(wakes.keys());
+  for (const resource of Object.values(tree.resources ?? {})) {
+    if (resource.status.conditionIds?.some((id) => changedConditionIds.has(id))) {
+      taskIds.add(resource.metadata.id);
+    }
+  }
+  const resources = [...taskIds].flatMap((taskId) => {
+    const resource = tree.resources?.[taskId];
+    return resource ? [resource] : [];
+  });
+  saveTaskState(config, tree, {
+    resourceMutation: {
+      fences: resources.map((resource) => ({
+        taskId: resource.metadata.id,
+        resourceVersion: resource.metadata.resourceVersion,
+        generation: resource.metadata.generation,
+        currentAttemptId: resource.status.currentAttemptId ?? null,
+      })),
+      tasks: resources.flatMap((resource) =>
+        wakes.has(resource.metadata.id)
+          ? [
+              {
+                resource,
+                ...(tree.taskTriggers?.[resource.metadata.id]
+                  ? { trigger: tree.taskTriggers[resource.metadata.id] }
+                  : {}),
+                ready: true,
+              },
+            ]
+          : [],
+      ),
+      conditions: [...changedConditionIds].flatMap((id) =>
+        tree.conditions?.[id] ? [tree.conditions[id]] : [],
+      ),
+    },
+  });
+}
+
 /**
  * Re-evaluate one already-persisted event against the current Condition level.
  *
@@ -338,12 +387,13 @@ export function trackAppTaskConditionEvents(
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const wakes = new Map<string, AppTaskConditionWake>();
+    const changedConditionIds = new Set<string>();
     let changed = false;
     for (const event of events) {
-      changed = applyConditionEvent(tree, event, wakes) || changed;
+      changed = applyConditionEvent(tree, event, wakes, undefined, changedConditionIds) || changed;
     }
 
-    if (changed) saveTaskState(config, tree);
+    if (changed) saveConditionMutation(config, tree, wakes, changedConditionIds);
     return [...wakes.values()];
   });
 }
@@ -364,8 +414,10 @@ export function matchingAppTaskConditionTaskIds(
 ): string[] {
   const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
   const eventType = typeof event.type === "string" ? event.type : "";
-  let routes = readAppTaskConditionRoutes(config, eventType);
-  if (routes === null) {
+  let routes = config.resourceStore
+    ? config.resourceStore.readConditionRoutes(eventType)
+    : readAppTaskConditionRoutes(config, eventType);
+  if (routes === null && !config.resourceStore) {
     const tree = readTaskState(config);
     routes = appTaskConditionRoutesByEventType(tree)[eventType] ?? [];
     // Repair missing projections lazily for task states created before this
@@ -373,7 +425,7 @@ export function matchingAppTaskConditionTaskIds(
     writeAppTaskConditionRouteIndex(config, tree);
   }
   const matched = new Set<string>();
-  for (const { condition, taskIds } of routes) {
+  for (const { condition, taskIds } of routes ?? []) {
     if (!isCondition(condition) || !matches(condition, event)) continue;
     for (const taskId of taskIds) {
       if (allowed && !allowed.has(taskId)) continue;
@@ -392,9 +444,12 @@ export function trackAppTaskConditionEventForTasks(
   const allowed = new Set(taskIds);
   if (allowed.size === 0) return [];
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
+    const tree = readTaskState(config, { taskIds: allowed });
     const wakes = new Map<string, AppTaskConditionWake>();
-    if (applyConditionEvent(tree, event, wakes, allowed)) saveTaskState(config, tree);
+    const changedConditionIds = new Set<string>();
+    if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {
+      saveConditionMutation(config, tree, wakes, changedConditionIds);
+    }
     return [...wakes.values()];
   });
 }

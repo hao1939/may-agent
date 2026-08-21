@@ -14,6 +14,8 @@ import {
   EVENT_INTERFACE_INPUT,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
+  EVENT_TASK_EMISSION_FENCE,
+  type EventTaskEmissionFence,
   type AgentEvent,
   type DeliveryResult,
 } from "../app/event-bus.js";
@@ -642,7 +644,18 @@ export class DbWriter {
           : {};
       // The canonical envelope target is routing authority. Persist it in the
       // indexed correlation columns without copying it into event.data.
-      const correlation = eventCorrelation({ ...persistedPayload, ...target });
+      const emissionFence = (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[
+        EVENT_TASK_EMISSION_FENCE
+      ];
+      const observedCorrelation = eventCorrelation({ ...persistedPayload, ...target });
+      const correlation = emissionFence
+        ? {
+            ...observedCorrelation,
+            projectId: emissionFence.appId,
+            taskId: emissionFence.taskId,
+            attemptId: emissionFence.attemptId,
+          }
+        : observedCorrelation;
       const idempotencyKey =
         typeof persistedPayload.idempotencyKey === "string" ? persistedPayload.idempotencyKey.trim() : "";
       const trustedIngressSource = ingressSource(event, source);
@@ -698,6 +711,44 @@ export class DbWriter {
           return existingId;
         }
       }
+      if (emissionFence) {
+        const ownership = this.db
+          .prepare(
+            `SELECT t.generation, t.current_attempt_id, a.task_generation, a.state, a.lease_until,
+                    m.value AS authority
+             FROM app_tasks t
+             JOIN app_task_attempts a
+               ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
+             JOIN app_task_store_meta m
+               ON m.app_id = t.app_id AND m.key = 'authority'
+             WHERE t.app_id = ? AND t.task_id = ? AND a.attempt_id = ?`,
+          )
+          .get(emissionFence.appId, emissionFence.taskId, emissionFence.attemptId) as
+          | {
+              generation?: number;
+              current_attempt_id?: string;
+              task_generation?: number;
+              state?: string;
+              lease_until?: number | null;
+              authority?: string;
+            }
+          | null;
+        const leaseUntil = Number(ownership?.lease_until);
+        if (
+          ownership?.authority !== "resources" ||
+          ownership?.generation !== emissionFence.taskGeneration ||
+          ownership?.task_generation !== emissionFence.taskGeneration ||
+          ownership?.current_attempt_id !== emissionFence.attemptId ||
+          ownership?.state !== "running" ||
+          !Number.isFinite(leaseUntil) ||
+          leaseUntil <= timestamp
+        ) {
+          throw new Error(
+            `Task emission fence rejected stale attempt ${emissionFence.attemptId} for ` +
+              `${emissionFence.appId}/${emissionFence.taskId}@${emissionFence.taskGeneration}`,
+          );
+        }
+      }
       const body = prepareEventBody(this.persistDir, persistedPayload);
       const info = this.db.run(
         `INSERT INTO events
@@ -749,6 +800,7 @@ export class DbWriter {
         throw new Error(`Persisted event ${rowId} cannot expose its durable receipt`, { cause: error });
       }
       persistEventTrace(this.db, event, rowId, timestamp);
+      if (emissionFence) this.persistExactTaskWake(event, target, rowId, timestamp);
       this.closePairForFollowup(payload, rowId, timestamp);
       this.closeConventionPairs(event.type, payload, rowId, timestamp);
       this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
@@ -763,6 +815,67 @@ export class DbWriter {
       }
       throw error;
     }
+  }
+
+  /** Persist an exact resource-backed target wake before EventBus fan-out. */
+  private persistExactTaskWake(
+    event: AgentEvent,
+    target: Record<string, unknown>,
+    eventId: number,
+    observedAt: number,
+  ): void {
+    const appId = String(target.appId ?? target.project ?? "").trim().replace(/\.app$/, "");
+    const taskId = String(target.taskId ?? "").trim();
+    if (!appId || !taskId) return;
+    const authority = this.db
+      .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
+      .get(appId) as { value?: string } | null;
+    if (authority?.value !== "resources") return;
+    const row = this.db
+      .prepare("SELECT generation, trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+      .get(appId, taskId) as { generation?: number; trigger_json?: string | null } | null;
+    if (!row || !Number.isInteger(row.generation)) {
+      throw new Error(`Task emission target does not exist: ${appId}/${taskId}`);
+    }
+    const canonical = {
+      ...(event as unknown as Record<string, unknown>),
+      eventId,
+    };
+    const previous = (() => {
+      try {
+        return row.trigger_json ? (JSON.parse(row.trigger_json) as Record<string, unknown>) : null;
+      } catch {
+        return null;
+      }
+    })();
+    const previousEvents = Array.isArray(previous?.events)
+      ? (previous.events as Array<Record<string, unknown>>)
+      : previous?.event
+        ? [{ event: previous.event, observedAt: previous.observedAt }]
+        : [];
+    const observedAtIso = new Date(observedAt).toISOString();
+    const events = [...previousEvents, { event: canonical, observedAt: observedAtIso }];
+    const trigger = {
+      taskId,
+      taskGeneration: row.generation,
+      resourceVersion: Number(previous?.resourceVersion ?? 0) + 1,
+      events,
+      event: canonical,
+      observedAt: observedAtIso,
+    };
+    this.db.prepare(
+      `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(appId, taskId, `event:${eventId}`, observedAt, JSON.stringify(canonical));
+    this.db.prepare(
+      `UPDATE app_tasks
+       SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?
+       WHERE app_id = ? AND task_id = ?`,
+    ).run(JSON.stringify(trigger), observedAt, appId, taskId);
+    this.db.prepare(
+      `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
+       ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
+    ).run(appId);
   }
 
   private closePairForFollowup(payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {

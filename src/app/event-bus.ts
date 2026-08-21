@@ -955,9 +955,20 @@ export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
+/** Exact synchronous durable-route acceptance observed for this emission. */
+export const EVENT_DELIVERY_RESULT = Symbol.for("may-agent.eventDeliveryResult");
 /** Marks events admitted through the semantic EventInput boundary. */
 export const EVENT_INTERFACE_INPUT = Symbol.for("may-agent.eventInterfaceInput");
 export const EVENT_RECORD_ONLY = Symbol.for("may-agent.eventRecordOnly");
+/** Trusted, non-serializable source-attempt fence consumed by DbWriter. */
+export const EVENT_TASK_EMISSION_FENCE = Symbol.for("may-agent.eventTaskEmissionFence");
+export type EventTaskEmissionFence = {
+  appId: string;
+  taskId: string;
+  taskGeneration: number;
+  attemptId: string;
+  localKey: string;
+};
 export const EVENT_SUBSCRIBER_WARN_MS = 25;
 
 const eventContext = new AsyncLocalStorage<AgentEvent>();
@@ -1050,7 +1061,10 @@ export class EventBus {
    *  it uses only the built-in idempotent recovery routes because an ordinary
    *  subscriber may already have performed its effect before the earlier process
    *  stopped. */
-  emit(input: AgentEvent): AgentEvent & { [EVENT_ROW_ID]?: number } {
+  emit(input: AgentEvent): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
     const tracedEvent = inheritedEventTrace(input, eventContext.getStore());
     // DbWriter attaches the durable row id to the routed envelope. Frozen
     // producer input must not silently lose delivery and child-trace metadata.
@@ -1114,7 +1128,13 @@ export class EventBus {
             note: "record-only event persisted; no responsible consumer required",
           };
         }
-        if (delivery) this.deliveryRecorder?.(event, delivery);
+        if (delivery) {
+          Object.defineProperty(event, EVENT_DELIVERY_RESULT, {
+            value: Object.freeze({ ...delivery }),
+            configurable: true,
+          });
+          this.deliveryRecorder?.(event, delivery);
+        }
       }
     } finally {
       this.emitDepth--;

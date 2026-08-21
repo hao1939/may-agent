@@ -738,9 +738,9 @@ describe("App task reconciler state", () => {
 
     const entries = listRunnableAppTaskQueueEntries(config);
     expect(entries.filter((entry) => entry.taskId.startsWith("work/aged-"))).toEqual([
-      { taskId: "work/aged-p3", options: { front: false, priority: "P1" } },
-      { taskId: "work/aged-p2", options: { front: false, priority: "P1" } },
-      { taskId: "work/aged-p1", options: { front: false, priority: "P1" } },
+      { taskId: "work/aged-p3", options: { front: false, priority: "P1", lane: "normal" } },
+      { taskId: "work/aged-p2", options: { front: false, priority: "P1", lane: "normal" } },
+      { taskId: "work/aged-p1", options: { front: false, priority: "P1", lane: "normal" } },
     ]);
     expect(entries.find((entry) => entry.taskId === "work/fresh-p1")?.options.priority).toBe("P1");
   });
@@ -758,7 +758,7 @@ describe("App task reconciler state", () => {
     saveTaskState(config, tree);
 
     expect(appTaskQueueEntries(config, ["work/aged-p2"])).toEqual([
-      { taskId: "work/aged-p2", options: { front: false, priority: "P1" } },
+      { taskId: "work/aged-p2", options: { front: false, priority: "P1", lane: "normal" } },
     ]);
   });
 
@@ -791,11 +791,11 @@ describe("App task reconciler state", () => {
     const entries = listRunnableAppTaskQueueEntries(config);
     expect(entries.find((entry) => entry.taskId === "work/fresh-trigger-p2")).toEqual({
       taskId: "work/fresh-trigger-p2",
-      options: { front: true, priority: "P2" },
+      options: { front: true, priority: "P2", lane: "normal" },
     });
     expect(entries.find((entry) => entry.taskId === "work/aged-trigger-p2")).toEqual({
       taskId: "work/aged-trigger-p2",
-      options: { front: true, priority: "P1" },
+      options: { front: true, priority: "P1", lane: "normal" },
     });
   });
 
@@ -823,8 +823,8 @@ describe("App task reconciler state", () => {
     expect(listRunnableAppTaskIds(config).slice(0, 2)).toEqual(["runtime/owner-review", "work/autonomous-p0"]);
     const entries = listRunnableAppTaskQueueEntries(config).slice(0, 2);
     expect(entries).toEqual([
-      { taskId: "runtime/owner-review", options: { front: true, priority: "P0" } },
-      { taskId: "work/autonomous-p0", options: { front: true, priority: "P0" } },
+      { taskId: "runtime/owner-review", options: { front: true, priority: "P0", lane: "human" } },
+      { taskId: "work/autonomous-p0", options: { front: true, priority: "P0", lane: "normal" } },
     ]);
     const queue = new AppTaskQueue(1);
     for (const entry of entries) queue.enqueue(entry.taskId, entry.options);
@@ -856,9 +856,33 @@ describe("App task reconciler state", () => {
 
     expect(readAppTaskTrigger(config, ownerReview.id)).toEqual(humanComment);
     expect(appTaskQueueEntries(config, [ownerReview.id])).toEqual([
-      { taskId: ownerReview.id, options: { front: true, priority: "P0" } },
+      { taskId: ownerReview.id, options: { front: true, priority: "P0", lane: "human" } },
     ]);
     expect(listRunnableAppTaskIds(config)[0]).toBe(ownerReview.id);
+  });
+
+  it("retains trusted human scheduling origin on the admitted task resource", () => {
+    const { config } = fixture();
+    const humanTask = { ...intent("achieve"), id: "conversation/request-42", priority: "P0" as const };
+    observeAppTaskIntent(config, {
+      intent: humanTask,
+      appOwner: "app-owner",
+      trigger: {
+        type: "app.task.requested",
+        source: "human",
+        data: {
+          request: { id: "request-42", source: { kind: "human", id: "message-42" } },
+        },
+      },
+    });
+
+    expect(readTaskState(config).resources?.[humanTask.id]?.status.lane).toBe("human");
+    expect(appTaskQueueEntries(config, [humanTask.id])).toEqual([
+      {
+        taskId: humanTask.id,
+        options: { front: true, priority: "P0", lane: "human" },
+      },
+    ]);
   });
 
   it("schedules untriggered P0 before triggered P2 (priority over trigger presence)", () => {
@@ -880,11 +904,11 @@ describe("App task reconciler state", () => {
     expect(listRunnableAppTaskQueueEntries(config).slice(0, 2)).toEqual([
       {
         taskId: "work/new-p0",
-        options: { front: false, priority: "P0" },
+        options: { front: false, priority: "P0", lane: "normal" },
       },
       {
         taskId: "work/live-result-p2",
-        options: { front: true, priority: "P2" },
+        options: { front: true, priority: "P2", lane: "normal" },
       },
     ]);
   });
@@ -1012,7 +1036,7 @@ describe("App task reconciler state", () => {
     expect(appTaskQueueEntries(config, [waitingIntent.id])).toEqual([
       {
         taskId: waitingIntent.id,
-        options: { front: true, priority: "P0" },
+        options: { front: true, priority: "P0", lane: "normal" },
       },
     ]);
     expect(readAppTaskIntent(config, waitingIntent.id)?.category).toBe("domain");

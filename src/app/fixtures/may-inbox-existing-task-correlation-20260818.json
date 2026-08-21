@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "kind": "immutable-runtime-capture",
+    "capturedAt": "2026-08-19T09:37:21Z",
+    "sourceSession": {
+      "id": "s_1787048407052_294",
+      "requestId": "app-inbox:app_7ae28c2c-3058-499c-a749-84a4ffa04100",
+      "agent": "may",
+      "source": "app-inbox-owner",
+      "status": "done",
+      "resultRef": "sessions/s_1787048407052_294/result.json",
+      "resultSha256": "7f05f1cb19f13f7ee5e6e103e14e107436ab7fca014855003097a35d174ee785"
+    },
+    "taskStateCapture": {
+      "ref": "may-agent.app/.state/migrations/app-boundary-v1-20260819T093721Z/state.json",
+      "sha256": "df7c20eb72128281fdc06e0c08fd4fe58a74c9a508ee66ecac1eec872104d00c"
+    }
+  },
+  "request": {
+    "id": "app_7ae28c2c-3058-499c-a749-84a4ffa04100",
+    "appId": "may-agent",
+    "parentId": "app_6e1aea80-892e-4e87-9f9f-14acde1bc40d",
+    "source": {
+      "kind": "app",
+      "id": "may-agent"
+    },
+    "input": {
+      "kind": "owner-review",
+      "data": {
+        "reason": "restore-runnable-owner-for-checkpoint-recovery-repair",
+        "blockedTask": "runtime/restore-runnable-owner-for-checkpoint-recovery-repair"
+      }
+    }
+  },
+  "dependencyObservation": {
+    "kind": "task",
+    "id": "runtime/restore-runnable-owner-for-checkpoint-recovery-repair",
+    "status": "attention",
+    "summary": "Resolved owner tech-lead is not a runnable agent"
+  },
+  "ownerResult": {
+    "requestId": "app_7ae28c2c-3058-499c-a749-84a4ffa04100",
+    "disposition": {
+      "type": "task",
+      "task": {
+        "kind": "existing",
+        "taskId": "runtime/restore-runnable-owner-for-checkpoint-recovery-repair"
+      }
+    }
+  },
+  "taskResource": {
+    "id": "runtime/restore-runnable-owner-for-checkpoint-recovery-repair",
+    "generation": 3,
+    "resourceVersion": 10,
+    "phase": "attention",
+    "completionReceipts": []
+  },
+  "existingTaskAdmission": {
+    "idempotencyKey": "task:app_7ae28c2c-3058-499c-a749-84a4ffa04100:existing:runtime/restore-runnable-owner-for-checkpoint-recovery-repair",
+    "taskId": "runtime/restore-runnable-owner-for-checkpoint-recovery-repair",
+    "taskGeneration": 2,
+    "specHash": "5b4ac2cd96eedb06edc1c8985bb48839f04b0a71dabd23722a64e71bb5e480b5",
+    "admittedAt": "2026-08-18T10:09:48.184Z"
+  }
+}
