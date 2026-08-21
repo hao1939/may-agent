@@ -273,10 +273,20 @@ For task-owned work:
 
 ## Facts and side effects
 
-`ctx.events.emit` publishes observed or produced facts. The workflow cannot
+`ctx.events.emit` publishes observed or produced facts. In a resource-backed
+task attempt, every event requires a stable `localKey`. The Host verifies the
+attempt fence, deduplicates that key within the task generation, persists the
+event and exact target wake, and only then exposes it to subscribers. This
+commit is independent of the workflow's later final result. The workflow cannot
 assume publication means another owner accepted work. Any actionable consumer
 must be declared by the destination App as an input subscription, exact task
 target, or matching Condition.
+
+The compatibility `ctx.emit` and `ctx.dispatchEvent` forms are rejected for a
+resource-backed task because they cannot carry the fenced local key. Use
+`ctx.events.emit`. To request a result from another App, return a typed
+dependency instead of emitting `app.input.requested`; the App request row is
+the single durable correlation authority.
 
 Where a domain mutation and its resulting fact must be atomic, use an explicit
 domain adapter/outbox capability owned by the Host. Do not emulate

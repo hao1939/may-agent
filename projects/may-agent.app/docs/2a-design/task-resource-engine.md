@@ -2,9 +2,10 @@
 
 **Design status:** Accepted.
 **Implementation status:** Core reconciliation, generation fencing, Conditions,
-parent/child work, recovery, bounded concurrency, and App-scoped Task list/get
-reads are implemented. Some pressure/drain guarantees and richer diagnostic
-detail remain partial.
+parent/child work, bounded concurrency, resource-backed Task list/get, fenced
+mid-attempt event emission, and indexed recovery are implemented. Apps retain
+their existing authority until an explicit guarded cutover; bounded
+task-context reads and per-App rollout remain in progress.
 
 The task engine is the single Host execution path for App-owned work. Read
 [agent-app.md](agent-app.md) first.
@@ -38,10 +39,10 @@ App input declares, revises, attaches to, or wakes TaskIntent
   -> task converges, waits on exact evidence, or becomes visible attention
 ```
 
-Observers publish facts. The Condition tracker may update exact Condition
-state and wake its task. A periodic resync only redelivers known runnable task
-IDs; it never invents desired state, polls external systems, or reads the task
-tree as a queue.
+Observers publish facts. The Condition tracker updates only exact Conditions
+still owned by waiting/running tasks and wakes those task IDs. Events are the
+normal trigger. Indexed startup, due, expired-lease, and safety queries repair
+a lost in-memory wake without scanning an App tree.
 
 The queue is an in-memory hint. The persisted task, trigger, Condition, and
 attempt state are sufficient to recover it.
@@ -150,19 +151,28 @@ generation-fenced and atomically admitted with the result.
 Each step uses the same contract fixtures. Do not first implement separate SDK,
 tool, socket, and HTTP models and try to reconcile them later.
 
-## Authority
+## Authority and migration
 
-| Surface                   | Role                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------ |
-| `.state/tasks/state.json` | Sole mutable authority for tasks, Conditions, attempts, triggers, and receipts |
-| `.state/tasks/tree.json`  | Disposable human/UI projection                                                 |
-| `tasks/seed.json`         | Initial desired state for a new App                                            |
-| `project.json`            | Authored project configuration, never rewritten by task operations             |
+| Surface                           | Role                                                                        |
+| --------------------------------- | --------------------------------------------------------------------------- |
+| EventHub SQLite resource rows     | Authority after that App completes guarded cutover                          |
+| `.state/tasks/state.json`         | Legacy authority before cutover; never recreated by resource-backed runtime |
+| `.state/tasks/tree.json`          | Disposable legacy human/UI projection                                       |
+| `tasks/seed.json`                 | Initial desired state for a new App                                         |
+| `project.json`                    | Authored project configuration, never rewritten by task operations          |
 
+One App has exactly one authority. Cutover requires pause, drained attempts,
+import, full shadow comparison, source-revision verification, activation, and
+explicit resume. Runtime discovery never imports or activates implicitly.
 `tree.json` may be regenerated and must never restore canonical state. Task
 state retains the bounded detail needed for reconciliation and recovery;
 long-term domain evidence belongs in projects, reports, knowledge, session
 evidence, or other owned artifacts.
+
+A foreground task read loads only the named task, its parent chain, direct
+children and dependencies, linked Conditions and receipts, and a bounded
+recent-attempt window. It does not deserialize unrelated resources, groups, or
+attempt history.
 
 ## Task identity and state
 
@@ -185,7 +195,7 @@ uses one admission path for all task IDs.
 
 ## Controller
 
-Each App has one logical controller and one deduplicating key queue. The
+Each App has one logical controller and one deduplicating in-memory ready set. The
 controller may:
 
 - deduplicate and prioritize task keys;
@@ -200,9 +210,10 @@ It must not interpret task prose, choose project strategy, infer external truth
 from time, contain App-specific policy, or use `tree.json` as a scheduler.
 
 Global and per-App capacity limits allow unrelated keys to run concurrently
-while serializing each key. Durable excess work stays pending. A bounded urgent
-FIFO lane favors exact wakes and continuations without starving older ordinary
-work; elapsed time never promotes work into explicitly critical `P0`.
+while serializing each key. Durable excess work stays pending. Trusted human
+and normal lanes form the scheduling boundary, and human work has reserved Host
+capacity. App priority may order peers inside a lane but cannot override
+trusted human origin.
 
 ## Selecting the attempt handler
 
@@ -254,9 +265,15 @@ Creating follow-up work does not complete the current task. Required
 decomposition creates direct children and returns `waiting`; independent later
 work may be a successor only after the current outcome is actually accepted.
 
-Task changes and the result apply in one transaction. Races against a newer
+Task changes and the final result apply in one transaction. Events emitted
+while an attempt runs are separate durable commit points: a resource-backed
+workflow supplies a stable local key, and the Host verifies the attempt fence,
+deduplicates, persists exact wakes, then publishes. Races against a newer
 generation or already-advanced target are treated as stale and retried from
 current state, not converted into partial mutation or misleading attention.
+Cross-App result work is returned as a typed dependency. Its durable App
+request row is the correlation record; generic event emission cannot create a
+second request lifecycle.
 
 ## Acceptance
 
@@ -417,7 +434,8 @@ replacement lifecycle or change desired state.
 
 Tests and audits must prove:
 
-1. `state.json` is the only mutable task authority.
+1. Each App has exactly one mutable task authority; activated resource-backed
+   Apps do not read or recreate `state.json`.
 2. Queue entries contain IDs and stale readers claim current canonical state.
 3. At most one current attempt exists per `(appId, taskId)`.
 4. Condition update and trigger persistence are atomic.
@@ -425,8 +443,11 @@ Tests and audits must prove:
 6. Completion has an explicit acceptance basis.
 7. Parent waits and child creation commit together; meaningful child changes
    durably wake the same parent.
-8. Pause/restart/pressure retain work without inventing another attempt.
+8. Pause/restart/pressure retain work without inventing another attempt; an
+   indexed safety query can rebuild a lost ready-set entry.
 9. Direct owner and workflow-nested sessions remain correlated to the current
    task generation and obsolete sessions cannot complete it.
-10. Every App-owned execution uses this engine; only direct non-App execution
+10. A task-owned emitted event is visible only after durable acceptance, and a
+    retry with the same local key cannot duplicate it.
+11. Every App-owned execution uses this engine; only direct non-App execution
     such as CLI experiments and Gym may run without an App task.

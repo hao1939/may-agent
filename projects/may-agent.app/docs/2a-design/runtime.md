@@ -162,6 +162,13 @@ At startup the Host:
 - resumes only compatible bounded sessions; and
 - leaves paused task work retained but unqueued.
 
+For a resource-backed App, recovery is indexed insurance: one bounded startup
+query, one nearest-due timer, indexed expired-lease repair, and a bounded safety
+query. The safety query advances an indexed cursor across bounded pages so a
+large lost ready set cannot starve rows beyond the first page. Events remain
+the ordinary trigger. The Runtime does not continuously deserialize every App
+task or refill the ready set by scanning the whole tree.
+
 Recovery preserves request and task identities. Requests correlate callers;
 tasks own App work. Logs and traces are evidence, not reconstruction authority.
 

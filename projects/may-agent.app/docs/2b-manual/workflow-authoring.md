@@ -137,6 +137,12 @@ Return task changes through the compatibility `actions` field and Conditions in 
 files, write projections, acquire task locks, or emit assignment/completion
 events.
 
+For a resource-backed task, publish facts only with
+`ctx.events.emit({ type, localKey, data })`. The older `ctx.emit` and
+`ctx.dispatchEvent` forms are rejected because they bypass the attempt fence.
+Return cross-App result work as a typed dependency; do not emit
+`app.input.requested` directly.
+
 Use `needs-owner` only when the same App owner must provide exceptional
 judgment. Do not clear an explicit workflow merely to let an owner perform
 workflow-owned effects.
@@ -198,10 +204,16 @@ Publish only semantic facts whose route or observation status is declared:
 ```ts
 await ctx.events.emit({
   type: "sample.change.verified",
+  localKey: `change-verified:${ctx.input.changeId}`,
   data: { changeId: ctx.input.changeId },
   target: { appId: "sample" },
 });
 ```
+
+For task-owned workflows, `localKey` is required and must describe the stable
+logical emission, not the current retry. Durable acceptance makes the event
+visible immediately; a later workflow failure does not roll it back, and a
+retry with the same key does not publish it twice.
 
 Publishing a fact does not address an owner or guarantee a reply. An App
 input subscription, exact task target, or Condition must own any

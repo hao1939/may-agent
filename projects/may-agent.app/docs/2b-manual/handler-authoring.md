@@ -33,7 +33,7 @@ export default defineApp({
 });
 ```
 
-Targeted task events, Condition observations, and periodic resync already enter
+Targeted task events, Condition observations, and indexed recovery already enter
 the same controller. Do not add a second route or scheduler for them.
 
 ## Workflow convention
@@ -77,9 +77,10 @@ checkpoint:
 }
 ```
 
-The minimum is 60 seconds. When the checkpoint is missed, existing passive
-resync wakes this same task and owner. Returning the same Condition resets the
-checkpoint. Do not add a cron job, duplicate task, or routine Telegram update.
+The minimum is 60 seconds. The Host stores the nearest checkpoint in the due
+index and arms one timer; a bounded safety query recovers a missed wake.
+Returning the same Condition resets the checkpoint. Do not add a cron job,
+duplicate task, or routine Telegram update.
 Change execution or prove a real blocker after an evidence-free recheck; May
 handles any human-facing follow-through separately.
 
