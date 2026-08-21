@@ -455,6 +455,24 @@ describe("canonical evaluator aftermath", () => {
     ).toBe(true);
   });
 
+  test("reuses the exact task-owned identities when one aftermath attempt is delivered again", async () => {
+    const outcome = {
+      kind: "evaluation" as const,
+      evaluation,
+      findings: [finding],
+    };
+    const firstEvents: AppEvent[] = [];
+    const retryEvents: AppEvent[] = [];
+
+    await execute(context({ sessionId: "s_source" }, outcome, firstEvents));
+    await execute(context({ sessionId: "s_source" }, outcome, retryEvents));
+
+    const identities = (events: AppEvent[]) =>
+      events.map((event) => `${event.type}:${event.localKey}`);
+    expect(identities(retryEvents)).toEqual(identities(firstEvents));
+    expect(new Set(identities(firstEvents)).size).toBe(firstEvents.length);
+  });
+
   test("blocks inputs outside canonical reconciliation", async () => {
     const noReconciliation = await execute(
       createTestAppWorkflowContext({
