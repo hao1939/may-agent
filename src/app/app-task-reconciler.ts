@@ -174,7 +174,9 @@ function leaseIsFresh(attempt: AppTaskAttempt, nowMs: number, sessionActivity?: 
   const expiry = Date.parse(lease.expiresAt);
   if (Number.isFinite(expiry) && expiry > nowMs) return true;
   if (
-    sessionActivity?.sessionId !== attempt.sessionId ||
+    !attempt.sessionId ||
+    !sessionActivity ||
+    sessionActivity.sessionId !== attempt.sessionId ||
     typeof sessionActivity.lastActivityAt !== "number" ||
     !Number.isFinite(sessionActivity.lastActivityAt)
   ) {
@@ -2691,6 +2693,10 @@ export function claimObservedAppTask(
       ...(trigger ? { trigger } : {}),
       startedAt: now,
     };
+    // The canonical attempt, not its optional first Agent session, owns the
+    // execution fence. Persist a finite lease with the claim so a task-owned
+    // workflow can publish facts before it starts any child session.
+    refreshAttemptLease(attempt);
     tree.attempts = { ...(tree.attempts ?? {}), [attemptId]: attempt };
     changedAttempts.add(attempt);
     if (tree.taskTriggers) {
@@ -2858,7 +2864,7 @@ export function recordAppTaskAttemptWorkspace(
   });
 }
 
-function refreshAttemptLease(attempt: AppTaskAttempt, sessionId: string, nowMs = Date.now()): void {
+function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs = Date.now()): void {
   const times = boundedLeaseTimes(nowMs);
   const existing = attempt.lease;
   attempt.lease = {
@@ -2866,11 +2872,11 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId: string, nowMs =
     version: (existing?.version ?? 0) + 1,
     ...times,
     runtimeId: attempt.runtimeId,
-    sessionId,
+    ...(sessionId ? { sessionId } : {}),
   };
 }
 
-/** Attach the launched owner-session id and initial lease to the current attempt. */
+/** Attach the launched owner-session id and refresh the current attempt lease. */
 export function recordAppTaskAttemptSession(config: TaskStateConfig, claim: AppTaskClaim, sessionId: string): boolean {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config, { taskIds: [claim.taskId] });

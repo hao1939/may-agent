@@ -196,6 +196,30 @@ afterEach(() => {
 });
 
 describe("App task reconciler state", () => {
+  it("fences a fresh canonical attempt before its first Agent session", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const attempt = readTaskState(config).attempts?.[claim.attemptId];
+    expect(attempt).toMatchObject({
+      state: "running",
+      runtimeId: expect.any(String),
+      lease: {
+        id: expect.any(String),
+        version: 1,
+        runtimeId: expect.any(String),
+      },
+    });
+    expect(attempt?.sessionId).toBeUndefined();
+    expect(attempt?.lease?.sessionId).toBeUndefined();
+    expect(Date.parse(attempt?.lease?.expiresAt ?? "")).toBeGreaterThan(Date.now());
+  });
+
   it("keeps an achieve task live when its handler revises the same task generation", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
