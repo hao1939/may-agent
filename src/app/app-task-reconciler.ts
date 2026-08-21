@@ -1561,9 +1561,7 @@ export function observeAppTaskIntent(
             ...resourceMutation,
             ...(admissionKey && tree.appTaskAdmissions?.[admissionKey]
               ? {
-                  admissions: [
-                    { taskId: admissionKey, value: tree.appTaskAdmissions[admissionKey] },
-                  ],
+                  admissions: [{ taskId: admissionKey, value: tree.appTaskAdmissions[admissionKey] }],
                 }
               : {}),
           },
@@ -1893,8 +1891,7 @@ export function readAppTaskLiveSnapshot(config: TaskStateConfig, currentTaskId: 
       live: candidates
         .slice(0, MAX_APP_TASK_LIVE_SNAPSHOT)
         .map((resource) => liveTaskContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness)),
-      truncated:
-        (indexedIds ? indexedIds.length : candidates.length) > MAX_APP_TASK_LIVE_SNAPSHOT,
+      truncated: (indexedIds ? indexedIds.length : candidates.length) > MAX_APP_TASK_LIVE_SNAPSHOT,
     };
   });
 }
@@ -2029,6 +2026,13 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "attention") return needsOwnerHandoff(tree, resource);
   if (resource.status.phase === "running") return true;
   return false;
+}
+
+function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string): void {
+  // The indexed wake has been consumed and the Task is durably blocked. Its
+  // dependency, child, or Condition transition will record the next exact
+  // wake; leaving this row changed would make safety recovery retry a no-op.
+  config.resourceStore?.setRecoveryState(taskId, { ready: false, changed: false });
 }
 
 function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {
@@ -2605,6 +2609,7 @@ export function claimObservedAppTask(
       );
     });
     if (dependencyIds.length > 0) {
+      acknowledgeIndexedRecoveryWait(config, task.id);
       return { kind: "waiting", taskId: task.id, conditionIds: [], dependencyIds };
     }
 
@@ -2630,6 +2635,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
+      acknowledgeIndexedRecoveryWait(config, task.id);
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds, childIds };
     }
     if (
@@ -2639,6 +2645,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
+      acknowledgeIndexedRecoveryWait(config, task.id);
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
     }
 
@@ -3264,7 +3271,7 @@ function applyTaskActions(
   const applied: string[] = [];
   const supersededSessionIds = new Set<string>();
 
-    for (const action of actions) {
+  for (const action of actions) {
     if (action.kind !== "create-task" && action.taskId === claim.taskId && action.kind !== "update-task") {
       throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
     }
@@ -3531,7 +3538,11 @@ function beginResourceMutationScopeForTasks(tree: TaskTree, taskIds: Iterable<st
   return scope;
 }
 
-function beginResourceMutationScope(tree: TaskTree, claim: AppTaskClaim, actions: AppTaskAction[]): ResourceMutationScope {
+function beginResourceMutationScope(
+  tree: TaskTree,
+  claim: AppTaskClaim,
+  actions: AppTaskAction[],
+): ResourceMutationScope {
   const scope = emptyResourceMutationScope();
   const track = (taskId: string | undefined) => trackResourceMutationTask(scope, tree, taskId);
   track(claim.taskId);
@@ -3554,10 +3565,7 @@ function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
   scope.taskIds.add(taskId);
   const resource = tree.resources?.[taskId];
   if (!resource) return;
-  if (
-    !scope.createdTaskIds.has(taskId) &&
-    !scope.fences.some((candidate) => candidate.taskId === taskId)
-  ) {
+  if (!scope.createdTaskIds.has(taskId) && !scope.fences.some((candidate) => candidate.taskId === taskId)) {
     scope.originalTaskIds.add(taskId);
     scope.fences.push({
       taskId,
@@ -3711,6 +3719,9 @@ export function completeAppTask(
           .map((candidate) => candidate.metadata.id),
       ]),
     ];
+    for (const dependentTaskId of dependentTaskIds) {
+      trackResourceMutationTask(mutationScope, tree, dependentTaskId);
+    }
     if (claim.mode === "maintain" || pendingSelfTrigger) {
       touchResource(resource, {
         phase: pendingSelfTrigger

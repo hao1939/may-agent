@@ -142,9 +142,7 @@ describe("AppTaskResourceStore", () => {
     );
 
     const store = AppTaskResourceStore.fromDb(db, "example");
-    expect(store.readConditionRoutes("legacy.completed")).toEqual([
-      expect.objectContaining({ taskIds: ["legacy"] }),
-    ]);
+    expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
     db.close();
   });
 
@@ -443,6 +441,64 @@ describe("AppTaskResourceStore", () => {
     expect(store.readTask("new-task")?.spec.outcome).toBe("handle new task");
     expect(store.readSnapshot().appTaskAdmissions?.["new-task-admission"]?.taskId).toBe("new-task");
     expect(existsSync(paths.taskStatePath)).toBeFalse();
+    store.close();
+  });
+
+  it("retires a durable dependency wait and atomically indexes its completion wake", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-resource-dependency-"));
+    roots.push(root);
+    const appDir = join(root, "resource-dependency.app");
+    mkdirSync(appDir, { recursive: true });
+    const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
+    const tree = fixture();
+    const dependency = resource("dependency");
+    const dependent = resource("dependent");
+    dependent.spec.dependsOn = [dependency.metadata.id];
+    tree.resources = { dependency, dependent };
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    store.importPausedSnapshot(tree, "revision-1");
+    store.activate("revision-1");
+    const paths = projectRuntimePaths(appDir, root);
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: root,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "may",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    cacheTaskStateReads(config);
+
+    expect(
+      claimObservedAppTask(config, {
+        taskId: dependent.metadata.id,
+        appOwner: "may",
+        handler: "owner",
+        isOwnerRunnable: () => true,
+      }),
+    ).toMatchObject({
+      kind: "waiting",
+      dependencyIds: [dependency.metadata.id],
+    });
+    expect(store.listRecoveryCandidates().items.map((entry) => entry.taskId)).not.toContain(dependent.metadata.id);
+
+    const claim = claimObservedAppTask(config, {
+      taskId: dependency.metadata.id,
+      appOwner: "may",
+      handler: "owner",
+      isOwnerRunnable: () => true,
+    });
+    expect(claim.kind).toBe("claimed");
+    if (claim.kind !== "claimed") throw new Error("expected dependency claim");
+    expect(completeAppTask(config, claim, { summary: "dependency complete", evidence: ["test"] })).toMatchObject({
+      status: "applied",
+      dependentTaskIds: [dependent.metadata.id],
+    });
+    expect(store.listRecoveryCandidates().items).toContainEqual(
+      expect.objectContaining({ taskId: dependent.metadata.id, ready: true }),
+    );
     store.close();
   });
 
