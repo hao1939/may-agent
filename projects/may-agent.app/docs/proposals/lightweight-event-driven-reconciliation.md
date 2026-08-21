@@ -384,6 +384,13 @@ The Host now has the migration bridge rather than a second permanent runtime:
 - runtime discovery uses resource rows only after paused import, drained
   attempts, shadow comparison, revision-fenced activation, and explicit resume.
 
+The guarded operator command now makes that boundary concrete: `inspect` shows
+the current authority and exact source revision, `pause` stops new claims, and
+offline `activate` requires drained attempts, the final reviewed SHA-256, and
+an explicit assertion that the daemon is stopped. It refuses to overwrite an
+already-active resource authority. The operator procedure is documented in
+[Agent App operations and recovery](../2b-manual/app-operations-recovery.md).
+
 Foreground reads now load the named task, parent chain, direct children,
 dependencies, linked Conditions and receipts, and a bounded recent-attempt
 window. Resource-backed Task list/get and Condition replay no longer depend on
@@ -427,8 +434,8 @@ result wake meet the non-model latency budget under saturated normal work.
 - Add indexes for ready, changed, due, and expired tasks.
 - Migrate a paused App snapshot, shadow-compare reads, then cut over that App
   once. Do not run permanent dual authorities.
-- Start with May and one large App, then migrate remaining Apps using the same
-  proof.
+- Start with the smallest low-risk App, then one large App; migrate May only
+  after the human Conversation path has passed the same proof.
 
 **Exit:** one task transition touches only its own bounded rows, and restart
 does not require parsing an App task tree.

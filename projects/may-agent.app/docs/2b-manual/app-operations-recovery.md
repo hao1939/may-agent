@@ -10,7 +10,8 @@ Restart the daemon normally. Startup:
 1. loads and validates every `app.ts` into one immutable registry snapshot;
 2. prepares input routes and the task controller from that same snapshot;
 3. republishes the generation only after every consumer accepts it;
-4. repairs request correlation and rescans unfinished tasks;
+4. repairs request correlation and runs bounded indexed recovery for ready,
+   changed, due, or expired tasks;
 5. recovers task attempts from their persisted task/session fences;
 6. enables outward delivery after transports are attached.
 
@@ -60,6 +61,45 @@ For a state-shape migration:
 6. resume the App.
 
 The revision guard must fail closed if state changes between review and apply.
+
+### Whole-App JSON to resource rows
+
+Use the guarded cutover command only after the running daemon contains the
+resource-backed runtime bridge. Replace the example paths with the canonical
+App directory and the daemon's actual persistence directory:
+
+```bash
+bun scripts/cutover-task-resources.ts inspect \
+  --app-dir /app/projects/gym.app --persist-dir /app/.state
+
+bun scripts/cutover-task-resources.ts pause \
+  --app-dir /app/projects/gym.app --persist-dir /app/.state \
+  --reason "resource-row cutover"
+```
+
+Keep inspecting until `runningAttemptIds` is empty. Then stop the daemon, prove
+that it is stopped through the deployment supervisor, and inspect once more.
+Use the `sourceRevision` from that final offline inspection—not the revision
+printed before attempts drained:
+
+```bash
+bun scripts/cutover-task-resources.ts activate \
+  --app-dir /app/projects/gym.app --persist-dir /app/.state \
+  --expected-revision SHA256_FROM_FINAL_INSPECT \
+  --confirm-daemon-stopped --resume
+```
+
+Start the same reviewed Runtime release. It discovers `authority=resources`
+and must not recreate or mutate `state.json`. Verify resource-backed task
+list/get, one normal reconciliation, restart recovery, and the indexed safety
+query before selecting the next App.
+
+The command fails closed when the source is not paused, an attempt still runs,
+the source revision changed, shadow comparison differs, or resource authority
+is already active. Before activation, recovery is simply to leave or resume
+the one paused JSON authority. After activation, roll forward: the old JSON
+remains paused evidence and must never be resumed as a second authority.
+Neither path deletes historical state.
 
 ## Delivery uncertainty
 
