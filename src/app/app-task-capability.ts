@@ -2,13 +2,13 @@ import type { AppDependencyObservation, TaskIntent } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
-import { createRuntimeTaskReader } from "./app-read.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   attachLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
   previewLoadedCanonicalAppTaskEvent,
+  readLoadedAppTaskView,
   startAppTaskRuntimeWatcher,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
@@ -48,28 +48,8 @@ export function createAppTaskCapability(options: {
   bus: EventBus;
   runtime?: AppTaskRuntimeOptions;
 }): AppTaskCapability {
-  const dependencyReaders = new Map<string, ReturnType<typeof createRuntimeTaskReader>>();
-  let dependencyReaderResetScheduled = false;
-
-  const dependencyReader = (appDir: string): ReturnType<typeof createRuntimeTaskReader> => {
-    let reader = dependencyReaders.get(appDir);
-    if (!reader) {
-      reader = createRuntimeTaskReader({ appDir, projectDir: appDir });
-      dependencyReaders.set(appDir, reader);
-    }
-    if (!dependencyReaderResetScheduled) {
-      dependencyReaderResetScheduled = true;
-      setTimeout(() => {
-        dependencyReaders.clear();
-        dependencyReaderResetScheduled = false;
-      }, 0).unref?.();
-    }
-    return reader;
-  };
-
   return {
     close: async () => {
-      dependencyReaders.clear();
       await closeInstalledAppTaskRuntimes(options.bus);
     },
     attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
@@ -92,7 +72,7 @@ export function createAppTaskCapability(options: {
       return startAppTaskRuntimeWatcher(options.runtime, { reload });
     },
     async readDependency({ appDir, dependency }) {
-      const task = dependencyReader(appDir)(dependency.id);
+      const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
       return task
         ? {
             kind: "task",
