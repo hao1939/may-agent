@@ -1,9 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { Type, defineApp, type AppDefinition, type AppTaskAttachment } from "@may-agent/sdk";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import {
+  Type,
+  defineApp,
+  type AppConversationResource,
+  type AppDefinition,
+  type AppTaskAttachment,
+} from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { readAppConversationResource } from "./app-inbox-store.js";
-import { AppInboxHost } from "./app-inbox-host.js";
+import { APP_REQUEST_CONVERSATION_MAX_BYTES, AppInboxHost, boundedAppRequestConversation } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
   kind: Type.Literal("probe"),
@@ -153,23 +161,80 @@ describe("App inbox host", () => {
     ]);
   });
 
-  it("returns an unrunnable-owner attention result without reattaching the existing Task", async () => {
-    const sourceSessionId = "s_1787048407052_294";
-    const requestId = "app_7ae28c2c-3058-499c-a749-84a4ffa04100";
-    const taskId = "runtime/restore-runnable-owner-for-checkpoint-recovery-repair";
-    const immutableTaskResource = {
+  it("reads the captured May attention result without reattaching or mutating its existing Task", async () => {
+    const fixtureUrl = new URL("./fixtures/may-inbox-existing-task-correlation-20260818.json", import.meta.url);
+    const fixtureBytes = readFileSync(fixtureUrl);
+    expect(createHash("sha256").update(fixtureBytes).digest("hex")).toBe(
+      "478b54c083fa4fa53dc61b83ef57565c59a31a85827d1a722527ebcb0118e508",
+    );
+    const capture = JSON.parse(fixtureBytes.toString("utf8")) as {
+      provenance: {
+        kind: string;
+        sourceSession: { id: string; requestId: string; resultSha256: string };
+        taskStateCapture: { sha256: string };
+      };
+      request: {
+        id: string;
+        appId: string;
+        parentId: string;
+        source: { kind: "app"; id: string };
+      };
+      dependencyObservation: {
+        kind: "task";
+        id: string;
+        status: "attention";
+        summary: string;
+      };
+      ownerResult: {
+        requestId: string;
+        disposition: { type: "task"; task: { kind: "existing"; taskId: string } };
+      };
+      taskResource: {
+        id: string;
+        generation: number;
+        resourceVersion: number;
+        phase: string;
+        completionReceipts: unknown[];
+      };
+      existingTaskAdmission: {
+        idempotencyKey: string;
+        taskId: string;
+        taskGeneration: number;
+        specHash: string;
+      };
+    };
+    expect(capture.provenance).toMatchObject({
+      kind: "immutable-runtime-capture",
+      sourceSession: {
+        id: "s_1787048407052_294",
+        requestId: "app-inbox:app_7ae28c2c-3058-499c-a749-84a4ffa04100",
+        resultSha256: "7f05f1cb19f13f7ee5e6e103e14e107436ab7fca014855003097a35d174ee785",
+      },
+      taskStateCapture: { sha256: "df7c20eb72128281fdc06e0c08fd4fe58a74c9a508ee66ecac1eec872104d00c" },
+    });
+
+    const requestId = capture.request.id;
+    const taskId = capture.ownerResult.disposition.task.taskId;
+    expect(capture.request.appId).toBe("may-agent");
+    expect(capture.ownerResult.requestId).toBe(requestId);
+    expect(capture.dependencyObservation.id).toBe(taskId);
+    expect(capture.existingTaskAdmission).toMatchObject({
+      idempotencyKey: `task:${requestId}:existing:${taskId}`,
       taskId,
-      generation: 3,
-      resourceVersion: 10,
-      phase: "attention",
-      completionReceipts: ["checkpoint-recovery-proof:immutable"],
-    } as const;
+      taskGeneration: 2,
+    });
+
     const attachments: Array<{ appId: string; taskId: string; idempotencyKey: string }> = [];
     const completed: Array<{ requestId: string; summary?: string }> = [];
-    let dependencyStatus: "running" | "attention" = "running";
+    let dependencyReady = false;
+    const readCapturedTaskResource = () => {
+      const readback = JSON.parse(readFileSync(fixtureUrl, "utf8")) as typeof capture;
+      return structuredClone(readback.taskResource);
+    };
+    const taskResourceBeforeReview = readCapturedTaskResource();
     const mayApp = defineApp({
-      ...app("may"),
-      task: () => ({ kind: "existing", taskId }),
+      ...app("may-agent"),
+      task: () => capture.ownerResult.disposition.task,
     });
     const host = new AppInboxHost({
       db,
@@ -179,56 +244,63 @@ describe("App inbox host", () => {
         attachments.push({ appId, taskId: attachedTaskId, idempotencyKey });
         return { taskId: attachedTaskId };
       },
-      readDependency: async ({ dependency }) => ({
-        kind: "task",
-        id: dependency.id,
-        status: dependencyStatus,
-        ...(dependencyStatus === "attention"
-          ? {
-              summary: "Resolved owner tech-lead is not a runnable agent",
-              evidence: [
-                `source-session:${sourceSessionId}`,
-                `canonical-task:${immutableTaskResource.taskId}@${immutableTaskResource.generation}/${immutableTaskResource.resourceVersion}`,
-              ],
-            }
-          : {}),
-      }),
+      readDependency: async ({ dependency }) => {
+        if (!dependencyReady) return { kind: dependency.kind, id: dependency.id, status: "running" };
+        const authoritativeReadback = JSON.parse(readFileSync(fixtureUrl, "utf8")) as typeof capture;
+        expect(authoritativeReadback.dependencyObservation.id).toBe(dependency.id);
+        return authoritativeReadback.dependencyObservation;
+      },
       onRequestCompleted: (item, result) => completed.push({ requestId: item.id, summary: result.summary }),
     });
     host.admit({
       id: requestId,
-      appId: "may",
-      parentId: "app_6e1aea80-892e-4e87-9f9f-14acde1bc40d",
-      source: { kind: "app", id: "may-agent" },
-      input: { kind: "probe", data: { value: sourceSessionId } },
+      appId: capture.request.appId,
+      parentId: capture.request.parentId,
+      source: capture.request.source,
+      input: { kind: "probe", data: { value: capture.provenance.sourceSession.id } },
     });
 
-    await host.reconcileOnce("may");
+    await host.reconcileOnce(capture.request.appId);
     expect(attachments).toEqual([
       {
-        appId: "may",
+        appId: capture.request.appId,
         taskId,
-        idempotencyKey: `task:${requestId}:existing:${taskId}`,
+        idempotencyKey: capture.existingTaskAdmission.idempotencyKey,
       },
     ]);
-    const taskResourceBeforeReview = structuredClone(immutableTaskResource);
+    expect(host.get(requestId)).toMatchObject({
+      id: requestId,
+      appId: "may-agent",
+      status: "handling",
+      waitingOn: { kind: "task", id: taskId },
+    });
 
-    dependencyStatus = "attention";
+    dependencyReady = true;
     expect(host.wake({ kind: "task", id: taskId })).toBe(1);
-    expect(await host.reconcileOnce("may")).toEqual({ claimed: 1, admitted: 1, released: 0, errors: [] });
+    expect(await host.reconcileOnce(capture.request.appId)).toEqual({
+      claimed: 1,
+      admitted: 1,
+      released: 0,
+      errors: [],
+    });
 
     expect(host.get(requestId)).toMatchObject({
       id: requestId,
-      parentId: "app_6e1aea80-892e-4e87-9f9f-14acde1bc40d",
+      appId: "may-agent",
+      parentId: capture.request.parentId,
       status: "done",
-      result: {
-        summary: "Resolved owner tech-lead is not a runnable agent",
-        evidence: [`source-session:${sourceSessionId}`, `canonical-task:${taskId}@3/10`],
-      },
+      result: { summary: capture.dependencyObservation.summary },
     });
-    expect(completed).toEqual([{ requestId, summary: "Resolved owner tech-lead is not a runnable agent" }]);
+    expect(completed).toEqual([{ requestId, summary: capture.dependencyObservation.summary }]);
     expect(attachments).toHaveLength(1);
-    expect(immutableTaskResource).toEqual(taskResourceBeforeReview);
+    expect(readCapturedTaskResource()).toEqual(taskResourceBeforeReview);
+    expect(readCapturedTaskResource()).toEqual({
+      id: taskId,
+      generation: 3,
+      resourceVersion: 10,
+      phase: "attention",
+      completionReceipts: [],
+    });
   });
 
   it("closes completion-before-link races without creating a second Task", async () => {
@@ -288,6 +360,39 @@ describe("App inbox host", () => {
     expect(readAppConversationResource(db, "may", "may:primary").work).toEqual([
       expect.objectContaining({ requestId: "turn-1", dependency: { kind: "task", id: "probe/turn-1" } }),
     ]);
+  });
+
+  it("bounds owner Conversation context by bytes instead of retained message count", () => {
+    const conversation: AppConversationResource = {
+      id: "may:primary",
+      owner: "may",
+      version: 30,
+      current: { messageId: "message-30" },
+      messages: Array.from({ length: 30 }, (_, index) => ({
+        id: `message-${index + 1}`,
+        sequence: index + 1,
+        author: { kind: "human" as const, id: `human-${index + 1}` },
+        text: `${index + 1}:${"界".repeat(4_000)}`,
+        metadata: { requestId: index === 29 ? "current" : `request-${index + 1}` },
+        createdAt: index + 1,
+      })),
+      work: Array.from({ length: 20 }, (_, index) => ({
+        requestId: index === 0 ? "current" : `work-${index}`,
+        message: `Work ${index} ${"x".repeat(150)}`,
+        state: "working" as const,
+        progress: `Progress ${"y".repeat(230)}`,
+        createdAt: index,
+        changedAt: index,
+      })),
+    };
+
+    const bounded = boundedAppRequestConversation(conversation, "current");
+
+    expect(Buffer.byteLength(JSON.stringify(bounded), "utf8")).toBeLessThanOrEqual(APP_REQUEST_CONVERSATION_MAX_BYTES);
+    expect(bounded.messages.at(-1)?.id).toBe("message-29");
+    expect(bounded.messages.length).toBeLessThan(conversation.messages.length);
+    expect(bounded.work?.length).toBeLessThan(conversation.work!.length);
+    expect(bounded.work?.some((item) => item.requestId === "current")).toBeFalse();
   });
 
   it("retries independent batch items independently when one Task resolver fails", async () => {

@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../db.js";
+import { TASK_RESOURCE_SCHEMA } from "./task-resource-schema.js";
 
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
@@ -556,6 +557,7 @@ export function applyDbSchema(db: SqliteDb): void {
     // reference added to the canonical schema.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec(SCHEMA);
+    db.exec(TASK_RESOURCE_SCHEMA);
     ensureExistingAppInboxDeliveryShape(db);
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);

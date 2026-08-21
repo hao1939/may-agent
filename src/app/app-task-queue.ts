@@ -18,6 +18,8 @@ export class AppTaskQueue {
   private readonly dirtyPromote = new Set<string>();
   private readonly priorities = new Map<string, AppTaskPriority>();
   private readonly dirtyPriorities = new Map<string, AppTaskPriority>();
+  private readonly lanes = new Map<string, AppTaskLane>();
+  private readonly dirtyLanes = new Map<string, AppTaskLane>();
   private readonly frontPrioritySkips = new Map<string, number>();
   private readonly ordinaryPrioritySkips = new Map<string, number>();
   private consecutiveFrontTakes = 0;
@@ -32,17 +34,21 @@ export class AppTaskQueue {
     const key = taskId.trim();
     if (!key) throw new Error("AppTaskQueue requires a non-empty task ID");
     const priority = opts.priority ?? this.priorities.get(key) ?? "P2";
+    const lane = strongerLane(this.lanes.get(key), opts.lane);
     if (this.running.has(key)) {
       const alreadyDirty = this.dirty.has(key);
       this.dirty.add(key);
       if (opts.front || opts.promote) this.dirtyFront.add(key);
       if (opts.promote) this.dirtyPromote.add(key);
       this.dirtyPriorities.set(key, priority);
+      this.dirtyLanes.set(key, strongerLane(this.dirtyLanes.get(key), lane));
       return !alreadyDirty;
     }
     if (this.queued.has(key)) {
       const priorityChanged = this.priorities.get(key) !== priority;
+      const laneChanged = this.lanes.get(key) !== lane;
       this.priorities.set(key, priority);
+      this.lanes.set(key, lane);
       if (opts.promote && !this.promotedQueued.has(key)) {
         const index = this.pending.indexOf(key);
         if (index >= 0) this.pending.splice(index, 1);
@@ -53,7 +59,7 @@ export class AppTaskQueue {
         this.frontPrioritySkips.set(key, 0);
         return true;
       }
-      if ((!opts.front && !opts.promote) || this.frontQueued.has(key)) return priorityChanged;
+      if ((!opts.front && !opts.promote) || this.frontQueued.has(key)) return priorityChanged || laneChanged;
       const index = this.pending.indexOf(key);
       if (index >= 0) this.pending.splice(index, 1);
       this.pending.splice(this.frontQueued.size, 0, key);
@@ -64,6 +70,7 @@ export class AppTaskQueue {
     }
     this.queued.add(key);
     this.priorities.set(key, priority);
+    this.lanes.set(key, lane);
     if (opts.promote) {
       this.pending.splice(this.promotedQueued.size, 0, key);
       this.frontQueued.add(key);
@@ -83,9 +90,14 @@ export class AppTaskQueue {
   take(): string | null {
     if (this.running.size >= this.maxConcurrent) return null;
     const frontCount = this.frontQueued.size;
+    const humanIndex = this.pending.findIndex((taskId) => this.lanes.get(taskId) === "human");
     const takeOrdinary = frontCount < this.pending.length && this.consecutiveFrontTakes >= AppTaskQueue.maxFrontBurst;
     const takeIndex =
-      takeOrdinary || frontCount === 0 ? this.nextOrdinaryIndex(frontCount) : this.nextFrontIndex(frontCount);
+      humanIndex >= 0
+        ? humanIndex
+        : takeOrdinary || frontCount === 0
+          ? this.nextOrdinaryIndex(frontCount)
+          : this.nextFrontIndex(frontCount);
     const [taskId] = this.pending.splice(takeIndex, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
@@ -106,11 +118,19 @@ export class AppTaskQueue {
       const front = this.dirtyFront.delete(taskId);
       const promote = this.dirtyPromote.delete(taskId);
       const priority = this.dirtyPriorities.get(taskId) ?? this.priorities.get(taskId);
+      const lane = strongerLane(this.lanes.get(taskId), this.dirtyLanes.get(taskId));
       this.dirtyPriorities.delete(taskId);
-      this.enqueue(taskId, { front, promote, priority });
+      this.dirtyLanes.delete(taskId);
+      this.enqueue(taskId, { front, promote, priority, lane });
     } else {
       this.priorities.delete(taskId);
+      this.lanes.delete(taskId);
     }
+  }
+
+  nextLane(): AppTaskLane | null {
+    if (this.running.size >= this.maxConcurrent || this.pending.length === 0) return null;
+    return this.pending.some((taskId) => this.lanes.get(taskId) === "human") ? "human" : "normal";
   }
 
   get pendingCount(): number {
@@ -202,12 +222,20 @@ export class AppTaskQueue {
 
 export type AppTaskPriority = "P0" | "P1" | "P2" | "P3";
 
+export type AppTaskLane = "human" | "normal";
+
 export type AppTaskQueueOptions = {
   front?: boolean;
   /** Fresh exact wake: move an already-front-queued key ahead of passive resync backlog. */
   promote?: boolean;
   priority?: AppTaskPriority;
+  /** Trusted Host scheduling origin. App-authored priority cannot set this lane. */
+  lane?: AppTaskLane;
 };
+
+function strongerLane(current: AppTaskLane | undefined, incoming: AppTaskLane | undefined): AppTaskLane {
+  return current === "human" || incoming === "human" ? "human" : "normal";
+}
 
 function priorityRank(priority: AppTaskPriority): number {
   return { P0: 0, P1: 1, P2: 2, P3: 3 }[priority];

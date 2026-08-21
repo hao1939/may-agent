@@ -86,6 +86,25 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("reports one ready wait and trusted lane for each dispatch", async () => {
+    const dispatches: Array<{ taskId: string; readyWaitMs: number; lane: string; enqueuedAt: number }> = [];
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      async reconcile(taskId, dispatch) {
+        dispatches.push({ taskId, ...dispatch });
+      },
+    });
+
+    controller.enqueue("human-turn", { lane: "human" });
+    await waitUntil(() => dispatches.length === 1);
+
+    expect(dispatches[0]?.taskId).toBe("human-turn");
+    expect(dispatches[0]?.lane).toBe("human");
+    expect(dispatches[0]?.readyWaitMs).toBeGreaterThanOrEqual(0);
+    expect(dispatches[0]?.enqueuedAt).toBeLessThanOrEqual(Date.now());
+    controller.close();
+  });
+
   it("runs independent task keys concurrently up to the app limit", async () => {
     const started: string[] = [];
     const releases = new Map<string, () => void>();
@@ -266,6 +285,38 @@ describe("AppTaskController", () => {
     await waitUntil(() => capacity.snapshot().running === 0);
     controllerA.close();
     controllerB.close();
+  });
+
+  it("starts newly arrived human work through reserved capacity ahead of a normal waiter", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire();
+    const started: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controller = new AppTaskController({
+      maxConcurrent: 2,
+      capacity,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releases.set(taskId, resolve);
+        }),
+    });
+
+    controller.enqueue("normal", { lane: "normal", priority: "P0" });
+    await waitUntil(() => capacity.snapshot().waiting === 1);
+    controller.enqueue("human", { lane: "human", priority: "P2" });
+    await waitUntil(() => started.length === 1);
+
+    expect(started).toEqual(["human"]);
+    await waitUntil(() => capacity.snapshot().waiting === 1);
+    expect(capacity.snapshot()).toEqual({ running: 2, waiting: 1 });
+
+    releases.get("human")?.();
+    releaseBackground?.();
+    await waitUntil(() => started.includes("normal"));
+    releases.get("normal")?.();
+    await waitUntil(() => capacity.snapshot().running === 0);
+    controller.close();
   });
 
   it("shares the Host limit across replacement controllers", async () => {

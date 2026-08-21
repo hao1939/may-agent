@@ -13,11 +13,13 @@ import { AppRegistry } from "./app-registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
+  appTaskOwnerProtocol,
   applyCanonicalOwnerResidueCleanup,
   attachLoadedAppTask,
   beginCanonicalOwnerResidueGuard,
   closeInstalledAppTaskRuntimes,
   consumePersistedTerminalOwnerResult,
+  DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   finishCanonicalOwnerResidueGuard,
   installAppTaskRuntimes,
   planCanonicalOwnerResidueCleanup,
@@ -36,6 +38,8 @@ import {
 } from "./app-task-reconciler.js";
 import { readTaskState, saveTaskState } from "./app-task-store.js";
 import { HostCapacity } from "./host-capacity.js";
+import { getDb } from "../lib/requests.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
   addSessionBashProcessGroup,
   readSessionBashProcessGroups,
@@ -208,6 +212,33 @@ describe("canonical direct-owner residue cleanup", () => {
 });
 
 describe("App Task owner prompt context", () => {
+  it("keeps the schema-enforced owner protocol below four kilobytes", () => {
+    const protocol = appTaskOwnerProtocol("may");
+
+    expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(4 * 1_024);
+    expect(protocol).toContain("Finish exactly once with finish().result");
+    expect(protocol).toContain("Return state waiting only for an exact observable Condition");
+    expect(protocol).toContain("Runtime publishes and correlates it");
+    expect(protocol).not.toContain("Converged example");
+  });
+
+  it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {
+    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("treat that exact read-only observation");
+    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
+      "as complete authority for the dependency in this owner attempt",
+    );
+    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
+      "do not inspect Host-private task state, generated task-tree or Kanban projections",
+    );
+    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
+      "do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task",
+    );
+    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("This restriction is request-scoped");
+    expect(readFileSync(new URL("./app-task-runtime.ts", import.meta.url), "utf8")).toContain(
+      "DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,",
+    );
+  });
+
   it("keeps parent prompts bounded while preserving child identity and state", () => {
     const hiddenDetail = "exact-child-detail-" + "x".repeat(8_000);
     const context: Parameters<typeof projectAppTaskChildPromptContext>[0] = {
@@ -778,6 +809,43 @@ describe("canonical App task runtime", () => {
       appDir: f.appDir,
       owner: "sample-owner",
     });
+  });
+
+  it("installs an activated resource-backed App without recreating state.json", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const legacyConfig = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const tree = readTaskState(legacyConfig);
+    tree.project = "sample";
+    tree.project_lifecycle = "paused";
+    saveTaskState(legacyConfig, tree, { projectLifecycleReason: "test migration pause" });
+
+    const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
+    store.importPausedSnapshot(tree, "test-source-revision");
+    store.activate("test-source-revision");
+    store.setProjectLifecycle("active");
+    rmSync(legacyConfig.statePath);
+
+    const result = await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: {
+        id: "boot:resource-store",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    expect(result.installed).toHaveLength(1);
+    expect(result.installed[0]?.resourceStore?.isActive()).toBeTrue();
+    expect(result.installed[0]?.reconciliationPaused).toBeFalse();
+    expect(existsSync(legacyConfig.statePath)).toBeFalse();
   });
 
   it("yields readiness inside one large reconciliation after claim persistence", async () => {

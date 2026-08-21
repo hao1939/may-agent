@@ -65,11 +65,19 @@ export class HostCapacity {
   }
 
   acquireCancellable(callback: (release: () => void) => void): () => void {
+    return this.acquireCancellableLane(false, callback);
+  }
+
+  acquireForegroundCancellable(callback: (release: () => void) => void): () => void {
+    return this.acquireCancellableLane(true, callback);
+  }
+
+  private acquireCancellableLane(foreground: boolean, callback: (release: () => void) => void): () => void {
     let active = true;
     let reservedRelease: (() => void) | undefined;
     const waiter: CapacityWaiter = {
       active: true,
-      foreground: false,
+      foreground,
       grant: (release) => {
         reservedRelease = release;
         setTimeout(() => {
@@ -84,7 +92,7 @@ export class HostCapacity {
         }, 0);
       },
     };
-    const release = this.tryAcquire();
+    const release = foreground ? this.tryAcquireForeground() : this.tryAcquire();
     if (release) waiter.grant(release);
     else this.waiters.push(waiter);
 

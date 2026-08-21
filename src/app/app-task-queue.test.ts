@@ -154,6 +154,18 @@ describe("AppTaskQueue", () => {
     }
   });
 
+  it("runs trusted human work before normal work regardless of App priority", () => {
+    const queue = new AppTaskQueue(1);
+    queue.enqueue("normal-p0", { lane: "normal", front: true, priority: "P0" });
+    queue.enqueue("human-p2", { lane: "human", priority: "P2" });
+
+    expect(queue.nextLane()).toBe("human");
+    expect(queue.take()).toBe("human-p2");
+    queue.complete("human-p2");
+    expect(queue.nextLane()).toBe("normal");
+    expect(queue.take()).toBe("normal-p0");
+  });
+
   it("ages ordinary work so a replenished higher-priority lane cannot starve it", () => {
     const queue = new AppTaskQueue(1);
     queue.enqueue("compact-p1", { priority: "P1" });
@@ -196,6 +208,17 @@ describe("AppTaskQueue", () => {
 
     queue.complete("goal");
     expect(queue.snapshot().pending).toEqual(["goal", "old-a"]);
+  });
+
+  it("preserves the human lane for a wake received while running", () => {
+    const queue = new AppTaskQueue(1);
+    queue.enqueue("conversation", { lane: "human" });
+    expect(queue.take()).toBe("conversation");
+    queue.enqueue("conversation");
+
+    queue.complete("conversation");
+    expect(queue.nextLane()).toBe("human");
+    expect(queue.take()).toBe("conversation");
   });
 
   it("enforces app concurrency and preserves FIFO order", () => {

@@ -64,6 +64,7 @@ import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
+import type { AppTaskEmitter } from "../app/app-task-emitter.js";
 import { createUnavailableQueryService } from "./query-service.js";
 import { createUnavailableCommandService } from "./command-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
@@ -717,6 +718,8 @@ export interface RunWorkflowDirectOpts {
   taskBinding?: { taskId: string; generation: number };
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
+  /** Fenced event capability for a resource-backed Task attempt. */
+  taskEmitter?: AppTaskEmitter;
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
@@ -751,6 +754,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     projectId: opts.projectId,
     taskBinding: opts.taskBinding,
     recoveryOwner: opts.recoveryOwner,
+    taskEmitter: opts.taskEmitter,
     onEvent: opts.onEvent,
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
@@ -826,6 +830,8 @@ export interface WorkflowToolOptions {
   recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
+  /** Fenced App-authored event capability for a resource-backed Task attempt. */
+  taskEmitter?: AppTaskEmitter;
   /** Resolved app/domain paths supplied by Agent App infrastructure. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input for a system-dispatched top-level workflow. */
@@ -1492,11 +1498,17 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
         assertExecutionActive();
+        if (opts.taskEmitter) {
+          throw new Error("Task-owned workflows must emit through ctx.events.emit with a stable localKey");
+        }
         emitRuntimeEvent(event);
         onEvent?.(event as WorkflowEvent);
       },
       dispatchEvent: (eventType: string, data?: Record<string, unknown>) => {
         assertExecutionActive();
+        if (opts.taskEmitter) {
+          throw new Error("Task-owned workflows must emit through ctx.events.emit with a stable localKey");
+        }
         emitRuntimeEvent({ type: eventType, data: data ?? {} });
       },
 
@@ -1519,9 +1531,17 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       },
 
       events: {
-        emit: async (event: { type: string; data: unknown }) => {
+        emit: async (event: { type: string; data: unknown; localKey?: string }) => {
           assertExecutionActive();
-          emitRuntimeEvent(event);
+          if (opts.taskEmitter) {
+            if (!event.localKey?.trim()) {
+              throw new Error("Task-owned workflow events require a stable localKey");
+            }
+            const { localKey, ...published } = event;
+            opts.taskEmitter.emit(localKey, published as { type: string; data: Record<string, unknown> });
+          } else {
+            emitRuntimeEvent(event);
+          }
           onEvent?.(event as WorkflowEvent);
         },
       },

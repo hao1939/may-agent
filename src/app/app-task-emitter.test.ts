@@ -1,0 +1,201 @@
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { closeDb, getDb } from "../lib/requests.js";
+import { DbWriter } from "../lib/db-writer.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { createAppTaskEmitter } from "./app-task-emitter.js";
+import { EventBus } from "./event-bus.js";
+import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
+import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
+
+const roots: string[] = [];
+afterEach(() => {
+  for (const root of roots.splice(0)) {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function fixture(expiresAt = new Date(Date.now() + 60_000).toISOString()): TaskTree {
+  const resource: AppTaskResource = {
+    metadata: { id: "task-1", generation: 3, resourceVersion: 8 },
+    spec: { outcome: "coordinate", acceptance: ["done"], parentId: "project", mode: "achieve" },
+    status: {
+      observedGeneration: 2,
+      phase: "running",
+      currentAttemptId: "attempt-1",
+      updatedAt: new Date().toISOString(),
+    },
+  };
+  const attempt: AppTaskAttempt = {
+    metadata: { id: "attempt-1", resourceVersion: 1 },
+    taskId: "task-1",
+    taskGeneration: 3,
+    specHash: "hash",
+    owner: "may",
+    handler: "workflow:test",
+    runtimeId: "runtime-1",
+    state: "running",
+    reason: "test",
+    startedAt: new Date().toISOString(),
+    sessionId: "session-1",
+    lease: {
+      id: "lease-1",
+      version: 1,
+      lastActivityAt: new Date().toISOString(),
+      expiresAt,
+      runtimeId: "runtime-1",
+      sessionId: "session-1",
+    },
+  };
+  const child: AppTaskResource = {
+    metadata: { id: "child-1", generation: 1, resourceVersion: 1 },
+    spec: { outcome: "handle child", acceptance: ["done"], parentId: "task-1", mode: "achieve" },
+    status: { observedGeneration: 1, phase: "waiting", updatedAt: new Date().toISOString() },
+  };
+  return {
+    project: "sample",
+    project_lifecycle: "paused",
+    root_task_id: "project",
+    groups: { project: { id: "project", parent_id: null } },
+    resources: { "task-1": resource, "child-1": child },
+    attempts: { "attempt-1": attempt },
+    tasks: {},
+  };
+}
+
+function harness() {
+  const root = mkdtempSync(join(tmpdir(), "may-task-emitter-"));
+  roots.push(root);
+  const db = getDb(root);
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  store.importPausedSnapshot(fixture(), "revision-1", ["task-1"]);
+  store.activate("revision-1");
+  const bus = new EventBus();
+  const writer = new DbWriter(root);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const emitter = createAppTaskEmitter({
+    bus,
+    appId: "sample",
+    claim: { taskId: "task-1", generation: 3, attemptId: "attempt-1", owner: "may" },
+  });
+  return { root, db, bus, emitter, store };
+}
+
+describe("AppTaskEmitter", () => {
+  it("persists before immediate visibility and deduplicates a stable local key", () => {
+    const { db, bus, emitter } = harness();
+    const visible: number[] = [];
+    bus.subscribe((event) => {
+      if (event.type !== "sample.child.requested") return;
+      visible.push(
+        Number(
+          (db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get(event.type) as any).count,
+        ),
+      );
+    });
+
+    const first = emitter.emit("child-one", { type: "sample.child.requested", data: { child: "one" } });
+    const retry = emitter.emit("child-one", { type: "sample.child.requested", data: { child: "one" } });
+
+    expect(first).toBeGreaterThan(0);
+    expect(retry).toBe(first);
+    expect(visible).toEqual([1]);
+  });
+
+  it("records an exact target wake in the event transaction before subscribers run", () => {
+    const { db, bus, emitter } = harness();
+    const observed: Array<{ changed: number; linked: number }> = [];
+    bus.subscribe((event) => {
+      if (event.type !== "sample.child.requested") return;
+      const task = db
+        .prepare("SELECT changed FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("sample", "child-1") as { changed: number };
+      const link = db
+        .prepare("SELECT COUNT(*) AS count FROM app_task_events WHERE app_id = ? AND task_id = ?")
+        .get("sample", "child-1") as { count: number };
+      observed.push({ changed: task.changed, linked: link.count });
+    });
+
+    emitter.emit("wake-child", {
+      type: "sample.child.requested",
+      target: { appId: "sample", taskId: "child-1" },
+      data: { child: "one" },
+    });
+
+    expect(observed).toEqual([{ changed: 1, linked: 1 }]);
+  });
+
+  it("invalidates a cached task snapshot after an immediate exact wake", () => {
+    const { root, emitter, store } = harness();
+    const appDir = join(root, "sample.app");
+    mkdirSync(appDir, { recursive: true });
+    const paths = projectRuntimePaths(appDir, root);
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: root,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "may",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    cacheTaskStateReads(config);
+    expect(readTaskState(config).taskTriggers?.["child-1"]).toBeUndefined();
+
+    emitter.emit("wake-cached-child", {
+      type: "sample.child.requested",
+      target: { appId: "sample", taskId: "child-1" },
+      data: { child: "one" },
+    });
+
+    expect(readTaskState(config).taskTriggers?.["child-1"]?.event).toMatchObject({
+      type: "sample.child.requested",
+    });
+  });
+
+  it("returns an accepted retry after completion but rejects a new stale emission", () => {
+    const { db, emitter } = harness();
+    const first = emitter.emit("child-one", { type: "sample.child.requested", data: { child: "one" } });
+    db.prepare("UPDATE app_task_attempts SET state = 'completed' WHERE app_id = ? AND attempt_id = ?").run(
+      "sample",
+      "attempt-1",
+    );
+    db.prepare("UPDATE app_tasks SET current_attempt_id = NULL WHERE app_id = ? AND task_id = ?").run(
+      "sample",
+      "task-1",
+    );
+
+    expect(emitter.emit("child-one", { type: "sample.child.requested", data: { child: "one" } })).toBe(first);
+    expect(() =>
+      emitter.emit("child-two", { type: "sample.child.requested", data: { child: "two" } }),
+    ).toThrow("rejected stale attempt");
+  });
+
+  it("rejects an expired attempt before publishing", () => {
+    const { db, emitter } = harness();
+    db.prepare("UPDATE app_task_attempts SET lease_until = ? WHERE app_id = ? AND attempt_id = ?").run(
+      Date.now() - 1,
+      "sample",
+      "attempt-1",
+    );
+    expect(() => emitter.emit("late", { type: "sample.fact", data: {} })).toThrow("rejected stale attempt");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'sample.fact'").get()).toMatchObject({
+      count: 0,
+    });
+  });
+
+  it("keeps cross-App result correlation on the typed dependency contract", () => {
+    const { emitter } = harness();
+    expect(() =>
+      emitter.emit("foreign-result", {
+        type: "app.input.requested",
+        data: { appId: "foreign", input: { kind: "review", data: {} } },
+      }),
+    ).toThrow("must use a typed Task dependency");
+  });
+});
