@@ -790,10 +790,7 @@ describe("canonical App task runtime", () => {
     const bus = eventBus();
     writeFileSync(join(f.appDir, "app.ts"), `throw new Error("the task runtime must not import app.ts");`);
 
-    expect(await installAppTaskRuntimes(options(f, bus))).toEqual({
-      installed: [],
-      claimedSessionIds: new Set(),
-    });
+    expect(await installAppTaskRuntimes(options(f, bus))).toEqual({ installed: [] });
 
     const result = await installAppTaskRuntimes({
       ...options(f, bus),
@@ -955,7 +952,7 @@ describe("canonical App task runtime", () => {
     expect(readTaskState(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
   });
 
-  it("returns fresh task-session fences from the initial recovery pass", async () => {
+  it("releases a fresh previous-runtime attempt and requeues it through bounded task capacity", async () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, ".state");
@@ -1014,8 +1011,12 @@ describe("canonical App task runtime", () => {
 
     const recovered = await installAppTaskRuntimes(runtimeOptions, { includeFreshLeases: true });
 
-    expect(recovered.claimedSessionIds).toEqual(new Set(["session-resumable"]));
-    expect(readTaskState(config).resources?.["work/resumable"]?.status.phase).toBe("running");
+    expect(recovered.installed).toHaveLength(1);
+    expect(readTaskState(config).resources?.["work/resumable"]?.status).toMatchObject({
+      phase: "pending",
+      observedGeneration: 0,
+    });
+    expect(readSessionMeta(persistDir, "session-resumable")?.status).toBe("interrupted");
   });
 
   it("drains an orphaned setsid owner's exact process group before replacement recovery", async () => {
