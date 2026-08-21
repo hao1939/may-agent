@@ -43,6 +43,8 @@ export type AppTaskResource = {
   status: {
     observedGeneration: number;
     phase: "pending" | "running" | "converged" | "waiting" | "attention";
+    /** Trusted Host origin used only for capacity scheduling. */
+    lane?: "human" | "normal";
     currentAttemptId?: string;
     summary?: string;
     response?: string;

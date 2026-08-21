@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
@@ -96,6 +96,136 @@ export async function execute(ctx) {
 });
 
 describe("App workflow authoring context", () => {
+  it("does not let a resource-backed Task bypass the fenced event capability", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-unfenced-event-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "emit.ts"),
+      `
+export const name = "emit";
+export const description = "Unfenced event test";
+export async function execute(ctx) {
+  ctx.emit({ type: "test.child.requested", data: { child: "one" } });
+  return ctx.done("must not finish");
+}
+`,
+    );
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      taskEmitter: { emit: () => 41 },
+    });
+
+    expect(await runner.run("emit", "test")).toMatchObject({
+      type: "error",
+      error: expect.stringContaining("ctx.events.emit"),
+    });
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("requires and forwards a stable local key through the fenced Task emitter", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-fenced-event-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "emit.ts"),
+      `
+export const name = "emit";
+export const description = "Fenced event test";
+export async function execute(ctx) {
+  await ctx.events.emit({ type: "test.child.requested", localKey: "child-one", data: { child: "one" } });
+  return ctx.done("emitted");
+}
+`,
+    );
+    const emissions: Array<{ localKey: string; type: string }> = [];
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      taskEmitter: {
+        emit(localKey, event) {
+          emissions.push({ localKey, type: event.type });
+          return 41;
+        },
+      },
+    });
+
+    expect(await runner.run("emit", "test")).toMatchObject({ type: "done" });
+    expect(emissions).toEqual([{ localKey: "child-one", type: "test.child.requested" }]);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("makes a coordination event visible before the emitting workflow finishes", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-immediate-event-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "coordinate.ts"),
+      `
+export const name = "coordinate";
+export const description = "Immediate coordination event test";
+export async function execute(ctx) {
+  await ctx.events.emit({ type: "test.child.requested", data: { key: "child-one" } });
+  await ctx.agents.call("worker", "finish parent work");
+  return ctx.done("parent complete");
+}
+`,
+    );
+
+    let releaseAgent!: (value: unknown) => void;
+    const emitted: Array<{ type: string; data?: unknown }> = [];
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: () =>
+          new Promise((resolve) => {
+            releaseAgent = resolve;
+          }),
+      } as any,
+      workflowDir,
+      agentName: "owner",
+      runtimeCtx: {
+        emit: (event) => emitted.push(event as { type: string; data?: unknown }),
+        dispatchEvent: () => undefined,
+        getDb: () => {
+          throw new Error("unused");
+        },
+        query: {} as any,
+        commands: {} as any,
+        log: () => undefined,
+        notify: () => undefined,
+        metrics: {} as any,
+        persistDir: "",
+        projectRoot: root,
+        agentsRoot: root,
+        sharedRoot: root,
+        projectsRoot: root,
+      },
+    });
+
+    let finished = false;
+    const execution = runner.run("coordinate", "test").then((result) => {
+      finished = true;
+      return result;
+    });
+    const coordinationEvent = () => emitted.find((event) => event.type === "test.child.requested");
+    while (!coordinationEvent() && !finished) await Bun.sleep(1);
+
+    expect(coordinationEvent()).toEqual({ type: "test.child.requested", data: { key: "child-one" } });
+    expect(finished).toBeFalse();
+
+    releaseAgent({
+      sessionId: "child-session",
+      status: "done",
+      lastAssistantText: "done",
+      messages: [],
+      duration: "0s",
+      outputDir: "",
+      finishResult: { status: "success", summary: "done" },
+    });
+    expect(await execution).toMatchObject({ type: "done", summary: "parent complete" });
+  });
+
   it("adapts bounded Agent execution to the single execution result", async () => {
     const root = mkdtempSync(join(tmpdir(), "app-workflow-agent-"));
     const workflowDir = join(root, "workflows");

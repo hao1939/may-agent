@@ -1,4 +1,4 @@
-import { AppTaskQueue, type AppTaskQueueOptions } from "././app-task-queue.js";
+import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "././app-task-queue.js";
 import type { HostCapacity } from "./host-capacity.js";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
@@ -30,7 +30,7 @@ export type AppTaskControllerOptions = {
   maxConcurrent: number;
   /** Shared Host capacity. App-local limits still apply independently. */
   capacity?: HostCapacity;
-  reconcile(taskId: string): Promise<void>;
+  reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
   onError?(taskId: string, error: unknown, willRetry: boolean): void;
   maxRetries?: number;
   retryDelayMs?: (attempt: number) => number;
@@ -45,14 +45,24 @@ export type AppTaskControllerOptions = {
   };
 };
 
+/** Cheap causal timing passed to the App runtime; it is not durable authority. */
+export type AppTaskDispatch = {
+  enqueuedAt: number;
+  startedAt: number;
+  readyWaitMs: number;
+  lane: AppTaskLane;
+};
+
 /** One level-based reconciliation worker pool for one Agent App. */
 export class AppTaskController {
   private readonly queue: AppTaskQueue;
   private readonly failures = new Map<string, number>();
+  private readonly readySince = new Map<string, number>();
   private scheduled = false;
   private closed = false;
   private startReady: boolean;
   private waitingForCapacity = false;
+  private waitingCapacityLane?: AppTaskLane;
   private cancelCapacityWait?: () => void;
   private readonly drainWaiters = new Set<() => void>();
   private readonly resyncTimer?: ReturnType<typeof setInterval>;
@@ -79,6 +89,13 @@ export class AppTaskController {
   enqueue(taskId: string, opts: AppTaskQueueOptions = {}): boolean {
     if (this.closed) return false;
     const added = this.queue.enqueue(taskId, opts);
+    if (added && !this.readySince.has(taskId)) this.readySince.set(taskId, Date.now());
+    if (this.waitingCapacityLane === "normal" && this.queue.nextLane() === "human") {
+      this.cancelCapacityWait?.();
+      this.cancelCapacityWait = undefined;
+      this.waitingForCapacity = false;
+      this.waitingCapacityLane = undefined;
+    }
     this.schedulePump();
     return added;
   }
@@ -95,7 +112,9 @@ export class AppTaskController {
     this.cancelCapacityWait?.();
     this.cancelCapacityWait = undefined;
     this.waitingForCapacity = false;
+    this.waitingCapacityLane = undefined;
     if (this.resyncTimer) clearInterval(this.resyncTimer);
+    this.readySince.clear();
     this.resolveDrainWaiters();
   }
 
@@ -123,9 +142,12 @@ export class AppTaskController {
     if (this.closed) return;
     if (this.options.capacity) {
       if (this.queue.pendingCount === 0 || this.queue.runningCount >= this.queue.maxConcurrent) return;
-      const release = this.options.capacity.tryAcquire();
+      const lane = this.queue.nextLane();
+      if (!lane) return;
+      const release =
+        lane === "human" ? this.options.capacity.tryAcquireForeground() : this.options.capacity.tryAcquire();
       if (!release) {
-        this.waitForCapacity();
+        this.waitForCapacity(lane);
         return;
       }
       const taskId = this.queue.take();
@@ -133,23 +155,26 @@ export class AppTaskController {
         release();
         return;
       }
-      this.run(taskId, release);
+      this.run(taskId, release, lane);
       // Reconciliation has a synchronous state-claim prefix. Fill available
       // concurrency on later loop turns so readiness I/O can run between claims.
       if (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) this.schedulePump();
       return;
     }
+    const lane = this.queue.nextLane() ?? "normal";
     const taskId = this.queue.take();
     if (!taskId) return;
-    this.run(taskId);
+    this.run(taskId, undefined, lane);
     if (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) this.schedulePump();
   }
 
-  private waitForCapacity(): void {
+  private waitForCapacity(lane: AppTaskLane): void {
     if (this.waitingForCapacity || this.closed || !this.startReady || !this.options.capacity) return;
     this.waitingForCapacity = true;
-    this.cancelCapacityWait = this.options.capacity.acquireCancellable((release) => {
+    this.waitingCapacityLane = lane;
+    const acquired = (release: () => void) => {
       this.waitingForCapacity = false;
+      this.waitingCapacityLane = undefined;
       this.cancelCapacityWait = undefined;
       if (this.closed || !this.startReady) {
         release();
@@ -157,13 +182,26 @@ export class AppTaskController {
         return;
       }
       const taskId = this.queue.take();
-      if (taskId) this.run(taskId, release);
+      if (taskId) this.run(taskId, release, lane);
       else release();
-    });
+    };
+    this.cancelCapacityWait =
+      lane === "human"
+        ? this.options.capacity.acquireForegroundCancellable(acquired)
+        : this.options.capacity.acquireCancellable(acquired);
   }
 
-  private run(taskId: string, capacityRelease?: () => void): void {
-    const reconcile = () => (this.closed ? Promise.resolve() : this.options.reconcile(taskId));
+  private run(taskId: string, capacityRelease?: () => void, lane: AppTaskLane = "normal"): void {
+    const startedAt = Date.now();
+    const enqueuedAt = this.readySince.get(taskId) ?? startedAt;
+    this.readySince.delete(taskId);
+    const dispatch: AppTaskDispatch = {
+      enqueuedAt,
+      startedAt,
+      readyWaitMs: Math.max(0, startedAt - enqueuedAt),
+      lane,
+    };
+    const reconcile = () => (this.closed ? Promise.resolve() : this.options.reconcile(taskId, dispatch));
     void reconcile()
       .then(() => {
         this.failures.delete(taskId);
@@ -176,7 +214,7 @@ export class AppTaskController {
         this.options.onError?.(taskId, error, willRetry);
         if (willRetry) {
           const delay = Math.max(0, this.options.retryDelayMs?.(attempt) ?? Math.min(30_000, 250 * 2 ** (attempt - 1)));
-          setTimeout(() => this.enqueue(taskId), delay);
+          setTimeout(() => this.enqueue(taskId, { lane }), delay);
         }
       })
       .finally(() => {
