@@ -41,17 +41,19 @@ request may remain open while its task is pending, running, waiting, or in
 attention. Recovery must preserve its request id, source, input, idempotency
 key, and task link; only the task controller may restart App work.
 
-If a task attempt died, allow lease recovery to reclaim it. If its dependency
-completed while the daemon was offline, startup rescan will wake the same task.
-Do not insert another request row or mark the original complete by hand.
+If a task attempt died, let bounded recovery interrupt that execution evidence
+and requeue the same Task. If its dependency completed while the daemon was
+offline, startup recovery will wake the same Task. Do not resume its old
+session, insert another request row, or mark the original complete by hand.
 
 ## Task recovery
 
 Task attempts carry generation, resource-version, session, workspace, and
-lease fences. Recover the existing attempt when its session is resumable;
-otherwise let the task reconciler release or mark that exact attempt for
-attention. A task in `attention` is already the durable review obligation and
-does not need a synthetic owner-inbox event.
+lease fences. After process restart, the task reconciler interrupts the old
+attempt and starts any replacement through normal bounded Host capacity. The
+session remains execution evidence; it is not independently resumed by the
+generic session manager. A task in `attention` is already the durable review
+obligation and does not need a synthetic owner-inbox event.
 
 For a state-shape migration:
 

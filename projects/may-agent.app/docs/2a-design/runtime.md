@@ -100,9 +100,10 @@ The execution path owns prompt preparation, tool policy, cancellation,
 transcript evidence, and provider interaction. It does not own an App request
 or task outcome.
 
-Sessions are attempt records. A session may resume when the same bounded
-attempt can safely continue. Otherwise the owning task starts a new attempt
-from durable state.
+Sessions are attempt records. An explicitly controlled unbound session may
+resume when the same bounded request can safely continue. A task-owned session
+does not resume independently after process restart: its owning Task is
+requeued and any replacement attempt passes through normal Host capacity.
 
 ## Workflows
 
@@ -159,7 +160,7 @@ At startup the Host:
 - releases or repairs stale claims and leases;
 - repairs request correlation and requeues runnable tasks;
 - preserves completed results and delivery evidence;
-- resumes only compatible bounded sessions; and
+- resumes only compatible sessions that are not owned by a Task; and
 - leaves paused task work retained but unqueued.
 
 For a resource-backed App, recovery is indexed insurance: one bounded startup
