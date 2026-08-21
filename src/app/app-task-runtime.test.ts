@@ -10,6 +10,7 @@ import { EventBus } from "./event-bus.js";
 import { EVENT_ROW_ID } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
@@ -351,7 +352,10 @@ describe("canonical App task runtime", () => {
     const stateDir = join(f.appDir, ".state", "tasks");
     mkdirSync(stateDir, { recursive: true });
     const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
-    writeFileSync(join(stateDir, "state.json"), JSON.stringify({ ...seed, project_lifecycle: "paused" }));
+    writeFileSync(
+      join(stateDir, "state.json"),
+      `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
+    );
 
     const registry = new AppRegistry(f.projectsRoot);
     await registry.reload();
@@ -818,6 +822,18 @@ describe("canonical App task runtime", () => {
       owner: "sample-owner",
       maxConcurrent: 1,
     });
+    observeAppTaskIntent(legacyConfig, {
+      intent: {
+        id: "work/resource-dependency",
+        parentId: "operations",
+        outcome: "Read one resource-backed dependency",
+        acceptance: ["Dependency reads do not parse legacy state"],
+        mode: "achieve",
+        owner: "sample-owner",
+      },
+      appOwner: "sample-owner",
+      admissionKey: "attach:resource-dependency",
+    });
     const tree = readTaskState(legacyConfig);
     tree.project = "sample";
     tree.project_lifecycle = "paused";
@@ -842,6 +858,14 @@ describe("canonical App task runtime", () => {
     expect(result.installed).toHaveLength(1);
     expect(result.installed[0]?.resourceStore?.isActive()).toBeTrue();
     expect(result.installed[0]?.reconciliationPaused).toBeFalse();
+    expect(existsSync(legacyConfig.statePath)).toBeFalse();
+
+    expect(
+      await createAppTaskCapability({ bus }).readDependency({
+        appDir: f.appDir,
+        dependency: { kind: "task", id: "work/resource-dependency" },
+      }),
+    ).toMatchObject({ id: "work/resource-dependency", status: "pending" });
     expect(existsSync(legacyConfig.statePath)).toBeFalse();
   });
 
@@ -1354,7 +1378,10 @@ describe("canonical App task runtime", () => {
     const seed = JSON.parse(await Bun.file(seedPath).text());
     const stateDir = join(f.appDir, ".state", "tasks");
     mkdirSync(stateDir, { recursive: true });
-    writeFileSync(join(stateDir, "state.json"), JSON.stringify({ ...seed, project_lifecycle: "paused" }));
+    writeFileSync(
+      join(stateDir, "state.json"),
+      `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
+    );
     await installAppTaskRuntimes({
       ...options(f, bus),
       appRegistrySnapshot: {
