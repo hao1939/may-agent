@@ -19,7 +19,10 @@ afterEach(() => {
   }
 });
 
-function fixture(expiresAt = new Date(Date.now() + 60_000).toISOString()): TaskTree {
+function fixture(
+  expiresAt = new Date(Date.now() + 60_000).toISOString(),
+  sessionId: string | null = "session-1",
+): TaskTree {
   const resource: AppTaskResource = {
     metadata: { id: "task-1", generation: 3, resourceVersion: 8 },
     spec: { outcome: "coordinate", acceptance: ["done"], parentId: "project", mode: "achieve" },
@@ -41,14 +44,14 @@ function fixture(expiresAt = new Date(Date.now() + 60_000).toISOString()): TaskT
     state: "running",
     reason: "test",
     startedAt: new Date().toISOString(),
-    sessionId: "session-1",
+    ...(sessionId ? { sessionId } : {}),
     lease: {
       id: "lease-1",
       version: 1,
       lastActivityAt: new Date().toISOString(),
       expiresAt,
       runtimeId: "runtime-1",
-      sessionId: "session-1",
+      ...(sessionId ? { sessionId } : {}),
     },
   };
   const child: AppTaskResource = {
@@ -67,12 +70,12 @@ function fixture(expiresAt = new Date(Date.now() + 60_000).toISOString()): TaskT
   };
 }
 
-function harness() {
+function harness(sessionId: string | null = "session-1") {
   const root = mkdtempSync(join(tmpdir(), "may-task-emitter-"));
   roots.push(root);
   const db = getDb(root);
   const store = AppTaskResourceStore.fromDb(db, "sample");
-  store.importPausedSnapshot(fixture(), "revision-1", ["task-1"]);
+  store.importPausedSnapshot(fixture(undefined, sessionId), "revision-1", ["task-1"]);
   store.activate("revision-1");
   const bus = new EventBus();
   const writer = new DbWriter(root);
@@ -105,6 +108,32 @@ describe("AppTaskEmitter", () => {
     expect(first).toBeGreaterThan(0);
     expect(retry).toBe(first);
     expect(visible).toEqual([1]);
+  });
+
+  it("persists a task-owned workflow's first fenced event before any child Agent session", () => {
+    const { db, emitter } = harness(null);
+
+    const eventId = emitter.emit("pre-session", {
+      type: "sample.workflow.started",
+      data: { stage: "before-first-agent" },
+    });
+
+    expect(eventId).toBeGreaterThan(0);
+    expect(
+      db.prepare(
+        "SELECT event_type, task_id, attempt_id FROM events WHERE id = ?",
+      ).get(eventId),
+    ).toMatchObject({
+      event_type: "sample.workflow.started",
+      task_id: "task-1",
+      attempt_id: "attempt-1",
+    });
+    expect(
+      db.prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
+        .get("sample", "attempt-1"),
+    ).toMatchObject({
+      attempt_json: expect.not.stringContaining("sessionId"),
+    });
   });
 
   it("records an exact target wake in the event transaction before subscribers run", () => {

@@ -60,7 +60,8 @@ export type AppTaskAttemptLease = {
   lastActivityAt: string;
   expiresAt: string;
   runtimeId: string;
-  sessionId: string;
+  /** Present after the attempt starts its first child Agent session. */
+  sessionId?: string;
 };
 
 export type AppTaskAttempt = {
