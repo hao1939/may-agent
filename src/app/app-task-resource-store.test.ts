@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { openDatabase } from "../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
@@ -101,6 +102,52 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
+  it("backfills normalized Condition routes when opening a legacy resource database", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-resource-legacy-"));
+    roots.push(root);
+    const db = openDatabase(join(root, "host.sqlite"));
+    const legacy = resource("legacy");
+    legacy.status.conditionIds = ["legacy-condition"];
+    db.exec(`
+      CREATE TABLE app_tasks (
+        app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+        generation INTEGER NOT NULL, resource_version INTEGER NOT NULL,
+        observed_generation INTEGER NOT NULL, phase TEXT NOT NULL,
+        lane TEXT NOT NULL, changed INTEGER NOT NULL, ready INTEGER NOT NULL,
+        next_check_at INTEGER, lease_until INTEGER, current_attempt_id TEXT,
+        updated_at INTEGER NOT NULL, resource_json TEXT NOT NULL, trigger_json TEXT,
+        PRIMARY KEY(app_id, task_id)
+      );
+      CREATE TABLE app_task_conditions (
+        app_id TEXT NOT NULL, condition_id TEXT NOT NULL, state TEXT NOT NULL, condition_json TEXT NOT NULL,
+        PRIMARY KEY(app_id, condition_id)
+      );
+    `);
+    db.prepare(
+      `INSERT INTO app_tasks(
+         app_id, task_id, generation, resource_version, observed_generation, phase, lane,
+         changed, ready, updated_at, resource_json
+       ) VALUES (?, ?, 1, 1, 0, 'waiting', 'normal', 0, 0, 0, ?)`,
+    ).run("example", "legacy", JSON.stringify(legacy));
+    db.prepare(
+      "INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, 'unknown', ?)",
+    ).run(
+      "example",
+      "legacy-condition",
+      JSON.stringify({
+        metadata: { id: "legacy-condition", generation: 1, resourceVersion: 1 },
+        spec: { type: "legacy.completed", subject: "legacy", expected: "done" },
+        status: { state: "unknown", observedGeneration: 0, updatedAt: "2026-08-21T00:00:00.000Z" },
+      }),
+    );
+
+    const store = AppTaskResourceStore.fromDb(db, "example");
+    expect(store.readConditionRoutes("legacy.completed")).toEqual([
+      expect.objectContaining({ taskIds: ["legacy"] }),
+    ]);
+    db.close();
+  });
+
   it("imports and shadow-compares a paused App snapshot", () => {
     const store = open();
     const tree = fixture();
@@ -138,9 +185,7 @@ describe("AppTaskResourceStore", () => {
         nextCheckAt: 100,
       }),
     ).toBeTrue();
-    expect(
-      store.replaceTask({ expectedResourceVersion: 1, resource: next, ready: true }),
-    ).toBeFalse();
+    expect(store.replaceTask({ expectedResourceVersion: 1, resource: next, ready: true })).toBeFalse();
     expect(store.readTask("human")).toEqual(tree.resources?.human);
     expect(store.listRecoveryCandidates(100).items.map((entry) => entry.taskId)).toContain("normal");
     expect(store.nextDueAt()).toBe(100);
@@ -240,6 +285,8 @@ describe("AppTaskResourceStore", () => {
     const dueAt = store.nextDueAt();
     expect(dueAt).toBeGreaterThanOrEqual(before + 60_000);
     expect(dueAt).toBeLessThanOrEqual(Date.now() + 60_000);
+    expect(store.readConditionRoutes("example.completed")).toEqual([expect.objectContaining({ taskIds: ["normal"] })]);
+    expect(store.readConditionRoutes("unrelated.event")).toEqual([]);
 
     const queued: string[] = [];
     const scheduler = new AppTaskRecoveryScheduler({
@@ -321,8 +368,9 @@ describe("AppTaskResourceStore", () => {
 
     expect(store.readTask("normal")?.status.summary).toBe("resource local");
     expect(existsSync(paths.taskStatePath)).toBeFalse();
-    expect(readRuntimeTaskView({ executionPaths: { appDir, projectDir: root }, taskStateConfig: config }, "normal"))
-      .toMatchObject({ id: "normal", summary: "resource local" });
+    expect(
+      readRuntimeTaskView({ executionPaths: { appDir, projectDir: root }, taskStateConfig: config }, "normal"),
+    ).toMatchObject({ id: "normal", summary: "resource local" });
     expect(
       listRuntimeTaskViews(
         { executionPaths: { appDir, projectDir: root }, taskStateConfig: config },

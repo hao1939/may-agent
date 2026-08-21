@@ -208,6 +208,73 @@ describe("App inbox runtime", () => {
     expect(runtime.host.get("restart-request")?.result?.summary).toBe("Recovered result");
   });
 
+  it("wakes only the App waiting on an exact dependency", async () => {
+    mkdirSync(join(root, "other.app"), { recursive: true });
+    writeFileSync(
+      join(root, "other.app", "app.js"),
+      `export default {
+        id: "other", version: 1, owner: "other",
+        inputSchema: {
+          type: "object", additionalProperties: false, required: ["kind", "data"],
+          properties: {
+            kind: { const: "probe" },
+            data: { type: "object", additionalProperties: false, required: ["value"], properties: { value: { type: "string" } } }
+          }
+        },
+        task(input) { return { kind: "desired", intent: {
+          id: "other/" + input.id, parentId: "other", outcome: "Other work", acceptance: ["Done"], mode: "achieve"
+        } }; },
+        tasks: {}
+      };\n`,
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      scanIntervalMs: 10_000,
+    });
+    bus.emit({
+      type: "app.input.requested",
+      source: "test",
+      owner: "app:evaluation",
+      data: {
+        appId: "evaluation",
+        requestId: "waiting-request",
+        input: { kind: "probe", data: { value: "waiting" } },
+        source: { kind: "system", id: "test" },
+        idempotencyKey: "waiting:1",
+      },
+    });
+    await waitUntil(() => runtime?.host.get("waiting-request")?.waitingOn?.kind === "task");
+    runtime.host.admit({
+      id: "unrelated-request",
+      appId: "other",
+      source: { kind: "system", id: "test" },
+      input: { kind: "probe", data: { value: "unrelated" } },
+    });
+    task.observations.set("probe/waiting-request", {
+      kind: "task",
+      id: "probe/waiting-request",
+      status: "done",
+      summary: "Dependency done",
+    });
+
+    bus.emit({
+      type: "app.dependency.updated",
+      source: "test-task",
+      owner: "app:evaluation",
+      data: { kind: "task", id: "probe/waiting-request" },
+    });
+    await waitUntil(() => runtime?.host.get("waiting-request")?.status === "done");
+    await Bun.sleep(25);
+
+    expect(runtime.host.get("unrelated-request")?.status).toBe("pending");
+    expect(task.attached).not.toContain("other/unrelated-request");
+  });
+
   it("translates a subscribed Event into the same Task path", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
