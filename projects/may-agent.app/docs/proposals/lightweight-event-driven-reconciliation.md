@@ -399,6 +399,26 @@ restart and HTTP task reads left the legacy file at the same revision, size,
 and modification time. Five resource-backed task-list samples completed in
 5-29 ms while background model work saturated the daemon.
 
+The guarded rollout then cut over Gym, the May-agent platform App, Evaluation,
+the human-facing May App, and AKS in that order. Each App was paused, allowed
+to drain, inspected again after the daemon stopped, imported at the final
+reviewed source revision, activated once, and resumed:
+
+| App                        | Imported Tasks | Final legacy source revision                                             |
+| -------------------------- | -------------: | ------------------------------------------------------------------------ |
+| Scout knowledge library    |              7 | `672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b` |
+| Gym                        |             11 | `6dfe27f255e134e493c516836402fe50df3bb41b8a98f926c88cf34ef06b7a32` |
+| May-agent platform         |             47 | `9c0d63cdd65a72db3b44fcefc29989e823ba48e7924fb9afe6f1454abefe2d09` |
+| Evaluation                 |            668 | `542568e0782ed897427c44b5d046437ff87c1640f5f73ceabed23a9c22176fca` |
+| May human Conversation App |              0 | `6c8036378418204d41881386757ddff6c09ad59cbff69ef1eb1139cc41b890dd` |
+| AKS RP E2E                 |            541 | `d2dae7e1741afb2ea2912980ca584372f3cc661f7d56f8028fd5e8eab3ad6441` |
+
+All six restarted on resource authority without changing the source file's
+hash, size, or modification time. The human-facing May App had no live Tasks
+to import; its retained legacy history remained untouched. Evaluation and AKS
+admitted fresh fenced attempts through normal reconciliation rather than
+resuming drained legacy attempts.
+
 That restart exposed one superseded path: fresh task-owned agent sessions were
 claimed and all resumed directly by the generic session manager, bypassing
 Host capacity. Nine expensive sessions could therefore restart together and
@@ -413,13 +433,43 @@ dependencies, linked Conditions and receipts, and a bounded recent-attempt
 window. Resource-backed Task list/get and Condition replay no longer depend on
 `state.json` or an App-wide snapshot.
 
-Only Scout has completed the guarded production cutover. Legacy JSON remains
-the authority for May, Gym, Evaluation, and AKS until each App completes the
-same procedure. Historical data has not been deleted. Remaining work is to
-hold the canary through idle-resource and due-recovery proof, cut over the
-other Apps one at a time, extend fenced mid-attempt emission beyond direct
-task-owned workflows only when a concrete agent use case needs it, then remove
-the legacy JSON/resync path after the last reader moves.
+The first all-App restart exposed another whole-system cost. A burst of
+`app.dependency.updated` events synchronously woke an exact inbox dependency,
+then called the whole Host scan and evaluated Condition links by joining every
+Task's JSON. Individual durable subscribers took 60-145 ms; accumulated work
+held the daemon near one CPU core and made HTTP task reads time out. The repair
+keeps the same semantics but makes both operations exact: the inbox wake
+returns only affected App IDs, and a normalized indexed Task-to-Condition link
+replaces hot-path `json_each` scans. The safety scan remains recovery insurance;
+it is no longer invoked by an ordinary dependency event.
+
+A final boundary audit found one remaining legacy read: inbox dependency
+recovery constructed an App-directory reader, which reparsed frozen
+`state.json` snapshots instead of asking the loaded Task capability for the
+named resource. Runtime commit `ad86431e` removed that second reader and now
+uses the same resource-local Task view as list/get. Its regression test removes
+the legacy file after activation and still resolves the exact dependency.
+
+The production deploy of `ad86431e` completed through receipt
+`deploy-20260821T035008Z-2278365`: the loaded artifact matched the requested
+SHA-256, health was `healthy`, the owner wake was targeted, and no duplicate
+deploy occurred. The control socket became ready about 16 seconds after the new
+daemon process started, versus about 58 seconds before the last legacy reader
+was removed. Eight live AKS Task-list requests completed in 77-125 ms. A
+20-second sample during active AKS work averaged 11.05% of one CPU and 370 MiB
+RSS, with most individual seconds at 1-10%; the prior failure held roughly one
+CPU and exceeded 850 MiB RSS. A following 30-second observation produced no
+daemon log writes or slow `app-inbox-route` warnings. The live schema held
+1,284 resource Tasks and 151 normalized Condition routes with zero missing
+links. All five retained legacy source files still had their reviewed hashes.
+
+All six Apps have completed the guarded production cutover. Historical JSON
+snapshots and retained evidence have not been deleted. Remaining work is to
+hold the resource-backed cohort through idle-resource, event-storm, and
+due-recovery proof; extend fenced mid-attempt emission beyond direct task-owned
+workflows only when a concrete agent use case needs it; provide a resource-
+native bootstrap for a brand-new App; and only then remove legacy JSON/resync
+compatibility after its last reader moves.
 
 ### Phase 0: freeze the contract and expose cost
 
