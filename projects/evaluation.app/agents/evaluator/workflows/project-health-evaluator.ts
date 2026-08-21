@@ -14,6 +14,7 @@ import type {
   WorkflowContext,
 } from "@may-agent/sdk";
 import { Type } from "typebox";
+import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "project-health-evaluator";
 export const description =
@@ -742,6 +743,7 @@ export async function execute(
   const previous = readState(ctx.workspace.root, targetProject);
   await ctx.events.emit({
     type: "evaluation.project.review_started",
+    localKey: taskEmissionKey(ctx, "review-started"),
     data: { targetProject, reason },
     target: { appId: "evaluation", project: "evaluation" },
   });
@@ -759,12 +761,11 @@ export async function execute(
   if (!audit.complete) {
     await ctx.events.emit({
       type: "evaluation.project.review_failed",
+      localKey: taskEmissionKey(ctx, "review-failed"),
       data: {
         targetProject,
         reason,
-        executionId: execution.id,
-        status: execution.status,
-        summary: execution.summary,
+        failure: "incomplete-judgment",
       },
       target: { appId: "evaluation", project: "evaluation" },
     });
@@ -795,6 +796,7 @@ export async function execute(
     const summary = `${targetProject} project/App review skipped: ${reviewDecision.reason}.`;
     await ctx.events.emit({
       type: "evaluation.project.review_skipped",
+      localKey: taskEmissionKey(ctx, "review-skipped"),
       data: { targetProject, reason: reviewDecision.reason, fingerprint },
       target: { appId: "evaluation", project: "evaluation" },
     });
@@ -836,6 +838,7 @@ export async function execute(
   if (!durability.ok) {
     await ctx.events.emit({
       type: "evaluation.project.publication_failed",
+      localKey: taskEmissionKey(ctx, "publication-failed"),
       data: { targetProject, reportPath, errors: durability.errors },
       target: { appId: "evaluation", project: "evaluation" },
     });
@@ -862,6 +865,7 @@ export async function execute(
   };
   await ctx.events.emit({
     type: "evaluation.project.reviewed",
+    localKey: taskEmissionKey(ctx, "reviewed"),
     data: reviewed,
     target: { appId: "evaluation", project: "evaluation" },
   });
@@ -870,6 +874,7 @@ export async function execute(
     const appId = appIdForTarget(targetProject);
     await ctx.events.emit({
       type: "project.owner.requested",
+      localKey: taskEmissionKey(ctx, "owner-feedback-requested"),
       data: {
         project: appId,
         reason: "evaluation-project-health-feedback",
@@ -883,6 +888,7 @@ export async function execute(
   if (humanNotification) {
     await ctx.events.emit({
       type: "evaluation.human_decision.requested",
+      localKey: taskEmissionKey(ctx, "human-decision-requested"),
       data: {
         targetProject,
         reportPath,

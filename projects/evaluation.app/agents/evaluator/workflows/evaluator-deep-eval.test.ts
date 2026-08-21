@@ -84,21 +84,20 @@ describe("evaluator deep workflow", () => {
     expect(events).toEqual([
       {
         type: "evaluation.deep_dispatched",
+        localKey: "deep-dispatched",
         data: { source: "evaluator-deep-eval", sessionId: "s_source" },
         target: { appId: "evaluation", sessionId: "s_source" },
       },
       {
         type: "evaluation.deep_failed",
+        localKey: "deep-failed-execution",
         data: {
           source: "evaluator-deep-eval",
-          executionId: "s_inner",
-          status: "blocked",
-          summary: "transcript unavailable",
+          failure: "execution-not-done",
           sessionId: "s_source",
         },
         target: {
           appId: "evaluation",
-          executionId: "s_inner",
           sessionId: "s_source",
         },
       },
@@ -132,9 +131,9 @@ describe("evaluator deep workflow", () => {
         "evaluation.deep_failed",
       ]);
       expect(events[1]).toMatchObject({
+        localKey: "deep-failed-invalid-output",
         data: {
-          executionId: "s_inner",
-          status: "invalid-output",
+          failure: "invalid-output",
           sessionId: "s_source",
         },
         target: { sessionId: "s_source" },
@@ -195,6 +194,7 @@ describe("evaluator deep workflow", () => {
     });
     expect(events[1]).toMatchObject({
       type: "evaluation.deep_recorded",
+      localKey: "deep-recorded",
       data: {
         source: "evaluator-deep-eval",
         evaluation: {

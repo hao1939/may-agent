@@ -45,6 +45,11 @@ const judgment: ProjectHealthJudgment = {
 };
 
 function reconciliation(reason = "scheduled") {
+  const trigger = {
+    type: "evaluation.project.review.requested",
+    data: { targetProject: "gym.app", reason },
+    target: { appId: "evaluation", project: "evaluation" },
+  };
   return {
     appId: "evaluation",
     taskId: "runtime/project-audit/gym.app",
@@ -56,11 +61,18 @@ function reconciliation(reason = "scheduled") {
     acceptance: ["A current report is recorded."],
     input: { targetProject: "gym.app" },
     children: { live: [], completed: [] },
-    trigger: {
-      type: "evaluation.project.review.requested",
-      data: { targetProject: "gym.app", reason },
-      target: { appId: "evaluation", project: "evaluation" },
+    events: {
+      items: [
+        {
+          eventId: 73,
+          observedAt: "2026-08-21T00:00:00.000Z",
+          event: trigger,
+        },
+      ],
+      throughEventId: 73,
+      truncated: false,
     },
+    trigger,
   };
 }
 
@@ -305,6 +317,11 @@ describe("canonical project-health evaluator", () => {
       "evaluation.project.reviewed",
       "project.owner.requested",
     ]);
+    expect(events.map((event) => event.localKey)).toEqual([
+      "event-73:review-started",
+      "event-73:reviewed",
+      "event-73:owner-feedback-requested",
+    ]);
     expect(events[2]).toMatchObject({
       target: { appId: "gym", project: "gym" },
     });
@@ -355,6 +372,7 @@ describe("canonical project-health evaluator", () => {
 
     expect(events.at(-1)).toMatchObject({
       type: "evaluation.human_decision.requested",
+      localKey: "event-73:human-decision-requested",
       data: {
         targetProject: "gym.app",
         requestedHumanAction: "approve",
@@ -391,6 +409,10 @@ describe("canonical project-health evaluator", () => {
     expect(events.map((event) => event.type)).toEqual([
       "evaluation.project.review_started",
       "evaluation.project.review_failed",
+    ]);
+    expect(events.map((event) => event.localKey)).toEqual([
+      "event-73:review-started",
+      "event-73:review-failed",
     ]);
     expect(
       events.some((event) => event.type === "project.owner.requested"),

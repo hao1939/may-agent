@@ -7,6 +7,7 @@ import {
   type TaskReconciliationContext,
   type WorkflowContext,
 } from "@may-agent/sdk";
+import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "evaluator-heartbeat";
 export const description =
@@ -177,6 +178,7 @@ export async function execute(
   const triggerType = reconciliation.trigger?.type ?? null;
   await ctx.events.emit({
     type: "evaluation.owner_review_started",
+    localKey: taskEmissionKey(ctx, "owner-review-started"),
     data: {
       taskId: reconciliation.taskId,
       generation: reconciliation.generation,
@@ -203,18 +205,14 @@ export async function execute(
     );
     await ctx.events.emit({
       type: "evaluation.owner_review_failed",
+      localKey: taskEmissionKey(ctx, "owner-review-failed"),
       data: {
         taskId: reconciliation.taskId,
         generation: reconciliation.generation,
         triggerType,
-        executionId: execution.id,
-        status: execution.status,
-        summary: execution.summary,
+        failure: "agent-execution-not-done",
       },
-      target: {
-        appId: "evaluation",
-        executionId: execution.id,
-      },
+      target: { appId: "evaluation" },
     });
   } else {
     ownerResult = normalizeOwnerResult(execution.output, reconciliation);
@@ -222,19 +220,15 @@ export async function execute(
 
   await ctx.events.emit({
     type: "evaluation.owner_reviewed",
+    localKey: taskEmissionKey(ctx, "owner-reviewed"),
     data: {
       taskId: reconciliation.taskId,
       generation: reconciliation.generation,
       triggerType,
-      executionId: execution.id,
       state: ownerResult.state,
       proposedActions: ownerResult.actions ?? [],
-      evidence: ownerResult.evidence,
     },
-    target: {
-      appId: "evaluation",
-      executionId: execution.id,
-    },
+    target: { appId: "evaluation" },
   });
 
   return ctx.done(ownerResult.summary, ownerResult);

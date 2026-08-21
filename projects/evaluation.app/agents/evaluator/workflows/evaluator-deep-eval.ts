@@ -4,6 +4,7 @@ import {
   deepEvaluationOutcomeSchema,
   parseDeepEvaluationOutcome,
 } from "./lib/deep-evaluation.js";
+import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "evaluator-deep-eval";
 export const description =
@@ -24,6 +25,7 @@ export async function execute(
     typeof ctx.input?.sessionId === "string" ? ctx.input.sessionId.trim() : "";
   await ctx.events.emit({
     type: "evaluation.deep_dispatched",
+    localKey: taskEmissionKey(ctx, "deep-dispatched"),
     data: {
       source: name,
       ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
@@ -43,16 +45,14 @@ export async function execute(
     const summary = `Deep evaluator execution ${execution.id} ended ${execution.status}: ${execution.summary}`;
     await ctx.events.emit({
       type: "evaluation.deep_failed",
+      localKey: taskEmissionKey(ctx, "deep-failed-execution"),
       data: {
         source: name,
-        executionId: execution.id,
-        status: execution.status,
-        summary: execution.summary,
+        failure: "execution-not-done",
         ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
       },
       target: {
         appId: "evaluation",
-        executionId: execution.id,
         ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
       },
     });
@@ -69,16 +69,14 @@ export async function execute(
       : "Deep evaluator output failed validation; no explicit noCandidate reason or valid evaluation was preserved.";
     await ctx.events.emit({
       type: "evaluation.deep_failed",
+      localKey: taskEmissionKey(ctx, "deep-failed-invalid-output"),
       data: {
         source: name,
-        executionId: execution.id,
-        status: "invalid-output",
-        summary,
+        failure: "invalid-output",
         ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
       },
       target: {
         appId: "evaluation",
-        executionId: execution.id,
         ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
       },
     });
@@ -94,6 +92,7 @@ export async function execute(
   const evaluation = { ...outcome.evaluation, createdAt: Date.now() };
   await ctx.events.emit({
     type: "evaluation.deep_recorded",
+    localKey: taskEmissionKey(ctx, "deep-recorded"),
     data: { source: name, evaluation },
     target: {
       appId: "evaluation",

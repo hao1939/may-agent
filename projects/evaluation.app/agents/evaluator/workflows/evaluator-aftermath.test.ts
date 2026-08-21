@@ -289,6 +289,7 @@ describe("canonical evaluator aftermath", () => {
       }),
     ).toBe(true);
     expect(events[0]?.type).toBe("evaluation.recorded");
+    expect(events.every((event) => Boolean(event.localKey))).toBe(true);
   });
 
   test("evaluates an exact session from a finish summary, persists before routing, and returns a typed reconciliation result", async () => {
@@ -312,6 +313,11 @@ describe("canonical evaluator aftermath", () => {
       "project.owner.requested",
       "evaluation.human_decision.requested",
     ]);
+    expect(events.map((event) => event.localKey)).toEqual([
+      "evaluation-recorded",
+      expect.stringMatching(/^owner-finding-[a-f0-9]{16}$/),
+      expect.stringMatching(/^human-decision-[a-f0-9]{16}$/),
+    ]);
     expect(result.output).toMatchObject({
       state: "converged",
       actions: [],
@@ -332,7 +338,10 @@ describe("canonical evaluator aftermath", () => {
     );
     expect(result.status).toBe("done");
     expect(events).toEqual([
-      skippedEvaluationFact(skip, "s_evaluator", expect.any(Number)),
+      {
+        ...skippedEvaluationFact(skip, "s_evaluator", expect.any(Number)),
+        localKey: "evaluation-recorded",
+      },
     ]);
     expect(recordedEvaluation(events[0])).toMatchObject({
       sessionId: "s_skip",
@@ -382,6 +391,7 @@ describe("canonical evaluator aftermath", () => {
     expect(events.map((event) => event.type)).toEqual([
       "evaluation.review_failed",
     ]);
+    expect(events[0]?.localKey).toBe("review-failed");
     expect(
       events.some((event) => event.type === "project.owner.requested"),
     ).toBeFalse();
@@ -405,18 +415,44 @@ describe("canonical evaluator aftermath", () => {
     expect(events).toEqual([
       expect.objectContaining({
         type: "evaluation.review_failed",
+        localKey: "review-failed",
         data: expect.objectContaining({
           source: "evaluator-aftermath",
           requestedSessionId: "s_source",
-          executionId: "s_evaluator",
-          status: "done",
-          summary: "bounded evaluation complete",
-          reason:
-            "Evaluator execution s_evaluator returned no valid aftermath result.",
+          failure: "invalid-output",
         }),
         target: { appId: "evaluation", project: "evaluation" },
       }),
     ]);
+  });
+
+  test("gives repeated findings distinct stable semantic keys", async () => {
+    const events: AppEvent[] = [];
+    const secondFinding = {
+      ...finding,
+      summary: "A second bounded observation in the same concern family",
+      requestedHumanAction: "watch" as const,
+    };
+    await execute(
+      context(
+        { sessionId: "s_source" },
+        {
+          kind: "evaluation",
+          evaluation,
+          findings: [finding, secondFinding],
+        },
+        events,
+      ),
+    );
+
+    const ownerKeys = events
+      .filter((event) => event.type === "project.owner.requested")
+      .map((event) => event.localKey);
+    expect(ownerKeys).toHaveLength(2);
+    expect(new Set(ownerKeys).size).toBe(2);
+    expect(
+      ownerKeys.every((key) => /^owner-finding-[a-f0-9]{16}$/.test(key!)),
+    ).toBe(true);
   });
 
   test("blocks inputs outside canonical reconciliation", async () => {

@@ -4,6 +4,7 @@ import type {
   WorkflowContext,
 } from "@may-agent/sdk";
 import { Type } from "typebox";
+import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "evaluator-aftermath";
 export const description =
@@ -580,17 +581,16 @@ function reconciled(
 async function reviewFailed(
   ctx: WorkflowContext<AftermathInput>,
   execution: ExecutionResult,
+  failure: "execution-not-done" | "invalid-output",
   reason: string,
 ): Promise<ExecutionResult> {
   await ctx.events.emit({
     type: "evaluation.review_failed",
+    localKey: taskEmissionKey(ctx, "review-failed"),
     data: {
       source: name,
       requestedSessionId: sessionId(ctx.input?.sessionId) || undefined,
-      executionId: execution.id,
-      status: execution.status,
-      summary: execution.summary,
-      reason,
+      failure,
     },
     target: { appId: "evaluation", project: "evaluation" },
   });
@@ -622,6 +622,7 @@ export async function execute(
     return reviewFailed(
       ctx,
       execution,
+      "execution-not-done",
       `Evaluator execution ${execution.id} ended ${execution.status}: ${execution.summary}`,
     );
   }
@@ -634,6 +635,7 @@ export async function execute(
     return reviewFailed(
       ctx,
       execution,
+      "invalid-output",
       `Evaluator execution ${execution.id} returned no valid aftermath result.`,
     );
   }
@@ -653,19 +655,40 @@ export async function execute(
       ? outcome.evaluation.sessionId
       : outcome.sessionId;
   if (outcome.kind === "skip") {
-    await ctx.events.emit(skippedEvaluationFact(outcome, execution.id));
+    await ctx.events.emit({
+      ...skippedEvaluationFact(outcome, execution.id),
+      localKey: taskEmissionKey(ctx, "evaluation-recorded"),
+    });
   } else {
-    await ctx.events.emit(
-      evaluationRecordedFact(outcome.evaluation, execution.id),
-    );
-    for (const finding of outcome.findings) {
-      await ctx.events.emit(ownerFindingEvent(finding, outcome.evaluation));
+    await ctx.events.emit({
+      ...evaluationRecordedFact(outcome.evaluation, execution.id),
+      localKey: taskEmissionKey(ctx, "evaluation-recorded"),
+    });
+    for (const [index, finding] of outcome.findings.entries()) {
+      const findingIdentity = {
+        index,
+        targetAppId: finding.targetAppId,
+        dedupeKey: finding.dedupeKey,
+      };
+      await ctx.events.emit({
+        ...ownerFindingEvent(finding, outcome.evaluation),
+        localKey: taskEmissionKey(
+          ctx,
+          memberEmissionKey("owner-finding", findingIdentity),
+        ),
+      });
       if (
         finding.requestedHumanAction === "decide" ||
         finding.requestedHumanAction === "approve" ||
         finding.requestedHumanAction === "provide-input"
       ) {
-        await ctx.events.emit(humanDecisionEvent(finding, outcome.evaluation));
+        await ctx.events.emit({
+          ...humanDecisionEvent(finding, outcome.evaluation),
+          localKey: taskEmissionKey(
+            ctx,
+            memberEmissionKey("human-decision", findingIdentity),
+          ),
+        });
       }
     }
   }

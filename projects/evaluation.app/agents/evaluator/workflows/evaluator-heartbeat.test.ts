@@ -11,6 +11,11 @@ type Input = { scope?: string };
 function reconciliation(
   overrides: Partial<TaskReconciliationContext<Input>> = {},
 ): TaskReconciliationContext<Input> {
+  const trigger = {
+    type: "metric.breach",
+    data: { metricId: "evaluation.delivery-rate", value: 0.4 },
+    target: { appId: "evaluation", project: "evaluation" },
+  };
   return {
     appId: "evaluation",
     taskId: "runtime/owner-review",
@@ -49,11 +54,18 @@ function reconciliation(
       completed: [],
     },
     taskSnapshot: { live: [], truncated: false },
-    trigger: {
-      type: "metric.breach",
-      data: { metricId: "evaluation.delivery-rate", value: 0.4 },
-      target: { appId: "evaluation", project: "evaluation" },
+    events: {
+      items: [
+        {
+          eventId: 41,
+          observedAt: "2026-08-21T00:00:00.000Z",
+          event: trigger,
+        },
+      ],
+      throughEventId: 41,
+      truncated: false,
     },
+    trigger,
     ...overrides,
   };
 }
@@ -117,6 +129,7 @@ describe("evaluator heartbeat", () => {
   test("rejects malformed output as a visible no-op without self-waking the reviewed task", async () => {
     const events: Array<{
       type: string;
+      localKey?: string;
       target?: { appId?: string; taskId?: string };
     }> = [];
     const ctx = createTestAppWorkflowContext({
@@ -133,6 +146,7 @@ describe("evaluator heartbeat", () => {
         events.push(
           event as {
             type: string;
+            localKey?: string;
             target?: { appId?: string; taskId?: string };
           },
         );
@@ -156,6 +170,10 @@ describe("evaluator heartbeat", () => {
     expect(events.every((event) => event.target?.taskId === undefined)).toBe(
       true,
     );
+    expect(events.map((event) => event.localKey)).toEqual([
+      "event-41:owner-review-started",
+      "event-41:owner-reviewed",
+    ]);
   });
 
   test("keeps valid direct-child mutations and filters stale or runtime actions", () => {
@@ -220,7 +238,7 @@ describe("evaluator heartbeat", () => {
   });
 
   test("records execution failure and preserves desired state", async () => {
-    const events: Array<{ type: string }> = [];
+    const events: Array<{ type: string; localKey?: string }> = [];
     const ctx: WorkflowContext<Input> = createTestAppWorkflowContext({
       input: { scope: "evaluation.app" },
       reconciliation: reconciliation(),
@@ -231,7 +249,7 @@ describe("evaluator heartbeat", () => {
         summary: "runtime restarted",
       }),
       emit: async (event) => {
-        events.push(event as { type: string });
+        events.push(event as { type: string; localKey?: string });
       },
     });
 
@@ -252,5 +270,34 @@ describe("evaluator heartbeat", () => {
       "evaluation.owner_review_failed",
       "evaluation.owner_reviewed",
     ]);
+    expect(events.map((event) => event.localKey)).toEqual([
+      "event-41:owner-review-started",
+      "event-41:owner-review-failed",
+      "event-41:owner-reviewed",
+    ]);
+  });
+
+  test("keeps durable failure events identical across retries of one wake", async () => {
+    async function eventsFor(executionId: string) {
+      const events: unknown[] = [];
+      await execute(
+        createTestAppWorkflowContext({
+          input: { scope: "evaluation.app" },
+          reconciliation: reconciliation(),
+          callAgent: async () => ({
+            id: executionId,
+            kind: "agent",
+            status: "interrupted",
+            summary: `attempt ${executionId} restarted`,
+          }),
+          emit: async (event) => {
+            events.push(event);
+          },
+        }),
+      );
+      return events;
+    }
+
+    expect(await eventsFor("s_first")).toEqual(await eventsFor("s_retry"));
   });
 });
