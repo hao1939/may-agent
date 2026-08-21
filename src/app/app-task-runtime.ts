@@ -105,7 +105,6 @@ import {
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
-  claimFreshAppTaskSessionsForStartup,
   taskReconciliationConfig,
   APP_TASK_RECOVERY_OWNER,
   type AppTaskAttemptRecovery,
@@ -2950,17 +2949,12 @@ function emitAppTaskDependencyUpdated(
   });
 }
 
-export function persistedAppTaskSessionCanResume(meta: { status?: string } | null): boolean {
-  return meta?.status === "running" || meta?.status === "idle";
-}
-
 function recoverInterruptedAppTasks(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
   controllers: Map<string, AppTaskController>,
   includeFreshLeases = false,
-): Set<string> {
-  const claimedSessionIds = new Set<string>();
+): void {
   for (const descriptor of descriptors) {
     if (!descriptor.app.tasks) continue;
     const controller = controllers.get(descriptor.id);
@@ -2985,12 +2979,6 @@ function recoverInterruptedAppTasks(
         enqueueAppTask(controller, config, recovery.taskId);
       }
     };
-    const freshCandidates: Array<{
-      recovery: AppTaskAttemptRecovery;
-      sessionId: string;
-      nowMs: number;
-      sessionActivity: { sessionId: string; lastActivityAt: number | null };
-    }> = [];
     for (const recovery of recoverableAppTaskAttempts(
       config,
       Date.now(),
@@ -3037,37 +3025,7 @@ function recoverInterruptedAppTasks(
           continue;
         }
       }
-      if (
-        includeFreshLeases &&
-        recovery.sessionId &&
-        opts.persistDir &&
-        persistedAppTaskSessionCanResume(persistedSession)
-      ) {
-        freshCandidates.push({
-          recovery,
-          sessionId: recovery.sessionId,
-          nowMs: Date.now(),
-          sessionActivity: {
-            sessionId: recovery.sessionId,
-            lastActivityAt: readSessionLastActivityAt(opts.persistDir, recovery.sessionId),
-          },
-        });
-        continue;
-      }
       releaseRecovery(recovery);
-    }
-    const claimed = claimFreshAppTaskSessionsForStartup(
-      config,
-      freshCandidates.map((candidate) => ({
-        binding: { taskId: candidate.recovery.taskId, generation: candidate.recovery.taskGeneration },
-        sessionId: candidate.sessionId,
-        nowMs: candidate.nowMs,
-        sessionActivity: candidate.sessionActivity,
-      })),
-    );
-    for (const candidate of freshCandidates) {
-      if (claimed.has(candidate.sessionId)) claimedSessionIds.add(candidate.sessionId);
-      else releaseRecovery(candidate.recovery);
     }
     const missingAttemptRepairs = repairRunningAppTasksWithoutAttempt(config, runningRecoveryTaskIds);
     for (const repair of missingAttemptRepairs) {
@@ -3129,7 +3087,6 @@ function recoverInterruptedAppTasks(
       }
     }
   }
-  return claimedSessionIds;
 }
 
 /**
@@ -3138,10 +3095,10 @@ function recoverInterruptedAppTasks(
  * generic stale-session resumption so task-owned sessions are reconciled by
  * their durable task state first.
  */
-export function recoverInstalledAppTasks(bus: EventBus): Set<string> {
+export function recoverInstalledAppTasks(bus: EventBus): void {
   const opts = appRouterOptionsByBus.get(bus);
-  if (!opts) return new Set();
-  return recoverInterruptedAppTasks(
+  if (!opts) return;
+  recoverInterruptedAppTasks(
     opts,
     appRouterDescriptorsByBus.get(bus) ?? [],
     appTaskControllersByBus.get(bus) ?? new Map(),
@@ -3430,7 +3387,7 @@ async function commitAppTaskRuntimeDescriptors(
   opts: AppTaskRuntimeOptions,
   prepared: AppTaskRuntimeDescriptor[],
   recovery: { includeFreshLeases: boolean },
-): Promise<{ installed: AppTaskRuntimeDescriptor[]; claimedSessionIds: Set<string> }> {
+): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
     const { id } = descriptor;
@@ -3457,16 +3414,16 @@ async function commitAppTaskRuntimeDescriptors(
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
   }
-  const claimedSessionIds = recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
+  recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
   await requeueRepairedAppTaskHandlers(opts, installed, controllers);
 
-  return { installed, claimedSessionIds };
+  return { installed };
 }
 
 export async function installAppTaskRuntimes(
   opts: AppTaskRuntimeOptions,
   recovery: { includeFreshLeases?: boolean } = {},
-): Promise<{ installed: AppTaskRuntimeDescriptor[]; claimedSessionIds: Set<string> }> {
+): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
   try {

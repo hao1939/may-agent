@@ -24,9 +24,7 @@ describe("cron startup recovery", () => {
   it("runs installed App task recovery before generic stale-session resumption", () => {
     const source = readFileSync(new URL("./cron-startup.ts", import.meta.url), "utf8");
     const recoveryImport = source.indexOf('recoverInstalledAppTasks } from "./app-task-runtime.js";');
-    const recoveryCall = source.indexOf(
-      "const claimedAppTaskSessionIds = options.claimedAppTaskSessionIds ?? recoverInstalledAppTasks(bus);",
-    );
+    const recoveryCall = source.indexOf("recoverInstalledAppTasks(bus);");
     const staleResume = source.indexOf("manager.resumeStaleSessions(");
 
     expect(recoveryImport).toBeGreaterThan(-1);
@@ -34,16 +32,13 @@ describe("cron startup recovery", () => {
     expect(recoveryCall).toBeLessThan(staleResume);
   });
 
-  it("resumes only a task-bound session atomically claimed by App task recovery", () => {
+  it("never resumes task-bound execution outside bounded Task recovery", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-claimed-task-app-"));
     try {
       const persisted = session(appDir, "app-task-owner");
-      expect(shouldResumeStartupSession("claimed-session", persisted, new Set(["claimed-session"]))).toEqual({
-        resume: true,
-      });
-      expect(shouldResumeStartupSession("different-session", persisted, new Set(["claimed-session"]))).toEqual({
+      expect(shouldResumeStartupSession("task-session", persisted)).toEqual({
         resume: false,
-        reason: "Task-bound project session was not claimed by App task recovery during startup",
+        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
       });
     } finally {
       rmSync(appDir, { recursive: true, force: true });
@@ -61,7 +56,7 @@ describe("cron startup recovery", () => {
           shouldResumeStartupSession(sessionId, persisted),
         ).toEqual({
           resume: false,
-          reason: "Task-bound project session was not claimed by App task recovery during startup",
+          reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
         });
       }
     } finally {
@@ -124,7 +119,7 @@ describe("cron startup recovery", () => {
       }
       expect(shouldResumeStartupSession("session-1", session(appDir, "app-task-owner"))).toEqual({
         resume: false,
-        reason: "Task-bound project session was not claimed by App task recovery during startup",
+        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
       });
     } finally {
       rmSync(appDir, { recursive: true, force: true });

@@ -13,8 +13,6 @@ export interface CronRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   loaderOpts: AgentLoaderOptions;
-  /** Exact task sessions fenced during the initial App task install pass. */
-  claimedAppTaskSessionIds?: ReadonlySet<string>;
 }
 
 function fieldFromPrompt(prompt: string, name: string): string | null {
@@ -36,9 +34,8 @@ function currentProjectLifecycle(appDir: string): string | null {
 }
 
 export function shouldResumeStartupSession(
-  sessionId: string,
+  _sessionId: string,
   session: PersistedSession,
-  claimedAppTaskSessionIds: ReadonlySet<string> = new Set(),
 ): { resume: true } | { resume: false; reason?: string } {
   if (session.recoveryOwner === LEGACY_APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
@@ -46,7 +43,6 @@ export function shouldResumeStartupSession(
       reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
     };
   }
-  if (claimedAppTaskSessionIds.has(sessionId)) return { resume: true };
   // recoveryOwner names the recovery runtime; it does not by itself bind a
   // workflow call to a task resource.
   if (
@@ -58,7 +54,7 @@ export function shouldResumeStartupSession(
   ) {
     return {
       resume: false,
-      reason: "Task-bound project session was not claimed by App task recovery during startup",
+      reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
     };
   }
   if (!session.projectId) return { resume: true };
@@ -77,10 +73,10 @@ export function shouldResumeStartupSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts } = options;
 
-  const claimedAppTaskSessionIds = options.claimedAppTaskSessionIds ?? recoverInstalledAppTasks(bus);
+  recoverInstalledAppTasks(bus);
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
-    shouldResume: (sessionId, session) => shouldResumeStartupSession(sessionId, session, claimedAppTaskSessionIds),
+    shouldResume: shouldResumeStartupSession,
   });
   const orphansCleaned: typeof interrupted = [];
   const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
