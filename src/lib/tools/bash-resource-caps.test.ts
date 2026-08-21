@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { readdirSync } from "node:fs";
-import { createBashTool, DEFAULT_BASH_TIMEOUT } from "./bash.js";
+import { readdirSync, statSync, unlinkSync } from "node:fs";
+import { BASH_CAPTURE_TAIL_BYTES, createBashTool, DEFAULT_BASH_TIMEOUT, type BashToolDetails } from "./bash.js";
 
 describe("P113 Bash Resource Caps", () => {
   it("DEFAULT_BASH_TIMEOUT is 120 seconds", () => {
@@ -49,9 +49,11 @@ describe("P113 Bash Resource Caps", () => {
   it("settles concurrent shell calls from the same long-running process", async () => {
     const tool = createBashTool("/tmp", { defaultTimeout: 10 });
     const results = await Promise.all(
-      Array.from({ length: 8 }, (_, index) => tool.execute(`call-${index}`, {
-        command: `printf 'call-%s\\n' ${index}`,
-      })),
+      Array.from({ length: 8 }, (_, index) =>
+        tool.execute(`call-${index}`, {
+          command: `printf 'call-%s\\n' ${index}`,
+        }),
+      ),
     );
 
     for (const [index, result] of results.entries()) {
@@ -69,6 +71,53 @@ describe("P113 Bash Resource Caps", () => {
 
     const after = readdirSync("/proc/self/fd").length;
     expect(after - before).toBeLessThanOrEqual(3);
+  });
+
+  it("keeps complete large output on disk without replaying it through the daemon", async () => {
+    const outputBytes = 8 * 1024 * 1024;
+    const tool = createBashTool("/tmp", { defaultTimeout: 10 });
+    let transientBytes = 0;
+
+    const result = await tool.execute(
+      "large-output",
+      { command: `bun -e 'process.stdout.write("x".repeat(${outputBytes}))'` },
+      undefined,
+      (update) => {
+        transientBytes += Buffer.byteLength(update.content[0]?.text ?? "");
+      },
+    );
+    const details = result.details as BashToolDetails | undefined;
+    const fullOutputPath = details?.fullOutputPath;
+
+    expect(fullOutputPath).toBeString();
+    expect(statSync(fullOutputPath!).size).toBe(outputBytes);
+    expect(Buffer.byteLength(result.content[0]?.text ?? "")).toBeLessThan(BASH_CAPTURE_TAIL_BYTES);
+    expect(transientBytes).toBeLessThan(outputBytes / 2);
+    expect(result.content[0]?.text).toContain("Full output:");
+
+    unlinkSync(fullOutputPath!);
+  });
+
+  it("preserves the complete capture when a large-output command times out", async () => {
+    const outputBytes = 2 * 1024 * 1024;
+    const tool = createBashTool("/tmp", { defaultTimeout: 0.3 });
+    let error: Error | undefined;
+
+    try {
+      await tool.execute("large-timeout", {
+        command: `bun -e 'process.stdout.write("x".repeat(${outputBytes})); setTimeout(() => {}, 10_000)'`,
+      });
+    } catch (caught) {
+      error = caught as Error;
+    }
+
+    expect(error?.message).toContain("Command timed out after 0.3 seconds");
+    const fullOutputPath = error?.message.match(/Full output: ([^\]]+)/)?.[1];
+    expect(fullOutputPath).toBeString();
+    expect(statSync(fullOutputPath!).size).toBe(outputBytes);
+    expect(Buffer.byteLength(error?.message ?? "")).toBeLessThan(BASH_CAPTURE_TAIL_BYTES * 2);
+
+    unlinkSync(fullOutputPath!);
   });
 
   it("tool description mentions the default timeout", () => {
