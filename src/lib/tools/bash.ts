@@ -4,6 +4,7 @@ import {
 	closeSync,
 	createWriteStream,
 	existsSync,
+	fstatSync,
 	openSync,
 	readdirSync,
 	readFileSync,
@@ -192,6 +193,16 @@ export function drainPersistedSessionBashProcessGroups(
 export const DEFAULT_BASH_TIMEOUT = 120;
 
 /**
+ * Maximum unread output copied through the daemon for one shell poll.
+ *
+ * The command's capture file remains the complete evidence. The in-process
+ * tool loop needs only enough recent output to update the agent and construct
+ * its bounded result; replaying a multi-megabyte build log through the daemon
+ * would make execution volume control-plane work.
+ */
+export const BASH_CAPTURE_TAIL_BYTES = DEFAULT_MAX_BYTES * 2;
+
+/**
  * Generate a unique temp file path for bash output
  */
 function getTempFilePath(): string {
@@ -216,6 +227,8 @@ export interface BashToolDetails {
  * Override these to delegate command execution to remote systems (e.g., SSH).
  */
 export interface BashOperations {
+	/** The operation retains complete large output and returns its path. */
+	retainsFullOutput?: boolean;
 	/**
 	 * Execute a command and stream output.
 	 * @param command - The command to execute
@@ -234,8 +247,17 @@ export interface BashOperations {
 			onProcessGroupSpawn?: (pgid: number) => void;
 			onProcessGroupDrained?: (pgid: number) => void;
 		},
-	) => Promise<{ exitCode: number | null }>;
+	) => Promise<{
+		exitCode: number | null;
+		fullOutputPath?: string;
+		totalOutputBytes?: number;
+	}>;
 }
+
+type BashExecutionError = Error & {
+	fullOutputPath?: string;
+	totalOutputBytes?: number;
+};
 
 /**
  * Default bash operations using local shell
@@ -244,16 +266,17 @@ export function createLocalBashOperations(
 	drainProcessGroup: (pgid: number) => Promise<boolean> = drainBashProcessGroup,
 ): BashOperations {
 	return {
-	exec: (command, cwd, { onData, signal, timeout, env, onProcessGroupSpawn, onProcessGroupDrained }) => {
-		return new Promise((resolve, reject) => {
-			if (!existsSync(cwd)) {
-				reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
-				return;
-			}
-			if (signal?.aborted) {
-				reject(new Error("aborted"));
-				return;
-			}
+		retainsFullOutput: true,
+		exec: (command, cwd, { onData, signal, timeout, env, onProcessGroupSpawn, onProcessGroupDrained }) => {
+			return new Promise((resolve, reject) => {
+				if (!existsSync(cwd)) {
+					reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
+					return;
+				}
+				if (signal?.aborted) {
+					reject(new Error("aborted"));
+					return;
+				}
 
 			const capturePath = getTempFilePath();
 			const captureFd = openSync(capturePath, "w+");
@@ -270,6 +293,13 @@ export function createLocalBashOperations(
 
 			const flushCapture = () => {
 				if (captureClosed) return;
+				const captureSize = fstatSync(captureFd).size;
+				// Keep the complete log on disk, but discard stale transient output
+				// before it crosses into the daemon. The final tail is sufficient for
+				// the model response and the retained file is the full evidence.
+				if (captureSize - captureOffset > BASH_CAPTURE_TAIL_BYTES) {
+					captureOffset = captureSize - BASH_CAPTURE_TAIL_BYTES;
+				}
 				const buffer = Buffer.allocUnsafe(64 * 1024);
 				while (true) {
 					const bytesRead = readSync(captureFd, buffer, 0, buffer.length, captureOffset);
@@ -279,20 +309,28 @@ export function createLocalBashOperations(
 				}
 			};
 
-			const cleanup = () => {
+			const cleanup = (): { fullOutputPath?: string; totalOutputBytes: number } => {
 				if (timeoutHandle) clearTimeout(timeoutHandle);
 				if (capturePollHandle) clearInterval(capturePollHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
+				let totalOutputBytes = 0;
 				if (!captureClosed) {
 					flushCapture();
+					totalOutputBytes = fstatSync(captureFd).size;
 					captureClosed = true;
 					closeSync(captureFd);
-					try {
-						unlinkSync(capturePath);
-					} catch {
-						// The capture file was already removed.
+					if (totalOutputBytes <= DEFAULT_MAX_BYTES) {
+						try {
+							unlinkSync(capturePath);
+						} catch {
+							// The capture file was already removed.
+						}
 					}
 				}
+				return {
+					totalOutputBytes,
+					...(totalOutputBytes > DEFAULT_MAX_BYTES ? { fullOutputPath: capturePath } : {}),
+				};
 			};
 			const settleAfterDrain = async (exitCode: number | null, error?: Error) => {
 				if (settled) return;
@@ -302,15 +340,19 @@ export function createLocalBashOperations(
 				if (child.pid) {
 					const drained = await drainProcessGroup(child.pid);
 					if (!drained) {
-						cleanup();
-						reject(new Error(`bash process group ${child.pid} did not exit after bounded SIGTERM/SIGKILL drain; durable ownership must be recovered before settlement`));
+						const capture = cleanup();
+						const drainError = new Error(`bash process group ${child.pid} did not exit after bounded SIGTERM/SIGKILL drain; durable ownership must be recovered before settlement`) as BashExecutionError;
+						Object.assign(drainError, capture);
+						reject(drainError);
 						return;
 					}
 					onProcessGroupDrained?.(child.pid);
 				}
-				cleanup();
-				if (error) reject(error);
-				else resolve({ exitCode });
+				const capture = cleanup();
+				if (error) {
+					Object.assign(error as BashExecutionError, capture);
+					reject(error);
+				} else resolve({ exitCode, ...capture });
 			};
 			const onAbort = () => void settleAfterDrain(null, new Error("aborted"));
 
@@ -325,8 +367,8 @@ export function createLocalBashOperations(
 					timeout * 1000,
 				);
 			}
-		});
-	},
+			});
+		},
 	};
 }
 
@@ -466,7 +508,7 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 					totalBytes += data.length;
 
 					// Start writing to temp file once we exceed the threshold
-					if (totalBytes > DEFAULT_MAX_BYTES && !tempFilePath) {
+					if (!ops.retainsFullOutput && totalBytes > DEFAULT_MAX_BYTES && !tempFilePath) {
 						tempFilePath = getTempFilePath();
 						tempFileStream = createWriteStream(tempFilePath);
 						// Write all buffered chunks to the file
@@ -525,7 +567,8 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 						)
 						: undefined,
 				})
-					.then(({ exitCode }) => {
+					.then(({ exitCode, fullOutputPath, totalOutputBytes }) => {
+						tempFilePath = fullOutputPath ?? tempFilePath;
 						// Close temp file stream
 						if (tempFileStream) {
 							tempFileStream.end();
@@ -538,11 +581,19 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 						// Apply tail truncation
 						const truncation = truncateTail(fullOutput);
 						let outputText = truncation.content || "(no output)";
+						const sourceTotalBytes = totalOutputBytes ?? totalBytes;
+						const sourceBounded = sourceTotalBytes > totalBytes;
 
 						// Build details with truncation info
 						let details: BashToolDetails | undefined;
 
-						if (truncation.truncated) {
+						if (sourceBounded) {
+							details = {
+								...(truncation.truncated ? { truncation } : {}),
+								fullOutputPath: tempFilePath,
+							};
+							outputText += `\n\n[Showing the recent ${formatSize(Buffer.byteLength(fullOutput))} of ${formatSize(sourceTotalBytes)} output. Full output: ${tempFilePath}]`;
+						} else if (truncation.truncated) {
 							details = {
 								truncation,
 								fullOutputPath: tempFilePath,
@@ -572,7 +623,8 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 							resolve({ content: [{ type: "text", text: outputText }], details });
 						}
 					})
-					.catch((err: Error) => {
+					.catch((err: BashExecutionError) => {
+						tempFilePath = err.fullOutputPath ?? tempFilePath;
 						// Close temp file stream
 						if (tempFileStream) {
 							tempFileStream.end();
@@ -581,6 +633,10 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 						// Combine all buffered chunks for error output
 						const fullBuffer = Buffer.concat(chunks);
 						let output = fullBuffer.toString("utf-8");
+						if (err.totalOutputBytes && err.totalOutputBytes > fullBuffer.byteLength) {
+							if (output) output += "\n\n";
+							output += `[Showing the recent ${formatSize(fullBuffer.byteLength)} of ${formatSize(err.totalOutputBytes)} output. Full output: ${tempFilePath}]`;
+						}
 
 						if (err.message === "aborted") {
 							if (output) output += "\n\n";
@@ -592,7 +648,8 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 							output += `Command timed out after ${timeoutSecs} seconds`;
 							reject(new Error(output));
 						} else {
-							reject(err);
+							if (output && output !== err.message) reject(new Error(`${err.message}\n\n${output}`));
+							else reject(err);
 						}
 					});
 			});
