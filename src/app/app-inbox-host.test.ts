@@ -398,9 +398,9 @@ describe("App inbox host", () => {
       id: "turn-1",
       conversation: { id: "may:primary", current: { messageId: "message-1" } },
     });
-    expect(readAppConversationResource(db, "may", "may:primary").work).toEqual([
-      expect.objectContaining({ requestId: "turn-1", dependency: { kind: "task", id: "probe/turn-1" } }),
-    ]);
+    const conversation = readAppConversationResource(db, "may", "may:primary");
+    expect(conversation.messages).toEqual([]);
+    expect(conversation).not.toHaveProperty("work");
   });
 
   it("bounds owner Conversation context by bytes instead of retained message count", () => {
@@ -417,14 +417,6 @@ describe("App inbox host", () => {
         metadata: { requestId: index === 29 ? "current" : `request-${index + 1}` },
         createdAt: index + 1,
       })),
-      work: Array.from({ length: 20 }, (_, index) => ({
-        requestId: index === 0 ? "current" : `work-${index}`,
-        message: `Work ${index} ${"x".repeat(150)}`,
-        state: "working" as const,
-        progress: `Progress ${"y".repeat(230)}`,
-        createdAt: index,
-        changedAt: index,
-      })),
     };
 
     const bounded = boundedAppRequestConversation(conversation, "current");
@@ -432,8 +424,7 @@ describe("App inbox host", () => {
     expect(Buffer.byteLength(JSON.stringify(bounded), "utf8")).toBeLessThanOrEqual(APP_REQUEST_CONVERSATION_MAX_BYTES);
     expect(bounded.messages.at(-1)?.id).toBe("message-29");
     expect(bounded.messages.length).toBeLessThan(conversation.messages.length);
-    expect(bounded.work?.length).toBeLessThan(conversation.work!.length);
-    expect(bounded.work?.some((item) => item.requestId === "current")).toBeFalse();
+    expect(bounded).not.toHaveProperty("work");
   });
 
   it("continues with the next request after one Task resolver fails", async () => {
