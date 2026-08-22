@@ -1085,7 +1085,18 @@ running Task attempts, running workflows, daemon child processes, and durable
 event growth. Any activity invalidates the sample instead of being charged to
 the idle EventHub. Its first three-second run correctly rejected the window:
 Evaluation work and child commands were active even though no new event arrived.
-Production activation and a valid quiet window remain outstanding.
+
+The initial sampler itself exposed a measurement flaw: opening a new control
+connection every second raised an otherwise empty Runtime from about 0.5% CPU
+to 2.2-2.8%. It now keeps one connection, requests diagnostics only at the
+window endpoints, samples CPU/RSS directly from `/proc`, and uses one-second
+read-only Task/session/attempt/workflow/event watermarks to catch work that
+starts and finishes between endpoint status reads. One isolated 30-second
+window was correctly rejected when the minute daemon heartbeat appended an
+event. The immediate quiet retry was valid at 0.53% CPU, 104,747,008 bytes RSS,
+zero active executions, attempts, workflows, or children, and no durable state
+change. This proves the current empty core meets its local idle targets.
+Production activation and a retained-state quiet window remain outstanding.
 
 ### Phase 0: freeze the contract and expose cost
 

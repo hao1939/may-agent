@@ -117,11 +117,14 @@ bun scripts/sample-runtime-quiet.ts \
   --seconds 30
 ```
 
-The sampler reads the control socket, `/proc`, and SQLite in read-only mode. It
-rejects the window when an agent, Task attempt, workflow, daemon child process,
-or new durable event appears. A rejected window is execution evidence, not an
-idle-performance failure; wait for real quiescence and sample again. Judge the
-idle CPU/RSS target only from `validQuietWindow: true` output.
+The sampler keeps one control-socket connection and reads `/proc` and SQLite in
+read-only mode. It rejects the window when an agent, Task attempt, workflow,
+daemon child process, durable event, Task version, session activity, or run
+record appears. Process diagnostics are requested only at the endpoints;
+one-second activity checks do not repeatedly reconnect to or profile the
+daemon. A rejected window is execution evidence, not an idle-performance
+failure; wait for real quiescence and sample again. Judge the idle CPU/RSS
+target only from `validQuietWindow: true` output.
 
 An older deployed Runtime that does not expose `diagnostics.pid` may be sampled
 temporarily with `--pid <actual-daemon-pid>`. Do not use a retained identity PID

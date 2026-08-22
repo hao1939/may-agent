@@ -172,6 +172,9 @@ process CPU, heap, external memory, RSS, PID, and uptime on demand. Normal
 health probes do not pay that observation cost. The quiet-runtime sampler
 combines this explicit read with active execution, child-process, Task,
 workflow, and event checks; it refuses to label a contaminated window idle.
+It keeps one control connection, reads CPU/RSS from `/proc`, and checks durable
+activity watermarks once per second. Only the window endpoints request process
+diagnostics, so the measurement does not manufacture the CPU load it reports.
 
 The agent-facing `system_status` dashboard is also an on-demand bounded read.
 Active sessions come from the status index and recent terminal sessions from
