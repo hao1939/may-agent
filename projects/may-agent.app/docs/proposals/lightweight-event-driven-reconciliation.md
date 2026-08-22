@@ -661,6 +661,20 @@ The main process settled near 310-325 MiB RSS rather than the prior roughly
 averaged 5% of one CPU and no physical reads. Retained history and the 68
 invalid admission plans remain intact.
 
+A longer sample then isolated the remaining five-second CPU spikes. About 20
+legacy inbox items already had an exact dependency but were still reclaimed
+after every failed review: generic claim release assigned a one-second retry,
+and the five-second scan claimed them again. This turned dependency waiting
+into polling even though dependency events and bounded recovery already exist.
+Claim release now distinguishes ordinary pending work from dependency-bound
+work. Ordinary failures retain their bounded retry; a failed dependency review
+returns to `handling` with no `available_at` or `review_at` deadline and wakes
+only for the exact dependency event or an explicit bounded recovery review. A
+regression test proves that elapsed wall time alone cannot reclaim the wait and
+that the later exact dependency wake makes it claimable immediately. No inbox
+row, session, event, Task, or retained evidence was deleted or rewritten to
+apply this repair.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
