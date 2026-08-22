@@ -8,6 +8,7 @@ import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
   getAppEventAdmissionPlan,
+  listPendingAppEventAdmissionPlans,
   markAppEventAdmissionCommandAdmitted,
   recordAppEventAdmissionCommandFailure,
 } from "./app-event-admission-store.js";
@@ -167,6 +168,48 @@ describe("App event admission store", () => {
       lastError: undefined,
       completedAt: 1700,
     });
+  });
+
+  it("reads only a bounded due slice for recovery", () => {
+    const database = fixture();
+    database
+      .prepare(
+        `INSERT INTO events (id, event_type, data, timestamp)
+         VALUES (102, 'sample.changed', '{}', 1001), (103, 'sample.changed', '{}', 1002)`,
+      )
+      .run();
+    for (const [eventId, now] of [
+      [101, 1_000],
+      [102, 2_000],
+      [103, 3_000],
+    ] as const) {
+      createAppEventAdmissionPlan(database, {
+        eventId,
+        registrySnapshotId: "boot-a:1",
+        registryGeneration: 1,
+        now,
+        routes: [
+          {
+            appId: "sample",
+            kind: "task",
+            routeId: `work/${eventId}`,
+            intent: null,
+            conditionTaskIds: [],
+          },
+        ],
+      });
+    }
+
+    expect(listPendingAppEventAdmissionPlans(database, { updatedBefore: 2_500, limit: 1 })).toMatchObject([
+      { eventId: 101 },
+    ]);
+    expect(listPendingAppEventAdmissionPlans(database, { updatedBefore: 2_500, limit: 10 })).toMatchObject([
+      { eventId: 101 },
+      { eventId: 102 },
+    ]);
+    expect(() => listPendingAppEventAdmissionPlans(database, { limit: 0 })).toThrow(
+      "recovery limit must be an integer",
+    );
   });
 
   it("replays the retained version-one inbox payload without inventing Condition wakes", () => {

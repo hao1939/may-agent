@@ -21,25 +21,80 @@ let reconnectDelayMs = 250;
 let buffer = "";
 let raw = false;
 let debug = false;
-let watchMode = "may"; // may | all | current
-let watchedSessionId = null;
-let pendingStatusView = null;
+let watchedTask = null;
+let watchedTaskReadInFlight = false;
+let watchedTaskDirty = false;
 let lastDisconnectedMessage = "";
 let conversationReady = false;
 const pendingInputLines = [];
 
-const knownSessions = new Map();
-const sessionsWithText = new Set();
 const renderedConversationMessages = new Set();
+function rememberRenderedConversationMessage(messageId) {
+  renderedConversationMessages.add(messageId);
+  // Passive reads contain 30 messages. Retain several windows for reconnect
+  // deduplication without growing with the append-only Conversation forever.
+  while (renderedConversationMessages.size > 256) {
+    const oldest = renderedConversationMessages.values().next().value;
+    if (typeof oldest !== "string") break;
+    renderedConversationMessages.delete(oldest);
+  }
+}
 let lastConversationSequence = Date.now();
 let lastWork = [];
 const pendingConversationReads = [];
 let conversationSyncDirty = false;
+const pendingAppReads = [];
+const pendingTaskListReads = [];
+const pendingTaskReads = [];
+const knownAppIds = new Set();
+const knownTaskRefs = new Set();
+
+function rememberCompletion(set, value, limit) {
+  if (set.has(value)) set.delete(value);
+  set.add(value);
+  while (set.size > limit) set.delete(set.values().next().value);
+}
+
+const ordinaryCommands = [
+  "/apps",
+  "/tasks",
+  "/task",
+  "/watch",
+  "/unwatch",
+  "/cancel",
+  "/help",
+  "/reload",
+  "/restart",
+  "/shell",
+  "/exit",
+];
+
+function completeInput(line) {
+  const input = String(line || "");
+  const parts = input.split(/\s+/);
+  if (parts.length === 1) {
+    const matches = ordinaryCommands.filter((command) => command.startsWith(parts[0]));
+    return [matches.length ? matches : ordinaryCommands, parts[0]];
+  }
+  const command = parts[0];
+  const current = parts.at(-1) || "";
+  const choices =
+    command === "/apps"
+      ? [...knownAppIds]
+      : command === "/tasks"
+        ? [...knownAppIds, "all"]
+        : command === "/task" || command === "/watch" || command === "/cancel"
+          ? [...knownTaskRefs]
+          : [];
+  const matches = choices.filter((choice) => choice.startsWith(current));
+  return [matches.length ? matches : choices, current];
+}
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
   historySize: 1000,
+  completer: completeInput,
 });
 
 function shortSessionId(sessionId) {
@@ -50,6 +105,7 @@ function shortSessionId(sessionId) {
 
 function promptText() {
   if (!connected) return "you[disconnected]> ";
+  if (watchedTask) return `you[task ${watchedTask.ref}]> `;
   return "you> ";
 }
 
@@ -104,37 +160,8 @@ function flatPayload(event) {
   return Object.keys(data).length > 0 ? data : event || {};
 }
 
-function eventSessionId(event) {
-  const data = flatPayload(event);
-  return typeof data.sessionId === "string" ? data.sessionId : null;
-}
-
-function rememberSession(item) {
-  if (!item || typeof item !== "object") return;
-  const sessionId = typeof item.sessionId === "string" ? item.sessionId : null;
-  if (!sessionId) return;
-  const previous = knownSessions.get(sessionId) || {};
-  knownSessions.set(sessionId, {
-    ...previous,
-    ...item,
-    sessionId,
-    updatedAt: Date.now(),
-  });
-}
-
-function rememberStatusItems(items) {
-  if (!Array.isArray(items)) return;
-  for (const item of items) {
-    rememberSession(item);
-  }
-}
-
-function watchSessions() {
-  if (watchMode === "current" && watchedSessionId) return [watchedSessionId];
-  if (watchMode === "all" || debug || raw) return ["*"];
-  // Normal conversation only needs responses addressed to this delivery
-  // channel. Session streams remain available through /watch.
-  return [];
+function subscribedSessions() {
+  return debug || raw ? ["*"] : [];
 }
 
 function sendFrame(frame, opts = {}) {
@@ -175,7 +202,7 @@ function mayInputFrame(message) {
   // Readline already rendered this human turn in the current terminal. Keep
   // its durable identity so a Conversation wake does not echo it back here,
   // while turns from another Console process remain visible.
-  renderedConversationMessages.add(messageId);
+  rememberRenderedConversationMessage(messageId);
   return {
     type: "publish",
     event: {
@@ -185,6 +212,7 @@ function mayInputFrame(message) {
         conversationId,
         author: { kind: "human", id: messageId },
         text: message,
+        ...(watchedTask ? { context: { focusedTask: { appId: watchedTask.appId, taskId: watchedTask.taskId } } } : {}),
         metadata: { channel: source, channelThreadId: "local-terminal" },
       },
       idempotencyKey: messageId,
@@ -208,6 +236,7 @@ function requestConversation(kind = "startup") {
       appId: "may",
       conversationId,
       limit: 30,
+      includeWork: false,
     },
     { silent: true },
   );
@@ -235,6 +264,56 @@ function requestWork(options = {}) {
     { silent: true },
   );
   if (!sent) pendingConversationReads.pop();
+  return sent;
+}
+
+function requestApps(appId = null, command = "/apps") {
+  pendingAppReads.push({ appId, command });
+  const sent = sendFrame({ type: "apps.list", ...(appId ? { appId } : {}) }, { silent: true });
+  if (!sent) pendingAppReads.pop();
+  return sent;
+}
+
+function requestTasks(options = {}) {
+  const pending = {
+    appId: options.appId || null,
+    includeDone: options.includeDone === true,
+    command: options.command || "/tasks",
+  };
+  pendingTaskListReads.push(pending);
+  const sent = sendFrame(
+    {
+      type: "tasks.list",
+      ...(pending.appId ? { appId: pending.appId } : {}),
+      ...(pending.includeDone ? { includeDone: true } : {}),
+      limit: 30,
+    },
+    { silent: true },
+  );
+  if (!sent) pendingTaskListReads.pop();
+  return sent;
+}
+
+function requestTask(input) {
+  const pending = {
+    kind: input.kind || "detail",
+    command: input.command || `/task ${input.ref || ""}`.trim(),
+  };
+  pendingTaskReads.push(pending);
+  if (pending.kind === "watch-refresh") watchedTaskReadInFlight = true;
+  const sent = sendFrame(
+    {
+      type: "task.get",
+      ...(input.ref ? { ref: input.ref } : {}),
+      ...(input.appId ? { appId: input.appId } : {}),
+      ...(input.taskId ? { taskId: input.taskId } : {}),
+    },
+    { silent: true },
+  );
+  if (!sent) {
+    pendingTaskReads.pop();
+    if (pending.kind === "watch-refresh") watchedTaskReadInFlight = false;
+  }
   return sent;
 }
 
@@ -270,7 +349,109 @@ function presentView(command, text, options = {}) {
     metadata: {
       command,
       ...(Array.isArray(options.requestIds) && options.requestIds.length > 0 ? { requestIds: options.requestIds } : {}),
+      ...(Array.isArray(options.taskRefs) && options.taskRefs.length > 0 ? { taskRefs: options.taskRefs } : {}),
     },
+  });
+}
+
+function taskIdentity(task) {
+  return task && typeof task.appId === "string" && typeof task.taskId === "string"
+    ? { appId: task.appId, taskId: task.taskId }
+    : null;
+}
+
+function taskResult(task) {
+  if (typeof task?.response === "string" && task.response.trim()) return task.response.trim();
+  if (typeof task?.summary === "string" && task.summary.trim()) return task.summary.trim();
+  return "";
+}
+
+function renderApps(apps, pending) {
+  if (!Array.isArray(apps)) return;
+  const lines = ["", pending?.appId ? `App ${pending.appId}:` : "Apps:"];
+  if (apps.length === 0) lines.push("  Nothing found.");
+  for (const app of apps) {
+    if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
+    const active = Number(app.activeTasks || 0);
+    const details = [
+      `${active} active`,
+      ...(Number(app.runningTasks || 0) ? [`${app.runningTasks} running`] : []),
+      ...(Number(app.waitingTasks || 0) ? [`${app.waitingTasks} waiting`] : []),
+      ...(Number(app.attentionTasks || 0) ? [`${app.attentionTasks} attention`] : []),
+    ];
+    lines.push(`  ${app.id} — ${details.join(" · ")}`);
+    if (pending?.appId && typeof app.description === "string" && app.description.trim()) {
+      lines.push(`    ${app.description.trim()}`);
+    }
+  }
+  lines.push("");
+  presentView(pending?.command || "/apps", lines.join("\n"));
+}
+
+function renderTasks(page, pending) {
+  const tasks = Array.isArray(page?.items) ? page.items : [];
+  const title = pending?.includeDone ? "Tasks (active and recent):" : "Active Tasks:";
+  const lines = ["", title];
+  if (tasks.length === 0) lines.push("  Nothing found.");
+  for (const task of tasks) {
+    if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
+    if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
+    const result = taskResult(task);
+    lines.push(
+      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${String(task.status || "?").padEnd(9)} ${String(task.outcome || task.taskId || "Task")}`,
+    );
+    if (task.terminal && result) lines.push(...result.split("\n").map((line) => `    ${line}`));
+  }
+  if (page?.nextCursor) lines.push("  More Tasks are available; use the channel's next-page control.");
+  lines.push("");
+  presentView(pending?.command || "/tasks", lines.join("\n"), {
+    taskRefs: tasks.map(taskIdentity).filter(Boolean),
+  });
+}
+
+function renderTask(task, command, options = {}) {
+  if (!task || typeof task !== "object") {
+    printLine("[task] Task not found.");
+    return;
+  }
+  if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
+  if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
+  const lines = [
+    "",
+    `Task ${task.ref}:`,
+    `  App: ${task.appId}`,
+    `  ID: ${task.taskId}`,
+    `  Status: ${task.status}`,
+    `  Outcome: ${task.outcome}`,
+    `  Updated: ${formatWorkTime(task.updatedAt)}`,
+  ];
+  const result = taskResult(task);
+  if (result)
+    lines.push(task.terminal ? "  Result:" : "  Progress:", ...result.split("\n").map((line) => `    ${line}`));
+  if (task.execution?.sessionId) lines.push(`  Diagnostic session: ${task.execution.sessionId}`);
+  lines.push("");
+  if (options.transient) printLine(lines.join("\n"));
+  else presentView(command, lines.join("\n"), { taskRefs: [taskIdentity(task)] });
+}
+
+function setWatchedTask(task) {
+  watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
+  watchedTaskDirty = false;
+  subscribe();
+  refreshPrompt();
+}
+
+function refreshWatchedTask() {
+  if (!watchedTask) return;
+  if (watchedTaskReadInFlight) {
+    watchedTaskDirty = true;
+    return;
+  }
+  requestTask({
+    kind: "watch-refresh",
+    appId: watchedTask.appId,
+    taskId: watchedTask.taskId,
+    command: `/watch ${watchedTask.ref}`,
   });
 }
 
@@ -413,20 +594,8 @@ function renderConversation(messages) {
     const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
     printConversationText(speaker, text);
-    renderedConversationMessages.add(id);
+    rememberRenderedConversationMessage(id);
   }
-}
-
-function steerFrame(sessionId, message) {
-  return canonicalFrame("session.steer.requested", { message }, { target: { sessionId } });
-}
-
-function cancelFrame(sessionId) {
-  return canonicalFrame("session.cancel.requested", {}, { urgency: "high", target: { sessionId } });
-}
-
-function cancelAllFrame() {
-  return canonicalFrame("session.cancel_all.requested", { reason: "human requested cancel all" }, { urgency: "high" });
 }
 
 function runtimeFrame(type) {
@@ -434,56 +603,13 @@ function runtimeFrame(type) {
   return canonicalFrame(type, {}, { urgency });
 }
 
-function subscribe(mode = watchMode) {
-  watchMode = mode;
+function subscribe() {
   return sendFrame({
     type: "subscribe",
-    sessions: watchSessions(),
+    sessions: subscribedSessions(),
     conversations: [conversationId],
+    task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
   });
-}
-
-function requestStatus(command = "/status") {
-  pendingStatusView = command;
-  if (!sendFrame({ type: "status" })) pendingStatusView = null;
-}
-
-function resolveSessionId(input) {
-  const needle = String(input || "").trim();
-  if (!needle) return { ok: false, message: "missing session id" };
-  if (knownSessions.has(needle)) return { ok: true, sessionId: needle };
-  const matches = [...knownSessions.keys()].filter((id) => id.startsWith(needle) || id.endsWith(needle));
-  if (matches.length === 1) return { ok: true, sessionId: matches[0] };
-  if (matches.length > 1)
-    return { ok: false, message: `ambiguous session id '${needle}': ${matches.map(shortSessionId).join(", ")}` };
-  return { ok: false, message: `unknown session id '${needle}'. Run /sessions first.` };
-}
-
-function renderStatus(items) {
-  rememberStatusItems(items);
-  if (!Array.isArray(items) || items.length === 0) return "[status] No active sessions";
-  return items
-    .map((item) => {
-      const sessionId = String(item.sessionId || "?");
-      const agent = String(item.agent || item.name || "?");
-      const status = String(item.status || "?");
-      const kind = String(item.kind || "?");
-      const task = String(item.task || "")
-        .replace(/\s+/g, " ")
-        .slice(0, 100);
-      return `${shortSessionId(sessionId).padEnd(10)}  ${agent.padEnd(12)}  ${status.padEnd(8)}  ${kind.padEnd(6)}  "${task}"`;
-    })
-    .join("\n");
-}
-
-function shouldShowSessionEvent(event) {
-  if (watchMode === "all") return true;
-  const sid = eventSessionId(event);
-  if (!sid) return true;
-  if (watchMode === "current") return !!watchedSessionId && sid === watchedSessionId;
-  const data = flatPayload(event);
-  const known = knownSessions.get(sid) || {};
-  return String(data.agent || known.agent || "") === daemonAgent;
 }
 
 function formatToolArgs(tool, args) {
@@ -497,21 +623,12 @@ function formatToolArgs(tool, args) {
 function handleConnected(event) {
   connected = true;
   reconnectDelayMs = 250;
-  rememberStatusItems(event.activeAgents);
   printLine(`Connected to ${event.agent || daemonAgent} (${event.instance || instance})`);
 }
 
 function handleSessionStart(event) {
   const data = flatPayload(event);
-  rememberSession({
-    sessionId: data.sessionId,
-    agent: data.agent,
-    status: "running",
-    kind: data.kind,
-    task: data.task,
-    parentSessionId: data.parentSessionId,
-  });
-  if (!debug && watchMode === "may") return;
+  if (!debug) return;
   const parent = data.parentSessionId ? ` child of ${shortSessionId(data.parentSessionId)}` : "";
   printLine(
     `[${data.agent || daemonAgent}] started ${shortSessionId(data.sessionId)}${parent}: ${String(data.task || "").slice(0, 100)}`,
@@ -522,36 +639,21 @@ function handleSessionEnd(event) {
   const data = flatPayload(event);
   const sessionId = typeof data.sessionId === "string" ? data.sessionId : "";
   const agent = String(data.agent || daemonAgent);
-  const kind = String(data.kind || knownSessions.get(sessionId)?.kind || "");
   const status = String(data.status || "done");
-  rememberSession({
-    sessionId,
-    agent,
-    status,
-    kind,
-    task: data.task,
-  });
-  const isMayTurn = agent === daemonAgent;
+  if (!debug) return;
   const rawSummary = String(data.summary || data.error || "").trim();
-  if (
-    (debug || watchMode !== "may") &&
-    isMayTurn &&
-    status === "done" &&
-    rawSummary &&
-    !sessionsWithText.has(sessionId)
-  ) {
-    printResponseText(rawSummary);
-  }
-  if (!debug && watchMode === "may" && status === "done") {
-    refreshPrompt();
-    return;
-  }
-  const summary = isMayTurn && status === "done" ? "" : rawSummary;
-  printLine(`[${agent}] ${shortSessionId(sessionId)} ${status}${summary ? `: ${summary.slice(0, 180)}` : ""}`);
+  printLine(`[${agent}] ${shortSessionId(sessionId)} ${status}${rawSummary ? `: ${rawSummary.slice(0, 180)}` : ""}`);
 }
 
 function handleEvent(event) {
   if (!event || typeof event !== "object") return;
+  if (event.type === "app.task.updated") {
+    const data = flatPayload(event);
+    if (watchedTask && data.appId === watchedTask.appId && data.taskId === watchedTask.taskId) {
+      refreshWatchedTask();
+    }
+    return;
+  }
   if (event.type === "conversation.updated") {
     const data = flatPayload(event);
     if (data.conversationId === conversationId) {
@@ -576,7 +678,6 @@ function handleEvent(event) {
     return;
   }
 
-  if (!shouldShowSessionEvent(event)) return;
   const data = flatPayload(event);
   switch (event.type) {
     case "connected":
@@ -586,13 +687,13 @@ function handleEvent(event) {
       if (event.command === "publish" && Number.isSafeInteger(event.eventId) && event.eventId > 0) {
         // Non-human Conversation events are projected by durable event row ID.
         // Marking every local publish receipt is harmless for other event kinds.
-        renderedConversationMessages.add(`event:${event.eventId}`);
+        rememberRenderedConversationMessage(`event:${event.eventId}`);
       }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
-          renderWorkList(event.conversation?.work, { all: false, command: "/work", transient: true });
+          lastWork = Array.isArray(event.conversation?.work) ? event.conversation.work : [];
           conversationReady = true;
           flushPendingInput();
         } else if (pending?.kind === "sync") {
@@ -603,6 +704,46 @@ function handleEvent(event) {
           renderWorkList(event.conversation?.work, pending);
         }
         if (conversationSyncDirty) requestConversation("sync");
+      }
+      if (event.command === "apps.list") {
+        renderApps(event.apps, pendingAppReads.shift());
+      }
+      if (event.command === "tasks.list") {
+        renderTasks(event.tasks, pendingTaskListReads.shift());
+      }
+      if (event.command === "task.get") {
+        const pending = pendingTaskReads.shift();
+        const task = event.task;
+        if (pending?.kind === "watch-start") {
+          renderTask(task, pending.command);
+          if (task?.terminal) {
+            setWatchedTask(null);
+            printLine("[watch] Task is already terminal.");
+          } else if (task) {
+            setWatchedTask(task);
+            printLine(`[watch] Watching ${task.ref}. Bare text is Task feedback through May.`);
+          }
+        } else if (pending?.kind === "watch-refresh") {
+          watchedTaskReadInFlight = false;
+          renderTask(task, pending.command, { transient: true });
+          if (!task || task.terminal) {
+            setWatchedTask(null);
+            if (task?.terminal) printLine("[watch] Task finished; watch ended.");
+          } else if (watchedTask) {
+            watchedTask.ref = task.ref;
+          }
+          if (watchedTaskDirty) {
+            watchedTaskDirty = false;
+            refreshWatchedTask();
+          }
+        } else {
+          renderTask(task, pending?.command || "/task");
+        }
+      }
+      if (event.command === "task.cancel") {
+        const task = event.task;
+        if (task) renderTask(task, "/cancel");
+        else printLine("[cancel] Cancellation was accepted.");
       }
       // Admission is transport bookkeeping. May's durable acknowledgement or
       // answer is the human-visible response.
@@ -615,29 +756,23 @@ function handleEvent(event) {
           flushPendingInput();
         }
       }
-      printLine(`[error] ${event.message || "unknown error"}`);
-      return;
-    case "status":
-      {
-        const rendered = renderStatus(event.activeAgents);
-        if (pendingStatusView) presentView(pendingStatusView, rendered);
-        else if (debug || watchMode === "all") printLine(rendered);
-        pendingStatusView = null;
+      if (event.command === "apps.list") pendingAppReads.shift();
+      if (event.command === "tasks.list") pendingTaskListReads.shift();
+      if (event.command === "task.get") {
+        const pending = pendingTaskReads.shift();
+        if (pending?.kind === "watch-refresh") watchedTaskReadInFlight = false;
       }
+      printLine(`[error] ${event.message || "unknown error"}`);
       return;
     case "session.start":
       handleSessionStart(event);
       return;
     case "text":
-      if (!debug && watchMode === "may") return;
-      {
-        const sid = eventSessionId(event);
-        if (sid) sessionsWithText.add(sid);
-        try {
-          readline.clearLine(process.stdout, 0);
-          readline.cursorTo(process.stdout, 0);
-        } catch {}
-      }
+      if (!debug) return;
+      try {
+        readline.clearLine(process.stdout, 0);
+        readline.cursorTo(process.stdout, 0);
+      } catch {}
       writeStdout(String(event.text || ""));
       return;
     case "tool_call":
@@ -658,7 +793,7 @@ function handleEvent(event) {
       return;
     }
     case "info":
-      if (debug || watchMode === "all") printLine(String(event.message || ""));
+      if (debug) printLine(String(event.message || ""));
       return;
   }
 }
@@ -676,13 +811,15 @@ function connectSocket() {
     sendFrame(
       {
         type: "subscribe",
-        sessions: watchSessions(),
+        sessions: subscribedSessions(),
         conversations: [conversationId],
+        task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
       },
       { silent: true },
     );
-    sendFrame({ type: "status" }, { silent: true });
     requestConversation();
+    watchedTaskReadInFlight = false;
+    refreshWatchedTask();
     refreshPrompt();
   });
 
@@ -714,6 +851,10 @@ function connectSocket() {
     conversationReady = false;
     socket = null;
     pendingConversationReads.length = 0;
+    pendingAppReads.length = 0;
+    pendingTaskListReads.length = 0;
+    pendingTaskReads.length = 0;
+    watchedTaskReadInFlight = false;
     if (closing) return;
     refreshPrompt();
     scheduleReconnect();
@@ -734,26 +875,16 @@ function printHelp() {
   printLine(
     [
       "Commands:",
-      "  /work [all|number]",
-      "  /status, /sessions",
-      "  /watch may|all|<sessionId>",
-      "  /steer <sessionId> <message>",
-      "  /cancel <sessionId>|all",
-      "  /debug, /raw",
+      "  /apps [app]",
+      "  /tasks [app] [all]",
+      "  /task <ref>",
+      "  /watch [ref], /unwatch",
+      "  /cancel [ref]",
       "  /reload, /restart, /shell, /exit",
       "",
-      "Bare text always starts a bounded turn with May.",
+      "Bare text goes to May. While watching, it is feedback for that Task.",
     ].join("\n"),
   );
-}
-
-function resolveCommandSession(name, reference) {
-  const resolved = resolveSessionId(reference);
-  if (!resolved.ok) {
-    printLine(`[${name}] ${resolved.message}`);
-    return null;
-  }
-  return resolved.sessionId;
 }
 
 function handleCommand(input) {
@@ -765,10 +896,32 @@ function handleCommand(input) {
     case "help":
       printHelp();
       return;
-    case "status":
-    case "sessions":
-      requestStatus(`/${command}`);
+    case "apps":
+      if (restParts.length > 1) {
+        printLine("Usage: /apps [app]");
+        return;
+      }
+      requestApps(rest || null, input);
       return;
+    case "tasks": {
+      const includeDone = restParts.some((part) => part.toLowerCase() === "all");
+      const appIds = restParts.filter((part) => part.toLowerCase() !== "all");
+      if (appIds.length > 1) {
+        printLine("Usage: /tasks [app] [all]");
+        return;
+      }
+      requestTasks({ appId: appIds[0], includeDone, command: input });
+      return;
+    }
+    case "task":
+      if (!rest || restParts.length !== 1) {
+        printLine("Usage: /task <ref>");
+        return;
+      }
+      requestTask({ ref: rest, command: input });
+      return;
+    // Temporary diagnostic alias for the old Host-request projection. It is
+    // deliberately absent from help and must not be confused with Tasks.
     case "work":
       if (!rest) {
         requestWork({ command: "/work" });
@@ -792,72 +945,61 @@ function handleCommand(input) {
       }
       return;
     case "watch": {
-      const mode = rest.toLowerCase();
-      if (mode === "may" || mode === "chat") {
-        watchedSessionId = null;
-        subscribe("may");
-        return;
-      }
-      if (mode === "all") {
-        watchedSessionId = null;
-        subscribe("all");
-        return;
-      }
-      if (mode === "current") {
-        if (!watchedSessionId) {
-          printLine("[watch] No watched session. Use /watch <sessionId>.");
+      if (!rest) {
+        if (!watchedTask) {
+          printLine("[watch] No Task is watched. Use /watch <ref>.");
           return;
         }
-        subscribe("current");
+        requestTask({
+          kind: "detail",
+          appId: watchedTask.appId,
+          taskId: watchedTask.taskId,
+          command: "/watch",
+        });
         return;
       }
-      const sessionId = resolveCommandSession("watch", rest);
-      if (!sessionId) {
-        if (!rest) printLine("Usage: /watch may|all|<sessionId>");
+      if (restParts.length !== 1) {
+        printLine("Usage: /watch [ref]");
         return;
       }
-      watchedSessionId = sessionId;
-      subscribe("current");
+      requestTask({ kind: "watch-start", ref: rest, command: input });
       return;
     }
-    case "use":
-      printLine(
-        "[/use] Input always goes to May. Use /watch <sessionId> to inspect or /steer <sessionId> <message> to steer.",
-      );
-      return;
-    case "may":
-      watchedSessionId = null;
-      subscribe("may");
-      printLine("Bare text goes to May.");
-      return;
-    case "steer": {
-      const [reference, ...messageParts] = restParts;
-      const message = messageParts.join(" ").trim();
-      if (!reference || !message) {
-        printLine("Usage: /steer <sessionId> <message>");
+    case "unwatch":
+      if (rest) {
+        printLine("Usage: /unwatch");
         return;
       }
-      const sessionId = resolveCommandSession("steer", reference);
-      if (sessionId) sendFrame(steerFrame(sessionId, message));
+      if (!watchedTask) {
+        printLine("[watch] No Task is watched.");
+        return;
+      }
+      watchedTask = null;
+      watchedTaskDirty = false;
+      subscribe();
+      printLine("Stopped watching. The Task is unchanged.");
+      return;
+    case "cancel": {
+      if (restParts.length > 1) {
+        printLine("Usage: /cancel [ref]");
+        return;
+      }
+      if (rest) {
+        sendFrame({ type: "task.cancel", ref: rest, reason: "human requested cancellation" });
+        return;
+      }
+      if (!watchedTask) {
+        printLine("Usage: /cancel <ref>, or watch a Task first.");
+        return;
+      }
+      sendFrame({
+        type: "task.cancel",
+        appId: watchedTask.appId,
+        taskId: watchedTask.taskId,
+        reason: "human requested cancellation",
+      });
       return;
     }
-    case "cancel":
-      if (rest.toLowerCase() === "all") {
-        sendFrame(cancelAllFrame());
-        return;
-      }
-      if (!rest) {
-        printLine("Usage: /cancel <sessionId>|all");
-        return;
-      }
-      {
-        const sessionId = resolveCommandSession("cancel", rest);
-        if (sessionId) sendFrame(cancelFrame(sessionId));
-      }
-      return;
-    case "new":
-      printLine("Every message already starts a bounded May turn.");
-      return;
     case "reload":
       sendFrame(runtimeFrame("runtime.reload.requested"));
       return;
@@ -866,12 +1008,12 @@ function handleCommand(input) {
       return;
     case "raw":
       raw = !raw;
-      subscribe(watchMode);
+      subscribe();
       printLine(`[raw ${raw ? "on" : "off"}]`);
       return;
     case "debug":
       debug = !debug;
-      subscribe(watchMode);
+      subscribe();
       printLine(`[debug ${debug ? "on" : "off"}]`);
       return;
     case "shell":
@@ -911,12 +1053,6 @@ function handleInput(line) {
     return;
   }
 
-  // A session-only watch would hide the bounded May turn that this input
-  // starts. Return to the May view before sending so the reply stays visible.
-  if (watchMode === "current") {
-    watchedSessionId = null;
-    subscribe("may");
-  }
   sendFrame(mayInputFrame(input));
   refreshPrompt();
 }

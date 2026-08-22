@@ -9,7 +9,7 @@ describe("console transport", () => {
     console.log = originalLog;
   });
 
-  it("restores the prompt when the primary session reaches a stable boundary", () => {
+  it("restores the prompt when the primary session reaches a stable boundary", async () => {
     const bus = new EventBus();
     const onResponseDelivered = mock(() => {});
     console.log = mock(() => {});
@@ -25,6 +25,7 @@ describe("console transport", () => {
         status: "done",
       },
     } as any);
+    await new Promise<void>((resolve) => setImmediate(resolve));
 
     expect(onResponseDelivered).toHaveBeenCalledTimes(1);
   });

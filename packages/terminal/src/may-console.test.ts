@@ -21,7 +21,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3_000): Promise<voi
 }
 
 describe("May Console", () => {
-  test("sends bare text to a fresh May turn and steers sessions only by explicit command", async () => {
+  test("shares Conversation context and manages stable Tasks instead of sessions", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-"));
     const instance = "test";
     const socketDir = join(root, "instances", instance);
@@ -31,6 +31,7 @@ describe("May Console", () => {
     const frames: Array<Record<string, any>> = [];
     const remoteConversationMessages: Array<Record<string, any>> = [];
     let completedWorkId: string | null = null;
+    let taskTerminal = false;
     let client: Socket | null = null;
     let inputBuffer = "";
     const server: Server = createServer((socket) => {
@@ -138,6 +139,66 @@ describe("May Console", () => {
                 },
               })}\n`,
             );
+          } else if (frame.type === "apps.list") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "apps.list",
+                apps: [
+                  {
+                    id: "evaluation",
+                    owner: "evaluator",
+                    description: "Reviews project behavior",
+                    activeTasks: taskTerminal ? 0 : 1,
+                    runningTasks: taskTerminal ? 0 : 1,
+                    waitingTasks: 0,
+                    attentionTasks: 0,
+                  },
+                ],
+              })}\n`,
+            );
+          } else if (frame.type === "tasks.list") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "tasks.list",
+                tasks: {
+                  items: [
+                    {
+                      appId: "evaluation",
+                      taskId: "review/docs",
+                      ref: "8f12ac90",
+                      status: taskTerminal ? "done" : "running",
+                      outcome: "Review the docs",
+                      summary: taskTerminal ? "Review complete" : "Reviewing current behavior",
+                      response: taskTerminal ? "The design and implementation now align." : undefined,
+                      updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
+                      terminal: taskTerminal,
+                      cancellable: !taskTerminal,
+                    },
+                  ],
+                },
+              })}\n`,
+            );
+          } else if (frame.type === "task.get") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "task.get",
+                task: {
+                  appId: "evaluation",
+                  taskId: "review/docs",
+                  ref: "8f12ac90",
+                  status: taskTerminal ? "done" : "running",
+                  outcome: "Review the docs",
+                  summary: taskTerminal ? "Review complete" : "Reviewing current behavior",
+                  response: taskTerminal ? "The design and implementation now align." : undefined,
+                  updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
+                  terminal: taskTerminal,
+                  cancellable: !taskTerminal,
+                },
+              })}\n`,
+            );
           } else if (
             frame.type === "publish" &&
             frame.event?.type === "conversation.message.created" &&
@@ -206,16 +267,10 @@ describe("May Console", () => {
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
-    await waitFor(() => frames.some((frame) => frame.type === "status"));
+    await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get"));
     await waitFor(() => output.includes("\nyou> Earlier question\n\n") && output.includes("\nmay> Earlier answer\n\n"));
-    await waitFor(
-      () =>
-        output.includes("Active work:") &&
-        output.includes("Review the May design — Analyzing") &&
-        output.includes(" · changed ") &&
-        output.includes("Codex is reviewing the implementation.") &&
-        output.includes("Review AKS tasks — Queued"),
-    );
+    expect(frames.some((frame) => frame.type === "status")).toBe(false);
+    expect(output).not.toContain("Active work:");
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
       conversations: ["may:primary"],
@@ -224,6 +279,14 @@ describe("May Console", () => {
 
     child.stdin.write("/work\n");
     await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 2);
+    await waitFor(
+      () =>
+        output.includes("Active work:") &&
+        output.includes("Review the May design — Analyzing") &&
+        output.includes(" · changed ") &&
+        output.includes("Codex is reviewing the implementation.") &&
+        output.includes("Review AKS tasks — Queued"),
+    );
 
     child.stdin.write("/work all\n");
     await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 3);
@@ -298,18 +361,34 @@ describe("May Console", () => {
     await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length === 6);
     await waitFor(() => output.includes("Request: Review the May design") && output.includes("Status: Done"));
 
-    child.stdin.write("/sessions\n");
-    await waitFor(() => output.includes("focused work"));
+    child.stdin.write("/apps evaluation\n");
+    await waitFor(() => output.includes("App evaluation:") && output.includes("Reviews project behavior"));
+    child.stdin.write("/tasks evaluation\n");
+    await waitFor(
+      () => output.includes("Active Tasks:") && output.includes("8f12ac90") && output.includes("Review the docs"),
+    );
+    child.stdin.write("/task 8f12ac90\n");
+    await waitFor(
+      () =>
+        output.includes("Task 8f12ac90:") &&
+        output.includes("Progress:") &&
+        output.includes("Reviewing current behavior"),
+    );
 
-    child.stdin.write("review Gym\n");
+    child.stdin.write("/watch 8f12ac90\n");
+    await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
+    await waitFor(() => output.includes("[watch] Watching 8f12ac90"));
+
+    child.stdin.write("please keep the compatibility alias\n");
     await waitFor(() => humanFrames().length === 2);
     const input = humanFrames()[1];
     expect(input).toMatchObject({
       event: {
         target: { appId: "may" },
         data: {
-          text: "review Gym",
+          text: "please keep the compatibility alias",
           conversationId: "may:primary",
+          context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } },
           metadata: { channel: "may-console", channelThreadId: "local-terminal" },
         },
       },
@@ -318,38 +397,28 @@ describe("May Console", () => {
       frames.some(
         (frame) =>
           frame.type === "publish" &&
-          frame.event?.data?.metadata?.command === "/sessions" &&
-          String(frame.event?.data?.text).includes("s_worker_1"),
+          frame.event?.data?.metadata?.command === "/task 8f12ac90" &&
+          frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
       ),
     ).toBe(true);
-    await waitFor(() => output.includes("\nmay> May response 2\n\nyou> "));
+    await waitFor(() => output.includes("\nmay> May response 2\n\nyou[task 8f12ac90]> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);
 
-    child.stdin.write("/steer s_worker use the smaller plan\n");
-    await waitFor(() => frames.some((frame) => frame.type === "session.steer.requested"));
-    expect(frames.find((frame) => frame.type === "session.steer.requested")).toMatchObject({
-      target: { sessionId: "s_worker_123" },
-      data: { message: "use the smaller plan" },
-    });
-
-    child.stdin.write("/watch s_worker\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 2);
-    expect(frames.filter((frame) => frame.type === "subscribe")[1]?.sessions).toEqual(["s_worker_123"]);
-
-    child.stdin.write("another May request\n");
-    await waitFor(() => humanFrames().length === 3);
-    expect(frames.filter((frame) => frame.type === "subscribe")[2]?.sessions).toEqual([]);
-    expect(humanFrames()[2]?.event?.target?.appId).toBe("may");
-    await waitFor(() => output.includes("\nmay> May response 3\n\nyou> "));
-
-    child.stdin.write("/debug\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 4);
-    expect(frames.filter((frame) => frame.type === "subscribe")[3]?.sessions).toEqual(["*"]);
-    child.stdin.write("/debug\n");
-    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").length === 5);
-    expect(frames.filter((frame) => frame.type === "subscribe")[4]?.sessions).toEqual([]);
+    taskTerminal = true;
+    client?.write(
+      `${JSON.stringify({
+        type: "app.task.updated",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      })}\n`,
+    );
+    await waitFor(() => output.includes("The design and implementation now align."));
+    await waitFor(
+      () =>
+        frames.filter((frame) => frame.type === "subscribe").at(-1)?.task === null &&
+        output.includes("[watch] Task finished; watch ended."),
+    );
 
     const beforeTelegramSync = frames.filter((frame) => frame.type === "app.conversation.get").length;
     remoteConversationMessages.push({
@@ -435,12 +504,8 @@ describe("May Console", () => {
           if (!line.trim()) continue;
           const frame = JSON.parse(line) as Record<string, any>;
           frames.push(frame);
-          if (frame.type === "status") {
-            socket.write(`${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`);
-          } else if (frame.type === "app.conversation.get" && frame.workRequestId) {
-            socket.write(
-              `${JSON.stringify({ type: "ok", command: "app.conversation.get", conversation })}\n`,
-            );
+          if (frame.type === "app.conversation.get" && frame.includeWork !== false) {
+            socket.write(`${JSON.stringify({ type: "ok", command: "app.conversation.get", conversation })}\n`);
           } else if (frame.type !== "app.conversation.get") {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
           }
@@ -467,16 +532,25 @@ describe("May Console", () => {
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
-    child.stdin.write("/work 1\n");
-    await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get" && !frame.workRequestId));
-    expect(frames.some((frame) => frame.workRequestId)).toBe(false);
+    child.stdin.write("/work\n");
+    await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get" && frame.includeWork === false));
+    expect(frames.filter((frame) => frame.type === "app.conversation.get")).toHaveLength(1);
     await waitFor(() => output.includes("[waiting for May; input queued]"));
     expect(output).toContain("[waiting for May; input queued]");
 
-    client?.write(`${JSON.stringify({ type: "ok", command: "app.conversation.get", conversation })}\n`);
-    await waitFor(() => frames.some((frame) => frame.workRequestId === "work-one"));
-    await waitFor(() => output.includes("Work 1:") && output.includes("Request: Inspect the first item"));
-    expect(output).not.toContain("[work] No item 1");
+    client?.write(
+      `${JSON.stringify({
+        type: "ok",
+        command: "app.conversation.get",
+        conversation: { ...conversation, work: [] },
+      })}\n`,
+    );
+    await waitFor(
+      () =>
+        frames.filter((frame) => frame.type === "app.conversation.get").length === 2 &&
+        frames.at(-1)?.includeWork === undefined,
+    );
+    await waitFor(() => output.includes("Active work:") && output.includes("Inspect the first item"));
 
     child.stdin.write("/exit\n");
     await once(child, "exit");

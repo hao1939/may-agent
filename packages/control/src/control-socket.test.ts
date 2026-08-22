@@ -455,7 +455,7 @@ describe("control socket protocol", () => {
         expect({ appId, conversationId, options }).toEqual({
           appId: "may",
           conversationId: "may:primary",
-          options: { limit: 30, workRequestId: undefined, allWork: false },
+          options: { limit: 30, workRequestId: undefined, allWork: false, includeWork: false },
         });
         return conversation;
       },
@@ -467,6 +467,7 @@ describe("control socket protocol", () => {
         appId: "may",
         conversationId: "may:primary",
         limit: 30,
+        includeWork: false,
       }),
     ).resolves.toMatchObject({
       type: "ok",
@@ -595,6 +596,41 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("serves the shared App and Task resource interface without emitting work", async () => {
+    const task = { appId: "evaluation", taskId: "review/docs", ref: "8f12ac90", status: "waiting" };
+    const core = createCore({
+      listApps: (appId) => [{ id: appId ?? "evaluation", activeTasks: 1 }],
+      listTasks: (options) => {
+        expect(options).toEqual({ appId: "evaluation", includeDone: true, limit: 10 });
+        return { items: [task] };
+      },
+      getTask: (input) => {
+        expect(input).toEqual({ ref: "8f12ac90" });
+        return task;
+      },
+    });
+
+    await expect(sendSocketCommand(core.endpoint, { type: "apps.list", appId: "evaluation" })).resolves.toEqual({
+      type: "ok",
+      command: "apps.list",
+      apps: [{ id: "evaluation", activeTasks: 1 }],
+    });
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "tasks.list",
+        appId: "evaluation",
+        includeDone: true,
+        limit: 10,
+      }),
+    ).resolves.toEqual({ type: "ok", command: "tasks.list", tasks: { items: [task] } });
+    await expect(sendSocketCommand(core.endpoint, { type: "task.get", ref: "8f12ac90" })).resolves.toEqual({
+      type: "ok",
+      command: "task.get",
+      task,
+    });
+    expect(core.emitted).toEqual([]);
+  });
+
   it("discovers and invokes project action shortcuts", async () => {
     const core = createCore({
       describeProjectActions: (projectId) => [
@@ -661,6 +697,27 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("returns process memory only when diagnostics are requested", async () => {
+    const core = createCore();
+
+    const status = await sendSocketCommand(core.endpoint, { type: "status", diagnostics: true });
+
+    expect(status).toMatchObject({
+      type: "status",
+      command: "status",
+      diagnostics: {
+        uptimeSeconds: expect.any(Number),
+        memory: {
+          rssBytes: expect.any(Number),
+          heapTotalBytes: expect.any(Number),
+          heapUsedBytes: expect.any(Number),
+          externalBytes: expect.any(Number),
+          arrayBuffersBytes: expect.any(Number),
+        },
+      },
+    });
+  });
+
   it("includes the current chat target as ready when it is not active", async () => {
     const core = createCore({
       getSessionId: () => "s_chat_done",
@@ -722,6 +779,43 @@ describe("control socket protocol", () => {
     core.getBroadcast()?.(update);
 
     await expect(nextFrame(stream)).resolves.toEqual(update);
+    stream.destroy();
+  });
+
+  it("turns semantic Task transitions into one identity-only wake for the exact watched Task", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    stream.write(
+      JSON.stringify({
+        type: "subscribe",
+        sessions: [],
+        conversations: ["may:primary"],
+        task: { appId: "evaluation", taskId: "review/docs" },
+      }) + "\n",
+    );
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+
+    core.getBroadcast()?.({
+      type: "project.task.reconciled",
+      target: { appId: "other" },
+      data: { project: "other", taskId: "review/docs", summary: "must not leak" },
+    });
+    core.getBroadcast()?.({
+      type: "project.task.reconcile.profiled",
+      data: { project: "evaluation", taskId: "review/docs", providerMs: 100 },
+    });
+    core.getBroadcast()?.({
+      type: "project.task.reconciled",
+      target: { appId: "evaluation" },
+      data: { project: "evaluation", taskId: "review/docs", summary: "not part of the wake" },
+    });
+
+    await expect(nextFrame(stream)).resolves.toEqual({
+      type: "app.task.updated",
+      data: { appId: "evaluation", taskId: "review/docs" },
+    });
     stream.destroy();
   });
 

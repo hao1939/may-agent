@@ -39,6 +39,12 @@ export type AppInboxRuntime = {
   reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
 };
 
+// Admission normally happens directly from the accepted event. This recovery
+// pass exists only for crashes and transient failures, so it must stay bounded
+// and must not turn a permanently invalid route into a five-second retry storm.
+const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
+const ADMISSION_RECOVERY_BATCH_SIZE = 16;
+
 export type StartAppInboxRuntimeOptions = {
   registry: AppRegistry;
   db: SqliteDb;
@@ -607,8 +613,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     return admissionPlanDelivery(plan, plan.status === "completed" ? "already admitted durably" : "queued durably");
   };
 
-  const recoverAdmissionPlans = (): void => {
-    for (const plan of listPendingAppEventAdmissionPlans(options.db)) queueAdmissionPlan(plan);
+  let nextAdmissionRecoveryAt = 0;
+  const recoverAdmissionPlans = (force = false): void => {
+    const currentTime = now();
+    if (!force && currentTime < nextAdmissionRecoveryAt) return;
+    nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
+    const plans = listPendingAppEventAdmissionPlans(options.db, {
+      ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
+      limit: ADMISSION_RECOVERY_BATCH_SIZE,
+    });
+    for (const plan of plans) queueAdmissionPlan(plan);
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
@@ -731,7 +745,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
       });
       schedule(admitted.item.appId);
-      return { accepted: true, by: `app-inbox:${admitted.item.appId}` };
+      return {
+        accepted: true,
+        by: `app-inbox:${admitted.item.appId}`,
+        route: "direct",
+        note: `request:${admitted.item.id}; ${admitted.created ? "created" : "existing"}`,
+      };
     }
     if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
       const kind = data.kind;
@@ -903,6 +922,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("App inbox scanIntervalMs must be positive");
   }
   await recoverTaskDependencies();
+  // One bounded startup pass repairs work interrupted by the previous process.
+  // Subsequent recovery observes the normal cooldown.
+  recoverAdmissionPlans(true);
   const timer = setInterval(scanNow, scanIntervalMs);
   timer.unref?.();
   scanNow();
@@ -939,6 +961,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       observerRuntime.replace(next);
       appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
       refreshScheduleActivations();
+      // App definitions may have made a previously unavailable frozen route
+      // admissible. Retry one bounded slice immediately after the reload.
+      recoverAdmissionPlans(true);
       scanNow();
       return host.appIds();
     },

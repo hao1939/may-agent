@@ -162,10 +162,8 @@ export function runDbMaintenancePass(
        SELECT e.id
        FROM events e
        WHERE e.timestamp < ?
-         -- Human approval outcomes are the durable resolution record for
-         -- Telegram approval cards. notification_messages intentionally
-         -- outlives the general event window, so pruning these outcomes would
-         -- make an already handled card appear open again.
+         -- Human approval outcomes are durable business facts. Keep them past
+         -- the generic diagnostic-event window regardless of adapter history.
          AND e.event_type NOT IN ('project.approval.submitted', 'project.approval.resolved')
          AND NOT EXISTS (
            SELECT 1 FROM event_pair_runs p

@@ -38,7 +38,6 @@ function fixture(acceptsAppInput: (appId: string, input: AppInput) => boolean = 
     manager: manager as any,
     clearCancelLatch: () => undefined,
     projectRoot: root,
-    persistDir: root,
     acceptsAppInput,
     reload: () => undefined,
     restart: () => undefined,

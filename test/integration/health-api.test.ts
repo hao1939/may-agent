@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { writeSessionMeta } from "../../src/lib/persistence.js";
-import { insertWorkflowRun } from "../../src/lib/requests.js";
+import { writeSessionMeta, type PersistedSession } from "../../src/lib/persistence.js";
+import { insertWorkflowRun, upsertSession } from "../../src/lib/requests.js";
 import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -41,6 +41,11 @@ function registerTestAgents(manager: SubagentManager) {
     tools: [],
     apiKey: "fake-key",
   });
+}
+
+function writeAuditSession(persistDir: string, sessionId: string, meta: PersistedSession): void {
+  writeSessionMeta(persistDir, sessionId, meta);
+  upsertSession(persistDir, { sessionId, ...meta });
 }
 
 describe("health()", () => {
@@ -129,16 +134,16 @@ describe("auditHealth()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns correct session counts from filesystem", async () => {
+  it("returns correct session counts from the indexed session table", async () => {
     // Create a recent session
-    writeSessionMeta(persistDir, "s_recent_0", {
+    writeAuditSession(persistDir, "s_recent_0", {
       agent: "coder",
       task: "recent task",
       status: "done",
       startedAt: Date.now() - 3600_000, // 1 hour ago
     });
     // Create an old session
-    writeSessionMeta(persistDir, "s_old_0", {
+    writeAuditSession(persistDir, "s_old_0", {
       agent: "coder",
       task: "old task",
       status: "done",
@@ -153,7 +158,7 @@ describe("auditHealth()", () => {
 
   it("detects unevaluated sessions", async () => {
     // Session with transcript but no evaluation
-    writeSessionMeta(persistDir, "s_uneval_0", {
+    writeAuditSession(persistDir, "s_uneval_0", {
       agent: "coder",
       task: "unevaluated task",
       status: "done",
@@ -169,7 +174,7 @@ describe("auditHealth()", () => {
   });
 
   it("classifies meta-agent sessions as auto-skippable", async () => {
-    writeSessionMeta(persistDir, "s_eval_0", {
+    writeAuditSession(persistDir, "s_eval_0", {
       agent: "evaluator",
       task: "eval task",
       status: "done",
@@ -183,7 +188,7 @@ describe("auditHealth()", () => {
   });
 
   it("detects stale sessions (running on disk but not in memory)", async () => {
-    writeSessionMeta(persistDir, "s_stale_0", {
+    writeAuditSession(persistDir, "s_stale_0", {
       agent: "coder",
       task: "stuck task",
       status: "running",
@@ -232,6 +237,23 @@ describe("auditHealth()", () => {
     expect(report.workflowRuns.running).toBe(1);
     expect(report.workflowRuns.interrupted).toBe(0);
   });
+
+  it("uses indexed runtime tables without loading the retained session registry", async () => {
+    writeAuditSession(persistDir, "s_indexed_0", {
+      agent: "coder",
+      task: "indexed audit",
+      status: "done",
+      startedAt: Date.now(),
+    });
+    manager.registryStore.getRegistry = () => {
+      throw new Error("auditHealth must not parse all session metadata");
+    };
+
+    const report = await manager.auditHealth();
+
+    expect(report.totalPersistedSessions).toBe(1);
+    expect(report.sessionsLast24h).toBe(1);
+  });
 });
 
 describe("reconcileHealth()", () => {
@@ -257,7 +279,7 @@ describe("reconcileHealth()", () => {
   });
 
   it("detects stale sessions (in filesystem but not in memory)", async () => {
-    writeSessionMeta(persistDir, "s_orphan_0", {
+    writeAuditSession(persistDir, "s_orphan_0", {
       agent: "coder",
       task: "orphaned task",
       status: "running",

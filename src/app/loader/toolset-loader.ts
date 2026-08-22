@@ -23,6 +23,7 @@ import type { AgentConfig } from "./agent-config.js";
 import { listConfiguredAgentNames } from "./agent-discovery.js";
 import { loadAgentLocalTools } from "./agent-local-tools.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
+import { mayConversationNoticeEvent } from "../app-input-event.js";
 
 export interface ToolsetLoaderOptions {
   agentsRoot: string;
@@ -187,12 +188,13 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
             opts.projectRoot,
             (msg) => {
-              bus.emit({
-                type: "message.created",
-                source: `agent:${config.name}`,
-                owner: "human:operator",
-                data: { from: config.name, to: "human", content: msg, priority: "P2" },
-              } as any);
+              bus.emit(
+                mayConversationNoticeEvent({
+                  source: `cron:${config.name}`,
+                  authorId: `cron:${config.name}`,
+                  text: msg,
+                }),
+              );
             },
             (event) => bus.emit(event),
           );

@@ -21,10 +21,12 @@ import type { EventBus } from "../event-bus.js";
 import { log } from "../../lib/log.js";
 
 export function attachDaemonInfoLog(bus: EventBus): void {
-  bus.subscribe((event) => {
-    if (event.type !== "info") return;
-    const message = (event as { message?: unknown }).message;
-    if (typeof message !== "string" || message.length === 0) return;
-    log("info", message);
-  });
+  bus.listen(
+    (event) => {
+      const message = (event as { message?: unknown }).message;
+      if (typeof message !== "string" || message.length === 0) return;
+      log("info", message);
+    },
+    { label: "daemon-info-log", types: ["info"] },
+  );
 }

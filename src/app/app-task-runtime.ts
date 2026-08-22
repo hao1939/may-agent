@@ -106,6 +106,8 @@ import {
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
   taskReconciliationConfig,
+  renewAppTaskAttemptLease,
+  APP_TASK_ATTEMPT_LEASE_DURATION_MS,
   APP_TASK_RECOVERY_OWNER,
   type AppTaskAttemptRecovery,
   type AppTaskChildContext,
@@ -780,6 +782,34 @@ async function runTaskCapability(input: {
   } as AgentEvent);
 
   let providerStarted = false;
+  const workflowLeaseTimer = descriptor.resourceStore
+    ? setInterval(
+        () => {
+          try {
+            if (!renewAppTaskAttemptLease(appTaskConfig(descriptor), claim)) {
+              clearInterval(workflowLeaseTimer);
+            }
+          } catch (error) {
+            clearInterval(workflowLeaseTimer);
+            opts.bus.emit({
+              type: "project.task.lease-renewal.failed",
+              source: "may-agent-runtime",
+              owner: `agent:${claim.owner}`,
+              target: { appId: descriptor.id, taskId: claim.taskId },
+              data: {
+                taskId: claim.taskId,
+                taskGeneration: claim.generation,
+                attemptId: claim.attemptId,
+                reason: error instanceof Error ? error.message : String(error),
+              },
+              ...(trace ? { trace } : {}),
+            } as unknown as AgentEvent);
+          }
+        },
+        Math.floor(APP_TASK_ATTEMPT_LEASE_DURATION_MS / 3),
+      )
+    : undefined;
+  workflowLeaseTimer?.unref();
   try {
     const runtimeCtx = buildRuntimeCtx({
       bus: opts.bus,
@@ -934,6 +964,7 @@ async function runTaskCapability(input: {
       ...(!unavailable ? { executionFailed: true } : {}),
     };
   } finally {
+    if (workflowLeaseTimer) clearInterval(workflowLeaseTimer);
     if (providerStarted) input.observer?.providerFinished();
   }
 }
@@ -1909,367 +1940,459 @@ async function reconcileTask(input: {
   };
 
   try {
-
-  const config = appTaskConfig(descriptor);
-  const claimStartedAt = performance.now();
-  const defaultParentId = config.resourceStore?.rootTaskId() ?? readTaskState(config).root_task_id;
-  if (!defaultParentId) {
-    throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
-  }
-  const primary = claimObservedAppTask(config, {
-    taskId: input.taskId,
-    appOwner: descriptor.owner,
-    handler: "auto",
-    reason: input.reason ?? "task-controller",
-    isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
-  });
-  timing.claimMs = Math.max(0, performance.now() - claimStartedAt);
-  if (primary.kind !== "claimed") {
-    if (primary.kind === "busy") {
-      const active = readTaskState(config, { taskIds: [input.taskId] }).attempts?.[primary.attemptId ?? ""];
-      const terminalSession =
-        active?.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, active.sessionId) : null;
-      if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
-        const consumed = consumePersistedTerminalOwnerResult({
-          persistDir: opts.persistDir,
-          config,
-          descriptor,
-          taskId: input.taskId,
-          sessionId: active.sessionId,
-          onRejected: (error) => {
-            opts.bus.emit({
-              type: "info",
-              message: `[app-task:${descriptor.id}] Rejected terminal result for ${input.taskId}; the task will be retried: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
+    const config = appTaskConfig(descriptor);
+    const claimStartedAt = performance.now();
+    const defaultParentId = config.resourceStore?.rootTaskId() ?? readTaskState(config).root_task_id;
+    if (!defaultParentId) {
+      throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
+    }
+    const primary = claimObservedAppTask(config, {
+      taskId: input.taskId,
+      appOwner: descriptor.owner,
+      handler: "auto",
+      reason: input.reason ?? "task-controller",
+      isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
+    });
+    timing.claimMs = Math.max(0, performance.now() - claimStartedAt);
+    if (primary.kind !== "claimed") {
+      if (primary.kind === "busy") {
+        const active = readTaskState(config, { taskIds: [input.taskId] }).attempts?.[primary.attemptId ?? ""];
+        const terminalSession =
+          active?.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, active.sessionId) : null;
+        if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
+          const consumed = consumePersistedTerminalOwnerResult({
+            persistDir: opts.persistDir,
+            config,
+            descriptor,
+            taskId: input.taskId,
+            sessionId: active.sessionId,
+            onRejected: (error) => {
+              opts.bus.emit({
+                type: "info",
+                message: `[app-task:${descriptor.id}] Rejected terminal result for ${input.taskId}; the task will be retried: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              });
+            },
+          });
+          if (consumed) {
+            emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", input.taskId, {
+              route: "terminal-owner-result-recovery",
+              generation: consumed.claim.generation,
+              attemptId: consumed.claim.attemptId,
+              handler: consumed.claim.handler,
+              disposition: consumed.state,
+              summary: consumed.summary,
+              evidence: consumed.evidence,
+              actionsApplied: consumed.actionsApplied,
+              evidenceSessionId: active.sessionId,
             });
-          },
-        });
-        if (consumed) {
-          emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", input.taskId, {
-            route: "terminal-owner-result-recovery",
-            generation: consumed.claim.generation,
-            attemptId: consumed.claim.attemptId,
-            handler: consumed.claim.handler,
-            disposition: consumed.state,
-            summary: consumed.summary,
-            evidence: consumed.evidence,
-            actionsApplied: consumed.actionsApplied,
-            evidenceSessionId: active.sessionId,
-          });
-          if (consumed.state === "converged") emitAppTaskDependencyCompleted(opts, descriptor, input.taskId);
-          return consumed.reconcileTaskIds;
+            if (consumed.state === "converged") emitAppTaskDependencyCompleted(opts, descriptor, input.taskId);
+            return consumed.reconcileTaskIds;
+          }
+        }
+        const leaseCheckAt = Date.now();
+        const sessionActivity =
+          active?.sessionId && opts.persistDir
+            ? {
+                sessionId: active.sessionId,
+                lastActivityAt: readSessionLastActivityAt(opts.persistDir, active.sessionId),
+              }
+            : undefined;
+        const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId, leaseCheckAt, sessionActivity);
+        const sessionId = expired?.sessionId;
+        const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
+        const terminalStatus =
+          session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
+            ? session.status
+            : null;
+        if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+          const released = releaseTerminalSessionExpiredAppTaskAttempt(
+            config,
+            { ...expired, sessionId, terminalStatus },
+            `Expired reconciliation ${input.taskId} lost its synchronous caller after owner session completion`,
+            leaseCheckAt,
+            sessionActivity,
+          );
+          if (released.released) {
+            emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.recovery.requeued", input.taskId, {
+              route: "task-controller",
+              reason: "terminal-owner-session-expired-lease",
+              attemptId: expired.attemptId,
+              evidenceSessionId: sessionId,
+              terminalStatus,
+            });
+            return [input.taskId];
+          }
         }
       }
-      const leaseCheckAt = Date.now();
-      const sessionActivity =
-        active?.sessionId && opts.persistDir
-          ? {
-              sessionId: active.sessionId,
-              lastActivityAt: readSessionLastActivityAt(opts.persistDir, active.sessionId),
-            }
-          : undefined;
-      const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId, leaseCheckAt, sessionActivity);
-      const sessionId = expired?.sessionId;
-      const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
-      const terminalStatus =
-        session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
-          ? session.status
-          : null;
-      if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
-        const released = releaseTerminalSessionExpiredAppTaskAttempt(
-          config,
-          { ...expired, sessionId, terminalStatus },
-          `Expired reconciliation ${input.taskId} lost its synchronous caller after owner session completion`,
-          leaseCheckAt,
-          sessionActivity,
-        );
-        if (released.released) {
-          emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.recovery.requeued", input.taskId, {
-            route: "task-controller",
-            reason: "terminal-owner-session-expired-lease",
-            attemptId: expired.attemptId,
-            evidenceSessionId: sessionId,
-            terminalStatus,
-          });
-          return [input.taskId];
-        }
-      }
+      const skip =
+        primary.kind === "busy"
+          ? { reason: "attempt-active", attemptId: primary.attemptId }
+          : primary.kind === "waiting"
+            ? primary.dependencyIds?.length
+              ? { reason: "dependencies-open", dependencyIds: primary.dependencyIds }
+              : primary.childIds?.length
+                ? { reason: "children-open", childIds: primary.childIds }
+                : { reason: "conditions-open", conditionIds: primary.conditionIds }
+            : primary.kind === "attention"
+              ? { reason: "attention-required", generation: primary.generation, summary: primary.summary }
+              : { reason: "already-completed", generation: primary.generation };
+      emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconcile.skipped", input.taskId, {
+        route: "task-controller",
+        ...skip,
+      });
+      if (primary.kind === "attention") emitAppTaskDependencyUpdated(opts, descriptor, input.taskId);
+      return [];
     }
-    const skip =
-      primary.kind === "busy"
-        ? { reason: "attempt-active", attemptId: primary.attemptId }
-        : primary.kind === "waiting"
-          ? primary.dependencyIds?.length
-            ? { reason: "dependencies-open", dependencyIds: primary.dependencyIds }
-            : primary.childIds?.length
-              ? { reason: "children-open", childIds: primary.childIds }
-              : { reason: "conditions-open", conditionIds: primary.conditionIds }
-          : primary.kind === "attention"
-            ? { reason: "attention-required", generation: primary.generation, summary: primary.summary }
-            : { reason: "already-completed", generation: primary.generation };
-    emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconcile.skipped", input.taskId, {
+    timing.attemptId = primary.attemptId;
+    timing.generation = primary.generation;
+    for (const sessionId of primary.supersededSessionIds ?? []) {
+      interruptSupersededOwnerSession(
+        opts,
+        sessionId,
+        `Task ${primary.taskId} superseded an orphaned owner session while recovering the current generation`,
+        primary.taskId,
+      );
+    }
+    const intent = primary.intent;
+    const event = primary.trigger as EventEnvelope | undefined;
+    const contextStartedAt = performance.now();
+    const childContext = readAppTaskChildContext(config, primary.taskId);
+    const taskSnapshot = readAppTaskLiveSnapshot(config, primary.taskId);
+    timing.contextBuildMs = Math.max(0, performance.now() - contextStartedAt);
+    let executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
+    const declaredOutputPaths = primary.declaredOutputPaths;
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
       route: "task-controller",
-      ...skip,
-    });
-    if (primary.kind === "attention") emitAppTaskDependencyUpdated(opts, descriptor, input.taskId);
-    return [];
-  }
-  timing.attemptId = primary.attemptId;
-  timing.generation = primary.generation;
-  for (const sessionId of primary.supersededSessionIds ?? []) {
-    interruptSupersededOwnerSession(
-      opts,
-      sessionId,
-      `Task ${primary.taskId} superseded an orphaned owner session while recovering the current generation`,
-      primary.taskId,
-    );
-  }
-  const intent = primary.intent;
-  const event = primary.trigger as EventEnvelope | undefined;
-  const contextStartedAt = performance.now();
-  const childContext = readAppTaskChildContext(config, primary.taskId);
-  const taskSnapshot = readAppTaskLiveSnapshot(config, primary.taskId);
-  timing.contextBuildMs = Math.max(0, performance.now() - contextStartedAt);
-  let executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
-  const declaredOutputPaths = primary.declaredOutputPaths;
-  emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
-    route: "task-controller",
-    generation: primary.generation,
-    attemptId: primary.attemptId,
-    handler: primary.handler,
-    owner: primary.owner,
-  });
-
-  // Claiming a task rewrites the canonical state plus its disposable route and
-  // read projections. On large retained trees that synchronous durability
-  // boundary is substantial. Yield before owner/workflow association can
-  // perform another state rewrite, so HTTP readiness and accepted event
-  // ingress get an observable turn inside one reconciliation (not merely
-  // between separate claims).
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-  const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
-  let taskWorkspace: PreparedTaskWorkspace | undefined;
-  let workspaceFinalized = false;
-  const finalizeWorkspace = async (outcome: "accepted" | "waiting" | "failed") => {
-    if (!taskWorkspace || workspaceFinalized) return { ok: true as const };
-    try {
-      const finalized = await finalizeAppTaskWorkspace(taskWorkspace, outcome);
-      workspaceFinalized = true;
-      recordAppTaskAttemptWorkspace(config, primary, finalized.metadata);
-      return finalized;
-    } catch (error) {
-      workspaceFinalized = true;
-      taskWorkspace.metadata.disposition = "retained-for-recovery";
-      recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata);
-      return {
-        ok: false as const,
-        metadata: taskWorkspace.metadata,
-        reason: `Task workspace finalization failed and was retained for recovery: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      };
-    }
-  };
-  let primaryResult: TaskCapabilityRun | undefined;
-  if (workflowKey) {
-    const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
-    const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, workflowKey);
-    if (
-      definition.workspace === "task" ||
-      (typeof definition.workspace === "object" && definition.workspace.kind === "task")
-    ) {
-      try {
-        if (descriptor.app.workspace?.kind !== "git") {
-          throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
-        }
-        const previous = Object.values(readTaskState(config, { taskIds: [primary.taskId] }).attempts ?? {})
-          .filter(
-            (attempt) =>
-              attempt.taskId === primary.taskId &&
-              attempt.taskGeneration === primary.generation &&
-              attempt.workspace?.kind === "task-worktree",
-          )
-          .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
-        taskWorkspace = await prepareAppTaskWorkspace({
-          repoDir: descriptor.projectDir,
-          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-          taskId: primary.taskId,
-          generation: primary.generation,
-          baseBranch:
-            typeof definition.workspace === "object"
-              ? definition.workspace.baseBranch
-              : (descriptor.app.workspace.branch ?? "dev"),
-          previous,
-        });
-        executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
-        if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
-          throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
-        }
-      } catch (error) {
-        primaryResult = {
-          handlerResult: {
-            state: "error",
-            summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-            evidence: [],
-            actions: [],
-          },
-          runId: null,
-          workspacePreparationFailed: true,
-        };
-      }
-    }
-    primaryResult ??= await runTaskCapability({
-      opts,
-      descriptor,
-      capability: {
-        workflow: workflowKey,
-        agent: primary.owner,
-        task: `Reconcile task through workflow ${workflowKey}`,
-      },
-      intent,
-      claim: primary,
-      defaultParentId,
-      executionPaths,
-      declaredOutputPaths,
-      childContext,
-      taskSnapshot,
-      event,
-      ...(primary.handoff
-        ? {
-            fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-              primary.handoff.evidence.length
-                ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
-                : ""
-            }`,
-          }
-        : {}),
-      observer,
-    });
-  } else {
-    primaryResult = await runTaskOwner({
-      opts,
-      descriptor,
-      intent,
-      claim: primary,
-      defaultParentId,
-      executionPaths,
-      declaredOutputPaths,
-      childContext,
-      event,
-      ...(primary.handoff
-        ? {
-            fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-              primary.handoff.evidence.length
-                ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
-                : ""
-            }`,
-          }
-        : {}),
-      observer,
-    });
-    if (primary.handoff && intent.workflow) {
-      const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
-      const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, intent.workflow);
-      if (definition.verifier) {
-        primaryResult.verifier = {
-          ...definition.verifier,
-          verify: definition.verifier.verify as AppTaskVerifier,
-        };
-      }
-    }
-  }
-
-  if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
-
-  const primaryHandlerResult = primaryResult.handlerResult;
-  if (
-    primaryHandlerResult.state === "converged" &&
-    primary.handoff?.reason === "needs-owner" &&
-    intent.workflow &&
-    !primaryResult.verifier
-  ) {
-    primaryHandlerResult.state = "error";
-    primaryHandlerResult.summary = `Owner convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
-  }
-  if (primaryResult.unavailable) {
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
       generation: primary.generation,
+      attemptId: primary.attemptId,
       handler: primary.handler,
-      condition: "HandlerUnavailable",
-      reason: primaryHandlerResult.summary,
+      owner: primary.owner,
     });
-  }
-  if (primaryHandlerResult.state === "converged") {
-    const accepted = await establishTaskAcceptance({
-      descriptor,
-      intent,
-      claim: primary,
-      capability: primaryResult,
-      executionPaths,
-    });
-    const acceptanceBasis = accepted.ok ? accepted.acceptanceBasis : undefined;
-    if (!accepted.ok) {
-      primaryHandlerResult.state = "error";
-      primaryHandlerResult.summary = accepted.summary;
-      primaryHandlerResult.evidence = accepted.evidence;
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.verification.failed", intent.id, {
-        generation: primary.generation,
-        attemptId: primary.attemptId,
-        handler: primary.handler,
-        summary: accepted.summary,
-        evidence: accepted.evidence,
-        workflowRunId: primaryResult.runId,
+
+    // Claiming a task rewrites the canonical state plus its disposable route and
+    // read projections. On large retained trees that synchronous durability
+    // boundary is substantial. Yield before owner/workflow association can
+    // perform another state rewrite, so HTTP readiness and accepted event
+    // ingress get an observable turn inside one reconciliation (not merely
+    // between separate claims).
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
+    let taskWorkspace: PreparedTaskWorkspace | undefined;
+    let workspaceFinalized = false;
+    const finalizeWorkspace = async (outcome: "accepted" | "waiting" | "failed") => {
+      if (!taskWorkspace || workspaceFinalized) return { ok: true as const };
+      try {
+        const finalized = await finalizeAppTaskWorkspace(taskWorkspace, outcome);
+        workspaceFinalized = true;
+        recordAppTaskAttemptWorkspace(config, primary, finalized.metadata);
+        return finalized;
+      } catch (error) {
+        workspaceFinalized = true;
+        taskWorkspace.metadata.disposition = "retained-for-recovery";
+        recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata);
+        return {
+          ok: false as const,
+          metadata: taskWorkspace.metadata,
+          reason: `Task workspace finalization failed and was retained for recovery: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        };
+      }
+    };
+    let primaryResult: TaskCapabilityRun | undefined;
+    if (workflowKey) {
+      const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
+      const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, workflowKey);
+      if (
+        definition.workspace === "task" ||
+        (typeof definition.workspace === "object" && definition.workspace.kind === "task")
+      ) {
+        try {
+          if (descriptor.app.workspace?.kind !== "git") {
+            throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+          }
+          const previous = Object.values(readTaskState(config, { taskIds: [primary.taskId] }).attempts ?? {})
+            .filter(
+              (attempt) =>
+                attempt.taskId === primary.taskId &&
+                attempt.taskGeneration === primary.generation &&
+                attempt.workspace?.kind === "task-worktree",
+            )
+            .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
+          taskWorkspace = await prepareAppTaskWorkspace({
+            repoDir: descriptor.projectDir,
+            workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+            taskId: primary.taskId,
+            generation: primary.generation,
+            baseBranch:
+              typeof definition.workspace === "object"
+                ? definition.workspace.baseBranch
+                : (descriptor.app.workspace.branch ?? "dev"),
+            previous,
+          });
+          executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+          if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
+            throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
+          }
+        } catch (error) {
+          primaryResult = {
+            handlerResult: {
+              state: "error",
+              summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
+              evidence: [],
+              actions: [],
+            },
+            runId: null,
+            workspacePreparationFailed: true,
+          };
+        }
+      }
+      primaryResult ??= await runTaskCapability({
+        opts,
+        descriptor,
+        capability: {
+          workflow: workflowKey,
+          agent: primary.owner,
+          task: `Reconcile task through workflow ${workflowKey}`,
+        },
+        intent,
+        claim: primary,
+        defaultParentId,
+        executionPaths,
+        declaredOutputPaths,
+        childContext,
+        taskSnapshot,
+        event,
+        ...(primary.handoff
+          ? {
+              fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
+                primary.handoff.evidence.length
+                  ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                  : ""
+              }`,
+            }
+          : {}),
+        observer,
       });
     } else {
-      const finalized = await finalizeWorkspace("accepted");
+      primaryResult = await runTaskOwner({
+        opts,
+        descriptor,
+        intent,
+        claim: primary,
+        defaultParentId,
+        executionPaths,
+        declaredOutputPaths,
+        childContext,
+        event,
+        ...(primary.handoff
+          ? {
+              fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
+                primary.handoff.evidence.length
+                  ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                  : ""
+              }`,
+            }
+          : {}),
+        observer,
+      });
+      if (primary.handoff && intent.workflow) {
+        const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
+        const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, intent.workflow);
+        if (definition.verifier) {
+          primaryResult.verifier = {
+            ...definition.verifier,
+            verify: definition.verifier.verify as AppTaskVerifier,
+          };
+        }
+      }
+    }
+
+    if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
+
+    const primaryHandlerResult = primaryResult.handlerResult;
+    if (
+      primaryHandlerResult.state === "converged" &&
+      primary.handoff?.reason === "needs-owner" &&
+      intent.workflow &&
+      !primaryResult.verifier
+    ) {
+      primaryHandlerResult.state = "error";
+      primaryHandlerResult.summary = `Owner convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
+    }
+    if (primaryResult.unavailable) {
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
+        generation: primary.generation,
+        handler: primary.handler,
+        condition: "HandlerUnavailable",
+        reason: primaryHandlerResult.summary,
+      });
+    }
+    if (primaryHandlerResult.state === "converged") {
+      const accepted = await establishTaskAcceptance({
+        descriptor,
+        intent,
+        claim: primary,
+        capability: primaryResult,
+        executionPaths,
+      });
+      const acceptanceBasis = accepted.ok ? accepted.acceptanceBasis : undefined;
+      if (!accepted.ok) {
+        primaryHandlerResult.state = "error";
+        primaryHandlerResult.summary = accepted.summary;
+        primaryHandlerResult.evidence = accepted.evidence;
+        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.verification.failed", intent.id, {
+          generation: primary.generation,
+          attemptId: primary.attemptId,
+          handler: primary.handler,
+          summary: accepted.summary,
+          evidence: accepted.evidence,
+          workflowRunId: primaryResult.runId,
+        });
+      } else {
+        const finalized = await finalizeWorkspace("accepted");
+        if (!finalized.ok) {
+          primaryHandlerResult.state = "error";
+          primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
+          primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
+        }
+      }
+      if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
+        try {
+          const apply = persistResult(() =>
+            completeAppTask(config, primary, {
+              summary: primaryHandlerResult.summary,
+              response: primaryHandlerResult.response,
+              evidence: primaryHandlerResult.evidence,
+              actions: primaryHandlerResult.actions,
+              acceptanceBasis,
+            }),
+          );
+          const appliedDisposition = apply.taskContinues
+            ? primaryHandlerResult.actions.some(
+                (action) => action.kind === "update-task" && action.taskId === primary.taskId,
+              )
+              ? "revised"
+              : "progress"
+            : "converged";
+          interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
+          const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+          emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+            generation: primary.generation,
+            attemptId: primary.attemptId,
+            handler: primary.handler,
+            disposition: apply.status === "applied" ? appliedDisposition : "stale",
+            outcome: intent.outcome,
+            mode: intent.mode,
+            owner: intent.owner ?? descriptor.owner,
+            ...(intent.workflow ? { workflow: intent.workflow } : {}),
+            acceptance: intent.acceptance,
+            input: intent.input ?? {},
+            summary: primaryHandlerResult.summary,
+            evidence: primaryHandlerResult.evidence,
+            acceptanceBasis,
+            actionsApplied: apply.actionsApplied,
+            ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
+            workflowRunId: primaryResult.runId,
+          });
+          if (apply.status === "applied" && appliedDisposition === "converged") {
+            emitAppTaskDependencyCompleted(opts, descriptor, intent.id);
+          }
+          return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
+        } catch (error) {
+          const stale = recoverStaleTaskActionResult(config, primary, error);
+          if (stale) {
+            const summary = error instanceof Error ? error.message : String(error);
+            emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+              generation: primary.generation,
+              attemptId: primary.attemptId,
+              handler: primary.handler,
+              disposition: "stale",
+              outcome: intent.outcome,
+              mode: intent.mode,
+              owner: intent.owner ?? descriptor.owner,
+              ...(intent.workflow ? { workflow: intent.workflow } : {}),
+              input: intent.input ?? {},
+              summary,
+              evidence: primaryHandlerResult.evidence,
+              staleRecovery: stale.staleRecovery,
+              workflowRunId: primaryResult.runId,
+            });
+            return stale.reconcileTaskIds;
+          }
+          primaryHandlerResult.state = "error";
+          primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
+        }
+      }
+    }
+
+    if (primaryHandlerResult.state === "waiting") {
+      const finalized = await finalizeWorkspace("waiting");
       if (!finalized.ok) {
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
         primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
       }
     }
-    if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
+
+    if (primaryHandlerResult.state === "waiting" && primaryHandlerResult.dependencies?.length) {
       try {
-        const apply = persistResult(() => completeAppTask(config, primary, {
-          summary: primaryHandlerResult.summary,
-          response: primaryHandlerResult.response,
-          evidence: primaryHandlerResult.evidence,
-          actions: primaryHandlerResult.actions,
-          acceptanceBasis,
-        }));
-        const appliedDisposition = apply.taskContinues
-          ? primaryHandlerResult.actions.some(
-              (action) => action.kind === "update-task" && action.taskId === primary.taskId,
-            )
-            ? "revised"
-            : "progress"
-          : "converged";
+        const dependencyConditions = admitTaskAppDependencies({
+          opts,
+          descriptor,
+          claim: primary,
+          dependencies: primaryHandlerResult.dependencies,
+        });
+        const conditions = [...(primaryHandlerResult.conditions ?? []), ...dependencyConditions];
+        const conditionIds = new Set(conditions.map((condition) => condition.id));
+        if (conditionIds.size !== conditions.length) {
+          throw new Error("Task result uses the same Condition id for an App dependency and an explicit Condition");
+        }
+        primaryHandlerResult.conditions = conditions;
+      } catch (error) {
+        primaryHandlerResult.state = "error";
+        primaryHandlerResult.summary = `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
+
+    if (primaryHandlerResult.state === "waiting") {
+      try {
+        const apply = persistResult(() =>
+          deferAppTask(config, primary, {
+            disposition: "waiting",
+            summary: primaryHandlerResult.summary,
+            evidence: primaryHandlerResult.evidence,
+            actions: primaryHandlerResult.actions,
+            conditions: primaryHandlerResult.conditions,
+          }),
+        );
         interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
           handler: primary.handler,
-          disposition: apply.status === "applied" ? appliedDisposition : "stale",
-          outcome: intent.outcome,
-          mode: intent.mode,
-          owner: intent.owner ?? descriptor.owner,
-          ...(intent.workflow ? { workflow: intent.workflow } : {}),
-          acceptance: intent.acceptance,
+          disposition: apply.status === "applied" ? primaryHandlerResult.state : "stale",
+          ...(primary.trigger?.type === "project.task.condition-review.missed"
+            ? { reason: "condition-review-checkpoint-missed" }
+            : {}),
           input: intent.input ?? {},
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
-          acceptanceBasis,
           actionsApplied: apply.actionsApplied,
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
         });
-        if (apply.status === "applied" && appliedDisposition === "converged") {
-          emitAppTaskDependencyCompleted(opts, descriptor, intent.id);
-        }
-        return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
+        const replayedTaskIds =
+          apply.status === "applied"
+            ? replayPersistedConditionEvents(opts, descriptor, config, {
+                conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
+              })
+            : [];
+        return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
       } catch (error) {
         const stale = recoverStaleTaskActionResult(config, primary, error);
         if (stale) {
@@ -2279,10 +2402,6 @@ async function reconcileTask(input: {
             attemptId: primary.attemptId,
             handler: primary.handler,
             disposition: "stale",
-            outcome: intent.outcome,
-            mode: intent.mode,
-            owner: intent.owner ?? descriptor.owner,
-            ...(intent.workflow ? { workflow: intent.workflow } : {}),
             input: intent.input ?? {},
             summary,
             evidence: primaryHandlerResult.evidence,
@@ -2292,133 +2411,50 @@ async function reconcileTask(input: {
           return stale.reconcileTaskIds;
         }
         primaryHandlerResult.state = "error";
-        primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
+        primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
-  }
 
-  if (primaryHandlerResult.state === "waiting") {
-    const finalized = await finalizeWorkspace("waiting");
-    if (!finalized.ok) {
-      primaryHandlerResult.state = "error";
-      primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-      primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
-    }
-  }
+    await finalizeWorkspace("failed");
 
-  if (primaryHandlerResult.state === "waiting" && primaryHandlerResult.dependencies?.length) {
-    try {
-      const dependencyConditions = admitTaskAppDependencies({
-        opts,
-        descriptor,
-        claim: primary,
-        dependencies: primaryHandlerResult.dependencies,
-      });
-      const conditions = [...(primaryHandlerResult.conditions ?? []), ...dependencyConditions];
-      const conditionIds = new Set(conditions.map((condition) => condition.id));
-      if (conditionIds.size !== conditions.length) {
-        throw new Error("Task result uses the same Condition id for an App dependency and an explicit Condition");
-      }
-      primaryHandlerResult.conditions = conditions;
-    } catch (error) {
-      primaryHandlerResult.state = "error";
-      primaryHandlerResult.summary = `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`;
-    }
-  }
-
-  if (primaryHandlerResult.state === "waiting") {
-    try {
-      const apply = persistResult(() => deferAppTask(config, primary, {
-        disposition: "waiting",
+    const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
+    const attention = persistResult(() =>
+      markAppTaskAttention(config, primary, {
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,
-        actions: primaryHandlerResult.actions,
-        conditions: primaryHandlerResult.conditions,
-      }));
-      interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
-      const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+        reason: primaryResult.unavailable
+          ? "HandlerUnavailable"
+          : primaryResult.executionFailed
+            ? "HandlerExecutionFailed"
+            : primaryResult.workspacePreparationFailed
+              ? "WorkspacePreparationFailed"
+              : primaryHandlerResult.state === "needs-owner"
+                ? "needs-owner"
+                : "handler-blocked",
+        wakeParent: !ownerHandoff,
+      }),
+    );
+    if (attention.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
+    if (!ownerHandoff) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: apply.status === "applied" ? primaryHandlerResult.state : "stale",
-        ...(primary.trigger?.type === "project.task.condition-review.missed"
-          ? { reason: "condition-review-checkpoint-missed" }
-          : {}),
+        disposition: "attention",
         input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
-        evidence: primaryHandlerResult.evidence,
-        actionsApplied: apply.actionsApplied,
-        ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
-        workflowRunId: primaryResult.runId,
       });
-      const replayedTaskIds =
-        apply.status === "applied"
-          ? replayPersistedConditionEvents(opts, descriptor, config, {
-              conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
-            })
-          : [];
-      return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
-    } catch (error) {
-      const stale = recoverStaleTaskActionResult(config, primary, error);
-      if (stale) {
-        const summary = error instanceof Error ? error.message : String(error);
-        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-          generation: primary.generation,
-          attemptId: primary.attemptId,
-          handler: primary.handler,
-          disposition: "stale",
-          input: intent.input ?? {},
-          summary,
-          evidence: primaryHandlerResult.evidence,
-          staleRecovery: stale.staleRecovery,
-          workflowRunId: primaryResult.runId,
-        });
-        return stale.reconcileTaskIds;
-      }
-      primaryHandlerResult.state = "error";
-      primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
+      return attention.status === "applied" && attention.parentTaskId ? [attention.parentTaskId] : [];
     }
-  }
-
-  await finalizeWorkspace("failed");
-
-  const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
-  const attention = persistResult(() => markAppTaskAttention(config, primary, {
-    summary: primaryHandlerResult.summary,
-    evidence: primaryHandlerResult.evidence,
-    reason: primaryResult.unavailable
-      ? "HandlerUnavailable"
-      : primaryResult.executionFailed
-        ? "HandlerExecutionFailed"
-        : primaryResult.workspacePreparationFailed
-          ? "WorkspacePreparationFailed"
-          : primaryHandlerResult.state === "needs-owner"
-            ? "needs-owner"
-            : "handler-blocked",
-    wakeParent: !ownerHandoff,
-  }));
-  if (attention.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
-  if (!ownerHandoff) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
       attemptId: primary.attemptId,
       handler: primary.handler,
-      disposition: "attention",
+      disposition: "owner-handoff",
       input: intent.input ?? {},
       summary: primaryHandlerResult.summary,
     });
-    return attention.status === "applied" && attention.parentTaskId ? [attention.parentTaskId] : [];
-  }
-  emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-    generation: primary.generation,
-    attemptId: primary.attemptId,
-    handler: primary.handler,
-    disposition: "owner-handoff",
-    input: intent.input ?? {},
-    summary: primaryHandlerResult.summary,
-  });
-  return [intent.id];
+    return [intent.id];
   } catch (error) {
     timing.outcome = "failed";
     throw error;
@@ -2983,12 +3019,7 @@ function recoverInterruptedAppTasks(
         enqueueAppTask(controller, config, recovery.taskId);
       }
     };
-    for (const recovery of recoverableAppTaskAttempts(
-      config,
-      Date.now(),
-      includeFreshLeases,
-      runningRecoveryTaskIds,
-    )) {
+    for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases, runningRecoveryTaskIds)) {
       if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
       }
@@ -3198,8 +3229,9 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
   }
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
-  opts.bus.subscribe(
-    (rawEvent): DeliveryResult | void => {
+  opts.bus.listen(
+    (rawEvent): void => {
+      if (rawEvent.type !== "session.start" && rawEvent.type !== "session.end") return;
       const event = flattenEvent(rawEvent);
       const startedSessionId =
         event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
@@ -3339,7 +3371,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       }
       return undefined;
     },
-    { label: "app-task-session" },
+    { label: "app-task-session", types: ["session.start", "session.end"] },
   );
 }
 

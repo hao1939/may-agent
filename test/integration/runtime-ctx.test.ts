@@ -120,28 +120,24 @@ describe("buildRuntimeCtx", () => {
     });
   });
 
-  it("notify emits notification event on bus", () => {
+  it("notify appends one tool-authored message to May's shared Conversation", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
 
     rtx.notify("something happened");
 
     expect(opts.bus.emit).toHaveBeenCalledWith({
-      type: "message.created",
+      type: "conversation.message.created",
       source: "agent:test-agent",
-      owner: "human:operator",
+      owner: "app:may",
       data: {
-        from: "test-agent",
-        to: "human",
-        content: "something happened",
-        priority: "P2",
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "tool", id: "test-agent" },
+        text: "something happened",
       },
     });
-    expect(opts.bus.emit).toHaveBeenCalledWith({
-      type: "notification",
-      agent: "test-agent",
-      text: "something happened",
-    });
+    expect(opts.bus.emit).toHaveBeenCalledTimes(1);
   });
 
   it("spreads into HandlerContext without conflict", () => {

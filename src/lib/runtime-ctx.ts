@@ -23,6 +23,7 @@ import type { PersistedSession } from "./persistence.js";
 import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
 import { buildCanonicalEventEnvelope } from "../../packages/control/src/event-envelope.js";
+import { mayConversationNoticeEvent } from "../app/app-input-event.js";
 
 /**
  * RuntimeCtx — internal type for workflow/sdk infra.
@@ -86,18 +87,13 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     commands: createCommandService(),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {
-      opts.bus.emit({
-        type: "message.created",
-        source: `agent:${opts.agentName}`,
-        owner: "human:operator",
-        data: {
-          from: opts.agentName,
-          to: "human",
-          content: msg,
-          priority: "P2",
-        },
-      } as any);
-      opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg } as any);
+      opts.bus.emit(
+        mayConversationNoticeEvent({
+          source: `agent:${opts.agentName}`,
+          authorId: opts.agentName,
+          text: msg,
+        }),
+      );
     },
     metrics: createMetricService({
       getDb: () => getDb(opts.persistDir),

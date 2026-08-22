@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
 import type { AppEvent, AppInput } from "@may-agent/sdk";
+import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
-import { createRuntimeAppRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
-import type { TaskListOptions, TaskView } from "@may-agent/sdk";
+import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { readAppConversationResource } from "./app-inbox-store.js";
 import { HostCapacity } from "./host-capacity.js";
@@ -25,7 +25,7 @@ import {
   startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EventBus } from "./event-bus.js";
+import { EventBus, type AgentEvent } from "./event-bus.js";
 import { createEventInterface, type EventInterface } from "./event-interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
@@ -34,6 +34,7 @@ import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
+import { HumanTaskService } from "./human-task-service.js";
 
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
@@ -182,6 +183,24 @@ export async function runAppRuntime(opts: {
   let appInboxRuntime: AppInboxRuntime | null = null;
   const appRegistry = new AppRegistry(opts.projectsRoot);
   await appRegistry.reload();
+  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry, {
+    onCancelled: ({ appId, taskId, sessionId, reason }) => {
+      if (sessionId && manager.hasActiveSession(sessionId)) manager.cancel(sessionId);
+      bus.emit({
+        type: "app.task.cancelled",
+        source: "human-task-service",
+        owner: "human:operator",
+        target: { appId, taskId },
+        data: { appId, taskId, reason },
+      } as unknown as AgentEvent);
+      bus.emit({
+        type: "app.dependency.updated",
+        source: "human-task-service",
+        owner: "human:operator",
+        data: { kind: "task", id: taskId },
+      });
+    },
+  });
 
   attachDaemonEventSubscribers({
     bus,
@@ -255,7 +274,7 @@ export async function runAppRuntime(opts: {
   }
 
   let appWatcher: { close(): void } | null = null;
-  let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
+  let telegramBot: { close: () => void } = { close: () => {} };
   let cancelledOnce = false;
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
@@ -296,7 +315,6 @@ export async function runAppRuntime(opts: {
       cancelledOnce = false;
     },
     projectRoot: opts.projectRoot,
-    persistDir: opts.persistDir,
     acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
     reload: handleReload,
     restart: gracefulRestart,
@@ -309,18 +327,16 @@ export async function runAppRuntime(opts: {
     process.exit(1);
   }
 
-  // Attach the human-attention gate before opening any external ingress or
-  // starting cron work. Otherwise an event accepted during startup can be
-  // persisted and printed while completely missing Telegram admission.
+  // Open the Conversation adapter before external ingress or cron work so it
+  // can observe every later shared Conversation update.
   telegramBot = TELEGRAM_ENABLED
     ? attachTelegramBot({
         bus,
-        manager,
         persistDir: opts.persistDir,
-        projectRoot: opts.projectRoot,
         interfaceAgent,
+        humanTasks,
       })
-    : { close: () => {}, sendAlert: () => {} };
+    : { close: () => {} };
 
   const events = createEventInterface({
     bus,
@@ -338,16 +354,6 @@ export async function runAppRuntime(opts: {
     getRuntime: () => appInboxRuntime,
     admit: admitAppInput,
   });
-  const appTaskPaths = (appId: string) => {
-    const normalized = appId.trim().replace(/\.app$/, "");
-    const entry = appRegistry.snapshot().entries.find((candidate) => candidate.definition.id === normalized);
-    if (!entry) throw new Error(`App ${appId} is not loaded`);
-    const projectDir = entry.definition.workspace?.localPath
-      ? resolve(entry.appDir, entry.definition.workspace.localPath)
-      : entry.appDir;
-    return { appDir: entry.appDir, projectDir };
-  };
-  const taskStatuses = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention", "done"]);
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
@@ -360,19 +366,22 @@ export async function runAppRuntime(opts: {
     getAppConversation: (appId, conversationId, options) =>
       readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
     listAppTasks: (appId, options) => {
-      const status = options?.status?.map((value) => {
-        if (!taskStatuses.has(value as TaskView["status"])) throw new Error(`Invalid Task status: ${value}`);
-        return value as TaskView["status"];
+      return appTasks.list({
+        appId,
+        options: {
+          ...(options?.status ? { status: options.status as TaskListOptions["status"] } : {}),
+          ...(options?.limit === undefined ? {} : { limit: options.limit }),
+          ...(options?.cursor ? { cursor: options.cursor } : {}),
+        },
       });
-      return listRuntimeTaskViews({ executionPaths: appTaskPaths(appId) }, {
-        ...(status ? { status } : {}),
-        ...(options?.limit === undefined ? {} : { limit: options.limit }),
-        ...(options?.cursor ? { cursor: options.cursor } : {}),
-      } satisfies TaskListOptions);
     },
-    getAppTask: (appId, taskId) => readRuntimeTaskView({ executionPaths: appTaskPaths(appId) }, taskId),
+    getAppTask: (appId, taskId) => appTasks.get({ appId, taskId }),
     resolveAppTask: (appId, event) =>
       appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
+    listApps: (appId) => humanTasks.listApps(appId),
+    listTasks: (options) => humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]),
+    getTask: (input) => humanTasks.getTask(input),
+    cancelTask: (input) => humanTasks.cancelTask(input),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });

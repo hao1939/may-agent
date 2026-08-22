@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS app_tasks (
 CREATE INDEX IF NOT EXISTS idx_app_tasks_ready ON app_tasks(app_id, ready, lane, updated_at, task_id);
 CREATE INDEX IF NOT EXISTS idx_app_tasks_changed ON app_tasks(app_id, changed, updated_at, task_id);
 CREATE INDEX IF NOT EXISTS idx_app_tasks_phase ON app_tasks(app_id, phase, updated_at, task_id);
+CREATE INDEX IF NOT EXISTS idx_app_tasks_global_phase
+  ON app_tasks(phase, updated_at DESC, app_id, task_id);
 CREATE INDEX IF NOT EXISTS idx_app_tasks_due ON app_tasks(app_id, next_check_at, task_id)
   WHERE next_check_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_tasks_expired ON app_tasks(app_id, lease_until, task_id)
@@ -63,6 +65,22 @@ CREATE TABLE IF NOT EXISTS app_task_receipts (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_receipts_parent
   ON app_task_receipts(app_id, parent_id, completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_app_task_receipts_completed
+  ON app_task_receipts(completed_at DESC, app_id, receipt_id);
+CREATE TABLE IF NOT EXISTS app_task_refs (
+  digest TEXT PRIMARY KEY, prefix8 TEXT NOT NULL, prefix16 TEXT NOT NULL,
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL, indexed_at INTEGER NOT NULL,
+  UNIQUE(app_id, task_id)
+);
+CREATE INDEX IF NOT EXISTS idx_app_task_refs_prefix8 ON app_task_refs(prefix8, digest);
+CREATE INDEX IF NOT EXISTS idx_app_task_refs_prefix16 ON app_task_refs(prefix16, digest);
+CREATE TABLE IF NOT EXISTS app_task_cancellations (
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+  requested_at INTEGER NOT NULL, reason TEXT NOT NULL, cancellation_json TEXT NOT NULL,
+  PRIMARY KEY(app_id, task_id)
+);
+CREATE INDEX IF NOT EXISTS idx_app_task_cancellations_time
+  ON app_task_cancellations(requested_at DESC, app_id, task_id);
 CREATE TABLE IF NOT EXISTS app_task_groups (
   app_id TEXT NOT NULL, group_id TEXT NOT NULL, group_json TEXT NOT NULL,
   PRIMARY KEY(app_id, group_id)

@@ -2,14 +2,13 @@
  * Tests for the system-status tool.
  *
  * Tests the tool against real .state/ data to verify:
- * - Active session scanning
- * - History tail-read optimization (sort & slice)
+ * - Indexed active session reads
+ * - Bounded recent-history reads
  * - JSONL tail reading (delegations)
  * - Focus tasks and todo parsing
  * - Output formatting
  *
- * Note: Job history comes from SQLite and requires bun:sqlite.
- * Under the test runner, job queries return empty results gracefully.
+ * Job and session history use the same SQLite read projection as the runtime.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
@@ -17,6 +16,7 @@ import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createSystemStatusTool } from "./system-status.js";
+import { upsertSession } from "../db/sessions.js";
 
 // ── Test fixtures ───────────────────────────────────────────────────────
 
@@ -44,6 +44,14 @@ function createTestState() {
     }),
   );
   writeFileSync(join(stateDir, "sessions", activeSession1, "[ACTIVE]"), "active");
+  upsertSession(stateDir, {
+    sessionId: activeSession1,
+    agent: "bob",
+    task: "[heartbeat] Read heartbeat.md",
+    status: "running",
+    startedAt: Date.now() - 30_000,
+    kind: "job",
+  });
 
   const activeSession2 = "s_" + (Date.now() - 120_000) + "_2"; // 2m ago
   mkdirSync(join(stateDir, "sessions", activeSession2));
@@ -58,6 +66,14 @@ function createTestState() {
     }),
   );
   writeFileSync(join(stateDir, "sessions", activeSession2, "[ACTIVE]"), "active");
+  upsertSession(stateDir, {
+    sessionId: activeSession2,
+    agent: "may",
+    task: "Triage inbox",
+    status: "idle",
+    startedAt: Date.now() - 120_000,
+    kind: "chat",
+  });
 
   // Create terminal sessions (some recent, some old)
   const recentHistory = "s_" + (Date.now() - 5 * 60_000) + "_100";
@@ -73,6 +89,15 @@ function createTestState() {
       kind: "call",
     }),
   );
+  upsertSession(stateDir, {
+    sessionId: recentHistory,
+    agent: "coder",
+    task: "Implement feature X",
+    status: "done",
+    startedAt: Date.now() - 6 * 60_000,
+    endedAt: Date.now() - 5 * 60_000,
+    kind: "call",
+  });
 
   const recentError = "s_" + (Date.now() - 10 * 60_000) + "_101";
   mkdirSync(join(stateDir, "sessions", recentError));
@@ -88,6 +113,16 @@ function createTestState() {
       kind: "call",
     }),
   );
+  upsertSession(stateDir, {
+    sessionId: recentError,
+    agent: "optimizer",
+    task: "Optimize prompts",
+    status: "error",
+    startedAt: Date.now() - 12 * 60_000,
+    endedAt: Date.now() - 10 * 60_000,
+    error: "Context limit exceeded",
+    kind: "call",
+  });
 
   // Old terminal session (should be outside 60m window)
   const oldHistory = "s_" + (Date.now() - 120 * 60_000) + "_50";
@@ -102,6 +137,14 @@ function createTestState() {
       endedAt: Date.now() - 120 * 60_000,
     }),
   );
+  upsertSession(stateDir, {
+    sessionId: oldHistory,
+    agent: "scout",
+    task: "Deep dive research",
+    status: "done",
+    startedAt: Date.now() - 150 * 60_000,
+    endedAt: Date.now() - 120 * 60_000,
+  });
 
   // Create delegations.jsonl
   const delegations = [
@@ -250,12 +293,10 @@ describe("system-status tool", () => {
     expect(text).toContain("❌"); // error delegation
   });
 
-  it("shows job health section (empty when SQLite unavailable in tests)", async () => {
+  it("shows the job health section", async () => {
     const result = await tool.execute("test-call-6", {});
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
-    // Job data comes from SQLite, which isn't available in this test environment.
-    // The tool handles this gracefully by returning empty results.
     expect(text).toContain("⏱️ Cron/Jobs");
   });
 
@@ -275,8 +316,25 @@ describe("system-status tool", () => {
       activeSessions: 2,
       historyInWindow: 2,
       delegationCount: 3,
-      jobCount: 0, // SQLite not available in vitest — jobs come back empty
+      jobCount: 0,
     });
+  });
+
+  it("reads sessions from the indexed projection without a session artifact directory", async () => {
+    const projectionState = join(root, "projection-only-state");
+    upsertSession(projectionState, {
+      sessionId: "projection-active",
+      agent: "may",
+      task: "Reconcile one Task",
+      status: "running",
+      startedAt: Date.now() - 1_000,
+    });
+    const projectionTool = createSystemStatusTool(projectionState, agentsRoot);
+
+    const result = await projectionTool.execute("projection-only", {});
+    const text = (result.content[0] as { type: "text"; text: string }).text;
+    expect(text).toContain("Active Sessions (1)");
+    expect(text).toContain("Reconcile one Task");
   });
 
   it("handles missing state directory gracefully", async () => {

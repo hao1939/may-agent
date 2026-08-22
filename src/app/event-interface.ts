@@ -95,16 +95,8 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       if (input.data.metadata !== undefined) {
         const metadata = record(input.data.metadata, "conversation.message.created data.metadata");
         optionalTextField(metadata, "channel", "conversation.message.created data.metadata.channel");
-        optionalTextField(
-          metadata,
-          "channelTargetId",
-          "conversation.message.created data.metadata.channelTargetId",
-        );
-        optionalTextField(
-          metadata,
-          "channelThreadId",
-          "conversation.message.created data.metadata.channelThreadId",
-        );
+        optionalTextField(metadata, "channelTargetId", "conversation.message.created data.metadata.channelTargetId");
+        optionalTextField(metadata, "channelThreadId", "conversation.message.created data.metadata.channelThreadId");
         if (
           metadata.channelMessageId !== undefined &&
           (!Number.isSafeInteger(metadata.channelMessageId) || Number(metadata.channelMessageId) <= 0)
@@ -123,6 +115,25 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
               "conversation.message.created data.metadata.requestIds must be an array of at most 100 non-empty strings",
             );
           }
+        }
+        if (
+          metadata.taskRefs !== undefined &&
+          (!Array.isArray(metadata.taskRefs) ||
+            metadata.taskRefs.length > 100 ||
+            metadata.taskRefs.some(
+              (value) =>
+                !value ||
+                typeof value !== "object" ||
+                Array.isArray(value) ||
+                typeof (value as Record<string, unknown>).appId !== "string" ||
+                !String((value as Record<string, unknown>).appId).trim() ||
+                typeof (value as Record<string, unknown>).taskId !== "string" ||
+                !String((value as Record<string, unknown>).taskId).trim(),
+            ))
+        ) {
+          throw new Error(
+            "conversation.message.created data.metadata.taskRefs must be an array of at most 100 canonical Task identities",
+          );
         }
       }
     },
@@ -575,12 +586,14 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
     subscribe(filter, listener) {
       const types = filter.types?.length ? new Set(filter.types) : null;
       const sessionIds = filter.sessionIds?.length ? new Set(filter.sessionIds) : null;
-      return options.bus.subscribe((event) => {
-        if (types && !types.has(event.type)) return;
-        const data = eventData(event);
-        if (sessionIds && (typeof data.sessionId !== "string" || !sessionIds.has(data.sessionId))) return;
-        listener(publicEvent(event));
-      });
+      return options.bus.listen(
+        (event) => {
+          const data = eventData(event);
+          if (sessionIds && (typeof data.sessionId !== "string" || !sessionIds.has(data.sessionId))) return;
+          listener(publicEvent(event));
+        },
+        { label: "event-interface", ...(types ? { types: [...types] } : {}) },
+      );
     },
   };
 }

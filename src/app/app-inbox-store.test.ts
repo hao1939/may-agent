@@ -145,7 +145,12 @@ describe("App inbox store", () => {
         conversationId: "may:primary",
         author: { kind: "command", id: "may-console" },
         text: "Active work: 1 item",
-        metadata: { channel: "may-console", command: "/work", requestIds: ["human-1"] },
+        metadata: {
+          channel: "may-console",
+          command: "/tasks",
+          requestIds: ["human-1"],
+          taskRefs: [{ appId: "evaluation", taskId: "review/docs" }],
+        },
       }),
       110,
     );
@@ -185,10 +190,19 @@ describe("App inbox store", () => {
           sequence: 11,
           author: { kind: "command", id: "may-console" },
           text: "Active work: 1 item",
-          metadata: { channel: "may-console", command: "/work", requestIds: ["human-1"] },
+          metadata: {
+            channel: "may-console",
+            command: "/tasks",
+            requestIds: ["human-1"],
+            taskRefs: [{ appId: "evaluation", taskId: "review/docs" }],
+          },
         },
       ],
       work: [{ requestId: "human-1", state: "queued" }],
+    });
+    expect(readAppConversationResource(db, "may", "may:primary", { includeWork: false })).toMatchObject({
+      messages: [{ id: "console:1" }, { id: "event:11" }],
+      work: [],
     });
   });
 
