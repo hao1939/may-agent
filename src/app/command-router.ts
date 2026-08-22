@@ -305,16 +305,18 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
   });
 
-  const unsubscribeProjectComment = bus.subscribe((event) => {
-    if (event.type !== "project.comment.created") return;
-    const data = eventData(event);
-    appendProjectDiscussion(
-      data.projectPath,
-      data.comment,
-      eventSource(event),
-      nonEmptyString(data.author) ?? undefined,
-    );
-  });
+  const unsubscribeProjectComment = bus.listen(
+    (event) => {
+      const data = eventData(event);
+      appendProjectDiscussion(
+        data.projectPath,
+        data.comment,
+        eventSource(event),
+        nonEmptyString(data.author) ?? undefined,
+      );
+    },
+    { label: "project-comment-projection", types: ["project.comment.created"] },
+  );
 
   return {
     handleInput,

@@ -106,7 +106,7 @@ describe("command router integration", () => {
     h.router.close();
   });
 
-  it("applies legacy project comments at the filesystem adapter", () => {
+  it("applies legacy project comments at the filesystem adapter", async () => {
     const h = harness();
     const projectPath = "projects/demo";
     const projectDir = join(h.projectRoot, projectPath);
@@ -122,6 +122,7 @@ describe("command router integration", () => {
       owner: "agent:tech-lead",
       data: { projectPath, comment: "please continue", author: "hao" },
     });
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(readFileSync(join(projectDir, "discussion.md"), "utf8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf8")).toContain("status: active");
     h.router.close();
