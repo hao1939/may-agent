@@ -55,6 +55,28 @@ owner agent by default, name a workflow, or select a registered executor;
 `executor` are mutually exclusive; omitting both means the managed owner
 agent.
 
+The complete executor extension boundary is deliberately small:
+
+```ts
+type TaskExecutor = (attempt: {
+  appId: string;
+  task: TaskDetail;
+  cwd: string;
+  events: TaskReconciliationEvents;
+  publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
+  onEvent(listener: (event: AppEvent) => void): () => void;
+}) => Promise<TaskReconcileResult>;
+```
+
+An executor reads current Task state and its bounded unobserved event batch,
+does one useful bounded attempt, optionally publishes retry-safe progress or
+findings, and returns one result. `onEvent` is an optional low-latency view of
+new durable Task input such as feedback, approval, steering, or cancellation;
+the next attempt still receives that input if the executor cannot consume it
+live. The Runtime owns fencing, leases, event persistence, result admission,
+and recovery, so an executor implements no scheduler, queue, retry loop, or
+Task storage.
+
 Every adapter receives the same bounded Task detail and ordered event batch,
 may publish a fact through the current generation/attempt fence, and returns
 one `TaskReconcileResult`. An event addressed to `{ appId, taskId }` is durable
