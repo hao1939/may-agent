@@ -5,23 +5,21 @@ May system, including the Host in `projects/may-agent`. Runtime code
 repositories do not keep parallel design folders. When code changes a
 contract, update the corresponding document here in the same change.
 
-The system is easiest to understand as:
+The system is easiest to understand as one loop:
 
 ```text
-events carry input and facts
-metrics expose signals
-agents judge and act
-workflows enforce a learned bounded process
-apps own durable outcomes and results
-projects hold goal and posture
-tasks are the one App work resource
-tasks reconcile desired state across bounded attempts
+event -> App Task -> one bounded attempt -> result or another wake
 ```
 
-In May-specific names, **May** is who the human talks to. The **May App**
-(`app:may`) durably owns that conversation, while the replaceable **May worker**
-(`agent:may`) performs one bounded reasoning attempt. The **Host Operations
-App** (`app:may-agent`) instead owns Tasks that change the Host. There is no
+An App owns each durable outcome. The Host stores events and Tasks, runs
+bounded attempts, and recovers unfinished work. An attempt may use an agent or
+workflow, but neither becomes another work owner.
+
+For May, the ordinary model is simply: a human talks to **May**, and the **May
+App** (`app:may`) keeps that Conversation Task alive until May answers or routes
+typed work to the responsible App. Only execution diagnostics need the term
+**May worker** (`agent:may`) for one replaceable reasoning attempt. The **Host
+Operations App** (`app:may-agent`) owns Tasks that change the Host. There is no
 separate architectural component called “May agent.”
 
 ## Documentation tiers

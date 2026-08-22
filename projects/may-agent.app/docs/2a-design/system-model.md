@@ -78,9 +78,12 @@ detail.
 ```text
 human talks to May
   -> May App (`app:may`) owns the Conversation Task
-  -> Host runs a bounded worker such as `agent:may`
-  -> May App accepts the answer or routes typed work to another App
+  -> May answers or routes typed work to the responsible App
 ```
+
+That is the complete ordinary mental model. The Host may run a bounded worker
+such as `agent:may` while reconciling the Conversation Task, but the worker is
+an execution detail, not another service or owner.
 
 The names describe different responsibilities:
 
@@ -97,6 +100,16 @@ peers. The App owns the obligation across retries and restarts; the worker only
 attempts it. The worker can change, fail, or be replaced without changing the
 Conversation Task. In code, unqualified `owner: "may"` selects this worker;
 durable Task identity remains namespaced by its App.
+
+Use the shortest name that fits the audience:
+
+- say **May** in product behavior, conversation, and ordinary operations;
+- say **May App** when discussing durable ownership or routing; and
+- say **May worker** only when inspecting one model/agent execution.
+
+Do not make a human or App author reason about all three at once. In
+particular, a Task is never transferred to the worker merely because the Host
+is currently running that worker.
 
 Current design prose uses **App** as the architectural term. Retained names such
 as `agent-app`, the `Agent App` document title, and project type values are
