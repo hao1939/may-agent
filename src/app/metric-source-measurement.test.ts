@@ -8,11 +8,32 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID } from "./event-bus.js";
 import {
   attachMetricSourceMeasurement,
+  batchableProjectMetricCommand,
   type MetricSourceMeasurementRuntime,
   STALE_ACTIVE_SOURCE_QUERY,
   SUBSCRIBER_FAILED_COUNT_METRIC_ID,
   SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
 } from "./metric-source-measurement.js";
+
+describe("source-command metric batching", () => {
+  it("groups both project and focused metric samplers by their accepted script", () => {
+    expect(
+      batchableProjectMetricCommand("bun /app/projects/example.app/scripts/project-metrics.ts example.total --json"),
+    ).toEqual({
+      scriptPath: "/app/projects/example.app/scripts/project-metrics.ts",
+      metricId: "example.total",
+    });
+    expect(
+      batchableProjectMetricCommand("bun /app/projects/example.app/scripts/focus-metric-sample.ts example.live --json"),
+    ).toEqual({
+      scriptPath: "/app/projects/example.app/scripts/focus-metric-sample.ts",
+      metricId: "example.live",
+    });
+    expect(
+      batchableProjectMetricCommand("bun /app/projects/example.app/scripts/arbitrary.ts example.live --json"),
+    ).toBeNull();
+  });
+});
 
 describe("source-query metric measurement", () => {
   let persistDir: string;
@@ -41,9 +62,7 @@ describe("source-query metric measurement", () => {
 
     expect(
       db
-        .prepare(
-          "SELECT owner, threshold, priority, config, source_query, measure_interval FROM metrics WHERE id = ?",
-        )
+        .prepare("SELECT owner, threshold, priority, config, source_query, measure_interval FROM metrics WHERE id = ?")
         .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
     ).toEqual({
       owner: "tech-lead",
@@ -58,9 +77,7 @@ describe("source-query metric measurement", () => {
   it("persists, measures, and alerts on the rolling subscriber failure source without hiding malformed targets", async () => {
     const db = getDb(persistDir);
     expect(
-      db
-        .prepare("SELECT owner, source_query FROM metrics WHERE id = ?")
-        .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+      db.prepare("SELECT owner, source_query FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
     ).toEqual({
       owner: "may",
       source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
@@ -115,14 +132,12 @@ describe("source-query metric measurement", () => {
     const triggerEventId = trigger[EVENT_ROW_ID]!;
     await measurement.idle();
 
-    expect(
-      db.prepare("SELECT current FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
-    ).toEqual({ current: 4 });
+    expect(db.prepare("SELECT current FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID)).toEqual({
+      current: 4,
+    });
     expect(
       db
-        .prepare(
-          "SELECT value, measured_by, note FROM metric_snapshots WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
-        )
+        .prepare("SELECT value, measured_by, note FROM metric_snapshots WHERE metric_id = ? ORDER BY id DESC LIMIT 1")
         .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
     ).toEqual({
       value: 4,
@@ -131,9 +146,7 @@ describe("source-query metric measurement", () => {
     });
     expect(
       db
-        .prepare(
-          "SELECT alert_type, resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
-        )
+        .prepare("SELECT alert_type, resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 1")
         .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
     ).toEqual({ alert_type: "consecutive_failures", resolved_at: null });
   });
@@ -186,9 +199,7 @@ describe("source-query metric measurement", () => {
     expect(metric.updated_at).toBeGreaterThan(Date.now() - 5_000);
     expect(
       db
-        .prepare(
-          "SELECT value, measured_by, note FROM metric_snapshots WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
-        )
+        .prepare("SELECT value, measured_by, note FROM metric_snapshots WHERE metric_id = ? ORDER BY id DESC LIMIT 1")
         .get("event.unhandled-signal-count-1h"),
     ).toEqual({
       value: 0,
@@ -196,15 +207,9 @@ describe("source-query metric measurement", () => {
       note: `source-query; trigger-event:${triggerEventId}`,
     });
     expect(
-      db.prepare("SELECT resolved_at FROM metric_alerts WHERE metric_id = ?").get(
-        "event.unhandled-signal-count-1h",
-      ),
+      db.prepare("SELECT resolved_at FROM metric_alerts WHERE metric_id = ?").get("event.unhandled-signal-count-1h"),
     ).toMatchObject({ resolved_at: expect.any(Number) });
-    expect(
-      db.prepare("SELECT accepted_by, delivery_route FROM events WHERE id = ?").get(
-        triggerEventId,
-      ),
-    ).toEqual({
+    expect(db.prepare("SELECT accepted_by, delivery_route FROM events WHERE id = ?").get(triggerEventId)).toEqual({
       accepted_by: "runtime:metric-source-measurement",
       delivery_route: "direct",
     });

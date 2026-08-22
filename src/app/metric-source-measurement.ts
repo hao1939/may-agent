@@ -42,12 +42,8 @@ type CommandSample = {
 
 function sourceQueryValue(row: Record<string, unknown> | null): number | null {
   if (!row) return null;
-  const candidate = Object.prototype.hasOwnProperty.call(row, "value")
-    ? row.value
-    : Object.values(row)[0];
-  return typeof candidate === "number" && Number.isFinite(candidate)
-    ? candidate
-    : null;
+  const candidate = Object.prototype.hasOwnProperty.call(row, "value") ? row.value : Object.values(row)[0];
+  return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : null;
 }
 
 function isReadOnlySourceQuery(query: string): boolean {
@@ -84,12 +80,8 @@ function parseCommandOutput(output: string): CommandSample | null {
   }
 }
 
-export function batchableProjectMetricCommand(
-  command: string,
-): { scriptPath: string; metricId: string } | null {
-  const match = command
-    .trim()
-    .match(/^bun\s+(\S+\/project-metrics\.ts)\s+(\S+)\s+--json$/);
+export function batchableProjectMetricCommand(command: string): { scriptPath: string; metricId: string } | null {
+  const match = command.trim().match(/^bun\s+(\S+\/(?:project-metrics|focus-metric-sample)\.ts)\s+(\S+)\s+--json$/);
   return match ? { scriptPath: match[1]!, metricId: match[2]! } : null;
 }
 
@@ -132,16 +124,12 @@ async function executeBatches(rows: SourceMetric[]): Promise<{
     if (group.length < 2) continue;
     for (const item of group) handled.add(item.rowId);
     try {
-      const stdout = await execFileText(
-        "bun",
-        [scriptPath, "--batch-json", ...group.map((item) => item.metricId)],
-        {
-          cwd: "/app",
-          encoding: "utf8",
-          timeout: 120_000,
-          maxBuffer: 4 * 1024 * 1024,
-        },
-      );
+      const stdout = await execFileText("bun", [scriptPath, "--batch-json", ...group.map((item) => item.metricId)], {
+        cwd: "/app",
+        encoding: "utf8",
+        timeout: 120_000,
+        maxBuffer: 4 * 1024 * 1024,
+      });
       const parsed = JSON.parse(stdout) as Record<string, unknown>;
       for (const item of group) {
         const sample = commandSample(parsed[item.metricId]);
@@ -188,9 +176,7 @@ export async function measureSourceMetrics(options: {
   const measured: string[] = [];
   const skipped: string[] = [];
   const defaultMeasuredAt = options.measuredAt ?? Date.now();
-  const queryNote = options.triggerEventId
-    ? `source-query; trigger-event:${options.triggerEventId}`
-    : "source-query";
+  const queryNote = options.triggerEventId ? `source-query; trigger-event:${options.triggerEventId}` : "source-query";
   const commandNote = options.triggerEventId
     ? `source-command; trigger-event:${options.triggerEventId}`
     : "source-command";
@@ -206,9 +192,7 @@ export async function measureSourceMetrics(options: {
           skipped.push(row.id);
           continue;
         }
-        const value = sourceQueryValue(
-          db.prepare(row.source_query).get() as Record<string, unknown> | null,
-        );
+        const value = sourceQueryValue(db.prepare(row.source_query).get() as Record<string, unknown> | null);
         if (value != null) sample = { value };
       } else if (row.source_command) {
         measuredBy = "runtime:metric-source-command";
@@ -341,9 +325,7 @@ export function attachMetricSourceMeasurement(options: {
 
   options.bus.subscribe((event): DeliveryResult | void => {
     if ((event as { type: string }).type !== METRIC_SOURCE_MEASUREMENT_EVENT) return;
-    const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[
-      EVENT_ROW_ID
-    ];
+    const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     schedule({
       triggerEventId,
       measuredAt: Date.now(),
