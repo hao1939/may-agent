@@ -77,6 +77,16 @@ describe("canonical App definition validation", () => {
           { id: "same", event: {}, toInput() {} },
         ],
         observations: ["", {}],
+        actions: {
+          missing: { description: "Missing translation", inputSchema: {} },
+          legacy: {
+            description: "Retired event translation",
+            inputSchema: {},
+            toEvent() {
+              return { type: "legacy.event", data: {} };
+            },
+          },
+        },
         schedules: [
           { id: "tick", intervalMs: 0, input: { kind: "" } },
           { id: "missing-target", intervalMs: 1 },
@@ -101,6 +111,9 @@ describe("canonical App definition validation", () => {
         "App broken subscription same requires toInput",
         "App broken subscription same requires a valid event selector",
         "App broken observations must contain valid event selectors",
+        "App broken action missing requires toInput",
+        "App broken action legacy requires toInput",
+        "App broken action legacy cannot use retired toEvent",
         "App broken schedule tick intervalMs must be positive",
         "App broken schedule tick requires a valid App input",
         "App broken schedule missing-target requires exactly one App input or event",

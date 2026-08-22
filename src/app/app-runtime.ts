@@ -74,7 +74,6 @@ export function createAppInputAdmission(options: {
 }
 
 export function createProjectActionAccess(options: {
-  events: Pick<EventInterface, "publish">;
   getRuntime: () => AppInboxRuntime | null;
   admit: NonNullable<AttachControlSocketOptions["admitAppInput"]>;
 }): {
@@ -91,24 +90,11 @@ export function createProjectActionAccess(options: {
       const runtime = options.getRuntime();
       if (!runtime?.host.hasApp(input.projectId)) throw new Error(`App ${input.projectId} is not loaded`);
       const appId = input.projectId.trim().replace(/\.app$/, "");
-      const action = runtime.host.invokeAction(appId, input.actionId, input.params);
+      const actionInput = runtime.host.invokeAction(appId, input.actionId, input.params);
       const idempotencyKey = input.idempotencyKey?.trim() || `action:${appId}:${input.actionId}:${randomUUID()}`;
-      if (action.kind === "event") {
-        return options.events.publish(
-          {
-            ...action.event,
-            type: action.event.type.trim(),
-            idempotencyKey,
-          },
-          {
-            source: `app:${appId}:action:${input.actionId}`,
-            allowUnregistered: true,
-          },
-        );
-      }
       return options.admit({
         appId,
-        input: action.input as Record<string, unknown>,
+        input: actionInput as Record<string, unknown>,
         source: { kind: "human", id: "control-socket:project-action" },
         idempotencyKey,
       });
@@ -347,7 +333,6 @@ export async function runAppRuntime(opts: {
     : { close: () => {} };
   const admitAppInput = createAppInputAdmission({ events });
   const projectActions = createProjectActionAccess({
-    events,
     getRuntime: () => appInboxRuntime,
     admit: admitAppInput,
   });
