@@ -54,10 +54,21 @@ describe("Task cancellation fence", () => {
     store.activate("revision-1");
     store.setProjectLifecycle("active");
     const db = openDatabase(dbPath);
+    const retainedEvent = db
+      .prepare("SELECT event_json FROM app_task_events WHERE app_id = 'sample' AND task_id = 'work'")
+      .get();
     const service = new HumanTaskService(db, {
       snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
     });
     service.cancelTask({ appId: "sample", taskId: "work", reason: "superseded" });
+
+    // Recovery must trust the terminal cancellation even if a legacy writer
+    // left stale scheduling columns behind. Cancellation is a fence, not a
+    // destructive cleanup of the Task's evidence.
+    db.prepare(
+      `UPDATE app_tasks SET ready = 1, changed = 1, next_check_at = 1, lease_until = 1
+       WHERE app_id = 'sample' AND task_id = 'work'`,
+    ).run();
 
     const config: TaskStateConfig = {
       appDir,
@@ -77,7 +88,12 @@ describe("Task cancellation fence", () => {
       }),
     ).toEqual({ kind: "completed", taskId: "work", generation: 1 });
     expect(store.listRecoveryCandidates().items).toEqual([]);
+    expect(store.nextDueAt()).toBeNull();
+    expect(store.setRecoveryState("work", { ready: true, changed: true, nextCheckAt: 2 })).toBeFalse();
     expect(store.listTaskIdsByPhase(["attention", "pending"])).toEqual([]);
+    expect(
+      db.prepare("SELECT event_json FROM app_task_events WHERE app_id = 'sample' AND task_id = 'work'").get(),
+    ).toEqual(retainedEvent);
 
     db.close();
     store.close();
