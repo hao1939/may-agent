@@ -17,14 +17,16 @@ function reconciliationTaskSnapshot(appDir: string) {
   const status = (task: Record<string, any>) => {
     const phase = String(task.phase ?? task.state ?? "pending");
     return (
-      {
-        backlog: "pending",
-        active: "running",
-        blocked: "waiting",
-        review: "attention",
-        converged: "done",
-      } as Record<string, string>
-    )[phase] ?? phase;
+      (
+        {
+          backlog: "pending",
+          active: "running",
+          blocked: "waiting",
+          review: "attention",
+          converged: "done",
+        } as Record<string, string>
+      )[phase] ?? phase
+    );
   };
   const liveEntries = Object.entries(tree.tasks ?? {}).filter(
     ([, task]) =>
@@ -39,32 +41,28 @@ function reconciliationTaskSnapshot(appDir: string) {
       generation: Number(task.generation ?? task.revision ?? 1),
       status: status(task),
       outcome: String(task.outcome ?? task.goal ?? ""),
-      evidence: Array.isArray(task.evidence) ? task.evidence : [],
       ...(typeof task.owner === "string" ? { owner: task.owner } : {}),
-      ...(typeof task.workflow === "string" ? { workflow: task.workflow } : {}),
-      input:
-        task.input && typeof task.input === "object" && !Array.isArray(task.input)
-          ? task.input
-          : {},
       ...(typeof task.priority === "string" ? { priority: task.priority } : {}),
       ...(typeof task.category === "string" ? { category: task.category } : {}),
       ...(Array.isArray(task.depends_on) ? { dependsOn: task.depends_on } : {}),
-      conditions: (Array.isArray(task.condition_ids) ? task.condition_ids : []).flatMap(
-        (conditionId: string) => {
-          const spec = tree.conditions?.[conditionId]?.spec;
-          return spec
-            ? [
-                {
-                  id: conditionId,
-                  type: String(spec.type ?? ""),
-                  subject: String(spec.subject ?? ""),
-                  expected: spec.expected,
-                  ...(typeof spec.owner === "string" ? { owner: spec.owner } : {}),
-                },
-              ]
-            : [];
-        },
-      ),
+      conditions: (Array.isArray(task.condition_ids)
+        ? task.condition_ids
+        : []
+      ).flatMap((conditionId: string) => {
+        const spec = tree.conditions?.[conditionId]?.spec;
+        return spec
+          ? [
+              {
+                id: conditionId,
+                type: String(spec.type ?? ""),
+                subject: String(spec.subject ?? ""),
+                ...(typeof spec.owner === "string"
+                  ? { owner: spec.owner }
+                  : {}),
+              },
+            ]
+          : [];
+      }),
       ...(task.readiness && typeof task.readiness === "object"
         ? {
             readiness: {
@@ -79,7 +77,9 @@ function reconciliationTaskSnapshot(appDir: string) {
       hasLiveChildren: (Array.isArray(task.children) ? task.children : []).some(
         (childId: string) => liveIds.has(childId),
       ),
-      ...(typeof task.updated_at === "string" ? { updatedAt: task.updated_at } : {}),
+      ...(typeof task.updated_at === "string"
+        ? { updatedAt: task.updated_at }
+        : {}),
     })),
     truncated: false,
   };
@@ -312,6 +312,34 @@ function context(input: {
   const { type, target, data, ...legacyData } = input.trigger;
   return {
     input: {},
+    read: {
+      tasks: {
+        async get(taskId: string) {
+          const tree = JSON.parse(
+            readFileSync(taskTreePath(input.appDir), "utf8"),
+          ) as {
+            tasks?: Record<string, Record<string, any>>;
+          };
+          const task = tree.tasks?.[taskId];
+          if (!task) return null;
+          return {
+            id: taskId,
+            status: String(task.phase ?? task.state ?? "pending"),
+            generation: Number(task.generation ?? task.revision ?? 1),
+            outcome: String(task.outcome ?? task.goal ?? ""),
+            parentId: String(task.parent_id ?? "project"),
+            acceptance: Array.isArray(task.acceptance) ? task.acceptance : [],
+            input:
+              task.input &&
+              typeof task.input === "object" &&
+              !Array.isArray(task.input)
+                ? task.input
+                : {},
+            conditions: [],
+          };
+        },
+      },
+    },
     reconciliation: {
       appId: "aks-rp-e2e",
       taskId: "runtime/focus-plan",

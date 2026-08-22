@@ -608,9 +608,10 @@ function lineageFromApprovalRecord(input: {
   return null;
 }
 
-function resolveFocusApprovalLineage(
+async function resolveFocusApprovalLineage(
   tree: ObservedTaskTree,
-): FocusApprovalLineage | null {
+  readTask: WorkflowContext["read"]["tasks"]["get"],
+): Promise<FocusApprovalLineage | null> {
   const focusTask = liveFocusPlanTask(tree);
   if (!focusTask) return null;
 
@@ -623,7 +624,7 @@ function resolveFocusApprovalLineage(
     );
     if (!hasApprovalCondition) continue;
 
-    const resourceInput = recordValue(resource.input);
+    const resourceInput = recordValue((await readTask(taskId))?.input);
     const approvalInput =
       recordValue(resourceInput?.approval) ??
       recordValue(resourceInput?.approvalLineage) ??
@@ -665,8 +666,9 @@ async function dispatchHumanApproval(
     (input.result === "off_track"
       ? "AKS RP E2E focus is off track"
       : "AKS RP E2E focus plan needs approval");
-  const preservedLineage = resolveFocusApprovalLineage(
+  const preservedLineage = await resolveFocusApprovalLineage(
     taskObservation(ctx.reconciliation),
+    ctx.read.tasks.get,
   );
   const planId =
     preservedLineage?.planId || focusPlanId(input.kind, input.result);

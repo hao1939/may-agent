@@ -118,6 +118,12 @@ A workflow is one bounded App-owned procedure. It receives typed input, task
 reconciliation context, scoped reads, agent calls, fact/metric ports, and an
 allocated workspace.
 
+Automatic reconciliation context stays small: the current Task and direct
+children carry decision-ready facts, while the App-wide snapshot carries only
+compact planning state. Exact detail for another Task is loaded explicitly by
+identity through the scoped Task read API, so unrelated Task payloads do not
+inflate every workflow or agent prompt.
+
 It does not receive the Host database, event bus, queues, scheduler, manager,
 or recovery state. A workflow finishes, blocks, or returns a task result; it
 does not remain alive as a background controller.

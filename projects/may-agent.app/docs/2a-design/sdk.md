@@ -3,8 +3,7 @@
 **Design status:** Accepted.
 **Implementation status:** Every current App uses `task(input)` and Task
 reconciliation, and the request-disposition surface has been removed. The
-shared bounded Task collection is exposed as `read.tasks.list/get`; the former
-exact `read.task(id)` call remains only as a compatibility alias.
+shared bounded Task collection is exposed as `read.tasks.list/get`.
 
 `@may-agent/sdk` is the narrow boundary between an App and the Host. It
 describes meaning, inputs, results, facts, and desired work; it does not expose
@@ -150,13 +149,13 @@ For App-owned work, `reconciliation` supplies bounded current facts:
 App/task identity, generation, owner, mode, outcome, acceptance, typed input,
 live/completed child views, a bounded snapshot of other live App tasks for
 frontier-health review, and the ordered unobserved event batch that drove this
-attempt. Snapshot entries carry
-typed status, category, readiness, Conditions, and bounded attempt evidence;
-the current task is omitted, the list is capped at 64, and `truncated` makes an
-incomplete view explicit. This is not a listing API and does not expose the
-task tree, mutation handles, queue, or task files. The field remains optional
-in the current compatibility type only so direct non-App workflow execution can
-reuse the bounded workflow runner; an App task attempt must always receive it.
+attempt. Snapshot entries carry only planning facts: identity, parent,
+generation, bounded outcome, status, category, readiness, and compact Condition
+references. They do not copy every other Task's input, acceptance, result
+evidence, or attempt detail into each execution. The current task is omitted,
+the list is capped at 64, and `truncated` makes an incomplete view explicit.
+When one exact Task matters, the workflow calls `read.tasks.get(taskId)`. This
+is not a global task-tree or storage API.
 
 The event batch has `items`, `throughEventId`, and `truncated`. `items` are
 ordered by durable event identity. `throughEventId` is the highest event in the
@@ -167,15 +166,16 @@ also expose the final item as singular `trigger` while Apps migrate, but new
 App code reads `events`.
 
 `read` contains exact bounded projections. Ordinary resources use one
-collection shape: bounded `list` plus exact `get`. The runtime binds task reads
-to the current App:
+collection shape: bounded summary pages from `list` plus explicit detail from
+`get`. Large desired input and exact Conditions cross the boundary only for the
+named Task. The runtime binds both reads to the current App:
 
 ```ts
 type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
-    get(taskId: string): Promise<TaskView | null>;
+    get(taskId: string): Promise<TaskDetail | null>;
   };
   execution(executionId: string): Promise<ExecutionView | null>;
   metric(metricId: string): Promise<MetricView | null>;
@@ -319,7 +319,7 @@ serve different boundaries:
 | Run a reusable bounded workflow                | workflow tool                | `ctx.workflows.run`        |
 | Publish a fact                                 | event tool where authorized  | `ctx.events.emit`          |
 | Record a domain sample                         | metric tool where authorized | `ctx.metrics.record`       |
-| Read this App's Tasks                          | `tasks` list/get              | `ctx.read.tasks.list/get`  |
+| Read this App's Tasks                          | `tasks` list/get             | `ctx.read.tasks.list/get`  |
 | Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |
 
 Background forks, session steering, cancellation, process control, and human

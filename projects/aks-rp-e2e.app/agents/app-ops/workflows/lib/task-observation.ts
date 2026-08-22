@@ -78,7 +78,9 @@ export function taskObservation(
           spec: {
             type: condition.type,
             subject: condition.subject,
-            expected: condition.expected,
+            ...(Object.prototype.hasOwnProperty.call(condition, "expected")
+              ? { expected: (condition as { expected?: unknown }).expected }
+              : {}),
             ...(condition.owner ? { owner: condition.owner } : {}),
           },
         },
@@ -109,7 +111,6 @@ export function taskObservation(
                 },
               }
             : {}),
-          input: child.input,
           condition_ids: child.conditions.map(({ id }) => id),
         },
       ]),

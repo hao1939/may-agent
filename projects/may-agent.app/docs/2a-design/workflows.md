@@ -158,13 +158,14 @@ For task-owned execution, `ctx.reconciliation` supplies:
 - bounded live and completed child views; and
 - a capped snapshot of other live App tasks when App-wide frontier health must
   be reviewed; and
-- the exact event that triggered this pass, when present.
+- the ordered unobserved event batch that triggered this pass.
 
-The snapshot excludes the current task, carries a `truncated` bit, and does not
-change parent/child ownership semantics. These facts are enough to reconcile
-current desired work without parsing a prompt packet or reading global task
-persistence. A workflow returns a typed output for the task boundary to
-validate and admit. It never edits task state itself.
+The snapshot excludes the current task, carries a `truncated` bit, and contains
+only compact planning facts. It does not replicate the input, acceptance,
+result evidence, or attempt history of every live Task. A workflow that needs
+one Task's exact desired input or Conditions uses
+`ctx.read.tasks.get(taskId)`. A workflow returns a typed output for the task
+boundary to validate and admit. It never edits task state itself.
 
 ## Invocation
 
