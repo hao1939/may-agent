@@ -382,7 +382,10 @@ export function createLocalBashOperations(
 			const onAbort = () => void settleAfterDrain(null, new Error("aborted"));
 
 			if (child.pid) onProcessGroupSpawn?.(child.pid);
-			capturePollHandle = setInterval(observeCapture, 100);
+			// Progress is only observable once per BASH_PROGRESS_INTERVAL_MS. Polling
+			// the same file ten times inside that window adds timer and allocation
+			// churn to every long-running command without improving the agent view.
+			capturePollHandle = setInterval(observeCapture, BASH_PROGRESS_INTERVAL_MS);
 			child.once("error", (error) => void settleAfterDrain(null, error));
 			child.once("exit", (exitCode) => void settleAfterDrain(exitCode));
 			if (signal) signal.addEventListener("abort", onAbort, { once: true });

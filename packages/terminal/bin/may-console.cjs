@@ -46,6 +46,7 @@ let conversationSyncDirty = false;
 const pendingAppReads = [];
 const pendingTaskListReads = [];
 const pendingTaskReads = [];
+let nextTaskPage = null;
 const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
@@ -280,6 +281,7 @@ function requestTasks(options = {}) {
     appId: options.appId || null,
     includeDone: options.includeDone === true,
     command: options.command || "/tasks",
+    cursor: options.cursor || null,
   };
   pendingTaskListReads.push(pending);
   const sent = sendFrame(
@@ -287,6 +289,7 @@ function requestTasks(options = {}) {
       type: "tasks.list",
       ...(pending.appId ? { appId: pending.appId } : {}),
       ...(pending.includeDone ? { includeDone: true } : {}),
+      ...(pending.cursor ? { cursor: pending.cursor } : {}),
       limit: 30,
     },
     { silent: true },
@@ -403,7 +406,14 @@ function renderTasks(page, pending) {
     );
     if (task.terminal && result) lines.push(...result.split("\n").map((line) => `    ${line}`));
   }
-  if (page?.nextCursor) lines.push("  More Tasks are available; use the channel's next-page control.");
+  nextTaskPage = page?.nextCursor
+    ? {
+        appId: pending?.appId || null,
+        includeDone: pending?.includeDone === true,
+        cursor: page.nextCursor,
+      }
+    : null;
+  if (nextTaskPage) lines.push("  More Tasks are available; run /tasks more for the next page.");
   lines.push("");
   presentView(pending?.command || "/tasks", lines.join("\n"), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
@@ -888,7 +898,7 @@ function printHelp() {
     [
       "Commands:",
       "  /apps [app]",
-      "  /tasks [app] [all]",
+      "  /tasks [app] [all], /tasks more",
       "  /task <ref>",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
@@ -916,10 +926,18 @@ function handleCommand(input) {
       requestApps(rest || null, input);
       return;
     case "tasks": {
+      if (restParts.length === 1 && restParts[0].toLowerCase() === "more") {
+        if (!nextTaskPage) {
+          printLine("[tasks] No next page. Run /tasks first.");
+          return;
+        }
+        requestTasks({ ...nextTaskPage, command: input });
+        return;
+      }
       const includeDone = restParts.some((part) => part.toLowerCase() === "all");
       const appIds = restParts.filter((part) => part.toLowerCase() !== "all");
       if (appIds.length > 1) {
-        printLine("Usage: /tasks [app] [all]");
+        printLine("Usage: /tasks [app] [all], or /tasks more");
         return;
       }
       requestTasks({ appId: appIds[0], includeDone, command: input });

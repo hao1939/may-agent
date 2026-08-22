@@ -131,6 +131,7 @@ describe("P113 Bash Resource Caps", () => {
     expect(statSync(execution.fullOutputPath!).size).toBe(outputChunks * outputChunkBytes);
     expect(hostReadBytes).toBeLessThanOrEqual(BASH_CAPTURE_TAIL_BYTES);
     expect(progressSignals).toBeGreaterThan(0);
+    expect(progressSignals).toBeLessThanOrEqual(2);
 
     unlinkSync(execution.fullOutputPath!);
   });
