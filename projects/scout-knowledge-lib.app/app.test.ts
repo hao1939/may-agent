@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import app, { resolveScoutTask } from "./app";
+import app, {
+  evaluationOwnerRequestedInput,
+  libraryHealthObservedInput,
+  resolveScoutTask,
+} from "./app";
 
 describe("Scout task reconciliation", () => {
   it("maps each source to an independent standing maintain task", () => {
@@ -100,6 +104,203 @@ describe("Scout task reconciliation", () => {
       id: "library-maintenance",
       workflow: "knowledge-planner",
     });
+  });
+
+  it("replays evaluator owner-request 5815704 through the supported Scout binding", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "project-owner-request",
+    );
+    const emitted = {
+      type: "project.owner.requested",
+      source: "agent:evaluator",
+      owner: "project:scout-knowledge-lib",
+      data: {
+        project: "scout-knowledge-lib",
+        reason: "evaluation-session-finding",
+        sourceSessionId: "s_1787206167374_411",
+        evaluationVerdict: "acceptable",
+        finding: {
+          targetAppId: "scout-knowledge-lib",
+          severity: "concern",
+          summary:
+            "One removed XHS finding basename remains in the Scout digest.",
+          message:
+            "Update agents/scout/workspace/digest/today.md:310 to the canonical xhs-coverage-gap-unverified-assessment.md path.",
+          evidence: [
+            "session s_1787206167374_411 result.json verification claim",
+            "/app/projects/scout-knowledge-lib/agents/scout/workspace/digest/today.md:310",
+          ],
+          dedupeKey: "scout-provenance-repair-stale-cross-reference",
+          requestedHumanAction: "none",
+        },
+      },
+    };
+
+    const admitted = evaluationOwnerRequestedInput(emitted);
+    expect(subscription?.toInput(emitted)).toEqual(admitted);
+    expect(admitted).toMatchObject({
+      kind: "owner-review",
+      data: {
+        reason: "evaluation-session-finding",
+        sourceSessionId: "s_1787206167374_411",
+        finding: {
+          targetAppId: "scout-knowledge-lib",
+          dedupeKey: "scout-provenance-repair-stale-cross-reference",
+          requestedHumanAction: "none",
+        },
+      },
+    });
+    expect(
+      resolveScoutTask({
+        type: "project.owner.requested",
+        ...admitted?.data,
+      }),
+    ).toMatchObject({
+      id: "library-maintenance",
+      workflow: "knowledge-planner",
+      mode: "maintain",
+    });
+  });
+
+  it("leaves malformed, unrelated, and unauthorized evaluator requests visible", () => {
+    const valid = {
+      type: "project.owner.requested",
+      source: "agent:evaluator",
+      data: {
+        project: "scout-knowledge-lib",
+        reason: "evaluation-session-finding",
+        sourceSessionId: "s_source",
+        finding: {
+          targetAppId: "scout-knowledge-lib",
+          message: "bounded correction",
+          evidence: ["primary proof"],
+          dedupeKey: "bounded-correction",
+          requestedHumanAction: "none",
+        },
+      },
+    };
+    expect(
+      evaluationOwnerRequestedInput({ ...valid, source: "agent:other" }),
+    ).toBeNull();
+    expect(
+      evaluationOwnerRequestedInput({
+        ...valid,
+        data: { ...valid.data, project: "unrelated" },
+      }),
+    ).toBeNull();
+    expect(
+      evaluationOwnerRequestedInput({
+        ...valid,
+        data: {
+          ...valid.data,
+          finding: { ...valid.data.finding, dedupeKey: "" },
+        },
+      }),
+    ).toBeNull();
+    for (const evidence of [[], [""], ["   "], ["primary proof", 42]]) {
+      expect(
+        evaluationOwnerRequestedInput({
+          ...valid,
+          data: {
+            ...valid.data,
+            finding: { ...valid.data.finding, evidence },
+          },
+        }),
+      ).toBeNull();
+    }
+    expect(app.observations).not.toContain("project.owner.requested");
+  });
+
+  it("routes only schema-valid actionable Scout library-health packets", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "library-health-observed-actionable",
+    );
+    expect(subscription?.event).toEqual({
+      type: "project.library_health.observed",
+      project: "scout-knowledge-lib",
+      source: "agent:scout",
+    });
+    const actionable = {
+      type: "project.library_health.observed",
+      source: "agent:scout",
+      data: {
+        project: "scout-knowledge-lib",
+        packetPath:
+          "/app/projects/scout-knowledge-lib.app/.state/library-health-packets.jsonl",
+        wakeCount: 1,
+        wakeSignals: [{ key: "future:path", fingerprint: "abc123" }],
+      },
+    };
+    expect(libraryHealthObservedInput(actionable)).toEqual({
+      kind: "owner-review",
+      data: {
+        reason: "library-health-signal",
+        packetPath:
+          "/app/projects/scout-knowledge-lib.app/.state/library-health-packets.jsonl",
+        signalCount: 1,
+        signals: [{ key: "future:path", fingerprint: "abc123" }],
+        observedEventType: "project.library_health.observed",
+      },
+    });
+    expect(subscription?.toInput(actionable)).toEqual(
+      libraryHealthObservedInput(actionable),
+    );
+  });
+
+  it("keeps non-actionable and malformed library-health facts visible", () => {
+    const base = {
+      type: "project.library_health.observed",
+      source: "agent:scout",
+      data: {
+        project: "scout-knowledge-lib",
+        packetPath: "/tmp/packet.jsonl",
+        wakeCount: 0,
+        wakeSignals: [],
+      },
+    };
+    expect(libraryHealthObservedInput(base)).toBeNull();
+    expect(
+      libraryHealthObservedInput({
+        ...base,
+        data: { ...base.data, wakeCount: 1 },
+      }),
+    ).toBeNull();
+    expect(
+      libraryHealthObservedInput({
+        ...base,
+        data: {
+          ...base.data,
+          wakeCount: 1,
+          wakeSignals: [{ key: "missing-fingerprint" }],
+        },
+      }),
+    ).toBeNull();
+    expect(app.observations).not.toContain("project.library_health.observed");
+  });
+
+  it("does not broaden the consumer to unknown sources, projects, or signals", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "library-health-observed-actionable",
+    );
+    expect(subscription?.event).toMatchObject({
+      source: "agent:scout",
+      project: "scout-knowledge-lib",
+    });
+    expect(
+      app.subscriptions?.some(
+        ({ event }) =>
+          typeof event !== "string" &&
+          event.type === "project.library_health.observed" &&
+          (!event.source || !event.project),
+      ),
+    ).toBe(false);
+    expect(
+      app.subscriptions?.some(({ event }) =>
+        typeof event === "string"
+          ? event === "unrelated.signal"
+          : event.type === "unrelated.signal",
+      ),
+    ).toBe(false);
   });
 
   it("translates Scout metric breaches into one addressed owner input", () => {

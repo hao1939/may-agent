@@ -65,6 +65,7 @@ const ownerReviewReasons = new Set([
   "manual-library-review",
   "repair-index",
   "owner-message",
+  "evaluation-session-finding",
 ]);
 
 export function resolveScoutTask(
@@ -190,6 +191,75 @@ function scoutInput(kind: AppInput["kind"], data: unknown): AppInput {
   return { kind, data: eventParams(data) };
 }
 
+export function evaluationOwnerRequestedInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const details = eventDetails(event as unknown as Record<string, unknown>);
+  const finding = eventParams(details.finding);
+  const evidence = finding.evidence;
+  if (
+    event.source !== "agent:evaluator" ||
+    details.project !== projectId ||
+    details.reason !== "evaluation-session-finding" ||
+    typeof details.sourceSessionId !== "string" ||
+    details.sourceSessionId.trim().length === 0 ||
+    finding.targetAppId !== projectId ||
+    typeof finding.dedupeKey !== "string" ||
+    finding.dedupeKey.trim().length === 0 ||
+    finding.requestedHumanAction !== "none" ||
+    typeof finding.message !== "string" ||
+    finding.message.trim().length === 0 ||
+    !Array.isArray(evidence) ||
+    evidence.length === 0 ||
+    evidence.some(
+      (item) => typeof item !== "string" || item.trim().length === 0,
+    )
+  ) {
+    return null;
+  }
+  return scoutInput("owner-review", details);
+}
+
+export function libraryHealthObservedInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const details = eventDetails(event as unknown as Record<string, unknown>);
+  const wakeCount = details.wakeCount;
+  const wakeSignals = details.wakeSignals;
+  const packetPath = details.packetPath;
+  if (
+    !Number.isInteger(wakeCount) ||
+    Number(wakeCount) < 0 ||
+    !Array.isArray(wakeSignals) ||
+    typeof packetPath !== "string" ||
+    packetPath.trim().length === 0
+  ) {
+    return null;
+  }
+  if (Number(wakeCount) === 0 && wakeSignals.length === 0) return null;
+  if (
+    Number(wakeCount) !== wakeSignals.length ||
+    wakeSignals.length === 0 ||
+    wakeSignals.some(
+      (signal) =>
+        !signal ||
+        typeof signal !== "object" ||
+        Array.isArray(signal) ||
+        typeof (signal as Record<string, unknown>).key !== "string" ||
+        typeof (signal as Record<string, unknown>).fingerprint !== "string",
+    )
+  ) {
+    return null;
+  }
+  return scoutInput("owner-review", {
+    reason: "library-health-signal",
+    packetPath,
+    signalCount: wakeCount,
+    signals: wakeSignals,
+    observedEventType: event.type,
+  });
+}
+
 function intentForScoutInput(input: AppInput): TaskIntent | null {
   const data = eventParams(input.data);
   switch (input.kind) {
@@ -268,10 +338,22 @@ export default defineApp({
         const details = eventDetails(
           event as unknown as Record<string, unknown>,
         );
+        if (details.reason === "evaluation-session-finding") {
+          return evaluationOwnerRequestedInput(event);
+        }
         return ownerReviewReasons.has(String(details.reason ?? ""))
           ? scoutInput("owner-review", details)
           : null;
       },
+    },
+    {
+      id: "library-health-observed-actionable",
+      event: {
+        type: "project.library_health.observed",
+        project: projectId,
+        source: "agent:scout",
+      },
+      toInput: libraryHealthObservedInput,
     },
     {
       id: "scout-metric-breach",

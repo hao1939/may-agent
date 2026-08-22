@@ -8,6 +8,12 @@ import {
 import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import {
+  ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
+  DEFAULT_SCOUT_TASK_STATE_PATH,
+  RETIRED_ACCEPTED_SOURCE_OUTPUTS_24H_METRIC_ID,
+} from "../../../scripts/accepted-source-outputs.js";
+import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "library-health";
 export const description =
@@ -727,11 +733,41 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     return ctx.blocked("Library health requires a canonical App workspace");
   const appDir = ctx.workspace.appRoot;
   const projectDir = ctx.workspace.projectRoot;
+  ctx.metrics.define({
+    id: RETIRED_ACCEPTED_SOURCE_OUTPUTS_24H_METRIC_ID,
+    name: "Accepted Scout source outputs in the last 24 hours (unsupported)",
+    owner: "scout",
+    project: projectId,
+    type: "gauge",
+    unit: "count",
+    priority: "P2",
+    status: "retired",
+    description:
+      "Retired because canonical completed Scout attempts do not retain structured durable-output evidence for successive runs; latest task resources cannot prove rolling-window coverage.",
+  });
+  ctx.metrics.define({
+    id: ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
+    name: "Latest accepted Scout source outputs per source",
+    owner: "scout",
+    project: projectId,
+    type: "gauge",
+    target: 1,
+    threshold: 0,
+    unit: "count",
+    priority: "P2",
+    alertOp: "<",
+    source: "source_command",
+    sourceCommand: `bun ${appDir}/scripts/accepted-source-outputs.ts`,
+    measureInterval: 21_600_000,
+    status: "active",
+    description: `Distinct durable output:<path> evidence represented by each source's latest converged Scout task resource in ${DEFAULT_SCOUT_TASK_STATE_PATH}. Evidence-backed latest no-change resources without durable output are excluded; no rolling-window or successive-run coverage is claimed.`,
+  });
   const packet = buildLibraryHealthPacket({ appDir, projectDir });
   const packetPath = writePacket(appDir, packet);
 
   await ctx.events.emit({
     type: "project.library_health.observed",
+    localKey: taskEmissionKey(ctx, "library-health-observed"),
     target: { appId: projectId, project: projectId },
     data: {
       project: projectId,
@@ -742,25 +778,9 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     },
   });
 
-  if (packet.wake_signals.length > 0) {
-    await ctx.events.emit({
-      type: "project.owner.requested",
-      target: { appId: projectId, project: projectId },
-      data: {
-        project: projectId,
-        reason: "library-health-signal",
-        packetPath,
-        signalCount: packet.wake_signals.length,
-        signals: packet.wake_signals,
-        instruction:
-          "Review the deterministic Scout-library facts and perform the smallest useful maintenance step or record an exact no-op reason.",
-      },
-    });
-  }
-
   const summary =
     packet.wake_signals.length > 0
-      ? `Library health recorded ${packet.facts.length} fact(s) and requested owner review for ${packet.wake_signals.length}.`
+      ? `Library health recorded ${packet.facts.length} fact(s) and published ${packet.wake_signals.length} actionable signal(s).`
       : `Library health recorded ${packet.facts.length} fact(s); no owner wake was needed.`;
   return ctx.done(summary, {
     state: "converged",

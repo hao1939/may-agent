@@ -5,6 +5,7 @@ import {
   type TaskReconcileResult,
   type WorkflowContext,
 } from "@may-agent/sdk";
+import { taskEmissionKey } from "./lib/task-emission.js";
 
 type OwnerResult = Exclude<TaskReconcileResult, { state: "needs-owner" }>;
 
@@ -170,6 +171,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
   }
   await ctx.events.emit({
     type: "project.knowledge.maintained",
+    localKey: taskEmissionKey(ctx, "knowledge-maintained"),
     target: { appId: "scout-knowledge-lib", project: "scout-knowledge-lib" },
     data: {
       project: "scout-knowledge-lib",

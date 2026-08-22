@@ -220,7 +220,7 @@ describe("Scout library-health observer", () => {
     );
   });
 
-  it("uses the existing owner wake for a new identity collision", async () => {
+  it("publishes one actionable observation for a new identity collision", async () => {
     const paths = fixture();
     writeFileSync(
       join(paths.appDir, "agents", "scout", "workspace", "digest", "today.md"),
@@ -234,6 +234,19 @@ describe("Scout library-health observer", () => {
     const result = await execute(
       createTestAppWorkflowContext({
         input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "runtime/library-health-observer",
+          generation: 1,
+          resourceVersion: 27,
+          owner: "scout",
+          mode: "maintain",
+          outcome: "Observe library health",
+          acceptance: ["Publish one bounded observation"],
+          input: {},
+          children: { live: [], completed: [] },
+          events: { throughEventId: 5925532, items: [] },
+        },
         workspace: {
           appRoot: paths.appDir,
           projectRoot: paths.projectDir,
@@ -246,18 +259,23 @@ describe("Scout library-health observer", () => {
       }),
     );
 
+    expect(emitted).toHaveLength(1);
     expect(emitted).toContainEqual(
       expect.objectContaining({
-        type: "project.owner.requested",
+        type: "project.library_health.observed",
+        localKey: "event-5925532:library-health-observed",
         data: expect.objectContaining({
-          reason: "library-health-signal",
-          signals: expect.arrayContaining([
+          wakeCount: 2,
+          wakeSignals: expect.arrayContaining([
             expect.objectContaining({
               key: "artifact-identity-collision:github:2026-07-20:536",
             }),
           ]),
         }),
       }),
+    );
+    expect(emitted).not.toContainEqual(
+      expect.objectContaining({ type: "project.owner.requested" }),
     );
     expect(result).toMatchObject({
       status: "done",

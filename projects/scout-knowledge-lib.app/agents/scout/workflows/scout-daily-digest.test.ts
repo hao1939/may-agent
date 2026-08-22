@@ -34,6 +34,19 @@ function fixture(today: string, archives: Record<string, string> = {}) {
     emitted,
     ctx: createTestAppWorkflowContext({
       input: {},
+      reconciliation: {
+        appId: "scout-knowledge-lib",
+        taskId: "daily-digest",
+        generation: 1,
+        resourceVersion: 9,
+        owner: "scout",
+        mode: "maintain",
+        outcome: "Deliver the daily digest",
+        acceptance: ["Deliver each digest at most once"],
+        input: {},
+        children: { live: [], completed: [] },
+        events: { throughEventId: 5925535, items: [] },
+      },
       workspace: {
         appRoot: appDir,
         projectRoot: appDir,
@@ -92,7 +105,12 @@ describe("Scout daily digest", () => {
     const result = await execute(test.ctx);
     const numbered = join(test.digestDir, `${date}-2.md`);
 
-    expect(test.emitted).toHaveLength(1);
+    expect(test.emitted).toEqual([
+      expect.objectContaining({
+        type: "message.created",
+        localKey: "event-5925535:daily-digest-delivered",
+      }),
+    ]);
     expect(existsSync(numbered)).toBe(true);
     expect(readFileSync(numbered, "utf8")).toContain("### New finding");
     expect(readFileSync(join(test.digestDir, `${date}.md`), "utf8")).toContain(

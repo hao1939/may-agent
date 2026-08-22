@@ -127,6 +127,7 @@ describe("Scout owner reconciliation boundary", () => {
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",
+      localKey: "state-1:knowledge-maintained",
       data: {
         proposedActions: [{ kind: "create-task", id: "repair-navigation" }],
       },

@@ -14,6 +14,7 @@ import {
 } from "node:fs";
 import { basename, join } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "scout-daily-digest";
 export const description = "Compile and send daily research digest.";
@@ -108,6 +109,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   // Send to human via bus event (Telegram picks this up)
   await ctx.events.emit({
     type: "message.created",
+    localKey: taskEmissionKey(ctx, "daily-digest-delivered"),
     source: "app:scout-knowledge-lib",
     owner: "human:operator",
     target: { human: true },
