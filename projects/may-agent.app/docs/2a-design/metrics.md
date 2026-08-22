@@ -125,6 +125,10 @@ must not block unrelated App work. Database retention, filesystem pruning, WAL
 maintenance, and compaction are Host maintenance, not metric work; see
 [storage.md](storage.md).
 
+A periodic measurement trigger is a record-only fact. It queues measurement
+for a later event-loop turn and never accepts semantic event delivery; the next
+cadence repairs a missed optional observation.
+
 ## Interpretation
 
 Useful categories include:

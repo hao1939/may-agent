@@ -335,10 +335,10 @@ subscription or exact target.
 
 ## Schedules and observers
 
-An event schedule publishes a typed fact through the shared scheduler. An input
-schedule publishes a time-correlated `app.input.requested` event. The schedule
-applies its declared catch-up policy before publication; the standard route
-then admits the linked App request.
+An event schedule publishes a record-only typed fact through the shared
+scheduler. An input schedule publishes a time-correlated
+`app.input.requested` event. The schedule applies its declared catch-up policy
+before publication; the standard route then admits the linked App request.
 
 An observer reads current external state and returns facts for the host to
 publish after a successful bounded run. It cannot mutate inbox/task state or
