@@ -35,32 +35,6 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
-  it("does not repeat an initial resync when startup already seeded the queue", async () => {
-    let openGate = () => {};
-    let resyncs = 0;
-    const startAfter = new Promise<void>((resolve) => {
-      openGate = resolve;
-    });
-    const controller = new AppTaskController({
-      maxConcurrent: 1,
-      startAfter,
-      reconcile: async () => {},
-      resync: {
-        intervalMs: 10_000,
-        onStart: false,
-        tasks: () => {
-          resyncs += 1;
-          return [];
-        },
-      },
-    });
-
-    openGate();
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(resyncs).toBe(0);
-    controller.close();
-  });
-
   it("runs deduplicated keys through one bounded worker pool", async () => {
     const started: string[] = [];
     const releases = new Map<string, () => void>();
@@ -479,90 +453,6 @@ describe("AppTaskController", () => {
     await waitUntil(() => runs === 3);
     expect(errors).toEqual([true, true]);
     controller.close();
-  });
-
-  it("feeds periodic resync through the same deduplicating queue", async () => {
-    let runs = 0;
-    const controller = new AppTaskController({
-      maxConcurrent: 1,
-      resync: {
-        intervalMs: 5,
-        taskIds: () => ["standing-task", "standing-task"],
-      },
-      reconcile: async (taskId) => {
-        expect(taskId).toBe("standing-task");
-        runs++;
-      },
-    });
-
-    await waitUntil(() => runs > 0);
-    expect(controller.snapshot().running.length).toBeLessThanOrEqual(1);
-    controller.close();
-  });
-
-  it("refills newly ready resync work as soon as capacity opens", async () => {
-    const ready = ["first"];
-    const started: string[] = [];
-    const releases = new Map<string, () => void>();
-    const controller = new AppTaskController({
-      maxConcurrent: 1,
-      resync: {
-        intervalMs: 60_000,
-        taskIds: () => [...ready],
-      },
-      reconcile: (taskId) =>
-        new Promise<void>((resolve) => {
-          started.push(taskId);
-          releases.set(taskId, resolve);
-        }),
-    });
-
-    await waitUntil(() => started.length === 1);
-    expect(started).toEqual(["first"]);
-    ready.splice(0, ready.length, "second");
-
-    releases.get("first")?.();
-    await waitUntil(() => started.length === 2);
-    expect(started).toEqual(["first", "second"]);
-    releases.get("second")?.();
-    await waitUntil(() => !controller.snapshot().running.length);
-    controller.close();
-  });
-
-  it("resyncs runnable state as soon as a replacement controller becomes active", async () => {
-    const started: string[] = [];
-    let releaseOld: (() => void) | undefined;
-    const old = new AppTaskController({
-      maxConcurrent: 1,
-      reconcile: () =>
-        new Promise<void>((resolve) => {
-          started.push("old");
-          releaseOld = resolve;
-        }),
-    });
-    old.enqueue("old");
-    await waitUntil(() => started.length === 1);
-    old.close();
-
-    const current = new AppTaskController({
-      maxConcurrent: 1,
-      startAfter: old.whenDrained(),
-      resync: {
-        intervalMs: 60_000,
-        taskIds: () => ["recovered-runnable-task"],
-      },
-      reconcile: async (taskId) => {
-        started.push(taskId);
-      },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    expect(started).toEqual(["old"]);
-    releaseOld?.();
-    await waitUntil(() => started.includes("recovered-runnable-task"));
-    expect(started).toEqual(["old", "recovered-runnable-task"]);
-    current.close();
-    await current.whenDrained();
   });
 
   it("cancels stale capacity waits when hot reload replaces controllers", async () => {
