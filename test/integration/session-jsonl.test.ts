@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
@@ -7,6 +7,7 @@ import {
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
+  readSessionMessagesTail,
   sessionDir,
   sessionJsonlPath,
 } from "../../src/lib/persistence.js";
@@ -133,6 +134,50 @@ describe("Session JSONL persistence", () => {
 
       const messages = readSessionMessages(persistDir, sessionId);
       expect(messages).toEqual([]);
+    });
+
+    it("reads only the requested transcript tail", () => {
+      const sessionId = "test-session-tail";
+      ensureSessionDir(persistDir, sessionId);
+      for (const text of ["first", "second", "third", "fourth"]) {
+        appendSessionMessage(persistDir, sessionId, userMessage(text));
+      }
+
+      const messages = readSessionMessagesTail(persistDir, sessionId, 2);
+
+      expect(messages.map((message: any) => message.content[0].text)).toEqual(["third", "fourth"]);
+    });
+
+    it("discards a partial first line at the byte boundary", () => {
+      const sessionId = "test-session-bounded-tail";
+      ensureSessionDir(persistDir, sessionId);
+      for (const text of ["old-".repeat(200), "recent", "latest"]) {
+        appendSessionMessage(persistDir, sessionId, userMessage(text));
+      }
+
+      const lastTwoBytes = Buffer.byteLength(
+        `${JSON.stringify(userMessage("recent"))}\n${JSON.stringify(userMessage("latest"))}\n`,
+      );
+      const messages = readSessionMessagesTail(persistDir, sessionId, 10, lastTwoBytes + 20);
+
+      expect(messages.map((message: any) => message.content[0].text)).toEqual(["recent", "latest"]);
+    });
+
+    it("skips corrupted complete lines in the bounded tail", () => {
+      const sessionId = "test-session-corrupt-tail";
+      ensureSessionDir(persistDir, sessionId);
+      writeFileSync(
+        sessionJsonlPath(persistDir, sessionId),
+        `${JSON.stringify(userMessage("first"))}\nnot-json\n${JSON.stringify(userMessage("last"))}\n`,
+      );
+      const warn = console.warn;
+      console.warn = () => {};
+      try {
+        const messages = readSessionMessagesTail(persistDir, sessionId, 3, 1024 * 1024);
+        expect(messages.map((message: any) => message.content[0].text)).toEqual(["first", "last"]);
+      } finally {
+        console.warn = warn;
+      }
     });
   });
 

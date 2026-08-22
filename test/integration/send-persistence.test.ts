@@ -86,15 +86,16 @@ describe("terminal session persistence", () => {
     const result2 = await manager.waitFor(sessionId);
     expect(result2.sessionId).toBe(result1.sessionId);
     expect(result2.status).toBe(result1.status);
+    expect(result2.messages.length).toBeGreaterThan(0);
   });
 
-  it("bounds completed message histories retained in memory", () => {
+  it("keeps compact completed receipts rather than transcript copies", () => {
     for (let index = 0; index < 20; index++) {
       (manager as any).rememberCompletedResult({
         sessionId: `completed-${index}`,
         status: "done",
         lastAssistantText: "done",
-        messages: [],
+        messages: [{ role: "user", content: [{ type: "text", text: "large transcript" }] }],
         duration: "1s",
         outputDir: persistDir,
       });
@@ -103,5 +104,6 @@ describe("terminal session persistence", () => {
     expect((manager as any).completedResults.size).toBe(16);
     expect((manager as any).completedResults.has("completed-0")).toBe(false);
     expect((manager as any).completedResults.has("completed-19")).toBe(true);
+    expect((manager as any).completedResults.get("completed-19").messages).toEqual([]);
   });
 });
