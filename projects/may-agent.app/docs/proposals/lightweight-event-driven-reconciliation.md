@@ -602,6 +602,24 @@ project-comment projection, cleanup, digests, and network delivery use
 independent async listeners. Long-running meaning belongs to a Task, not an
 inline subscriber.
 
+Runtime commits `8c32c049` and `f3e616f2` make this boundary concrete. A
+cancelled Task is now a terminal recovery fence even when an old row retains
+stale ready, changed, due, or lease fields; recovery cannot re-arm it, and
+cancellation no longer deletes its linked Task-event evidence. Project-comment
+filesystem work, stuck detection, auto-resume, and escalation follow-up now run
+through independent asynchronous listeners rather than inline publication.
+The complete Host test gate passed before deployment.
+
+Production receipt
+`deploy-app_b4bf161e-f3e616f2-20260822T1638Z-resume1` loaded exact source
+`f3e616f2982f2eba25d04ccf71e49ebe45c928c1` and matching artifact SHA
+`92cca34524185b7429fcbb06597180af79080bbe01cc04f6f23aa288771403b1`, with
+healthy status, one targeted wake, and no duplicate deployment. Three retained
+cancelled deployment Tasks had previously produced a no-op reconciliation
+profile on each safety pass. They produced zero further profiles after this
+deployment across more than one safety interval, while their cancellation,
+Task, attempt, and event records remained readable.
+
 Generic session recovery is deterministic again. The Host no longer invokes a
 digest/evaluator model to choose whether a stuck session should be cancelled or
 an interrupted session resumed. It counts consecutive error-only turns,
