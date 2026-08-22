@@ -34,6 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_sess_parent ON sessions(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId);
 CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId);
 CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
+CREATE INDEX IF NOT EXISTS idx_sess_ended ON sessions(endedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_sess_activity ON sessions(lastActivityAt);
 
 CREATE TABLE IF NOT EXISTS gym_runs (
@@ -545,7 +546,9 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   entryContentHash TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_wfr_status ON workflow_runs(status);
+CREATE INDEX IF NOT EXISTS idx_wfr_status_started ON workflow_runs(status, startedAt);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
+CREATE INDEX IF NOT EXISTS idx_wfr_parent_workflow ON workflow_runs(parentWorkflowRunId, startedAt);
 CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, startedAt DESC);
 `;
 

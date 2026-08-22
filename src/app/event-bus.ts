@@ -264,6 +264,7 @@ export type SystemEvent =
           channelMessageId?: number;
           requestId?: string;
           command?: string;
+          taskRefs?: Array<{ appId: string; taskId: string }>;
         };
         idempotencyKey?: string;
       };
@@ -906,7 +907,7 @@ export type SystemEvent =
       timestamp: number;
       data: {
         originalEventType: string;
-        subscriberPriority: "first" | "normal";
+        subscriberPriority: "first" | "normal" | "listener";
         error: string;
       };
     };
@@ -949,11 +950,26 @@ export type DeliveryResult = {
 export type SubscriberResult = DeliveryResult | void;
 export type Subscriber = (event: AgentEvent) => SubscriberResult;
 export type SubscribeOptions = { priority?: "first" | "normal"; label?: string };
+export type EventListener = (event: AgentEvent) => void | Promise<void>;
+export type ListenOptions = { label?: string; types?: readonly string[] };
 export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
+
+type EventListenerState = {
+  listener: EventListener;
+  label: string;
+  types: ReadonlySet<string> | null;
+  pending: AgentEvent[];
+  scheduled: boolean;
+  active: boolean;
+  dropped: number;
+};
 
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
+
+const EVENT_LISTENER_BATCH_SIZE = 64;
+const EVENT_LISTENER_BACKLOG_LIMIT = 256;
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
 /** Exact synchronous durable-route acceptance observed for this emission. */
 export const EVENT_DELIVERY_RESULT = Symbol.for("may-agent.eventDeliveryResult");
@@ -1010,11 +1026,12 @@ export class EventBus {
   private durableRouteSubscribers: Subscriber[] = [];
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
+  private listeners: EventListenerState[] = [];
   private deliveryRecorder: DeliveryRecorder | undefined;
   private emitDepth = 0;
   private reportingFailures = false;
   private pendingFailureEvents: AgentEvent[] = [];
-  private subscriberLabels = new WeakMap<Subscriber, string>();
+  private subscriberLabels = new WeakMap<Subscriber | EventListener, string>();
 
   /** Subscribe to all events. Returns unsubscribe function. */
   subscribe(fn: Subscriber, opts?: SubscribeOptions): () => void {
@@ -1024,6 +1041,30 @@ export class EventBus {
     return () => {
       this.firstSubscribers = this.firstSubscribers.filter((s) => s !== fn);
       this.normalSubscribers = this.normalSubscribers.filter((s) => s !== fn);
+    };
+  }
+
+  /**
+   * Listen to persisted events after the synchronous persistence and routing
+   * boundary. Listeners are non-authoritative: they cannot accept delivery,
+   * and their FIFO work never extends emit() latency.
+   */
+  listen(fn: EventListener, opts?: ListenOptions): () => void {
+    const state: EventListenerState = {
+      listener: fn,
+      label: opts?.label?.trim() || fn.name || "anonymous",
+      types: opts?.types?.length ? new Set(opts.types) : null,
+      pending: [],
+      scheduled: false,
+      active: true,
+      dropped: 0,
+    };
+    if (opts?.label?.trim()) this.subscriberLabels.set(fn, opts.label.trim());
+    this.listeners.push(state);
+    return () => {
+      state.active = false;
+      state.pending.length = 0;
+      this.listeners = this.listeners.filter((candidate) => candidate !== state);
     };
   }
 
@@ -1137,6 +1178,7 @@ export class EventBus {
           this.deliveryRecorder?.(event, delivery);
         }
       }
+      if (!retry[EVENT_REDELIVERY_REQUIRED]) this.enqueueListenerEvent(event);
     } finally {
       this.emitDepth--;
       if (this.emitDepth === 0) this.flushFailureEvents();
@@ -1150,8 +1192,61 @@ export class EventBus {
       this.durableRouteSubscribers.length +
       this.firstSubscribers.length +
       this.normalSubscribers.length +
+      this.listeners.length +
       (this.persistenceSubscriber ? 1 : 0)
     );
+  }
+
+  private enqueueListenerEvent(event: AgentEvent): void {
+    if (this.listeners.length === 0) return;
+    for (const state of this.listeners) {
+      if (!state.active || (state.types && !state.types.has(event.type))) continue;
+      if (state.pending.length >= EVENT_LISTENER_BACKLOG_LIMIT) {
+        state.pending.shift();
+        state.dropped++;
+      }
+      state.pending.push(event);
+      if (state.scheduled) continue;
+      state.scheduled = true;
+      setImmediate(() => void this.drainListenerEvents(state));
+    }
+  }
+
+  private async drainListenerEvents(state: EventListenerState): Promise<void> {
+    if (!state.active) {
+      state.scheduled = false;
+      return;
+    }
+    if (state.dropped > 0) {
+      log(
+        "warn",
+        `[event-bus] listener '${state.label}' dropped ${state.dropped} stale event notification(s) after its bounded backlog filled`,
+      );
+      state.dropped = 0;
+    }
+    // Each listener owns a bounded FIFO. A slow optional observer therefore
+    // cannot block another observer or retain an unbounded event backlog.
+    const events = state.pending.splice(0, EVENT_LISTENER_BATCH_SIZE);
+    for (const event of events) {
+      if (!state.active) break;
+      const startedAt = performance.now();
+      try {
+        await eventContext.run(event, () => state.listener(event));
+      } catch (error) {
+        this.reportSubscriberFailure(event, "listener", error);
+        this.flushFailureEvents();
+      } finally {
+        const durationMs = performance.now() - startedAt;
+        if (durationMs >= EVENT_SUBSCRIBER_WARN_MS) {
+          log("warn", `[event-bus] listener '${state.label}' took ${durationMs.toFixed(1)}ms on event '${event.type}'`);
+        }
+      }
+    }
+    if (state.active && state.pending.length > 0) {
+      setImmediate(() => void this.drainListenerEvents(state));
+    } else {
+      state.scheduled = false;
+    }
   }
 
   private runSubscriber(
@@ -1174,7 +1269,7 @@ export class EventBus {
     }
   }
 
-  private reportSubscriberFailure(event: AgentEvent, priority: "first" | "normal", err: unknown): void {
+  private reportSubscriberFailure(event: AgentEvent, priority: "first" | "normal" | "listener", err: unknown): void {
     const msg = err instanceof Error ? err.message : String(err);
     log("warn", `[event-bus] ${priority}-priority subscriber threw on event '${event.type}': ${msg}`);
     if (event.type === "subscriber.failed") return;

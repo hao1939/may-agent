@@ -454,6 +454,9 @@ describe("trace()", () => {
     });
 
     const sid = manager.run("worker", "standalone task");
+    (manager.registryStore as any).getRegistry = () => {
+      throw new Error("trace must not scan all historical metadata");
+    };
     const trace = manager.trace(sid);
 
     expect(trace).not.toBeNull();

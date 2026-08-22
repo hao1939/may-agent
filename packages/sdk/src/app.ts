@@ -104,6 +104,8 @@ export type AppConversationMessage = {
     command?: string;
     /** Ordered work identities represented by this rendered command/tool view. */
     requestIds?: string[];
+    /** Ordered canonical Tasks represented by this rendered command/tool view. */
+    taskRefs?: Array<{ appId: string; taskId: string }>;
   };
   createdAt: number;
 };

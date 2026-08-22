@@ -150,6 +150,26 @@ export function listWorkflowRunIds(persistDir: string): string[] {
   return (db.prepare("SELECT runId FROM workflow_runs ORDER BY startedAt").all() as Array<{ runId: string }>).map(r => r.runId);
 }
 
+/** Read only the direct children needed to render one workflow trace. */
+export function listChildWorkflowRunIds(persistDir: string, parentWorkflowRunId: string): string[] {
+  const db = getDb(persistDir);
+  return (
+    db
+      .prepare("SELECT runId FROM workflow_runs WHERE parentWorkflowRunId = ? ORDER BY startedAt, runId")
+      .all(parentWorkflowRunId) as Array<{ runId: string }>
+  ).map((row) => row.runId);
+}
+
+/** Select only workflow runs that can require restart recovery. */
+export function listRunningWorkflowRunIdsBefore(persistDir: string, startedBefore: number): string[] {
+  const db = getDb(persistDir);
+  return (
+    db
+      .prepare("SELECT runId FROM workflow_runs WHERE status = 'running' AND startedAt < ? ORDER BY startedAt, runId")
+      .all(startedBefore) as Array<{ runId: string }>
+  ).map((row) => row.runId);
+}
+
 /** Get step sessions for a workflow run, ordered by startedAt. */
 export function getWorkflowStepSessions(persistDir: string, workflowRunId: string): Array<{
   sessionId: string; agent: string; task: string; status: string;

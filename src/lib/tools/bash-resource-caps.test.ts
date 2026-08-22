@@ -1,6 +1,12 @@
 import { describe, it, expect } from "bun:test";
 import { readdirSync, statSync, unlinkSync } from "node:fs";
-import { BASH_CAPTURE_TAIL_BYTES, createBashTool, DEFAULT_BASH_TIMEOUT, type BashToolDetails } from "./bash.js";
+import {
+  BASH_CAPTURE_TAIL_BYTES,
+  createBashTool,
+  createLocalBashOperations,
+  DEFAULT_BASH_TIMEOUT,
+  type BashToolDetails,
+} from "./bash.js";
 
 describe("P113 Bash Resource Caps", () => {
   it("DEFAULT_BASH_TIMEOUT is 120 seconds", () => {
@@ -77,12 +83,14 @@ describe("P113 Bash Resource Caps", () => {
     const outputBytes = 8 * 1024 * 1024;
     const tool = createBashTool("/tmp", { defaultTimeout: 10 });
     let transientBytes = 0;
+    let transientUpdates = 0;
 
     const result = await tool.execute(
       "large-output",
       { command: `bun -e 'process.stdout.write("x".repeat(${outputBytes}))'` },
       undefined,
       (update) => {
+        transientUpdates++;
         transientBytes += Buffer.byteLength(update.content[0]?.text ?? "");
       },
     );
@@ -92,10 +100,39 @@ describe("P113 Bash Resource Caps", () => {
     expect(fullOutputPath).toBeString();
     expect(statSync(fullOutputPath!).size).toBe(outputBytes);
     expect(Buffer.byteLength(result.content[0]?.text ?? "")).toBeLessThan(BASH_CAPTURE_TAIL_BYTES);
-    expect(transientBytes).toBeLessThan(outputBytes / 2);
+    expect(transientUpdates).toBeLessThanOrEqual(2);
+    expect(transientBytes).toBeLessThan(100);
     expect(result.content[0]?.text).toContain("Full output:");
 
     unlinkSync(fullOutputPath!);
+  });
+
+  it("observes steady output without copying more than one bounded tail into the Host", async () => {
+    const outputChunks = 40;
+    const outputChunkBytes = 8 * 1024;
+    const operations = createLocalBashOperations();
+    let hostReadBytes = 0;
+    let progressSignals = 0;
+
+    const execution = await operations.exec(
+      `bun -e 'let count = 0; const chunk = "x".repeat(${outputChunkBytes}); const timer = setInterval(() => { process.stdout.write(chunk); if (++count === ${outputChunks}) clearInterval(timer); }, 30)'`,
+      "/tmp",
+      {
+        onData: (data) => {
+          hostReadBytes += data.byteLength;
+        },
+        onProgress: () => {
+          progressSignals++;
+        },
+      },
+    );
+
+    expect(execution.totalOutputBytes).toBe(outputChunks * outputChunkBytes);
+    expect(statSync(execution.fullOutputPath!).size).toBe(outputChunks * outputChunkBytes);
+    expect(hostReadBytes).toBeLessThanOrEqual(BASH_CAPTURE_TAIL_BYTES);
+    expect(progressSignals).toBeGreaterThan(0);
+
+    unlinkSync(execution.fullOutputPath!);
   });
 
   it("preserves the complete capture when a large-output command times out", async () => {

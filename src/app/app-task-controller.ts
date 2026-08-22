@@ -1,4 +1,4 @@
-import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "././app-task-queue.js";
+import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./app-task-queue.js";
 import type { HostCapacity } from "./host-capacity.js";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];

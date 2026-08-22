@@ -10,11 +10,7 @@ import {
 import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle.js";
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
-import {
-  attachCliTaskRunner,
-  markOrphanedCliTasks,
-  recoverMissingCliTaskRecords,
-} from "./cli-task-runner.js";
+import { attachCliTaskRunner, markOrphanedCliTasks, recoverMissingCliTaskRecords } from "./cli-task-runner.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
 
@@ -167,6 +163,7 @@ export function closeRestartedWorkflowPairs(opts: { bus: EventBus; persistDir: s
 /** Apply state changes only after their canonical event has been persisted. */
 export function createMetricMutationSubscriber(persistDir: string) {
   return (event: Parameters<EventBus["emit"]>[0]): void => {
+    if (event.type !== "metric.threshold_changed" && event.type !== "metric.alert_resolved") return;
     const data = eventData(event) as Record<string, unknown>;
     const db = getDb(persistDir);
 
@@ -205,7 +202,7 @@ export function attachDaemonEventSubscribers(opts: {
 
   attachCliTaskRunner({ bus, persistDir, projectRoot, sourceSessionAvailable });
   attachMetricSourceMeasurement({ bus, persistDir });
-  bus.subscribe(createMetricMutationSubscriber(persistDir));
+  bus.subscribe(createMetricMutationSubscriber(persistDir), { label: "metric-mutation" });
   const recoveredCliAdmissions = recoverMissingCliTaskRecords({ bus, persistDir });
   if (recoveredCliAdmissions > 0) {
     bus.emit({
@@ -235,8 +232,14 @@ export function attachDaemonEventSubscribers(opts: {
     });
   }
 
-  bus.subscribe(createDigestWriter(persistDir));
-  bus.subscribe(createLastSessionWriter(projectRoot));
+  bus.listen(createDigestWriter(persistDir), {
+    label: "session-digest",
+    types: ["session.start", "session.end"],
+  });
+  bus.listen(createLastSessionWriter(projectRoot), {
+    label: "last-session",
+    types: ["session.end"],
+  });
   bus.subscribe(
     createStuckDetector(
       (sessionId, _reason) => {
@@ -252,9 +255,8 @@ export function attachDaemonEventSubscribers(opts: {
           trigger: "circuit_break",
         });
       },
-      persistDir,
-      () => manager,
     ),
+    { label: "session-stuck-detection" },
   );
   bus.subscribe(
     createAutoResume(
@@ -285,20 +287,26 @@ export function attachDaemonEventSubscribers(opts: {
           trigger: "resume_exhausted",
         });
       },
-      persistDir,
-      () => manager,
     ),
+    { label: "session-auto-resume" },
   );
-  bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir }));
+  bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir }), {
+    label: "escalation-lifecycle",
+  });
 
-  bus.subscribe((event) => {
-    if (event.type === "session.start") {
+  bus.subscribe(
+    (event) => {
+      if (event.type !== "session.start") return;
       const info = eventData(event) as any;
       if (info.agent && info.sessionId) setAgentSessionId(info.agent, info.sessionId);
-    }
-    if (event.type === "session.end") {
+    },
+    { label: "agent-session-binding" },
+  );
+  bus.listen(
+    (event) => {
       const info = eventData(event) as any;
       if (info.agent) runAgentCleanup(info.agent);
-    }
-  });
+    },
+    { label: "agent-session-cleanup", types: ["session.end"] },
+  );
 }

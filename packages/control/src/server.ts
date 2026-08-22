@@ -3,6 +3,7 @@ import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { normalizeSocketFrame, type EventInput, type EventReceipt } from "./protocol.js";
+import { taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
 export type ControlEmitResult = { eventId?: number };
@@ -42,11 +43,21 @@ export interface AttachControlSocketOptions {
   getAppConversation?: (
     appId: string,
     conversationId: string,
-    options?: { limit?: number; allWork?: boolean; workRequestId?: string },
+    options?: { limit?: number; includeWork?: boolean; allWork?: boolean; workRequestId?: string },
   ) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
+  listApps?: (appId?: string) => unknown;
+  listTasks?: (options?: {
+    appId?: string;
+    includeDone?: boolean;
+    status?: string[];
+    limit?: number;
+    cursor?: string;
+  }) => unknown;
+  getTask?: (input: { ref?: string; appId?: string; taskId?: string }) => unknown;
+  cancelTask?: (input: { ref?: string; appId?: string; taskId?: string; reason?: string }) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -68,6 +79,7 @@ interface ClientState {
   socket: Duplex;
   filter: Set<string> | null;
   conversations: Set<string>;
+  task: { appId: string; taskId: string } | null;
   chatMode: boolean;
   subscribed: boolean;
 }
@@ -146,6 +158,20 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
   return active;
 }
 
+function runtimeDiagnostics(): Record<string, unknown> {
+  const memory = process.memoryUsage();
+  return {
+    uptimeSeconds: process.uptime(),
+    memory: {
+      rssBytes: memory.rss,
+      heapTotalBytes: memory.heapTotal,
+      heapUsedBytes: memory.heapUsed,
+      externalBytes: memory.external,
+      arrayBuffersBytes: memory.arrayBuffers,
+    },
+  };
+}
+
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.subscribed) return false;
   const data = eventPayload(event);
@@ -176,6 +202,10 @@ export interface ControlSocketCoreOptions {
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
+  listApps?: AttachControlSocketOptions["listApps"];
+  listTasks?: AttachControlSocketOptions["listTasks"];
+  getTask?: AttachControlSocketOptions["getTask"];
+  cancelTask?: AttachControlSocketOptions["cancelTask"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   agentName: string;
@@ -198,6 +228,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     listAppTasks,
     getAppTask,
     resolveAppTask,
+    listApps,
+    listTasks,
+    getTask,
+    cancelTask,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -263,6 +297,24 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         clients.delete(sock);
       }
     }
+
+    const wake = taskUpdateIdentity(event);
+    if (!wake) return;
+    let wakeLine: string | undefined;
+    for (const [sock, client] of clients) {
+      if (!client.subscribed || client.task?.appId !== wake.appId || client.task.taskId !== wake.taskId) continue;
+      try {
+        wakeLine ??= `${JSON.stringify({ type: "app.task.updated", data: wake })}\n`;
+        if (sock.writableLength + Buffer.byteLength(wakeLine) > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
+          clients.delete(sock);
+          sock.destroy(new Error("Control socket client is too slow"));
+          continue;
+        }
+        sock.write(wakeLine);
+      } catch {
+        clients.delete(sock);
+      }
+    }
   }
 
   const unsubscribe = subscribeEvents(broadcast);
@@ -282,7 +334,14 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       socket.end();
       return;
     }
-    clients.set(socket, { socket, filter: null, conversations: new Set(), chatMode: false, subscribed: false });
+    clients.set(socket, {
+      socket,
+      filter: null,
+      conversations: new Set(),
+      task: null,
+      chatMode: false,
+      subscribed: false,
+    });
     const removeClient = () => clients.delete(socket);
     socket.on("close", removeClient);
     socket.on("error", removeClient);
@@ -342,13 +401,22 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = frame.sessions;
           const conversations = frame.conversations;
+          const task = frame.task;
           const client = clients.get(socket);
           if (
             client &&
             Array.isArray(sessions) &&
             sessions.every((session) => typeof session === "string") &&
             (conversations === undefined ||
-              (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim())))
+              (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim()))) &&
+            (task === undefined ||
+              task === null ||
+              (typeof task === "object" &&
+                !Array.isArray(task) &&
+                typeof (task as Record<string, unknown>).appId === "string" &&
+                Boolean(String((task as Record<string, unknown>).appId).trim()) &&
+                typeof (task as Record<string, unknown>).taskId === "string" &&
+                Boolean(String((task as Record<string, unknown>).taskId).trim())))
           ) {
             if (sessions.includes("*")) {
               client.filter = null;
@@ -364,6 +432,15 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             client.conversations = new Set(
               Array.isArray(conversations) ? conversations.map((id) => String(id).trim()) : [],
             );
+            client.task =
+              task && typeof task === "object" && !Array.isArray(task)
+                ? {
+                    appId: String((task as Record<string, unknown>).appId)
+                      .trim()
+                      .replace(/\.app$/, ""),
+                    taskId: String((task as Record<string, unknown>).taskId).trim(),
+                  }
+                : null;
             client.subscribed = true;
             writeFrame(socket, { type: "ok", command: "subscribe" });
           } else {
@@ -377,7 +454,14 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
                       (!Array.isArray(conversations) ||
                         !conversations.every((id) => typeof id === "string" && id.trim()))
                     ? "conversations must be an array of non-empty strings"
-                    : "invalid subscription",
+                    : task !== undefined &&
+                        task !== null &&
+                        (typeof task !== "object" ||
+                          Array.isArray(task) ||
+                          typeof (task as Record<string, unknown>).appId !== "string" ||
+                          typeof (task as Record<string, unknown>).taskId !== "string")
+                      ? "task must contain non-empty appId and taskId strings"
+                      : "invalid subscription",
             });
           }
           continue;
@@ -388,6 +472,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             type: "status",
             command: "status",
             activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
+            ...(frame.diagnostics === true ? { diagnostics: runtimeDiagnostics() } : {}),
           });
           continue;
         }
@@ -558,6 +643,15 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const limit = frame.limit === undefined ? undefined : Number(frame.limit);
           const workRequestId = typeof frame.workRequestId === "string" ? frame.workRequestId.trim() : undefined;
           const allWork = frame.allWork === true;
+          const includeWork = frame.includeWork === undefined ? undefined : frame.includeWork === true;
+          if (frame.includeWork !== undefined && typeof frame.includeWork !== "boolean") {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: "includeWork must be a boolean",
+            });
+            continue;
+          }
           if (!appId || !conversationId || !getAppConversation) {
             writeFrame(socket, {
               type: "error",
@@ -576,7 +670,12 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               conversationId,
-              conversation: getAppConversation(appId, conversationId, { limit, workRequestId, allWork }),
+              conversation: getAppConversation(appId, conversationId, {
+                limit,
+                workRequestId,
+                allWork,
+                ...(includeWork === undefined ? {} : { includeWork }),
+              }),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -676,6 +775,94 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               type: "ok",
               command: normalized.command,
               ...(resolveAppTask(appId, event as Record<string, unknown>) as Record<string, unknown>),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "apps.list") {
+          if (!listApps) {
+            writeFrame(socket, { type: "error", command: normalized.command, message: "App reads are unavailable" });
+            continue;
+          }
+          try {
+            const appId = typeof frame.appId === "string" && frame.appId.trim() ? frame.appId.trim() : undefined;
+            writeFrame(socket, { type: "ok", command: normalized.command, apps: listApps(appId) });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "tasks.list") {
+          if (!listTasks) {
+            writeFrame(socket, { type: "error", command: normalized.command, message: "Task reads are unavailable" });
+            continue;
+          }
+          try {
+            if (
+              frame.status !== undefined &&
+              (!Array.isArray(frame.status) ||
+                !frame.status.every((value) => typeof value === "string" && Boolean(value.trim())))
+            ) {
+              throw new Error("status must be an array of non-empty strings");
+            }
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              tasks: listTasks({
+                ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
+                ...(frame.includeDone === true ? { includeDone: true } : {}),
+                ...(Array.isArray(frame.status) ? { status: frame.status as string[] } : {}),
+                ...(frame.limit === undefined ? {} : { limit: Number(frame.limit) }),
+                ...(typeof frame.cursor === "string" && frame.cursor.trim() ? { cursor: frame.cursor.trim() } : {}),
+              }),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (
+          normalized.kind === "control" &&
+          (normalized.command === "task.get" || normalized.command === "task.cancel")
+        ) {
+          const operation = normalized.command === "task.get" ? getTask : cancelTask;
+          if (!operation) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message:
+                normalized.command === "task.get" ? "Task reads are unavailable" : "Task cancellation is unavailable",
+            });
+            continue;
+          }
+          try {
+            const input = {
+              ...(typeof frame.ref === "string" && frame.ref.trim() ? { ref: frame.ref.trim() } : {}),
+              ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
+              ...(typeof frame.taskId === "string" && frame.taskId.trim() ? { taskId: frame.taskId.trim() } : {}),
+              ...(typeof frame.reason === "string" && frame.reason.trim() ? { reason: frame.reason.trim() } : {}),
+            };
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              task: operation(input),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -815,6 +1002,10 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
     resolveAppTask: opts.resolveAppTask,
+    listApps: opts.listApps,
+    listTasks: opts.listTasks,
+    getTask: opts.getTask,
+    cancelTask: opts.cancelTask,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,

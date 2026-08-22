@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, writeFileSync, writeSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import { eventData, type AgentEvent, type EventBus, type EventTrace, type SubscriberResult } from "./event-bus.js";
 
 type CliTool = "claude" | "codex";
@@ -163,11 +164,6 @@ function rememberReusableSession(persistDir: string, record: CliTaskRecord, now:
   writeSessionStore(persistDir, record.sourceOwner, store);
 }
 
-function appendFile(path: string, text: string): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, text, { flag: "a" });
-}
-
 function ensureInside(root: string, path: string): string {
   const base = resolve(root);
   const resolved = resolve(base, path);
@@ -294,46 +290,135 @@ function promptForRun(record: CliTaskRecord, prompt: string): string {
   return `${context.join("\n")}\n\nTask:\n${prompt}`;
 }
 
-function extractCliSessionId(tool: CliTool, stdout: string): string | undefined {
-  let found: string | undefined;
-  for (const line of stdout.split("\n")) {
-    if (!line.trim()) continue;
-    try {
-      const event = JSON.parse(line) as Record<string, unknown>;
-      if (tool === "codex" && event.type === "thread.started" && typeof event.thread_id === "string") {
-        found = event.thread_id;
-      } else if (tool === "claude" && typeof event.session_id === "string") {
-        found = event.session_id;
-      }
-    } catch {
-      continue;
-    }
+export const CLI_DIAGNOSTIC_TAIL_BYTES = 64 * 1024;
+const CLI_PROTOCOL_LINE_MAX_CHARS = 1024 * 1024;
+
+type CliOutputSnapshot = {
+  stdout: string;
+  stderr: string;
+  completedProtocol: boolean;
+  finalText?: string;
+  cliSessionId?: string;
+  permissionFailure: boolean;
+  toolFailure: boolean;
+};
+
+function appendBoundedTail(current: Buffer, chunk: Buffer): Buffer {
+  if (chunk.byteLength >= CLI_DIAGNOSTIC_TAIL_BYTES) {
+    return Buffer.from(chunk.subarray(chunk.byteLength - CLI_DIAGNOSTIC_TAIL_BYTES));
   }
-  return found;
+  const retainedCurrentBytes = Math.min(current.byteLength, CLI_DIAGNOSTIC_TAIL_BYTES - chunk.byteLength);
+  return Buffer.concat([current.subarray(current.byteLength - retainedCurrentBytes), chunk]);
 }
 
-function extractFinalText(tool: CliTool, stdout: string): string | undefined {
-  let found: string | undefined;
-  for (const line of stdout.split("\n")) {
-    if (!line.trim()) continue;
+/** Incrementally reads native JSONL protocol while retaining only bounded diagnostics. */
+export function createCliOutputCollector(tool: CliTool): {
+  stdout: (chunk: Buffer) => void;
+  stderr: (chunk: Buffer) => void;
+  finish: () => CliOutputSnapshot;
+} {
+  const decoder = new StringDecoder("utf8");
+  let pendingLine = "";
+  let skipOversizedLine = false;
+  let stdoutTail: Buffer<ArrayBufferLike> = Buffer.alloc(0);
+  let stderrTail: Buffer<ArrayBufferLike> = Buffer.alloc(0);
+  let completedProtocol = false;
+  let finalText: string | undefined;
+  let cliSessionId: string | undefined;
+  let permissionFailure = false;
+  let toolFailure = false;
+  let diagnosticCarry = "";
+
+  const inspectDiagnostics = (text: string): void => {
+    const sample = diagnosticCarry + text;
+    permissionFailure ||= /permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(sample);
+    toolFailure ||= /tool.*(?:failed|error)|command not found|ENOENT/i.test(sample);
+    diagnosticCarry = sample.slice(-256);
+  };
+
+  const inspectLine = (line: string): void => {
+    if (!line.trim()) return;
     try {
       const event = JSON.parse(line) as Record<string, any>;
-      if (tool === "codex" && event.type === "item.completed" && event.item?.type === "agent_message") {
-        if (typeof event.item.text === "string") found = event.item.text;
+      if (tool === "codex") {
+        if (event.type === "thread.started" && typeof event.thread_id === "string") cliSessionId = event.thread_id;
+        if (event.type === "turn.completed") completedProtocol = true;
+        if (event.type === "item.completed" && event.item?.type === "agent_message") {
+          if (typeof event.item.text === "string") finalText = event.item.text;
+        }
+        return;
       }
-      if (tool === "claude") {
-        if (event.type === "result" && typeof event.result === "string") found = event.result;
-        if (event.type === "assistant" && Array.isArray(event.message?.content)) {
-          for (const block of event.message.content) {
-            if (block?.type === "text" && typeof block.text === "string") found = block.text;
-          }
+      if (typeof event.session_id === "string") cliSessionId = event.session_id;
+      if (event.type === "result") {
+        if (event.subtype === "success" && event.is_error !== true) completedProtocol = true;
+        if (typeof event.result === "string") finalText = event.result;
+      }
+      if (event.type === "assistant" && Array.isArray(event.message?.content)) {
+        for (const block of event.message.content) {
+          if (block?.type === "text" && typeof block.text === "string") finalText = block.text;
         }
       }
     } catch {
-      continue;
+      // Non-protocol output remains available in the durable events file.
     }
-  }
-  return found;
+  };
+
+  const consume = (text: string): void => {
+    let remaining = text;
+    while (remaining.length > 0) {
+      if (skipOversizedLine) {
+        const newline = remaining.indexOf("\n");
+        if (newline < 0) return;
+        skipOversizedLine = false;
+        remaining = remaining.slice(newline + 1);
+        continue;
+      }
+      const newline = remaining.indexOf("\n");
+      if (newline < 0) {
+        pendingLine += remaining;
+        if (pendingLine.length > CLI_PROTOCOL_LINE_MAX_CHARS) {
+          pendingLine = "";
+          skipOversizedLine = true;
+        }
+        return;
+      }
+      pendingLine += remaining.slice(0, newline);
+      inspectLine(pendingLine);
+      pendingLine = "";
+      remaining = remaining.slice(newline + 1);
+    }
+  };
+
+  return {
+    stdout(chunk) {
+      const text = decoder.write(chunk);
+      stdoutTail = appendBoundedTail(stdoutTail, chunk);
+      inspectDiagnostics(text);
+      consume(text);
+    },
+    stderr(chunk) {
+      const text = chunk.toString("utf8");
+      stderrTail = appendBoundedTail(stderrTail, chunk);
+      inspectDiagnostics(text);
+    },
+    finish() {
+      const remainder = decoder.end();
+      if (remainder) {
+        inspectDiagnostics(remainder);
+        consume(remainder);
+      }
+      if (!skipOversizedLine) inspectLine(pendingLine);
+      return {
+        stdout: stdoutTail.toString("utf8"),
+        stderr: stderrTail.toString("utf8"),
+        completedProtocol,
+        finalText,
+        cliSessionId,
+        permissionFailure,
+        toolFailure,
+      };
+    },
+  };
 }
 
 function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
@@ -384,6 +469,11 @@ type CliAttemptResult = {
   exitCode: number;
   stdout: string;
   stderr: string;
+  completedProtocol: boolean;
+  finalText?: string;
+  cliSessionId?: string;
+  permissionFailure: boolean;
+  toolFailure: boolean;
   timedOut: boolean;
   error?: string;
 };
@@ -406,22 +496,6 @@ function signalCliProcessTree(child: ReturnType<typeof spawn>, signal: NodeJS.Si
   }
 }
 
-function hasCompletedProtocol(tool: CliTool, stdout: string): boolean {
-  for (const line of stdout.split("\n")) {
-    if (!line.trim()) continue;
-    try {
-      const event = JSON.parse(line) as Record<string, unknown>;
-      if (tool === "codex" && event.type === "turn.completed") return true;
-      if (tool === "claude" && event.type === "result" && event.subtype === "success" && event.is_error !== true) {
-        return true;
-      }
-    } catch {
-      continue;
-    }
-  }
-  return false;
-}
-
 function structuredStatus(record: CliTaskRecord): StructuredCliResult["status"] {
   if (record.status === "orphaned") return "failed";
   if (record.error?.toLowerCase().includes("timeout")) return "timed_out";
@@ -436,9 +510,9 @@ function classifyCliOutcome(
   expected?: CliTaskRecord["expectedOutput"],
 ): { failureCategory?: CliTaskRecord["failureCategory"]; error?: string } {
   const diagnosticText = `${attempt.stderr}\n${attempt.stdout}\n${attempt.error ?? ""}`;
-  const permissionFailure = /permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(
-    diagnosticText,
-  );
+  const permissionFailure =
+    attempt.permissionFailure ||
+    /permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(diagnosticText);
   if (attempt.timedOut) {
     return {
       failureCategory: "timeout",
@@ -452,10 +526,13 @@ function classifyCliOutcome(
         error: "CLI worker was denied a required permission",
       };
     }
-    const category = /tool.*(?:failed|error)|command not found|ENOENT/i.test(diagnosticText) ? "tool" : "process";
+    const category =
+      attempt.toolFailure || /tool.*(?:failed|error)|command not found|ENOENT/i.test(diagnosticText)
+        ? "tool"
+        : "process";
     return { failureCategory: category, error: attempt.error ?? `CLI exited with code ${attempt.exitCode}` };
   }
-  if (!hasCompletedProtocol(tool, attempt.stdout)) {
+  if (!attempt.completedProtocol) {
     if (permissionFailure) {
       return {
         failureCategory: "permission",
@@ -588,17 +665,30 @@ async function runCliAttempt(opts: {
   const { bus, spawnCommand, record, recordPath, prompt, now, attempt } = opts;
   const native = commandFor(record, prompt);
   const { command, args } = sandboxedCommand(record, native.command, native.args);
-  const child = spawnCommand(command, args, {
-    cwd: record.worktree ?? record.cwd,
-    env: cliEnv(record),
-    detached: process.platform !== "win32",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const collector = createCliOutputCollector(record.tool);
+  const eventsPath = record.eventsPath ?? record.resultPath;
+  mkdirSync(dirname(eventsPath), { recursive: true });
+  const eventsFd = openSync(eventsPath, "a");
+  let eventsClosed = false;
+  let child: ReturnType<typeof spawn>;
+  try {
+    child = spawnCommand(command, args, {
+      cwd: record.worktree ?? record.cwd,
+      env: cliEnv(record),
+      detached: process.platform !== "win32",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (error) {
+    closeSync(eventsFd);
+    throw error;
+  }
   record.runnerPid = process.pid;
   record.pid = child.pid;
   writeRecord(recordPath, record);
-  const stdoutChunks: string[] = [];
-  const stderrChunks: string[] = [];
+
+  const retainEventChunk = (chunk: Buffer): void => {
+    if (!eventsClosed) writeSync(eventsFd, chunk);
+  };
 
   bus.emit({
     type: "cli.task.started",
@@ -624,14 +714,12 @@ async function runCliAttempt(opts: {
   } as any);
 
   child.stdout?.on("data", (chunk: Buffer) => {
-    const text = chunk.toString();
-    stdoutChunks.push(text);
-    appendFile(record.eventsPath ?? record.resultPath, text);
+    collector.stdout(chunk);
+    retainEventChunk(chunk);
   });
   child.stderr?.on("data", (chunk: Buffer) => {
-    const text = chunk.toString();
-    stderrChunks.push(text);
-    appendFile(record.eventsPath ?? record.resultPath, text);
+    collector.stderr(chunk);
+    retainEventChunk(chunk);
   });
 
   return await new Promise<CliAttemptResult>((resolveDone) => {
@@ -645,18 +733,20 @@ async function runCliAttempt(opts: {
         signalCliProcessTree(child, "SIGKILL");
       }, CLI_TERMINATION_GRACE_MS);
     }, record.timeoutMs);
-    const finish = (result: CliAttemptResult): void => {
+    const finish = (result: Pick<CliAttemptResult, "exitCode" | "timedOut" | "error">): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutTimer);
       if (forceTimer) clearTimeout(forceTimer);
-      resolveDone(result);
+      if (!eventsClosed) {
+        eventsClosed = true;
+        closeSync(eventsFd);
+      }
+      resolveDone({ ...result, ...collector.finish() });
     };
     child.on("close", (code, signal) => {
       finish({
         exitCode: exitCode(code, signal),
-        stdout: stdoutChunks.join(""),
-        stderr: stderrChunks.join(""),
         timedOut,
         error: timedOut
           ? `CLI task exceeded timeout ${record.timeoutMs}ms`
@@ -669,8 +759,6 @@ async function runCliAttempt(opts: {
       const message = err instanceof Error ? err.message : String(err);
       finish({
         exitCode: 1,
-        stdout: stdoutChunks.join(""),
-        stderr: stderrChunks.join(""),
         timedOut,
         error: message,
       });
@@ -981,10 +1069,9 @@ async function runCliTask(opts: {
     record.exitCode = attempt.exitCode;
     record.finishedAt = iso(now);
     if (!existsSync(record.resultPath)) {
-      const finalText = extractFinalText(record.tool, attempt.stdout);
-      writeFileSync(record.resultPath, finalText ?? "");
+      writeFileSync(record.resultPath, attempt.finalText ?? "");
     }
-    const cliSessionId = extractCliSessionId(record.tool, attempt.stdout);
+    const cliSessionId = attempt.cliSessionId;
     if (cliSessionId) {
       record.cliSessionId = cliSessionId;
       record.resumeCommand = resumeCommand(record, cliSessionId);

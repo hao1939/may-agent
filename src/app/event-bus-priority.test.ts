@@ -21,10 +21,96 @@ describe("EventBus subscriber priority", () => {
       return { accepted: true, by: "durable" };
     });
     bus.subscribe(() => calls.push("ordinary"));
+    bus.listen(() => calls.push("listener"));
 
     bus.emit({ type: "info", message: "retry" });
 
     expect(calls).toEqual(["durable"]);
+  });
+
+  it("runs listeners later in FIFO order without extending emit", async () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    bus.subscribe((event) => calls.push(`route:${event.type}`));
+    bus.listen(async (event) => {
+      await Promise.resolve();
+      calls.push(`observe:${event.type}`);
+    });
+
+    bus.emit({ type: "info", message: "one" });
+    bus.emit({ type: "heartbeat", agent: "may" });
+
+    expect(calls).toEqual(["route:info", "route:heartbeat"]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(calls).toEqual(["route:info", "route:heartbeat", "observe:info", "observe:heartbeat"]);
+  });
+
+  it("keeps each listener independent and filters before queueing", async () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    let releaseSlow!: () => void;
+    const slow = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    bus.listen(
+      async () => {
+        calls.push("slow:start");
+        await slow;
+        calls.push("slow:end");
+      },
+      { types: ["info"] },
+    );
+    bus.listen((event) => calls.push(`fast:${event.type}`), { types: ["info"] });
+
+    bus.emit({ type: "info", message: "one" });
+    bus.emit({ type: "heartbeat", agent: "may" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(calls).toEqual(["slow:start", "fast:info"]);
+    releaseSlow();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(calls).toEqual(["slow:start", "fast:info", "slow:end"]);
+  });
+
+  it("bounds a stalled listener backlog and retains the newest notifications", async () => {
+    const bus = new EventBus();
+    const observed: string[] = [];
+    let releaseFirst!: () => void;
+    const first = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    bus.listen(async (event) => {
+      const message = String((event as { message?: unknown }).message ?? "");
+      observed.push(message);
+      if (message === "blocked") await first;
+    });
+
+    bus.emit({ type: "info", message: "blocked" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let index = 1; index <= 300; index++) bus.emit({ type: "info", message: String(index) });
+    releaseFirst();
+    for (let turn = 0; turn < 8 && observed.at(-1) !== "300"; turn++) {
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+
+    expect(observed).toHaveLength(257);
+    expect(observed[0]).toBe("blocked");
+    expect(observed[1]).toBe("45");
+    expect(observed.at(-1)).toBe("300");
+  });
+
+  it("reports listener failures as later durable events", async () => {
+    const bus = new EventBus();
+    const persisted: string[] = [];
+    bus.setPersistenceSubscriber((event) => persisted.push(event.type));
+    bus.listen((event) => {
+      if (event.type === "info") throw new Error("listener boom");
+    });
+
+    bus.emit({ type: "info", message: "test" });
+    expect(persisted).toEqual(["info"]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
 
   it("runs 'first' subscribers before 'normal' subscribers", () => {
@@ -176,15 +262,16 @@ describe("EventBus subscriber priority", () => {
     expect(order).toEqual([]);
   });
 
-  it("listenerCount counts both priority buckets", () => {
+  it("listenerCount counts routes and listeners", () => {
     const bus = new EventBus();
     expect(bus.listenerCount).toBe(0);
 
     bus.subscribe(() => {}, { priority: "first" });
     bus.subscribe(() => {});
     bus.subscribe(() => {}, { priority: "first" });
+    bus.listen(() => {});
 
-    expect(bus.listenerCount).toBe(3);
+    expect(bus.listenerCount).toBe(4);
   });
 
   it("inherits trace context for events emitted by a handler", () => {

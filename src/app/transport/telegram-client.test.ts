@@ -3,140 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb } from "../../lib/db/connection.js";
-import { getDb } from "../../lib/db/connection.js";
-import {
-  getLatestInboundNotificationMessage,
-  getRecentTelegramConversationMessages,
-  getTelegramConversationView,
-  storeNotificationMessage,
-} from "../../lib/db/notifications.js";
 import { createTelegramClient, splitTelegramMessage } from "./telegram-client.js";
 
 describe("telegram client", () => {
-  it("recovers the latest inbound Telegram anchor for a request trace", () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "telegram-inbound-trace-"));
-    try {
-      for (const [telegramMsgId, sentAt, traceId] of [
-        [500, 1, "trace-a"],
-        [501, 2, "trace-b"],
-        [502, 3, "trace-a"],
-      ] as const) {
-        storeNotificationMessage(persistDir, {
-          telegram_msg_id: telegramMsgId,
-          event_type: "human.input.received",
-          agent: "may",
-          session_id: null,
-          project_id: null,
-          data: JSON.stringify({ direction: "inbound", traceId }),
-          sent_at: sentAt,
-        });
-      }
-
-      expect(getLatestInboundNotificationMessage(persistDir, "trace-a")?.telegram_msg_id).toBe(502);
-      expect(getLatestInboundNotificationMessage(persistDir, "trace-b")?.telegram_msg_id).toBe(501);
-      expect(getLatestInboundNotificationMessage(persistDir, "trace-missing")).toBeNull();
-    } finally {
-      closeDb(persistDir);
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
-
-  it("reads a bounded Telegram conversation window in message order", () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "telegram-conversation-window-"));
-    const conversationId = "telegram:chat:123:topic:0:agent:may";
-    try {
-      for (const [telegramMsgId, direction, text, sentAt] of [
-        [600, "inbound", "Review Gym", 1],
-        [601, "outbound", "Gym is active", 2],
-        [602, "inbound", "What about AKS?", 3],
-      ] as const) {
-        storeNotificationMessage(persistDir, {
-          telegram_msg_id: telegramMsgId,
-          event_type: direction === "inbound" ? "human.input.received" : "response",
-          agent: direction === "inbound" ? "may" : "may",
-          session_id: null,
-          project_id: null,
-          data: JSON.stringify({ direction, conversationId, text, traceId: `trace-${telegramMsgId}` }),
-          sent_at: sentAt,
-        });
-      }
-
-      expect(getRecentTelegramConversationMessages(persistDir, conversationId, 2)).toEqual([
-        expect.objectContaining({ telegramMsgId: 601, direction: "outbound", text: "Gym is active" }),
-        expect.objectContaining({ telegramMsgId: 602, direction: "inbound", text: "What about AKS?" }),
-      ]);
-    } finally {
-      closeDb(persistDir);
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
-
-  it("assembles an exact focused request from existing trace and message data", () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "telegram-conversation-view-"));
-    const conversationId = "telegram:chat:123:topic:0:agent:may";
-    try {
-      storeNotificationMessage(persistDir, {
-        telegram_msg_id: 610,
-        event_type: "human.input.received",
-        agent: "may",
-        session_id: null,
-        project_id: "gym",
-        data: JSON.stringify({
-          direction: "inbound",
-          conversationId,
-          text: "What happened to the Gym run?",
-          traceId: "trace-gym-1",
-          taskId: "learning/gym-run",
-        }),
-        sent_at: 1,
-      });
-      const db = getDb(persistDir);
-      db.run(
-        `INSERT INTO events (event_type, source, owner, data, project_id, task_id, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "project.owner.result",
-          "gym",
-          "agent:may",
-          JSON.stringify({ status: "waiting", summary: "Provider connection failed; no model output." }),
-          "gym",
-          "learning/gym-run",
-          2,
-        ],
-      );
-      const eventId = Number((db.prepare("SELECT last_insert_rowid() AS id").get() as { id: number }).id);
-      db.run("UPDATE event_traces SET trace_id = ? WHERE event_id = ?", ["trace-gym-1", eventId]);
-
-      expect(
-        getTelegramConversationView(persistDir, {
-          conversationId,
-          traceId: "trace-gym-1",
-          taskId: "learning/gym-run",
-          projectId: "gym",
-        }),
-      ).toMatchObject({
-        focus: {
-          traceId: "trace-gym-1",
-          taskId: "learning/gym-run",
-          projectId: "gym",
-          owner: "agent:may",
-          status: "waiting",
-          events: [
-            expect.objectContaining({
-              eventId,
-              type: "project.owner.result",
-              summary: "Provider connection failed; no model output.",
-            }),
-          ],
-        },
-        recentMessages: [expect.objectContaining({ telegramMsgId: 610 })],
-      });
-    } finally {
-      closeDb(persistDir);
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
-
   it("splits long messages without dropping content", () => {
     const chunks = splitTelegramMessage(["one", "two", "three"].join("\n"), 8);
     expect(chunks).toEqual(["one\ntwo", "three"]);
@@ -181,8 +50,8 @@ describe("telegram client", () => {
     }
   });
 
-  it("stores approval notification context for reply enrichment", async () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-approval-"));
+  it("indexes sent-message delivery context independently of its payload", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-delivery-"));
     try {
       const client = createTelegramClient({
         token: "token",

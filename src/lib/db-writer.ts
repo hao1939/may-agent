@@ -46,7 +46,7 @@ const DURABLE_COMMAND_EVENTS = new Set([
 
 const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
 const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
-const DEFAULT_HOUSEKEEPING_INTERVAL_MS = 30_000;
+export const EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS = 30_000;
 // Task assignment pairs use a longer TTL because project tasks legitimately
 // take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
 // batches (e.g. 150 aks-rp-e2e tasks) to orphan simultaneously and breach
@@ -454,7 +454,7 @@ export class DbWriter {
   constructor(persistDir: string, opts: { housekeepingIntervalMs?: number } = {}) {
     this.persistDir = persistDir;
     this.db = getDb(persistDir);
-    this.housekeepingIntervalMs = Math.max(0, opts.housekeepingIntervalMs ?? DEFAULT_HOUSEKEEPING_INTERVAL_MS);
+    this.housekeepingIntervalMs = Math.max(0, opts.housekeepingIntervalMs ?? EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS);
   }
 
   /** Subscribe this writer to an EventBus. */
@@ -630,7 +630,6 @@ export class DbWriter {
     project?: () => void,
   ): number | null {
     const timestamp = Date.now();
-    this.runDueHousekeeping(timestamp);
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
@@ -1039,7 +1038,8 @@ export class DbWriter {
     }
   }
 
-  private runDueHousekeeping(now: number): void {
+  /** Run periodic delivery repair outside the event-persistence path. */
+  runHousekeeping(now = Date.now()): void {
     if (now - this.lastHousekeepingAt < this.housekeepingIntervalMs) return;
     this.lastHousekeepingAt = now;
     this.sweepStalePairs(now);

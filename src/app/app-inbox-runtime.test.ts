@@ -418,6 +418,7 @@ describe("App inbox runtime", () => {
   it("records an unavailable exact Task target without blocking event delivery", async () => {
     const bus = persistentBus();
     const failures: Array<Record<string, unknown>> = [];
+    let admissionAttempts = 0;
     bus.subscribe((event) => {
       if (event.type === "subscriber.failed") failures.push(event.data as Record<string, unknown>);
     });
@@ -425,9 +426,12 @@ describe("App inbox runtime", () => {
       registry: await loadedRegistry(root),
       db,
       bus,
-      admitTaskEvent: () => undefined,
+      admitTaskEvent: () => {
+        admissionAttempts += 1;
+        return undefined;
+      },
       previewTaskEvent: () => [],
-      scanIntervalMs: 10_000,
+      scanIntervalMs: 5,
     });
 
     const startedAt = performance.now();
@@ -455,6 +459,8 @@ describe("App inbox runtime", () => {
         }),
       ],
     });
+    await Bun.sleep(30);
+    expect(admissionAttempts).toBe(1);
   });
 
   it("emits one Conversation update when human work changes", async () => {

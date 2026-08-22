@@ -3,7 +3,7 @@
  *
  * Two areas under test:
  * 1. P62 Recovery: two-tier decision logic (digest → classifyError fallback)
- * 2. Circuit breaker: digest-informed kill/escalate/resume decisions
+ * 2. Circuit breaker: deterministic bounded cancellation
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
@@ -237,27 +237,11 @@ describe("P62 Recovery — two-tier decision", () => {
 
 // ── Circuit Breaker Decision Logic Tests ───────────────────────────────
 
-describe("Circuit breaker — digest-informed decisions", () => {
-  let persistDir: string;
-
-  beforeEach(() => {
-    persistDir = makeTempDir();
-    setupDb(persistDir);
-  });
-
-  afterEach(() => {
-    try { rmSync(persistDir, { recursive: true }); } catch {}
-  });
-
-  it("falls back to kill when persistDir is undefined", () => {
+describe("Circuit breaker — deterministic cancellation", () => {
+  it("cancels at the terminal error threshold", () => {
     const cancelledSessions: string[] = [];
 
-    const handler = createStuckDetector(
-      (sessionId: string) => cancelledSessions.push(sessionId),
-      undefined,
-      undefined, // no persistDir
-      undefined,
-    );
+    const handler = createStuckDetector((sessionId: string) => cancelledSessions.push(sessionId), undefined);
 
     handler(sessionStart("s_fallback", "coder", "test") as any);
     for (let i = 0; i < 7; i++) {
@@ -270,19 +254,13 @@ describe("Circuit breaker — digest-informed decisions", () => {
       } as any);
     }
 
-    // Without persistDir, should fall back to immediate kill
     expect(cancelledSessions).toContain("s_fallback");
   });
 
   it("stuck warning at threshold 4 does not cancel", () => {
     const cancelledSessions: string[] = [];
 
-    const handler = createStuckDetector(
-      (sessionId: string) => cancelledSessions.push(sessionId),
-      undefined,
-      persistDir,
-      undefined,
-    );
+    const handler = createStuckDetector((sessionId: string) => cancelledSessions.push(sessionId), undefined);
 
     handler(sessionStart("s_warn", "coder", "test") as any);
     for (let i = 0; i < 4; i++) {
@@ -301,12 +279,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
   it("consecutive error count resets on successful turn", () => {
     const cancelledSessions: string[] = [];
 
-    const handler = createStuckDetector(
-      (sessionId: string) => cancelledSessions.push(sessionId),
-      undefined,
-      persistDir,
-      undefined,
-    );
+    const handler = createStuckDetector((sessionId: string) => cancelledSessions.push(sessionId), undefined);
 
     handler(sessionStart("s_reset", "coder", "test") as any);
     for (let i = 0; i < 5; i++) {
@@ -343,12 +316,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
   it("session_end cleans up state", () => {
     const cancelledSessions: string[] = [];
 
-    const handler = createStuckDetector(
-      (sessionId: string) => cancelledSessions.push(sessionId),
-      undefined,
-      persistDir,
-      undefined,
-    );
+    const handler = createStuckDetector((sessionId: string) => cancelledSessions.push(sessionId), undefined);
 
     handler(sessionStart("s_cleanup", "coder", "test") as any);
     for (let i = 0; i < 3; i++) {

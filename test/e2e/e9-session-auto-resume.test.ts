@@ -30,10 +30,9 @@
  *   - The LLM call that follows session.start. Sandbox has no API
  *     credentials, so the actual model invocation will fail. We only
  *     assert that the resume attempt happened.
- *   - The auto-resume after interrupt path (driven by createAutoResume +
- *     the digest classifier). That path is gated on an `evaluator` agent
- *     being available to synthesize "still_open" from transcript — a
- *     separate concern not in the scope of this primitive-level test.
+ *   - The automatic bounded retry after an interrupted session. This test
+ *     covers the resume primitive directly rather than waiting for its
+ *     production backoff.
  *
  * Why this test would have caught the original v2 regression:
  *   The legacy `resumeInterrupted` no-op was unreachable from `steer`

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { runDbMaintenancePass } from "../../lib/db/maintenance.js";
 import { closeAllDbs, getDb } from "../../lib/db/connection.js";
+import { DbWriter, EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS } from "../../lib/db-writer.js";
 import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
 
 const LIVENESS_INTERVAL_MS = 30_000;
@@ -145,6 +146,9 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
   const startupDelayMs = parseStartupDelayMs(argv);
   let stopping = false;
   let livenessRunning = false;
+  const deliveryWriter = new DbWriter(opts.persistDir, {
+    housekeepingIntervalMs: once ? 0 : EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS,
+  });
   const livenessNotBefore = Date.now() + LIVENESS_STARTUP_GRACE_MS;
   let livenessState: RuntimeLivenessState = {
     consecutiveFailures: 0,
@@ -188,8 +192,12 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
             livenessRunning = false;
           });
       }, LIVENESS_INTERVAL_MS);
+  const deliveryTimer = once
+    ? null
+    : setInterval(() => deliveryWriter.runHousekeeping(), EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS);
 
   try {
+    if (once) deliveryWriter.runHousekeeping();
     if (!once) await waitForDelay(startupDelayMs, () => stopping);
     do {
       if (stopping) break;
@@ -219,6 +227,7 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
     } while (!stopping);
   } finally {
     if (livenessTimer) clearInterval(livenessTimer);
+    if (deliveryTimer) clearInterval(deliveryTimer);
     closeAllDbs();
   }
 }

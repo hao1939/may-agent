@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../../src/app/event-bus.js";
@@ -11,40 +11,14 @@ import {
   stageAppInboxClaimDelivery,
 } from "../../src/app/app-inbox-store.js";
 import { attachTelegramBot } from "../../src/app/transport/telegram.js";
+import { AppRegistry } from "../../src/app/app-registry.js";
+import { HumanTaskService } from "../../src/app/human-task-service.js";
 import { getDb } from "../../src/lib/requests.js";
 
 function jsonResponse(result: unknown) {
   return {
     json: async () => ({ ok: true, result }),
   } as Response;
-}
-
-function sessionStart(data: Record<string, unknown>, source = "runtime") {
-  return { type: "session.start", source, owner: `agent:${data.agent}`, data };
-}
-
-function attentionReviewManager() {
-  return {
-    status() {
-      return [];
-    },
-    async callAgent(_agent: string, prompt: string) {
-      const marker = "Candidate:\n";
-      const candidate = JSON.parse(prompt.slice(prompt.lastIndexOf(marker) + marker.length)) as { content: string };
-      return {
-        status: "done",
-        sessionId: "attention-review",
-        structuredResult: {
-          disposition: "deliver",
-          understoodIntent: "Deliver the useful test notification.",
-          reason: "The e2e fixture admits this notification.",
-          nextAction: "Deliver the reviewed text.",
-          evidence: ["E2E admission fixture."],
-          deliveredMessage: candidate.content,
-        },
-      };
-    },
-  } as any;
 }
 
 async function waitFor(assertion: () => void, timeoutMs = 5000): Promise<void> {
@@ -66,6 +40,7 @@ describe("telegram reply e2e", () => {
   let persistDir: string;
   let oldToken: string | undefined;
   let oldChatId: string | undefined;
+  let humanTasks: HumanTaskService;
 
   beforeEach(() => {
     persistDir = mkdtempSync(resolve(tmpdir(), "telegram-e2e-"));
@@ -73,6 +48,7 @@ describe("telegram reply e2e", () => {
     oldChatId = process.env.TELEGRAM_CHAT_ID;
     process.env.TELEGRAM_BOT_TOKEN = "test-token";
     process.env.TELEGRAM_CHAT_ID = "12345";
+    humanTasks = new HumanTaskService(getDb(persistDir), new AppRegistry(join(persistDir, "apps")));
   });
 
   afterEach(() => {
@@ -135,8 +111,8 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: attentionReviewManager(),
       interfaceAgent: "may",
+      humanTasks,
     });
 
     await waitFor(() => {
@@ -151,21 +127,51 @@ describe("telegram reply e2e", () => {
           replyTo: "telegram:12345:100",
           metadata: { channel: "telegram", channelMessageId: 200 },
           context: {
-            telegramReply: {
-              replyToMsgId: 100,
-              conversationId: "may:primary",
-              fallback: "telegram-quote",
+            reply: {
+              channel: "telegram",
+              messageId: 100,
+              quotedText: "Project needs attention: projects/example",
             },
           },
         },
       });
       const input = String(conversationMessages[0].data?.text);
-      expect(input).toContain("[User replying to Telegram message]");
-      expect(input).toContain("Project needs attention");
-      expect(input).toContain("User says: show details");
+      expect(input).toBe("show details");
     });
     expect(sentMessages).toHaveLength(0);
 
+    bot.close();
+  });
+
+  it("does not turn raw session or legacy human-targeted events into Telegram output", async () => {
+    const sentMessages: Array<{ text: string }> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 300 + sentMessages.length });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const bot = attachTelegramBot({ persistDir, bus, interfaceAgent: "may", humanTasks });
+    bus.emit({ type: "text", sessionId: "legacy-session", agent: "may", text: "raw session text" } as any);
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: { from: "may", to: "human", content: "legacy notification" },
+    } as any);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(sentMessages).toHaveLength(0);
     bot.close();
   });
 
@@ -220,7 +226,12 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "conversation.message.created") messages.push(event);
     });
-    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      interfaceAgent: "may",
+      humanTasks,
+    });
 
     await waitFor(() => {
       expect(sentMessages).toHaveLength(1);
@@ -279,7 +290,12 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "conversation.message.created" && event.data?.author?.kind === "human") input = event;
     });
-    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      interfaceAgent: "may",
+      humanTasks,
+    });
     await waitFor(() => expect(input).toBeTruthy());
 
     const db = getDb(persistDir);
@@ -298,12 +314,7 @@ describe("telegram reply e2e", () => {
     });
     const claim = claimAppInboxItem(db, "item-80", "test", 1_000, 2);
     if (!claim) throw new Error("expected May request claim");
-    completeAppInboxClaim(
-      db,
-      claim,
-      { summary: "Reviewed.", response: "Reviewed.", evidence: ["test:accepted"] },
-      3,
-    );
+    completeAppInboxClaim(db, claim, { summary: "Reviewed.", response: "Reviewed.", evidence: ["test:accepted"] }, 3);
     bus.emit({
       type: "conversation.updated",
       source: "app-inbox",
@@ -343,7 +354,12 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "conversation.message.created") conversationEvents.push(event);
     });
-    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      interfaceAgent: "may",
+      humanTasks,
+    });
     createAppInboxItem(getDb(persistDir), {
       id: "console-message-1",
       appId: "may",
@@ -370,7 +386,66 @@ describe("telegram reply e2e", () => {
     bot.close();
   });
 
-  it("handles native status and unknown commands locally without creating May work", async () => {
+  it("coalesces Conversation wake storms while one Telegram sync is in flight", async () => {
+    const db = getDb(persistDir) as any;
+    const prepare = db.prepare.bind(db);
+    let conversationReads = 0;
+    db.prepare = (sql: string) => {
+      if (sql.includes("event_type = 'conversation.message.created'")) conversationReads++;
+      return prepare(sql);
+    };
+    let releaseSend!: () => void;
+    const sendGate = new Promise<void>((resolve) => {
+      releaseSend = resolve;
+    });
+    let sendCalls = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL) => {
+      const method = String(url).split("/").pop();
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sendCalls++;
+        if (sendCalls === 1) await sendGate;
+        return jsonResponse({ message_id: 700 + sendCalls });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const bot = attachTelegramBot({ persistDir, bus, interfaceAgent: "may", humanTasks });
+    const baselineReads = conversationReads;
+    createAppInboxItem(db, {
+      id: "console-storm-message",
+      appId: "may",
+      source: { kind: "human", id: "may-console:storm:1" },
+      input: { kind: "message", data: { message: "One durable message" } },
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "may-console",
+      now: 1,
+    });
+    const wake = {
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: "app:may",
+      data: { appId: "may", conversationId: "may:primary" },
+    } as const;
+    bus.emit(wake);
+    await waitFor(() => expect(sendCalls).toBe(1));
+    for (let index = 0; index < 50; index++) bus.emit(wake);
+    releaseSend();
+
+    await waitFor(() => expect(conversationReads).toBe(baselineReads + 2));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(conversationReads).toBe(baselineReads + 2);
+    expect(sendCalls).toBe(1);
+    bot.close();
+  });
+
+  it("rejects removed session commands and unknown commands locally without creating May work", async () => {
     const sentMessages: Array<Record<string, unknown>> = [];
     let getUpdatesCount = 0;
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
@@ -400,683 +475,23 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "conversation.message.created") messages.push(event);
     });
-    const bot = attachTelegramBot({ persistDir, bus, manager: attentionReviewManager(), interfaceAgent: "may" });
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      interfaceAgent: "may",
+      humanTasks,
+    });
 
     await waitFor(() => expect(sentMessages).toHaveLength(2));
     expect(sentMessages.map((message) => message.text)).toEqual([
-      "No active sessions.",
+      "Unknown command: /status. Use /help to see available commands.",
       "Unknown command: /does-not-exist. Use /help to see available commands.",
     ]);
-    await waitFor(() => expect(messages).toHaveLength(1));
-    expect(messages[0]).toMatchObject({
-      data: { author: { kind: "command" }, text: "No active sessions.", metadata: { command: "/status" } },
-    });
+    expect(messages).toEqual([]);
     bot.close();
   });
 
-  it("sends root assistant text without waiting for session.end", async () => {
-    const sentMessages: Array<{ chat_id: string; text: string }> = [];
-    let activeSessionId = "s_live_reply";
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        await new Promise((resolve) => setTimeout(resolve, 5));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        return jsonResponse({ message_id: 400 + sentMessages.length });
-      }
-
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const bot = attachTelegramBot({
-      persistDir,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-
-    bus.emit(
-      sessionStart(
-        {
-          sessionId: activeSessionId,
-          agent: "may",
-          task: "live reply",
-          trigger: "chat",
-          firedAt: Date.now(),
-          kind: "chat",
-        },
-        "telegram",
-      ) as any,
-    );
-    activeSessionId = "";
-    bus.emit({
-      type: "text",
-      sessionId: "s_live_reply",
-      agent: "may",
-      text: "I received this and started checking it.",
-    });
-
-    await waitFor(() => {
-      expect(sentMessages.some((m) => m.text.includes("started checking"))).toBe(true);
-    });
-
-    bot.close();
-  });
-
-  it("forwards proactive may-to-human messages without an active chat turn", async () => {
-    const sentMessages: Array<{ chat_id: string; text: string }> = [];
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        await new Promise((resolve) => setTimeout(resolve, 5));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        return jsonResponse({ message_id: 500 + sentMessages.length });
-      }
-
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const bot = attachTelegramBot({
-      persistDir,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-
-    bus.emit({
-      type: "message.created",
-      source: "agent:may",
-      owner: "human:operator",
-      data: {
-        from: "may",
-        to: "human",
-        content: "Metric alert triage needs attention for capability.session-trace-completeness.",
-      },
-    });
-
-    await waitFor(() => {
-      expect(sentMessages.some((m) => m.text.includes("Metric alert triage needs attention"))).toBe(true);
-    });
-
-    bot.close();
-  });
-
-  it("forwards approval packets addressed to human:operator and preserves reply context for approval closure", async () => {
-    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
-    let approvalPacketTelegramMsgId: number | null = null;
-    let approvalReplyDelivered = false;
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        if (!approvalReplyDelivered && approvalPacketTelegramMsgId) {
-          approvalReplyDelivered = true;
-          return jsonResponse([
-            {
-              update_id: 9,
-              message: {
-                message_id: 511,
-                chat: { id: 12345 },
-                text: "approve",
-                reply_to_message: {
-                  message_id: approvalPacketTelegramMsgId,
-                  text: "📋 AKS RP E2E approval packet dispatch",
-                },
-              },
-            },
-          ]);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 25));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        const messageId = 500 + sentMessages.length;
-        if (
-          approvalPacketTelegramMsgId === null &&
-          String(body.text || "").includes("AKS RP E2E approval packet dispatch")
-        ) {
-          approvalPacketTelegramMsgId = messageId;
-        }
-        return jsonResponse({ message_id: messageId });
-      }
-
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const appInputs: any[] = [];
-    bus.subscribe((event: any) => {
-      if (event.type === "conversation.message.created") appInputs.push(event);
-    });
-
-    const bot = attachTelegramBot({
-      persistDir,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-
-    bus.emit({
-      type: "message.created",
-      source: "agent:aks-explorer",
-      owner: "human:operator",
-      data: {
-        from: "aks-explorer",
-        to: "human:operator",
-        content: "AKS RP E2E approval packet dispatch",
-        projectPath: "projects/aks-rp-e2e.app",
-        approvalId: "approval-123",
-        waitId: "wait-123",
-        pathId: "path.network.example",
-        packetPath: "evidence/archive/example-approval.md",
-        requestedAction: "Approve one bounded replay",
-        reason: "Need exact owner decision",
-        expectedResponse: {
-          type: "project.approval.submitted",
-          approvalId: "approval-123",
-          waitId: "wait-123",
-          pathId: "path.network.example",
-        },
-      },
-    } as any);
-
-    await waitFor(() => {
-      expect(sentMessages.some((m) => m.text.includes("AKS RP E2E approval packet dispatch"))).toBe(true);
-    });
-
-    await waitFor(() => {
-      expect(appInputs).toHaveLength(1);
-      const inputText = String(appInputs[0].data?.text ?? "");
-      expect(inputText).toBe("approve");
-      expect(inputText).not.toContain("Conversation: approval:approval-123");
-      expect(inputText).not.toContain("Approval id:");
-      expect(appInputs[0].data?.conversationId).toBe("may:primary");
-      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
-        conversationId: "may:primary",
-        requestConversationId: "approval:approval-123",
-        expectedClosure: ["project.approval.submitted"],
-      });
-      expect(appInputs[0].data?.context?.suggestedTarget).toMatchObject({
-        agent: "may",
-        projectPath: "projects/aks-rp-e2e.app",
-      });
-      expect(sentMessages).toHaveLength(1);
-    });
-
-    bot.close();
-  });
-
-  it("keeps approval replies as May requests for interpretation", async () => {
-    const db = getDb(persistDir);
-    db.run(
-      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        650,
-        "message.created",
-        "aks-explorer",
-        "s_approval_source",
-        "projects/aks-rp-e2e.app",
-        JSON.stringify({
-          text: "AKS RP E2E approval packet dispatch",
-          conversationId: "approval:approval-650",
-          originalIssue: {
-            eventType: "project.approval.requested",
-            approvalKind: "approval-packet-dispatch",
-            approvalId: "approval-650",
-            waitId: "wait-650",
-            pathId: "path.network.example",
-            packetPath: "evidence/archive/example-approval.md",
-            requestedAction: "Approve one bounded replay",
-            reason: "Need exact owner decision",
-          },
-          expectedClosure: ["project.approval.submitted"],
-        }),
-        Date.now(),
-      ],
-    );
-
-    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
-    let getUpdatesCount = 0;
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        getUpdatesCount++;
-        if (getUpdatesCount === 1) {
-          return jsonResponse([
-            {
-              update_id: 9,
-              message: {
-                message_id: 651,
-                chat: { id: 12345 },
-                text: "approve",
-                reply_to_message: {
-                  message_id: 650,
-                  text: "AKS RP E2E approval packet dispatch",
-                },
-              },
-            },
-          ]);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 25));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        return jsonResponse({ message_id: 700 + sentMessages.length });
-      }
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const steers: any[] = [];
-    const chatStarts: any[] = [];
-    const appInputs: any[] = [];
-    const comments: any[] = [];
-    const approvals: any[] = [];
-    bus.subscribe((event: any) => {
-      if (event.type === "session.steer.requested") steers.push(event);
-      if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "conversation.message.created") appInputs.push(event);
-      if (event.type === "project.comment.created") comments.push(event);
-      if (event.type === "project.approval.submitted") approvals.push(event);
-    });
-
-    const bot = attachTelegramBot({
-      persistDir,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-    await waitFor(() => {
-      expect(appInputs).toHaveLength(1);
-      expect(String(appInputs[0].data?.text)).toBe("approve");
-      expect(appInputs[0].data?.conversationId).toBe("may:primary");
-      expect(appInputs[0].data?.context?.suggestedTarget).toMatchObject({
-        agent: "may",
-        projectPath: "projects/aks-rp-e2e.app",
-      });
-      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
-        requestConversationId: "approval:approval-650",
-        expectedClosure: ["project.approval.submitted"],
-        sessionId: "s_approval_source",
-      });
-      expect(steers).toHaveLength(0);
-      expect(chatStarts).toHaveLength(0);
-      expect(comments).toHaveLength(0);
-      expect(approvals).toHaveLength(0);
-      expect(sentMessages).toHaveLength(0);
-    });
-
-    bot.close();
-  });
-
-  it("enriches a project notification reply and sends it to May", async () => {
-    const projectRoot = mkdtempSync(resolve(tmpdir(), "telegram-project-root-"));
-
-    const db = getDb(persistDir);
-    db.run(
-      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        700,
-        "message.created",
-        "may",
-        null,
-        "projects/example-project",
-        JSON.stringify({
-          text: "Project needs review",
-          conversationId: "tg_project_review_1",
-          conversation: {
-            originalIssue: {
-              eventType: "project.review.requested",
-              projectPath: "projects/example-project",
-              taskId: "review-plan",
-            },
-            lastHandledBy: { agent: "may", sessionId: "s_project_review" },
-          },
-        }),
-        Date.now(),
-      ],
-    );
-    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
-    let getUpdatesCount = 0;
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        getUpdatesCount++;
-        if (getUpdatesCount === 1) {
-          return jsonResponse([
-            {
-              update_id: 11,
-              message: {
-                message_id: 701,
-                chat: { id: 12345 },
-                text: "please revise the scoped plan",
-                reply_to_message: {
-                  message_id: 700,
-                  text: "Project needs review",
-                },
-              },
-            },
-          ]);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 25));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        return jsonResponse({ message_id: 800 + sentMessages.length });
-      }
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const chatStarts: any[] = [];
-    const appInputs: any[] = [];
-    const comments: any[] = [];
-    const steers: any[] = [];
-    let activeChatSessionId = "";
-    bus.subscribe((event: any) => {
-      if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "conversation.message.created") appInputs.push(event);
-      if (event.type === "project.comment.created") comments.push(event);
-      if (event.type === "session.steer.requested") steers.push(event);
-    });
-
-    const bot = attachTelegramBot({
-      persistDir,
-      projectRoot,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-    await waitFor(() => {
-      expect(chatStarts).toHaveLength(0);
-      expect(appInputs).toHaveLength(1);
-      const appMessage = String(appInputs[0].data?.text);
-      expect(appMessage).toBe("please revise the scoped plan");
-      expect(appInputs[0].data?.conversationId).toBe("may:primary");
-      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
-        conversationId: "may:primary",
-        requestConversationId: "tg_project_review_1",
-        taskId: "review-plan",
-        projectId: "projects/example-project",
-        originalIssue: { eventType: "project.review.requested" },
-        notification: { text: "Project needs review" },
-      });
-      expect(comments).toHaveLength(0);
-      expect(steers).toHaveLength(0);
-      expect(sentMessages).toHaveLength(0);
-    });
-
-    activeChatSessionId = "s_canonical_may";
-    bus.emit(
-      sessionStart(
-        {
-          sessionId: activeChatSessionId,
-          agent: "may",
-          task: String(appInputs[0].data?.text),
-          trigger: "chat",
-          firedAt: Date.now(),
-          kind: "chat",
-          channelMessageId: 701,
-          conversationId: "may:primary",
-        },
-        "telegram",
-      ) as any,
-    );
-    bus.emit({
-      type: "text",
-      sessionId: activeChatSessionId,
-      agent: "may",
-      text: "I updated the scoped plan with your feedback.",
-    } as any);
-
-    await waitFor(() => {
-      expect(
-        sentMessages.some(
-          (m) => m.text.includes("updated the scoped plan") && (m.reply_parameters as any)?.message_id === 701,
-        ),
-      ).toBe(true);
-    });
-
-    bot.close();
-    rmSync(projectRoot, { recursive: true, force: true });
-  });
-
-  it("enriches a Telegram reply with stored session context and sends it to May", async () => {
-    const db = getDb(persistDir);
-    db.run(
-      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        900,
-        "message.created",
-        "may",
-        "s_reply_target",
-        null,
-        JSON.stringify({
-          text: "Session needs input",
-          conversationId: "tg_session_input_1",
-          conversation: {
-            originalIssue: { eventType: "session.blocked", sourceSessionId: "s_reply_target" },
-            lastHandledBy: { agent: "may", sessionId: "s_reply_target" },
-          },
-        }),
-        Date.now(),
-      ],
-    );
-    const sessionDir = join(persistDir, "sessions", "s_reply_target");
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(
-      join(sessionDir, "session-compact.jsonl"),
-      [
-        JSON.stringify({ role: "system", content: [{ type: "text", text: "Original session summary" }] }),
-        JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Waiting for human direction" }] }),
-      ].join("\n"),
-    );
-
-    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
-    let getUpdatesCount = 0;
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        getUpdatesCount++;
-        if (getUpdatesCount === 1) {
-          return jsonResponse([
-            {
-              update_id: 21,
-              message: {
-                message_id: 901,
-                chat: { id: 12345 },
-                text: "continue with the smaller plan",
-                reply_to_message: {
-                  message_id: 900,
-                  text: "Session needs input",
-                },
-              },
-            },
-          ]);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 25));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        return jsonResponse({ message_id: 950 + sentMessages.length });
-      }
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const steers: any[] = [];
-    const chatStarts: any[] = [];
-    const appInputs: any[] = [];
-    bus.subscribe((event: any) => {
-      if (event.type === "session.steer.requested") steers.push(event);
-      if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "conversation.message.created") appInputs.push(event);
-    });
-
-    const bot = attachTelegramBot({
-      persistDir,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-    await waitFor(() => {
-      expect(steers).toHaveLength(0);
-      expect(chatStarts).toHaveLength(0);
-      expect(appInputs).toHaveLength(1);
-      const appMessage = String(appInputs[0].data?.text);
-      expect(appMessage).toBe("continue with the smaller plan");
-      expect(appInputs[0].data?.conversationId).toBe("may:primary");
-      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
-        conversationId: "may:primary",
-        requestConversationId: "tg_session_input_1",
-        sessionId: "s_reply_target",
-        originalIssue: { eventType: "session.blocked", sourceSessionId: "s_reply_target" },
-        notification: { text: "Session needs input" },
-      });
-      expect(sentMessages).toHaveLength(0);
-    });
-
-    bot.close();
-  });
-
-  it("routes escalation notification replies through May instead of steering the source session", async () => {
-    const db = getDb(persistDir);
-    db.run(
-      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        1200,
-        "message.created",
-        "evaluator",
-        "s_escalation_source",
-        "projects/aks-rp-e2e.app",
-        JSON.stringify({
-          text: "Approval return path needs a human decision.",
-          conversationId: "escalation:esc_1",
-          originalIssue: {
-            eventType: "escalation.created",
-            escalationId: "esc_1",
-            sourceSessionId: "s_escalation_source",
-            projectPath: "projects/aks-rp-e2e.app",
-            reason: "Approval return path is not visibly closing.",
-            requestedAction: "Approve retry or dismiss the escalation.",
-          },
-          expectedClosure: ["escalation.resolved", "escalation.dismissed"],
-        }),
-        Date.now(),
-      ],
-    );
-
-    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
-    let getUpdatesCount = 0;
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
-      const method = String(url).split("/").pop();
-      const body = init?.body ? JSON.parse(String(init.body)) : {};
-
-      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") {
-        getUpdatesCount++;
-        if (getUpdatesCount === 1) {
-          return jsonResponse([
-            {
-              update_id: 41,
-              message: {
-                message_id: 1201,
-                chat: { id: 12345 },
-                text: "approve retry",
-                reply_to_message: {
-                  message_id: 1200,
-                  text: "Approval return path needs a human decision.",
-                },
-              },
-            },
-          ]);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 25));
-        return jsonResponse([]);
-      }
-      if (method === "sendMessage") {
-        sentMessages.push(body);
-        return jsonResponse({ message_id: 1250 + sentMessages.length });
-      }
-      throw new Error(`unexpected Telegram method: ${method}`);
-    });
-
-    const bus = new EventBus();
-    const chatStarts: any[] = [];
-    const appInputs: any[] = [];
-    const steers: any[] = [];
-    bus.subscribe((event: any) => {
-      if (event.type === "chat.start.requested") chatStarts.push(event);
-      if (event.type === "conversation.message.created") appInputs.push(event);
-      if (event.type === "session.steer.requested") steers.push(event);
-    });
-
-    const bot = attachTelegramBot({
-      persistDir,
-      bus,
-      manager: attentionReviewManager(),
-      interfaceAgent: "may",
-    });
-    await waitFor(() => {
-      expect(steers).toHaveLength(0);
-      expect(chatStarts).toHaveLength(0);
-      expect(appInputs).toHaveLength(1);
-      const appMessage = String(appInputs[0].data?.text);
-      expect(appMessage).toBe("approve retry");
-      expect(appInputs[0].data?.conversationId).toBe("may:primary");
-      expect(appInputs[0].data?.context?.telegramReply).toMatchObject({
-        requestConversationId: "escalation:esc_1",
-        sessionId: "s_escalation_source",
-        expectedClosure: ["escalation.resolved", "escalation.dismissed"],
-        originalIssue: {
-          eventType: "escalation.created",
-          escalationId: "esc_1",
-          sourceSessionId: "s_escalation_source",
-        },
-      });
-      expect(sentMessages).toHaveLength(0);
-    });
-
-    bot.close();
-  });
-
-  it("normalizes Telegram slash commands into daemon events", async () => {
+  it("keeps Task cancellation local while forwarding runtime slash commands", async () => {
     let getUpdatesCount = 0;
 
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
@@ -1109,19 +524,11 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: attentionReviewManager(),
       interfaceAgent: "may",
+      humanTasks,
     });
 
     await waitFor(() => {
-      expect(events).toContainEqual({
-        type: "session.cancel.requested",
-        source: "telegram",
-        owner: "agent:may",
-        urgency: "high",
-        target: { sessionId: "s_active_telegram" },
-        data: {},
-      });
       expect(events).toContainEqual({
         type: "runtime.reload.requested",
         source: "telegram",
@@ -1135,6 +542,7 @@ describe("telegram reply e2e", () => {
         urgency: "high",
         data: {},
       });
+      expect(events.some((event) => event.type === "session.cancel.requested")).toBe(false);
       expect(events.some((event) => event.type === "input")).toBe(false);
     });
 

@@ -6,6 +6,7 @@ import { closeDb, getDb } from "../lib/requests.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppTaskEmitter } from "./app-task-emitter.js";
+import { renewAppTaskAttemptLease, type AppTaskClaim } from "./app-task-reconciler.js";
 import { EventBus } from "./event-bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
@@ -96,9 +97,7 @@ describe("AppTaskEmitter", () => {
     bus.subscribe((event) => {
       if (event.type !== "sample.child.requested") return;
       visible.push(
-        Number(
-          (db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get(event.type) as any).count,
-        ),
+        Number((db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get(event.type) as any).count),
       );
     });
 
@@ -119,17 +118,14 @@ describe("AppTaskEmitter", () => {
     });
 
     expect(eventId).toBeGreaterThan(0);
-    expect(
-      db.prepare(
-        "SELECT event_type, task_id, attempt_id FROM events WHERE id = ?",
-      ).get(eventId),
-    ).toMatchObject({
+    expect(db.prepare("SELECT event_type, task_id, attempt_id FROM events WHERE id = ?").get(eventId)).toMatchObject({
       event_type: "sample.workflow.started",
       task_id: "task-1",
       attempt_id: "attempt-1",
     });
     expect(
-      db.prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
+      db
+        .prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
         .get("sample", "attempt-1"),
     ).toMatchObject({
       attempt_json: expect.not.stringContaining("sessionId"),
@@ -200,9 +196,9 @@ describe("AppTaskEmitter", () => {
     );
 
     expect(emitter.emit("child-one", { type: "sample.child.requested", data: { child: "one" } })).toBe(first);
-    expect(() =>
-      emitter.emit("child-two", { type: "sample.child.requested", data: { child: "two" } }),
-    ).toThrow("rejected stale attempt");
+    expect(() => emitter.emit("child-two", { type: "sample.child.requested", data: { child: "two" } })).toThrow(
+      "rejected stale attempt",
+    );
   });
 
   it("rejects an expired attempt before publishing", () => {
@@ -215,6 +211,60 @@ describe("AppTaskEmitter", () => {
     expect(() => emitter.emit("late", { type: "sample.fact", data: {} })).toThrow("rejected stale attempt");
     expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'sample.fact'").get()).toMatchObject({
       count: 0,
+    });
+  });
+
+  it("accepts a terminal task-owned emission after the current workflow renews its lease", () => {
+    const { root, db, emitter, store } = harness();
+    const appDir = join(root, "sample.app");
+    mkdirSync(appDir, { recursive: true });
+    const paths = projectRuntimePaths(appDir, root);
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: root,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "may",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    const claim: AppTaskClaim = {
+      kind: "claimed",
+      taskId: "task-1",
+      generation: 3,
+      resourceVersion: 8,
+      specHash: "hash",
+      attemptId: "attempt-1",
+      owner: "may",
+      handler: "workflow:test",
+      mode: "achieve",
+      intent: {
+        id: "task-1",
+        parentId: "project",
+        outcome: "coordinate",
+        acceptance: ["done"],
+        mode: "achieve",
+      },
+      events: [],
+      eventsTruncated: false,
+      declaredOutputPaths: [],
+    };
+
+    db.prepare("UPDATE app_task_attempts SET lease_until = ? WHERE app_id = ? AND attempt_id = ?").run(
+      Date.now() - 1,
+      "sample",
+      "attempt-1",
+    );
+    expect(renewAppTaskAttemptLease(config, claim)).toBe(true);
+
+    const eventId = emitter.emit("terminal-after-renewal", {
+      type: "sample.workflow.completed",
+      data: { status: "done" },
+    });
+    expect(eventId).toBeGreaterThan(0);
+    expect(db.prepare("SELECT event_type, attempt_id FROM events WHERE id = ?").get(eventId)).toMatchObject({
+      event_type: "sample.workflow.completed",
+      attempt_id: "attempt-1",
     });
   });
 

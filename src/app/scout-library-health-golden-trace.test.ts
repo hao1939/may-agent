@@ -54,10 +54,26 @@ function eventRow(
   };
 }
 
+function routedVisibility(
+  db: ReturnType<typeof openDatabase>,
+  originEventId: number,
+  request: ReturnType<AppInboxHost["get"]>,
+): boolean {
+  const origin = db.prepare("SELECT delivery_status, accepted_by FROM events WHERE id = ?").get(originEventId) as {
+    delivery_status: string;
+    accepted_by: string | null;
+  };
+  expect(origin).toEqual({ delivery_status: "pending", accepted_by: null });
+  expect(request).toMatchObject({ originEventId });
+  return (
+    origin.delivery_status === "pending" && origin.accepted_by === null && request?.originEventId === originEventId
+  );
+}
+
 async function runControl(control: GoldenControl): Promise<{
   routeCount: number;
   terminal: "done" | "pending" | "waiting";
-  visible: true;
+  visible: boolean;
   intentionallyObserved: boolean;
 }> {
   const db = openDatabase(":memory:");
@@ -106,14 +122,17 @@ async function runControl(control: GoldenControl): Promise<{
 
     if (control.id === "failed-wake") {
       expect(first.errors).toEqual([expect.stringContaining("golden failed wake")]);
-      expect(host.get(requestId)).toMatchObject({ status: "pending", waitingOn: undefined });
-      return { routeCount: 1, terminal: "pending", visible: true, intentionallyObserved };
+      const retryable = host.get(requestId);
+      expect(retryable).toMatchObject({ status: "pending", waitingOn: undefined });
+      const visible = routedVisibility(db, persisted.id, retryable);
+      return { routeCount: 1, terminal: "pending", visible, intentionallyObserved };
     }
 
     const waiting = host.get(requestId);
     expect(waiting).toMatchObject({ status: "handling", waitingOn: { kind: "task" } });
     if (control.id === "nonterminal-domain-result") {
-      return { routeCount: 1, terminal: "waiting", visible: true, intentionallyObserved };
+      const visible = routedVisibility(db, persisted.id, waiting);
+      return { routeCount: 1, terminal: "waiting", visible, intentionallyObserved };
     }
 
     expect(control.id).toBe("actionable-positive");

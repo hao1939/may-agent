@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./connection.js";
 import { runDbMaintenancePass } from "./maintenance.js";
-import { isApprovalNotificationResolved } from "./notifications.js";
 
 describe("bounded DB maintenance", () => {
   it("keeps WAL checkpoint work on the maintenance path", () => {
@@ -150,7 +149,15 @@ describe("bounded DB maintenance", () => {
 
       expect(result.deleted.events).toBe(1);
       expect(db.prepare("SELECT 1 FROM events WHERE event_type = 'old.detail'").get()).toBeFalsy();
-      expect(isApprovalNotificationResolved(persistDir, { approvalId: "approval:handled" })).toBe(true);
+      expect(
+        db
+          .prepare(
+            `SELECT 1 FROM events
+             WHERE event_type = 'project.approval.submitted'
+               AND json_extract(data, '$.approvalId') = ?`,
+          )
+          .get("approval:handled"),
+      ).toBeTruthy();
     } finally {
       closeDb(persistDir);
     }

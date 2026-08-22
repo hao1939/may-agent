@@ -12,8 +12,7 @@ import { join, dirname } from "node:path";
 import { eventData, type AgentEvent } from "../app/event-bus.js";
 import { resolveRuntimeAgentDirectory } from "../app/loader/agent-discovery.js";
 import { log } from "./log.js";
-import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
-import type { SubagentManager } from "./manager.js";
+import { createStartDigest, createEndDigest } from "./session-digest.js";
 import { writeLastSession } from "./last-session.js";
 import { getDb } from "./requests.js";
 
@@ -33,13 +32,7 @@ export function createStuckDetector(
   emitCancel: (sessionId: string, reason: string) => void,
   /** Optional: called when circuit breaker fires so the system can diagnose the failure. */
   onCircuitBreak?: (agent: string, sessionId: string, reason: string) => void,
-  /** Optional: persistDir for digest writes. */
-  persistDir?: string,
-  /** Optional: manager for LLM synthesis in digest classification (Phase 3 shadow classifier). Accepts a getter for deferred initialization. */
-  managerOrGetter?: SubagentManager | (() => SubagentManager | undefined),
 ): (event: AgentEvent) => void {
-  const getManager = () =>
-    typeof managerOrGetter === "function" ? managerOrGetter() : managerOrGetter;
   const state = new Map<string, StuckState>();
 
   return (event: AgentEvent) => {
@@ -71,61 +64,21 @@ export function createStuckDetector(
     if (s.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !s.warned) {
       s.warned = true;
       log("warn", `[stuck] ${event.agent} (${event.sessionId}) has ${s.consecutiveErrorTurns} consecutive error turns`);
-      // Digest: stuck_detected (warning, not kill yet) — pass manager for LLM synthesis + classification
-      if (persistDir) {
-        upsertDigest(persistDir, {
-          sessionId: event.sessionId,
-          agent: event.agent,
-          trigger: "stuck_detected",
-          details: { consecutiveErrorTurns: s.consecutiveErrorTurns },
-        }, getManager()).then(digest => {
-          // Shadow comparison: existing system only warns on stuck_detected (no action)
-          logShadowComparison(event.sessionId, "stuck_detected", "nothing", digest);
-        }).catch(err => log("warn", `[digest] stuck_detected failed: ${err}`));
-      }
     }
 
     if (s.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
       const reason = `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`;
-      log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — evaluating`);
-
-      // Phase 4a: Use digest classifier to decide action instead of always killing
-      const fallbackKill = () => {
-        log("info", `[stuck] decision=kill source=fallback session=${event.sessionId} agent=${event.agent}`);
-        emitCancel(event.sessionId, reason);
-        if (onCircuitBreak) {
-          try { onCircuitBreak(event.agent, event.sessionId, reason); } catch (err) { log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`); }
+      log(
+        "error",
+        `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`,
+      );
+      emitCancel(event.sessionId, reason);
+      if (onCircuitBreak) {
+        try {
+          onCircuitBreak(event.agent, event.sessionId, reason);
+        } catch (err) {
+          log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`);
         }
-      };
-
-      if (persistDir) {
-        upsertDigest(persistDir, {
-          sessionId: event.sessionId,
-          agent: event.agent,
-          trigger: "circuit_break",
-          details: { consecutiveErrorTurns: s.consecutiveErrorTurns, reason },
-        }, getManager()).then(digest => {
-          const action = digest?.action ?? "kill";
-          log("info", `[stuck] decision=${action} source=digest session=${event.sessionId} agent=${event.agent}`);
-          if (action === "kill" || action === "nothing") {
-            emitCancel(event.sessionId, reason);
-            if (onCircuitBreak) {
-              try { onCircuitBreak(event.agent, event.sessionId, reason); } catch (err) { log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`); }
-            }
-          } else if (action === "escalate") {
-            emitCancel(event.sessionId, reason);
-            if (onCircuitBreak) {
-              try { onCircuitBreak(event.agent, event.sessionId, `${reason} (escalated by classifier)`); } catch (err) { log("warn", `[stuck] onCircuitBreak failed for ${event.sessionId}: ${err}`); }
-            }
-          }
-          // "resume" or "requeue" → don't cancel, classifier says session has recoverable work
-          // The session will continue running, and the auto-resume or P62 recovery will handle it
-        }).catch(err => {
-          log("warn", `[digest] circuit_break failed: ${err}`);
-          fallbackKill();
-        });
-      } else {
-        fallbackKill();
       }
       state.delete(event.sessionId);
     }
@@ -141,13 +94,7 @@ const MAX_RESUME_ATTEMPTS = 2;
 export function createAutoResume(
   emitResume: (sessionId: string, agent: string, attempt: number) => void,
   emitEscalate: (agent: string, sessionId: string, reason: string) => void,
-  /** Optional: persistDir for digest writes. */
-  persistDir?: string,
-  /** Optional: manager for LLM synthesis in digest classification (Phase 3 shadow classifier). Accepts a getter for deferred initialization. */
-  managerOrGetter?: SubagentManager | (() => SubagentManager | undefined),
 ): (event: AgentEvent) => void {
-  const getManager = () =>
-    typeof managerOrGetter === "function" ? managerOrGetter() : managerOrGetter;
   const attempts = new Map<string, number>();
 
   return (event: AgentEvent) => {
@@ -164,20 +111,7 @@ export function createAutoResume(
 
     const prev = attempts.get(info.sessionId) ?? 0;
     if (prev >= MAX_RESUME_ATTEMPTS) {
-      // Exhausted retries — escalate immediately
       const reason = `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${info.turnCount ?? 0} turns. Error: ${info.error?.slice(0, 200) ?? "unknown"}. Task: ${(info.task ?? "").slice(0, 200)}`;
-      // Digest: resume_exhausted — pass manager for LLM synthesis + classification
-      if (persistDir) {
-        upsertDigest(persistDir, {
-          sessionId: info.sessionId,
-          agent: info.agent,
-          trigger: "resume_exhausted",
-          details: { attempts: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, error: info.error?.slice(0, 200), turnCount: info.turnCount },
-        }, getManager()).then(digest => {
-          // Shadow comparison: existing system always escalates on resume_exhausted
-          logShadowComparison(info.sessionId, "resume_exhausted", "escalate", digest);
-        }).catch(err => log("warn", `[digest] resume_exhausted failed: ${err}`));
-      }
       attempts.delete(info.sessionId);
       emitEscalate(info.agent, info.sessionId, reason);
       return;
@@ -187,47 +121,11 @@ export function createAutoResume(
     const delay = 10_000 * (prev + 1); // 10s, 20s backoff
     log(
       "info",
-      `[resume] ${info.agent} (${info.sessionId}) interrupted after ${info.turnCount ?? 0} turns — evaluating via digest classifier (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
+      `[resume] ${info.agent} (${info.sessionId}) interrupted after ${info.turnCount ?? 0} turns — scheduling attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS}`,
     );
-
-    // Phase 4c: Use digest classifier to decide whether to resume
-    const fallbackResume = () => {
-      log("info", `[resume] decision=resume source=fallback session=${info.sessionId} agent=${info.agent}`);
-      setTimeout(() => {
-        emitResume(info.sessionId, info.agent, prev + 1);
-      }, delay);
-    };
-
-    if (persistDir) {
-      upsertDigest(persistDir, {
-        sessionId: info.sessionId,
-        agent: info.agent,
-        trigger: "auto_resume",
-        what_happened: `Auto-resume attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS} after ${delay}ms delay: ${(info.error ?? "unknown error").slice(0, 200)}`,
-        details: { attempt: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, delayMs: delay, error: info.error?.slice(0, 200), turnCount: info.turnCount },
-      }, getManager()).then(digest => {
-        const action = digest?.action ?? "resume";
-        log("info", `[resume] decision=${action} source=digest session=${info.sessionId} agent=${info.agent} reason=${digest?.action_reason ?? "no_digest"}`);
-        if (action === "resume" || action === "requeue") {
-          setTimeout(() => {
-            emitResume(info.sessionId, info.agent, prev + 1);
-          }, delay);
-        } else if (action === "escalate") {
-          // Don't resume — escalate instead
-          attempts.delete(info.sessionId);
-          emitEscalate(info.agent, info.sessionId, `Digest classifier rejected resume: ${digest?.action_reason ?? "unknown"}`);
-        } else {
-          // "kill" or "nothing" — skip resume, clean up attempts
-          log("info", `[resume] skipping resume: classifier says ${action} for ${info.sessionId}`);
-          attempts.delete(info.sessionId);
-        }
-      }).catch(err => {
-        log("warn", `[digest] auto_resume failed: ${err}`);
-        fallbackResume();
-      });
-    } else {
-      fallbackResume();
-    }
+    setTimeout(() => {
+      emitResume(info.sessionId, info.agent, prev + 1);
+    }, delay);
   };
 }
 
