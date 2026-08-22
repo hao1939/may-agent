@@ -73,7 +73,7 @@ The stable capabilities are:
 | `ctx.read.metric(id)`                    | Read one metric projection                                                     |
 | `ctx.agents.call(agent, task, options?)` | Run and await one bounded agent execution                                      |
 | `ctx.workflows.run(name, input)`         | Run and await one nested workflow                                              |
-| `ctx.events.emit(event)`                 | Publish a fact after successful bounded work                                   |
+| `ctx.events.emit(event)`                 | Publish an immediate durable fact from the current bounded attempt             |
 | `ctx.metrics.record(...)`                | Record a domain metric definition/sample                                       |
 | `ctx.workspace`                          | App/task-scoped source and output paths when granted                           |
 | `ctx.log`                                | Structured diagnostic logging                                                  |
