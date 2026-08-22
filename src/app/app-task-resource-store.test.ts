@@ -471,6 +471,24 @@ describe("AppTaskResourceStore", () => {
     expect(dueAt).toBeGreaterThanOrEqual(before + 60_000);
     expect(dueAt).toBeLessThanOrEqual(Date.now() + 60_000);
     expect(store.readConditionRoutes("example.completed")).toEqual([expect.objectContaining({ taskIds: ["normal"] })]);
+    expect(store.readTaskConditions("normal")).toEqual([
+      expect.objectContaining({
+        metadata: expect.objectContaining({ id: "example:later" }),
+        spec: expect.objectContaining({ type: "example.completed", expected: "done" }),
+      }),
+    ]);
+    expect(
+      readRuntimeTaskView({ executionPaths: { appDir, projectDir: root }, taskStateConfig: config }, "normal"),
+    ).toMatchObject({
+      id: "normal",
+      conditions: [expect.objectContaining({ id: "example:later", type: "example.completed", expected: "done" })],
+    });
+    expect(
+      listRuntimeTaskViews(
+        { executionPaths: { appDir, projectDir: root }, taskStateConfig: config },
+        { status: ["waiting"] },
+      ).items[0],
+    ).not.toHaveProperty("conditions");
     expect(store.readConditionRoutes("unrelated.event")).toEqual([]);
 
     const queued: string[] = [];

@@ -470,6 +470,20 @@ export class AppTaskResourceStore {
     return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
   }
 
+  readTaskConditions(taskId: string): AppTaskCondition[] {
+    const rows = this.db
+      .prepare(
+        `SELECT conditions.condition_json
+         FROM app_task_condition_routes routes
+         JOIN app_task_conditions conditions
+           ON conditions.app_id = routes.app_id AND conditions.condition_id = routes.condition_id
+         WHERE routes.app_id = ? AND routes.task_id = ?
+         ORDER BY routes.condition_id`,
+      )
+      .all(this.appId, taskId) as Array<{ condition_json?: string }>;
+    return rows.flatMap((row) => (row.condition_json ? [parseJson<AppTaskCondition>(row.condition_json)] : []));
+  }
+
   isCancelled(taskId: string): boolean {
     return Boolean(
       this.db

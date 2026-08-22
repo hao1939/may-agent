@@ -76,6 +76,7 @@ describe("App read projections", () => {
           outcome: `Complete ${id}`,
           acceptance: ["Completed"],
           mode: "achieve",
+          input: { exact: `input-for-${id}` },
         },
       });
     }
@@ -87,12 +88,20 @@ describe("App read projections", () => {
 
     const first = await read.tasks.list({ limit: 1 });
     expect(first.items).toEqual([expect.objectContaining({ id: "review/a", status: "pending", generation: 1 })]);
+    expect(first.items[0]).not.toHaveProperty("input");
+    expect(first.items[0]).not.toHaveProperty("acceptance");
     expect(first.nextCursor).toBeString();
     await expect(read.tasks.list({ limit: 1, cursor: first.nextCursor })).resolves.toEqual({
       items: [expect.objectContaining({ id: "review/b", status: "pending", generation: 1 })],
     });
     await expect(read.tasks.list({ status: ["done"] })).resolves.toEqual({ items: [] });
-    await expect(read.tasks.get("review/a")).resolves.toMatchObject({ id: "review/a" });
+    await expect(read.tasks.get("review/a")).resolves.toMatchObject({
+      id: "review/a",
+      parentId: "review",
+      acceptance: ["Completed"],
+      input: { exact: "input-for-review/a" },
+      conditions: [],
+    });
     await expect(read.tasks.get("missing")).resolves.toBeNull();
     await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
     await expect(read.tasks.list({ status: ["unknown" as never] })).rejects.toThrow("Invalid Task status filter");

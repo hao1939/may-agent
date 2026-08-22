@@ -1,4 +1,12 @@
-import type { AppRead, ExecutionView, MetricView, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
+import type {
+  AppRead,
+  ExecutionView,
+  MetricView,
+  TaskDetail,
+  TaskListOptions,
+  TaskPage,
+  TaskView,
+} from "@may-agent/sdk/app";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
@@ -31,33 +39,47 @@ function taskConfig(paths: NonNullable<RuntimeAppReadOptions["executionPaths"]>)
 export function readRuntimeTaskView(
   opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
   taskId: string,
-): TaskView | null {
+): TaskDetail | null {
   if (opts.taskStateConfig?.resourceStore) {
     const receipt = opts.taskStateConfig.resourceStore.readReceipt(taskId);
-    if (receipt) return receiptTaskView(receipt);
+    if (receipt) return receiptTaskDetail(receipt);
     const resource = opts.taskStateConfig.resourceStore.readTask(taskId);
-    return resource ? resourceTaskView(resource) : null;
+    return resource
+      ? resourceTaskDetail(
+          resource,
+          opts.taskStateConfig.resourceStore.readTaskConditions(taskId).map((condition) => ({
+            id: condition.metadata.id,
+            ...structuredClone(condition.spec),
+          })),
+        )
+      : null;
   }
   if (!opts.executionPaths) return null;
   const tree = readTaskState(taskConfig(opts.executionPaths));
-  return taskView(tree, taskId);
+  return taskDetail(tree, taskId);
 }
 
 /** Reuse one parsed canonical tree across a bounded sequence of Task reads. */
 export function createRuntimeTaskReader(
   executionPaths: NonNullable<RuntimeAppReadOptions["executionPaths"]>,
-): (taskId: string) => TaskView | null {
+): (taskId: string) => TaskDetail | null {
   const config = taskConfig(executionPaths);
   cacheTaskStateReads(config);
-  return (taskId) => taskView(readTaskState(config), taskId);
+  return (taskId) => taskDetail(readTaskState(config), taskId);
 }
 
-function taskView(tree: TaskTree, taskId: string): TaskView | null {
+function taskDetail(tree: TaskTree, taskId: string): TaskDetail | null {
   const receipt = tree.receipts?.[taskId];
-  if (receipt) return receiptTaskView(receipt);
+  if (receipt) return receiptTaskDetail(receipt);
   const resource = tree.resources?.[taskId];
   if (!resource) return null;
-  return resourceTaskView(resource);
+  return resourceTaskDetail(
+    resource,
+    (resource.status.conditionIds ?? []).flatMap((conditionId) => {
+      const condition = tree.conditions?.[conditionId];
+      return condition ? [{ id: condition.metadata.id, ...structuredClone(condition.spec) }] : [];
+    }),
+  );
 }
 
 function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
@@ -81,6 +103,38 @@ function resourceTaskView(resource: NonNullable<TaskTree["resources"]>[string]):
     summary: resource.status.summary,
     response: resource.status.response,
     evidence: resource.status.evidence ? [...resource.status.evidence] : undefined,
+  };
+}
+
+function receiptTaskDetail(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskDetail {
+  return {
+    ...receiptTaskView(receipt),
+    parentId: receipt.parentId,
+    acceptance: [...receipt.acceptance],
+    input: structuredClone(receipt.input ?? {}),
+    owner: receipt.owner,
+    ...(receipt.workflow ? { workflow: receipt.workflow } : {}),
+    ...(receipt.priority ? { priority: receipt.priority } : {}),
+    conditions: [],
+  };
+}
+
+function resourceTaskDetail(
+  resource: NonNullable<TaskTree["resources"]>[string],
+  conditions: TaskDetail["conditions"],
+): TaskDetail {
+  return {
+    ...resourceTaskView(resource),
+    parentId: resource.spec.parentId,
+    mode: resource.spec.mode,
+    acceptance: [...resource.spec.acceptance],
+    input: structuredClone(resource.spec.input ?? {}),
+    ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
+    ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
+    ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
+    ...(resource.spec.category ? { category: resource.spec.category } : {}),
+    ...(resource.spec.dependsOn?.length ? { dependsOn: [...resource.spec.dependsOn] } : {}),
+    conditions,
   };
 }
 
@@ -118,8 +172,10 @@ export function listRuntimeTaskViews(
     const pageIds = ids.slice(0, limit);
     return {
       items: pageIds.flatMap((id) => {
-        const view = readRuntimeTaskView(opts, id);
-        return view ? [view] : [];
+        const receipt = opts.taskStateConfig!.resourceStore!.readReceipt(id);
+        if (receipt) return [receiptTaskView(receipt)];
+        const resource = opts.taskStateConfig!.resourceStore!.readTask(id);
+        return resource ? [resourceTaskView(resource)] : [];
       }),
       ...(ids.length > limit && pageIds.length > 0 ? { nextCursor: encodeTaskCursor(pageIds.at(-1)!) } : {}),
     };
@@ -128,7 +184,12 @@ export function listRuntimeTaskViews(
   const ids = [...new Set([...Object.keys(tree.resources ?? {}), ...Object.keys(tree.receipts ?? {})])].sort();
   const visible = ids
     .filter((id) => after === null || id > after)
-    .map((id) => taskView(tree, id))
+    .map((id) => {
+      const receipt = tree.receipts?.[id];
+      if (receipt) return receiptTaskView(receipt);
+      const resource = tree.resources?.[id];
+      return resource ? resourceTaskView(resource) : null;
+    })
     .filter((task): task is TaskView => Boolean(task && (!statuses || statuses.has(task.status))));
   const page = visible.slice(0, limit);
   return {
