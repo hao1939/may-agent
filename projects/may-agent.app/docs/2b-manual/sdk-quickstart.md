@@ -164,12 +164,10 @@ Use bounded reads only:
 ```ts
 await ctx.read.appResult(itemId);
 await ctx.read.tasks.get(taskId);
-await ctx.read.tasks.list({ phase: ["attention"] });
+await ctx.read.tasks.list({ status: ["attention"] });
 await ctx.read.execution(executionId);
 await ctx.read.metric(metricId);
 ```
-
-`ctx.read.task(taskId)` remains a temporary exact-read compatibility alias.
 
 A task-bound workflow already receives its task and bounded direct-child views
 in `ctx.reconciliation`; it should not list tasks merely to rediscover that

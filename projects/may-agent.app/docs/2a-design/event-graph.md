@@ -93,8 +93,9 @@ Console and Telegram ingress does not create two events for one human turn.
 
 Agent, tool, and command-authored Conversation messages add context without a
 request link. Transient messages add neither durable context nor work. The
-Conversation read reconstructs messages and work from existing durable records;
-it is not another causal or mutable work graph.
+Conversation read reconstructs only durable messages; Task state is read from
+the Task resource interface. Conversation is not another causal or mutable
+work graph.
 
 Deterministic controls instead emit one exact `session.steer.requested`,
 `session.cancel.requested`, `project.approval.submitted`, or
