@@ -711,9 +711,11 @@ export function consumePersistedTerminalOwnerResult(input: {
   return null;
 }
 
-async function runTaskCapability(input: {
+async function executeTaskCapability(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
+  attempt: TaskAttempt;
+  taskEvents: AppTaskEvents;
   capability: WorkflowCapability;
   intent: AppTaskIntent;
   claim: AppTaskClaim;
@@ -727,14 +729,7 @@ async function runTaskCapability(input: {
   observer?: AppTaskExecutionObserver;
 }): Promise<TaskCapabilityRun> {
   const { opts, descriptor, capability, intent, claim, event } = input;
-  const taskAttempt = runtimeTaskAttempt({
-    opts,
-    descriptor,
-    claim,
-    cwd: input.executionPaths.workspaceDir,
-    ...(event ? { event } : {}),
-  });
-  const reconciliationEvents = taskAttempt.attempt.events;
+  const reconciliationEvents = input.attempt.events;
   const runtime = requireWorkflowRuntimeOptions(opts);
   const agentName = capability.agent ?? claim.owner;
   const trace = childEventTrace(event);
@@ -792,34 +787,6 @@ async function runTaskCapability(input: {
   } as AgentEvent);
 
   let providerStarted = false;
-  const workflowLeaseTimer = descriptor.resourceStore
-    ? setInterval(
-        () => {
-          try {
-            if (!renewAppTaskAttemptLease(appTaskConfig(descriptor), claim)) {
-              clearInterval(workflowLeaseTimer);
-            }
-          } catch (error) {
-            clearInterval(workflowLeaseTimer);
-            opts.bus.emit({
-              type: "project.task.lease-renewal.failed",
-              source: "may-agent-runtime",
-              owner: `agent:${claim.owner}`,
-              target: { appId: descriptor.id, taskId: claim.taskId },
-              data: {
-                taskId: claim.taskId,
-                taskGeneration: claim.generation,
-                attemptId: claim.attemptId,
-                reason: error instanceof Error ? error.message : String(error),
-              },
-              ...(trace ? { trace } : {}),
-            } as unknown as AgentEvent);
-          }
-        },
-        Math.floor(APP_TASK_ATTEMPT_LEASE_DURATION_MS / 3),
-      )
-    : undefined;
-  workflowLeaseTimer?.unref();
   try {
     const runtimeCtx = buildRuntimeCtx({
       bus: opts.bus,
@@ -848,11 +815,7 @@ async function runTaskCapability(input: {
         generation: claim.generation,
       },
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
-      ...(descriptor.resourceStore
-        ? {
-            taskEmitter: taskAttempt.events,
-          }
-        : {}),
+      ...(descriptor.resourceStore ? { taskEmitter: input.taskEvents } : {}),
       trace,
       executionPaths: input.executionPaths,
       workflowInput: intent.input ?? {},
@@ -968,10 +931,21 @@ async function runTaskCapability(input: {
       ...(!unavailable ? { executionFailed: true } : {}),
     };
   } finally {
-    if (workflowLeaseTimer) clearInterval(workflowLeaseTimer);
-    taskAttempt.close();
     if (providerStarted) input.observer?.providerFinished();
   }
+}
+
+async function runTaskCapability(
+  input: Omit<Parameters<typeof executeTaskCapability>[0], "attempt" | "taskEvents">,
+): Promise<TaskCapabilityRun> {
+  return runTaskExecutorAttempt({
+    opts: input.opts,
+    descriptor: input.descriptor,
+    claim: input.claim,
+    executionPaths: input.executionPaths,
+    ...(input.event ? { event: input.event } : {}),
+    execute: (attempt, taskEvents) => executeTaskCapability({ ...input, attempt, taskEvents }),
+  });
 }
 
 /** Project the exact persisted attempt batch onto the public workflow contract. */
@@ -2048,7 +2022,7 @@ async function runTaskExecutorAttempt(input: {
   claim: AppTaskClaim;
   executionPaths: AppTaskExecutionPaths;
   event?: EventEnvelope;
-  execute: (attempt: TaskAttempt) => Promise<TaskCapabilityRun>;
+  execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
 }): Promise<TaskCapabilityRun> {
   const taskAttempt = runtimeTaskAttempt({
     opts: input.opts,
@@ -2069,7 +2043,7 @@ async function runTaskExecutorAttempt(input: {
   );
   leaseTimer.unref();
   try {
-    return await input.execute(taskAttempt.attempt);
+    return await input.execute(taskAttempt.attempt, taskAttempt.events);
   } finally {
     clearInterval(leaseTimer);
     taskAttempt.close();
