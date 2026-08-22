@@ -105,6 +105,18 @@ the one paused JSON authority. After activation, roll forward: the old JSON
 remains paused evidence and must never be resumed as a second authority.
 Neither path deletes historical state.
 
+## Runtime deployment target
+
+A correlated Runtime deployment must name an existing `may-agent` Task. Before
+building or restarting, the deploy preflight reads that exact `{appId, taskId}`
+from the Host database (`$STATE_DIR/may.db`, normally `/app/.state/may.db`) and
+verifies that `app_task_store_meta.authority` is `resources`. The read is
+query-only. A missing database, missing resource authority, wrong App, or stale
+Task fails closed before any artifact or process changes.
+
+The retained App-local `.state/tasks/state.json` is migration evidence after
+cutover. Deployment must not consult, recreate, or mutate it.
+
 ## Delivery uncertainty
 
 An App result and its outward delivery are separate durable facts. Retry only a
