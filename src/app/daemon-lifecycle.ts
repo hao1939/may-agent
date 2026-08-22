@@ -5,6 +5,7 @@ import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentCrons, reloadAgents } from "./agent-loader.js";
+import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
 
 export type AppGenerationReloadResult = {
   appIds: string[];
@@ -132,6 +133,7 @@ export function createDaemonLifecycle(opts: {
   };
 
   const handleReload = async (reloadOptions: { throwOnError?: boolean } = {}): Promise<RuntimeReloadResult> => {
+    invalidateRuntimeModuleCache();
     const result = await reloadAgents(opts.loaderOpts);
     let appGeneration: AppGenerationReloadResult | undefined;
     try {

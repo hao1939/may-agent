@@ -18,6 +18,7 @@ import { createModelRegistry } from "../../src/app/model-registry.js";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { invalidateRuntimeModuleCache } from "../../src/lib/runtime-import.js";
 
 const AGENTS_ROOT = "/app/agents";
 const PROJECTS_ROOT = "/app/projects";
@@ -537,7 +538,7 @@ describe("agent loader boundaries", () => {
     }
   });
 
-  it("hot-reloads handler modules on each invocation", async () => {
+  it("reloads handler modules only after the runtime reload boundary", async () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-handlers-"));
     try {
       const agentDir = join(root, "agents", "alpha");
@@ -569,6 +570,8 @@ describe("agent loader boundaries", () => {
 
       writeFileSync(handlerPath, `export function create() { return async () => "v2"; }`);
 
+      expect(await handlers.get("sample-entry")!()).toBe("v1");
+      invalidateRuntimeModuleCache();
       expect(await handlers.get("sample-entry")!()).toBe("v2");
     } finally {
       rmSync(root, { recursive: true, force: true });

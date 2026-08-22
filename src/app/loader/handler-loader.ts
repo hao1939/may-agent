@@ -124,11 +124,11 @@ export async function loadHandlersForAgentCrons(
         }
 
         for (const entry of fileEntries) {
-          cron.registerHandler(entry.name, createHotReloadHandler(modulePath, ctx, entry));
+          cron.registerHandler(entry.name, createReloadableHandler(modulePath, ctx, entry));
           registered.push(`${agentName}:${entry.name}`);
           bus.emit({
             type: "info",
-            message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (hot-reload)`,
+            message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (reloadable)`,
           });
         }
       } catch (err) {
@@ -193,7 +193,7 @@ export async function loadHandlersForAgentCrons(
           return false;
         }
 
-        cron.registerHandler(entryName, createHotReloadHandler(modulePath, ctx, entry));
+        cron.registerHandler(entryName, createReloadableHandler(modulePath, ctx, entry));
         bus.emit({
           type: "info",
           message: `[handler] Dynamically registered ${agentName}:${entryName} → ${entry.handler}.ts (post-startup)`,
@@ -254,14 +254,14 @@ function resolveHandlerModule(handlerDir: string, handlerFile: string): string |
   return null;
 }
 
-function createHotReloadHandler(modulePath: string, ctx: HandlerContext, entry: CronEntry) {
+function createReloadableHandler(modulePath: string, ctx: HandlerContext, entry: CronEntry) {
   const entrySnapshot = { ...entry };
   return async (event?: EventEnvelope) => {
-    const freshMod = await importRuntimeModule<HandlerModule>(modulePath);
-    if (typeof freshMod.create !== "function") {
+    const module = await importRuntimeModule<HandlerModule>(modulePath);
+    if (typeof module.create !== "function") {
       throw new Error(`Handler ${modulePath} no longer exports create()`);
     }
-    const fn = freshMod.create(ctx, entrySnapshot);
+    const fn = module.create(ctx, entrySnapshot);
     return fn(event);
   };
 }

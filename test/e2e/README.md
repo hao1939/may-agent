@@ -18,7 +18,7 @@ Spawn a real `bun src/app/may.ts --cron --socket` subprocess pointed at a
 sandboxed state dir, then drive it through its Unix socket and observe via
 the sandbox's SQLite DB and filesystem. Asserts behavior of the **full
 running daemon** — process boundary, socket frames, event persistence,
-handler hot-reload, workflow file discovery, etc.
+explicit runtime reload, workflow file discovery, etc.
 
 Each live-stack test is its own sandbox at `/tmp/may-e2e-<runId>/` with its
 own `.state/`, `agents/`, `projects/`, `shared/`. Nothing is read from or
@@ -70,7 +70,9 @@ the full-LLM variant of E6 are still future work — see roadmap in
 
 `fixtures/agents/` — minimal agent definitions. `agent.json` with `tools: ["cron"]` and a 3-line `AGENTS.md`. No real heartbeat, no real handlers unless the test specifies them.
 
-`fixtures/handlers/` — one-purpose handler files per test. State across fires must persist in DB (handlers are hot-reloaded every fire; module-level state is reset).
+`fixtures/handlers/` — one-purpose handler files per test. State across fires
+must persist in DB. Handler modules remain loaded until the explicit runtime
+reload boundary, so durable state must not depend on module-level variables.
 
 `fixtures/workflows/` — fixture workflows used by E3b. Pure functions, no LLM calls.
 
