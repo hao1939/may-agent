@@ -240,7 +240,7 @@ export function attachDaemonEventSubscribers(opts: {
     label: "last-session",
     types: ["session.end"],
   });
-  bus.subscribe(
+  bus.listen(
     createStuckDetector(
       (sessionId, _reason) => {
         bus.emit({
@@ -262,9 +262,12 @@ export function attachDaemonEventSubscribers(opts: {
         });
       },
     ),
-    { label: "session-stuck-detection" },
+    {
+      label: "session-stuck-detection",
+      types: ["session.start", "session.end", "turn_end"],
+    },
   );
-  bus.subscribe(
+  bus.listen(
     createAutoResume(
       (sessionId, agent, attempt) => {
         try {
@@ -294,10 +297,12 @@ export function attachDaemonEventSubscribers(opts: {
         });
       },
     ),
-    { label: "session-auto-resume" },
+    { label: "session-auto-resume", types: ["session.end"] },
   );
-  bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir }), {
+  const escalationLifecycle = createEscalationLifecycleSubscriber({ bus, manager, persistDir });
+  bus.listen((event) => void escalationLifecycle(event), {
     label: "escalation-lifecycle",
+    types: ["escalation.resolved", "escalation.dismissed"],
   });
 
   bus.subscribe(
