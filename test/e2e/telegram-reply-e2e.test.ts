@@ -8,7 +8,6 @@ import {
   claimAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
-  stageAppInboxClaimDelivery,
 } from "../../src/app/app-inbox-store.js";
 import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
 import { AppRegistry } from "../../src/app/app-registry.js";
@@ -216,17 +215,14 @@ describe("telegram reply e2e", () => {
     });
     const claim = claimAppInboxItem(db, "work-1", "worker", 100, 2)!;
     expect(associateAppInboxClaimSession(db, claim, "session-1", 3)).toBe(true);
-    stageAppInboxClaimDelivery(
-      db,
-      claim,
-      {
-        channel: "telegram",
-        sessionId: "session-1",
-        requestId: "request-1",
-        result: { summary: "The design is sound.", response: "The design is clean and ready to use." },
-      },
-      4,
-    );
+    expect(
+      completeAppInboxClaim(
+        db,
+        claim,
+        { summary: "The design is sound.", response: "The design is clean and ready to use." },
+        4,
+      ),
+    ).toBe(true);
     const sentMessages: Array<{ chat_id: string; text: string }> = [];
     let getUpdatesCount = 0;
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {

@@ -7,7 +7,6 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import {
   associateAppInboxClaimSession,
   claimAppInboxItem,
-  claimNextAppInboxDelivery,
   claimNextAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
@@ -19,14 +18,9 @@ import {
   listAppInboxItems,
   listAppInboxSessionWaits,
   listAppInboxTaskDependencyKeys,
-  markAppInboxSendingDeliveriesUncertain,
-  recordAppInboxDeliveryReceipt,
   releaseAppInboxClaim,
   readAppConversationResource,
   renewAppInboxClaim,
-  restoreReplayableAppInboxDeliveries,
-  stageAppInboxClaimDelivery,
-  stageAppInboxProgressDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
   wakeAppInboxItemsWaitingOnApp,
@@ -314,17 +308,21 @@ describe("App inbox store", () => {
     });
     const analysis = claimAppInboxItem(db, "analysis", "worker", 100, 120)!;
     expect(waitAppInboxClaim(db, analysis, { kind: "analysis", id: "analysis-1" }, { now: 121 })).toBe(true);
-    stageAppInboxProgressDelivery(
-      db,
-      {
-        itemId: "analysis",
-        operationId: "progress:analysis",
-        channel: "telegram",
-        sessionId: "session-1",
-        requestId: "request-1",
-        text: "Codex is checking the implementation.",
-      },
-      122,
+    // Historical delivery rows remain readable after the mutation path is retired.
+    db.run(
+      `INSERT INTO app_inbox_deliveries (
+         operation_id, item_id, kind, text, session_id, request_id, channel, status, created_at, updated_at
+       ) VALUES (?, ?, 'progress', ?, ?, ?, ?, 'delivered', ?, ?)`,
+      [
+        "progress:analysis",
+        "analysis",
+        "Codex is checking the implementation.",
+        "session-1",
+        "request-1",
+        "telegram",
+        122,
+        122,
+      ],
     );
     createAppInboxItem(db, {
       id: "delegated",
@@ -354,17 +352,7 @@ describe("App inbox store", () => {
     });
     const ready = claimAppInboxItem(db, "ready", "worker", 100, 146)!;
     expect(associateAppInboxClaimSession(db, ready, "session-ready", 147)).toBe(true);
-    stageAppInboxClaimDelivery(
-      db,
-      ready,
-      {
-        channel: "may-console",
-        sessionId: "session-ready",
-        requestId: "request-ready",
-        result: { summary: "Recommendation is ready." },
-      },
-      148,
-    );
+    expect(completeAppInboxClaim(db, ready, { summary: "Recommendation is ready." }, 148)).toBe(true);
     createAppInboxItem(db, {
       id: "system",
       appId: "may",
@@ -561,7 +549,7 @@ describe("App inbox store", () => {
     expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
   });
 
-  it("projects a human result independently from transport delivery state", () => {
+  it("keeps historical delivery evidence read-only after semantic completion", () => {
     createAppInboxItem(db, {
       id: "human-delivery",
       appId: "may",
@@ -574,21 +562,25 @@ describe("App inbox store", () => {
     });
     const claim = claimAppInboxItem(db, "human-delivery", "worker-1", 50, 100)!;
     expect(associateAppInboxClaimSession(db, claim, "session-1", 101)).toBe(true);
-    const delivery = stageAppInboxClaimDelivery(
-      db,
-      claim,
-      {
-        channel: "telegram",
-        sessionId: "session-1",
-        requestId: "app-inbox-human:human-delivery",
-        result: { summary: "finished", response: "Hello back" },
-      },
-      102,
+    expect(completeAppInboxClaim(db, claim, { summary: "finished", response: "Hello back" }, 102)).toBe(true);
+    db.run(
+      `INSERT INTO app_inbox_deliveries (
+         operation_id, item_id, kind, text, session_id, request_id, channel, status, created_at, updated_at
+       ) VALUES (?, ?, 'final', ?, ?, ?, ?, 'pending', ?, ?)`,
+      [
+        "legacy-delivery:human-delivery",
+        "human-delivery",
+        "Hello back",
+        "session-1",
+        "app-inbox-human:human-delivery",
+        "telegram",
+        103,
+        103,
+      ],
     );
 
-    expect(delivery.status).toBe("pending");
     expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
-      status: "handling",
+      status: "done",
       result: { summary: "finished", response: "Hello back" },
       delivery: { status: "pending" },
     });
@@ -597,228 +589,10 @@ describe("App inbox store", () => {
       expect.objectContaining({ author: { kind: "agent", id: "may" }, text: "Hello back" }),
     ]);
     expect(claimAppInboxItem(db, "human-delivery", "worker-2", 50, 200)).toBeNull();
-    expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]?.waitingOnDelivery).toBe(1);
-
-    const dispatch = claimNextAppInboxDelivery(db, 103)!;
-    expect(dispatch).toMatchObject({
-      text: "Hello back",
-      delivery: { status: "sending", operationId: delivery.operationId },
-    });
-    expect(
-      recordAppInboxDeliveryReceipt(
-        db,
-        {
-          operationId: delivery.operationId,
-          itemId: "different-item",
-          sessionId: "session-1",
-          requestId: "app-inbox-human:human-delivery",
-          channel: "telegram",
-          status: "delivered",
-        },
-        104,
-      ),
-    ).toEqual({ matched: false, completed: false });
-    expect(
-      recordAppInboxDeliveryReceipt(
-        db,
-        {
-          operationId: delivery.operationId,
-          itemId: "human-delivery",
-          sessionId: "session-1",
-          requestId: "app-inbox-human:human-delivery",
-          channel: "telegram",
-          status: "uncertain",
-          reason: "request outcome unknown",
-        },
-        105,
-      ),
-    ).toEqual({ matched: true, completed: false, status: "uncertain" });
-    expect(claimNextAppInboxDelivery(db, 106)).toBeNull();
-    expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
-      status: "handling",
-      delivery: { status: "uncertain", failureReason: "request outcome unknown" },
-    });
-    expect(readAppConversationResource(db, "may", "may:primary").messages).toHaveLength(2);
-
-    expect(
-      recordAppInboxDeliveryReceipt(
-        db,
-        {
-          operationId: delivery.operationId,
-          itemId: "human-delivery",
-          sessionId: "session-1",
-          requestId: "app-inbox-human:human-delivery",
-          channel: "telegram",
-          status: "delivered",
-          externalMessageId: "700",
-        },
-        107,
-      ),
-    ).toEqual({ matched: true, completed: true, status: "delivered" });
-    expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
-      status: "done",
-      delivery: { status: "delivered", externalMessageId: "700" },
-    });
-    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
-      expect.objectContaining({ author: { kind: "human", id: "event:42" }, text: "hello" }),
-      expect.objectContaining({ author: { kind: "agent", id: "may" }, text: "Hello back" }),
+    expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]?.waitingOnDelivery).toBe(0);
+    expect(listAppInboxDeliveries(db, "human-delivery")).toMatchObject([
+      { kind: "final", status: "pending", text: "Hello back" },
     ]);
-  });
-
-  it("delivers durable progress without completing the request", () => {
-    createAppInboxItem(db, {
-      id: "human-progress",
-      appId: "may",
-      source: { kind: "human", id: "telegram:42" },
-      input: { kind: "message", data: { text: "please inspect" } },
-      channel: "telegram",
-      now: 100,
-    });
-    const claim = claimAppInboxItem(db, "human-progress", "worker-1", 50, 100)!;
-    expect(associateAppInboxClaimSession(db, claim, "session-progress", 101)).toBe(true);
-    expect(waitAppInboxClaim(db, claim, { kind: "analysis", id: "analysis-1" }, { now: 102 })).toBe(true);
-    const progress = stageAppInboxProgressDelivery(
-      db,
-      {
-        itemId: "human-progress",
-        operationId: "app-progress:human-progress:analysis-1",
-        channel: "telegram",
-        sessionId: "session-progress",
-        requestId: "app-inbox-human:human-progress",
-        text: "I’ll inspect this and return with the evidence.",
-      },
-      102,
-    );
-    // Retrying the same admitted analysis stages no duplicate message.
-    expect(
-      stageAppInboxProgressDelivery(
-        db,
-        {
-          itemId: "human-progress",
-          operationId: progress.operationId,
-          channel: "telegram",
-          sessionId: "session-progress",
-          requestId: "app-inbox-human:human-progress",
-          text: "I’ll inspect this and return with the evidence.",
-        },
-        103,
-      ).operationId,
-    ).toBe(progress.operationId);
-
-    const dispatch = claimNextAppInboxDelivery(db, 104)!;
-    expect(dispatch).toMatchObject({
-      text: "I’ll inspect this and return with the evidence.",
-      delivery: { kind: "progress", operationId: progress.operationId },
-    });
-    expect(
-      recordAppInboxDeliveryReceipt(
-        db,
-        {
-          operationId: progress.operationId,
-          itemId: "human-progress",
-          sessionId: "session-progress",
-          requestId: "app-inbox-human:human-progress",
-          channel: "telegram",
-          status: "delivered",
-        },
-        105,
-      ),
-    ).toEqual({ matched: true, completed: false, status: "delivered" });
-    expect(getAppInboxItem(db, "human-progress")).toMatchObject({
-      status: "handling",
-      waitingOn: { kind: "analysis", id: "analysis-1" },
-    });
-    expect(listAppInboxDeliveries(db, "human-progress")).toMatchObject([
-      { kind: "progress", status: "delivered", text: "I’ll inspect this and return with the evidence." },
-    ]);
-  });
-
-  it("preserves a definite delivery failure for review without redispatch", () => {
-    createAppInboxItem(db, {
-      id: "failed-delivery",
-      appId: "may",
-      source: { kind: "human", id: "event:43" },
-      input: { kind: "message", data: { text: "hello" } },
-      channel: "web-ui",
-      now: 100,
-    });
-    const claim = claimAppInboxItem(db, "failed-delivery", "worker-1", 50, 100)!;
-    associateAppInboxClaimSession(db, claim, "session-2", 101);
-    const delivery = stageAppInboxClaimDelivery(
-      db,
-      claim,
-      {
-        channel: "web-ui",
-        sessionId: "session-2",
-        requestId: "app-inbox-human:failed-delivery",
-        result: { summary: "finished" },
-      },
-      102,
-    );
-    expect(claimNextAppInboxDelivery(db, 103)).not.toBeNull();
-
-    expect(
-      recordAppInboxDeliveryReceipt(
-        db,
-        {
-          operationId: delivery.operationId,
-          itemId: "failed-delivery",
-          sessionId: "session-2",
-          requestId: "app-inbox-human:failed-delivery",
-          channel: "web-ui",
-          status: "failed",
-          reason: "no connected browser",
-        },
-        104,
-      ),
-    ).toEqual({ matched: true, completed: false, status: "failed" });
-    expect(claimNextAppInboxDelivery(db, 1_000)).toBeNull();
-    expect(getAppInboxItem(db, "failed-delivery")).toMatchObject({
-      status: "handling",
-      result: { summary: "finished" },
-      delivery: { status: "failed", failureReason: "no connected browser" },
-    });
-  });
-
-  it("replays only idempotent internal deliveries after restart", () => {
-    for (const [id, channel] of [
-      ["internal-delivery", "agent:evaluator"],
-      ["external-delivery", "telegram"],
-    ] as const) {
-      createAppInboxItem(db, {
-        id,
-        appId: "may",
-        source: { kind: "system", id: `event:${id}` },
-        input: { kind: "message", data: { message: id } },
-        channel,
-        now: 100,
-      });
-      const claim = claimAppInboxItem(db, id, "worker-1", 50, 100)!;
-      associateAppInboxClaimSession(db, claim, `session:${id}`, 101);
-      stageAppInboxClaimDelivery(
-        db,
-        claim,
-        {
-          channel,
-          sessionId: `session:${id}`,
-          requestId: `request:${id}`,
-          result: { summary: `${id} result` },
-        },
-        102,
-      );
-      expect(claimNextAppInboxDelivery(db, 103)).not.toBeNull();
-    }
-
-    expect(restoreReplayableAppInboxDeliveries(db, 200)).toBe(1);
-    expect(markAppInboxSendingDeliveriesUncertain(db, 200)).toBe(1);
-    expect(getAppInboxItem(db, "internal-delivery")?.delivery).toMatchObject({
-      channel: "agent:evaluator",
-      status: "pending",
-    });
-    expect(getAppInboxItem(db, "external-delivery")?.delivery).toMatchObject({
-      channel: "telegram",
-      status: "uncertain",
-    });
   });
 
   it("wakes dependency waits and also requeues them at review time", () => {
