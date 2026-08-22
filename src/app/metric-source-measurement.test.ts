@@ -210,8 +210,8 @@ describe("source-query metric measurement", () => {
       db.prepare("SELECT resolved_at FROM metric_alerts WHERE metric_id = ?").get("event.unhandled-signal-count-1h"),
     ).toMatchObject({ resolved_at: expect.any(Number) });
     expect(db.prepare("SELECT accepted_by, delivery_route FROM events WHERE id = ?").get(triggerEventId)).toEqual({
-      accepted_by: "runtime:metric-source-measurement",
-      delivery_route: "direct",
+      accepted_by: null,
+      delivery_route: null,
     });
   });
 

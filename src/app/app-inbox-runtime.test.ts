@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppDependencyObservation } from "@may-agent/sdk";
@@ -7,7 +7,13 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "./app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
-import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import {
+  EVENT_DEDUPLICATED,
+  EVENT_RECORD_ONLY,
+  EVENT_REDELIVERY_REQUIRED,
+  EVENT_ROW_ID,
+  EventBus,
+} from "./event-bus.js";
 import { AppRegistry } from "./app-registry.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
@@ -516,5 +522,46 @@ describe("App inbox runtime", () => {
 
     expect(updates).toBeGreaterThan(0);
     expect(runtime.host.get("turn-1")?.conversationId).toBe("may:primary");
+  });
+
+  it("publishes event schedules as record-only facts", async () => {
+    const appPath = join(root, "evaluation.app", "app.js");
+    const source = readFileSync(appPath, "utf8");
+    writeFileSync(
+      appPath,
+      source.replace(
+        "subscriptions: [{",
+        `schedules: [{
+          id: "sample-fact",
+          intervalMs: 1000,
+          event: { type: "sample.observed", data: { value: 1 } }
+        }],
+        subscriptions: [{`,
+      ),
+    );
+    let currentTime = 1_000;
+    const bus = persistentBus();
+    const observed: Array<{ type: string; recordOnly: boolean }> = [];
+    bus.subscribe((event) => {
+      if (event.type !== "sample.observed") return;
+      observed.push({
+        type: event.type,
+        recordOnly: (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY] === true,
+      });
+    });
+    const task = capabilities(bus);
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      now: () => currentTime,
+      scanIntervalMs: 10_000,
+    });
+
+    currentTime = 2_000;
+    runtime.scanNow();
+
+    expect(observed).toEqual([{ type: "sample.observed", recordOnly: true }]);
   });
 });

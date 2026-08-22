@@ -9,7 +9,14 @@ import {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
+import {
+  EVENT_RECORD_ONLY,
+  EVENT_ROW_ID,
+  eventData,
+  type AgentEvent,
+  type DeliveryResult,
+  type EventBus,
+} from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
@@ -443,7 +450,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!configuredSchedule.input) {
           if (activation.lastSlot === undefined || slot <= activation.lastSlot) continue;
           const event = configuredSchedule.event;
-          options.bus.emit({
+          const scheduledFact = {
             ...event,
             source: event.source ?? `app:${definition.id}:schedule:${configuredSchedule.id}`,
             owner: event.owner ?? `app:${definition.id}`,
@@ -451,7 +458,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               ...record(event.data),
               idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
             },
-          } as AgentEvent);
+          } as AgentEvent;
+          // Event schedules publish facts; they do not create a reliable
+          // command channel or make a passive observer the delivery owner.
+          Object.defineProperty(scheduledFact, EVENT_RECORD_ONLY, { value: true, configurable: true });
+          options.bus.emit(scheduledFact);
           activation.lastSlot = slot;
           continue;
         }

@@ -418,7 +418,15 @@ describe("telegram reply e2e", () => {
     const prepare = db.prepare.bind(db);
     let conversationReads = 0;
     db.prepare = (sql: string) => {
-      if (sql.includes("event_type = 'conversation.message.created'")) conversationReads++;
+      // One resource read prepares separate message and command projections.
+      // Count only the message projection so this measures Conversation reads,
+      // not internal SQL statements.
+      if (
+        sql.includes("event_type = 'conversation.message.created'") &&
+        sql.includes("author.kind') IN ('agent', 'tool')")
+      ) {
+        conversationReads++;
+      }
       return prepare(sql);
     };
     let releaseSend!: () => void;
@@ -465,6 +473,7 @@ describe("telegram reply e2e", () => {
     for (let index = 0; index < 50; index++) bus.emit(wake);
     releaseSend();
 
+    // The initial read plus one dirty retry is sufficient for all 50 wakes.
     await waitFor(() => expect(conversationReads).toBe(baselineReads + 2));
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(conversationReads).toBe(baselineReads + 2);
