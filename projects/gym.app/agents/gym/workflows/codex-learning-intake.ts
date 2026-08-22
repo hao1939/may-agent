@@ -1,12 +1,15 @@
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   renameSync,
   rmSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -32,6 +35,12 @@ const DEFAULT_BATCH_SIZE = 200;
 const DEFAULT_MAX_BATCHES = 1;
 const MAX_BATCHES = 5;
 const MAX_CATALOG_ITEMS = 80;
+const FROZEN_REPLAY_TEST_COMMAND =
+  "bun test ./agents/gym/workflows/codex-learning-intake.test.ts --timeout 30000";
+const FROZEN_REPLAY_OVERLAY_FILES = [
+  "codex-learning-intake.ts",
+  "codex-learning-intake.test.ts",
+] as const;
 
 const signalSchema = Type.Object(
   {
@@ -238,6 +247,7 @@ interface DesignReviewAttempt {
   changed: boolean;
   error?: string;
   evidence?: string[];
+  validationDiagnostics?: DesignReviewValidationDiagnostic[];
 }
 
 type DesignReviewValidationDiagnostic =
@@ -287,6 +297,19 @@ function record(value: unknown): Record<string, unknown> {
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function frozenReplayProvenance(): {
+  files: Array<{ path: string; sha256: string }>;
+  targeted_test_command: string;
+} {
+  return {
+    files: FROZEN_REPLAY_OVERLAY_FILES.map((name) => {
+      const path = join(import.meta.dir, name);
+      return { path, sha256: sha256(readFileSync(path, "utf8")) };
+    }),
+    targeted_test_command: FROZEN_REPLAY_TEST_COMMAND,
+  };
 }
 
 function integer(
@@ -357,7 +380,13 @@ function consolidationPrompt(path: string): string {
   ].join("\n");
 }
 
-function designReviewPrompt(path: string): string {
+function designReviewPrompt(path: string, designSources: string[]): string {
+  const citationInventory = designSourceAnchorInventory(designSources)
+    .map(
+      ({ path, anchors }) =>
+        `- ${path}\n  valid Markdown anchors: ${anchors.length ? anchors.map((anchor) => `#${anchor}`).join(", ") : "(none)"}`,
+    )
+    .join("\n");
   return [
     "Review every Hao learning candidate against the May deputy learning design and accepted May-agent system design.",
     `Input: ${path}`,
@@ -367,7 +396,9 @@ function designReviewPrompt(path: string): string {
     "Review every candidate exactly once. Judge meaning, scope, current validity, and whether the candidate is transferable.",
     "Use supported when the meaning and scope agree with accepted design. Use revise when the core signal is useful but its wording, scope, or mechanism is wrong. Use conflict for a real contradiction. Use out-of-scope for a valid owner or project preference that is not May deputy learning. Use needs-human only when the sources cannot settle the decision.",
     "Recommend lesson-evidence for a durable method, practice-example for a worked example, benchmark-seed for behavior worth testing, owner-preference for personal/project guidance outside the deputy curriculum, or discard for unsafe, obsolete, or weak material.",
-    "For system claims, cite only exact source paths listed in designSources, optionally followed by a Markdown section anchor. Out-of-scope owner preferences may have no source reference.",
+    "For system claims, cite only an exact source path below, optionally followed by one of that path's enumerated Markdown section anchors. Unlisted paths and invented anchors are invalid. Out-of-scope owner preferences may have no source reference.",
+    "Valid citation inventory:",
+    citationInventory,
     "Write the summary and rationale in short, plain language. Do not approve, promote, or change May or benchmark truth.",
   ].join("\n");
 }
@@ -519,20 +550,32 @@ function markdownAnchor(title: string): string {
     .replace(/\s+/g, "-");
 }
 
+function markdownAnchors(path: string): string[] {
+  return [
+    ...new Set(
+      readFileSync(path, "utf8")
+        .split(/\r?\n/)
+        .flatMap((line) => {
+          const heading = line.match(/^#{1,6}\s+(.+?)\s*#*$/)?.[1];
+          return heading ? [markdownAnchor(heading)] : [];
+        }),
+    ),
+  ];
+}
+
+function designSourceAnchorInventory(
+  designSources: string[],
+): Array<{ path: string; anchors: string[] }> {
+  return designSources.map((path) => ({ path, anchors: markdownAnchors(path) }));
+}
+
 function validSourceReference(
   reference: string,
   allowedSources: Set<string>,
 ): boolean {
   const [path, anchor] = reference.split("#", 2);
   if (!path || !allowedSources.has(path)) return false;
-  if (!anchor) return true;
-  const anchors = readFileSync(path, "utf8")
-    .split(/\r?\n/)
-    .flatMap((line) => {
-      const heading = line.match(/^#{1,6}\s+(.+?)\s*#*$/)?.[1];
-      return heading ? [markdownAnchor(heading)] : [];
-    });
-  return anchors.includes(anchor);
+  return !anchor || markdownAnchors(path).includes(anchor);
 }
 
 function designFingerprint(paths: string[]): string {
@@ -687,6 +730,7 @@ async function reviewLearningMaterials(
   runPath: string,
   runId: string,
   now: string,
+  frozenReviewInputPath?: string,
 ): Promise<DesignReviewAttempt> {
   if (!preferences.length) return { review: null, changed: false };
   const missingSources = designSources.filter((path) => !existsSync(path));
@@ -703,6 +747,7 @@ async function reviewLearningMaterials(
   const nextCatalogFingerprint = catalogFingerprint(preferences);
   const existing = readJson<DesignReview>(reviewPath);
   if (
+    !frozenReviewInputPath &&
     existing?.design_fingerprint === nextDesignFingerprint &&
     existing.catalog_fingerprint === nextCatalogFingerprint &&
     candidateDesignReviews(existing, preferences, designSources)
@@ -710,12 +755,18 @@ async function reviewLearningMaterials(
     return { review: existing, changed: false };
   }
 
-  const reviewInputPath = join(scratchDir, "design-review.json");
-  writeJson(reviewInputPath, { designSources, preferences });
+  const reviewInputPath =
+    frozenReviewInputPath ?? join(scratchDir, "design-review.json");
+  if (!frozenReviewInputPath)
+    writeJson(reviewInputPath, {
+      designSources,
+      designSourceAnchors: designSourceAnchorInventory(designSources),
+      preferences,
+    });
   const result = await callGymAgent(
     ctx,
     "gym",
-    designReviewPrompt(reviewInputPath),
+    designReviewPrompt(reviewInputPath, designSources),
     {
       schema: designReviewSchema,
       timeoutMs: 900_000,
@@ -751,6 +802,7 @@ async function reviewLearningMaterials(
         validation.diagnostics,
         now,
       ),
+      validationDiagnostics: validation.diagnostics,
     };
   }
   return {
@@ -765,6 +817,379 @@ async function reviewLearningMaterials(
       reviews,
     },
   };
+}
+
+interface FrozenDesignReviewInput {
+  designSources: string[];
+  preferences: CatalogPreference[];
+  checkpoint?: Checkpoint;
+}
+
+function fileFingerprint(path: string): string | null {
+  return existsSync(path) ? sha256(readFileSync(path, "utf8")) : null;
+}
+
+function directoryFingerprint(path: string): string | null {
+  if (!existsSync(path)) return null;
+  return sha256(
+    readdirSync(path)
+      .sort()
+      .map((name) => `${name}\0${fileFingerprint(join(path, name))}`)
+      .join("\0"),
+  );
+}
+
+function learningStateFingerprints(
+  stateDir: string,
+): Record<string, string | null> {
+  return {
+    checkpoint: fileFingerprint(join(stateDir, "checkpoint.json")),
+    catalog: fileFingerprint(join(stateDir, "catalog.json")),
+    design_review: fileFingerprint(join(stateDir, "design-review.json")),
+    candidate_evidence: directoryFingerprint(join(stateDir, "evidence")),
+    evidence_journal: fileFingerprint(join(stateDir, "evidence.jsonl")),
+  };
+}
+
+function frozenInputValidation(value: unknown): {
+  input: FrozenDesignReviewInput | null;
+  diagnostics: string[];
+} {
+  const candidate = record(value);
+  const designSources = Array.isArray(candidate.designSources)
+    ? candidate.designSources.map(String)
+    : [];
+  const preferences = Array.isArray(candidate.preferences)
+    ? (candidate.preferences as unknown[])
+    : [];
+  const diagnostics: string[] = [];
+  if (
+    !designSources.length ||
+    new Set(designSources).size !== designSources.length
+  )
+    diagnostics.push("designSources");
+  if (!preferences.length) diagnostics.push("preferences");
+  if (designSources.some((path) => !path || !existsSync(path)))
+    diagnostics.push("designSources[]");
+  const ids = new Set<string>();
+  const parsedPreferences: CatalogPreference[] = [];
+  preferences.forEach((value, index) => {
+    const preference = record(value);
+    const id = String(preference.id ?? "");
+    const evidenceIds = Array.isArray(preference.evidenceIds)
+      ? preference.evidenceIds.map(String)
+      : [];
+    const conflictEvidenceIds = Array.isArray(preference.conflictEvidenceIds)
+      ? preference.conflictEvidenceIds.map(String)
+      : [];
+    const competencies = Array.isArray(preference.competencies)
+      ? preference.competencies.map(String)
+      : [];
+    if (
+      !id ||
+      ids.has(id) ||
+      preference.status !== "candidate" ||
+      !["global", "system", "project", "task-class"].includes(
+        String(preference.scope),
+      ) ||
+      !String(preference.statement ?? "").trim() ||
+      !String(preference.rationale ?? "").trim() ||
+      !evidenceIds.length ||
+      evidenceIds.some((evidenceId) => !evidenceId) ||
+      !Number.isFinite(Number(preference.confidence)) ||
+      Number(preference.confidence) < MIN_CONFIDENCE ||
+      Number(preference.confidence) > 1
+    ) {
+      diagnostics.push(`preferences[${index}]`);
+      return;
+    }
+    ids.add(id);
+    parsedPreferences.push({
+      id,
+      statement: String(preference.statement).trim(),
+      scope: String(preference.scope) as SignalScope,
+      rationale: String(preference.rationale).trim(),
+      evidenceIds,
+      conflictEvidenceIds,
+      confidence: Number(preference.confidence),
+      competencies,
+      status: "candidate",
+    });
+  });
+  let checkpoint: Checkpoint | undefined;
+  if (candidate.checkpoint !== undefined) {
+    const proposed = record(candidate.checkpoint);
+    const processed = proposed.processed_source_ids;
+    if (
+      proposed.schema_version !== 1 ||
+      proposed.source !== "codex-history" ||
+      typeof proposed.updated_at !== "string" ||
+      !Array.isArray(processed) ||
+      processed.some((id) => typeof id !== "string")
+    ) {
+      diagnostics.push("checkpoint");
+    } else {
+      checkpoint = proposed as unknown as Checkpoint;
+    }
+  }
+  return {
+    input: diagnostics.length
+      ? null
+      : { designSources, preferences: parsedPreferences, checkpoint },
+    diagnostics,
+  };
+}
+
+function atomicWriteJsonFiles(entries: Array<[string, unknown]>): void {
+  const originals = new Map<string, Buffer | null>();
+  const staged: Array<[string, string]> = [];
+  for (const [path, value] of entries) {
+    mkdirSync(dirname(path), { recursive: true });
+    originals.set(path, existsSync(path) ? readFileSync(path) : null);
+    const temporary = `${path}.txn-${process.pid}`;
+    writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`);
+    staged.push([path, temporary]);
+  }
+  const committed: string[] = [];
+  try {
+    for (const [path, temporary] of staged) {
+      renameSync(temporary, path);
+      committed.push(path);
+    }
+  } catch (error) {
+    for (const path of committed.reverse()) {
+      const original = originals.get(path);
+      if (original === null) unlinkSync(path);
+      else if (original) writeFileSync(path, original);
+    }
+    throw error;
+  } finally {
+    for (const [, temporary] of staged) rmSync(temporary, { force: true });
+  }
+}
+
+async function replayFrozenDesignReview(
+  ctx: WorkflowContext,
+  input: Record<string, unknown>,
+  stateDir: string,
+): Promise<ExecutionResult> {
+  const frozenPath = String(
+    input.frozenInputPath ??
+      input.frozenDesignReviewInputPath ??
+      input.frozenDesignReviewPath ??
+      "",
+  );
+  const expectedSha256 = String(
+    input.frozenDesignReviewInputSha256 ?? input.expectedSha256 ?? "",
+  );
+  const replayKey = String(input.replayKey ?? "");
+  if (
+    !frozenPath ||
+    !expectedSha256.match(/^[a-f0-9]{64}$/) ||
+    !replayKey ||
+    !existsSync(frozenPath)
+  ) {
+    return ctx.done("Frozen design-review replay preflight rejected.", {
+      state: "needs-owner",
+      summary: "Frozen design-review replay preflight rejected.",
+      evidence: [],
+    });
+  }
+  const frozenBytes = readFileSync(frozenPath, "utf8");
+  if (sha256(frozenBytes) !== expectedSha256) {
+    return ctx.done("Frozen design-review replay hash mismatch.", {
+      state: "needs-owner",
+      summary: "Frozen design-review replay hash mismatch.",
+      evidence: [],
+    });
+  }
+  const appliedOverlay = frozenReplayProvenance();
+  const receiptsDir = join(stateDir, "replays");
+  const receiptPath = join(
+    receiptsDir,
+    `${safeKey(replayKey, "replay")}-${sha256(replayKey).slice(0, 12)}.json`,
+  );
+  if (existsSync(receiptPath)) {
+    return ctx.done(
+      "Frozen design-review replay already has a terminal receipt.",
+      {
+        state: "converged",
+        summary: "Frozen design-review replay already has a terminal receipt.",
+        evidence: [receiptPath],
+        actions: [],
+      },
+    );
+  }
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(frozenBytes);
+  } catch {
+    decoded = null;
+  }
+  const validation = frozenInputValidation(decoded);
+  if (!validation.input) {
+    mkdirSync(receiptsDir, { recursive: true });
+    writeJson(receiptPath, {
+      schema_version: 1,
+      replay_key: replayKey,
+      status: "failed",
+      phase: "input-validation",
+      frozen_input: { path: frozenPath, sha256: expectedSha256 },
+      applied_overlay: appliedOverlay,
+      validation_diagnostics: validation.diagnostics,
+      completed_at: new Date().toISOString(),
+    });
+    return ctx.done(
+      "Frozen design-review replay input is structurally invalid.",
+      {
+        state: "needs-owner",
+        summary: "Frozen design-review replay input is structurally invalid.",
+        evidence: [receiptPath],
+        diagnostics: validation.diagnostics,
+      },
+    );
+  }
+
+  if (existsSync(receiptPath)) {
+    return ctx.done(
+      "Frozen design-review replay already has a terminal receipt.",
+      {
+        state: "converged",
+        summary: "Frozen design-review replay already has a terminal receipt.",
+        evidence: [receiptPath],
+        actions: [],
+      },
+    );
+  }
+  mkdirSync(receiptsDir, { recursive: true });
+  const lockPath = `${receiptPath}.lock`;
+  let lock: number;
+  try {
+    lock = openSync(lockPath, "wx");
+  } catch {
+    return ctx.done("Frozen design-review replay is already in progress.", {
+      state: "needs-owner",
+      summary: "Frozen design-review replay is already in progress.",
+      evidence: [lockPath],
+    });
+  }
+
+  const catalogPath = join(stateDir, "catalog.json");
+  const checkpointPath = join(stateDir, "checkpoint.json");
+  const designReviewPath = join(stateDir, "design-review.json");
+  const attemptPath = receiptPath.replace(/\.json$/, ".attempt.json");
+  const scratchDir = join(
+    stateDir,
+    "scratch",
+    `replay-${sha256(replayKey).slice(0, 20)}`,
+  );
+  const now = new Date().toISOString();
+  const before = learningStateFingerprints(stateDir);
+  try {
+    if (fileFingerprint(frozenPath) !== expectedSha256)
+      throw new Error("Frozen design-review input changed after preflight.");
+    mkdirSync(scratchDir, { recursive: true });
+    const review = await reviewLearningMaterials(
+      ctx,
+      validation.input.preferences,
+      validation.input.designSources,
+      designReviewPath,
+      scratchDir,
+      attemptPath,
+      `frozen-replay-${sha256(replayKey).slice(0, 20)}`,
+      now,
+      frozenPath,
+    );
+    if (review.error || !review.review) {
+      const receipt = {
+        schema_version: 1,
+        replay_key: replayKey,
+        status: "failed",
+        frozen_input: { path: frozenPath, sha256: expectedSha256 },
+        applied_overlay: appliedOverlay,
+        validation_diagnostics: review.validationDiagnostics ?? [],
+        state_before: before,
+        state_after: learningStateFingerprints(stateDir),
+        evidence: review.evidence ?? [],
+        completed_at: now,
+      };
+      writeJson(receiptPath, receipt);
+      return ctx.done(review.error ?? "Frozen design-review replay failed.", {
+        state: "needs-owner",
+        summary: review.error ?? "Frozen design-review replay failed.",
+        evidence: [receiptPath, ...(review.evidence ?? [])],
+      });
+    }
+    const checkpoint = validation.input.checkpoint ??
+      readJson<Checkpoint>(checkpointPath) ?? {
+        schema_version: 1,
+        source: "codex-history",
+        updated_at: now,
+        processed_source_ids: [],
+      };
+    const catalog: Catalog = {
+      schema_version: 1,
+      owner: "hao",
+      updated_at: now,
+      preferences: validation.input.preferences,
+    };
+    const receipt = {
+      schema_version: 1,
+      replay_key: replayKey,
+      status: "completed",
+      frozen_input: { path: frozenPath, sha256: expectedSha256 },
+      applied_overlay: appliedOverlay,
+      file_fingerprints: {
+        design_sources: Object.fromEntries(
+          validation.input.designSources.map((path) => [
+            path,
+            fileFingerprint(path),
+          ]),
+        ),
+        catalog: sha256(`${JSON.stringify(catalog, null, 2)}\n`),
+        design_review: sha256(`${JSON.stringify(review.review, null, 2)}\n`),
+        checkpoint: sha256(`${JSON.stringify(checkpoint, null, 2)}\n`),
+      },
+      completed_at: now,
+    };
+    atomicWriteJsonFiles([
+      [catalogPath, catalog],
+      [designReviewPath, review.review],
+      [checkpointPath, checkpoint],
+      [receiptPath, receipt],
+    ]);
+    return ctx.done("Frozen design-review replay completed exactly once.", {
+      state: "converged",
+      summary: "Frozen design-review replay completed exactly once.",
+      evidence: [receiptPath, checkpointPath, catalogPath, designReviewPath],
+      actions: [],
+    });
+  } catch (error) {
+    const receipt = {
+      schema_version: 1,
+      replay_key: replayKey,
+      status: "failed",
+      phase: "runtime",
+      frozen_input: { path: frozenPath, sha256: expectedSha256 },
+      applied_overlay: appliedOverlay,
+      error_sha256: sha256(
+        error instanceof Error ? error.message : String(error),
+      ),
+      state_before: before,
+      state_after: learningStateFingerprints(stateDir),
+      completed_at: now,
+    };
+    writeJson(receiptPath, receipt);
+    return ctx.done("Frozen design-review replay failed at runtime.", {
+      state: "needs-owner",
+      summary: "Frozen design-review replay failed at runtime.",
+      evidence: [receiptPath],
+    });
+  } finally {
+    closeSync(lock);
+    rmSync(lockPath, { force: true });
+    rmSync(scratchDir, { recursive: true, force: true });
+  }
 }
 
 function workflowInput(ctx: WorkflowContext): Record<string, unknown> {
@@ -802,6 +1227,11 @@ export async function runCodexLearningIntake(
     "learning",
     "codex",
   );
+  if (
+    input.mode === "frozen-design-review-replay" ||
+    input.mode === "replay-frozen-design-review"
+  )
+    return replayFrozenDesignReview(ctx, input, stateDir);
   const evidenceDir = join(stateDir, "evidence");
   const runsDir = join(stateDir, "runs");
   const checkpointPath = join(stateDir, "checkpoint.json");

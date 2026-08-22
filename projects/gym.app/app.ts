@@ -144,19 +144,31 @@ function mayImprovementIntent(): TaskIntent {
   };
 }
 
-function gymOwnerReviewIntent(): TaskIntent {
+function gymOwnerReviewIntent(input: AppInput, requestId: string): TaskIntent {
+  const readableRequestId = requestId
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  const requestDigest = createHash("sha256")
+    .update(requestId)
+    .digest("hex")
+    .slice(0, 16);
   return {
-    id: "runtime/owner-review",
+    id: `owner-review/${readableRequestId || "request"}-${requestDigest}`,
     parentId: "review-proposals",
     outcome:
-      "Keep the Gym project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
+      "Review one request for the Gym project and organize the smallest useful next step from its exact admitted evidence.",
     acceptance: [
       "Interpret the exact requested outcome before selecting work; a free-form comment is intent, not an instruction to run the normal May campaign.",
       "Answer, record an evidence-backed no-op, or propose bounded durable follow-up without changing benchmark truth.",
       "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
     ],
-    mode: "maintain",
+    mode: "achieve",
     owner: "gym",
+    input: {
+      requestId,
+      admittedInput: input,
+    },
     priority: "P1",
   };
 }
@@ -333,8 +345,15 @@ export function resolveGymTask(
         workflow: "regression-run",
         input: selected(details, [
           "agent",
+          "baseline",
           "benchmark",
+          "candidate",
+          "constraints",
           "reason",
+          "requestId",
+          "requiredProof",
+          "returnPath",
+          "sampleScope",
           "scenario",
           "trials",
         ]),
@@ -415,7 +434,7 @@ function gymTaskIntentForInput(
   const data = { ...params(input.data), requestId };
   switch (input.kind) {
     case "owner-review":
-      return gymOwnerReviewIntent();
+      return gymOwnerReviewIntent(input, requestId);
     case "improve-may":
       return mayImprovementIntent();
     case "run-regression":

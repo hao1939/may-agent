@@ -39,6 +39,7 @@ import {
   verify,
   verificationBenchmark,
   validateFindings,
+  writeWorkflowResultRevision,
   type Finding,
   type GymLoopApi,
 } from "./improve-agent";
@@ -112,6 +113,76 @@ function outputOf(result: Record<string, unknown>): Record<string, unknown> {
 }
 
 describe("single agent-improvement loop", () => {
+  test("preserves immutable result revisions while retaining the legacy latest pointer", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-result-revisions-"));
+    roots.push(root);
+    const resultPath = join(root, "generation", "result.json");
+
+    const firstRevision = writeWorkflowResultRevision(resultPath, {
+      summary: "First terminal result",
+      next: "done",
+      evidence: [resultPath, "first-proof"],
+    });
+    const firstBytes = readFileSync(firstRevision);
+    expect(JSON.parse(readFileSync(resultPath, "utf8"))).toMatchObject({
+      summary: "First terminal result",
+      result_revision_path: firstRevision,
+      result_latest_path: resultPath,
+      evidence: [firstRevision, "first-proof"],
+    });
+
+    const secondRevision = writeWorkflowResultRevision(resultPath, {
+      summary: "Second terminal result",
+      next: "wait-for-approval",
+      evidence: [resultPath, "second-proof"],
+      approval: {
+        kind: "agent-improvement",
+        packetPath: resultPath,
+      },
+    });
+    const secondBytes = readFileSync(secondRevision);
+    expect(secondRevision).not.toBe(firstRevision);
+    expect(readFileSync(firstRevision)).toEqual(firstBytes);
+    expect(readFileSync(secondRevision)).toEqual(secondBytes);
+    expect(JSON.parse(readFileSync(firstRevision, "utf8")).summary).toBe(
+      "First terminal result",
+    );
+    expect(JSON.parse(readFileSync(resultPath, "utf8"))).toMatchObject({
+      summary: "Second terminal result",
+      result_revision_path: secondRevision,
+      result_latest_path: resultPath,
+      approval: {
+        packetPath: resultPath,
+        packetRevisionPath: secondRevision,
+        packetLatestPath: resultPath,
+      },
+    });
+
+    const legacyPath = join(
+      root,
+      "gym.app",
+      ".state",
+      "candidates",
+      "legacy",
+      "1",
+      "result.json",
+    );
+    mkdirSync(dirname(legacyPath), { recursive: true });
+    writeFileSync(
+      legacyPath,
+      JSON.stringify({
+        summary: "Legacy single result",
+        candidate_fingerprint: "a".repeat(64),
+      }),
+    );
+    expect(
+      locateCandidateRetry(root, "legacy", 1, {
+        reason: "retry-candidate-verification",
+        candidateFingerprint: "a".repeat(64),
+      }),
+    ).toMatchObject({ resultPath: legacyPath });
+  });
+
   test("locates the exact approved packet across curriculum drift", () => {
     const root = mkdtempSync(join(tmpdir(), "gym-approval-location-"));
     roots.push(root);
@@ -307,7 +378,9 @@ describe("single agent-improvement loop", () => {
       unknown
     >;
     expect(result.summary).toContain("Applied approved benchmark/scorer fix");
-    expect((outputOf(result).evidence as unknown[]).length).toBeLessThanOrEqual(32);
+    expect((outputOf(result).evidence as unknown[]).length).toBeLessThanOrEqual(
+      32,
+    );
     expect(readFileSync(join(targetPath, "scorer.cjs"), "utf8")).toBe(
       "fixed\n",
     );
@@ -867,26 +940,26 @@ describe("single agent-improvement loop", () => {
     );
 
     ctx.task = [
-        "## Reconciliation Task",
-        "```json",
-        JSON.stringify({
-          taskId: "improve/may",
-          generation: 7,
-          input: { agent: "may", curriculumDrain: true },
-        }),
-        "```",
-        "## Trigger Event",
-        "```json",
-        JSON.stringify({
-          type: "gym.improvement.requested",
-          data: {
-            agent: "may",
-            curriculumDrain: true,
-            reason: "resume-preserved-evaluation-only-adjustment",
-          },
-        }),
-        "```",
-      ].join("\n");
+      "## Reconciliation Task",
+      "```json",
+      JSON.stringify({
+        taskId: "improve/may",
+        generation: 7,
+        input: { agent: "may", curriculumDrain: true },
+      }),
+      "```",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "gym.improvement.requested",
+        data: {
+          agent: "may",
+          curriculumDrain: true,
+          reason: "resume-preserved-evaluation-only-adjustment",
+        },
+      }),
+      "```",
+    ].join("\n");
     const recoveryCtx = ctx;
 
     writeFileSync(join(protectedBenchmark, "suite.json"), '{"changed":true}\n');
@@ -1331,9 +1404,7 @@ describe("single agent-improvement loop", () => {
     const gymRoot = join(import.meta.dir, "../../../../gym");
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
     expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(targets.map(({ id }) => id)).toEqual([
-      "app-outcome-management",
-    ]);
+    expect(targets.map(({ id }) => id)).toEqual(["app-outcome-management"]);
     expect(targets[0]?.scenarios).toContain(
       "may-app-delegate-recurring-outcome",
     );

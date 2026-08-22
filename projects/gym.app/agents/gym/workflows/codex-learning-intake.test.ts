@@ -29,6 +29,23 @@ function task(input: Record<string, unknown> = {}): string {
   })}\n\`\`\``;
 }
 
+function expectReplayProvenance(receipt: Record<string, any>): void {
+  const paths = [
+    join(import.meta.dir, "codex-learning-intake.ts"),
+    join(import.meta.dir, "codex-learning-intake.test.ts"),
+  ];
+  expect(receipt.applied_overlay).toEqual({
+    files: paths.map((path) => ({
+      path,
+      sha256: createHash("sha256")
+        .update(readFileSync(path, "utf8"))
+        .digest("hex"),
+    })),
+    targeted_test_command:
+      "bun test ./agents/gym/workflows/codex-learning-intake.test.ts --timeout 30000",
+  });
+}
+
 function source(root: string): string {
   const codexHome = join(root, ".codex");
   const sessionId = "session-1";
@@ -80,11 +97,12 @@ test("keeps only validated strong signals and persists source references without
     "# Accepted design\n\nUse clear direct decision verbs.\n",
   );
   let calls = 0;
+  let reviewPrompt = "";
   const projectsRoot = join(root, "projects");
   const ctx = canonicalGymTestContext({
     projectsRoot,
     task: task({ batchSize: 10, maxBatches: 1 }),
-    async runAgent() {
+    async runAgent(_agent, prompt) {
       calls += 1;
       if (calls === 1) {
         const checkpoint = join(
@@ -168,6 +186,13 @@ test("keeps only validated strong signals and persists source references without
       const reviewInput = JSON.parse(
         readFileSync(join(evidenceDir, runDir, "design-review.json"), "utf8"),
       );
+      reviewPrompt = prompt;
+      expect(reviewInput.designSources).toEqual([designSource]);
+      expect(reviewInput.designSourceAnchors).toEqual([
+        { path: designSource, anchors: ["accepted-design"] },
+      ]);
+      expect(reviewPrompt).toContain(`- ${designSource}`);
+      expect(reviewPrompt).toContain("valid Markdown anchors: #accepted-design");
       return {
         status: "success",
         sessionId: "design-review",
@@ -269,6 +294,12 @@ test("design-review failures preserve durable diagnostics without advancing cand
       disposition: "structurally-invalid",
       diagnosticCode: "invalid-source-reference",
     },
+    {
+      returnedStatus: "success",
+      expectedCallStatus: "done",
+      disposition: "structurally-invalid",
+      diagnosticCode: "invented-anchor",
+    },
   ] as const;
 
   for (const variant of variants) {
@@ -356,7 +387,14 @@ test("design-review failures preserve durable diagnostics without advancing cand
               ? [{ ...validReview, candidateId: "private unknown candidate" }]
               : variant.diagnosticCode === "invalid-source-reference"
                 ? [{ ...validReview, sourceRefs: ["private unlisted source"] }]
-                : [];
+                : variant.diagnosticCode === "invented-anchor"
+                  ? [
+                      {
+                        ...validReview,
+                        sourceRefs: [`${designSource}#private-invented-anchor`],
+                      },
+                    ]
+                  : [];
         return {
           status: variant.returnedStatus,
           sessionId: `review-${variant.returnedStatus}-${variant.diagnosticCode}`,
@@ -406,16 +444,31 @@ test("design-review failures preserve durable diagnostics without advancing cand
     expect(failure.call_status).toBe(variant.expectedCallStatus);
     expect(failure.validation_disposition).toBe(variant.disposition);
     if (variant.diagnosticCode) {
+      const expectedCode =
+        variant.diagnosticCode === "invented-anchor"
+          ? "invalid-source-reference"
+          : variant.diagnosticCode;
       expect(
         failure.validation_diagnostics.map(
           (diagnostic: { code: string }) => diagnostic.code,
         ),
-      ).toContain(variant.diagnosticCode);
+      ).toContain(expectedCode);
+      if (
+        variant.diagnosticCode === "invalid-source-reference" ||
+        variant.diagnosticCode === "invented-anchor"
+      ) {
+        expect(failure.validation_diagnostics[0].reason).toBe(
+          variant.diagnosticCode === "invented-anchor"
+            ? "invalid-anchor"
+            : "unlisted-path",
+        );
+      }
       expect(failure.rejected_output_sha256).toHaveLength(64);
       expect(JSON.stringify(failure)).not.toContain(
         "private unknown candidate",
       );
       expect(JSON.stringify(failure)).not.toContain("private unlisted source");
+      expect(JSON.stringify(failure)).not.toContain("private-invented-anchor");
     } else {
       expect(failure.validation_diagnostics).toBeUndefined();
       expect(failure.rejected_output_sha256).toBeUndefined();
@@ -426,10 +479,265 @@ test("design-review failures preserve durable diagnostics without advancing cand
     );
     expect(JSON.parse(snapshot)).toEqual({
       designSources: [designSource],
+      designSourceAnchors: [
+        { path: designSource, anchors: ["accepted-design"] },
+      ],
       preferences: JSON.parse(catalog).preferences,
     });
     expect(readdirSync(join(stateDir, "scratch"))).toEqual([]);
   }
+});
+
+test("replays an exact frozen design-review input once and commits candidate state atomically", async () => {
+  const root = mkdtempSync(join(tmpdir(), "codex-frozen-review-"));
+  roots.push(root);
+  const projectsRoot = join(root, "projects");
+  const stateDir = join(projectsRoot, "gym.app", ".state", "learning", "codex");
+  const designSource = join(root, "accepted-design.md");
+  writeFileSync(designSource, "# Accepted design\n\nUse direct decisions.\n");
+  const frozenPath = join(root, "frozen-review-input.json");
+  const frozen = `${JSON.stringify(
+    {
+      designSources: [designSource],
+      preferences: [
+        {
+          id: "candidate-1",
+          statement: "Use direct decisions.",
+          scope: "global",
+          rationale: "Explicit preference.",
+          evidenceIds: ["evidence-1"],
+          conflictEvidenceIds: [],
+          confidence: 0.99,
+          competencies: [],
+          status: "candidate",
+        },
+      ],
+      checkpoint: {
+        schema_version: 1,
+        source: "codex-history",
+        updated_at: "2026-08-19T00:00:00.000Z",
+        processed_source_ids: ["frozen-source-1"],
+      },
+    },
+    null,
+    2,
+  )}\n`;
+  writeFileSync(frozenPath, frozen);
+  const expectedSha = createHash("sha256").update(frozen).digest("hex");
+
+  const mismatchRoot = join(root, "mismatch-projects");
+  const mismatchStateDir = join(
+    mismatchRoot,
+    "gym.app",
+    ".state",
+    "learning",
+    "codex",
+  );
+  mkdirSync(mismatchStateDir, { recursive: true });
+  const mismatchState = {
+    checkpoint: '{"preserved":"checkpoint"}\n',
+    catalog: '{"preserved":"catalog"}\n',
+    review: '{"preserved":"review"}\n',
+  };
+  writeFileSync(
+    join(mismatchStateDir, "checkpoint.json"),
+    mismatchState.checkpoint,
+  );
+  writeFileSync(join(mismatchStateDir, "catalog.json"), mismatchState.catalog);
+  writeFileSync(
+    join(mismatchStateDir, "design-review.json"),
+    mismatchState.review,
+  );
+  let mismatchCalls = 0;
+  const mismatchCtx = canonicalGymTestContext({
+    projectsRoot: mismatchRoot,
+    task: task({
+      mode: "frozen-design-review-replay",
+      frozenInputPath: frozenPath,
+      expectedSha256: "0".repeat(64),
+      replayKey: "review-20260819",
+    }),
+    async runAgent() {
+      mismatchCalls += 1;
+      throw new Error("must not be called");
+    },
+  });
+  const mismatchResult = await runCodexLearningIntake(mismatchCtx);
+  expect(mismatchCalls).toBe(0);
+  expect((mismatchResult.output as { summary: string }).summary).toBe(
+    "Frozen design-review replay hash mismatch.",
+  );
+  expect(readFileSync(join(mismatchStateDir, "checkpoint.json"), "utf8")).toBe(
+    mismatchState.checkpoint,
+  );
+  expect(readFileSync(join(mismatchStateDir, "catalog.json"), "utf8")).toBe(
+    mismatchState.catalog,
+  );
+  expect(
+    readFileSync(join(mismatchStateDir, "design-review.json"), "utf8"),
+  ).toBe(mismatchState.review);
+  expect(existsSync(join(mismatchStateDir, "replays"))).toBe(false);
+
+  let calls = 0;
+  const ctx = canonicalGymTestContext({
+    projectsRoot,
+    task: task({
+      mode: "frozen-design-review-replay",
+      frozenInputPath: frozenPath,
+      expectedSha256: expectedSha,
+      replayKey: "review-20260819",
+    }),
+    async runAgent() {
+      calls += 1;
+      return {
+        status: "success",
+        sessionId: "frozen-design-review",
+        structuredResult: {
+          summary: "The candidate matches accepted design.",
+          reviews: [
+            {
+              candidateId: "candidate-1",
+              alignment: "supported",
+              rationale: "The accepted design states the same rule.",
+              sourceRefs: [designSource],
+              recommendedUse: "lesson-evidence",
+            },
+          ],
+        },
+      };
+    },
+  });
+
+  await runCodexLearningIntake(ctx);
+  const checkpoint = readFileSync(join(stateDir, "checkpoint.json"), "utf8");
+  const catalog = readFileSync(join(stateDir, "catalog.json"), "utf8");
+  const review = readFileSync(join(stateDir, "design-review.json"), "utf8");
+  expect(calls).toBe(1);
+  expect(JSON.parse(checkpoint).processed_source_ids).toEqual([
+    "frozen-source-1",
+  ]);
+  expect(JSON.parse(catalog).preferences[0].status).toBe("candidate");
+  expect(JSON.parse(review).reviews).toHaveLength(1);
+  expect(JSON.parse(review).reviews[0].sourceRefs).toEqual([designSource]);
+  const receiptPath = join(
+    stateDir,
+    "replays",
+    `review-20260819-${createHash("sha256")
+      .update("review-20260819")
+      .digest("hex")
+      .slice(0, 12)}.json`,
+  );
+  const receipt = JSON.parse(readFileSync(receiptPath, "utf8"));
+  expect(receipt.status).toBe("completed");
+  expect(receipt.frozen_input).toEqual({
+    path: frozenPath,
+    sha256: expectedSha,
+  });
+  expectReplayProvenance(receipt);
+  expect(receipt.file_fingerprints.design_sources[designSource]).toHaveLength(
+    64,
+  );
+  expect(receipt.file_fingerprints.checkpoint).toBe(
+    createHash("sha256").update(checkpoint).digest("hex"),
+  );
+  expect(receipt.file_fingerprints.catalog).toBe(
+    createHash("sha256").update(catalog).digest("hex"),
+  );
+  expect(receipt.file_fingerprints.design_review).toBe(
+    createHash("sha256").update(review).digest("hex"),
+  );
+
+  await runCodexLearningIntake(ctx);
+  expect(calls).toBe(1);
+  expect(readFileSync(join(stateDir, "checkpoint.json"), "utf8")).toBe(
+    checkpoint,
+  );
+  expect(readFileSync(join(stateDir, "catalog.json"), "utf8")).toBe(catalog);
+  expect(readFileSync(join(stateDir, "design-review.json"), "utf8")).toBe(
+    review,
+  );
+});
+
+test("frozen replay rejection leaves existing candidate state byte-identical", async () => {
+  const root = mkdtempSync(join(tmpdir(), "codex-frozen-rejection-"));
+  roots.push(root);
+  const projectsRoot = join(root, "projects");
+  const stateDir = join(projectsRoot, "gym.app", ".state", "learning", "codex");
+  mkdirSync(stateDir, { recursive: true });
+  const designSource = join(root, "accepted-design.md");
+  writeFileSync(designSource, "# Accepted design\n\nUse direct decisions.\n");
+  const frozenPath = join(root, "frozen-review-input.json");
+  const candidate = {
+    id: "candidate-1",
+    statement: "Use direct decisions.",
+    scope: "global",
+    rationale: "Explicit preference.",
+    evidenceIds: ["evidence-1"],
+    conflictEvidenceIds: [],
+    confidence: 0.99,
+    competencies: [],
+    status: "candidate",
+  };
+  const frozen = `${JSON.stringify({
+    designSources: [designSource],
+    preferences: [candidate],
+  })}\n`;
+  writeFileSync(frozenPath, frozen);
+  const originals = {
+    checkpoint: '{"old":"checkpoint"}\n',
+    catalog: '{"old":"catalog"}\n',
+    review: '{"old":"review"}\n',
+  };
+  writeFileSync(join(stateDir, "checkpoint.json"), originals.checkpoint);
+  writeFileSync(join(stateDir, "catalog.json"), originals.catalog);
+  writeFileSync(join(stateDir, "design-review.json"), originals.review);
+  let calls = 0;
+  const ctx = canonicalGymTestContext({
+    projectsRoot,
+    task: task({
+      mode: "frozen-design-review-replay",
+      frozenDesignReviewInputPath: frozenPath,
+      frozenDesignReviewInputSha256: createHash("sha256")
+        .update(frozen)
+        .digest("hex"),
+      replayKey: "invalid-review",
+    }),
+    async runAgent() {
+      calls += 1;
+      return {
+        status: "success",
+        sessionId: "invalid-review",
+        structuredResult: { summary: "Incomplete.", reviews: [] },
+      };
+    },
+  });
+  const result = await runCodexLearningIntake(ctx);
+  expect(calls).toBe(1);
+  expect(readFileSync(join(stateDir, "checkpoint.json"), "utf8")).toBe(
+    originals.checkpoint,
+  );
+  expect(readFileSync(join(stateDir, "catalog.json"), "utf8")).toBe(
+    originals.catalog,
+  );
+  expect(readFileSync(join(stateDir, "design-review.json"), "utf8")).toBe(
+    originals.review,
+  );
+  const output = result.output as { evidence: string[] };
+  const terminalReceipt = JSON.parse(readFileSync(output.evidence[0]!, "utf8"));
+  expect(terminalReceipt.status).toBe("failed");
+  expectReplayProvenance(terminalReceipt);
+  expect(terminalReceipt.validation_diagnostics).toEqual([
+    {
+      code: "omitted-candidate",
+      field: "reviews[].candidateId",
+      candidate_id: "candidate-1",
+    },
+  ]);
+  expect(terminalReceipt.state_before).toEqual(terminalReceipt.state_after);
+  expect(output.evidence.every((path) => existsSync(path))).toBe(true);
+
+  await runCodexLearningIntake(ctx);
+  expect(calls).toBe(1);
 });
 
 test("advances the checkpoint when review finds no strong signal", async () => {

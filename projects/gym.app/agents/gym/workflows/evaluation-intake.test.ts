@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execute } from "./evaluation-intake.ts";
+import { evaluationEmissionLocalKey, execute } from "./evaluation-intake.ts";
 import { canonicalGymTestContext } from "./lib/test-context";
 
 function task(data: Record<string, unknown>): string {
@@ -76,11 +76,88 @@ describe("evaluation-intake", () => {
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.review.requested",
+        localKey: evaluationEmissionLocalKey(
+          {
+            agent: "may",
+            reviewedVerdict: "needs_improvement",
+            sessionId: "session-bad",
+          },
+          "incident-review-requested",
+        ),
         data: expect.objectContaining({
           requestKey: "incident-session-bad",
         }),
       }),
     ]);
+  });
+
+  it("keeps semantic emission keys stable on replay and distinct across evaluations", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-evaluation-replay-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const emitted: Record<string, unknown>[] = [];
+    const replayedDetails = {
+      agent: "may",
+      reviewedVerdict: "needs_improvement",
+      sessionId: "replayed-failure",
+    };
+    const replayed = canonicalGymTestContext({
+      projectsRoot,
+      task: task(replayedDetails),
+      emit: (event) => emitted.push(event),
+    });
+    const distinct = canonicalGymTestContext({
+      projectsRoot,
+      task: task({ ...replayedDetails, sessionId: "distinct-failure" }),
+      emit: (event) => emitted.push(event),
+    });
+
+    await execute(replayed);
+    await execute(replayed);
+    await execute(distinct);
+
+    expect(emitted.map((event) => event.localKey)).toEqual([
+      evaluationEmissionLocalKey(replayedDetails, "incident-review-requested"),
+      evaluationEmissionLocalKey(replayedDetails, "incident-review-requested"),
+      evaluationEmissionLocalKey(
+        { ...replayedDetails, sessionId: "distinct-failure" },
+        "incident-review-requested",
+      ),
+    ]);
+    expect(emitted[0]?.localKey).not.toBe(emitted[2]?.localKey);
+  });
+
+  it("generalizes actionable reviewed failures across paraphrased descriptions", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-evaluation-paraphrase-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const emitted: Record<string, unknown>[] = [];
+    for (const [sessionId, summary] of [
+      ["paraphrase-direct", "May skipped required terminal proof."],
+      [
+        "paraphrase-generalized",
+        "The response stopped before evidence established the final outcome.",
+      ],
+    ] as const) {
+      await execute(
+        canonicalGymTestContext({
+          projectsRoot,
+          task: task({
+            agent: "may",
+            reviewedVerdict: "needs_improvement",
+            sessionId,
+            summary,
+          }),
+          emit: (event) => emitted.push(event),
+        }),
+      );
+    }
+
+    expect(emitted.map((event) => event.type)).toEqual([
+      "gym.review.requested",
+      "gym.review.requested",
+    ]);
+    expect(new Set(emitted.map((event) => event.localKey)).size).toBe(2);
   });
 
   it("uses only the exact trigger that owns the current attempt", async () => {
@@ -111,7 +188,7 @@ describe("evaluation-intake", () => {
     ).toBe(false);
   });
 
-  it("trusts the reviewed verdict over the original triage lane", async () => {
+  it("keeps opposite reviewed passes non-actionable despite negative triage text", async () => {
     const root = mkdtempSync(join(tmpdir(), "gym-evaluation-verdict-"));
     roots.push(root);
     const projectsRoot = join(root, "projects");

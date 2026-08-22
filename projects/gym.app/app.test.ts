@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import type { AppEvent, AppInput, AppTaskInput } from "@may-agent/sdk";
+import { Check } from "typebox/value";
 import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
 import gymApp, { resolveGymTask, taskForGymInput } from "./app.ts";
 
@@ -17,9 +18,9 @@ function event(
   };
 }
 
-function admitted(input: AppInput): AppTaskInput {
+function admitted(input: AppInput, id = "request-1"): AppTaskInput {
   return {
-    id: "request-1",
+    id,
     source: { kind: "system" as const, id: "test" },
     input,
   };
@@ -345,7 +346,7 @@ describe("Gym task reconciliation", () => {
       parentId: "regression-assurance",
       mode: "achieve",
       workflow: "regression-run",
-      input: { benchmark: "may-alignment" },
+      input: { benchmark: "may-alignment", requestId: "request-201" },
     });
     expect(
       resolveGymTask(
@@ -354,7 +355,106 @@ describe("Gym task reconciliation", () => {
     ).toBeNull();
   });
 
-  test("routes owner comments through the inbox rather than task fact admission", () => {
+  test("binds the frozen comparison and correlation fields into the regression run", () => {
+    const requestId = "appdep_42bceb440b8fcd47cf81241f";
+    const data = {
+      agent: "may",
+      benchmark: "may-alignment",
+      reason: "frozen-comparison-request",
+      scenario: "may-align-proof-before-adopt",
+      trials: 1,
+      baseline: {
+        artifact: "/app/.state/sessions/s_1787238379742_871/result.json",
+        sha256:
+          "e4d47ca876d70d8f24ec5896c33d4d1824acaced93d85b7ae128e92b8e870cff",
+      },
+      candidate: {
+        commit: "0ff56f626cbfb3646a098deef4042c8b262d1bd3",
+        patchSha256:
+          "c09007f96d991be0714f7c500afb53a125a5560550fda3ca3a965a0dd3c4aab7",
+        repo: "/app/projects/may-agent",
+      },
+      sampleScope: { scenarios: ["may-align-proof-before-adopt"], trials: 1 },
+      requiredProof: ["result", "correlation"],
+      constraints: ["do-not-execute-comparison"],
+      returnPath:
+        "/app/projects/gym/.state/proofs/run-regression-request-correlation/terminal.json",
+    };
+
+    expect(Check(gymApp.inputSchema, { kind: "run-regression", data })).toBe(
+      true,
+    );
+    const attachment = taskForGymInput(
+      admitted({ kind: "run-regression", data }, requestId),
+    );
+    expect(attachment).toMatchObject({
+      kind: "desired",
+      intent: {
+        workflow: "regression-run",
+        input: { ...data, requestId },
+      },
+    });
+    if (attachment.kind !== "desired") {
+      throw new Error("run-regression did not produce a desired task");
+    }
+    expect(attachment.intent.input).toEqual({ ...data, requestId });
+    expect(attachment.intent.input).toHaveProperty(
+      "returnPath",
+      data.returnPath,
+    );
+  });
+
+  test("rejects comparison aliases before they can reach the regression run", () => {
+    const aliases = [
+      "compare-regression",
+      "run-comparison",
+      "regression-run",
+      "run-regression-comparison",
+    ];
+
+    for (const kind of aliases) {
+      const input = { kind, data: { benchmark: "may-alignment" } };
+      expect(Check(gymApp.inputSchema, input)).toBe(false);
+      const bypassed = taskForGymInput(
+        admitted(input as AppInput, "unrecognized-alias"),
+      );
+      if (bypassed.kind !== "desired") {
+        throw new Error(`${kind} did not produce the defensive fallback task`);
+      }
+      expect(bypassed.intent.workflow).not.toBe("regression-run");
+    }
+
+    expect(
+      Check(gymApp.inputSchema, {
+        kind: "run-regression",
+        data: { agent: "may", benchmark: "may-alignment", trials: 3 },
+      }),
+    ).toBe(true);
+    expect(
+      taskForGymInput(
+        admitted(
+          {
+            kind: "run-regression",
+            data: { agent: "may", benchmark: "may-alignment", trials: 3 },
+          },
+          "generic-regression-request",
+        ),
+      ),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        workflow: "regression-run",
+        input: {
+          agent: "may",
+          benchmark: "may-alignment",
+          trials: 3,
+          requestId: "generic-regression-request",
+        },
+      },
+    });
+  });
+
+  test("routes owner comments to request-correlated achieve carriers", () => {
     const subscription = gymApp.subscriptions?.find(
       ({ id }) => id === "project-comment",
     );
@@ -363,17 +463,80 @@ describe("Gym task reconciliation", () => {
       event("project.comment.created", {
         comment:
           "Review the current training loop and decide what should happen next.",
+        context: { source: "field", sequence: 7 },
       }),
     );
     expect(input).toMatchObject({ kind: "owner-review" });
-    expect(taskForGymInput(admitted(input!))).toMatchObject({
+
+    const first = taskForGymInput(admitted(input!, "owner request/17"));
+    const duplicate = taskForGymInput(admitted(input!, "owner request/17"));
+    const distinct = taskForGymInput(admitted(input!, "owner request/18"));
+
+    expect(first).toEqual(duplicate);
+    expect(first).toMatchObject({
       kind: "desired",
       intent: {
-        id: "runtime/owner-review",
-        mode: "maintain",
+        mode: "achieve",
         owner: "gym",
+        input: {
+          requestId: "owner request/17",
+          admittedInput: input,
+        },
       },
     });
+    if (first.kind !== "desired" || distinct.kind !== "desired") {
+      throw new Error("owner review input did not produce desired tasks");
+    }
+    expect(first.intent.id).toMatch(
+      /^owner-review\/owner-request-17-[a-f0-9]{16}$/,
+    );
+    expect(first.intent.id.startsWith("runtime/")).toBe(false);
+    expect(distinct.intent.id).not.toBe(first.intent.id);
+  });
+
+  test("rejects malformed and unsupported inputs at the declared admission schema", () => {
+    expect(
+      Check(gymApp.inputSchema, {
+        kind: "owner-review",
+        data: { comment: "review this" },
+      }),
+    ).toBe(true);
+    expect(Check(gymApp.inputSchema, { kind: "owner-review" })).toBe(false);
+    expect(
+      Check(gymApp.inputSchema, {
+        kind: "owner-review",
+        data: "not-an-object",
+      }),
+    ).toBe(false);
+    expect(Check(gymApp.inputSchema, { kind: "unsupported", data: {} })).toBe(
+      false,
+    );
+    expect(
+      Check(gymApp.inputSchema, {
+        kind: "owner-review",
+        data: {},
+        extra: true,
+      }),
+    ).toBe(false);
+  });
+
+  test("keeps every other supported input kind out of owner-review carriers", () => {
+    const supportedNonOwnerInputs: AppInput[] = [
+      { kind: "improve-may", data: {} },
+      { kind: "run-regression", data: { benchmark: "may-alignment" } },
+      { kind: "report-incident", data: { sessionId: "session-1" } },
+      { kind: "collect-codex-learning", data: {} },
+      { kind: "review-telegram-field", data: {} },
+    ];
+
+    for (const input of supportedNonOwnerInputs) {
+      expect(Check(gymApp.inputSchema, input)).toBe(true);
+      const attachment = taskForGymInput(admitted(input, "shared-request"));
+      if (attachment.kind !== "desired") {
+        throw new Error(`${input.kind} did not produce a desired task`);
+      }
+      expect(attachment.intent.id.startsWith("owner-review/")).toBe(false);
+    }
   });
 
   test("reconciles typed improvement wakes into one maintain task", () => {

@@ -127,7 +127,9 @@ interface StoredResult {
 type CampaignNext = "done" | "wait-for-approval" | "ask-owner";
 type TrackState = "complete" | "issue";
 type CompletionKind =
-  "no-actionable-failure" | "non-may-disposition" | "artifact-applied";
+  | "no-actionable-failure"
+  | "non-may-disposition"
+  | "artifact-applied";
 
 interface AssessmentProblem {
   kind: "missing-manifest" | "invalid-run" | "not-reproduced";
@@ -903,11 +905,71 @@ function readJson<T>(path: string): T | null {
   return JSON.parse(readFileSync(path, "utf8")) as T;
 }
 
-function writeJson(path: string, value: unknown): void {
+function nextResultRevisionPath(resultPath: string): string {
+  const revisionsDir = join(dirname(resultPath), "result-revisions");
+  mkdirSync(revisionsDir, { recursive: true });
+  const next =
+    readdirSync(revisionsDir, { withFileTypes: true }).reduce(
+      (maximum, entry) => {
+        const match = entry.isFile() ? entry.name.match(/^(\d+)\.json$/) : null;
+        return match ? Math.max(maximum, Number(match[1])) : maximum;
+      },
+      0,
+    ) + 1;
+  return join(revisionsDir, `${String(next).padStart(6, "0")}.json`);
+}
+
+/**
+ * Preserve each emitted workflow result before updating result.json. The
+ * generation-level path intentionally remains the mutable compatibility
+ * pointer; callers asserting terminal evidence must cite the returned path.
+ */
+export function writeWorkflowResultRevision(
+  resultPath: string,
+  value: unknown,
+): string {
+  const revisionPath = nextResultRevisionPath(resultPath);
+  const result = record(value);
+  const evidence = Array.isArray(result.evidence)
+    ? result.evidence
+        .map(String)
+        .map((item) => (item === resultPath ? revisionPath : item))
+    : undefined;
+  const approval = result.approval ? record(result.approval) : null;
+  const durable = {
+    ...result,
+    result_revision_path: revisionPath,
+    result_latest_path: resultPath,
+    ...(evidence ? { evidence } : {}),
+    ...(approval
+      ? {
+          approval: {
+            ...approval,
+            packetRevisionPath: revisionPath,
+            packetLatestPath: resultPath,
+          },
+        }
+      : {}),
+  };
+  const bytes = `${JSON.stringify(durable, null, 2)}\n`;
+  // A revision path is allocated once and never renamed or replaced.
+  writeFileSync(revisionPath, bytes, { flag: "wx" });
+  mkdirSync(dirname(resultPath), { recursive: true });
+  const temporary = `${resultPath}.tmp`;
+  writeFileSync(temporary, bytes);
+  renameSync(temporary, resultPath);
+  return revisionPath;
+}
+
+function writeJson(path: string, value: unknown): string {
+  if (path.endsWith(`${sep}result.json`)) {
+    return writeWorkflowResultRevision(path, value);
+  }
   mkdirSync(dirname(path), { recursive: true });
   const temporary = `${path}.tmp`;
   writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`);
   renameSync(temporary, path);
+  return path;
 }
 
 async function classifyFailures(
@@ -916,7 +978,8 @@ async function classifyFailures(
   runDirs: string[],
 ): Promise<Finding[] | null> {
   if (!failing.length) return [];
-  const result = await callGymAgent(ctx,
+  const result = await callGymAgent(
+    ctx,
     "gym",
     [
       "Classify every listed failing Gym scenario from immutable evidence.",
@@ -1213,7 +1276,13 @@ function planFromInput(
   const suite = record(
     JSON.parse(
       readFileSync(
-        join(gymProjectsRoot(ctx), "gym", "benchmarks", benchmark, "suite.json"),
+        join(
+          gymProjectsRoot(ctx),
+          "gym",
+          "benchmarks",
+          benchmark,
+          "suite.json",
+        ),
         "utf8",
       ),
     ),
@@ -1386,8 +1455,16 @@ export function dispatchApproval(
     artifactFingerprint: request.artifactFingerprint,
     acceptedDecisions: ["approve", "adjust", "decline"],
   };
+  const storedPacket = readJson<Record<string, unknown>>(request.packetPath);
+  const packetRevisionPath = String(
+    (request as ApprovalRequest & { packetRevisionPath?: string })
+      .packetRevisionPath ??
+      storedPacket?.result_revision_path ??
+      request.packetPath,
+  );
   const approval = {
     ...request,
+    packetRevisionPath,
     question: request.requestedAction,
     options: [
       {
@@ -1404,56 +1481,69 @@ export function dispatchApproval(
     directEvent: expectedResponse,
   };
 
-  void emitGymEvent(ctx, gymEvent("project.approval.requested", {
-    taskId: request.taskId,
-    taskGeneration: request.taskGeneration,
-    approvalKind: request.kind,
-    approvalId: request.approvalId,
-    waitId: request.waitId,
-    artifactFingerprint: request.artifactFingerprint,
-    packetPath: request.packetPath,
-    requestedAction: request.requestedAction,
-    reason: request.reason,
-    expectedResponse,
-  }));
-  void emitGymEvent(ctx, gymEvent("message.created", {
-    to: "human",
-    from: "gym",
-    project: "gym",
-    projectId: "projects/gym.app",
-    projectPath: "projects/gym.app",
-    taskId: request.taskId,
-    taskGeneration: request.taskGeneration,
-    content: [
-      request.kind === "agent-improvement"
-        ? "Gym has a verified May improvement"
-        : "Gym found a benchmark or scorer fix",
-      "",
-      "Decision",
-      request.requestedAction,
-      "",
-      "Why now",
-      request.reason,
-      "",
-      `Artifact: ${request.artifactFingerprint}`,
-      `Review packet: ${request.packetPath}`,
-      "",
-      "Reply: approve or reject <reason>",
-    ].join("\n"),
-    priority: "P1",
-    intent: "gym-approval",
-    approval,
-    approvalKind: request.kind,
-    approvalId: request.approvalId,
-    waitId: request.waitId,
-    artifactFingerprint: request.artifactFingerprint,
-    packetPath: request.packetPath,
-    pathId: request.taskId,
-    requestedAction: request.requestedAction,
-    reason: request.reason,
-    expectedResponse,
-    dedupKey: request.approvalId,
-  }, { target: { human: true } }));
+  void emitGymEvent(
+    ctx,
+    gymEvent("project.approval.requested", {
+      taskId: request.taskId,
+      taskGeneration: request.taskGeneration,
+      approvalKind: request.kind,
+      approvalId: request.approvalId,
+      waitId: request.waitId,
+      artifactFingerprint: request.artifactFingerprint,
+      packetPath: request.packetPath,
+      packetRevisionPath,
+      requestedAction: request.requestedAction,
+      reason: request.reason,
+      expectedResponse,
+    }),
+  );
+  void emitGymEvent(
+    ctx,
+    gymEvent(
+      "message.created",
+      {
+        to: "human",
+        from: "gym",
+        project: "gym",
+        projectId: "projects/gym.app",
+        projectPath: "projects/gym.app",
+        taskId: request.taskId,
+        taskGeneration: request.taskGeneration,
+        content: [
+          request.kind === "agent-improvement"
+            ? "Gym has a verified May improvement"
+            : "Gym found a benchmark or scorer fix",
+          "",
+          "Decision",
+          request.requestedAction,
+          "",
+          "Why now",
+          request.reason,
+          "",
+          `Artifact: ${request.artifactFingerprint}`,
+          `Immutable review packet: ${packetRevisionPath}`,
+          `Latest-state compatibility pointer: ${request.packetPath}`,
+          "",
+          "Reply: approve or reject <reason>",
+        ].join("\n"),
+        priority: "P1",
+        intent: "gym-approval",
+        approval,
+        approvalKind: request.kind,
+        approvalId: request.approvalId,
+        waitId: request.waitId,
+        artifactFingerprint: request.artifactFingerprint,
+        packetPath: request.packetPath,
+        packetRevisionPath,
+        pathId: request.taskId,
+        requestedAction: request.requestedAction,
+        reason: request.reason,
+        expectedResponse,
+        dedupKey: request.approvalId,
+      },
+      { target: { human: true } },
+    ),
+  );
 }
 
 function approvalFromStored(
@@ -2026,8 +2116,7 @@ function locateStoredEvaluationAdjustment(
   | { error: string; evidence: string[] }
   | null {
   if (
-    String(input.reason ?? "") !==
-    "resume-preserved-evaluation-only-adjustment"
+    String(input.reason ?? "") !== "resume-preserved-evaluation-only-adjustment"
   ) {
     return null;
   }
@@ -2326,7 +2415,8 @@ async function buildBenchmarkFix(
   mkdirSync(dirname(workspacePath), { recursive: true });
   cpSync(targetPath, workspacePath, { recursive: true });
   const before = fingerprintTree(workspacePath);
-  const result = await callGymAgent(ctx,
+  const result = await callGymAgent(
+    ctx,
     "gym-implementer",
     [
       "Build one narrow isolated benchmark/scorer fix from this reviewed Gym evidence.",
@@ -2600,7 +2690,8 @@ async function reviewFailedCandidate(
   verificationDir: string,
 ): Promise<FailedReview | null> {
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const result = await callGymAgent(ctx,
+    const result = await callGymAgent(
+      ctx,
       "gym",
       [
         "Review this failed May candidate before deciding what changes next.",
@@ -2655,8 +2746,8 @@ interface IterationRevision {
 function saveWorkflowResult(
   resultPath: string,
   value: Record<string, unknown>,
-): void {
-  writeJson(resultPath, {
+): string {
+  return writeJson(resultPath, {
     schema_version: 1,
     ...value,
     actions: [],
@@ -2673,7 +2764,7 @@ function saveAttentionResult(
 ): GymExecutionResult {
   const bounded = boundedEvidence([resultPath, ...evidence]);
   const previous = readJson<Record<string, unknown>>(resultPath) ?? {};
-  saveWorkflowResult(resultPath, {
+  const revisionPath = saveWorkflowResult(resultPath, {
     ...previous,
     ...details,
     summary,
@@ -2687,7 +2778,7 @@ function saveAttentionResult(
   return ctx.done(summary, {
     state: "needs-owner",
     summary,
-    evidence: bounded,
+    evidence: boundedEvidence([revisionPath, ...evidence]),
   });
 }
 
@@ -2704,7 +2795,7 @@ function saveCompletedResult(
   },
 ): string[] {
   const evidence = boundedEvidence([resultPath, ...input.evidence]);
-  saveWorkflowResult(resultPath, {
+  const revisionPath = saveWorkflowResult(resultPath, {
     task_id: input.taskId,
     generation: input.generation,
     ...input.details,
@@ -2716,7 +2807,7 @@ function saveCompletedResult(
     conditions: [],
     approval: null,
   });
-  return evidence;
+  return boundedEvidence([revisionPath, ...input.evidence]);
 }
 
 function migrateLegacyRevision(candidateStateDir: string): void {
@@ -2830,7 +2921,8 @@ async function runCandidateIteration(
     if (baseCandidatePath && existsSync(baseCandidatePath)) {
       cpSync(baseCandidatePath, candidateDir, { recursive: true });
     }
-    const result = await callGymAgent(ctx,
+    const result = await callGymAgent(
+      ctx,
       "gym-implementer",
       [
         "Build one narrow isolated May candidate for this approved Gym finding.",
@@ -3285,7 +3377,7 @@ async function runCandidateIteration(
       : []),
     ...(review?.evidence ?? []),
   ];
-  saveWorkflowResult(resultPath, {
+  const resultRevisionPath = saveWorkflowResult(resultPath, {
     task_id: taskId,
     generation,
     iteration,
@@ -3326,28 +3418,40 @@ async function runCandidateIteration(
     conditions: approval ? [approval.condition] : [],
     approval,
   });
-  void emitGymEvent(ctx, gymEvent("gym.improvement.reviewed", {
-    taskId,
-    agent: plan.agent,
-    candidateId,
-    candidateFingerprint,
-    verificationDir,
-    recommendation,
-    resultPath,
-  }));
-  if (approval) dispatchApproval(ctx, approval);
+  void emitGymEvent(
+    ctx,
+    gymEvent("gym.improvement.reviewed", {
+      taskId,
+      agent: plan.agent,
+      candidateId,
+      candidateFingerprint,
+      verificationDir,
+      recommendation,
+      resultPath,
+    }),
+  );
+  const resultEvidence = boundedEvidence([
+    resultRevisionPath,
+    ...evidence.filter((item) => item !== resultPath),
+  ]);
+  const durableApproval = approval
+    ? (approvalFromStored(
+        readJson<Record<string, unknown>>(resultPath) ?? {},
+      ) ?? approval)
+    : null;
+  if (durableApproval) dispatchApproval(ctx, durableApproval);
   if (!approval) {
     return ctx.done(summary, {
       state: workflowState,
       summary,
-      evidence: boundedEvidence(evidence),
+      evidence: resultEvidence,
       ...(workflowState === "converged" ? { actions: [] } : {}),
     });
   }
   return ctx.done(summary, {
     state: "waiting",
     summary,
-    evidence: boundedEvidence(evidence),
+    evidence: resultEvidence,
     actions: [],
     conditions: [approval.condition],
   });
@@ -3609,8 +3713,7 @@ async function runEvaluationOnlyAdjustment(
         RELEASE_TRIALS,
       ) &&
       verification.comparison.baseline_run_id === baseline.manifest.run_id &&
-      verification.comparison.candidate_run_id ===
-        verification.manifest.run_id;
+      verification.comparison.candidate_run_id === verification.manifest.run_id;
     const protectedUnchanged =
       !protectedPath ||
       (existsSync(protectedPath) &&
@@ -3697,7 +3800,7 @@ async function runEvaluationOnlyAdjustment(
       join(verification.runDir, "comparison.json"),
       ...(protectedPath ? [protectedPath] : []),
     ]);
-    saveWorkflowResult(resultPath, {
+    const resultRevisionPath = saveWorkflowResult(resultPath, {
       ...stored,
       task_id: taskId,
       generation,
@@ -3722,20 +3825,26 @@ async function runEvaluationOnlyAdjustment(
       conditions: [approval.condition],
       approval,
     });
-    await emitGymEvent(ctx, gymEvent("gym.improvement.reviewed", {
-      taskId,
-      agent: plan.agent,
-      candidateId,
-      candidateFingerprint: adjustment.candidateFingerprint,
-      verificationDir: verification.runDir,
-      recommendation: "promote",
-      resultPath,
-    }));
+    await emitGymEvent(
+      ctx,
+      gymEvent("gym.improvement.reviewed", {
+        taskId,
+        agent: plan.agent,
+        candidateId,
+        candidateFingerprint: adjustment.candidateFingerprint,
+        verificationDir: verification.runDir,
+        recommendation: "promote",
+        resultPath,
+      }),
+    );
     dispatchApproval(ctx, approval);
     return ctx.done(summary, {
       state: "waiting",
       summary,
-      evidence,
+      evidence: boundedEvidence([
+        resultRevisionPath,
+        ...evidence.filter((item) => item !== resultPath),
+      ]),
       actions: [],
       conditions: [approval.condition],
     });
@@ -3835,7 +3944,7 @@ async function prepareBenchmarkFixProposal(
     ...review.evidence,
     ...fix.evidence,
   ]);
-  saveWorkflowResult(resultPath, {
+  const resultRevisionPath = saveWorkflowResult(resultPath, {
     task_id: taskId,
     generation,
     assessment_path: plan.assessmentPath,
@@ -3854,18 +3963,24 @@ async function prepareBenchmarkFixProposal(
     conditions: [approval.condition],
     approval,
   });
-  await emitGymEvent(ctx, gymEvent("gym.improvement.reviewed", {
-    taskId,
-    agent: plan.agent,
-    artifactFingerprint: fix.fingerprint,
-    recommendation: review.disposition,
-    resultPath,
-  }));
+  await emitGymEvent(
+    ctx,
+    gymEvent("gym.improvement.reviewed", {
+      taskId,
+      agent: plan.agent,
+      artifactFingerprint: fix.fingerprint,
+      recommendation: review.disposition,
+      resultPath,
+    }),
+  );
   dispatchApproval(ctx, approval);
   return ctx.done(summary, {
     state: "waiting",
     summary,
-    evidence,
+    evidence: boundedEvidence([
+      resultRevisionPath,
+      ...evidence.filter((item) => item !== resultPath),
+    ]),
     actions: [],
     conditions: [approval.condition],
   });
@@ -3898,10 +4013,7 @@ async function runCandidate(
   if (previous && !previous.approval) {
     const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
     const recovery =
-      preservedEvaluationAdjustment(
-        candidateStateDir,
-        triggerDetails(ctx),
-      ) ??
+      preservedEvaluationAdjustment(candidateStateDir, triggerDetails(ctx)) ??
       recoverableStoredEvaluationAdjustment(
         candidateStateDir,
         stored,
@@ -4068,7 +4180,8 @@ async function runCandidate(
         proposalAccepted: true,
         evidence: [resultPath, decisionPath, artifactPath],
       });
-      await emitGymEvent(ctx,
+      await emitGymEvent(
+        ctx,
         previous.approval.kind === "agent-improvement"
           ? gymEvent("agent.revision.changed", {
               agent: plan.agent,
@@ -4212,7 +4325,10 @@ async function runCandidate(
       );
       const revision = outcome as IterationRevision;
       if (revision.kind !== "revise") {
-        return appendTaskActions(outcome as GymExecutionResult, retryCloseActions);
+        return appendTaskActions(
+          outcome as GymExecutionResult,
+          retryCloseActions,
+        );
       }
       accumulatedEvidence.push(...revision.evidence);
       plan = {
@@ -4591,7 +4707,8 @@ async function selectPriorityExperiment(
     focus: experiment.assessment.focus,
     findings: experiment.assessment.findings,
   }));
-  const result = await callGymAgent(ctx,
+  const result = await callGymAgent(
+    ctx,
     "gym",
     [
       "You own the improve/may goal and must choose the single highest-priority integration path from two independent, frozen development assessments.",
@@ -4676,12 +4793,15 @@ function emitCurriculumContinuation(
   ctx: WorkflowContext,
   campaignId: string,
 ): void {
-  void emitGymEvent(ctx, gymEvent("gym.improvement.requested", {
+  void emitGymEvent(
+    ctx,
+    gymEvent("gym.improvement.requested", {
       agent: "may",
       curriculumDrain: true,
       reason: "curriculum-continue",
       campaignId,
-  }));
+    }),
+  );
 }
 
 export function improvementInput(
@@ -4833,10 +4953,7 @@ export async function runImprovement(
   }
   if (storedAdjustment && "resultPath" in storedAdjustment) {
     try {
-      const plan = planFromApprovalPacket(
-        ctx,
-        storedAdjustment.resultPath,
-      );
+      const plan = planFromApprovalPacket(ctx, storedAdjustment.resultPath);
       if (!plan) {
         return saveAttentionResult(
           ctx,
@@ -5025,11 +5142,7 @@ export async function runImprovement(
       });
     }
     if (actionable.length) {
-      const selected = await selectPriorityExperiment(
-        ctx,
-        actionable,
-        input,
-      );
+      const selected = await selectPriorityExperiment(ctx, actionable, input);
       const result = await runImprovementOnce(
         ctx,
         loop,
@@ -5044,8 +5157,7 @@ export async function runImprovement(
         return result;
       }
       const selectedResultPath = join(
-        improvementStatePaths(ctx, taskId, generation, selected.scope)
-          .stateDir,
+        improvementStatePaths(ctx, taskId, generation, selected.scope).stateDir,
         "result.json",
       );
       const selectedCheckpoint =
@@ -5116,7 +5228,9 @@ export async function runImprovement(
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<GymExecutionResult> {
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<GymExecutionResult> {
   return runImprovement(ctx);
 }
 

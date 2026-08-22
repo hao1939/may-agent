@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type {
+  AppEvent,
+  ExecutionResult,
+  WorkflowContext,
+} from "@may-agent/sdk";
 import {
   emitGymEvent,
   gymAppRoot,
@@ -79,6 +83,72 @@ function requestedScenarios(details: Record<string, unknown>): string[] {
   return values.map((value) => validatedName(value, "scenario", ""));
 }
 
+type RegressionEmission =
+  | "completed"
+  | "review-required"
+  | "runtime-failed"
+  | "runtime-review-required";
+
+/**
+ * Task-owned regression emission contract:
+ * - one admitted request and semantic emission always produce the same key;
+ * - different semantic emissions from that request always produce different keys.
+ */
+export function regressionEmissionLocalKey(
+  ctx: WorkflowContext,
+  emission: RegressionEmission,
+): string {
+  const details = triggerDetails(ctx) ?? {};
+  const admittedInput =
+    ctx.reconciliation?.input &&
+    typeof ctx.reconciliation.input === "object" &&
+    !Array.isArray(ctx.reconciliation.input)
+      ? (ctx.reconciliation.input as Record<string, unknown>)
+      : ctx.input && typeof ctx.input === "object" && !Array.isArray(ctx.input)
+        ? (ctx.input as Record<string, unknown>)
+        : {};
+  const requestIdentity =
+    [
+      details.requestId,
+      details.request_id,
+      details.correlatedOwnerRequestId,
+      details.ownerRequestId,
+      details.requestKey,
+      details.correlationId,
+      details.id,
+      admittedInput.requestId,
+      admittedInput.request_id,
+      admittedInput.correlatedOwnerRequestId,
+      admittedInput.ownerRequestId,
+      admittedInput.requestKey,
+      admittedInput.correlationId,
+      admittedInput.id,
+    ].find(
+      (value) =>
+        (typeof value === "string" && value.trim().length > 0) ||
+        typeof value === "number",
+    ) ??
+    ctx.reconciliation?.taskId ??
+    "regression-request";
+  const requestHash = createHash("sha256")
+    .update(String(requestIdentity).trim())
+    .digest("hex")
+    .slice(0, 20);
+  return `regression-${requestHash}-${emission}`;
+}
+
+function regressionEvent(
+  ctx: WorkflowContext,
+  emission: RegressionEmission,
+  type: string,
+  data: Record<string, unknown>,
+): AppEvent<Record<string, unknown>> {
+  return {
+    ...gymEvent(type, data),
+    localKey: regressionEmissionLocalKey(ctx, emission),
+  };
+}
+
 function runDirectory(stdout: string): string | null {
   for (const line of stdout.trim().split(/\r?\n/).reverse()) {
     const candidate = line.trim();
@@ -121,12 +191,12 @@ function summarizeRun(runDir: string): Record<string, unknown> {
   };
 }
 
-function regressionFailure(
+async function regressionFailure(
   ctx: WorkflowContext,
   benchmark: string,
   reason: string,
   evidence: Record<string, unknown>,
-): ExecutionResult {
+): Promise<ExecutionResult> {
   const failureKey = createHash("sha256")
     .update(JSON.stringify({ benchmark, reason, evidence }))
     .digest("hex")
@@ -149,17 +219,23 @@ function regressionFailure(
       2,
     )}\n`,
   );
-  void emitGymEvent(ctx, gymEvent("gym.regression.failed", {
-    benchmark,
-    reason,
-    failurePath,
-    ...evidence,
-  }));
-  void emitGymEvent(ctx, gymEvent("gym.review.requested", {
-    kind: "regression-runtime",
-    requestKey: `regression-runtime-${failureKey}`,
-    failurePath,
-  }));
+  await emitGymEvent(
+    ctx,
+    regressionEvent(ctx, "runtime-failed", "gym.regression.failed", {
+      benchmark,
+      reason,
+      failurePath,
+      ...evidence,
+    }),
+  );
+  await emitGymEvent(
+    ctx,
+    regressionEvent(ctx, "runtime-review-required", "gym.review.requested", {
+      kind: "regression-runtime",
+      requestKey: `regression-runtime-${failureKey}`,
+      failurePath,
+    }),
+  );
   return ctx.done(reason, {
     state: "converged",
     summary: reason,
@@ -244,18 +320,24 @@ export async function runRegression(
   mkdirSync(stateDir, { recursive: true });
   writeFileSync(outcomePath, `${JSON.stringify(outcome, null, 2)}\n`);
 
-  await emitGymEvent(ctx, gymEvent("gym.regression.completed", {
-    ...outcome,
-    outcomePath,
-  }));
-  if (outcome.review_required) {
-    await emitGymEvent(ctx, gymEvent("gym.review.requested", {
-      kind: "regression",
-      requestKey: `regression-${runId}`,
-      runId: outcome.run_id,
-      runDir,
+  await emitGymEvent(
+    ctx,
+    regressionEvent(ctx, "completed", "gym.regression.completed", {
+      ...outcome,
       outcomePath,
-    }));
+    }),
+  );
+  if (outcome.review_required) {
+    await emitGymEvent(
+      ctx,
+      regressionEvent(ctx, "review-required", "gym.review.requested", {
+        kind: "regression",
+        requestKey: `regression-${runId}`,
+        runId: outcome.run_id,
+        runDir,
+        outcomePath,
+      }),
+    );
   }
 
   const summary = `Gym regression ${String(outcome.run_id)} completed: ${JSON.stringify(outcome.counts)}.`;

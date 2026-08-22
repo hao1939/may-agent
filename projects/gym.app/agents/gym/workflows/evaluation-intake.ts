@@ -31,6 +31,19 @@ function evaluationIdentity(details: Record<string, unknown>): string {
   return safeKey(raw, `evaluation-${fallback}`);
 }
 
+type EvaluationEmission = "incident-review-requested";
+
+export function evaluationEmissionLocalKey(
+  details: Record<string, unknown>,
+  emission: EvaluationEmission,
+): string {
+  const identityHash = createHash("sha256")
+    .update(evaluationIdentity(details))
+    .digest("hex")
+    .slice(0, 20);
+  return `evaluation-${identityHash}-${emission}`;
+}
+
 function isFailure(details: Record<string, unknown>): boolean {
   const lane = String(details.lane ?? "").toLowerCase();
   const reviewedVerdict = String(details.reviewedVerdict ?? "").toLowerCase();
@@ -120,15 +133,18 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (failure) {
     const incident = writeIncident(appDir, details);
     evidence.push(incident.path);
-    await emitGymEvent(
-      ctx,
-      gymEvent("gym.review.requested", {
+    await emitGymEvent(ctx, {
+      ...gymEvent("gym.review.requested", {
         kind: "incident",
         requestKey: `incident-${incident.id}`,
         incidentId: incident.id,
         incidentPath: incident.path,
       }),
-    );
+      localKey: evaluationEmissionLocalKey(
+        details,
+        "incident-review-requested",
+      ),
+    });
   }
   const identity = evaluationIdentity(details);
   const summary = `Evaluation intake processed ${identity}: ${disposition}.`;
