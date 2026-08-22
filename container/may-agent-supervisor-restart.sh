@@ -9,19 +9,33 @@ deploy_marker="${MAY_AGENT_DEPLOY_MARKER:-/app/projects/may-agent/bundle/deploy-
 sdk_marker="${MAY_AGENT_SDK_DEPLOY_MARKER:-/app/projects/may-agent/bundle/sdk-requested}"
 sdk_root="${MAY_AGENT_DEPLOY_SDK_ROOT:-/app/projects/may-agent/bundle}"
 sdk_link="${MAY_AGENT_SDK_LINK:-$sdk_root/sdk-current}"
+ui_marker="${MAY_AGENT_UI_DEPLOY_MARKER:-/app/projects/may-agent/bundle/ui-requested}"
+ui_root="${MAY_AGENT_DEPLOY_UI_ROOT:-/app/projects/may-agent/bundle}"
+ui_target="${MAY_AGENT_UI_PATH:-/app/projects/platform/ui}"
 receipt_tool="${MAY_AGENT_DEPLOY_RECEIPT_TOOL:-/app/projects/may-agent/bundle/deploy-receipt.ts}"
+receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-/app/projects/may-agent/.state/deploy-receipts}"
+runtime_user="${MAY_AGENT_RUNTIME_USER:-mayagent}"
+runtime_group="${MAY_AGENT_RUNTIME_GROUP:-mayagent}"
 install_tmp="${target}.next.$$"
 backup="${target}.prev.$$"
 console_install_tmp="${console_target}.next.$$"
 console_backup="${console_target}.prev.$$"
 sdk_link_tmp="${sdk_link}.next.$$"
+ui_link_tmp="${ui_target}.next.$$"
+ui_backup="${ui_target}.prev.$$"
 services_stopped=0
 deployed=0
 finalized=0
+receipt_accepted=0
+activation_started=0
 runtime_services="may-agent may-agent-web"
 receipt=""
 sdk_release=""
+ui_release=""
 previous_sdk_release=""
+sdk_had_previous=0
+ui_had_previous=0
+ui_activation_started=0
 health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"
 health_delay="${MAY_AGENT_HEALTH_DELAY:-1}"
 
@@ -58,16 +72,52 @@ switch_sdk() {
   mv -Tf "$sdk_link_tmp" "$sdk_link"
 }
 
+restore_previous_release() {
+  supervisorctl stop $runtime_services || true
+  services_stopped=1
+  install -m 755 -o "$runtime_user" -g "$runtime_group" "$backup" "$target"
+  install -m 755 "$console_backup" "$console_target"
+  if [ "$sdk_had_previous" = "1" ]; then
+    switch_sdk "$previous_sdk_release"
+  else
+    rm -f "$sdk_link"
+  fi
+  if [ "$ui_activation_started" = "1" ]; then
+    if [ -L "$ui_target" ] || [ -f "$ui_target" ]; then
+      rm -f "$ui_target"
+    elif [ -e "$ui_target" ]; then
+      echo "[may-agent-restarter] refusing to replace unexpected rollback UI path: $ui_target" >&2
+      return 1
+    fi
+    if [ "$ui_had_previous" = "1" ]; then
+      mv "$ui_backup" "$ui_target"
+    fi
+    ui_activation_started=0
+  fi
+  supervisorctl start $runtime_services
+  services_stopped=0
+  activation_started=0
+}
+
 cleanup() {
   rc=$?
-  rm -f "$install_tmp" "$console_install_tmp" "$sdk_link_tmp"
+  rm -f "$install_tmp" "$console_install_tmp" "$sdk_link_tmp" "$ui_link_tmp"
+  if [ "$activation_started" = "1" ] && [ "$finalized" = "0" ]; then
+    restore_previous_release || true
+  fi
   if [ "$services_stopped" = "1" ]; then supervisorctl start $runtime_services || true; fi
-  if [ "$deployed" = "1" ] && [ "$finalized" = "0" ] && [ -n "$receipt" ]; then
+  if [ "$receipt_accepted" = "1" ] && [ "$finalized" = "0" ]; then
+    rm -f "$deploy_marker" "$sdk_marker" "$ui_marker"
     loaded="$(sha256sum "$target" 2>/dev/null | awk '{print $1}' || echo unknown)"
     settle failed "$loaded" unhealthy false "restarter-exit-$rc" || true
     emit_wake failed || true
   fi
-  rm -f "$backup" "$console_backup"
+  if [ "$activation_started" = "0" ] || [ "$finalized" = "1" ]; then
+    rm -f "$backup" "$console_backup"
+    rm -rf "$ui_backup"
+  else
+    echo "[may-agent-restarter] rollback artifacts retained: $backup $console_backup $ui_backup" >&2
+  fi
   exit "$rc"
 }
 trap cleanup EXIT
@@ -77,8 +127,13 @@ sleep "${MAY_AGENT_RESTART_DELAY:-0.2}"
 
 if [ -e "$deploy_marker" ]; then
   receipt="$(cat "$deploy_marker")"
-  case "$receipt" in /app/projects/may-agent/.state/deploy-receipts/*.json) ;; *) echo "Unsafe deploy receipt path: $receipt" >&2; exit 1;; esac
-  if [ ! -f "$receipt" ] || [ ! -x "$bundle" ] || [ ! -x "$console_bundle" ]; then
+  case "$receipt" in "$receipt_dir"/*.json) ;; *) echo "Unsafe deploy receipt path: $receipt" >&2; exit 1;; esac
+  if [ ! -f "$receipt" ]; then
+    echo "[may-agent-restarter] receipt missing: $receipt" >&2
+    exit 1
+  fi
+  receipt_accepted=1
+  if [ ! -x "$bundle" ] || [ ! -x "$console_bundle" ]; then
     echo "[may-agent-restarter] receipt or bundle missing: $receipt $bundle $console_bundle" >&2
     exit 1
   fi
@@ -88,8 +143,14 @@ if [ -e "$deploy_marker" ]; then
     echo "[may-agent-restarter] SDK release missing or mismatched: $sdk_release" >&2
     exit 1
   fi
+  ui_release="$(cat "$ui_marker" 2>/dev/null || true)"
+  if [ "$ui_release" != "ui-$source_commit" ] || [ ! -f "$ui_root/$ui_release/index.html" ]; then
+    echo "[may-agent-restarter] UI release missing or mismatched: $ui_release" >&2
+    exit 1
+  fi
   if [ -L "$sdk_link" ]; then
     previous_sdk_release="$(readlink "$sdk_link")"
+    sdk_had_previous=1
   elif [ -e "$sdk_link" ]; then
     echo "[may-agent-restarter] SDK current path is not a symlink: $sdk_link" >&2
     exit 1
@@ -104,12 +165,21 @@ services_stopped=1
 if [ -n "$receipt" ]; then
   cp -f "$target" "$backup"
   cp -f "$console_target" "$console_backup"
+  activation_started=1
   switch_sdk "$sdk_release"
-  install -m 755 -o mayagent -g mayagent "$bundle" "$install_tmp"
+  install -m 755 -o "$runtime_user" -g "$runtime_group" "$bundle" "$install_tmp"
   mv -f "$install_tmp" "$target"
   install -m 755 "$console_bundle" "$console_install_tmp"
   mv -f "$console_install_tmp" "$console_target"
-  rm -f "$deploy_marker" "$sdk_marker"
+  mkdir -p "$(dirname "$ui_target")"
+  ln -s "$ui_root/$ui_release" "$ui_link_tmp"
+  if [ -e "$ui_target" ] || [ -L "$ui_target" ]; then
+    mv "$ui_target" "$ui_backup"
+    ui_had_previous=1
+  fi
+  ui_activation_started=1
+  mv -Tf "$ui_link_tmp" "$ui_target"
+  rm -f "$deploy_marker" "$sdk_marker" "$ui_marker"
   deployed=1
 fi
 
@@ -124,15 +194,7 @@ if [ "$deployed" = "1" ]; then
     finalized=1
   else
     echo "[may-agent-restarter] health failed; rolling back" >&2
-    supervisorctl stop $runtime_services || true
-    services_stopped=1
-    install -m 755 -o mayagent -g mayagent "$backup" "$target"
-    install -m 755 "$console_backup" "$console_target"
-    if [ -n "$previous_sdk_release" ]; then
-      switch_sdk "$previous_sdk_release"
-    fi
-    supervisorctl start $runtime_services
-    services_stopped=0
+    restore_previous_release
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     rollback_health=unhealthy
     if wait_for_health; then rollback_health=healthy; fi
