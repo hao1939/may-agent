@@ -33,28 +33,50 @@ describe("AppTaskRecoveryScheduler", () => {
   });
 
   it("uses one nearest-due timer without polling before it is due", async () => {
-    let dueAt = Date.now() + 25;
+    let dueAt = Date.now() + 30;
     let recoveries = 0;
+    const queued: string[] = [];
     const scheduler = new AppTaskRecoveryScheduler({
       source: {
-        listRecoveryCandidates() {
+        listRecoveryCandidates(now = Date.now()) {
           recoveries += 1;
-          return { items: [], nextCursor: null };
+          return {
+            items:
+              now >= dueAt
+                ? [
+                    {
+                      taskId: "due-task",
+                      lane: "normal",
+                      ready: false,
+                      changed: false,
+                      nextCheckAt: dueAt,
+                      leaseUntil: null,
+                    },
+                  ]
+                : [],
+            nextCursor: null,
+          };
         },
         nextDueAt: () => dueAt,
       },
-      enqueue: () => {},
+      enqueue: (taskId) => queued.push(taskId),
       safetyIntervalMs: 10_000,
     });
 
     scheduler.start();
     expect(recoveries).toBe(1);
-    await Bun.sleep(40);
+    await Bun.sleep(10);
+    expect(recoveries).toBe(1);
+    expect(queued).toEqual([]);
+    await Bun.sleep(35);
     expect(recoveries).toBe(2);
-    dueAt = Date.now() + 20;
+    expect(queued).toEqual(["due-task"]);
+
+    dueAt = Date.now() + 25;
     scheduler.stateChanged();
     await Bun.sleep(30);
     expect(recoveries).toBe(3);
+    expect(queued).toEqual(["due-task", "due-task"]);
     scheduler.close();
   });
 
