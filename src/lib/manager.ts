@@ -50,6 +50,7 @@ import {
   appendSessionMessage,
   sessionOutputDir,
   readSessionMessages,
+  readSessionMessagesTail,
   readCompactedMessages,
   saveCompactedMessages,
   rewriteSessionMessages,
@@ -264,6 +265,8 @@ export interface SubagentManagerOptions {
 }
 
 const MAX_COMPLETED_RESULTS_IN_MEMORY = 16;
+const MAX_RESULT_MESSAGES = 1_000;
+const MAX_TRANSCRIPT_TAIL_BYTES = 8 * 1024 * 1024;
 const DEFAULT_NO_OBSERVATION_TIMEOUT_MS = 5 * 60 * 1000;
 
 function isProcessAlive(pid: number | undefined): boolean {
@@ -313,7 +316,9 @@ export class SubagentManager {
 
   private rememberCompletedResult(result: TaskResult): void {
     this.completedResults.delete(result.sessionId);
-    this.completedResults.set(result.sessionId, result);
+    // The transcript is already durable in session.jsonl. Keep only the exact
+    // terminal receipt in heap and hydrate a bounded tail when explicitly read.
+    this.completedResults.set(result.sessionId, { ...result, messages: [] });
     while (this.completedResults.size > MAX_COMPLETED_RESULTS_IN_MEMORY) {
       const oldest = this.completedResults.keys().next().value as string | undefined;
       if (!oldest) break;
@@ -376,7 +381,8 @@ export class SubagentManager {
       executionRoot?: string;
     },
   ): void {
-    const resumeMessages = this.buildResumeMessages(sessionId);
+    const resume = this.buildResumeMessages(sessionId);
+    const resumeMessages = resume.messages;
 
     if (opts.injectUserMessage) {
       // buildResumeMessages always ends with a user turn (either the original
@@ -389,21 +395,29 @@ export class SubagentManager {
         Array.isArray(tail.content) &&
         tail.content[0]?.type === "text" &&
         /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
-      if (isSyntheticRestart) resumeMessages.pop();
+      if (isSyntheticRestart) {
+        resumeMessages.pop();
+        if (resume.added[resume.added.length - 1] === tail) resume.added.pop();
+      }
       const newUserTurn: any = {
         role: "user",
         content: [{ type: "text", text: opts.injectUserMessage }],
         timestamp: Date.now(),
       };
       resumeMessages.push(newUserTurn);
-      // Persist the injected user turn to JSONL now — message_end events only
-      // fire for messages the agent itself emits, so without this the operator's
-      // turn would not appear in transcript views.
-      try {
-        appendSessionMessage(this._persistDir, sessionId, newUserTurn);
-      } catch {
-        /* best-effort */
+      resume.added.push(newUserTurn);
+    }
+
+    // Recovery messages are runtime-authored input. The agent does not emit a
+    // message_end event for them, so append them explicitly before resuming.
+    try {
+      for (const message of resume.added) {
+        appendSessionMessage(this._persistDir, sessionId, message);
       }
+    } catch (err) {
+      const reason = `Failed to persist session recovery: ${err instanceof Error ? err.message : String(err)}`;
+      this.emitSessionResumeFailed(sessionId, meta, reason, "resume_persistence_failed", true);
+      throw err;
     }
 
     if (opts.resetDbRow) {
@@ -820,7 +834,7 @@ export class SubagentManager {
 
   result(sessionId: string): TaskResult {
     const completed = this.completedResults.get(sessionId);
-    if (completed) return completed;
+    if (completed) return this.hydrateCompletedResult(completed);
     return this.resultFromStoredSession(sessionId);
   }
 
@@ -849,8 +863,7 @@ export class SubagentManager {
     const persisted = this._registry.getSession(sessionId);
     if (!persisted) throw new Error(`Session "${sessionId}" not found`);
 
-    const messages = readSessionMessages(this._persistDir, sessionId);
-    return messages.slice(-normalizedLimit);
+    return readSessionMessagesTail(this._persistDir, sessionId, normalizedLimit, MAX_TRANSCRIPT_TAIL_BYTES);
   }
 
   // ── Await ──
@@ -858,7 +871,7 @@ export class SubagentManager {
   async waitFor(sessionId: string): Promise<TaskResult> {
     const promise = this.results.get(sessionId);
     const completed = this.completedResults.get(sessionId);
-    if (completed) return completed;
+    if (completed) return this.hydrateCompletedResult(completed);
     if (!promise) return this.resultFromStoredSession(sessionId);
     return promise;
   }
@@ -1524,34 +1537,39 @@ export class SubagentManager {
     }
   }
 
-  private buildResumeMessages(sessionId: string): AgentMessage[] {
+  private buildResumeMessages(sessionId: string): { messages: AgentMessage[]; added: AgentMessage[] } {
     const messages =
       readCompactedMessages(this._persistDir, sessionId) ?? readSessionMessages(this._persistDir, sessionId);
     const repaired = messages.slice();
+    const added: AgentMessage[] = [];
     const last = repaired[repaired.length - 1] as any;
     const pendingToolCalls =
       last?.role === "assistant" && Array.isArray(last.content)
         ? last.content.filter((block: any) => block?.type === "toolCall")
         : [];
     for (const call of pendingToolCalls) {
-      repaired.push({
+      const toolResult = {
         role: "toolResult",
         toolCallId: call.id,
         isError: true,
         content: [{ type: "text", text: "Tool call interrupted because the process restarted." }],
         timestamp: Date.now(),
-      } as any);
+      } as any;
+      repaired.push(toolResult);
+      added.push(toolResult);
     }
 
     const updatedLast = repaired[repaired.length - 1] as any;
     if (updatedLast?.role && updatedLast.role !== "user") {
-      repaired.push({
+      const restartNotice = {
         role: "user",
         content: [{ type: "text", text: "Process restarted. Continue where you left off." }],
         timestamp: Date.now(),
-      } as any);
+      } as any;
+      repaired.push(restartNotice);
+      added.push(restartNotice);
     }
-    return repaired;
+    return { messages: repaired, added };
   }
 
   private sessionInfoFromMeta(sessionId: string, meta: any): SessionInfo {
@@ -1579,7 +1597,12 @@ export class SubagentManager {
     if (persisted.status === "running" || persisted.status === "idle") {
       throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
     }
-    const messages = readSessionMessages(this._persistDir, sessionId);
+    const messages = readSessionMessagesTail(
+      this._persistDir,
+      sessionId,
+      MAX_RESULT_MESSAGES,
+      MAX_TRANSCRIPT_TAIL_BYTES,
+    );
     const finishResult = extractFinishParams(messages as any[]);
     return {
       sessionId,
@@ -1591,6 +1614,18 @@ export class SubagentManager {
       error: persisted.error,
       finishResult: finishResult as any,
       structuredResult: finishResult?.result,
+    };
+  }
+
+  private hydrateCompletedResult(result: TaskResult): TaskResult {
+    return {
+      ...result,
+      messages: readSessionMessagesTail(
+        this._persistDir,
+        result.sessionId,
+        MAX_RESULT_MESSAGES,
+        MAX_TRANSCRIPT_TAIL_BYTES,
+      ),
     };
   }
 

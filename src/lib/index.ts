@@ -84,6 +84,7 @@ export {
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
+  readSessionMessagesTail,
   sessionDir,
   sessionJsonlPath,
   sessionOutputDir,
