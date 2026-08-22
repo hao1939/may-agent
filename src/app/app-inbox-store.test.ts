@@ -21,6 +21,7 @@ import {
   listAppInboxTaskDependencyKeys,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
+  releaseAppInboxClaim,
   readAppConversationResource,
   renewAppInboxClaim,
   restoreReplayableAppInboxDeliveries,
@@ -798,6 +799,27 @@ describe("App inbox store", () => {
     expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "unrelated-child" }, 120)).toBe(0);
     expect(claimAppInboxItem(db, "wake-me", "worker-3", 50, 120)?.generation).toBe(2);
     expect(claimAppInboxItem(db, "review-me", "worker-4", 50, 210)?.generation).toBe(2);
+  });
+
+  it("returns a failed dependency review to event-driven waiting", () => {
+    create("retry-wait", { now: 100 });
+    const initial = claimAppInboxItem(db, "retry-wait", "worker-1", 50, 100)!;
+    expect(
+      waitAppInboxClaim(db, initial, { kind: "session", id: "session-old" }, { reviewAfterMs: 100, now: 110 }),
+    ).toBe(true);
+    const review = claimAppInboxItem(db, "retry-wait", "worker-2", 50, 210)!;
+
+    expect(releaseAppInboxClaim(db, review, { retryAfterMs: 1, now: 211 })).toBe(true);
+    expect(getAppInboxItem(db, "retry-wait")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "session", id: "session-old" },
+      availableAt: undefined,
+      reviewAt: undefined,
+    });
+    expect(claimAppInboxItem(db, "retry-wait", "worker-3", 50, 10_000)).toBeNull();
+
+    expect(wakeAppInboxItemsWaitingOn(db, { kind: "session", id: "session-old" }, 10_001)).toBe(1);
+    expect(claimAppInboxItem(db, "retry-wait", "worker-3", 50, 10_001)).not.toBeNull();
   });
 
   it("deduplicates Task recovery keys and scopes a wake to the canonical App", () => {
