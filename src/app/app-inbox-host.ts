@@ -20,14 +20,16 @@ import {
   createAppInboxItem,
   getAppInboxItem,
   readAppConversationResource,
-  listAppInboxDependencyWaits,
+  listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
   renewAppInboxClaim,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
+  wakeAppInboxItemsWaitingOnApp,
   type AppInboxClaim,
   type AppInboxItem,
   type AppInboxWaitKind,
+  type AppInboxTaskDependencyKey,
 } from "./app-inbox-store.js";
 
 export type AppDependencyReader = (input: {
@@ -235,6 +237,7 @@ export class AppInboxHost {
   readonly #now: () => number;
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
+  #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
     this.#db = options.db;
@@ -469,9 +472,10 @@ export class AppInboxHost {
   }
 
   /** Wake one exact dependency and return only the Apps that gained ready work. */
-  wakeAppIds(waitingOn: { kind: AppInboxWaitKind; id: string }): string[] {
+  wakeAppIds(waitingOn: { kind: AppInboxWaitKind; id: string }, appId?: string): string[] {
     const appIds: string[] = [];
     const now = this.#now();
+    const scope = appId === undefined ? undefined : requiredText(appId, "appId");
     withTransaction(this.#db, () => {
       const rows = this.#db
         .prepare(
@@ -481,14 +485,18 @@ export class AppInboxHost {
              AND lease_owner IS NULL
              AND waiting_on_kind = ?
              AND waiting_on_id = ?
+             ${scope ? "AND app_id = ?" : ""}
              AND (available_at IS NULL OR available_at > ? OR review_at IS NOT NULL)
            ORDER BY app_id`,
         )
-        .all(waitingOn.kind, requiredText(waitingOn.id, "waitingOn.id"), now) as Array<{
+        .all(waitingOn.kind, requiredText(waitingOn.id, "waitingOn.id"), ...(scope ? [scope] : []), now) as Array<{
         app_id?: unknown;
       }>;
       if (rows.length === 0) return;
-      if (wakeAppInboxItemsWaitingOn(this.#db, waitingOn, now) === 0) return;
+      const woken = scope
+        ? wakeAppInboxItemsWaitingOnApp(this.#db, scope, waitingOn, now)
+        : wakeAppInboxItemsWaitingOn(this.#db, waitingOn, now);
+      if (woken === 0) return;
       for (const row of rows) {
         if (typeof row.app_id === "string" && row.app_id.trim()) appIds.push(row.app_id.trim());
       }
@@ -506,30 +514,34 @@ export class AppInboxHost {
     };
     if (!this.#readDependency) return outcome;
     const wokenApps = new Set<string>();
-    const waitsByApp = new Map<string, AppInboxItem[]>();
-    for (const item of listAppInboxDependencyWaits(this.#db, "task")) {
-      const waits = waitsByApp.get(item.appId) ?? [];
-      waits.push(item);
-      waitsByApp.set(item.appId, waits);
+    let page = listAppInboxTaskDependencyKeys(this.#db, { after: this.#taskDependencyRecoveryCursor });
+    if (page.items.length === 0 && this.#taskDependencyRecoveryCursor) {
+      this.#taskDependencyRecoveryCursor = undefined;
+      page = listAppInboxTaskDependencyKeys(this.#db);
     }
-    for (const waits of waitsByApp.values()) {
-      for (const item of waits) {
-        const dependency = item.waitingOn;
-        if (!dependency || dependency.kind !== "task") continue;
-        const taskDependency = { kind: "task", id: dependency.id } as const;
+    this.#taskDependencyRecoveryCursor = page.nextCursor;
+    const taskIdsByApp = new Map<string, string[]>();
+    for (const dependency of page.items) {
+      const taskIds = taskIdsByApp.get(dependency.appId) ?? [];
+      taskIds.push(dependency.taskId);
+      taskIdsByApp.set(dependency.appId, taskIds);
+    }
+    for (const [appId, taskIds] of taskIdsByApp) {
+      for (const taskId of taskIds) {
+        const taskDependency = { kind: "task", id: taskId } as const;
         try {
-          const observed = (await this.#observeDependency(item.appId, taskDependency)) ?? {
+          const observed = (await this.#observeDependency(appId, taskDependency)) ?? {
             ...taskDependency,
             status: "unknown" as const,
           };
           if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
-          const woken = wakeAppInboxItemsWaitingOn(this.#db, taskDependency, this.#now());
+          const woken = wakeAppInboxItemsWaitingOnApp(this.#db, appId, taskDependency, this.#now());
           if (woken > 0) {
             outcome.woken += woken;
-            wokenApps.add(item.appId);
+            wokenApps.add(appId);
           }
         } catch (error) {
-          outcome.errors.push(`Wait ${item.id} task ${taskDependency.id}: ${errorMessage(error)}`);
+          outcome.errors.push(`App ${appId} task ${taskDependency.id}: ${errorMessage(error)}`);
         }
       }
       // Each App may own a multi-megabyte canonical Task resource. Let HTTP,
@@ -754,7 +766,7 @@ export class AppInboxHost {
     if (attached.isComplete) {
       try {
         if (await attached.isComplete()) {
-          wakeAppInboxItemsWaitingOn(this.#db, { kind: "task", id: taskId }, this.#now());
+          wakeAppInboxItemsWaitingOnApp(this.#db, claim.item.appId, { kind: "task", id: taskId }, this.#now());
         }
       } catch {
         // The durable completion Event remains authoritative. A failed

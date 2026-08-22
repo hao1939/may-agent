@@ -18,6 +18,7 @@ import {
   listAppWork,
   listAppInboxItems,
   listAppInboxSessionWaits,
+  listAppInboxTaskDependencyKeys,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
   readAppConversationResource,
@@ -27,6 +28,7 @@ import {
   stageAppInboxProgressDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
+  wakeAppInboxItemsWaitingOnApp,
 } from "./app-inbox-store.js";
 
 describe("App inbox store", () => {
@@ -796,6 +798,37 @@ describe("App inbox store", () => {
     expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "unrelated-child" }, 120)).toBe(0);
     expect(claimAppInboxItem(db, "wake-me", "worker-3", 50, 120)?.generation).toBe(2);
     expect(claimAppInboxItem(db, "review-me", "worker-4", 50, 210)?.generation).toBe(2);
+  });
+
+  it("deduplicates Task recovery keys and scopes a wake to the canonical App", () => {
+    const waitForTask = (id: string, appId: string) => {
+      createAppInboxItem(db, {
+        id,
+        appId,
+        source: { kind: "system", id: "test" },
+        input: { kind: "message", data: { text: id } },
+        now: 100,
+      });
+      const claim = claimAppInboxItem(db, id, `worker:${appId}`, 50, 101)!;
+      expect(waitAppInboxClaim(db, claim, { kind: "task", id: "runtime/owner-review" }, { now: 102 })).toBe(true);
+    };
+    waitForTask("evaluation-1", "evaluation");
+    waitForTask("evaluation-2", "evaluation");
+    waitForTask("aks-1", "aks-rp-e2e");
+
+    const first = listAppInboxTaskDependencyKeys(db, { limit: 1 });
+    expect(first).toEqual({
+      items: [{ appId: "aks-rp-e2e", taskId: "runtime/owner-review" }],
+      nextCursor: { appId: "aks-rp-e2e", taskId: "runtime/owner-review" },
+    });
+    expect(listAppInboxTaskDependencyKeys(db, { after: first.nextCursor, limit: 1 })).toEqual({
+      items: [{ appId: "evaluation", taskId: "runtime/owner-review" }],
+    });
+
+    expect(wakeAppInboxItemsWaitingOnApp(db, "evaluation", { kind: "task", id: "runtime/owner-review" }, 120)).toBe(2);
+    expect(getAppInboxItem(db, "evaluation-1")?.availableAt).toBe(120);
+    expect(getAppInboxItem(db, "evaluation-2")?.availableAt).toBe(120);
+    expect(getAppInboxItem(db, "aks-1")?.availableAt).toBeUndefined();
   });
 
   it("fences recovered session waits by the exact claim generation", () => {

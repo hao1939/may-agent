@@ -296,6 +296,8 @@ export type SystemEvent =
       data: {
         kind: "app" | "task" | "session";
         id: string;
+        /** Required for new Task events; absent only on retained legacy events. */
+        appId?: string;
         status?: string;
         summary?: string;
         response?: string;
@@ -307,7 +309,7 @@ export type SystemEvent =
       type: "app.dependency.updated";
       source?: string;
       owner: string;
-      data: { kind: "app" | "task" | "session"; id: string };
+      data: { kind: "app" | "task" | "session"; id: string; appId?: string };
     }
   | {
       type: "channel.delivery.completed" | "channel.delivery.failed";

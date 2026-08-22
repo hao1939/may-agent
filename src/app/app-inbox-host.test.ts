@@ -332,6 +332,47 @@ describe("App inbox host", () => {
     expect(host.get("fast")).toMatchObject({ status: "done", result: { summary: "Already complete" } });
   });
 
+  it("re-observes each canonical Task dependency once and wakes only its App", async () => {
+    const constantTaskApp = (id: string) =>
+      defineApp({
+        ...app(id, "coalesce-compatible"),
+        task: () => ({ kind: "existing" as const, taskId: "runtime/owner-review" }),
+      });
+    const reads: string[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [constantTaskApp("evaluation"), constantTaskApp("aks-rp-e2e")],
+      attachTask: async ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      }),
+      readDependency: async ({ appId, dependency }) => {
+        reads.push(`${appId}/${dependency.id}`);
+        return {
+          kind: "task",
+          id: dependency.id,
+          status: appId === "evaluation" ? "done" : "running",
+          summary: appId === "evaluation" ? "Review complete" : "Review running",
+        };
+      },
+    });
+    admit(host, "evaluation-1", "evaluation");
+    admit(host, "evaluation-2", "evaluation");
+    admit(host, "aks-1", "aks-rp-e2e");
+    await host.reconcileOnce("evaluation");
+    await host.reconcileOnce("aks-rp-e2e");
+
+    expect(await host.recoverTaskDependencies()).toEqual({
+      linked: 0,
+      woken: 2,
+      wokenAppIds: ["evaluation"],
+      errors: [],
+    });
+    expect(reads).toEqual(["aks-rp-e2e/runtime/owner-review", "evaluation/runtime/owner-review"]);
+    expect(host.get("evaluation-1")?.availableAt).toBeDefined();
+    expect(host.get("evaluation-2")?.availableAt).toBeDefined();
+    expect(host.get("aks-1")?.availableAt).toBeUndefined();
+  });
+
   it("passes bounded Conversation context to the Task Event", async () => {
     let request: unknown;
     const host = new AppInboxHost({
