@@ -1,7 +1,7 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
-import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, type AgentEvent, type EventBus } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
@@ -327,19 +327,13 @@ export function attachMetricSourceMeasurement(options: {
       });
   };
 
-  options.bus.subscribe((event): DeliveryResult | void => {
+  options.bus.subscribe((event): void => {
     if ((event as { type: string }).type !== METRIC_SOURCE_MEASUREMENT_EVENT) return;
     const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     schedule({
       triggerEventId,
       measuredAt: Date.now(),
     });
-    return {
-      accepted: true,
-      by: "runtime:metric-source-measurement",
-      route: "direct",
-      note: "source-defined metric observation scheduled",
-    };
   });
 
   return {
