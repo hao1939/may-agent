@@ -238,8 +238,6 @@ export type TaskReconciliationContext<TInput = unknown> = {
     truncated: boolean;
   };
   events: TaskReconciliationEvents;
-  /** @deprecated Compatibility projection of the most relevant event in events. */
-  trigger?: AppEvent<Record<string, unknown>>;
 };
 
 export type WorkflowContext<TInput = unknown> = {
