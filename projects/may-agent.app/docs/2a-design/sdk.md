@@ -271,12 +271,17 @@ type TaskAppDependency = {
 };
 ```
 
-Runtime derives the child request ID from the parent App, task generation,
-dependency ID, target App, and input. It admits the request idempotently and
-adds the exact completion Condition. The completion Event is part of a later
+Runtime derives the initial child request ID from the parent App, task
+generation, dependency ID, target App, and input. It admits the request
+idempotently and adds the exact completion Condition. Later attempts retain
+every open child-request Condition. They reuse a request by returning its
+durable request ID, or by repeating the exact target input; changed prose does
+not create another request when the durable ID is named. To add genuinely new
+work for the same target App, return both the existing durable request and a
+new stable dependency ID and input. A replacement that omits the open request
+fails before publication. The completion Event is part of a later
 `reconciliation.events` batch, including the child summary, optional response,
-and evidence. Changing target or input meaning requires a new dependency ID or
-parent task generation; there is no imperative `delegate()` capability.
+and evidence. There is no imperative `delegate()` capability.
 
 Apps may supply pure task-change validation and bounded verification policy.
 They do not save task state, acquire locks, edit projections, or manufacture

@@ -383,7 +383,10 @@ tree. A waiting result declares a typed child App dependency. Runtime admits a
 deterministic child request, represents the wait as an exact Condition, and
 wakes the parent with the accepted child result Event. The target App owns and
 reconciles its Task; the requesting App owns only its parent Task and final
-acceptance decision.
+acceptance decision. Open child-request Conditions survive later parent
+attempts. A later result can reuse the durable request ID or declare the exact
+same target input; Runtime never turns a changed redeclaration into silent
+duplicate work. Conflicting replacement fails admission before publication.
 
 ## Outputs and workspaces
 

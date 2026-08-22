@@ -220,10 +220,16 @@ Dependency completion is one durable Event, not a private callback. The Host
 may use that same Event to wake a correlated request and every exact matching
 Task Condition. One consumer must not stop the Event from reaching the others.
 
-Retries reuse the same child request ID. If the process stops between request
-admission and parent deferral, attempt recovery repeats the idempotent command;
-if the child finished before the Condition was installed, persisted-event
-replay closes the race. No App polls another App's store or owns a second loop.
+The first declaration creates the child request ID. While its Condition is
+open, later attempts keep that durable request attached. They may name the
+request ID directly to reuse it even when explanatory input text varies. A
+same-target replacement that does not preserve the open request is rejected
+before another request is published; clearly distinct dependencies remain
+possible when the existing request is also declared. If the process stops
+between request admission and parent deferral, attempt recovery repeats only
+the same idempotent command; if the child finished before the Condition was
+installed, persisted-event replay closes the race. No App polls another App's
+store or owns a second loop.
 
 An accepted task result separates `summary` from `response`. `summary` explains
 the task state to operators and future attempts. `response` is the optional
