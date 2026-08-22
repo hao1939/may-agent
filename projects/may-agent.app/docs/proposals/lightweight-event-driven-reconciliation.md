@@ -214,6 +214,66 @@ Then it releases its lease, model stream, subprocess, tool clients, timers, and
 attempt-local memory. A workflow is a synchronous bounded procedure inside
 that attempt. An agent session is execution evidence, not another task loop.
 
+### One Task interface, replaceable executors
+
+Reconciliation must not depend on May's in-process agent runtime. A managed
+agent, an App workflow, Codex CLI, Claude Code, or a later executor receives the
+same small attempt contract:
+
+```ts
+type TaskAttempt = {
+  task: TaskDetail;
+  events: TaskEventBatch;
+  publish(localKey: string, event: AppEvent): Promise<EventReceipt>;
+  onEvent(listener: (event: AppEvent) => void): () => void;
+};
+
+type TaskExecutor =
+  (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
+```
+
+`task` is current bounded state. `events` is the ordered, unobserved input
+already owned by that Task. `publish` is the existing fenced, idempotent event
+commit. `onEvent` observes new events addressed to the running Task; it is a
+live convenience, never another durable queue. Every addressed event is still
+linked to the Task, so an executor that cannot accept live steering receives it
+on the next attempt. The accepted result remains the only way to advance Task
+state.
+
+Event direction follows one envelope convention instead of a new message
+protocol:
+
+- an event **to** `{ appId, taskId }` is feedback, approval, steering, or other
+  input; the Host durably links it and wakes that exact Task;
+- an event **from** the fenced attempt carries Task emission provenance and is
+  progress, a finding, a request, or another fact; it does not wake its own
+  Task merely because it is observable; and
+- event `type` and `data` remain domain-owned. The Runtime does not interpret
+  prose or require separate progress/finding/approval stores.
+
+Progress and findings are facts, not completion. An approval request may be
+rendered from an event, but durable waiting is still represented by the Task's
+exact Condition or dependency; the approval response is an event addressed
+back to the Task. If an adapter misses a transient notification, current Task
+state and its pending event link remain authoritative.
+
+Executor adapters only translate this contract:
+
+- the managed-agent adapter renders the Task/event snapshot, exposes the
+  scoped publish capability, and may steer the live session;
+- the workflow adapter supplies the same values as typed context;
+- the Codex/Claude adapter serializes the snapshot and result schema, exposes
+  the same local Task-event operations, and resumes or starts a bounded native
+  process; and
+- every adapter returns the same `TaskReconcileResult` for the same Host
+  validation and fenced commit.
+
+Executor selection is small App/Host policy. Process IDs, native session IDs,
+prompts, worker artifacts, and adapter retries remain attempt evidence; they do
+not enter Task desired state or create a second work lifecycle. Adding an
+executor therefore adds one adapter, not another scheduler, queue, task type,
+or recovery system.
+
 ### Recovery is insurance, not ordinary scheduling
 
 Events are the normal trigger. Recovery queries only indexed task fields:
@@ -1016,9 +1076,15 @@ does not require parsing an App task tree.
 - Keep final result admission independent from already accepted emissions.
 - Add the crash, duplicate, stale-attempt, early-child-result, and event-during-
   attempt tests.
+- Extract the executor-neutral `TaskAttempt` boundary from the current managed
+  agent/workflow paths, then place Codex and Claude behind the same result and
+  Task-event contract.
+- Forward live Task input only when an executor supports it; always retain the
+  durable next-attempt path as authority.
 
 **Exit:** Apps can break down and coordinate work through immediately visible
-events without holding an executor or losing restart safety.
+events without holding an executor or losing restart safety, and changing the
+executor does not change Task semantics.
 
 ### Phase 4: replace continuous discovery with a light dispatcher
 
