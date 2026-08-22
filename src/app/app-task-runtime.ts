@@ -1766,9 +1766,10 @@ export function liveTaskEventMessage(event: AgentEvent): string {
   ].join("\n");
 }
 
-async function runTaskOwner(input: {
+async function executeTaskOwner(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
+  attempt: TaskAttempt;
   intent: AppTaskIntent;
   claim: AppTaskClaim;
   defaultParentId: string;
@@ -1780,14 +1781,7 @@ async function runTaskOwner(input: {
   observer?: AppTaskExecutionObserver;
 }): Promise<TaskCapabilityRun> {
   const { opts, descriptor, intent, claim, event } = input;
-  const taskAttempt = runtimeTaskAttempt({
-    opts,
-    descriptor,
-    claim,
-    cwd: input.executionPaths.workspaceDir,
-    ...(event ? { event } : {}),
-  });
-  const reconciliationEvents = taskAttempt.attempt.events;
+  const reconciliationEvents = input.attempt.events;
   const trace = childEventTrace(event);
   const prompt = [
     appTaskOwnerProtocol(descriptor.id),
@@ -1858,9 +1852,10 @@ async function runTaskOwner(input: {
             executionRoot: ownerOptions.executionRoot,
           });
           recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, sessionId);
-          const unsubscribe = taskAttempt.events.onEvent((incoming) => {
+          const unsubscribe = input.attempt.onEvent((incoming) => {
             try {
-              opts.manager.send(sessionId, liveTaskEventMessage(incoming), { trace: childEventTrace(incoming) });
+              const event = incoming as AgentEvent;
+              opts.manager.send(sessionId, liveTaskEventMessage(event), { trace: childEventTrace(event) });
             } catch {
               // The session may finish between event admission and this
               // optional live hint. Durable Task input remains authoritative.
@@ -1885,7 +1880,6 @@ async function runTaskOwner(input: {
     result = await dispatchOwner();
   } finally {
     input.observer?.providerFinished();
-    taskAttempt.close();
     const cleanupPlan = planCanonicalOwnerResidueCleanup(residueGuard);
     restoredOwnerResidue = applyCanonicalOwnerResidueCleanup(cleanupPlan);
   }
@@ -1930,9 +1924,10 @@ function appTaskCliProtocol(appId: string): string {
   ].join("\n");
 }
 
-async function runTaskCli(input: {
+async function executeTaskCli(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
+  attempt: TaskAttempt;
   intent: AppTaskIntent;
   claim: AppTaskClaim;
   defaultParentId: string;
@@ -1957,14 +1952,7 @@ async function runTaskCli(input: {
       unavailable: true,
     };
   }
-  const taskAttempt = runtimeTaskAttempt({
-    opts,
-    descriptor,
-    claim,
-    cwd: input.executionPaths.workspaceDir,
-    ...(input.event ? { event: input.event } : {}),
-  });
-  const reconciliationEvents = taskAttempt.attempt.events;
+  const reconciliationEvents = input.attempt.events;
   const prompt = [
     appTaskCliProtocol(descriptor.id),
     "",
@@ -1998,17 +1986,6 @@ async function runTaskCli(input: {
   const residueGuard = beginCanonicalOwnerResidueGuard(input.executionPaths);
   let restoredResidue: string[] = [];
   let execution: Awaited<ReturnType<typeof executeTaskWithCli>>;
-  const leaseTimer = setInterval(
-    () => {
-      try {
-        if (!renewAppTaskAttemptLease(appTaskConfig(descriptor), claim)) clearInterval(leaseTimer);
-      } catch {
-        clearInterval(leaseTimer);
-      }
-    },
-    Math.floor(APP_TASK_ATTEMPT_LEASE_DURATION_MS / 3),
-  );
-  leaseTimer.unref();
   try {
     input.observer?.providerStarted(Buffer.byteLength(prompt));
     execution = await executeTaskWithCli({
@@ -2026,8 +2003,6 @@ async function runTaskCli(input: {
       ...(childEventTrace(input.event) ? { trace: childEventTrace(input.event) } : {}),
     });
   } finally {
-    clearInterval(leaseTimer);
-    taskAttempt.close();
     input.observer?.providerFinished();
     restoredResidue = finishCanonicalOwnerResidueGuard(residueGuard);
   }
@@ -2062,16 +2037,18 @@ async function runTaskCli(input: {
   };
 }
 
-async function runRegisteredTaskExecutor(input: {
+/**
+ * Give every agent/CLI executor the same fenced Task surface. Runtime owns
+ * attempt lifetime and lease renewal; adapters only translate TaskAttempt to
+ * their execution mechanism and return one Task result.
+ */
+async function runTaskExecutorAttempt(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
-  defaultParentId: string;
   executionPaths: AppTaskExecutionPaths;
   event?: EventEnvelope;
-  observer?: AppTaskExecutionObserver;
-  name: TaskExecutorName;
-  execute: TaskExecutor;
+  execute: (attempt: TaskAttempt) => Promise<TaskCapabilityRun>;
 }): Promise<TaskCapabilityRun> {
   const taskAttempt = runtimeTaskAttempt({
     opts: input.opts,
@@ -2091,39 +2068,89 @@ async function runRegisteredTaskExecutor(input: {
     Math.floor(APP_TASK_ATTEMPT_LEASE_DURATION_MS / 3),
   );
   leaseTimer.unref();
-  const runId = `executor:${input.name}:${input.claim.attemptId}`;
   try {
-    input.observer?.providerStarted(0);
-    const result = await input.execute(taskAttempt.attempt);
-    return {
-      handlerResult: normalizeTaskHandlerResult(
-        result,
-        { type: "done", summary: `${input.name} executor completed`, runId },
-        {
-          allowNeedsOwner: true,
-          defaultParentId: input.defaultParentId,
-          rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-          validateAction: input.descriptor.app.tasks?.validateAction,
-        },
-      ),
-      runId,
-    };
-  } catch (error) {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
-        evidence: [],
-        actions: [],
-      },
-      runId,
-      executionFailed: true,
-    };
+    return await input.execute(taskAttempt.attempt);
   } finally {
     clearInterval(leaseTimer);
     taskAttempt.close();
-    input.observer?.providerFinished();
   }
+}
+
+async function runTaskOwner(
+  input: Omit<Parameters<typeof executeTaskOwner>[0], "attempt">,
+): Promise<TaskCapabilityRun> {
+  return runTaskExecutorAttempt({
+    opts: input.opts,
+    descriptor: input.descriptor,
+    claim: input.claim,
+    executionPaths: input.executionPaths,
+    ...(input.event ? { event: input.event } : {}),
+    execute: (attempt) => executeTaskOwner({ ...input, attempt }),
+  });
+}
+
+async function runTaskCli(input: Omit<Parameters<typeof executeTaskCli>[0], "attempt">): Promise<TaskCapabilityRun> {
+  return runTaskExecutorAttempt({
+    opts: input.opts,
+    descriptor: input.descriptor,
+    claim: input.claim,
+    executionPaths: input.executionPaths,
+    ...(input.event ? { event: input.event } : {}),
+    execute: (attempt) => executeTaskCli({ ...input, attempt }),
+  });
+}
+
+async function runRegisteredTaskExecutor(input: {
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  claim: AppTaskClaim;
+  defaultParentId: string;
+  executionPaths: AppTaskExecutionPaths;
+  event?: EventEnvelope;
+  observer?: AppTaskExecutionObserver;
+  name: TaskExecutorName;
+  execute: TaskExecutor;
+}): Promise<TaskCapabilityRun> {
+  return runTaskExecutorAttempt({
+    opts: input.opts,
+    descriptor: input.descriptor,
+    claim: input.claim,
+    executionPaths: input.executionPaths,
+    ...(input.event ? { event: input.event } : {}),
+    execute: async (attempt) => {
+      const runId = `executor:${input.name}:${input.claim.attemptId}`;
+      try {
+        input.observer?.providerStarted(0);
+        const result = await input.execute(attempt);
+        return {
+          handlerResult: normalizeTaskHandlerResult(
+            result,
+            { type: "done", summary: `${input.name} executor completed`, runId },
+            {
+              allowNeedsOwner: true,
+              defaultParentId: input.defaultParentId,
+              rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+              validateAction: input.descriptor.app.tasks?.validateAction,
+            },
+          ),
+          runId,
+        };
+      } catch (error) {
+        return {
+          handlerResult: {
+            state: "error",
+            summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
+            evidence: [],
+            actions: [],
+          },
+          runId,
+          executionFailed: true,
+        };
+      } finally {
+        input.observer?.providerFinished();
+      }
+    },
+  });
 }
 
 const MAX_PROMPT_CHILD_TEXT = 256;
