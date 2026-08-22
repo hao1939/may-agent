@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -15,6 +15,26 @@ function tick(): Promise<void> {
 }
 
 describe("Cron event dispatch", () => {
+  it("keeps config activation explicit instead of polling cron.json", () => {
+    const root = tempRoot();
+    const configPath = join(root, "cron.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "maintenance", intervalMs: 60_000, handler: "maintenance" }]),
+    );
+    const cron = new Cron(configPath, {} as any, () => "s1", undefined, root);
+    try {
+      cron.start();
+      const runtime = cron as unknown as Record<string, unknown>;
+      expect(runtime.watchConfig).toBeUndefined();
+      expect(runtime.configWatcher).toBeUndefined();
+      expect(runtime.configPollTimer).toBeUndefined();
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("uses typed heartbeat category instead of entry-name inference", async () => {
     const root = tempRoot();
     const bus = new EventBus();

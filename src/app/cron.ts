@@ -15,8 +15,7 @@
  * Design: projects/may-agent.app/docs/2a-design/cron.md
  */
 
-import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";
-import { createHash } from "node:crypto";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus, type SystemEvent } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
@@ -203,7 +202,6 @@ export class Cron {
   private started = false;
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
-  private configWatcher?: StatWatcher;
   /** Event-to-handler subscriptions: event type → list of entry names. */
   private eventSubscriptions = new Map<string, Set<string>>();
   /** Event-trigger queue per entry. Preserves event-driven work when an entry is at concurrency capacity. */
@@ -260,64 +258,6 @@ export class Cron {
 
   onFire(cb: CronJobCallback): void {
     this.onJobFire = cb;
-  }
-
-  private lastConfigHash = "";
-  private configPollTimer?: ReturnType<typeof setInterval>;
-
-  /** Compute MD5 hash of file content for change detection. */
-  private hashFileContent(path: string): string {
-    try {
-      const content = readFileSync(path, "utf-8");
-      return createHash("md5").update(content).digest("hex");
-    } catch {
-      return "";
-    }
-  }
-
-  /** Watch cron.json for changes and auto-reload when modified.
-   *  Uses content-hash comparison (not mtime) for reliability in containers. */
-  watchConfig(): void {
-    if (this.configWatcher) return; // already watching
-    if (!existsSync(this.configPath)) return;
-
-    // Record current content hash so we can detect changes
-    this.lastConfigHash = this.hashFileContent(this.configPath);
-
-    // Primary: fs.watchFile (stat-based polling every 30s)
-    this.configWatcher = watchFile(this.configPath, { interval: 30_000 }, () => {
-      const newHash = this.hashFileContent(this.configPath);
-      if (newHash && newHash !== this.lastConfigHash) {
-        this.lastConfigHash = newHash;
-        this.onError?.(`Config file changed on disk — auto-reloading (watchFile)`);
-        this.reload();
-      }
-    });
-
-    // Fallback: explicit content-hash poll every 15s (watchFile can be unreliable in containers)
-    this.configPollTimer = setInterval(() => {
-      try {
-        if (!existsSync(this.configPath)) return;
-        const newHash = this.hashFileContent(this.configPath);
-        if (this.lastConfigHash && newHash && newHash !== this.lastConfigHash) {
-          this.lastConfigHash = newHash;
-          this.onError?.(`Config file changed on disk — auto-reloading (poll fallback)`);
-          this.reload();
-        }
-      } catch {}
-    }, 15_000);
-  }
-
-  /** Stop watching cron.json. */
-  unwatchConfig(): void {
-    if (this.configWatcher) {
-      unwatchFile(this.configPath);
-      this.configWatcher = undefined;
-    }
-    if (this.configPollTimer) {
-      clearInterval(this.configPollTimer);
-      this.configPollTimer = undefined;
-    }
   }
 
   load(): CronEntry[] {
@@ -608,7 +548,6 @@ export class Cron {
       if (entry.enabled === false) continue;
       this.startEntry(entry);
     }
-    this.watchConfig();
   }
 
   stop(): void {
@@ -617,7 +556,6 @@ export class Cron {
     for (const timer of this.pendingStartTimers.values()) clearTimeout(timer);
     this.pendingStartTimers.clear();
     this.started = false;
-    this.unwatchConfig();
   }
 
   reload(): void {
