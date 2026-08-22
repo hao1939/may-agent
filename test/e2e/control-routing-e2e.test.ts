@@ -228,7 +228,7 @@ describe("control routing e2e", () => {
       } as never,
       clearCancelLatch: () => {},
       projectRoot: root,
-      reload: () => {},
+      reload: () => ({ ok: true, summary: "[reload] No changes" }),
       restart: () => {},
       shutdown: () => {},
     });

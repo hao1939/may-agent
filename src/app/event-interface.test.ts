@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createAppInboxItem } from "./app-inbox-store.js";
-import { EVENT_ROW_ID, eventData, EventBus } from "./event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, eventData, EventBus } from "./event-bus.js";
 import { createEventInterface } from "./event-interface.js";
 
 const roots: string[] = [];
@@ -117,17 +117,31 @@ describe("simple event interface", () => {
     expect(receipt.delivery).toBe("recorded");
     expect(events.get(receipt.eventId)?.delivery.state).toBe("recorded");
 
-    bus.subscribeDurableRoute((event) =>
-      event.type === "runtime.reload.requested"
-        ? { accepted: true, by: "command-router:runtime-reload", route: "direct" }
-        : undefined,
-    );
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "runtime.reload.requested") return;
+      bus.emit({
+        type: "runtime.reload.finished",
+        source: "runtime",
+        owner: "agent:may",
+        data: { ok: true, summary: "[reload] No changes" },
+        trace: childEventTrace(event),
+      });
+      return { accepted: true, by: "command-router:runtime-reload", route: "direct" };
+    });
     const recovered = events.publish(input, { source: "control-socket" });
     expect(recovered).toMatchObject({ eventId: receipt.eventId, delivery: "accepted" });
     expect(events.get(receipt.eventId)?.delivery).toMatchObject({
       state: "accepted",
       acceptedBy: "command-router:runtime-reload",
     });
+    expect(events.get(receipt.eventId)?.links).toEqual([
+      {
+        kind: "operation",
+        id: expect.stringMatching(/^event:\d+$/),
+        state: "succeeded",
+        summary: "[reload] No changes",
+      },
+    ]);
   });
 
   it("keeps record-only delivery recorded even when a declared route reacts", () => {

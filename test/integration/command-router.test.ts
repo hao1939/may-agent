@@ -32,7 +32,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
     clearCancelLatch: () => {},
     projectRoot,
     acceptsAppInput: (appId) => appId === "may",
-    reload: () => {},
+    reload: () => ({ ok: true, summary: "[reload] No changes" }),
     restart: () => {},
     shutdown: () => {},
   });
