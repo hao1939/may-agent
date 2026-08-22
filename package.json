@@ -19,7 +19,7 @@
     "check:canonical-app-boundary": "bun scripts/check-canonical-app-boundary.ts",
     "sample:runtime-quiet": "bun scripts/sample-runtime-quiet.ts",
     "ui:sync": "bun scripts/build-webui.ts",
-    "bundle": "bun run ui:sync && mkdir -p bundle && bun build --compile src/app/binary-entry.ts --outfile bundle/may-agent",
+    "bundle": "bun run ui:sync && bun scripts/build-runtime-binary.ts",
     "deploy": "sh scripts/deploy.sh",
     "reload": "echo 'Package script reload does not deploy May code. Use bun run deploy to apply code changes, or /reload for agent/app definition reload.' >&2; exit 1",
     "smoke:steering": "bun run scripts/smoke-steering.ts",
