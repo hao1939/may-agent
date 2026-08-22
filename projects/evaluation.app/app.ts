@@ -472,7 +472,7 @@ const app = defineApp({
   description:
     "Independent session and App auditing with evidence-backed owner and human reporting.",
   inputSchema: evaluationInputSchema,
-  inbox: { batch: "single", maxConcurrent: 5 },
+  inbox: { maxConcurrent: 5 },
   task: taskForEvaluationInput,
   workspace: { kind: "local", localPath: "." },
   subscriptions: [

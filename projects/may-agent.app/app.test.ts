@@ -34,7 +34,7 @@ describe("canonical may-agent platform App", () => {
       id: "may-agent",
       version: 1,
       owner: "may",
-      inbox: { batch: "single", maxConcurrent: 2 },
+      inbox: { maxConcurrent: 2 },
       tasks: { maxConcurrent: 2 },
     });
     expect(app.task).toBe(taskForMayAgentInput);

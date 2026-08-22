@@ -383,7 +383,7 @@ const app = defineApp({
   description:
     "May-agent platform App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
-  inbox: { batch: "single", maxConcurrent: 2 },
+  inbox: { maxConcurrent: 2 },
   task: taskForMayAgentInput,
   workspace: { kind: "local", localPath: "../may-agent" },
   subscriptions: [

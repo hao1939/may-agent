@@ -33,7 +33,6 @@ describe("canonical May conversation App", () => {
       id: "may",
       version: 1,
       owner: "may",
-      inbox: { batch: "single" },
       tasks: { maxConcurrent: 8 },
     });
     expect(app.task).toBe(taskForMayInput);

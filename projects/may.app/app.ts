@@ -122,7 +122,6 @@ export default defineApp({
   description:
     "Conversation App for durable human requests and explicit human-decision obligations.",
   inputSchema: mayInputSchema,
-  inbox: { batch: "single" },
   task: taskForMayInput,
   tasks: { maxConcurrent: 8 },
   subscriptions: [

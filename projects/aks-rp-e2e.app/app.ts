@@ -963,7 +963,7 @@ const app = defineApp({
   description:
     "AKS RP E2E feature knowledge, spec verification, and project reconciliation.",
   inputSchema: aksInputSchema,
-  inbox: { batch: "single", maxConcurrent: appOpsSupportConcurrent },
+  inbox: { maxConcurrent: appOpsSupportConcurrent },
   task: taskForCanonicalAksInput,
   workspace: {
     kind: "git",

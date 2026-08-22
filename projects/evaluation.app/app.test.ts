@@ -45,7 +45,7 @@ describe("canonical evaluation App", () => {
       id: "evaluation",
       version: 1,
       owner: "evaluator",
-      inbox: { batch: "single", maxConcurrent: 5 },
+      inbox: { maxConcurrent: 5 },
       tasks: { maxConcurrent: 5 },
     });
     expect(app.task).toBe(taskForEvaluationInput);

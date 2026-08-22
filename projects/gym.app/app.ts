@@ -499,7 +499,7 @@ export default defineApp({
     localPath: "../gym",
   },
   inputSchema: gymInputSchema,
-  inbox: { batch: "single", maxConcurrent: 2 },
+  inbox: { maxConcurrent: 2 },
   task: taskForGymInput,
   subscriptions: [
     {

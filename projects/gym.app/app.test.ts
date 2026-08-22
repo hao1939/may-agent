@@ -43,7 +43,7 @@ describe("canonical Gym App", () => {
       version: 1,
       owner: "gym",
       workspace: { kind: "local", localPath: "../gym" },
-      inbox: { batch: "single", maxConcurrent: 2 },
+      inbox: { maxConcurrent: 2 },
       tasks: { maxConcurrent: 2 },
     });
     expect(gymApp.task).toBe(taskForGymInput);
