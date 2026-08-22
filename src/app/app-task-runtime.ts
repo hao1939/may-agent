@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import {
   chmodSync,
   existsSync,
@@ -54,6 +55,7 @@ import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths
 import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
+import { getAppInboxItem } from "./app-inbox-store.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
@@ -995,8 +997,87 @@ export function admitTaskAppDependencies(input: {
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
   dependencies: TaskAppDependency[];
+  existingConditions?: AppTaskConditionSpec[];
 }): AppTaskConditionSpec[] {
-  return input.dependencies.map((dependency) => {
+  const dependencyIds = new Set<string>();
+  for (const dependency of input.dependencies) {
+    if (dependencyIds.has(dependency.id)) {
+      throw new Error(`Task result declares App dependency ${dependency.id} more than once`);
+    }
+    dependencyIds.add(dependency.id);
+  }
+
+  const existing = (input.existingConditions ?? []).flatMap((condition) => {
+    if (condition.type !== "app.dependency.completed" || !condition.id.startsWith("app-request:")) return [];
+    const requestId = condition.subject.startsWith("id:") ? condition.subject.slice("id:".length) : "";
+    if (!requestId || condition.id !== `app-request:${requestId}`) return [];
+    const item = input.opts.persistDir ? getAppInboxItem(getDb(input.opts.persistDir), requestId) : null;
+    return [{ condition, requestId, item }];
+  });
+  const matchedExisting = new Set<string>();
+  const matches = new Map<string, (typeof existing)[number]>();
+
+  for (const dependency of input.dependencies) {
+    const direct = existing.filter(
+      ({ condition, requestId }) =>
+        dependency.id === requestId || dependency.id === condition.id || dependency.id === `app-request:${requestId}`,
+    );
+    const exact = existing.filter(
+      ({ item }) =>
+        item && item.appId === dependency.appId && isDeepStrictEqual(item.input, dependency.input),
+    );
+    const candidates = direct.length > 0 ? direct : exact;
+    if (candidates.length > 1) {
+      throw new Error(`App dependency ${dependency.id} ambiguously matches multiple open requests`);
+    }
+    const match = candidates[0];
+    if (!match) continue;
+    if (match.item && match.item.appId !== dependency.appId) {
+      throw new Error(
+        `App dependency ${dependency.id} refers to open request ${match.requestId} for App ${match.item.appId}, not ${dependency.appId}`,
+      );
+    }
+    if (matchedExisting.has(match.requestId)) {
+      throw new Error(`Open App request ${match.requestId} is declared more than once`);
+    }
+    matchedExisting.add(match.requestId);
+    matches.set(dependency.id, match);
+  }
+
+  const newDependencies = input.dependencies.filter((dependency) => !matches.has(dependency.id));
+  for (const dependency of newDependencies) {
+    const unresolvedExisting = existing.find(({ item, requestId }) => !item && !matchedExisting.has(requestId));
+    if (unresolvedExisting) {
+      throw new Error(
+        `Cannot classify App dependency ${dependency.id} while open request ${unresolvedExisting.requestId} is unavailable`,
+      );
+    }
+    const unredeclaredSameApp = existing.filter(
+      ({ item, requestId }) => item?.appId === dependency.appId && !matchedExisting.has(requestId),
+    );
+    if (unredeclaredSameApp.length > 0) {
+      throw new Error(
+        `App dependency ${dependency.id} would replace open request ${unredeclaredSameApp[0]!.requestId}; redeclare that durable request before adding distinct ${dependency.appId} work`,
+      );
+    }
+  }
+  for (let index = 0; index < newDependencies.length; index += 1) {
+    const dependency = newDependencies[index]!;
+    const duplicate = newDependencies
+      .slice(0, index)
+      .find(
+        (candidate) =>
+          candidate.appId === dependency.appId && isDeepStrictEqual(candidate.input, dependency.input),
+      );
+    if (duplicate) {
+      throw new Error(
+        `App dependencies ${duplicate.id} and ${dependency.id} request the same ${dependency.appId} outcome`,
+      );
+    }
+  }
+
+  const admitted = new Map<string, AppTaskConditionSpec>();
+  for (const dependency of newDependencies) {
     const identity = createHash("sha256")
       .update(
         JSON.stringify({
@@ -1024,13 +1105,42 @@ export function admitTaskAppDependencies(input: {
         idempotencyKey,
       },
     });
-    return {
+    admitted.set(dependency.id, {
       id: `app-request:${requestId}`,
       type: "app.dependency.completed",
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
-    };
+    });
+  }
+
+  return input.dependencies.map((dependency) => matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!);
+}
+
+function openTaskAppDependencyConditions(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  taskId: string,
+): AppTaskConditionSpec[] {
+  const tree = readTaskState(config, { taskIds: [taskId] });
+  const resource = tree.resources?.[taskId];
+  return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
+    const condition = tree.conditions?.[conditionId];
+    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.completed") {
+      return [];
+    }
+    return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
   });
+}
+
+function mergeTaskConditions(conditions: AppTaskConditionSpec[]): AppTaskConditionSpec[] {
+  const merged = new Map<string, AppTaskConditionSpec>();
+  for (const condition of conditions) {
+    const current = merged.get(condition.id);
+    if (current && !isDeepStrictEqual(current, condition)) {
+      throw new Error(`Task result conflicts with existing Condition ${condition.id}`);
+    }
+    merged.set(condition.id, condition);
+  }
+  return [...merged.values()];
 }
 
 function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string): string[] {
@@ -2333,20 +2443,24 @@ async function reconcileTask(input: {
       }
     }
 
-    if (primaryHandlerResult.state === "waiting" && primaryHandlerResult.dependencies?.length) {
+    if (primaryHandlerResult.state === "waiting") {
       try {
-        const dependencyConditions = admitTaskAppDependencies({
-          opts,
-          descriptor,
-          claim: primary,
-          dependencies: primaryHandlerResult.dependencies,
-        });
-        const conditions = [...(primaryHandlerResult.conditions ?? []), ...dependencyConditions];
-        const conditionIds = new Set(conditions.map((condition) => condition.id));
-        if (conditionIds.size !== conditions.length) {
-          throw new Error("Task result uses the same Condition id for an App dependency and an explicit Condition");
-        }
-        primaryHandlerResult.conditions = conditions;
+        const existingAppDependencyConditions = openTaskAppDependencyConditions(config, primary.taskId);
+        const dependencyConditions = primaryHandlerResult.dependencies?.length
+          ? admitTaskAppDependencies({
+              opts,
+              descriptor,
+              claim: primary,
+              dependencies: primaryHandlerResult.dependencies,
+              existingConditions: existingAppDependencyConditions,
+            })
+          : [];
+        const conditions = mergeTaskConditions([
+          ...existingAppDependencyConditions,
+          ...(primaryHandlerResult.conditions ?? []),
+          ...dependencyConditions,
+        ]);
+        primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`;
