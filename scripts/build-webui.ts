@@ -4,12 +4,8 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const staticRoot = join(repoRoot, "packages", "webui", "static");
-const platformServedUi = resolve(repoRoot, "..", "platform", "ui");
-const retiredUiCopies = [
-  join(repoRoot, "ui"),
-  resolve(repoRoot, "..", "..", "ui"),
-  resolve(repoRoot, "..", "may-agent.app", "ui"),
-];
+const configuredOutput = process.env.MAY_AGENT_UI_OUTPUT_DIR?.trim();
+const platformServedUi = configuredOutput ? resolve(configuredOutput) : resolve(repoRoot, "..", "platform", "ui");
 
 async function copyStatic(target: string) {
   await rm(target, { recursive: true, force: true });
@@ -17,7 +13,6 @@ async function copyStatic(target: string) {
   await cp(staticRoot, target, { recursive: true });
 }
 
-await Promise.all(retiredUiCopies.map((target) => rm(target, { recursive: true, force: true })));
 await copyStatic(platformServedUi);
 
 console.log(`generated ${platformServedUi}`);

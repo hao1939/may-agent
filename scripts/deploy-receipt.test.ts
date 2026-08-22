@@ -225,10 +225,13 @@ describe("restart-aware deploy receipts", () => {
       "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
     );
     expect(deploy).toContain('MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle');
+    expect(deploy).toContain('MAY_AGENT_UI_OUTPUT_DIR="$build_dir/bundle/platform-ui"');
     expect(deploy).toContain("$bundle_dir/may-agent.provenance.json");
     expect(deploy).toContain('"$artifact_sha" "$source_commit"');
     expect(deploy).toContain('sdk_release_name="sdk-$source_commit"');
     expect(deploy).toContain('cp -R "$build_dir/packages/sdk/." "$sdk_stage/"');
+    expect(deploy).toContain('ui_release_name="ui-$source_commit"');
+    expect(deploy).toContain('cp -R "$build_dir/bundle/platform-ui/." "$ui_stage/"');
   });
 
   it("can stage an immutable source-worktree build into the canonical deploy root", () => {
@@ -254,15 +257,17 @@ describe("restart-aware deploy receipts", () => {
     );
     expect(deploy).toContain('mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"');
     expect(deploy).toContain('mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"');
+    expect(deploy).toContain('mv -f "$bundle_dir/ui-requested.next" "$bundle_dir/ui-requested"');
     expect(deploy).toContain("docker exec -u root");
     expect(deploy).toContain("fail_restarter_launch docker-launch-failed");
     expect(deploy).toContain("fail_restarter_launch supervisor-launch-failed");
-    expect(deploy).toContain(
-      'deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false "$failure"',
-    );
+    expect(deploy).toContain('deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false "$failure"');
     const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
     expect(restarter).toContain(
       'receipt_tool="${MAY_AGENT_DEPLOY_RECEIPT_TOOL:-/app/projects/may-agent/bundle/deploy-receipt.ts}"',
+    );
+    expect(restarter).toContain(
+      'receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-/app/projects/may-agent/.state/deploy-receipts}"',
     );
     expect(restarter).toContain('sdk_root="${MAY_AGENT_DEPLOY_SDK_ROOT:-/app/projects/may-agent/bundle}"');
     expect(restarter).not.toContain('sdk_root="${MAY_AGENT_SDK_ROOT:-');
@@ -273,5 +278,12 @@ describe("restart-aware deploy receipts", () => {
     );
     expect(restarter).toContain('install -m 755 "$console_bundle" "$console_install_tmp"');
     expect(restarter).toContain('install -m 755 "$console_backup" "$console_target"');
+    expect(restarter).toContain(
+      'ui_marker="${MAY_AGENT_UI_DEPLOY_MARKER:-/app/projects/may-agent/bundle/ui-requested}"',
+    );
+    expect(restarter).toContain('ui_target="${MAY_AGENT_UI_PATH:-/app/projects/platform/ui}"');
+    expect(restarter).toContain('ui_release="$(cat "$ui_marker" 2>/dev/null || true)"');
+    expect(restarter).toContain('ln -s "$ui_root/$ui_release" "$ui_link_tmp"');
+    expect(restarter).toContain('mv "$ui_backup" "$ui_target"');
   });
 });

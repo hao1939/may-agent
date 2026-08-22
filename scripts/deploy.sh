@@ -34,6 +34,7 @@ if ! git merge-base --is-ancestor "$canonical_commit" "$source_commit"; then
   exit 2
 fi
 sdk_release_name="sdk-$source_commit"
+ui_release_name="ui-$source_commit"
 
 # The canonical checkout is shared and may contain unrelated tracked edits from
 # another owner. Those bytes are intentionally irrelevant: the deploy input is
@@ -51,7 +52,7 @@ ln -s "$PWD/node_modules" "$build_dir/node_modules"
 (
   cd "$build_dir"
   bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts
-  MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle
+  MAY_AGENT_UI_OUTPUT_DIR="$build_dir/bundle/platform-ui" MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle
 )
 mkdir -p "$bundle_dir"
 install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"
@@ -78,8 +79,21 @@ if [ ! -d "$sdk_release" ]; then
 fi
 test -f "$sdk_release/package.json"
 
-printf '{"version":1,"sourceCommit":"%s","artifactSha":"%s","sdkRelease":"%s","focusedReceiptTests":"39 pass, 0 fail"}\n' \
-  "$source_commit" "$artifact_sha" "$sdk_release_name" > "$bundle_dir/may-agent.provenance.json.next"
+# The Web UI is a deployable artifact, not a side effect of where the immutable
+# source archive happens to be extracted. Keep it versioned beside the binary
+# and SDK so the supervisor can activate and roll it back as one release.
+ui_release="$bundle_dir/$ui_release_name"
+if [ ! -d "$ui_release" ]; then
+  ui_stage="$bundle_dir/.${ui_release_name}.next.$$"
+  rm -rf "$ui_stage"
+  mkdir -p "$ui_stage"
+  cp -R "$build_dir/bundle/platform-ui/." "$ui_stage/"
+  mv "$ui_stage" "$ui_release"
+fi
+test -f "$ui_release/index.html"
+
+printf '{"version":1,"sourceCommit":"%s","artifactSha":"%s","sdkRelease":"%s","uiRelease":"%s"}\n' \
+  "$source_commit" "$artifact_sha" "$sdk_release_name" "$ui_release_name" > "$bundle_dir/may-agent.provenance.json.next"
 mv -f "$bundle_dir/may-agent.provenance.json.next" "$bundle_dir/may-agent.provenance.json"
 
 # This is the durability boundary: the requested receipt is atomically present
@@ -92,6 +106,8 @@ if [ "$rc" = "73" ]; then exit 0; fi
 if [ "$rc" != "0" ]; then exit "$rc"; fi
 printf '%s\n' "$sdk_release_name" > "$bundle_dir/sdk-requested.next"
 mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"
+printf '%s\n' "$ui_release_name" > "$bundle_dir/ui-requested.next"
+mv -f "$bundle_dir/ui-requested.next" "$bundle_dir/ui-requested"
 printf '%s\n' "$receipt" > "$bundle_dir/deploy-requested.next"
 mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
