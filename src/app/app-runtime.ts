@@ -273,7 +273,6 @@ export async function runAppRuntime(opts: {
     });
   }
 
-  let appWatcher: { close(): void } | null = null;
   let telegramBot: { close: () => void } = { close: () => {} };
   let cancelledOnce = false;
 
@@ -290,7 +289,6 @@ export async function runAppRuntime(opts: {
       activeRL = null;
     },
     beforeShutdown: () => {
-      appWatcher?.close();
       void appTasks.close();
       appInboxRuntime?.close();
     },
@@ -303,9 +301,6 @@ export async function runAppRuntime(opts: {
       return { appIds, taskApps };
     },
   });
-  if (appTaskOptions) {
-    appWatcher = appTasks.watchGenerations(() => handleReload({ throwOnError: true }));
-  }
   installProcessHandlers();
 
   const commandRouter = attachCommandRouter({

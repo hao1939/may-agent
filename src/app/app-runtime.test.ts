@@ -55,7 +55,15 @@ describe("app runtime startup order", () => {
   it("publishes inbox and canonical task routes in one registry transaction", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).toContain("appTasks.publishGeneration({ snapshot, publish: commit })");
-    expect(source).toContain("appTasks.watchGenerations(() => handleReload({ throwOnError: true }))");
+  });
+
+  it("reloads App generations explicitly instead of polling every source file", () => {
+    const runtime = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    const tasks = readFileSync(new URL("./app-task-runtime.ts", import.meta.url), "utf8");
+    expect(runtime).toContain("reloadApps: async () =>");
+    expect(runtime).not.toContain("watchGenerations");
+    expect(tasks).not.toContain("appTaskHostFingerprint");
+    expect(tasks).not.toContain("Auto-reloaded");
   });
 });
 
