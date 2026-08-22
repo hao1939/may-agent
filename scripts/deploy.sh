@@ -51,7 +51,7 @@ ln -s "$PWD/node_modules" "$build_dir/node_modules"
 (
   cd "$build_dir"
   bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts
-  bun run bundle
+  MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle
 )
 mkdir -p "$bundle_dir"
 install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"
