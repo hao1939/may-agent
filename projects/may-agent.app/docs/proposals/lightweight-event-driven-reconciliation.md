@@ -729,6 +729,21 @@ Console `/reload` showed the six-App result; request event 5933869 linked to
 succeeded result event 5933870, and command-authored Conversation event 5933871
 stored exactly the rendered result. No May Task or model turn was created.
 
+The next retained-store profile separated steady EventHub cost from scheduled
+observation cost. Normal seconds stayed near zero reads, while the five-minute
+measurement boundary produced large cached reads. An exact syscall trace of the
+AKS metric source found one batch reopening the 20.7 MiB canonical Task snapshot
+11 times and its 2.9 MiB projection 14 times. Those reads were App observation,
+not event admission or Task dispatch. The sampler now holds one immutable
+point-in-time Task view for one batch, and the five focus metrics share one
+source scan and one process. Against the unchanged retained store, project
+metric reads fell from 398.2 MB to 206.1 MB and focus-metric reads from 69.3 MB
+to 38.5 MB; combined elapsed time fell from about 5.1 seconds to 3.0 seconds.
+This proves and removes one history-amplifying observer path without deleting,
+compacting, checkpointing, or rewriting retained state. The remaining live
+burst still requires source-level attribution before the idle-resource exit is
+claimed.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
