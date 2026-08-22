@@ -1936,12 +1936,12 @@ describe("App task reconciler state", () => {
           id: `snapshot-task-${String(index).padStart(2, "0")}`,
           parentId: "operations",
           outcome: `Review snapshot task ${index}`,
-          acceptance: ["The task converges"],
+          acceptance: [`The task converges ${"a".repeat(2_000)}`],
           mode: "achieve",
           owner: "app-owner",
           priority: index === 0 ? "P0" : "P2",
           category: index === 0 ? "focus_plan" : "domain",
-          input: { index },
+          input: { index, exactPrivateDetail: `private-${index}-${"x".repeat(4_000)}` },
         },
         appOwner: "app-owner",
       });
@@ -1955,9 +1955,10 @@ describe("App task reconciler state", () => {
     expect(snapshot.live.find(({ taskId }) => taskId === "snapshot-task-00")).toMatchObject({
       category: "focus_plan",
       priority: "P0",
-      input: { index: 0 },
       readiness: { state: "ready", relatedTaskIds: [] },
     });
+    expect(JSON.stringify(snapshot)).not.toContain("exactPrivateDetail");
+    expect(Buffer.byteLength(JSON.stringify(snapshot), "utf8")).toBeLessThan(40_000);
   });
 
   it("commits a receipt and identifies dependents in the same absorption transaction", () => {

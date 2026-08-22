@@ -20,6 +20,20 @@ export type TaskView = {
   evidence?: string[];
 };
 
+/** Exact desired Task detail returned only by an explicitly scoped get. */
+export type TaskDetail = TaskView & {
+  parentId: string;
+  mode?: "achieve" | "maintain";
+  acceptance: string[];
+  input: Record<string, unknown>;
+  owner?: string;
+  workflow?: string;
+  priority?: TaskPriority;
+  category?: string;
+  dependsOn?: string[];
+  conditions: Condition[];
+};
+
 export type TaskListOptions = {
   /** Exact phases to include. Omitted means every phase. */
   status?: TaskView["status"][];
@@ -98,7 +112,7 @@ export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
-    get(taskId: string): Promise<TaskView | null>;
+    get(taskId: string): Promise<TaskDetail | null>;
   };
   execution(executionId: string): Promise<ExecutionView | null>;
   metric(metricId: string): Promise<MetricView | null>;
@@ -163,6 +177,26 @@ export type TaskReconciliationChild = {
   completedAt?: string;
 };
 
+/**
+ * Small App-wide planning projection. Exact Task input, acceptance, result
+ * evidence, and attempt detail stay behind read.tasks.get(taskId).
+ */
+export type TaskReconciliationSnapshotTask = {
+  taskId: string;
+  parentId: string;
+  generation: number;
+  outcome: string;
+  owner?: string;
+  priority?: TaskPriority;
+  category?: string;
+  dependsOn?: string[];
+  conditions: Array<Pick<Condition, "id" | "type" | "subject" | "owner" | "reviewAfterMs">>;
+  readiness?: TaskReconciliationChild["readiness"];
+  hasLiveChildren: boolean;
+  updatedAt?: string;
+  status: "pending" | "running" | "waiting" | "attention" | "done";
+};
+
 /** One durable event linked to the task before this attempt was claimed. */
 export type TaskReconciliationEvent = {
   /** Host event identity. Optional only while legacy trigger state is migrated. */
@@ -200,7 +234,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
    * frontier health. The current reconciliation task is intentionally omitted.
    */
   taskSnapshot: {
-    live: TaskReconciliationChild[];
+    live: TaskReconciliationSnapshotTask[];
     truncated: boolean;
   };
   events: TaskReconciliationEvents;
