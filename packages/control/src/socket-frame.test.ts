@@ -183,112 +183,23 @@ describe("socket frame normalization", () => {
     });
   });
 
-  it("normalizes legacy human socket shortcuts into canonical intent events", () => {
+  it("keeps explicit trigger commands while rejecting retired human shortcuts", () => {
     expect(normalizeSocketFrame({ type: "trigger.metrics-snapshot", forced: true })).toEqual({
       kind: "event",
       command: "trigger.metrics-snapshot",
       event: { type: "trigger.metrics-snapshot", forced: true },
     });
-    expect(normalizeSocketFrame({ type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" })).toEqual({
-      kind: "event",
-      command: "session.cancel.requested",
-      event: {
-        type: "session.cancel.requested",
-        source: "web-ui",
-        owner: "agent:may",
-        urgency: "high",
-        target: { sessionId: "s_1" },
-        data: {},
-      },
-    });
-    expect(normalizeSocketFrame({ type: "input", message: "hello", source: "socket" })).toEqual({
-      kind: "event",
-      command: "input",
-      event: {
-        type: "app.input.requested",
-        source: "socket",
-        owner: "app:may",
-        data: {
-          appId: "may",
-          input: { kind: "message", data: { message: "hello" } },
-          channel: "socket",
-        },
-      },
-    });
-    expect(normalizeSocketFrame({ type: "steer", sessionId: "s_1", message: "continue", source: "web-ui" })).toEqual({
-      kind: "event",
-      command: "steer",
-      event: {
-        type: "session.steer.requested",
-        source: "web-ui",
-        owner: "agent:may",
-        target: { sessionId: "s_1" },
-        data: { message: "continue" },
-      },
-    });
-    expect(normalizeSocketFrame({ type: "cancel_all", source: "web-ui" })).toEqual({
-      kind: "event",
-      command: "cancel_all",
-      event: {
-        type: "session.cancel_all.requested",
-        source: "web-ui",
-        owner: "agent:may",
-        urgency: "high",
-        data: { reason: "human requested cancel all" },
-      },
-    });
-    expect(normalizeSocketFrame({ type: "restart", source: "web-ui" })).toEqual({
-      kind: "event",
-      command: "restart",
-      event: {
-        type: "runtime.restart.requested",
-        source: "web-ui",
-        owner: "agent:may",
-        urgency: "high",
-        data: {},
-      },
-    });
-  });
-
-  it("keeps non-chat fork compatibility frames flat", () => {
-    expect(
-      normalizeSocketFrame({
-        type: "fork",
-        agent: "dev",
-        task: "investigate",
-        opts: { kind: "job", source: "web-ui" },
-      }),
-    ).toEqual({
-      kind: "event",
-      command: "fork",
-      event: { type: "fork", agent: "dev", task: "investigate", opts: { kind: "job", source: "web-ui" } },
-    });
-  });
-
-  it("normalizes legacy content/task aliases only for supported human shortcuts", () => {
-    expect(normalizeSocketFrame({ type: "input", content: "hello" })).toEqual({
-      kind: "event",
-      command: "input",
-      event: {
-        type: "app.input.requested",
-        source: "socket",
-        owner: "app:may",
-        data: {
-          appId: "may",
-          input: { kind: "message", data: { message: "hello" } },
-          channel: "socket",
-        },
-      },
-    });
-    expect(normalizeSocketFrame({ type: "fork", agent: "dev", message: "investigate" })).toEqual({
-      kind: "event",
-      command: "fork",
-      event: { type: "fork", agent: "dev", message: "investigate" },
-    });
-    expect(normalizeSocketFrame({ type: "message", from: "may", to: "dev", content: "hello" })).toEqual({
+    for (const type of ["input", "steer", "cancel", "cancel_all", "resume", "reload", "restart", "shutdown", "fork"]) {
+      expect(normalizeSocketFrame({ type, message: "legacy" })).toEqual({
+        kind: "error",
+        command: type,
+        message: `Unsupported socket frame type: ${type}`,
+      });
+    }
+    expect(normalizeSocketFrame({ type: "session.cancel.requested", sessionId: "s_1" })).toEqual({
       kind: "error",
-      command: "message",
-      message: "Unsupported socket frame type: message",
+      command: "session.cancel.requested",
+      message: "Canonical event 'session.cancel.requested' requires object field 'data'",
     });
   });
 

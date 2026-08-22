@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
 import {
   associateAppInboxClaimSession,
   claimAppInboxItem,
@@ -10,10 +10,37 @@ import {
   createAppInboxItem,
   stageAppInboxClaimDelivery,
 } from "../../src/app/app-inbox-store.js";
-import { attachTelegramBot } from "../../src/app/transport/telegram.js";
+import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
 import { AppRegistry } from "../../src/app/app-registry.js";
 import { HumanTaskService } from "../../src/app/human-task-service.js";
 import { getDb } from "../../src/lib/requests.js";
+
+function attachTelegramBot(
+  options: Omit<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">,
+): ReturnType<typeof attachTelegramBotRuntime> {
+  return attachTelegramBotRuntime({
+    ...options,
+    publishEvent(input) {
+      const data = {
+        ...input.data,
+        ...(input.target ?? {}),
+        ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+      };
+      const emitted = options.bus.emit({
+        type: input.type,
+        source: "telegram",
+        owner: input.target?.appId ? `app:${input.target.appId}` : "agent:may",
+        ...(input.target ? { target: input.target } : {}),
+        data,
+      } as any);
+      return {
+        eventId: Number(emitted[EVENT_ROW_ID]) || 1,
+        eventType: input.type,
+        delivery: "recorded",
+      };
+    },
+  });
+}
 
 function jsonResponse(result: unknown) {
   return {
@@ -533,14 +560,16 @@ describe("telegram reply e2e", () => {
         type: "runtime.reload.requested",
         source: "telegram",
         owner: "agent:may",
-        data: { requestId: "telegram:12345:1002:reload" },
+        data: {
+          requestId: "telegram:12345:1002:reload",
+          idempotencyKey: "telegram:12345:1002:reload",
+        },
       });
       expect(events).toContainEqual({
         type: "runtime.shutdown.requested",
         source: "telegram",
         owner: "agent:may",
-        urgency: "high",
-        data: {},
+        data: { idempotencyKey: "telegram:12345:1003:shutdown" },
       });
       expect(events.some((event) => event.type === "session.cancel.requested")).toBe(false);
       expect(events.some((event) => event.type === "input")).toBe(false);

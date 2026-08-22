@@ -5,16 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sendSocketCommand, type SocketEndpoint } from "../../packages/control/src/client.js";
 import { createControlSocketCore, type ControlEvent, type ControlSocket } from "../../packages/control/src/server.js";
-import { attachCommandRouter } from "../../src/app/command-router.js";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
-
-type RunCall = {
-  agent: string;
-  task: string;
-  opts: Record<string, unknown>;
-};
 
 const roots: string[] = [];
 const stateDirs: string[] = [];
@@ -205,83 +198,5 @@ describe("control routing e2e", () => {
       count: number;
     };
     expect(count.count).toBe(0);
-  });
-
-  it("routes socket fork frames to agent work and persists the inbox event in a temp state DB", async () => {
-    const { root, stateDir } = makeRoot();
-    const bus = new EventBus();
-    const writer = new DbWriter(stateDir);
-    const runCalls: RunCall[] = [];
-    bus.setPersistenceSubscriber(writer.handler);
-
-    const router = attachCommandRouter({
-      bus,
-      manager: {
-        status: () => [],
-        run: (agent: string, task: string, opts: Record<string, unknown>) => {
-          runCalls.push({ agent, task, opts });
-          return "s_e2e_dev";
-        },
-        cancel: () => {},
-        send: () => {},
-        resumeSession: () => {},
-      } as never,
-      clearCancelLatch: () => {},
-      projectRoot: root,
-      reload: () => ({ ok: true, summary: "[reload] No changes" }),
-      restart: () => {},
-      shutdown: () => {},
-    });
-
-    const core = createControlSocketCore({
-      getSessionId: () => "",
-      getStatus: () => [],
-      emitEvent: (event: ControlEvent) => {
-        const persisted = bus.emit(event as never);
-        return { eventId: Number(persisted[EVENT_ROW_ID]) };
-      },
-      subscribeEvents: (handler) => bus.subscribe(handler as never),
-      agentName: "may",
-      instance: "test",
-    });
-    sockets.push(core);
-
-    try {
-      const ack = await sendSocketCommand(mockEndpoint(core.attachClient), {
-        type: "fork",
-        agent: "dev",
-        task: "Investigate the failing migration",
-        opts: { kind: "job", source: "socket" },
-      });
-      await waitForSocketDispatch();
-
-      expect(ack).toMatchObject({ type: "ok", command: "fork", eventId: expect.any(Number) });
-      expect(runCalls).toEqual([
-        {
-          agent: "dev",
-          task: "Investigate the failing migration",
-          opts: { kind: "job", requestId: undefined },
-        },
-      ]);
-
-      const db = getDb(stateDir);
-      const row = db
-        .prepare("SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1")
-        .get("message.created") as { source: string; owner: string; data: string };
-      expect(row).toMatchObject({
-        source: "socket",
-        owner: "agent:dev",
-      });
-      expect(JSON.parse(row.data)).toMatchObject({
-        from: "socket",
-        to: "dev",
-        content: "Investigate the failing migration",
-        intent: "fork",
-        priority: "P0",
-      });
-      expect(stateDir.startsWith(root)).toBe(true);
-    } finally {
-      router.close();
-    }
   });
 });

@@ -362,8 +362,7 @@ async function sendProjectSteering() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "project.owner.requested",
-        source: "web-ui",
-        target: { project, taskId: task.id },
+        target: { appId: project, taskId: task.id },
         data: { project, projectId: project, projectPath: _projectDetailPath, taskId: task.id, action: "task-review", reason: message, params: { comment: message } },
       }),
     });

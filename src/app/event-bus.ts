@@ -15,43 +15,8 @@ import { log } from "../lib/log.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
 
-/** Agent commands (to core) */
+/** Typed commands accepted by the runtime. */
 export type AgentCommand =
-  | {
-      type: "fork";
-      agent: string;
-      task: string;
-      originSessionId?: string;
-      opts?: { kind?: string; requestId?: string; source?: string };
-    }
-  | { type: "input"; sessionId?: string; message: string; source?: string }
-  | { type: "steer"; sessionId?: string; message: string; source?: string }
-  | {
-      type: "human.input.received";
-      source: string;
-      owner: string;
-      data: {
-        inputId?: string;
-        actor?: string;
-        text: string;
-        conversation?: {
-          id?: string;
-          channel?: string;
-          channelTargetId?: string;
-          channelThreadId?: string;
-          channelMessageId?: number;
-          replyToInputId?: string;
-        };
-        target?: {
-          owner?: string;
-          agent?: string;
-          sessionId?: string;
-          projectPath?: string;
-          taskId?: string;
-        };
-        context?: Record<string, unknown>;
-      };
-    }
   | {
       type: "chat.start.requested";
       source: string;
@@ -77,9 +42,6 @@ export type AgentCommand =
       target: { sessionId: string };
       data: { message: string; context?: Record<string, unknown> };
     }
-  | { type: "cancel"; sessionId: string }
-  | { type: "cancel_all" }
-  | { type: "resume"; sessionId: string }
   | {
       type: "session.cancel.requested";
       source: string;
@@ -98,9 +60,6 @@ export type AgentCommand =
 
 /** Management commands (to core / supervisord) */
 export type ManagementCommand =
-  | { type: "reload" }
-  | { type: "restart" }
-  | { type: "shutdown" }
   | { type: "runtime.reload.requested"; source: string; owner: string; data: { reason?: string } }
   | {
       type: "runtime.reload.finished";

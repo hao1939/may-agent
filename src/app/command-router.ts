@@ -1,6 +1,5 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AppInput } from "@may-agent/sdk";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
@@ -10,10 +9,7 @@ import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
 export interface CommandRouterOptions {
   bus: EventBus;
   manager: SubagentManager;
-  clearCancelLatch: () => void;
   projectRoot: string;
-  /** Uses the live App registry and schema. */
-  acceptsAppInput?: (appId: string, input: AppInput) => boolean;
   reload: () => RuntimeReloadResult | Promise<RuntimeReloadResult>;
   restart: () => void;
   shutdown: () => void;
@@ -38,129 +34,15 @@ function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function ownerAgent(owner: unknown): string | null {
-  const value = nonEmptyString(owner);
-  return value?.startsWith("agent:") ? value.slice("agent:".length) : value;
-}
-
-function objectField(value: unknown, key: string): Record<string, unknown> | null {
-  return isRecord(value) && isRecord(value[key]) ? value[key] : null;
-}
-
-function stringField(value: unknown, key: string): string | null {
-  return isRecord(value) ? nonEmptyString(value[key]) : null;
-}
-
 function integerField(value: unknown, key: string): number | null {
   if (!isRecord(value)) return null;
   const next = value[key];
   return typeof next === "number" && Number.isInteger(next) ? next : null;
 }
 
-function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean) : [];
-}
-
-function telegramReplyContext(context: Record<string, unknown>): Record<string, unknown> | null {
-  return objectField(context, "telegramReply");
-}
-
-function approvalReplyContext(context: Record<string, unknown>): Record<string, unknown> | null {
-  const reply = telegramReplyContext(context);
-  if (!reply) return null;
-  const issue = objectField(reply, "originalIssue");
-  if (stringField(issue, "eventType") === "project.approval.requested") return reply;
-  return stringList(reply.expectedClosure).includes("project.approval.submitted") ? reply : null;
-}
-
-function isBrokerReply(context: Record<string, unknown>): boolean {
-  const reply = telegramReplyContext(context);
-  if (!reply) return false;
-  const issue = objectField(reply, "originalIssue");
-  return (
-    stringField(issue, "eventType") === "escalation.created" ||
-    stringList(reply.expectedClosure).some((type) =>
-      ["escalation.resolved", "escalation.dismissed", "project.approval.submitted"].includes(type),
-    )
-  );
-}
-
-type ApprovalDecision = "approve" | "adjust" | "hold" | "decline" | "reroute";
-
-function parseExplicitApprovalDecision(message: string): ApprovalDecision | null {
-  const normalized = message.trim().toLowerCase().replace(/\s+/g, " ");
-  if (!normalized || /[?？]/.test(normalized)) return null;
-  const exact: Record<string, ApprovalDecision> = {
-    approve: "approve",
-    approved: "approve",
-    yes: "approve",
-    ok: "approve",
-    okay: "approve",
-    "go ahead": "approve",
-    proceed: "approve",
-    reject: "decline",
-    rejected: "decline",
-    decline: "decline",
-    declined: "decline",
-    deny: "decline",
-    denied: "decline",
-    no: "decline",
-    hold: "hold",
-    pause: "hold",
-    wait: "hold",
-  };
-  const direct = exact[normalized.replace(/[.!]+$/, "")];
-  if (direct) return direct;
-  if (/^adjust(?:\s*:\s*|\s+)\S.+$/.test(normalized)) return "adjust";
-  if (/^(?:reroute|re-route)(?:\s*:\s*|\s+(?:to\s+)?)\S.+$/.test(normalized)) return "reroute";
-  return null;
-}
-
-function deliveredHumanMessage(message: string, context: Record<string, unknown>): string {
-  const reply = telegramReplyContext(context);
-  if (!reply) return message;
-  const issue = objectField(reply, "originalIssue");
-  const notification = objectField(reply, "notification");
-  const lines = ["May reply-handling work item", "", "Human reply", message, "", "Attached context"];
-  const fields: Array<[string, string | null]> = [
-    ["Conversation", stringField(reply, "conversationId")],
-    ["Request trace", stringField(reply, "traceId")],
-    ["Owner task", stringField(reply, "taskId")],
-    ["Original issue", stringField(issue, "eventType") ?? stringField(reply, "eventType")],
-    ["Escalation", stringField(issue, "escalationId") ?? stringField(reply, "escalationId")],
-    [
-      "Project",
-      stringField(issue, "projectPath") ?? stringField(reply, "projectId") ?? stringField(issue, "targetProject"),
-    ],
-    ["Source session", stringField(issue, "sourceSessionId") ?? stringField(reply, "sessionId")],
-    [
-      "Reason",
-      stringField(issue, "reason") ?? stringField(notification, "reason") ?? stringField(notification, "summary"),
-    ],
-    [
-      "Original ask",
-      stringField(issue, "requestedAction") ??
-        stringField(notification, "requestedAction") ??
-        stringField(notification, "requestedHumanAction"),
-    ],
-  ];
-  for (const [label, value] of fields) if (value) lines.push(`${label}: ${value}`);
-  const visible = stringField(notification, "text");
-  if (visible) lines.push(`Visible notification: ${visible.slice(0, 800)}`);
-  const closures = stringList(reply.expectedClosure);
-  if (closures.length) lines.push(`Expected closure: ${closures.join(", ")}`);
-  lines.push(
-    "",
-    "Understand the human's intention before applying consequential state. Questions and uncertain replies are not approvals.",
-    "Use the attached durable identity, answer supported questions, and ask one focused clarification when intent remains uncertain.",
-  );
-  return lines.join("\n");
-}
-
 /** Normalize external input, apply deterministic controls, and admit semantic work to an App. */
 export function attachCommandRouter(options: CommandRouterOptions): CommandRouter {
   const { bus, manager } = options;
-  const acceptsAppInput = options.acceptsAppInput ?? (() => false);
 
   const accepted = (control: string, note = "input handled by an explicit runtime route"): DeliveryResult => ({
     accepted: true,
@@ -199,46 +81,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           summary: `[reload] Failed: ${error instanceof Error ? error.message : String(error)}`,
         }),
       );
-  }
-
-  function messageInput(message: string, context: Record<string, unknown>): AppInput {
-    return { kind: "message", data: { message, ...(Object.keys(context).length ? { context } : {}) } };
-  }
-
-  function routeApp(input: {
-    appId: string;
-    appInput: AppInput;
-    event: unknown;
-    data: Record<string, unknown>;
-    source: string;
-    conversation: Record<string, unknown>;
-  }): DeliveryResult {
-    const sourceEventId = eventRowId(input.event);
-    const channel = nonEmptyString(input.conversation.channel) ?? input.source;
-    const channelMessageId = integerField(input.conversation, "channelMessageId") ?? undefined;
-    const sequence = sourceEventId ?? channelMessageId ?? Date.now();
-    const conversationId =
-      nonEmptyString(input.conversation.id) ?? `${channel}:${nonEmptyString(input.data.actor) ?? "human"}`;
-    bus.emit({
-      type: "app.input.requested",
-      source: input.source,
-      owner: `app:${input.appId}`,
-      data: {
-        appId: input.appId,
-        source: { kind: "human", id: sourceEventId ? `event:${sourceEventId}` : `channel:${channel}:${sequence}` },
-        input: input.appInput,
-        conversationId,
-        conversationSequence: sequence,
-        channel,
-        channelTargetId: nonEmptyString(input.conversation.channelTargetId) ?? undefined,
-        channelThreadId: nonEmptyString(input.conversation.channelThreadId) ?? undefined,
-        channelMessageId,
-        idempotencyKey:
-          nonEmptyString(input.data.inputId) ??
-          (sourceEventId ? `human-input:${sourceEventId}` : `human-input:${channel}:${sequence}`),
-      },
-    } as any);
-    return accepted(`app:${input.appId}`, `human input transferred to the durable ${input.appId} App inbox`);
   }
 
   function normalizeProjectPath(value: unknown): string | null {
@@ -300,165 +142,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       owner: normalizeEventOwner(projectOwner(normalized)),
       data: { projectPath: normalized, comment: true, commentText: text },
     } as any);
-  }
-
-  function submitApproval(
-    event: unknown,
-    data: Record<string, unknown>,
-    message: string,
-    context: Record<string, unknown>,
-    source: string,
-  ): DeliveryResult | null {
-    const reply = approvalReplyContext(context);
-    const decision = reply ? parseExplicitApprovalDecision(message) : null;
-    if (!reply || !decision) return null;
-    const issue = objectField(reply, "originalIssue");
-    const expected = objectField(issue, "expectedResponse");
-    const target = objectField(expected, "target");
-    const projectPath =
-      normalizeProjectPath(objectField(data, "target")?.projectPath) ??
-      normalizeProjectPath(stringField(issue, "projectPath")) ??
-      normalizeProjectPath(stringField(reply, "projectId")) ??
-      normalizeProjectPath(stringField(issue, "targetProject"));
-    bus.emit({
-      type: "project.approval.submitted",
-      source,
-      owner: normalizeEventOwner(
-        projectPath
-          ? projectOwner(projectPath, ownerAgent(isRecord(event) ? event.owner : null) ?? "may")
-          : (stringField(reply, "agent") ?? ownerAgent(isRecord(event) ? event.owner : null) ?? "may"),
-      ),
-      ...(target ? { target } : {}),
-      data: {
-        approvalKind:
-          stringField(issue, "approvalKind") ?? stringField(reply, "approvalKind") ?? "approval-packet-dispatch",
-        approvalId: stringField(issue, "approvalId") ?? stringField(expected, "approvalId") ?? undefined,
-        waitId: stringField(issue, "waitId") ?? stringField(expected, "waitId") ?? undefined,
-        pathId: stringField(issue, "pathId") ?? stringField(expected, "pathId") ?? undefined,
-        packetPath: stringField(issue, "packetPath") ?? undefined,
-        taskId: stringField(issue, "taskId") ?? stringField(expected, "taskId") ?? undefined,
-        taskGeneration: integerField(issue, "taskGeneration") ?? integerField(expected, "taskGeneration") ?? undefined,
-        artifactFingerprint:
-          stringField(issue, "artifactFingerprint") ?? stringField(expected, "artifactFingerprint") ?? undefined,
-        projectPath: projectPath ?? undefined,
-        projectId: projectPath ?? undefined,
-        targetProject: stringField(issue, "targetProject") ?? undefined,
-        decision,
-        message,
-        conversationId: stringField(reply, "conversationId") ?? undefined,
-      },
-      trace: childEventTrace(event),
-    } as any);
-    return accepted("approval");
-  }
-
-  function handleHumanInput(event: unknown): DeliveryResult | void {
-    options.clearCancelLatch();
-    const data = eventData(event);
-    const message = nonEmptyString(data.text) ?? nonEmptyString(data.message);
-    if (!message) return;
-    const conversation = isRecord(data.conversation) ? data.conversation : {};
-    const target = isRecord(data.target) ? data.target : {};
-    const context = isRecord(data.context) ? data.context : {};
-    const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
-    const eventOwner = isRecord(event) ? event.owner : "agent:may";
-    const delivered = deliveredHumanMessage(message, context);
-
-    const approval = submitApproval(event, data, message, context, source);
-    if (approval) return approval;
-
-    const sessionId = nonEmptyString(target.sessionId);
-    const lower = message.toLowerCase();
-    if (lower === "cancel") {
-      if (sessionId) {
-        bus.emit({
-          type: "session.cancel.requested",
-          source,
-          owner: String(eventOwner),
-          target: { sessionId },
-          data: {},
-        } as any);
-      } else {
-        bus.emit({
-          type: "human.input.rejected",
-          source: "command-router",
-          owner: String(eventOwner),
-          data: { reason: "cancel requires an explicit session target", input: message },
-        } as any);
-      }
-      return accepted(sessionId ? "session-cancel" : "session-cancel-rejected");
-    }
-    if (lower === "cancel all") {
-      bus.emit({ type: "session.cancel_all.requested", source, owner: "agent:may", data: {} } as any);
-      return accepted("session-cancel-all");
-    }
-    if (["reload", "restart", "close"].includes(lower)) {
-      const type =
-        lower === "reload"
-          ? "runtime.reload.requested"
-          : lower === "restart"
-            ? "runtime.restart.requested"
-            : "runtime.shutdown.requested";
-      bus.emit({ type, source, owner: "agent:may", data: { reason: `human requested ${lower}` } } as any);
-      return accepted(`runtime-${lower}`);
-    }
-    const brokerReply = isBrokerReply(context);
-    if (sessionId && context.explicitSessionControl === true && !brokerReply) {
-      bus.emit({
-        type: "session.steer.requested",
-        source,
-        owner: String(eventOwner),
-        target: { sessionId },
-        data: { message: delivered, context },
-      } as any);
-      return accepted("session-steer");
-    }
-
-    const projectPath = nonEmptyString(target.projectPath);
-    if (projectPath && !brokerReply) {
-      const tail = projectPath.replace(/\\/g, "/").replace(/\/$/, "").split("/").pop() ?? "";
-      const appId = tail.replace(/\.app$/, "");
-      const appInput = messageInput(message, context);
-      if (appId && acceptsAppInput(appId, appInput)) {
-        return routeApp({ appId, appInput, event, data, source, conversation });
-      }
-      bus.emit({
-        type: "project.comment.created",
-        source,
-        owner: String(eventOwner),
-        data: { projectPath, comment: message, author: nonEmptyString(data.actor) ?? "human" },
-      } as any);
-      return accepted("project-comment");
-    }
-
-    const agent = brokerReply ? "may" : (nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may");
-    if (agent === "may") {
-      const appInput = messageInput(delivered, context);
-      if (acceptsAppInput("may", appInput)) {
-        return routeApp({ appId: "may", appInput, event, data, source, conversation });
-      }
-      bus.emit({
-        type: "human.input.rejected",
-        source: "command-router",
-        owner: "app:may",
-        data: { reason: "May App is not registered", input: message },
-      } as any);
-      return accepted("app:may-unavailable");
-    }
-
-    bus.emit({
-      type: "chat.start.requested",
-      source,
-      owner: normalizeEventOwner(agent),
-      data: {
-        agent,
-        message: delivered,
-        channel: nonEmptyString(conversation.channel) ?? source,
-        conversationId: nonEmptyString(conversation.id) ?? undefined,
-        requestId: nonEmptyString(data.inputId) ?? undefined,
-      },
-    } as any);
-    return accepted(`agent:${agent}`);
   }
 
   function handleSteer(sessionId: unknown, message: unknown, source?: string, event?: unknown): boolean {
@@ -525,31 +208,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     });
     log("info", `[chat.start] Started ${agent} chat session: ${startedSessionId}`);
     return accepted(`agent:${agent}`);
-  }
-
-  function handleFork(event: any): DeliveryResult | void {
-    if (typeof event.agent !== "string" || typeof event.task !== "string") return;
-    if (event.agent === "may") {
-      handleInput(event.task, event.opts?.source ?? "socket");
-      return accepted("may-input-normalized");
-    }
-    bus.emit({
-      type: "message.created",
-      source: event.opts?.source ?? "socket",
-      owner: normalizeEventOwner(event.agent),
-      data: {
-        from: event.opts?.source ?? "socket",
-        to: event.agent,
-        content: event.task,
-        intent: "fork",
-        priority: "P0",
-      },
-    } as any);
-    manager.run(event.agent, event.task, {
-      kind: event.opts?.kind ?? "job",
-      requestId: event.opts?.requestId,
-    });
-    return accepted(`agent:${event.agent}`);
   }
 
   function admitMayInput(
@@ -647,51 +305,22 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
   });
 
-  const unsubscribeCompatibility = bus.subscribe((event) => {
-    switch (event.type) {
-      case "input":
-        if (typeof event.message === "string") handleInput(event.message, event.source);
-        return accepted("human-input-normalized");
-      case "human.input.received":
-        return handleHumanInput(event);
-      case "steer":
-        handleSteer(event.sessionId, event.message, event.source, event);
-        return accepted("session-steer");
-      case "cancel":
-        if (event.sessionId) manager.cancel(event.sessionId);
-        return accepted("session-cancel");
-      case "cancel_all":
-        for (const session of manager.status()) if (session.status === "running") manager.cancel(session.sessionId);
-        return accepted("session-cancel-all");
-      case "project.comment.created": {
-        const data = eventData(event);
-        appendProjectDiscussion(
-          data.projectPath,
-          data.comment,
-          eventSource(event),
-          nonEmptyString(data.author) ?? undefined,
-        );
-        break;
-      }
-      case "fork":
-        return handleFork(event);
-      case "reload":
-        finishReload(event);
-        return accepted("runtime-reload");
-      case "restart":
-        options.restart();
-        return accepted("runtime-restart");
-      case "shutdown":
-        options.shutdown();
-        return accepted("runtime-shutdown");
-    }
+  const unsubscribeProjectComment = bus.subscribe((event) => {
+    if (event.type !== "project.comment.created") return;
+    const data = eventData(event);
+    appendProjectDiscussion(
+      data.projectPath,
+      data.comment,
+      eventSource(event),
+      nonEmptyString(data.author) ?? undefined,
+    );
   });
 
   return {
     handleInput,
     close: () => {
       unsubscribeRequiredControls();
-      unsubscribeCompatibility();
+      unsubscribeProjectComment();
     },
   };
 }

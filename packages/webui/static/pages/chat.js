@@ -44,23 +44,16 @@ let chatAutoScroll = true;
 let feedAutoScroll = true;
 let feedItems = [];
 
-function eventOwner(agent) {
-  const value = String(agent || 'may').trim() || 'may';
-  return value.startsWith('agent:') || value.startsWith('human:') ? value : 'agent:' + value;
-}
-
-function currentSessionAgent() {
-  const session = activeSessions.find(s => s.sessionId === currentSessionId);
-  return session?.agent || currentAgentChat || 'may';
-}
-
-function sendIntent(type, ownerAgent, data, extra) {
+function sendIntent(type, data, extra) {
+  const target = extra?.target;
   ws.send(JSON.stringify({
-    type,
-    source: 'web-ui',
-    owner: eventOwner(ownerAgent),
-    ...(extra || {}),
-    data,
+    type: 'publish',
+    event: {
+      type,
+      ...(target ? { target } : {}),
+      data,
+      idempotencyKey: `web-ui:${crypto.randomUUID()}`,
+    },
   }));
 }
 
@@ -608,7 +601,6 @@ function sendChat() {
     // cold-resume — done/error/interrupted sessions too).
     sendIntent(
       'session.steer.requested',
-      currentSessionAgent(),
       { message: msg },
       { target: { sessionId: currentSessionId } },
     );
@@ -627,7 +619,11 @@ function sendChat() {
     }).catch(e => toast('Failed: ' + e.message));
   } else {
     // Chat mode — input to the interface agent
-    sendIntent('chat.start.requested', 'may', { agent: 'may', message: msg, channel: 'web-ui' });
+    sendIntent(
+      'app.input.requested',
+      { input: { kind: 'message', data: { message: msg } }, channel: 'web-ui' },
+      { target: { appId: 'may' } },
+    );
   }
   input.value = '';
 }

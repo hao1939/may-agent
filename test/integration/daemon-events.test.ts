@@ -401,7 +401,13 @@ describe("daemon event subscribers", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(events).toContainEqual(expect.objectContaining({ type: "cancel", sessionId: "s_stuck" }));
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "session.cancel.requested",
+          source: "runtime:stuck-detector",
+          target: { sessionId: "s_stuck" },
+        }),
+      );
       const escalation = events.find((event) => event.type === "escalation.created");
       expect(escalation).toMatchObject({
         type: "escalation.created",

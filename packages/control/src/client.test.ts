@@ -430,7 +430,7 @@ describe("emitDaemonEvent", () => {
     });
     await expect(sendAgentMessage(captureEndpoint(writes), "dev", "fix it", "cli")).resolves.toMatchObject({
       type: "ok",
-      command: "chat.start.requested",
+      command: "publish",
     });
 
     expect(JSON.parse(writes[0] ?? "")).toMatchObject({
@@ -451,11 +451,13 @@ describe("emitDaemonEvent", () => {
         idempotencyKey: expect.stringMatching(/^control-input-/),
       },
     });
-    expect(JSON.parse(writes[2] ?? "")).toEqual({
-      type: "chat.start.requested",
-      source: "cli",
-      owner: "agent:dev",
-      data: { agent: "dev", message: "fix it", channel: "cli" },
+    expect(JSON.parse(writes[2] ?? "")).toMatchObject({
+      type: "publish",
+      event: {
+        type: "chat.start.requested",
+        data: { agent: "dev", message: "fix it", channel: "cli" },
+        idempotencyKey: expect.stringMatching(/^control-chat-/),
+      },
     });
   });
 });

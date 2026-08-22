@@ -4,14 +4,41 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { createAppInboxItem } from "../app-inbox-store.js";
-import { EventBus } from "../event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "../event-bus.js";
 import {
-  attachTelegramBot,
+  attachTelegramBot as attachTelegramBotRuntime,
   renderTelegramApps,
   renderTelegramTask,
   renderTelegramTasks,
   telegramMayInputEvent,
 } from "./telegram.js";
+
+function attachTelegramBot(
+  options: Omit<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">,
+): ReturnType<typeof attachTelegramBotRuntime> {
+  return attachTelegramBotRuntime({
+    ...options,
+    publishEvent(input) {
+      const data = {
+        ...input.data,
+        ...(input.target ?? {}),
+        ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+      };
+      const emitted = options.bus.emit({
+        type: input.type,
+        source: "telegram",
+        owner: input.target?.appId ? `app:${input.target.appId}` : "agent:may",
+        ...(input.target ? { target: input.target } : {}),
+        data,
+      } as any);
+      return {
+        eventId: Number(emitted[EVENT_ROW_ID]) || 1,
+        eventType: input.type,
+        delivery: "recorded",
+      };
+    },
+  });
+}
 
 async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -32,23 +59,19 @@ describe("Telegram May input", () => {
         conversationId: "telegram:chat:123:topic:7:agent:may",
         replyToMessageId: 499,
         context: { quotedText: "Earlier question" },
-        trace: { traceId: "telegram:502", parentEventId: 41 },
       }),
     ).toEqual({
       type: "conversation.message.created",
-      source: "telegram",
-      owner: "app:may",
+      target: { appId: "may" },
       data: {
-        appId: "may",
         conversationId: "telegram:chat:123:topic:7:agent:may",
         author: { kind: "human", id: "telegram:123:502" },
         text: "Please inspect this",
         context: { quotedText: "Earlier question" },
         replyTo: "telegram:123:499",
         metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 502 },
-        idempotencyKey: "telegram:123:502",
       },
-      trace: { traceId: "telegram:502", parentEventId: 41 },
+      idempotencyKey: "telegram:123:502",
     });
   });
 

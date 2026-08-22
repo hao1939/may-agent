@@ -180,23 +180,6 @@ function sendFrame(frame, opts = {}) {
   }
 }
 
-function ownerForAgent(agent) {
-  const value = String(agent || daemonAgent || "may").trim() || "may";
-  return value.startsWith("agent:") || value.startsWith("human:") ? value : `agent:${value}`;
-}
-
-function canonicalFrame(type, data = {}, opts = {}) {
-  const owner = opts.owner || ownerForAgent(opts.agent || daemonAgent);
-  return {
-    type,
-    source,
-    owner,
-    ...(opts.urgency ? { urgency: opts.urgency } : {}),
-    ...(opts.target ? { target: opts.target } : {}),
-    data,
-  };
-}
-
 function mayInputFrame(message) {
   const sequence = Math.max(Date.now(), lastConversationSequence + 1);
   lastConversationSequence = sequence;
@@ -610,9 +593,15 @@ function renderConversation(messages) {
 }
 
 function runtimeFrame(type) {
-  const urgency = type === "runtime.reload.requested" ? undefined : "high";
   const requestId = `${source}:${adapterInstanceId}:${randomUUID()}`;
-  return canonicalFrame(type, { requestId }, { urgency });
+  return {
+    type: "publish",
+    event: {
+      type,
+      data: { requestId },
+      idempotencyKey: requestId,
+    },
+  };
 }
 
 function subscribe() {
@@ -1033,8 +1022,8 @@ function handleCommand(input) {
     case "reload":
       {
         const frame = runtimeFrame("runtime.reload.requested");
-        pendingRuntimeControls.set(frame.data.requestId, input);
-        if (!sendFrame(frame)) pendingRuntimeControls.delete(frame.data.requestId);
+        pendingRuntimeControls.set(frame.event.data.requestId, input);
+        if (!sendFrame(frame)) pendingRuntimeControls.delete(frame.event.data.requestId);
       }
       return;
     case "restart":

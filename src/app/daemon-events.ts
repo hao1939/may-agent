@@ -243,7 +243,13 @@ export function attachDaemonEventSubscribers(opts: {
   bus.subscribe(
     createStuckDetector(
       (sessionId, _reason) => {
-        bus.emit({ type: "cancel", sessionId } as any);
+        bus.emit({
+          type: "session.cancel.requested",
+          source: "runtime:stuck-detector",
+          owner: "agent:may",
+          target: { sessionId },
+          data: { reason: "session made no progress" },
+        } as any);
       },
       (agent, sessionId, reason) => {
         emitRuntimeEscalation(bus, {

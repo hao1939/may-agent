@@ -1642,7 +1642,10 @@ describe("event delivery metadata", () => {
       attachPersistence(bus, root);
 
       bus.emit({
-        type: "reload",
+        type: "test.unhandled",
+        source: "test",
+        owner: "agent:may",
+        data: {},
         ttl_ms: 1,
       } as any);
       await new Promise((resolve) => setTimeout(resolve, 5));
@@ -1658,7 +1661,7 @@ describe("event delivery metadata", () => {
         .prepare(
           `SELECT delivery_status
          FROM events
-         WHERE event_type = 'reload'`,
+         WHERE event_type = 'test.unhandled'`,
         )
         .get() as Record<string, unknown>;
       expect(row.delivery_status).toBe("unhandled");
@@ -1667,7 +1670,7 @@ describe("event delivery metadata", () => {
       const health = query.eventDeliveryHealth({ limit: 10 });
       expect(health.unhandledEvents).toEqual([
         expect.objectContaining({
-          eventType: "reload",
+          eventType: "test.unhandled",
           deliveryStatus: "unhandled",
         }),
       ]);
@@ -1685,7 +1688,7 @@ describe("event delivery metadata", () => {
       bus.setPersistenceSubscriber(writer.handler);
       bus.setDeliveryRecorder(writer.recordDelivery);
 
-      bus.emit({ type: "reload", ttl_ms: 1 } as any);
+      bus.emit({ type: "test.unhandled", source: "test", owner: "agent:may", data: {}, ttl_ms: 1 } as any);
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
         type: "handler.completed",
@@ -1695,7 +1698,7 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "pending",
       });
       expect(db.prepare("SELECT id FROM events WHERE event_type = 'handler.completed'").get()).toBeTruthy();
@@ -1707,12 +1710,12 @@ describe("event delivery metadata", () => {
         owner: "agent:may",
         data: { handler: "second", agent: "may", durationMs: 5 },
       } as any);
-      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "pending",
       });
 
       writer.runHousekeeping();
-      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "unhandled",
       });
     } finally {

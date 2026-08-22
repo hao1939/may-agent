@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { isSocketCommandType, type EventInput, type EventReceipt } from "./protocol.js";
-import { buildCanonicalEventEnvelope, normalizeEventOwner } from "./event-envelope.js";
+import { buildCanonicalEventEnvelope } from "./event-envelope.js";
 
 export interface SocketResponse {
   type: "ok" | "error" | "status";
@@ -53,7 +53,6 @@ function daemonEventFrame(eventType: string, data: Record<string, unknown>): Rec
   if (!eventType.includes(".") || isSocketCommandType(eventType)) {
     return { ...data, type: eventType };
   }
-
   return buildCanonicalEventEnvelope(eventType, data, { source: "control" });
 }
 
@@ -372,16 +371,18 @@ export function sendAgentMessage(
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
   if (agent === "may") return sendDaemonInput(endpoint, message, source, opts);
-  return sendDaemonEvent(
+  return sendSocketCommand(
     endpoint,
     {
-      type: "chat.start.requested",
-      source,
-      owner: normalizeEventOwner(agent),
-      data: {
-        agent,
-        message,
-        channel: source,
+      type: "publish",
+      event: {
+        type: "chat.start.requested",
+        data: {
+          agent,
+          message,
+          channel: source,
+        },
+        idempotencyKey: `control-chat-${randomUUID()}`,
       },
     },
     opts,

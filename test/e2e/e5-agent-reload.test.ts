@@ -2,13 +2,13 @@
  * E5 — Agent reload
  *
  * Validates that the daemon can pick up a new agent on disk and an updated
- * agent.json without restart, in response to a socket `reload` command.
+ * agent.json without restart, in response to a typed reload event.
  *
  * Flow:
  *   1. Boot sandbox with only `may`.
  *   2. After daemon ready, write a new agent directory
  *      `agents/newcomer/{agent.json,AGENTS.md}` on disk.
- *   3. Emit `{ type: "reload" }` over the socket.
+ *   3. Publish `runtime.reload.requested` over the socket.
  *   4. Assert daemon log contains `[reload] 1 new (newcomer)`.
  *   5. Modify `may/agent.json` (change description), emit reload again.
  *   6. Assert daemon log contains `[reload] 1 updated (may)`.
@@ -45,6 +45,14 @@ describe("E5: agent reload", () => {
     if (sb) await sb.close();
   });
 
+  const requestReload = (socketPath: string) =>
+    socketEmit(socketPath, "publish", {
+      event: {
+        type: "runtime.reload.requested",
+        data: { reason: "e2e agent reload" },
+      },
+    });
+
   test(
     "detects a new agent directory and reports it on reload",
     async () => {
@@ -71,7 +79,7 @@ describe("E5: agent reload", () => {
 
       const t0 = sb.getLogs().length;
 
-      const resp = (await socketEmit(sb.socketPath, "reload", {})) as { type?: string };
+      const resp = (await requestReload(sb.socketPath)) as { type?: string };
       expect(resp.type).toBe("ok");
 
       // Wait for the daemon to process the reload and emit its summary.
@@ -108,7 +116,7 @@ describe("E5: agent reload", () => {
 
       const t0 = sb.getLogs().length;
 
-      const resp = (await socketEmit(sb.socketPath, "reload", {})) as { type?: string };
+      const resp = (await requestReload(sb.socketPath)) as { type?: string };
       expect(resp.type).toBe("ok");
 
       const logSlice = await pollUntil(
@@ -131,7 +139,7 @@ describe("E5: agent reload", () => {
     "reports 'No changes' when nothing on disk changed",
     async () => {
       const t0 = sb.getLogs().length;
-      const resp = (await socketEmit(sb.socketPath, "reload", {})) as { type?: string };
+      const resp = (await requestReload(sb.socketPath)) as { type?: string };
       expect(resp.type).toBe("ok");
 
       // Either the daemon detects no churn ("No changes") OR it re-reports

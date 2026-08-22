@@ -18,12 +18,12 @@
 
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppWorkView } from "@may-agent/sdk";
-import { EVENT_ROW_ID, type AgentEvent, type EventBus, type EventTrace } from "../event-bus.js";
+import type { EventInput, EventReceipt } from "../event-interface.js";
+import { type EventBus } from "../event-bus.js";
 import { getDb } from "../../lib/requests.js";
 import { storeNotificationMessage } from "../../lib/db/notifications.js";
 import { readAppConversationResource } from "../app-inbox-store.js";
 import { createTelegramClient } from "./telegram-client.js";
-import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 import { TASK_UPDATE_EVENT_TYPES, taskUpdateIdentity } from "../../../packages/control/src/task-wake.js";
 import type { HumanAppView, HumanTaskService, HumanTaskView } from "../human-task-service.js";
 
@@ -40,6 +40,7 @@ export interface TelegramBotOptions {
   bus: EventBus;
   interfaceAgent: string;
   humanTasks: HumanTaskService;
+  publishEvent: (input: EventInput) => EventReceipt;
 }
 
 export interface TelegramBot {
@@ -186,15 +187,12 @@ export function telegramMayInputEvent(input: {
   topicId?: string | number;
   replyToMessageId?: number;
   context?: Record<string, unknown>;
-  trace?: EventTrace;
-}): AgentEvent {
+}): EventInput {
   const sourceId = `telegram:${input.chatId}:${input.messageId}`;
   return {
     type: "conversation.message.created",
-    source: "telegram",
-    owner: "app:may",
+    target: { appId: "may" },
     data: {
-      appId: "may",
       conversationId: input.conversationId,
       author: { kind: "human", id: sourceId },
       text: input.message,
@@ -208,9 +206,8 @@ export function telegramMayInputEvent(input: {
         ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
         channelMessageId: input.messageId,
       },
-      idempotencyKey: sourceId,
     },
-    ...(input.trace ? { trace: input.trace } : {}),
+    idempotencyKey: sourceId,
   };
 }
 
@@ -437,12 +434,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     requestIds?: string[];
     taskRefs?: Array<{ appId: string; taskId: string }>;
   }): void {
-    bus.emit({
+    opts.publishEvent({
       type: "conversation.message.created",
-      source: "telegram",
-      owner: `app:${opts.interfaceAgent}`,
+      target: { appId: opts.interfaceAgent },
       data: {
-        appId: opts.interfaceAgent,
         conversationId: input.conversationId,
         author: { kind: "command", id: "telegram" },
         text: input.text,
@@ -455,8 +450,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           ...(input.requestIds?.length ? { requestIds: input.requestIds } : {}),
           ...(input.taskRefs?.length ? { taskRefs: input.taskRefs } : {}),
         },
-        idempotencyKey: `telegram:${input.chatId ?? "unknown"}:conversation:${input.messageId}:${input.command}`,
       },
+      idempotencyKey: `telegram:${input.chatId ?? "unknown"}:conversation:${input.messageId}:${input.command}`,
     });
   }
 
@@ -470,7 +465,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     replyToMsgId?: number,
   ): void {
     if (!channelMessageId || !chatId || !conversationId) return;
-    const received = bus.emit(
+    const received = opts.publishEvent(
       telegramMayInputEvent({
         message,
         chatId,
@@ -484,7 +479,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }),
     );
 
-    const rowId = received[EVENT_ROW_ID];
+    const rowId = received.eventId;
     try {
       storeNotificationMessage(persistDir, {
         telegram_msg_id: channelMessageId,
@@ -811,23 +806,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         conversationId,
         command: text,
       });
-      bus.emit({
+      opts.publishEvent({
         type: "runtime.reload.requested",
-        source: "telegram",
-        owner: normalizeEventOwner(opts.interfaceAgent),
         data: { requestId },
-      } as any);
+        idempotencyKey: requestId,
+      });
       return true;
     }
 
     if (command === "/close") {
-      bus.emit({
+      opts.publishEvent({
         type: "runtime.shutdown.requested",
-        source: "telegram",
-        owner: normalizeEventOwner(opts.interfaceAgent),
-        urgency: "high",
         data: {},
-      } as any);
+        idempotencyKey: `telegram:${chatIdStr}:${msg.message_id}:shutdown`,
+      });
       return true;
     }
 
