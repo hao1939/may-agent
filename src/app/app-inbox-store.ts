@@ -1271,7 +1271,9 @@ export function releaseAppInboxClaim(
     db.run(
       `UPDATE app_inbox_items
        SET status = CASE WHEN waiting_on_kind IS NULL THEN 'pending' ELSE 'handling' END,
-           available_at = ?, session_id = NULL,
+           available_at = CASE WHEN waiting_on_kind IS NULL THEN ? ELSE NULL END,
+           review_at = CASE WHEN waiting_on_kind IS NULL THEN review_at ELSE NULL END,
+           session_id = NULL,
            lease_owner = NULL, lease_expires_at = NULL, changed_at = ?, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
