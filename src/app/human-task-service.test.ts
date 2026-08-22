@@ -113,6 +113,27 @@ describe("Task reference index", () => {
       kind: "resolved",
       task: { appId: "beta", taskId: "two" },
     });
+    const count = db.prepare("SELECT COUNT(*) AS count FROM app_task_refs").get() as { count: number };
+    ensureTaskReferenceIndex(db);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_refs").get()).toEqual(count);
+  });
+
+  test("backfills all references atomically", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "one", phase: "running", updatedAt: 20 });
+    insertReceipt(db, "beta", "two", 10);
+    db.exec(`
+      CREATE TRIGGER reject_second_task_reference
+      BEFORE INSERT ON app_task_refs WHEN NEW.task_id = 'two'
+      BEGIN SELECT RAISE(ABORT, 'test backfill failure'); END;
+    `);
+
+    expect(() => ensureTaskReferenceIndex(db)).toThrow("test backfill failure");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_refs").get()).toEqual({ count: 0 });
+
+    db.exec("DROP TRIGGER reject_second_task_reference");
+    ensureTaskReferenceIndex(db);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_refs").get()).toEqual({ count: 2 });
   });
 
   test("rejects an ambiguous short prefix instead of choosing list order", () => {

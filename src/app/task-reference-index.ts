@@ -42,8 +42,24 @@ export function ensureTaskReferenceIndex(db: SqliteDb): void {
     )
     .all() as Array<{ app_id?: string; task_id?: string }>;
   if (rows.length === 0) return;
-  for (const row of rows) {
-    if (row.app_id && row.task_id) indexTaskReference(db, row.app_id, row.task_id);
+  // This is one logical migration. Autocommitting every identity separately
+  // turns a modest backfill into thousands of journal flushes on a large Host
+  // database and can prevent the control socket from opening before health
+  // timeout. One transaction is both atomic and bounded by the missing rows.
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const indexedAt = Date.now();
+    for (const row of rows) {
+      if (row.app_id && row.task_id) indexTaskReference(db, row.app_id, row.task_id, indexedAt);
+    }
+    db.exec("COMMIT");
+  } catch (error) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // Preserve the insertion failure.
+    }
+    throw error;
   }
 }
 
