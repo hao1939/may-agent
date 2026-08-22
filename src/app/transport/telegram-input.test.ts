@@ -2,7 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/requests.js";
+import { createAppInboxItem } from "../app-inbox-store.js";
 import { EventBus } from "../event-bus.js";
 import {
   attachTelegramBot,
@@ -237,6 +238,208 @@ describe("Telegram May input", () => {
     } finally {
       bot.close();
       unsubscribe();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
+  });
+
+  it("uses the shared Task interface for watch feedback, terminal refresh, and cancellation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-task-controls-"));
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    const sent: string[] = [];
+    const observed: any[] = [];
+    const cancelCalls: Array<Record<string, unknown>> = [];
+    let taskTerminal = false;
+    let updatePolls = 0;
+    let releaseFollowup = () => {};
+    const followupReady = new Promise<void>((resolve) => {
+      releaseFollowup = resolve;
+    });
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const method = String(url).split("/").at(-1) ?? "";
+      if (method === "getMe")
+        return { json: async () => ({ ok: true, result: { username: "may", first_name: "May" } }) } as Response;
+      if (method === "getUpdates" && updatePolls++ === 0) {
+        return {
+          json: async () => ({
+            ok: true,
+            result: [
+              { update_id: 1, message: { message_id: 501, chat: { id: 123 }, text: "/apps evaluation" } },
+              { update_id: 2, message: { message_id: 502, chat: { id: 123 }, text: "/task 8f12ac90" } },
+              { update_id: 3, message: { message_id: 503, chat: { id: 123 }, text: "/watch 8f12ac90" } },
+              { update_id: 4, message: { message_id: 504, chat: { id: 123 }, text: "Prioritize exact evidence" } },
+            ],
+          }),
+        } as Response;
+      }
+      if (method === "getUpdates" && updatePolls === 2) {
+        await followupReady;
+        return {
+          json: async () => ({
+            ok: true,
+            result: [
+              { update_id: 5, message: { message_id: 505, chat: { id: 123 }, text: "/watch" } },
+              { update_id: 6, message: { message_id: 506, chat: { id: 123 }, text: "/cancel 8f12ac90" } },
+              { update_id: 7, message: { message_id: 507, chat: { id: 123 }, text: "/unwatch" } },
+            ],
+          }),
+        } as Response;
+      }
+      if (method === "getUpdates") return await new Promise<Response>(() => {});
+      if (method === "sendMessage") {
+        const body = JSON.parse(String(init?.body));
+        sent.push(body.text);
+        return { json: async () => ({ ok: true, result: { message_id: 900 + sent.length } }) } as Response;
+      }
+      throw new Error(`Unexpected Telegram method ${method}`);
+    }) as typeof fetch;
+    process.env.TELEGRAM_BOT_TOKEN = "test-token";
+    process.env.TELEGRAM_CHAT_ID = "123";
+
+    const task = () => ({
+      appId: "evaluation",
+      taskId: "review/docs",
+      ref: "8f12ac90",
+      status: taskTerminal ? ("done" as const) : ("running" as const),
+      generation: 1,
+      resourceVersion: taskTerminal ? 3 : 2,
+      outcome: "Review the docs",
+      summary: taskTerminal ? "The review is complete." : "Reviewing current behavior",
+      updatedAt: Date.UTC(2026, 7, 22, 1, taskTerminal ? 5 : 2, 3),
+      terminal: taskTerminal,
+      cancellable: !taskTerminal,
+    });
+    const bus = new EventBus();
+    const unsubscribe = bus.subscribe((event) => observed.push(event));
+    const bot = attachTelegramBot({
+      bus,
+      interfaceAgent: "may",
+      persistDir: root,
+      humanTasks: {
+        listApps: () => [
+          {
+            id: "evaluation",
+            owner: "evaluator",
+            activeTasks: 1,
+            attentionTasks: 0,
+            runningTasks: 1,
+            waitingTasks: 0,
+          },
+        ],
+        getTask: () => task(),
+        cancelTask(input: Record<string, unknown>) {
+          cancelCalls.push(input);
+          taskTerminal = true;
+          return task();
+        },
+      } as any,
+    });
+    try {
+      await waitFor(() => sent.length >= 3);
+      await waitFor(() =>
+        observed.some(
+          (event) =>
+            event.type === "conversation.message.created" &&
+            event.data?.text === "Prioritize exact evidence" &&
+            event.data?.context?.focusedTask?.taskId === "review/docs",
+        ),
+      );
+      expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 active"));
+      expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
+      expect(sent).toContainEqual(expect.stringContaining("Watching 8f12ac90"));
+
+      taskTerminal = true;
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "task-resource",
+        owner: "app:evaluation",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      } as any);
+      await waitFor(() => sent.some((text) => text.includes("Result:\nThe review is complete.")));
+
+      releaseFollowup();
+      await waitFor(() => sent.some((text) => text.includes("No Task is watched")));
+      await waitFor(() => cancelCalls.length === 1);
+      expect(cancelCalls[0]).toEqual({ ref: "8f12ac90", reason: "human requested cancellation from Telegram" });
+      expect(sent).toContain("No Task is watched.");
+    } finally {
+      bot.close();
+      unsubscribe();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
+  });
+
+  it("mirrors a Console conversation message without replaying Telegram's own human input", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-conversation-mirror-"));
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    const sent: string[] = [];
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const method = String(url).split("/").at(-1) ?? "";
+      if (method === "getMe")
+        return { json: async () => ({ ok: true, result: { username: "may", first_name: "May" } }) } as Response;
+      if (method === "getUpdates") return await new Promise<Response>(() => {});
+      if (method === "sendMessage") {
+        const body = JSON.parse(String(init?.body));
+        sent.push(body.text);
+        return { json: async () => ({ ok: true, result: { message_id: 900 + sent.length } }) } as Response;
+      }
+      throw new Error(`Unexpected Telegram method ${method}`);
+    }) as typeof fetch;
+    process.env.TELEGRAM_BOT_TOKEN = "test-token";
+    process.env.TELEGRAM_CHAT_ID = "123";
+
+    const bus = new EventBus();
+    const bot = attachTelegramBot({ bus, interfaceAgent: "may", persistDir: root, humanTasks: {} as any });
+    try {
+      const db = getDb(root);
+      createAppInboxItem(db, {
+        id: "console-request",
+        appId: "may",
+        conversationId: "may:primary",
+        conversationSequence: 1,
+        channel: "may-console",
+        source: { kind: "human", id: "may-console:test:1" },
+        input: { kind: "message", data: { message: "Message sent from Console" } },
+        now: 1,
+      });
+      createAppInboxItem(db, {
+        id: "telegram-request",
+        appId: "may",
+        conversationId: "may:primary",
+        conversationSequence: 2,
+        channel: "telegram",
+        channelTargetId: "123",
+        channelMessageId: 2,
+        source: { kind: "human", id: "telegram:123:2" },
+        input: { kind: "message", data: { message: "Telegram should not echo this" } },
+        now: 2,
+      });
+      bus.emit({
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      } as any);
+
+      await waitFor(() => sent.length === 1);
+      expect(sent[0]).toBe("Console · You\nMessage sent from Console");
+    } finally {
+      bot.close();
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
       globalThis.fetch = priorFetch;

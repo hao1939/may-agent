@@ -100,8 +100,6 @@ export type AppRead = {
     list(options?: TaskListOptions): Promise<TaskPage>;
     get(taskId: string): Promise<TaskView | null>;
   };
-  /** @deprecated Use tasks.get(taskId). */
-  task(taskId: string): Promise<TaskView | null>;
   execution(executionId: string): Promise<ExecutionView | null>;
   metric(metricId: string): Promise<MetricView | null>;
 };

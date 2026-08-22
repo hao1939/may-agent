@@ -33,14 +33,13 @@ function mockFn(): MockFnFactory {
 
 export function createTestAppRead(overrides: Partial<AppRead> = {}): AppRead {
   const fn = mockFn();
-  const getTask = overrides.tasks?.get ?? overrides.task ?? fn(async () => null);
+  const getTask = overrides.tasks?.get ?? fn(async () => null);
   return {
     appResult: overrides.appResult ?? fn(async () => null),
     tasks: {
       list: overrides.tasks?.list ?? fn(async () => ({ items: [] })),
       get: getTask,
     },
-    task: overrides.task ?? getTask,
     execution: overrides.execution ?? fn(async () => null),
     metric: overrides.metric ?? fn(async () => null),
   };

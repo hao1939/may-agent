@@ -86,15 +86,13 @@ describe("App read projections", () => {
     });
 
     const first = await read.tasks.list({ limit: 1 });
-    expect(first.items).toEqual([
-      expect.objectContaining({ id: "review/a", status: "pending", generation: 1 }),
-    ]);
+    expect(first.items).toEqual([expect.objectContaining({ id: "review/a", status: "pending", generation: 1 })]);
     expect(first.nextCursor).toBeString();
     await expect(read.tasks.list({ limit: 1, cursor: first.nextCursor })).resolves.toEqual({
       items: [expect.objectContaining({ id: "review/b", status: "pending", generation: 1 })],
     });
     await expect(read.tasks.list({ status: ["done"] })).resolves.toEqual({ items: [] });
-    await expect(read.tasks.get("review/a")).resolves.toEqual(await read.task("review/a"));
+    await expect(read.tasks.get("review/a")).resolves.toMatchObject({ id: "review/a" });
     await expect(read.tasks.get("missing")).resolves.toBeNull();
     await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
     await expect(read.tasks.list({ status: ["unknown" as never] })).rejects.toThrow("Invalid Task status filter");
