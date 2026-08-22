@@ -11,7 +11,6 @@ import {
   listLoadedAppTaskViews,
   previewLoadedCanonicalAppTaskEvent,
   readLoadedAppTaskView,
-  startAppTaskRuntimeWatcher,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
 
@@ -39,7 +38,6 @@ export type AppTaskCapability = {
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   get(input: { appId: string; taskId: string }): TaskView | null;
   publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
-  watchGenerations(reload: () => Promise<void>): { close(): void } | null;
 };
 
 /**
@@ -70,10 +68,6 @@ export function createAppTaskCapability(options: {
         afterCommit: () => publish(),
       });
       return { apps: result.installed.length };
-    },
-    watchGenerations(reload) {
-      if (!options.runtime) return null;
-      return startAppTaskRuntimeWatcher(options.runtime, { reload });
     },
     async readDependency({ appDir, dependency }) {
       const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });

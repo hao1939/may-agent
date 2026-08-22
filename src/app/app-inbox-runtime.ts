@@ -917,7 +917,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     return dependencyWakeDelivery;
   }, { label: "app-inbox-route" });
-  const scanIntervalMs = options.scanIntervalMs ?? 5_000;
+  // Events schedule normal work immediately. This interval is recovery
+  // insurance for lost in-memory wakes, due schedules, and observer slots; it
+  // must not turn the App inbox into an ordinary five-second polling loop.
+  const scanIntervalMs = options.scanIntervalMs ?? 60_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
     unsubscribe();
     throw new Error("App inbox scanIntervalMs must be positive");

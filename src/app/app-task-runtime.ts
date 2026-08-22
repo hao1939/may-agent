@@ -220,11 +220,6 @@ export interface AppTaskRuntimeOptions {
   registerLocalAgent?: (agentName: string, appDir: string, agentDir?: string) => Promise<boolean>;
 }
 
-export interface AppTaskRuntimeWatcher {
-  close(): void;
-  scanNow(): Promise<boolean>;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -3481,105 +3476,6 @@ export async function installAppTaskRuntimes(
   }
 }
 
-function hashFile(path: string): string {
-  try {
-    return createHash("sha256").update(readFileSync(path)).digest("hex");
-  } catch {
-    return "";
-  }
-}
-
-function hashRuntimeTsFiles(runtimeDir: string): string[] {
-  const files: string[] = [];
-  const pending = [runtimeDir];
-  while (pending.length > 0) {
-    const dir = pending.pop()!;
-    let entries;
-    try {
-      entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
-      const entryPath = join(dir, entry.name);
-      if (entry.isDirectory()) pending.push(entryPath);
-      else if (entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts")) {
-        files.push(`${entryPath}\t${hashFile(entryPath)}`);
-      }
-    }
-  }
-  return files.sort();
-}
-
 function appLifecycle(appDir: string): string {
   return readTaskStateLifecycle(appDir);
-}
-
-export function appTaskHostFingerprint(projectsRoot: string): string {
-  const parts: string[] = [];
-  for (const appDir of listAppDirs(projectsRoot)) {
-    const tsPath = join(appDir, "app.ts");
-    const jsPath = join(appDir, "app.js");
-    const manifestPath = existsSync(tsPath) ? tsPath : jsPath;
-    parts.push(`${appDir}\t${manifestPath}\t${hashFile(manifestPath)}`);
-    parts.push(`${appDir}\tproject_lifecycle\t${appLifecycle(appDir)}`);
-    parts.push(...hashRuntimeTsFiles(join(appDir, "watchers")));
-    for (const agent of localAgents(appDir)) {
-      const agentDir = join(appDir, "agents", agent.dirName);
-      const configPath = join(agentDir, "agent.json");
-      parts.push(`${appDir}\t${configPath}\t${hashFile(configPath)}`);
-      parts.push(...hashRuntimeTsFiles(join(agentDir, "workflows")));
-    }
-  }
-  return createHash("sha256").update(parts.join("\n")).digest("hex");
-}
-
-export function startAppTaskRuntimeWatcher(
-  opts: AppTaskRuntimeOptions,
-  watcherOpts: { intervalMs?: number; reload?: () => Promise<void> } = {},
-): AppTaskRuntimeWatcher {
-  const intervalMs = Math.max(1_000, watcherOpts.intervalMs ?? 5_000);
-  let closed = false;
-  let inFlight = false;
-  let lastFingerprint = appTaskHostFingerprint(opts.projectsRoot);
-
-  const scanNow = async (): Promise<boolean> => {
-    if (closed || inFlight) return false;
-    const nextFingerprint = appTaskHostFingerprint(opts.projectsRoot);
-    if (nextFingerprint === lastFingerprint) return false;
-    inFlight = true;
-    try {
-      if (watcherOpts.reload) await watcherOpts.reload();
-      else {
-        const result = await installAppTaskRuntimes(opts);
-        opts.bus.emit({
-          type: "info",
-          message: `[app-task] Auto-reloaded ${result.installed.length} task-enabled App(s)`,
-        });
-      }
-      lastFingerprint = nextFingerprint;
-      return true;
-    } catch (err) {
-      opts.bus.emit({
-        type: "info",
-        message: `[app-task] Auto-reload failed: ${err instanceof Error ? err.message : String(err)}`,
-      });
-      return false;
-    } finally {
-      inFlight = false;
-    }
-  };
-
-  const timer = setInterval(() => {
-    void scanNow();
-  }, intervalMs);
-  timer.unref();
-
-  return {
-    close: () => {
-      closed = true;
-      clearInterval(timer);
-    },
-    scanNow,
-  };
 }
