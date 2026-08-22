@@ -744,6 +744,17 @@ compacting, checkpointing, or rewriting retained state. The remaining live
 burst still requires source-level attribution before the idle-resource exit is
 claimed.
 
+Production correlation
+`metric-read-amplification-20260822-52662fd1-r1` then loaded Host commit
+`52662fd1` with matching requested and loaded artifact SHA, healthy status, one
+targeted wake, and no duplicate deploy. A correlated live metric snapshot read
+about 381 MB over seven active seconds, peaked at 54% of one CPU, and settled
+back to zero reads and mostly 0-1% CPU; RSS rose briefly from 241 MiB to 291 MiB
+and returned to roughly 233-250 MiB. This is materially below the earlier
+multi-gigabyte one-second burst, but the manual snapshot did not include every
+observer and schedule that aligns on a production interval boundary. The
+larger combined boundary therefore remains open for exact attribution.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
