@@ -160,8 +160,14 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
 
 function runtimeDiagnostics(): Record<string, unknown> {
   const memory = process.memoryUsage();
+  const cpu = process.cpuUsage();
   return {
+    pid: process.pid,
     uptimeSeconds: process.uptime(),
+    cpu: {
+      userMicros: cpu.user,
+      systemMicros: cpu.system,
+    },
     memory: {
       rssBytes: memory.rss,
       heapTotalBytes: memory.heapTotal,
