@@ -9,6 +9,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { EventBus } from "./event-bus.js";
 import { EVENT_ROW_ID } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
+import { createAppInboxItem } from "./app-inbox-store.js";
 import { AppRegistry } from "./app-registry.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import {
@@ -35,6 +36,7 @@ import {
   claimObservedAppTask,
   deferAppTask,
   observeAppTaskIntent,
+  recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   taskReconciliationConfig,
 } from "./app-task-reconciler.js";
@@ -341,6 +343,7 @@ describe("canonical App task runtime", () => {
   it("carries a deterministic cross-App result back as the parent's next Event", async () => {
     const f = fixture();
     const bus = eventBus();
+    const persistDir = join(f.root, "state");
     const evaluationDir = join(f.projectsRoot, "evaluation.app");
     mkdirSync(evaluationDir, { recursive: true });
     writeFileSync(
@@ -390,17 +393,21 @@ describe("canonical App task runtime", () => {
     await registry.reload();
     await installAppTaskRuntimes({
       ...options(f, bus),
-      persistDir: join(f.root, "state"),
+      persistDir,
       appRegistrySnapshot: registry.snapshot(),
     });
 
     let nextEventId = 1;
     const dependencyEvents: Array<Record<string, unknown>> = [];
+    const dependencyRequests: Array<Record<string, unknown>> = [];
     const conditionPreviews: string[][] = [];
     bus.setPersistenceSubscriber((event) => {
       Object.defineProperty(event, EVENT_ROW_ID, { value: nextEventId++, configurable: true });
     });
     bus.subscribe((event) => {
+      if (event.type === "app.input.requested") {
+        dependencyRequests.push(event as unknown as Record<string, unknown>);
+      }
       if (event.type === "app.dependency.completed" && event.data.kind === "app") {
         dependencyEvents.push(event as unknown as Record<string, unknown>);
       }
@@ -409,13 +416,16 @@ describe("canonical App task runtime", () => {
     applyDbSchema(db);
     const dependencyResults = new Map<string, { summary: string; response: string; evidence: string[] }>();
     let attachedDependencyTaskId: string | undefined;
+    let attachedDependencyTaskCount = 0;
     const inbox = await startAppInboxRuntime({
       registry,
       db,
       bus,
       attachTask: async ({ attachment }) => {
-        attachedDependencyTaskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
-        return { taskId: attachedDependencyTaskId };
+        const taskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
+        attachedDependencyTaskId ??= taskId;
+        attachedDependencyTaskCount += 1;
+        return { taskId };
       },
       readDependency: async ({ dependency }) => {
         const result = dependencyResults.get(dependency.id);
@@ -465,7 +475,7 @@ describe("canonical App task runtime", () => {
         reconciliationPaused: true,
       };
       const conditions = admitTaskAppDependencies({
-        opts: { ...options(f, bus), persistDir: join(f.root, "state") },
+        opts: { ...options(f, bus), persistDir },
         descriptor,
         claim: initial,
         dependencies: [
@@ -488,6 +498,77 @@ describe("canonical App task runtime", () => {
       const attachmentDeadline = Date.now() + 5_000;
       while (!attachedDependencyTaskId && Date.now() < attachmentDeadline) await Bun.sleep(5);
       if (!attachedDependencyTaskId) throw new Error("expected child App request to attach to a Task");
+      createAppInboxItem(getDb(persistDir), {
+        id: requestId,
+        appId: "evaluation",
+        source: { kind: "app", id: "sample" },
+        input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
+      });
+
+      expect(
+        recordAppTaskTrigger(config, initial.taskId, {
+          type: "message.created",
+          data: { message: "Review the current dependency without replacing it" },
+        }),
+      ).toEqual({ kind: "recorded" });
+      const checkpointReview = claimObservedAppTask(config, {
+        taskId: initial.taskId,
+        appOwner: "sample-owner",
+        handler: "owner:sample-owner",
+        reason: "checkpoint-review",
+      });
+      if (checkpointReview.kind !== "claimed") throw new Error("expected checkpoint review claim");
+      const reused = admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor,
+        claim: checkpointReview,
+        existingConditions: conditions,
+        dependencies: [
+          {
+            id: requestId,
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "parent-needs-review " } },
+          },
+        ],
+      });
+      expect(reused).toEqual(conditions);
+      expect(
+        deferAppTask(config, checkpointReview, {
+          disposition: "waiting",
+          summary: "The original independent review remains in progress",
+          conditions: reused,
+        }).status,
+      ).toBe("applied");
+      expect(readTaskState(config).resources?.[initial.taskId]?.status.conditionIds).toEqual([conditions[0]!.id]);
+      await Bun.sleep(10);
+      expect(dependencyRequests).toHaveLength(1);
+      expect(attachedDependencyTaskCount).toBe(1);
+
+      const expanded = admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor,
+        claim: checkpointReview,
+        existingConditions: conditions,
+        dependencies: [
+          {
+            id: requestId,
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "parent-needs-review " } },
+          },
+          {
+            id: "second-independent-review",
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "a-distinct-review" } },
+          },
+        ],
+      });
+      expect(expanded[0]).toEqual(conditions[0]);
+      expect(expanded[1]?.subject).not.toBe(conditions[0]?.subject);
+      const secondAttachmentDeadline = Date.now() + 5_000;
+      while (attachedDependencyTaskCount < 2 && Date.now() < secondAttachmentDeadline) await Bun.sleep(5);
+      expect(dependencyRequests).toHaveLength(2);
+      expect(attachedDependencyTaskCount).toBe(2);
+
       dependencyResults.set(attachedDependencyTaskId, {
         summary: "Independent review completed",
         response: "The dependency result is ready for the parent.",
@@ -535,6 +616,78 @@ describe("canonical App task runtime", () => {
       inbox.close();
       db.close();
     }
+  });
+
+  it("rejects replacement of an open App request before emitting duplicate work", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const emitted: Array<Record<string, unknown>> = [];
+    bus.subscribe((event) => emitted.push(event as unknown as Record<string, unknown>));
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/cross-app-conflict",
+        parentId: "operations",
+        outcome: "Use one independent review",
+        acceptance: ["The review result is considered"],
+        mode: "achieve",
+      },
+      appOwner: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/cross-app-conflict",
+      appOwner: "sample-owner",
+      handler: "owner:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const descriptor = {
+      id: "sample",
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      app: definition(),
+      reconciliationPaused: false,
+    };
+    const first = admitTaskAppDependencies({
+      opts: { ...options(f, bus), persistDir },
+      descriptor,
+      claim,
+      dependencies: [
+        { id: "review", appId: "evaluation", input: { kind: "deep-scan", data: { reason: "original" } } },
+      ],
+    });
+    const requestId = first[0]!.subject.slice("id:".length);
+    createAppInboxItem(getDb(persistDir), {
+      id: requestId,
+      appId: "evaluation",
+      source: { kind: "app", id: "sample" },
+      input: { kind: "deep-scan", data: { reason: "original" } },
+    });
+    const emittedBeforeConflict = emitted.length;
+
+    expect(() =>
+      admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor,
+        claim,
+        existingConditions: first,
+        dependencies: [
+          {
+            id: "replacement-review",
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "changed" } },
+          },
+        ],
+      }),
+    ).toThrow(`would replace open request ${requestId}`);
+    expect(emitted).toHaveLength(emittedBeforeConflict);
   });
 
   it("turns a typed child App dependency into deterministic input and an exact completion Condition", () => {
