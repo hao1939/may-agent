@@ -3318,7 +3318,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           }
           for (const candidate of listHandlerExecutionFailedAppTasks(
             config,
-            config.resourceStore?.listTaskIdsByPhase(["attention"], 512),
+            config.resourceStore?.listHandlerExecutionRecoveryTaskIds(successfulOwner.owner, 512),
           )) {
             if (candidate.owner !== successfulOwner.owner) continue;
             if (
