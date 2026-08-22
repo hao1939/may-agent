@@ -110,10 +110,15 @@ function signalProcessGroup(pgid: number, signal: "SIGTERM" | "SIGKILL"): void {
 
 async function waitForProcessGroupExit(pgid: number, timeoutMs: number): Promise<boolean> {
 	const deadline = Date.now() + timeoutMs;
-	while (processGroupAlive(pgid) && Date.now() < deadline) {
+	// The kernel group probe is cheap. Walking every process in /proc on every
+	// 20ms poll is not: on a busy Host one command settlement generated
+	// hundreds of thousands of reads. Inspect members once at the phase
+	// boundary only, where it is needed to distinguish live processes from a
+	// zombie-only group.
+	while (processGroupExists(pgid) && Date.now() < deadline) {
 		await new Promise((resolve) => setTimeout(resolve, PROCESS_GROUP_POLL_MS));
 	}
-	return !processGroupAlive(pgid);
+	return !processGroupExists(pgid) || !processGroupContainsLiveMember(pgid, readdirSync("/proc"));
 }
 
 /** Drain one exact setsid group before allowing its bash tool call to settle. */
@@ -136,7 +141,10 @@ export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
 			return waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_KILL_GRACE_MS);
 		}
 	}
-	if (!processGroupAlive(pgid)) return true;
+	// A signal to a zombie-only group is harmless. Avoid an eager /proc walk;
+	// the phase-boundary check below will distinguish zombies if the cheap
+	// kernel probe continues to report the group.
+	if (!processGroupExists(pgid)) return true;
 	signalProcessGroup(pgid, "SIGTERM");
 	if (await waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_TERM_GRACE_MS)) return true;
 	signalProcessGroup(pgid, "SIGKILL");
@@ -193,7 +201,7 @@ export function drainPersistedSessionBashProcessGroups(
 export const DEFAULT_BASH_TIMEOUT = 120;
 
 /**
- * Maximum unread output copied through the daemon for one shell poll.
+ * Maximum captured output copied into the Host when a local shell settles.
  *
  * The command's capture file remains the complete evidence. The in-process
  * tool loop needs only enough recent output to update the agent and construct
@@ -201,6 +209,7 @@ export const DEFAULT_BASH_TIMEOUT = 120;
  * would make execution volume control-plane work.
  */
 export const BASH_CAPTURE_TAIL_BYTES = DEFAULT_MAX_BYTES * 2;
+export const BASH_PROGRESS_INTERVAL_MS = 1_000;
 
 /**
  * Generate a unique temp file path for bash output
@@ -230,7 +239,7 @@ export interface BashOperations {
 	/** The operation retains complete large output and returns its path. */
 	retainsFullOutput?: boolean;
 	/**
-	 * Execute a command and stream output.
+	 * Execute a command and deliver bounded result/progress output.
 	 * @param command - The command to execute
 	 * @param cwd - Working directory
 	 * @param options - Execution options
@@ -241,6 +250,8 @@ export interface BashOperations {
 		cwd: string,
 		options: {
 			onData: (data: Buffer) => void;
+			/** Report output growth without copying command output into the Host. */
+			onProgress?: (totalOutputBytes: number) => void;
 			signal?: AbortSignal;
 			timeout?: number;
 			env?: NodeJS.ProcessEnv;
@@ -267,7 +278,11 @@ export function createLocalBashOperations(
 ): BashOperations {
 	return {
 		retainsFullOutput: true,
-		exec: (command, cwd, { onData, signal, timeout, env, onProcessGroupSpawn, onProcessGroupDrained }) => {
+		exec: (
+			command,
+			cwd,
+			{ onData, onProgress, signal, timeout, env, onProcessGroupSpawn, onProcessGroupDrained },
+		) => {
 			return new Promise((resolve, reject) => {
 				if (!existsSync(cwd)) {
 					reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
@@ -286,23 +301,33 @@ export function createLocalBashOperations(
 				stdio: ["ignore", captureFd, captureFd],
 			});
 			let settled = false;
-			let captureOffset = 0;
 			let captureClosed = false;
 			let capturePollHandle: NodeJS.Timeout | undefined;
 			let timeoutHandle: NodeJS.Timeout | undefined;
+			let observedCaptureSize = 0;
 
-			const flushCapture = () => {
+			const observeCapture = () => {
 				if (captureClosed) return;
 				const captureSize = fstatSync(captureFd).size;
-				// Keep the complete log on disk, but discard stale transient output
-				// before it crosses into the daemon. The final tail is sufficient for
-				// the model response and the retained file is the full evidence.
-				if (captureSize - captureOffset > BASH_CAPTURE_TAIL_BYTES) {
-					captureOffset = captureSize - BASH_CAPTURE_TAIL_BYTES;
-				}
+				if (captureSize === observedCaptureSize) return;
+				observedCaptureSize = captureSize;
+				onProgress?.(captureSize);
+			};
+
+			const readCaptureTail = (captureSize: number) => {
+				// The complete log remains on disk. Only one bounded tail crosses into
+				// the Host after the process group has drained, so steady verbose output
+				// cannot turn command execution into control-plane copying.
+				let captureOffset = Math.max(0, captureSize - BASH_CAPTURE_TAIL_BYTES);
 				const buffer = Buffer.allocUnsafe(64 * 1024);
-				while (true) {
-					const bytesRead = readSync(captureFd, buffer, 0, buffer.length, captureOffset);
+				while (captureOffset < captureSize) {
+					const bytesRead = readSync(
+						captureFd,
+						buffer,
+						0,
+						Math.min(buffer.length, captureSize - captureOffset),
+						captureOffset,
+					);
 					if (bytesRead === 0) return;
 					captureOffset += bytesRead;
 					onData(buffer.subarray(0, bytesRead));
@@ -315,8 +340,8 @@ export function createLocalBashOperations(
 				if (signal) signal.removeEventListener("abort", onAbort);
 				let totalOutputBytes = 0;
 				if (!captureClosed) {
-					flushCapture();
 					totalOutputBytes = fstatSync(captureFd).size;
+					readCaptureTail(totalOutputBytes);
 					captureClosed = true;
 					closeSync(captureFd);
 					if (totalOutputBytes <= DEFAULT_MAX_BYTES) {
@@ -357,7 +382,7 @@ export function createLocalBashOperations(
 			const onAbort = () => void settleAfterDrain(null, new Error("aborted"));
 
 			if (child.pid) onProcessGroupSpawn?.(child.pid);
-			capturePollHandle = setInterval(flushCapture, 100);
+			capturePollHandle = setInterval(observeCapture, 100);
 			child.once("error", (error) => void settleAfterDrain(null, error));
 			child.once("exit", (exitCode) => void settleAfterDrain(exitCode));
 			if (signal) signal.addEventListener("abort", onAbort, { once: true });
@@ -501,6 +526,7 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 				// Keep a rolling buffer of the last chunk for tail truncation
 				const chunks: Buffer[] = [];
 				let chunksBytes = 0;
+				let lastProgressAt = 0;
 				// Keep more than we need so we have enough for truncation
 				const maxChunksBytes = DEFAULT_MAX_BYTES * 2;
 
@@ -532,23 +558,26 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 						chunksBytes -= removed.length;
 					}
 
-					// Stream partial output to callback (truncated rolling buffer)
-					if (onUpdate) {
-						const fullBuffer = Buffer.concat(chunks);
-						const fullText = fullBuffer.toString("utf-8");
-						const truncation = truncateTail(fullText);
+					// Streaming operations that do not own a capture file still use data
+					// arrival as their progress signal. Local execution reports file-size
+					// growth separately and sends output only once, at completion.
+					if (!ops.retainsFullOutput) reportProgress();
+				};
+
+				const reportProgress = () => {
+					const now = Date.now();
+					if (onUpdate && now - lastProgressAt >= BASH_PROGRESS_INTERVAL_MS) {
+						lastProgressAt = now;
 						onUpdate({
-							content: [{ type: "text", text: truncation.content || "" }],
-							details: {
-								truncation: truncation.truncated ? truncation : undefined,
-								fullOutputPath: tempFilePath,
-							},
+							content: [{ type: "text", text: "Command is still running." }],
+							details: {},
 						});
 					}
 				};
 
 				ops.exec(spawnContext.command, spawnContext.cwd, {
 					onData: handleData,
+					onProgress: reportProgress,
 					signal,
 					timeout,
 					env: spawnContext.env,

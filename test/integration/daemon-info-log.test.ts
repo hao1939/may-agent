@@ -24,19 +24,17 @@ describe("attachDaemonInfoLog", () => {
     detach();
   });
 
-  test("forwards info bus events to log() as info-level entries", () => {
+  test("forwards info bus events to log() as info-level entries", async () => {
     const bus = new EventBus();
     attachDaemonInfoLog(bus);
     bus.emit({ type: "info", message: "[reload] 1 updated (may)" });
     bus.emit({ type: "info", message: "[telegram] Bot enabled (1 chat)" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
     const infos = captured.filter((c) => c.level === "info");
-    expect(infos.map((c) => c.message)).toEqual([
-      "[reload] 1 updated (may)",
-      "[telegram] Bot enabled (1 chat)",
-    ]);
+    expect(infos.map((c) => c.message)).toEqual(["[reload] 1 updated (may)", "[telegram] Bot enabled (1 chat)"]);
   });
 
-  test("ignores non-info bus events", () => {
+  test("ignores non-info bus events", async () => {
     const bus = new EventBus();
     attachDaemonInfoLog(bus);
     bus.emit({
@@ -46,19 +44,21 @@ describe("attachDaemonInfoLog", () => {
     } as any);
     bus.emit({ type: "tool_call", sessionId: "s_test", tool: "bash", args: { command: "ls" } } as any);
     bus.emit({ type: "message.created", source: "x", data: { to: "human", from: "may", content: "hi" } } as any);
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(captured.filter((c) => c.level === "info")).toEqual([]);
   });
 
-  test("ignores info events with empty or non-string message", () => {
+  test("ignores info events with empty or non-string message", async () => {
     const bus = new EventBus();
     attachDaemonInfoLog(bus);
     bus.emit({ type: "info", message: "" });
     bus.emit({ type: "info", message: 42 } as any);
     bus.emit({ type: "info" } as any);
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(captured.filter((c) => c.level === "info")).toEqual([]);
   });
 
-  test("multiple subscribers receive the same event (does not consume)", () => {
+  test("multiple subscribers receive the same event (does not consume)", async () => {
     const bus = new EventBus();
     const other: string[] = [];
     bus.subscribe((e) => {
@@ -67,6 +67,7 @@ describe("attachDaemonInfoLog", () => {
     attachDaemonInfoLog(bus);
     bus.emit({ type: "info", message: "hello" });
     expect(other).toEqual(["hello"]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(captured.filter((c) => c.level === "info").map((c) => c.message)).toEqual(["hello"]);
   });
 });

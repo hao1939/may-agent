@@ -3,7 +3,6 @@ import { join } from "node:path";
 import type { AppInput } from "@may-agent/sdk";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
-import { getTelegramConversationView, type TelegramConversationView } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./event-bus.js";
 
@@ -12,7 +11,6 @@ export interface CommandRouterOptions {
   manager: SubagentManager;
   clearCancelLatch: () => void;
   projectRoot: string;
-  persistDir?: string;
   /** Uses the live App registry and schema. */
   acceptsAppInput?: (appId: string, input: AppInput) => boolean;
   reload: () => void | Promise<void>;
@@ -155,33 +153,6 @@ function deliveredHumanMessage(message: string, context: Record<string, unknown>
     "Understand the human's intention before applying consequential state. Questions and uncertain replies are not approvals.",
     "Use the attached durable identity, answer supported questions, and ask one focused clarification when intent remains uncertain.",
   );
-  return lines.join("\n");
-}
-
-function appendTelegramConversationView(message: string, view: TelegramConversationView): string {
-  if (!view.focus && view.recentMessages.length === 0) return message;
-  const lines = [message];
-  if (view.focus) {
-    lines.push("", "Focused request (system-provided durable view)");
-    if (view.focus.traceId) lines.push(`Trace: ${view.focus.traceId}`);
-    if (view.focus.taskId) lines.push(`Owner task: ${view.focus.taskId}`);
-    if (view.focus.projectId) lines.push(`Project: ${view.focus.projectId}`);
-    if (view.focus.owner) lines.push(`Current owner: ${view.focus.owner}`);
-    if (view.focus.status) lines.push(`Current state: ${view.focus.status}`);
-    for (const event of view.focus.events.slice(-6)) {
-      lines.push(
-        `Evidence #${event.eventId}: ${[event.type, event.status, event.summary].filter(Boolean).join(" — ")}`,
-      );
-    }
-  }
-  if (view.recentMessages.length) lines.push("", "Recent Telegram context (oldest to newest; system-provided)");
-  for (const item of view.recentMessages) {
-    const speaker = item.direction === "inbound" ? "Hao" : item.agent || "May";
-    const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""]
-      .filter(Boolean)
-      .join(" ");
-    lines.push(`${speaker}${links ? ` [${links}]` : ""}: ${item.text.slice(0, 400)}`);
-  }
   return lines.join("\n");
 }
 
@@ -364,19 +335,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const context = isRecord(data.context) ? data.context : {};
     const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
     const eventOwner = isRecord(event) ? event.owner : "agent:may";
-    let delivered = deliveredHumanMessage(message, context);
-    if (source === "telegram" && options.persistDir && nonEmptyString(conversation.id)) {
-      const reply = telegramReplyContext(context);
-      delivered = appendTelegramConversationView(
-        delivered,
-        getTelegramConversationView(options.persistDir, {
-          conversationId: nonEmptyString(conversation.id)!,
-          traceId: stringField(reply, "traceId") ?? undefined,
-          taskId: stringField(reply, "taskId") ?? undefined,
-          projectId: stringField(reply, "projectId") ?? undefined,
-        }),
-      );
-    }
+    const delivered = deliveredHumanMessage(message, context);
 
     const approval = submitApproval(event, data, message, context, source);
     if (approval) return approval;

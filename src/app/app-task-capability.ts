@@ -1,4 +1,4 @@
-import type { AppDependencyObservation, TaskIntent } from "@may-agent/sdk";
+import type { AppDependencyObservation, TaskIntent, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
@@ -7,6 +7,8 @@ import {
   attachLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
+  getLoadedAppTaskView,
+  listLoadedAppTaskViews,
   previewLoadedCanonicalAppTaskEvent,
   readLoadedAppTaskView,
   startAppTaskRuntimeWatcher,
@@ -34,6 +36,8 @@ export type AppTaskCapability = {
     appDir: string;
     dependency: { kind: "task"; id: string };
   }): Promise<AppDependencyObservation | null>;
+  list(input: { appId: string; options?: TaskListOptions }): TaskPage;
+  get(input: { appId: string; taskId: string }): TaskView | null;
   publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
   watchGenerations(reload: () => Promise<void>): { close(): void } | null;
 };
@@ -84,5 +88,12 @@ export function createAppTaskCapability(options: {
           }
         : null;
     },
+    list: ({ appId, options: taskOptions }) =>
+      listLoadedAppTaskViews({
+        bus: options.bus,
+        appId,
+        ...(taskOptions ? { options: taskOptions } : {}),
+      }),
+    get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
   };
 }

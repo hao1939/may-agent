@@ -33,11 +33,12 @@ function timelineEvents(graph: EventGraphResponse): EventGraphNode[] {
 }
 
 function attachPersistence(bus: EventBus, root: string): void {
-  // Delivery-expiry tests use millisecond TTLs and explicitly retain the old
-  // sweep-on-next-event behavior. Production rate-limits this housekeeping.
+  // Delivery-expiry tests use millisecond TTLs and invoke housekeeping after
+  // each persisted event. Production runs it in the maintenance process.
   const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
+  bus.subscribe(() => writer.runHousekeeping());
 }
 
 describe("delivery acceptance recording", () => {
@@ -1676,7 +1677,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("rate-limits delivery housekeeping without delaying event persistence", async () => {
+  it("keeps rate-limited delivery housekeeping outside event persistence", async () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1706,6 +1707,11 @@ describe("event delivery metadata", () => {
         owner: "agent:may",
         data: { handler: "second", agent: "may", durationMs: 5 },
       } as any);
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
+        delivery_status: "pending",
+      });
+
+      writer.runHousekeeping();
       expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'reload'").get()).toEqual({
         delivery_status: "unhandled",
       });

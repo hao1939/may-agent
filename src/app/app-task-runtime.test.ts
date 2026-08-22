@@ -810,6 +810,7 @@ describe("canonical App task runtime", () => {
         projectId: "sample",
         data: { sessionId, agent: "sample-owner", status: "done", projectId: "sample" },
       });
+      await new Promise<void>((resolve) => setImmediate(resolve));
     } finally {
       writeFileSync(foreignStatePath, foreignState);
     }

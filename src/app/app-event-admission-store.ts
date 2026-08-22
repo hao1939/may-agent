@@ -213,16 +213,34 @@ export function getAppEventAdmissionPlan(db: SqliteDb, eventId: number): AppEven
   };
 }
 
-/** Pending plans are the durable queue for App event admission. */
-export function listPendingAppEventAdmissionPlans(db: SqliteDb): AppEventAdmissionPlan[] {
+/**
+ * Read a bounded slice of the durable admission queue.
+ *
+ * `updatedBefore` is the retry fence: a failed plan is not visible again until
+ * its cooldown has elapsed. New plans still enter through the event fast path
+ * and do not wait for this recovery read.
+ */
+export function listPendingAppEventAdmissionPlans(
+  db: SqliteDb,
+  options: { updatedBefore?: number; limit?: number } = {},
+): AppEventAdmissionPlan[] {
+  const limit = options.limit ?? 100;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+    throw new Error("App event admission recovery limit must be an integer between 1 and 500");
+  }
+  const hasRetryFence = options.updatedBefore !== undefined;
+  if (hasRetryFence && !Number.isFinite(options.updatedBefore)) {
+    throw new Error("App event admission recovery fence must be finite");
+  }
   return db
     .prepare(
       `SELECT event_id
        FROM app_event_admission_plans
-       WHERE status = 'pending'
-       ORDER BY created_at, event_id`,
+       WHERE status = 'pending'${hasRetryFence ? " AND updated_at <= ?" : ""}
+       ORDER BY updated_at, event_id
+       LIMIT ?`,
     )
-    .all()
+    .all(...(hasRetryFence ? [options.updatedBefore!, limit] : [limit]))
     .map((row) => getAppEventAdmissionPlan(db, requiredPositiveInteger(row.event_id, "event_id")))
     .filter((plan): plan is AppEventAdmissionPlan => plan !== null);
 }

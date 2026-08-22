@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
 
 describe("app runtime startup order", () => {
-  it("attaches Telegram admission before external ingress and cron work", () => {
+  it("attaches the Telegram Conversation adapter before external ingress and cron work", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     const admission = source.indexOf("telegramBot = TELEGRAM_ENABLED");
     const externalIngress = source.indexOf("await startInterfaceRuntime(");

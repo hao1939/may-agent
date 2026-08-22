@@ -19,6 +19,8 @@ export {
   updateWorkflowRun,
   getWorkflowRun,
   listWorkflowRunIds,
+  listChildWorkflowRunIds,
+  listRunningWorkflowRunIdsBefore,
   getWorkflowStepSessions,
 } from "./db/workflows.js";
 export type { WorkflowRunRecord } from "./db/workflows.js";

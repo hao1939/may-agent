@@ -63,11 +63,11 @@ import {
 import {
   updateSessionDb,
   updateSessionProgress,
-  listWorkflowRunIds,
   getWorkflowRun,
   getWorkflowStepSessions,
+  listChildWorkflowRunIds,
+  listRunningWorkflowRunIdsBefore,
   updateWorkflowRun,
-  hasEvaluation,
   getDb,
 } from "./requests.js";
 import { readIdentity } from "./detached.js";
@@ -1216,38 +1216,80 @@ export class SubagentManager {
   }
 
   async auditHealth(): Promise<any> {
-    const sessions = this._registry.getRegistry().sessions;
     const now = Date.now();
     const dayAgo = now - 24 * 60 * 60 * 1000;
-    const allSessions = Object.entries(sessions);
-    const unevaluated = allSessions.filter(
-      ([sid, s]) =>
-        (s.status === "done" || s.status === "error" || s.status === "interrupted") &&
-        !hasEvaluation(this._persistDir, sid),
-    );
-    const metaAgents = new Set(["evaluator", "optimizer", "may"]);
-    const staleSessions = allSessions
-      .filter(([sid, s]) => (s.status === "running" || s.status === "idle") && !this._sessions.has(sid))
-      .map(([sessionId, s]) => ({ sessionId, agent: s.agent, task: s.task, startedAt: s.startedAt, status: s.status }));
-    const workflowRuns = listWorkflowRunIds(this._persistDir)
-      .map((id) => getWorkflowRun(this._persistDir, id))
-      .filter(Boolean) as any[];
+    const db = getDb(this._persistDir);
+    const sessionCounts = db
+      .prepare(
+        `SELECT COUNT(*) AS total,
+                SUM(CASE WHEN startedAt >= ? THEN 1 ELSE 0 END) AS recent
+         FROM sessions`,
+      )
+      .get(dayAgo) as { total?: number | null; recent?: number | null } | null;
+    const unevaluated = db
+      .prepare(
+        `SELECT COUNT(*) AS total,
+                SUM(CASE WHEN session.agent IN ('evaluator', 'optimizer', 'may') THEN 1 ELSE 0 END) AS autoSkippable
+         FROM sessions session
+         LEFT JOIN evaluations evaluation ON evaluation.sessionId = session.sessionId
+         WHERE session.status IN ('done', 'error', 'interrupted')
+           AND evaluation.sessionId IS NULL`,
+      )
+      .get() as { total?: number | null; autoSkippable?: number | null } | null;
+    const liveSessionIds = [...this._sessions.keys()];
+    const liveSessionFilter = liveSessionIds.length
+      ? ` AND sessionId NOT IN (${liveSessionIds.map(() => "?").join(", ")})`
+      : "";
+    const staleCandidates = db
+      .prepare(
+        `SELECT sessionId, agent, task, startedAt, status
+         FROM sessions
+         WHERE status IN ('running', 'idle')
+         ${liveSessionFilter}
+         ORDER BY startedAt, sessionId
+         LIMIT 1001`,
+      )
+      .all(...liveSessionIds) as Array<{
+      sessionId: string;
+      agent: string;
+      task: string;
+      startedAt: number;
+      status: string;
+    }>;
+    const staleSessions = staleCandidates.slice(0, 1000);
+    const workflowRuns = db
+      .prepare(
+        `SELECT COUNT(*) AS total,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS completed,
+                SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) AS running,
+                SUM(CASE WHEN status = 'interrupted' THEN 1 ELSE 0 END) AS interrupted
+         FROM workflow_runs`,
+      )
+      .get() as {
+      total?: number | null;
+      completed?: number | null;
+      running?: number | null;
+      interrupted?: number | null;
+    } | null;
+    const unevaluatedTotal = Number(unevaluated?.total ?? 0);
+    const autoSkippable = Number(unevaluated?.autoSkippable ?? 0);
 
     return {
       timestamp: new Date().toISOString(),
-      sessionsLast24h: allSessions.filter(([, s]) => s.startedAt >= dayAgo).length,
-      totalPersistedSessions: allSessions.length,
+      sessionsLast24h: Number(sessionCounts?.recent ?? 0),
+      totalPersistedSessions: Number(sessionCounts?.total ?? 0),
       unevaluated: {
-        total: unevaluated.length,
-        actionable: unevaluated.filter(([, s]) => !metaAgents.has(s.agent)).length,
-        autoSkippable: unevaluated.filter(([, s]) => metaAgents.has(s.agent)).length,
+        total: unevaluatedTotal,
+        actionable: unevaluatedTotal - autoSkippable,
+        autoSkippable,
       },
       staleSessions,
+      staleSessionsTruncated: staleCandidates.length > 1000,
       workflowRuns: {
-        total: workflowRuns.length,
-        completed: workflowRuns.filter((r) => r.status === "done").length,
-        running: workflowRuns.filter((r) => r.status === "running").length,
-        interrupted: workflowRuns.filter((r) => r.status === "interrupted").length,
+        total: Number(workflowRuns?.total ?? 0),
+        completed: Number(workflowRuns?.completed ?? 0),
+        running: Number(workflowRuns?.running ?? 0),
+        interrupted: Number(workflowRuns?.interrupted ?? 0),
       },
     };
   }
@@ -1296,38 +1338,41 @@ export class SubagentManager {
   }
 
   getSessionTree(sessionId: string): any {
-    const registrySessions = this._registry.getRegistry().sessions;
     const buildNode = (sid: string): any => {
       const active = this._sessions.get(sid);
-      const persisted = registrySessions[sid];
+      const persisted = this._registry.getSession(sid);
       if (!active && !persisted) throw new Error(`Session "${sid}" not found`);
-      const rawStatus = active?.status ?? persisted.status;
+      const rawStatus = active?.status ?? persisted!.status;
       const messages = active ? (active.agent.state.messages as AgentMessage[]) : this.progress(sid, 1000);
       const node = {
         sessionId: sid,
-        agent: active?.agentName ?? persisted.agent,
-        task: active?.task ?? persisted.task,
+        agent: active?.agentName ?? persisted!.agent,
+        task: active?.task ?? persisted!.task,
         status: this.treeStatus(rawStatus),
-        startedAt: active?.startedAt ?? persisted.startedAt,
+        startedAt: active?.startedAt ?? persisted!.startedAt,
         endedAt: persisted?.endedAt,
         result: rawStatus === "done" ? extractLastAssistantText(messages) : undefined,
         children: [] as any[],
       };
+
+      const childIds = new Set<string>();
       for (const [childId, child] of this._sessions) {
-        if (child.parentSessionId === sid) node.children.push(buildNode(childId));
+        if (child.parentSessionId === sid) childIds.add(childId);
       }
-      for (const [childId, child] of Object.entries(registrySessions)) {
-        if (this._sessions.has(childId)) continue;
-        if (child.parentSessionId === sid) node.children.push(buildNode(childId));
+      const indexedChildren = getDb(this._persistDir)
+        .prepare("SELECT sessionId FROM sessions WHERE parentSessionId = ? ORDER BY startedAt, sessionId")
+        .all(sid) as Array<{ sessionId?: unknown }>;
+      for (const child of indexedChildren) {
+        if (typeof child.sessionId === "string" && child.sessionId) childIds.add(child.sessionId);
       }
+      for (const childId of childIds) node.children.push(buildNode(childId));
       return node;
     };
     return buildNode(sessionId);
   }
 
   trace(targetId: string): any | null {
-    const registrySessions = this._registry.getRegistry().sessions;
-    const targetSession = this._sessions.get(targetId) ?? registrySessions[targetId];
+    const targetSession = this._sessions.get(targetId) ?? this._registry.getSession(targetId) ?? undefined;
     if (targetSession) {
       return {
         targetId,
@@ -1349,10 +1394,8 @@ export class SubagentManager {
     const buildWorkflowNode = (runId: string): any => {
       const run = getWorkflowRun(this._persistDir, runId);
       if (!run) return null;
-      const children = listWorkflowRunIds(this._persistDir)
-        .map((id) => getWorkflowRun(this._persistDir, id))
-        .filter((child: any) => child?.parentWorkflowRunId === runId)
-        .map((child: any) => buildWorkflowNode(child.runId))
+      const children = listChildWorkflowRunIds(this._persistDir, runId)
+        .map((childRunId) => buildWorkflowNode(childRunId))
         .filter(Boolean);
       return {
         type: "workflow",
@@ -1465,7 +1508,7 @@ export class SubagentManager {
   }
 
   private cleanupStaleWorkflowRuns(): void {
-    for (const runId of listWorkflowRunIds(this._persistDir)) {
+    for (const runId of listRunningWorkflowRunIdsBefore(this._persistDir, this._createdAt)) {
       const run = getWorkflowRun(this._persistDir, runId);
       if (run?.status === "running" && run.startedAt < this._createdAt) {
         updateWorkflowRun(this._persistDir, runId, {

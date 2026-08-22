@@ -5,7 +5,9 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { PassThrough } from "node:stream";
 import {
+  CLI_DIAGNOSTIC_TAIL_BYTES,
   attachCliTaskRunner,
+  createCliOutputCollector,
   markOrphanedCliTasks,
   recoverMissingCliTaskRecords,
 } from "./cli-task-runner.js";
@@ -93,6 +95,29 @@ function fakeSuccessfulSpawnWithPermissionWords(_command: string, args: string[]
 }
 
 describe("CLI task runner", () => {
+  it("parses a verbose native stream incrementally with bounded diagnostics", () => {
+    const collector = createCliOutputCollector("codex");
+    collector.stdout(Buffer.from("permission denied while probing an optional path\n"));
+    for (let index = 0; index < 256; index += 1) {
+      collector.stdout(Buffer.from(`${JSON.stringify({ type: "item.updated", detail: "x".repeat(8 * 1024) })}\n`));
+    }
+    collector.stdout(Buffer.from(`${JSON.stringify({ type: "thread.started", thread_id: "bounded-session" })}\n`));
+    collector.stdout(
+      Buffer.from(
+        `${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "bounded result" } })}\n`,
+      ),
+    );
+    collector.stdout(Buffer.from(`${JSON.stringify({ type: "turn.completed" })}\n`));
+
+    const output = collector.finish();
+    expect(Buffer.byteLength(output.stdout)).toBeLessThanOrEqual(CLI_DIAGNOSTIC_TAIL_BYTES);
+    expect(output.stdout).not.toContain("permission denied while probing");
+    expect(output.permissionFailure).toBe(true);
+    expect(output.completedProtocol).toBe(true);
+    expect(output.cliSessionId).toBe("bounded-session");
+    expect(output.finalText).toBe("bounded result");
+  });
+
   it("tracks run_cli_agent through requested, started, and completed events", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-runner-"));
     const persistDir = join(root, ".state");

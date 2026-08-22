@@ -47,6 +47,7 @@ import {
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
+  renewAppTaskAttemptLease,
   taskReconciliationConfig,
 } from "./app-task-reconciler.ts";
 
@@ -218,6 +219,32 @@ describe("App task reconciler state", () => {
     expect(attempt?.sessionId).toBeUndefined();
     expect(attempt?.lease?.sessionId).toBeUndefined();
     expect(Date.parse(attempt?.lease?.expiresAt ?? "")).toBeGreaterThan(Date.now());
+  });
+
+  it("renews only the current bounded workflow attempt lease", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const before = readTaskState(config).attempts?.[claim.attemptId];
+    const renewalAt = Date.parse(before?.lease?.lastActivityAt ?? "") + 500;
+    expect(renewAppTaskAttemptLease(config, claim, renewalAt)).toBe(true);
+
+    const renewed = readTaskState(config).attempts?.[claim.attemptId];
+    expect(renewed?.lease).toMatchObject({
+      id: before?.lease?.id,
+      version: 2,
+      runtimeId: before?.runtimeId,
+      lastActivityAt: new Date(renewalAt).toISOString(),
+    });
+    expect(Date.parse(renewed?.lease?.expiresAt ?? "")).toBeGreaterThan(Date.parse(before?.lease?.expiresAt ?? ""));
+
+    const staleClaim = { ...claim, attemptId: `${claim.attemptId}-stale` };
+    expect(renewAppTaskAttemptLease(config, staleClaim, renewalAt)).toBe(false);
   });
 
   it("keeps an achieve task live when its handler revises the same task generation", () => {

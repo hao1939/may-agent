@@ -2417,6 +2417,13 @@ export function claimObservedAppTask(
     const tree = readTaskState(config, { taskIds: [input.taskId] });
     const task = tree.tasks[input.taskId];
     const resource = tree.resources?.[input.taskId];
+    if (config.resourceStore?.isCancelled(input.taskId)) {
+      return {
+        kind: "completed",
+        taskId: input.taskId,
+        generation: resource?.metadata.generation ?? tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
+      };
+    }
     if (!task || !resource) {
       return {
         kind: "completed",
@@ -2881,6 +2888,31 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
     runtimeId: attempt.runtimeId,
     ...(sessionId ? { sessionId } : {}),
   };
+}
+
+/** Keep one currently executing bounded workflow attempt current without weakening its claim fence. */
+export function renewAppTaskAttemptLease(config: TaskStateConfig, claim: AppTaskClaim, nowMs = Date.now()): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const match = matchingTask(tree, claim);
+    if (!match) return false;
+    match.attempt.metadata.resourceVersion += 1;
+    refreshAttemptLease(match.attempt, match.attempt.sessionId, nowMs);
+    saveTaskState(config, tree, {
+      resourceMutation: {
+        fences: [
+          {
+            taskId: claim.taskId,
+            resourceVersion: match.resource.metadata.resourceVersion,
+            generation: claim.generation,
+            currentAttemptId: claim.attemptId,
+          },
+        ],
+        attempts: [match.attempt],
+      },
+    });
+    return true;
+  });
 }
 
 /** Attach the launched owner-session id and refresh the current attempt lease. */

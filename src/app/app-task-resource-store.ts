@@ -4,6 +4,7 @@ import { basename } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { getDb } from "../lib/requests.js";
 import { ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
+import { indexTaskReference } from "./task-reference-index.js";
 import type { AppTaskAttempt, AppTaskCondition, AppTaskResource, AppTaskTrigger } from "./app-task-state.js";
 import {
   normalizeTaskStateInPlace,
@@ -226,6 +227,7 @@ export class AppTaskResourceStore {
       json(resource),
       trigger ? json(trigger) : null,
     );
+    indexTaskReference(this.db, this.appId, resource.metadata.id);
   }
 
   /** Refresh only one Task's normalized Condition links. */
@@ -314,6 +316,7 @@ export class AppTaskResourceStore {
           `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
            VALUES (?, ?, ?, ?, ?)`,
         ).run(this.appId, receipt.metadata.id, receipt.parentId, epoch(receipt.completedAt) ?? 0, json(receipt));
+        indexTaskReference(this.db, this.appId, receipt.metadata.id);
       }
       for (const [id, group] of Object.entries(tree.groups ?? {})) {
         this.db.prepare("INSERT INTO app_task_groups(app_id, group_id, group_json) VALUES (?, ?, ?)").run(
@@ -437,6 +440,14 @@ export class AppTaskResourceStore {
     return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
   }
 
+  isCancelled(taskId: string): boolean {
+    return Boolean(
+      this.db
+        .prepare("SELECT 1 AS cancelled FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
+        .get(this.appId, taskId),
+    );
+  }
+
   readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
     const rows = this.db
       .prepare(
@@ -503,7 +514,11 @@ export class AppTaskResourceStore {
     if (livePhases.length > 0) {
       clauses.push(
         `SELECT task_id AS id FROM app_tasks
-         WHERE app_id = ? AND task_id > ? AND phase IN (${livePhases.map(() => "?").join(", ")})`,
+         WHERE app_id = ? AND task_id > ? AND phase IN (${livePhases.map(() => "?").join(", ")})
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations c
+             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
+           )`,
       );
       values.push(this.appId, after, ...livePhases);
     }
@@ -860,6 +875,10 @@ export class AppTaskResourceStore {
         .prepare(
           `SELECT task_id FROM app_tasks
            WHERE app_id = ? AND phase IN (${phases.map(() => "?").join(", ")})
+             AND NOT EXISTS (
+               SELECT 1 FROM app_task_cancellations c
+               WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
+             )
            ORDER BY updated_at, task_id LIMIT ?`,
         )
         .all(this.appId, ...phases, boundedLimit) as Array<{ task_id?: string }>
@@ -873,6 +892,10 @@ export class AppTaskResourceStore {
         .prepare(
           `SELECT task_id FROM app_tasks
            WHERE app_id = ? AND task_id <> ? AND phase <> 'converged'
+             AND NOT EXISTS (
+               SELECT 1 FROM app_task_cancellations c
+               WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
+             )
            ORDER BY updated_at DESC, task_id LIMIT ?`,
         )
         .all(this.appId, excludeTaskId, boundedLimit) as Array<{ task_id?: string }>
@@ -1012,6 +1035,7 @@ export class AppTaskResourceStore {
            ON CONFLICT(app_id, receipt_id) DO UPDATE SET
              parent_id=excluded.parent_id, completed_at=excluded.completed_at, receipt_json=excluded.receipt_json`,
         ).run(this.appId, receipt.metadata.id, receipt.parentId, epoch(receipt.completedAt) ?? 0, json(receipt));
+        indexTaskReference(this.db, this.appId, receipt.metadata.id);
       }
       for (const groupId of new Set(mutation.deleteGroupIds ?? [])) {
         this.db.prepare("DELETE FROM app_task_groups WHERE app_id = ? AND group_id = ?").run(this.appId, groupId);

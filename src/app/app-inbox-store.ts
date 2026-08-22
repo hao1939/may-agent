@@ -385,6 +385,22 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
                     .slice(0, 100),
                 }
               : {}),
+            ...(Array.isArray(metadata.taskRefs)
+              ? {
+                  taskRefs: metadata.taskRefs
+                    .flatMap((value) => {
+                      if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+                      const ref = value as Record<string, unknown>;
+                      return typeof ref.appId === "string" &&
+                        ref.appId.trim() &&
+                        typeof ref.taskId === "string" &&
+                        ref.taskId.trim()
+                        ? [{ appId: ref.appId.trim(), taskId: ref.taskId.trim() }]
+                        : [];
+                    })
+                    .slice(0, 100),
+                }
+              : {}),
           },
         }
       : {}),
@@ -487,7 +503,7 @@ export function readAppConversationResource(
   db: SqliteDb,
   appId: string,
   conversationId: string,
-  options: { limit?: number; allWork?: boolean; workRequestId?: string } = {},
+  options: { limit?: number; includeWork?: boolean; allWork?: boolean; workRequestId?: string } = {},
 ): AppConversationResource {
   const limit = options.limit ?? 50;
   const messages = listAppConversationMessages(db, appId, conversationId, limit);
@@ -497,15 +513,18 @@ export function readAppConversationResource(
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
     messages,
-    work: listAppWork(db, appId, {
-      // `allWork` is an explicit full-history read. Keep the ordinary active
-      // view bounded by the conversation limit, but do not silently truncate
-      // the history page because message and work bounds are separate concerns.
-      limit: workRequestId ? 1 : options.allWork ? undefined : Math.min(limit, 100),
-      all: options.allWork,
-      requestId: workRequestId,
-      includeResultForRequestId: workRequestId,
-    }),
+    work:
+      options.includeWork === false
+        ? []
+        : listAppWork(db, appId, {
+            // `allWork` is an explicit full-history read. Keep the ordinary active
+            // view bounded by the conversation limit, but do not silently truncate
+            // the history page because message and work bounds are separate concerns.
+            limit: workRequestId ? 1 : options.allWork ? undefined : Math.min(limit, 100),
+            all: options.allWork,
+            requestId: workRequestId,
+            includeResultForRequestId: workRequestId,
+          }),
   };
 }
 

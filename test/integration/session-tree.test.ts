@@ -46,6 +46,9 @@ describe("getSessionTree()", () => {
     });
 
     const sid = manager.run("worker", "solo task");
+    (manager.registryStore as any).getRegistry = () => {
+      throw new Error("session tree must not scan all historical metadata");
+    };
     const tree = manager.getSessionTree(sid);
 
     expect(tree.sessionId).toBe(sid);

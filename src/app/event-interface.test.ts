@@ -160,15 +160,26 @@ describe("simple event interface", () => {
           conversationId: "sample:primary",
           author: { kind: "command", id: "console" },
           text: "Active work: two items",
-          metadata: { command: "/work", requestIds: ["request-2", "request-1"] },
+          metadata: {
+            command: "/tasks",
+            requestIds: ["request-2", "request-1"],
+            taskRefs: [
+              { appId: "evaluation", taskId: "review/docs" },
+              { appId: "gym", taskId: "conversation-scenario" },
+            ],
+          },
         },
       },
       { source: "control-socket" },
     );
 
     expect(events.get(receipt.eventId)?.event.data.metadata).toEqual({
-      command: "/work",
+      command: "/tasks",
       requestIds: ["request-2", "request-1"],
+      taskRefs: [
+        { appId: "evaluation", taskId: "review/docs" },
+        { appId: "gym", taskId: "conversation-scenario" },
+      ],
     });
     expect(() =>
       events.publish(
@@ -185,6 +196,21 @@ describe("simple event interface", () => {
         { source: "control-socket" },
       ),
     ).toThrow("metadata.requestIds");
+    expect(() =>
+      events.publish(
+        {
+          type: "conversation.message.created",
+          target: { appId: "sample" },
+          data: {
+            conversationId: "sample:primary",
+            author: { kind: "command", id: "console" },
+            text: "Invalid Task view",
+            metadata: { taskRefs: [{ appId: "evaluation", taskId: "" }] },
+          },
+        },
+        { source: "control-socket" },
+      ),
+    ).toThrow("metadata.taskRefs");
   });
 
   it("deduplicates one semantic input across trusted adapters", () => {
@@ -203,7 +229,7 @@ describe("simple event interface", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 1 });
   });
 
-  it("projects copied public events instead of exposing the live bus envelope", () => {
+  it("projects copied public events without delaying publication or exposing the live bus envelope", async () => {
     const { events } = fixture();
     const observed: Array<Record<string, unknown>> = [];
     const unsubscribe = events.subscribe({ types: ["project.owner.requested"] }, (event) => {
@@ -219,6 +245,8 @@ describe("simple event interface", () => {
       },
       { source: "control-socket" },
     );
+    expect(observed).toHaveLength(0);
+    await new Promise<void>((resolve) => setImmediate(resolve));
     unsubscribe();
 
     expect(observed).toHaveLength(1);

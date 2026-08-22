@@ -2,40 +2,30 @@
  * Telegram Bot UI — native Telegram bot integration for May.
  *
  * Uses the Telegram Bot API directly via fetch (no external dependencies).
- * Long-polling for incoming messages, sends responses on turn completion.
+ * Long-polling for incoming messages and rendering the shared Conversation.
  *
  * Configuration (env vars):
  *   TELEGRAM_BOT_TOKEN  — Bot token from @BotFather (required to enable)
  *   TELEGRAM_CHAT_ID    — Allowed chat ID(s), comma-separated (required for security)
  *
  * Features:
- *   - Incoming messages → daemon events with source "telegram"
- *   - Assistant responses streamed back as Telegram messages
+ *   - Incoming messages → May Conversation events
+ *   - Unseen Conversation messages → Telegram messages
  *   - Long messages split at 4096 char Telegram limit
- *   - /status, /cancel, /jobs commands
+ *   - Task-focused /apps, /tasks, /task, /watch, and /cancel commands
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
 import { setDefaultAutoSelectFamily } from "node:net";
-import { resolve } from "node:path";
 import type { AppConversationMessage, AppWorkView } from "@may-agent/sdk";
 import { EVENT_ROW_ID, type AgentEvent, type EventBus, type EventTrace } from "../event-bus.js";
-import type { SubagentManager } from "../../lib/index.js";
-import { readSessionMeta } from "../../lib/persistence.js";
 import { getDb } from "../../lib/requests.js";
-import {
-  getLatestInboundNotificationMessage,
-  getNotificationMessage,
-  hasDeliveredNotificationKey,
-  isApprovalNotificationResolved,
-  storeNotificationMessage,
-} from "../../lib/db/notifications.js";
-import { buildTelegramReplyRoute, primaryConversationId } from "./telegram-reply-router.js";
+import { storeNotificationMessage } from "../../lib/db/notifications.js";
 import { readAppConversationResource } from "../app-inbox-store.js";
 import { createTelegramClient } from "./telegram-client.js";
-import { attachTelegramOutbound } from "./telegram-outbound.js";
-import { reviewHumanAttention } from "./human-attention-review.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
+import { TASK_UPDATE_EVENT_TYPES, taskUpdateIdentity } from "../../../packages/control/src/task-wake.js";
+import type { HumanAppView, HumanTaskService, HumanTaskView } from "../human-task-service.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
@@ -47,19 +37,19 @@ try {
 
 export interface TelegramBotOptions {
   persistDir?: string;
-  projectRoot?: string;
   bus: EventBus;
-  manager: SubagentManager;
   interfaceAgent: string;
+  humanTasks: HumanTaskService;
 }
 
 export interface TelegramBot {
   close: () => void;
-  /** Send a proactive alert to the primary chat (first allowed chat ID). */
-  sendAlert: (text: string) => void;
 }
 
-const PROACTIVE_DEDUPE_WINDOW_MS = 60 * 60 * 1000;
+/** One logical human conversation; provider chat/topic IDs are coordinates. */
+export function primaryConversationId(agent: string): string {
+  return `${agent.trim() || "may"}:primary`;
+}
 
 function workStateLabel(state: unknown): string {
   const labels: Record<string, string> = {
@@ -109,8 +99,54 @@ function renderTelegramWorkDetail(item: AppWorkView, index: number): string {
   ].join("\n");
 }
 
+export function renderTelegramApps(apps: HumanAppView[]): string {
+  if (apps.length === 0) return "No Apps found.";
+  return [
+    "Apps:",
+    ...apps.map((app) => {
+      const states = [
+        `${app.activeTasks} active`,
+        ...(app.runningTasks ? [`${app.runningTasks} running`] : []),
+        ...(app.waitingTasks ? [`${app.waitingTasks} waiting`] : []),
+        ...(app.attentionTasks ? [`${app.attentionTasks} attention`] : []),
+      ];
+      return `• ${app.id} — ${states.join(" · ")}`;
+    }),
+  ].join("\n");
+}
+
+export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean): string {
+  if (tasks.length === 0) return includeDone ? "No active or recent Tasks." : "No active Tasks.";
+  return [
+    includeDone ? "Tasks (active and recent):" : "Active Tasks:",
+    ...tasks.flatMap((task) => {
+      const result = task.response?.trim() || task.summary?.trim();
+      return [
+        `• ${task.ref} · ${task.appId} · ${task.status}\n  ${task.outcome}`,
+        ...(task.terminal && result ? [`  ${result}`] : []),
+      ];
+    }),
+  ].join("\n");
+}
+
+export function renderTelegramTask(task: HumanTaskView): string {
+  const result = task.response?.trim() || task.summary?.trim();
+  return [
+    `Task ${task.ref}`,
+    `App: ${task.appId}`,
+    `ID: ${task.taskId}`,
+    `Status: ${task.status}`,
+    `Outcome: ${task.outcome}`,
+    `Updated: ${formatWorkTime(task.updatedAt)}`,
+    ...(result ? [task.terminal ? `Result:\n${result}` : `Progress:\n${result}`] : []),
+  ].join("\n");
+}
+
 function formatWorkTime(value: number): string {
-  return new Date(value).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+  return new Date(value)
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d{3}Z$/, " UTC");
 }
 
 function formatWorkAge(value: number, now = Date.now()): string {
@@ -178,10 +214,9 @@ export function telegramMayInputEvent(input: {
 }
 
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
-  const { bus, manager: _manager } = opts;
+  const { bus } = opts;
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
-  const projectRoot = opts.projectRoot ?? process.env.PROJECT_ROOT ?? resolve(opts.persistDir ?? ".state", "..");
   const allowedChatIds = (process.env.TELEGRAM_CHAT_ID || "")
     .split(",")
     .map((id) => id.trim())
@@ -191,7 +226,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   if (!token) {
     bus.emit({ type: "info", message: "[telegram] TELEGRAM_BOT_TOKEN not set — bot disabled" });
-    return { close: () => {}, sendAlert: () => {} };
+    return { close: () => {} };
   }
 
   if (allowedChatIds.length === 0) {
@@ -199,13 +234,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       type: "info",
       message: "[telegram] TELEGRAM_CHAT_ID not set — bot disabled (security: must specify allowed chat IDs)",
     });
-    return { close: () => {}, sendAlert: () => {} };
+    return { close: () => {} };
   }
 
   bus.emit({ type: "info", message: `[telegram] Bot enabled (${allowedChatIds.length} allowed chat(s))` });
   let running = true;
   let offset = 0;
-  const proactiveDedupe = new Map<string, { lastSentAt: number; suppressed: number }>();
   const telegramClient = createTelegramClient({
     token,
     persistDir: opts.persistDir ?? ".state",
@@ -213,27 +247,49 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   });
   const { apiCall, sendMessage } = telegramClient;
   const lastWorkBySurface = new Map<string, AppWorkView[]>();
+  const watchedTasks = new Map<
+    string,
+    { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
+  >();
+  const watchReads = new Set<string>();
+  const dirtyWatches = new Set<string>();
+  const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
   const sharedConversationId = primaryConversationId(opts.interfaceAgent);
   const renderedConversationMessages = new Set<string>();
+  const rememberRenderedConversationMessage = (messageId: string): void => {
+    renderedConversationMessages.add(messageId);
+    // Conversation reads contain at most 200 messages. Keeping more than two
+    // windows prevents replay without letting an append-only Conversation grow
+    // this adapter's heap forever.
+    while (renderedConversationMessages.size > 512) {
+      const oldest = renderedConversationMessages.values().next().value;
+      if (typeof oldest !== "string") break;
+      renderedConversationMessages.delete(oldest);
+    }
+  };
   try {
     for (const message of readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
       limit: 200,
+      includeWork: false,
     }).messages) {
-      renderedConversationMessages.add(message.id);
+      rememberRenderedConversationMessage(message.id);
     }
   } catch {
     // The Conversation may not be available until App runtime startup finishes.
   }
-  let conversationSync = Promise.resolve();
+  let conversationSyncRunning = false;
+  let conversationSyncDirty = false;
+  let conversationSyncScheduled = false;
 
   async function syncConversation(): Promise<void> {
     const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
       limit: 200,
+      includeWork: false,
     }).messages;
     for (const message of messages) {
       if (renderedConversationMessages.has(message.id)) continue;
       if (message.metadata?.channel === "telegram" && message.author.kind !== "agent") {
-        renderedConversationMessages.add(message.id);
+        rememberRenderedConversationMessage(message.id);
         continue;
       }
       const targetChatId = message.metadata?.channelTargetId ?? pendingChatId;
@@ -253,26 +309,94 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         }),
       });
       if (!delivered) return;
-      renderedConversationMessages.add(message.id);
+      rememberRenderedConversationMessage(message.id);
     }
   }
 
   function queueConversationSync(): void {
-    conversationSync = conversationSync
-      .then(() => (running ? syncConversation() : undefined))
-      .catch((error) => {
-        bus.emit({
-          type: "info",
-          message: `[telegram] Conversation sync failed: ${error instanceof Error ? error.message : String(error)}`,
+    if (!running) return;
+    if (conversationSyncRunning) {
+      conversationSyncDirty = true;
+      return;
+    }
+    if (conversationSyncScheduled) return;
+    conversationSyncScheduled = true;
+    // EventBus listeners drain a bounded FIFO asynchronously. Defer the read
+    // by one turn so a burst of wake-only events collapses before touching the
+    // Conversation resource. An update observed during I/O still requests one
+    // dirty retry below.
+    setImmediate(() => {
+      conversationSyncScheduled = false;
+      if (!running) return;
+      if (conversationSyncRunning) {
+        conversationSyncDirty = true;
+        return;
+      }
+      conversationSyncRunning = true;
+      void syncConversation()
+        .catch((error) => {
+          bus.emit({
+            type: "info",
+            message: `[telegram] Conversation sync failed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        })
+        .finally(() => {
+          conversationSyncRunning = false;
+          if (conversationSyncDirty) {
+            conversationSyncDirty = false;
+            queueConversationSync();
+          }
         });
-      });
+    });
   }
 
-  const unsubscribeConversation = bus.subscribe((event: any) => {
-    if (event.type !== "conversation.updated") return;
-    const data = event && typeof event.data === "object" && event.data ? event.data : {};
-    if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) queueConversationSync();
-  });
+  async function refreshWatch(surface: string): Promise<void> {
+    const watched = watchedTasks.get(surface);
+    if (!watched) return;
+    if (watchReads.has(surface)) {
+      dirtyWatches.add(surface);
+      return;
+    }
+    watchReads.add(surface);
+    try {
+      const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+      if (!task) {
+        watchedTasks.delete(surface);
+        await sendMessage(watched.chatId, `Task ${watched.ref} is no longer available; watch ended.`, undefined, {
+          messageThreadId: watched.topicId,
+        });
+        return;
+      }
+      await sendMessage(watched.chatId, renderTelegramTask(task), undefined, {
+        eventType: "task.watch",
+        agent: opts.interfaceAgent,
+        messageThreadId: watched.topicId,
+      });
+      if (task.terminal) watchedTasks.delete(surface);
+    } finally {
+      watchReads.delete(surface);
+      if (dirtyWatches.delete(surface) && watchedTasks.has(surface)) void refreshWatch(surface);
+    }
+  }
+
+  const unsubscribeConversation = bus.listen(
+    (event: any) => {
+      const data = event && typeof event.data === "object" && event.data ? event.data : {};
+      if (event.type === "conversation.updated") {
+        if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) queueConversationSync();
+        return;
+      }
+      const wake = taskUpdateIdentity(event);
+      if (!wake) return;
+      for (const [surface, watched] of watchedTasks) {
+        if (watched.appId === wake.appId && watched.taskId === wake.taskId) void refreshWatch(surface);
+      }
+    },
+    {
+      label: "telegram-conversation",
+      types: ["conversation.updated", ...TASK_UPDATE_EVENT_TYPES],
+    },
+  );
 
   function recordConversationMessage(input: {
     conversationId: string;
@@ -283,6 +407,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     chatId?: string;
     transient?: boolean;
     requestIds?: string[];
+    taskRefs?: Array<{ appId: string; taskId: string }>;
   }): void {
     bus.emit({
       type: "conversation.message.created",
@@ -300,228 +425,22 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           channelMessageId: input.messageId,
           command: input.command,
           ...(input.requestIds?.length ? { requestIds: input.requestIds } : {}),
+          ...(input.taskRefs?.length ? { taskRefs: input.taskRefs } : {}),
         },
         idempotencyKey: `telegram:${input.chatId ?? "unknown"}:conversation:${input.messageId}:${input.command}`,
       },
     });
   }
 
-  /** Unified outbound: all messages to user go through here.
-   * Always stores context for reply enrichment. */
-  function sendToUser(
-    text: string,
-    context?: {
-      eventType?: string;
-      agent?: string;
-      sessionId?: string;
-      projectId?: string;
-      summary?: string;
-      data?: Record<string, unknown>;
-      channelTargetId?: string;
-      channelThreadId?: string;
-      replyToMessageId?: number;
-      allowTraceReplyFallback?: boolean;
-      conversationId?: string;
-      traceId?: string;
-      parentEventId?: number;
-      taskId?: string;
-    },
-  ) {
-    if (shouldSuppressProactive(text, context)) return;
-    const data = { ...(context?.data ?? {}) };
-    const latestInbound =
-      context?.traceId && context.allowTraceReplyFallback !== false
-        ? getLatestInboundNotificationMessage(persistDir, context.traceId)
-        : null;
-    const inboundData = parseJsonRecord(latestInbound?.data);
-    const channelTargetId =
-      context?.channelTargetId ??
-      stringValue(data.channelTargetId) ??
-      stringValue(inboundData?.chatId) ??
-      pendingChatId;
-    if (!channelTargetId) return;
-    const rawThreadId =
-      context?.channelThreadId ?? stringValue(data.channelThreadId) ?? stringValue(inboundData?.topicId);
-    const messageThreadId = rawThreadId && /^[1-9]\d*$/.test(rawThreadId) ? Number(rawThreadId) : undefined;
-    const conversationId =
-      context?.conversationId ?? stringValue(inboundData?.conversationId) ?? primaryConversationId(opts.interfaceAgent);
-    const priorConversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
-    if (priorConversationId && priorConversationId !== conversationId && data.requestConversationId === undefined) {
-      data.requestConversationId = priorConversationId;
-    }
-    data.conversationId = conversationId;
-    data.channelTargetId = channelTargetId;
-    if (rawThreadId) data.channelThreadId = rawThreadId;
-    data.direction = "outbound";
-    if (context?.traceId) data.traceId = context.traceId;
-    if (context?.parentEventId) data.parentEventId = context.parentEventId;
-    if (context?.taskId) data.taskId = context.taskId;
-    const durableReplyTarget = latestInbound?.telegram_msg_id;
-    const replyToMessageId = context?.replyToMessageId ?? durableReplyTarget;
-    if (replyToMessageId) data.replyToMsgId = replyToMessageId;
-    const ctx = {
-      eventType: context?.eventType || "response",
-      agent: context?.agent || opts.interfaceAgent,
-      sessionId: context?.sessionId,
-      projectId: context?.projectId,
-      data: JSON.stringify({
-        ...data,
-        text: text.slice(0, 500),
-        summary: context?.summary,
-      }),
-      replyToMessageId,
-      messageThreadId,
-    };
-    const sourceEventId =
-      typeof data.sourceEventId === "number" && Number.isInteger(data.sourceEventId) && data.sourceEventId > 0
-        ? data.sourceEventId
-        : undefined;
-    const deliveryIdentity = {
-      ...(typeof data.operationId === "string" ? { operationId: data.operationId } : {}),
-      ...(typeof data.appInboxItemId === "string" ? { appInboxItemId: data.appInboxItemId } : {}),
-      ...(typeof data.appInboxRequestId === "string" ? { appInboxRequestId: data.appInboxRequestId } : {}),
-    };
-    sendMessage(channelTargetId, text, undefined, ctx)
-      .then((messageId) => {
-        if (messageId) {
-          bus.emit({
-            type: "channel.delivery.completed",
-            source: "telegram",
-            owner: "agent:may",
-            target: { human: true },
-            data: {
-              channel: "telegram",
-              externalMessageId: messageId,
-              sessionId: ctx.sessionId,
-              resultEventType: ctx.eventType,
-              ...deliveryIdentity,
-              ...(sourceEventId ? { sourceEventId } : {}),
-            },
-            ...(context?.traceId
-              ? {
-                  trace: {
-                    traceId: context.traceId,
-                    ...(context.parentEventId ? { parentEventId: context.parentEventId } : {}),
-                  },
-                }
-              : {}),
-          } as any);
-          return;
-        }
-        bus.emit({
-          type: "channel.delivery.failed",
-          source: "telegram",
-          owner: "agent:may",
-          target: { human: true },
-          data: {
-            channel: "telegram",
-            sessionId: ctx.sessionId,
-            resultEventType: ctx.eventType,
-            ...deliveryIdentity,
-            ...(sourceEventId ? { sourceEventId } : {}),
-            certainty: "uncertain",
-            reason: "Telegram send returned no message id",
-          },
-          ...(context?.traceId
-            ? {
-                trace: {
-                  traceId: context.traceId,
-                  ...(context.parentEventId ? { parentEventId: context.parentEventId } : {}),
-                },
-              }
-            : {}),
-        } as any);
-      })
-      .catch((err) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        bus.emit({
-          type: "channel.delivery.failed",
-          source: "telegram",
-          owner: "agent:may",
-          target: { human: true },
-          data: {
-            channel: "telegram",
-            sessionId: ctx.sessionId,
-            resultEventType: ctx.eventType,
-            ...deliveryIdentity,
-            ...(sourceEventId ? { sourceEventId } : {}),
-            certainty: "uncertain",
-            reason: msg,
-          },
-          ...(context?.traceId
-            ? {
-                trace: {
-                  traceId: context.traceId,
-                  ...(context.parentEventId ? { parentEventId: context.parentEventId } : {}),
-                },
-              }
-            : {}),
-        } as any);
-      });
-  }
-
-  function shouldSuppressProactive(text: string, context?: { eventType?: string; agent?: string }): boolean {
-    if (context?.eventType !== "message.created" && context?.eventType !== "alert") return false;
-
-    const now = Date.now();
-    const key = [
-      context.eventType,
-      context.agent ?? opts.interfaceAgent,
-      text.replace(/\s+/g, " ").trim().slice(0, 1000),
-    ].join("\n");
-
-    for (const [existingKey, value] of proactiveDedupe) {
-      if (now - value.lastSentAt > PROACTIVE_DEDUPE_WINDOW_MS) proactiveDedupe.delete(existingKey);
-    }
-
-    const existing = proactiveDedupe.get(key);
-    if (existing && now - existing.lastSentAt < PROACTIVE_DEDUPE_WINDOW_MS) {
-      existing.suppressed++;
-      if (existing.suppressed === 1 || existing.suppressed % 100 === 0) {
-        bus.emit({
-          type: "info",
-          message: `[telegram] Suppressed duplicate ${context.eventType} (${existing.suppressed}x): ${text.slice(0, 120)}`,
-        });
-      }
-      return true;
-    }
-
-    proactiveDedupe.set(key, { lastSentAt: now, suppressed: 0 });
-    return false;
-  }
-
-  function isApprovalReplyCandidate(context: { originalIssue?: unknown; expectedClosure?: unknown }): boolean {
-    const originalIssue =
-      context.originalIssue && typeof context.originalIssue === "object" && !Array.isArray(context.originalIssue)
-        ? (context.originalIssue as Record<string, unknown>)
-        : null;
-    if (originalIssue?.eventType === "project.approval.requested") return true;
-    return Array.isArray(context.expectedClosure) && context.expectedClosure.includes("project.approval.submitted");
-  }
-
   function emitChatStart(
     message: string,
-    source = "telegram",
     channelMessageId?: number,
-    target?: { sessionId?: string; agent?: string; projectPath?: string },
     context?: Record<string, unknown>,
     chatId?: string,
     topicId?: string | number,
     conversationId?: string,
     replyToMsgId?: number,
   ): void {
-    const receivedTrace = traceFromTelegramContext(context);
-    if (context?.explicitSessionControl === true && target?.sessionId) {
-      bus.emit({
-        type: "session.steer.requested",
-        source,
-        owner: normalizeEventOwner(opts.interfaceAgent),
-        target: { sessionId: target.sessionId },
-        data: { message, context },
-        ...(receivedTrace ? { trace: receivedTrace } : {}),
-      });
-      return;
-    }
     if (!channelMessageId || !chatId || !conversationId) return;
     const received = bus.emit(
       telegramMayInputEvent({
@@ -533,59 +452,32 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         replyToMessageId: replyToMsgId,
         context: {
           ...(context ?? {}),
-          ...(target ? { suggestedTarget: target } : {}),
         },
-        trace: receivedTrace,
       }),
     );
 
     const rowId = received[EVENT_ROW_ID];
-    const traceId = receivedTrace?.traceId ?? (rowId ? `event:${rowId}` : undefined);
-    const telegramReply = recordField(context, "telegramReply");
     try {
       storeNotificationMessage(persistDir, {
         telegram_msg_id: channelMessageId,
         event_type: "conversation.message.created",
         agent: opts.interfaceAgent,
         session_id: null,
-        project_id: target?.projectPath ?? stringValue(telegramReply?.projectId) ?? null,
+        project_id: null,
         data: JSON.stringify({
           direction: "inbound",
           conversationId,
           chatId,
           topicId: topicId ?? 0,
           replyToMsgId,
-          traceId,
-          parentEventId: receivedTrace?.parentEventId,
+          traceId: rowId ? `event:${rowId}` : undefined,
           sourceEventId: rowId,
-          taskId: stringValue(telegramReply?.taskId),
           text: message.slice(0, 500),
         }),
       });
     } catch {
       /* best-effort transport index; canonical input is already durable */
     }
-  }
-
-  function emitSessionCancel(sessionId: string): void {
-    bus.emit({
-      type: "session.cancel.requested",
-      source: "telegram",
-      owner: normalizeEventOwner(opts.interfaceAgent),
-      urgency: "high",
-      target: { sessionId },
-      data: {},
-    } as any);
-  }
-
-  function emitCancelAll(): void {
-    bus.emit({
-      type: "session.cancel_all.requested",
-      source: "telegram",
-      owner: normalizeEventOwner(opts.interfaceAgent),
-      urgency: "high",
-      data: { reason: "human requested cancel all" },
-    } as any);
   }
 
   // ── Incoming message handling ────────────────────────────────────
@@ -611,70 +503,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const conversationId = primaryConversationId(opts.interfaceAgent);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
-    // Keep the human text authoritative and attach provider reply context as
-    // evidence on the same May request.
-    let enrichedText = text;
-    let inputTarget: { sessionId?: string; agent?: string; projectPath?: string } | undefined;
+    // Keep the human text authoritative. A reply contributes only its provider
+    // anchor and bounded quoted text; Conversation and Task resources own the
+    // semantic context.
     let inputContext: Record<string, unknown> | undefined;
     const replyToMsg = msg.reply_to_message;
     const replyToMsgId = replyToMsg?.message_id;
     if (replyToMsgId) {
-      try {
-        const candidate = getNotificationMessage(opts.persistDir ?? ".state", replyToMsgId);
-        const candidateData = parseJsonRecord(candidate?.data);
-        const candidateChatId = stringValue(candidateData?.chatId) ?? stringValue(candidateData?.channelTargetId);
-        const ctx = candidateChatId && candidateChatId !== chatIdStr ? null : candidate;
-        const route = buildTelegramReplyRoute({
-          text,
-          replyToMsgId,
-          ctx,
-          quotedText: telegramMessageText(replyToMsg),
-          projectRoot,
-          persistDir: opts.persistDir ?? ".state",
-          interfaceAgent: opts.interfaceAgent,
-        });
-
-        if (route.kind === "notification") {
-          const requestConversationId = route.context.conversationId;
-          const telegramReply = {
-            ...route.context,
-            conversationId,
-            ...(requestConversationId && requestConversationId !== conversationId ? { requestConversationId } : {}),
-          };
-          inputContext = {
-            conversationId,
-            telegramReply,
-          };
-          if (route.projectPath && isApprovalReplyCandidate(route.context)) {
-            inputTarget = {
-              agent: opts.interfaceAgent,
-              projectPath: route.projectPath,
-            };
-          }
-          bus.emit({ type: "info", message: route.infoMessage });
-        } else if (route.kind === "quote") {
-          enrichedText = route.enrichedText;
-          inputContext = {
-            conversationId,
-            telegramReply: {
-              replyToMsgId,
-              conversationId,
-              fallback: "telegram-quote",
-            },
-          };
-          bus.emit({ type: "info", message: route.infoMessage });
-        } else {
-          inputContext = {
-            conversationId,
-            telegramReply: {
-              replyToMsgId,
-              conversationId,
-              fallback: "missing-context",
-            },
-          };
-          bus.emit({ type: "info", message: route.infoMessage });
-        }
-      } catch {}
+      const quotedText = telegramMessageText(replyToMsg).slice(0, 2_000);
+      inputContext = {
+        reply: {
+          channel: "telegram",
+          messageId: replyToMsgId,
+          ...(quotedText ? { quotedText } : {}),
+        },
+      };
     }
 
     if (await handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId, replyToMsgId)) {
@@ -682,13 +525,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     // Every ordinary turn becomes one durable May request.
-    const finalMessage = replyToMsgId ? enrichedText : text;
+    const focusedTask = watchedTasks.get(surfaceKey(chatIdStr, topicId));
+    if (focusedTask) {
+      inputContext = {
+        ...(inputContext ?? {}),
+        focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
+      };
+    }
     emitChatStart(
-      finalMessage,
-      "telegram",
+      text,
       msg.message_id,
-      inputTarget,
-      inputContext ?? { conversationId },
+      inputContext,
       chatIdStr,
       topicId,
       conversationId,
@@ -708,9 +555,144 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     const [cmd = "", ...rest] = text.split(/\s+/);
     const command = cmd.split("@")[0];
+    const surface = surfaceKey(chatIdStr, topicId);
+
+    const deliverCommandView = async (
+      rendered: string,
+      taskRefs: Array<{ appId: string; taskId: string }> = [],
+    ): Promise<void> => {
+      const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
+        eventType: "telegram.reply",
+        agent: opts.interfaceAgent,
+        data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
+        replyToMessageId: msg.message_id,
+        messageThreadId: topicId,
+      });
+      if (deliveredMessageId) {
+        recordConversationMessage({
+          conversationId,
+          text: rendered,
+          command: text,
+          messageId: deliveredMessageId,
+          chatId: chatIdStr,
+          topicId,
+          taskRefs,
+        });
+      }
+    };
+
+    if (command === "/apps") {
+      if (rest.length > 1) await deliverCommandView("Use: /apps [app]");
+      else await deliverCommandView(renderTelegramApps(opts.humanTasks.listApps(rest[0])));
+      return true;
+    }
+
+    if (command === "/tasks") {
+      const includeDone = rest.some((part) => part.toLowerCase() === "all");
+      const appIds = rest.filter((part) => part.toLowerCase() !== "all");
+      if (appIds.length > 1) {
+        await deliverCommandView("Use: /tasks [app] [all]");
+        return true;
+      }
+      const page = opts.humanTasks.listTasks({ appId: appIds[0], includeDone, limit: 30 });
+      await deliverCommandView(
+        renderTelegramTasks(page.items, includeDone),
+        page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
+      );
+      return true;
+    }
+
+    if (command === "/task") {
+      if (rest.length !== 1) {
+        await deliverCommandView("Use: /task <ref>");
+        return true;
+      }
+      const task = opts.humanTasks.getTask({ ref: rest[0] });
+      await deliverCommandView(
+        task ? renderTelegramTask(task) : `Task ${rest[0]} was not found.`,
+        task ? [{ appId: task.appId, taskId: task.taskId }] : [],
+      );
+      return true;
+    }
+
+    if (command === "/watch") {
+      if (rest.length > 1) {
+        await deliverCommandView("Use: /watch [ref]");
+        return true;
+      }
+      if (rest.length === 0) {
+        const watched = watchedTasks.get(surface);
+        if (!watched) await deliverCommandView("No Task is watched. Use /watch <ref>.");
+        else {
+          const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+          await deliverCommandView(
+            task ? renderTelegramTask(task) : `Task ${watched.ref} was not found; watch ended.`,
+            task ? [{ appId: task.appId, taskId: task.taskId }] : [],
+          );
+          if (!task || task.terminal) watchedTasks.delete(surface);
+        }
+        return true;
+      }
+      const task = opts.humanTasks.getTask({ ref: rest[0] });
+      if (!task) {
+        await deliverCommandView(`Task ${rest[0]} was not found.`);
+      } else if (task.terminal) {
+        watchedTasks.delete(surface);
+        await deliverCommandView(`${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched.`, [
+          { appId: task.appId, taskId: task.taskId },
+        ]);
+      } else {
+        watchedTasks.set(surface, {
+          appId: task.appId,
+          taskId: task.taskId,
+          ref: task.ref,
+          chatId: chatIdStr,
+          ...(topicId === undefined ? {} : { topicId }),
+        });
+        await deliverCommandView(
+          `${renderTelegramTask(task)}\n\nWatching ${task.ref}. Replies are Task feedback through May.`,
+          [{ appId: task.appId, taskId: task.taskId }],
+        );
+      }
+      return true;
+    }
+
+    if (command === "/unwatch") {
+      if (rest.length > 0) await deliverCommandView("Use: /unwatch");
+      else if (watchedTasks.delete(surface)) await deliverCommandView("Stopped watching. The Task is unchanged.");
+      else await deliverCommandView("No Task is watched.");
+      return true;
+    }
+
+    if (command === "/cancel") {
+      if (rest.length > 1) {
+        await deliverCommandView("Use: /cancel [ref]");
+        return true;
+      }
+      const watched = watchedTasks.get(surface);
+      if (!rest[0] && !watched) {
+        await deliverCommandView("Use: /cancel <ref>, or watch a Task first.");
+        return true;
+      }
+      try {
+        const task = opts.humanTasks.cancelTask(
+          rest[0]
+            ? { ref: rest[0], reason: "human requested cancellation from Telegram" }
+            : {
+                appId: watched!.appId,
+                taskId: watched!.taskId,
+                reason: "human requested cancellation from Telegram",
+              },
+        );
+        watchedTasks.delete(surface);
+        await deliverCommandView(renderTelegramTask(task), [{ appId: task.appId, taskId: task.taskId }]);
+      } catch (error) {
+        await deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
+      }
+      return true;
+    }
 
     if (command === "/work") {
-      const surface = `${chatIdStr}:${topicId ?? 0}`;
       const argument = rest.join(" ").trim().toLowerCase();
       let rendered: string;
       let renderedRequestIds: string[] = [];
@@ -770,105 +752,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         "🤖 *May Agent Bot*\n\n" +
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
-          "/work — Show active work (`/work all` for history)\n" +
-          "/status — Show active sessions\n" +
-          "/cancel <session>|all — Cancel an explicit target\n" +
-          "/steer <session> <message> — Explicitly steer one execution session\n" +
+          "/apps \[app\] — Show Apps and active Task counts\n" +
+          "/tasks \[app\] \[all\] — Show Tasks\n" +
+          "/task <ref> — Show one Task\n" +
+          "/watch \[ref\] — Watch or show one Task\n" +
+          "/unwatch — Stop watching without changing the Task\n" +
+          "/cancel \[ref\] — Cancel a Task\n" +
           "/reload — Reload agent configs\n" +
           "/help — Show this message",
         "Markdown",
         { messageThreadId: topicId },
       );
-      return true;
-    }
-
-    if (command === "/status" || command === "/agents") {
-      const sessions = _manager.status();
-      const rendered =
-        sessions.length === 0
-          ? "No active sessions."
-          : [
-              "Active sessions:",
-              ...sessions.map(
-                (session) =>
-                  `• ${session.agent} · ${session.status} · ${session.sessionId.slice(0, 12)}${
-                    session.task ? `\n  ${session.task.replace(/\s+/g, " ").trim().slice(0, 120)}` : ""
-                  }`,
-              ),
-            ].join("\n");
-      const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
-        eventType: "telegram.reply",
-        agent: opts.interfaceAgent,
-        data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
-        replyToMessageId: msg.message_id,
-        messageThreadId: topicId,
-      });
-      if (deliveredMessageId) {
-        recordConversationMessage({
-          conversationId,
-          text: rendered,
-          command: text,
-          messageId: deliveredMessageId,
-          chatId: chatIdStr,
-          topicId,
-        });
-      }
-      return true;
-    }
-
-    if (command === "/cancel") {
-      if (rest[0]?.toLowerCase() === "all") {
-        emitCancelAll();
-        return true;
-      }
-
-      const sessionId = rest[0]?.trim();
-      if (!sessionId) {
-        await sendMessage(chatIdStr, "Use: /cancel <session> or /cancel all", undefined, {
-          eventType: "telegram.reply",
-          agent: opts.interfaceAgent,
-          data: JSON.stringify({ direction: "outbound", conversationId }),
-          replyToMessageId: msg.message_id,
-          messageThreadId: topicId,
-        });
-        return true;
-      }
-      emitSessionCancel(sessionId);
-      return true;
-    }
-
-    if (command === "/steer") {
-      const [sessionId, ...messageParts] = rest;
-      const steerText = messageParts.join(" ").trim();
-      if (!sessionId || !steerText) {
-        await sendMessage(chatIdStr, "Use: /steer <session> <message>", undefined, {
-          eventType: "telegram.reply",
-          agent: opts.interfaceAgent,
-          data: JSON.stringify({ direction: "outbound", conversationId }),
-          replyToMessageId: msg.message_id,
-          messageThreadId: topicId,
-        });
-        return true;
-      }
-      emitChatStart(
-        steerText,
-        "telegram",
-        msg.message_id,
-        { agent: opts.interfaceAgent, sessionId },
-        { conversationId, explicitSessionControl: true },
-        chatIdStr,
-        topicId,
-        conversationId,
-        replyToMsgId,
-      );
-      await sendMessage(chatIdStr, `Received. I steered session ${sessionId}.`, undefined, {
-        eventType: "telegram.reply",
-        agent: opts.interfaceAgent,
-        sessionId,
-        data: JSON.stringify({ direction: "outbound", conversationId }),
-        replyToMessageId: msg.message_id,
-        messageThreadId: topicId,
-      });
       return true;
     }
 
@@ -902,20 +796,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     });
     return true;
   }
-
-  // ── Outbound: session-scoped assistant responses ─────────────────
-
-  const outbound = attachTelegramOutbound({
-    bus,
-    interfaceAgent: opts.interfaceAgent,
-    projectRoot,
-    pendingChatId,
-    getSessionReplyContext: (sessionId) => readSessionMeta(persistDir, sessionId),
-    hasDeliveredNotificationKey: (key) => hasDeliveredNotificationKey(persistDir, key),
-    isApprovalResolved: (identity) => isApprovalNotificationResolved(persistDir, identity),
-    sendToUser,
-    reviewProactive: (candidate) => reviewHumanAttention(_manager, candidate, projectRoot),
-  });
 
   function telegramMessageText(message: any): string {
     const text = message?.text ?? message?.caption ?? "";
@@ -982,42 +862,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     close: () => {
       running = false;
       unsubscribeConversation();
-      outbound.close();
     },
-    sendAlert: outbound.sendAlert,
   };
-}
-
-function recordField(value: unknown, key: string): Record<string, unknown> | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-  const field = (value as Record<string, unknown>)[key];
-  return field && typeof field === "object" && !Array.isArray(field) ? (field as Record<string, unknown>) : undefined;
-}
-
-function stringValue(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function positiveInteger(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
-}
-
-function traceFromTelegramContext(context: Record<string, unknown> | undefined): EventTrace | undefined {
-  const reply = recordField(context, "telegramReply");
-  const traceId = stringValue(reply?.traceId);
-  if (!traceId) return undefined;
-  const parentEventId = positiveInteger(reply?.sourceEventId) ?? positiveInteger(reply?.parentEventId);
-  return { traceId, ...(parentEventId ? { parentEventId } : {}) };
-}
-
-function parseJsonRecord(raw: string | null | undefined): Record<string, unknown> | undefined {
-  if (!raw) return undefined;
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : undefined;
-  } catch {
-    return undefined;
-  }
 }

@@ -6,14 +6,15 @@
  * view of system activity without grepping log files.
  *
  * Performance constraints:
- * - History dir has 3,500+ entries: use readdir → sort → slice (never walk all)
+ * - Session history is read from bounded indexed SQL projections, never by
+ *   enumerating or parsing retained session directories
  * - JSONL files can be large: use tail-read (last N KB) not full read
  * - All operations are read-only; no state mutation
  */
 
 import { Type } from "@earendil-works/pi-ai";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { existsSync, readdirSync, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
+import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
 import { getDb } from "../requests.js";
@@ -224,30 +225,28 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
   }
 }
 
+type SessionDashboardRow = PersistedSession & { id: string };
+
+function dashboardSessions(rows: SessionDashboardRow[]): Array<{ id: string; meta: PersistedSession }> {
+  return rows.map(({ id, ...meta }) => ({ id, meta }));
+}
+
 function getActiveSessions(stateDir: string): Array<{ id: string; meta: PersistedSession }> {
-  const sessionsRoot = join(stateDir, "sessions");
-  if (!existsSync(sessionsRoot)) return [];
-
-  const results: Array<{ id: string; meta: PersistedSession }> = [];
   try {
-    const dirs = readdirSync(sessionsRoot, { withFileTypes: true }).filter(
-      (d) => d.isDirectory() && existsSync(join(sessionsRoot, d.name, "[ACTIVE]")),
+    return dashboardSessions(
+      getDb(stateDir)
+        .prepare(
+          `SELECT sessionId AS id, agent, task, status, startedAt, endedAt, error, kind
+           FROM sessions INDEXED BY idx_sess_status
+           WHERE status IN ('running', 'idle')
+           ORDER BY startedAt, sessionId
+           LIMIT 1000`,
+        )
+        .all() as unknown as SessionDashboardRow[],
     );
-
-    for (const d of dirs) {
-      const metaPath = join(sessionsRoot, d.name, "meta.json");
-      if (!existsSync(metaPath)) continue;
-      try {
-        const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as PersistedSession;
-        results.push({ id: d.name, meta });
-      } catch {
-        // corrupted meta.json — skip
-      }
-    }
   } catch {
-    // readdir failed — return empty
+    return [];
   }
-  return results;
 }
 
 function getRecentHistory(
@@ -255,37 +254,19 @@ function getRecentHistory(
   windowMs: number,
   maxEntries: number = 100,
 ): Array<{ id: string; meta: PersistedSession }> {
-  const sessionsRoot = join(stateDir, "sessions");
-  if (!existsSync(sessionsRoot)) return [];
-
   try {
-    // Session IDs contain timestamps, so name order is a bounded recent-history approximation.
-    const dirs = readdirSync(sessionsRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name);
-    // Sort descending by name (timestamps in names give chronological order)
-    dirs.sort((a, b) => b.localeCompare(a));
-
-    // Only read the most recent entries
-    const candidates = dirs.slice(0, maxEntries);
     const cutoff = Date.now() - windowMs;
-    const results: Array<{ id: string; meta: PersistedSession }> = [];
-
-    for (const name of candidates) {
-      const metaPath = join(sessionsRoot, name, "meta.json");
-      if (!existsSync(metaPath)) continue;
-      try {
-        const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as PersistedSession;
-        // Filter by time window — use endedAt if available, otherwise startedAt
-        const ts = meta.endedAt ?? meta.startedAt;
-        if (meta.status !== "running" && meta.status !== "idle" && ts >= cutoff) {
-          results.push({ id: name, meta });
-        }
-      } catch {
-        // corrupted — skip
-      }
-    }
-    return results;
+    return dashboardSessions(
+      getDb(stateDir)
+        .prepare(
+          `SELECT sessionId AS id, agent, task, status, startedAt, endedAt, error, kind
+           FROM sessions INDEXED BY idx_sess_ended
+           WHERE endedAt >= ? AND status NOT IN ('running', 'idle')
+           ORDER BY endedAt DESC, sessionId DESC
+           LIMIT ?`,
+        )
+        .all(cutoff, Math.max(1, Math.min(maxEntries, 1000))) as unknown as SessionDashboardRow[],
+    );
   } catch {
     return [];
   }
