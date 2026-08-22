@@ -5,6 +5,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./event-bus.js";
+import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
 
 export interface CommandRouterOptions {
   bus: EventBus;
@@ -13,7 +14,7 @@ export interface CommandRouterOptions {
   projectRoot: string;
   /** Uses the live App registry and schema. */
   acceptsAppInput?: (appId: string, input: AppInput) => boolean;
-  reload: () => void | Promise<void>;
+  reload: () => RuntimeReloadResult | Promise<RuntimeReloadResult>;
   restart: () => void;
   shutdown: () => void;
 }
@@ -173,6 +174,32 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const value = (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID];
     return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
   };
+
+  function finishReload(event: unknown): void {
+    const request = eventData(event);
+    const emitResult = (result: RuntimeReloadResult): void => {
+      bus.emit({
+        type: "runtime.reload.finished",
+        source: "runtime",
+        owner: isRecord(event) ? String(event.owner ?? "agent:may") : "agent:may",
+        data: {
+          ...(nonEmptyString(request.requestId) ? { requestId: nonEmptyString(request.requestId) } : {}),
+          ok: result.ok,
+          summary: result.summary,
+        },
+        trace: childEventTrace(event),
+      } as any);
+    };
+    void Promise.resolve()
+      .then(() => options.reload())
+      .then(emitResult)
+      .catch((error) =>
+        emitResult({
+          ok: false,
+          summary: `[reload] Failed: ${error instanceof Error ? error.message : String(error)}`,
+        }),
+      );
+  }
 
   function messageInput(message: string, context: Record<string, unknown>): AppInput {
     return { kind: "message", data: { message, ...(Object.keys(context).length ? { context } : {}) } };
@@ -609,7 +636,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         for (const session of manager.status()) if (session.status === "running") manager.cancel(session.sessionId);
         return accepted("session-cancel-all");
       case "runtime.reload.requested":
-        void options.reload();
+        finishReload(event);
         return accepted("runtime-reload");
       case "runtime.restart.requested":
         options.restart();
@@ -649,7 +676,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       case "fork":
         return handleFork(event);
       case "reload":
-        void options.reload();
+        finishReload(event);
         return accepted("runtime-reload");
       case "restart":
         options.restart();

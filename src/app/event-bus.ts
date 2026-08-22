@@ -102,6 +102,16 @@ export type ManagementCommand =
   | { type: "restart" }
   | { type: "shutdown" }
   | { type: "runtime.reload.requested"; source: string; owner: string; data: { reason?: string } }
+  | {
+      type: "runtime.reload.finished";
+      source: "runtime";
+      owner: string;
+      data: {
+        requestId?: string;
+        ok: boolean;
+        summary: string;
+      };
+    }
   | { type: "runtime.restart.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }
   | { type: "runtime.shutdown.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } };
 

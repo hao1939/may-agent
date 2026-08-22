@@ -46,6 +46,7 @@ let conversationSyncDirty = false;
 const pendingAppReads = [];
 const pendingTaskListReads = [];
 const pendingTaskReads = [];
+const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 
@@ -600,7 +601,8 @@ function renderConversation(messages) {
 
 function runtimeFrame(type) {
   const urgency = type === "runtime.reload.requested" ? undefined : "high";
-  return canonicalFrame(type, {}, { urgency });
+  const requestId = `${source}:${adapterInstanceId}:${randomUUID()}`;
+  return canonicalFrame(type, { requestId }, { urgency });
 }
 
 function subscribe() {
@@ -647,6 +649,16 @@ function handleSessionEnd(event) {
 
 function handleEvent(event) {
   if (!event || typeof event !== "object") return;
+  if (event.type === "runtime.reload.finished") {
+    const data = flatPayload(event);
+    const requestId = typeof data.requestId === "string" ? data.requestId : "";
+    const command = pendingRuntimeControls.get(requestId);
+    if (command) {
+      pendingRuntimeControls.delete(requestId);
+      presentView(command, typeof data.summary === "string" ? data.summary : "[reload] Finished");
+    }
+    return;
+  }
   if (event.type === "app.task.updated") {
     const data = flatPayload(event);
     if (watchedTask && data.appId === watchedTask.appId && data.taskId === watchedTask.taskId) {
@@ -1001,7 +1013,11 @@ function handleCommand(input) {
       return;
     }
     case "reload":
-      sendFrame(runtimeFrame("runtime.reload.requested"));
+      {
+        const frame = runtimeFrame("runtime.reload.requested");
+        pendingRuntimeControls.set(frame.data.requestId, input);
+        if (!sendFrame(frame)) pendingRuntimeControls.delete(frame.data.requestId);
+      }
       return;
     case "restart":
       sendFrame(runtimeFrame("runtime.restart.requested"));

@@ -393,6 +393,28 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
   };
   const appId = optionalText(data.appId);
   const idempotencyKey = optionalText(data.idempotencyKey) ?? `event:${eventId}`;
+  if (eventType === "runtime.reload.requested") {
+    const completion = db
+      .prepare(
+        `SELECT e.id, e.data
+         FROM event_traces t
+         JOIN events e ON e.id = t.event_id
+         WHERE t.parent_event_id = ?
+           AND e.event_type = 'runtime.reload.finished'
+         ORDER BY e.id DESC
+         LIMIT 1`,
+      )
+      .get(eventId) as { id?: unknown; data?: unknown } | undefined;
+    if (typeof completion?.id === "number") {
+      const result = parseData(completion.data);
+      addLink({
+        kind: "operation",
+        id: `event:${completion.id}`,
+        state: result.ok === true ? "succeeded" : "failed",
+        ...(optionalText(result.summary) ? { summary: optionalText(result.summary) } : {}),
+      });
+    }
+  }
   const conversationAuthor =
     data.author && typeof data.author === "object" && !Array.isArray(data.author)
       ? (data.author as Record<string, unknown>)
