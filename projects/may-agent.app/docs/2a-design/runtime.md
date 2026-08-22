@@ -168,8 +168,10 @@ has no session-output, notification-review, or approval-ordering route on
 event acceptance.
 
 The local `status` control read has an explicit diagnostics option that samples
-process heap, external memory, and RSS on demand. Normal health probes do not
-pay that observation cost.
+process CPU, heap, external memory, RSS, PID, and uptime on demand. Normal
+health probes do not pay that observation cost. The quiet-runtime sampler
+combines this explicit read with active execution, child-process, Task,
+workflow, and event checks; it refuses to label a contaminated window idle.
 
 The agent-facing `system_status` dashboard is also an on-demand bounded read.
 Active sessions come from the status index and recent terminal sessions from

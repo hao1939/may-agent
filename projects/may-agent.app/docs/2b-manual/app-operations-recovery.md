@@ -105,6 +105,28 @@ the one paused JSON authority. After activation, roll forward: the old JSON
 remains paused evidence and must never be resumed as a second authority.
 Neither path deletes historical state.
 
+## Quiet-runtime proof
+
+Measure idle Host cost only through a window that is actually quiet:
+
+```bash
+cd /app/projects/may-agent
+bun scripts/sample-runtime-quiet.ts \
+  --socket /app/.state/instances/background/may.sock \
+  --state-dir /app/.state \
+  --seconds 30
+```
+
+The sampler reads the control socket, `/proc`, and SQLite in read-only mode. It
+rejects the window when an agent, Task attempt, workflow, daemon child process,
+or new durable event appears. A rejected window is execution evidence, not an
+idle-performance failure; wait for real quiescence and sample again. Judge the
+idle CPU/RSS target only from `validQuietWindow: true` output.
+
+An older deployed Runtime that does not expose `diagnostics.pid` may be sampled
+temporarily with `--pid <actual-daemon-pid>`. Do not use a retained identity PID
+without confirming that `/proc/<pid>/cmdline` is the running daemon.
+
 ## Runtime deployment target
 
 A correlated Runtime deployment must name an existing `may-agent` Task. Before

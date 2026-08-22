@@ -168,6 +168,11 @@ exported through `@may-agent/sdk`, and cannot be invoked as App workflows.
 Enabled handlers are compiled and bundled against the paired Runtime alongside
 the canonical workflow compatibility gate.
 
+`cron.json` is read at startup. The Cron tool applies an authorized edit by
+calling the scheduler's explicit `reload()` boundary immediately; an external
+file edit takes effect after an explicit process restart. The Host does not
+poll or hash every Cron configuration in the background.
+
 The May operations health packet and daily operations digest are current
 examples: both read host-owned operational ledgers; the digest may use the host
 delivery adapter; both emit facts when App-owner judgment is needed. Their

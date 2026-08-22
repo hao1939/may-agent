@@ -1072,6 +1072,21 @@ nearest due time, then enqueues that exact Task, and re-arms correctly after a
 later state change. These deterministic proofs do not replace the outstanding
 quiet-window and representative live-load measurements.
 
+The remaining standalone Cron compatibility path also carried two redundant
+source-discovery loops: every instance used `watchFile` and separately hashed
+`cron.json` every 15 seconds. They are removed. The authorized Cron tool already
+calls `reload()` after a write; external file edits now require a deliberate
+process restart. This removes periodic file reads without adding another
+watcher or changing schedule cadence.
+
+A read-only quiet-window sampler now makes the final idle proof falsifiable. It
+samples the daemon's cumulative CPU and memory while checking active agents,
+running Task attempts, running workflows, daemon child processes, and durable
+event growth. Any activity invalidates the sample instead of being charged to
+the idle EventHub. Its first three-second run correctly rejected the window:
+Evaluation work and child commands were active even though no new event arrived.
+Production activation and a valid quiet window remain outstanding.
+
 ### Phase 0: freeze the contract and expose cost
 
 - Add deterministic tests for the structural properties above.
