@@ -399,7 +399,7 @@ core itself can. The desired disposition is:
 | Current mechanism                     | Failure it addresses                   | Decision                                                                             |
 | ------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
 | EventBus and public event interface   | durable input and change notification  | **Keep, simplify:** one persistence-first EventHub; no second event lifecycle        |
-| Admission plans and commands          | recover partial routing work           | **Replace:** event plus exact task/request links are the durable acceptance record   |
+| Admission plans and commands          | recover a crash during route linking   | **Shrink:** no worker; exact links gate normal acceptance, retained rows only freeze partial recovery |
 | Inbox/request correlation             | remember which caller is owed a result | **Keep small:** create only for addressed calls; never execute policy there          |
 | Whole-App task JSON                   | task authority and restart recovery    | **Replace:** indexed resource-local task rows                                        |
 | Task controller                       | serialize and run ready tasks          | **Simplify:** one Host dispatcher with task IDs, two lanes, and per-task fencing     |
@@ -1036,6 +1036,20 @@ unregistered App facts and explicit `trigger.*` controls. This removes unused
 human compatibility without pretending the still-used operator contract is
 dead or deleting any retained event.
 
+The App admission boundary now follows the same rule. Previously, a routed
+event wrote frozen admission commands, queued a per-command timer pump, and
+returned `accepted` before the selected Task or request link existed. The
+normal path now applies those frozen commands synchronously and reports
+acceptance only after every exact link is durable. The per-command map, timer,
+and pump are removed. If a process stops or one bounded link fails, the
+retained frozen rows remain a recovery journal; the minute-level recovery pass
+reloads the original event identity and re-enters only idempotent durable
+routes. It neither appends another event nor replays ordinary subscribers, and
+successful recovery records acceptance on the original event row. Existing
+admission history is unchanged. This is an intermediate shrinkage boundary:
+the frozen rows may disappear only when the event plus exact links can provide
+the same cross-reload partial-admission proof atomically.
+
 ### Phase 0: freeze the contract and expose cost
 
 - Add deterministic tests for the structural properties above.
@@ -1108,8 +1122,9 @@ recovered within the safety interval.
 
 ### Phase 5: collapse redundant durable machinery
 
-- Replace admission plan/command chains with the accepted event and exact
-  task/request links.
+- **Partly done:** normal admission no longer has a plan/command worker; exact
+  task/request links gate acceptance. Retained frozen rows are used only to
+  recover a crash between route selection and the final exact link.
 - Reduce Conditions to task wait links and due times.
 - Keep request correlation only where a caller is owed a response.
 - Move task tree, Conversation display details, session digests, evaluations,
