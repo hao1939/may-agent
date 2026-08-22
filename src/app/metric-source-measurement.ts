@@ -327,17 +327,22 @@ export function attachMetricSourceMeasurement(options: {
       });
   };
 
-  options.bus.subscribe((event): void => {
-    if ((event as { type: string }).type !== METRIC_SOURCE_MEASUREMENT_EVENT) return;
-    const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-    schedule({
-      triggerEventId,
-      measuredAt: Date.now(),
-    });
-  });
+  options.bus.listen(
+    (event): void => {
+      const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+      schedule({
+        triggerEventId,
+        measuredAt: Date.now(),
+      });
+    },
+    { label: "metric-source-measurement", types: [METRIC_SOURCE_MEASUREMENT_EVENT] },
+  );
 
   return {
     async idle() {
+      // Let the EventBus listener consume a just-published wake before
+      // inspecting the measurement drain.
+      await new Promise<void>((resolve) => setImmediate(resolve));
       while (drain) await drain;
     },
   };
