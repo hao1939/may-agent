@@ -151,6 +151,12 @@ accompany Task views so a later natural-language turn has the exact resources
 the human saw. The old numbered `/work` request projection remains a hidden
 diagnostic compatibility view only; it is not a second work model.
 
+The journal retains every command view. The bounded Conversation projection
+keeps only the newest durable command view for each adapter surface
+(`channel`, target, and thread). Thus May receives what the human most recently
+saw on Console and Telegram without old `/tasks` pages evicting the actual
+human/May dialogue.
+
 ## Presentation
 
 - Human ingress is accepted after durable event persistence and request-to-task

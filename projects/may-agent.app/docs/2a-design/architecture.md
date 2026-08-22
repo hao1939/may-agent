@@ -3,8 +3,8 @@
 **Design status:** Accepted.
 **Implementation status:** The canonical path is implemented for every current
 App. Request storage correlates and delivers Task results; it does not execute
-App policy. An unused compatibility implementation for older App definitions
-remains to be removed.
+App policy. Task-enabled Apps must have active resource authority; retained
+pre-cutover files remain evidence but are not a runnable compatibility path.
 
 Read [system-model.md](system-model.md) first. The architecture follows one
 split:

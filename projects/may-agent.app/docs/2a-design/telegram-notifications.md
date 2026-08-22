@@ -225,6 +225,11 @@ Telegram exposes the same small Task meanings as Console:
 - `/cancel [ref]`; and
 - authorized Runtime reload.
 
+`/tasks` returns ten compact cards per page; `/tasks more` continues the prior
+query. Exact detail remains `/task <ref>`. Historical Telegram command events
+remain auditable, while the Conversation projection carries only the newest
+command view for each chat/topic.
+
 The presentation may use native buttons without changing the resource API.
 `/work` remains a hidden compatibility view of old May requests. Ordinary help
 does not expose session listing, steering, or session cancellation.

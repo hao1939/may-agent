@@ -86,7 +86,7 @@ Console sends typed socket reads:
 
 ```json
 { "type": "apps.list" }
-{ "type": "tasks.list", "appId": "evaluation", "limit": 30 }
+{ "type": "tasks.list", "appId": "evaluation", "limit": 10 }
 { "type": "task.get", "ref": "8f12ac90" }
 ```
 
@@ -125,6 +125,11 @@ such as `you[telegram]>`. A Console process suppresses only messages it already
 rendered; another Console process may still display the same shared message.
 Passive synchronization requests messages only; it does not rebuild the hidden
 legacy request-work view.
+
+The event journal retains prior command views, but the Conversation read
+returns only the newest view for each Console or Telegram surface. This keeps
+the latest human-visible context while preventing old list pages from becoming
+startup replay or May prompt history.
 
 ## Failure behavior
 

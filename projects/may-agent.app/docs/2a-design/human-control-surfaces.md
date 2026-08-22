@@ -78,6 +78,12 @@ contains ordered canonical `taskRefs`, so the next May turn receives the view
 the human actually saw. Automatic watch progress, reconnect notices, typing
 indicators, and delivery notices are transient.
 
+All command events remain durable evidence, while the current Conversation
+projection exposes only the newest command view per adapter surface. `/tasks`
+returns ten compact cards at a time and `/tasks more` continues the same opaque
+cursor. Exact outcome, progress, result, and evidence stay available through
+`/task <ref>`.
+
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
 

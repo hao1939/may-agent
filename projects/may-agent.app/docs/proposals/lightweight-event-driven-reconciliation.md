@@ -816,12 +816,33 @@ Console `/help` exposed the new command, `/tasks all` returned one bounded page
 with an explicit continuation, and `/tasks more` returned the next distinct
 page while preserving the prior query.
 
+Runtime commit `7135466c` tightens the same interface boundary in source. Task
+lists now return ten 96-byte cards per page, while exact detail remains
+`/task <ref>`. The append-only event journal still retains every rendered
+command, but the Conversation projection selects only the newest command view
+for each Console or Telegram surface. Against retained production evidence,
+the 30-message projection fell from 22.9 KB with 26 old command views to 5.1 KB
+with 14 human turns, 14 May replies, and the latest two surface views. Warm
+reads took 2-7 ms, and 42 focused Console/Telegram/Conversation tests plus both
+TypeScript checks passed. This source has not yet received a production
+activation receipt.
+
 A following 45-second no-agent sample averaged 7.778% of one CPU, peaked once
 at 79%, and held RSS between 258,464 and 336,240 KiB. The same window crossed a
 scheduled platform metric snapshot, four AKS pipeline observations, a pull
 request observation, a metric breach, and the resulting bounded Task checks.
 It therefore attributes the spike to scheduled App observation and is not the
 still-required quiet-window idle proof.
+
+After the `95536dad` deployment, a 15-second window with no newly persisted
+events still used 4.066% of one CPU and moved the main process from 264,892 to
+266,240 KiB RSS. The process diagnostic reported about 41 MB heap used and
+19 MB external memory at roughly 254 MB RSS. A later active window rose above
+13% while AKS and Evaluation owner sessions were executing. Zero new events is
+therefore not a valid idle predicate: provider/workflow execution can remain
+active without committing an event. The exit proof must require both no active
+owner execution and no scheduled observer boundary before attributing the
+remaining native RSS or CPU to the core.
 
 The next Host profile found a long-lived memory multiplier at the App execution
 boundary. Every handler and workflow invocation bundled its source again and
@@ -857,14 +878,23 @@ All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. A brand-new App now
 atomically establishes resource authority from its declarative seed without
 creating a legacy mutable `state.json`; an App that already has legacy state
-still requires guarded cutover. Remaining work is to
+still requires guarded cutover. Runtime commit `95536dad` removed the remaining
+legacy controller timer, whole-tree resync, and completion refill. Task-enabled
+Apps now fail closed without active resource authority; recovery is the indexed
+startup/nearest-due/bounded-safety scheduler only. Production correlation
+`deploy-app_eab20bc4-95536dad-20260822T1435Z` loaded matching requested and
+running artifact SHA, reported healthy, woke the exact owner Task, and did not
+redeploy. The retained pre-cutover files remain evidence, not a runnable
+fallback.
+
+Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
 due-recovery proof; validate the bounded execution, Conversation sync, indexed
 diagnostic, and runtime-generation module paths under longer representative
 load;
 extend fenced mid-attempt emission beyond direct task-owned workflows only when
-a concrete agent use case needs it; and remove legacy JSON/resync compatibility
-only after its last retained-data or operator reader moves.
+a concrete agent use case needs it; and define retention protection before any
+historical snapshot or evidence deletion.
 
 The human-adapter event boundary is now narrower as well. Console, Telegram,
 HTTP, Web UI, `--send`, runtime controls, and exact session controls all submit
