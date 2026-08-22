@@ -853,16 +853,32 @@ export class AppTaskResourceStore {
       .prepare(
         `SELECT * FROM (
            SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_ready
-             WHERE app_id = ? AND ready = 1 ${afterClause}
+             WHERE app_id = ? AND ready = 1
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancelled
+                 WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+               ) ${afterClause}
            UNION
            SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_changed
-             WHERE app_id = ? AND changed = 1 ${afterClause}
+             WHERE app_id = ? AND changed = 1
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancelled
+                 WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+               ) ${afterClause}
            UNION
            SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_due
-             WHERE app_id = ? AND next_check_at <= ? ${afterClause}
+             WHERE app_id = ? AND next_check_at <= ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancelled
+                 WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+               ) ${afterClause}
            UNION
            SELECT ${fields} FROM app_tasks INDEXED BY idx_app_tasks_expired
-             WHERE app_id = ? AND lease_until <= ? ${afterClause}
+             WHERE app_id = ? AND lease_until <= ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancelled
+                 WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+               ) ${afterClause}
          )
          ORDER BY CASE lane WHEN 'human' THEN 0 ELSE 1 END, updated_at, task_id LIMIT ?`,
       )
@@ -896,7 +912,14 @@ export class AppTaskResourceStore {
 
   nextDueAt(): number | null {
     const row = this.db
-      .prepare("SELECT MIN(next_check_at) AS due_at FROM app_tasks WHERE app_id = ? AND next_check_at IS NOT NULL")
+      .prepare(
+        `SELECT MIN(next_check_at) AS due_at FROM app_tasks
+         WHERE app_id = ? AND next_check_at IS NOT NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations cancelled
+             WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+           )`,
+      )
       .get(this.appId) as { due_at?: number | null } | null;
     return typeof row?.due_at === "number" ? row.due_at : null;
   }
@@ -1169,8 +1192,16 @@ export class AppTaskResourceStore {
     if (!assignments.length) return false;
     values.push(this.appId, taskId);
     const changed =
-      this.db.prepare(`UPDATE app_tasks SET ${assignments.join(", ")} WHERE app_id = ? AND task_id = ?`).run(...values)
-        .changes > 0;
+      this.db
+        .prepare(
+          `UPDATE app_tasks SET ${assignments.join(", ")}
+           WHERE app_id = ? AND task_id = ?
+             AND NOT EXISTS (
+               SELECT 1 FROM app_task_cancellations cancelled
+               WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+             )`,
+        )
+        .run(...values).changes > 0;
     if (changed) this.bumpRevision();
     return changed;
   }
