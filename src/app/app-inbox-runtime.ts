@@ -46,9 +46,9 @@ export type AppInboxRuntime = {
   reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
 };
 
-// Admission normally happens directly from the accepted event. This recovery
-// pass exists only for crashes and transient failures, so it must stay bounded
-// and must not turn a permanently invalid route into a five-second retry storm.
+// Admission normally completes on the event's synchronous durable-route pass.
+// This recovery pass exists only for an interrupted or transiently failed
+// pass, so it stays bounded and never becomes the normal work path.
 const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 
@@ -562,78 +562,61 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
-  const queuedAdmissionCommands = new Map<string, { eventId: number; appId: string; event?: AgentEvent }>();
-  let admissionTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const scheduleAdmissionPump = (): void => {
-    if (closed || admissionTimer || queuedAdmissionCommands.size === 0) return;
-    admissionTimer = setTimeout(() => {
-      admissionTimer = null;
-      if (closed) return;
-      const next = queuedAdmissionCommands.entries().next().value;
-      if (!next) return;
-      const [key, queued] = next;
-      queuedAdmissionCommands.delete(key);
-      const plan = getAppEventAdmissionPlan(options.db, queued.eventId);
-      const command = plan?.commands.find(
-        (candidate) => candidate.appId === queued.appId && candidate.status === "pending",
-      );
-      if (!plan || plan.status !== "pending" || !command) {
-        scheduleAdmissionPump();
-        return;
-      }
-      const event = queued.event ?? loadAdmissionEvent(options.db, queued.eventId, options.persistDir);
-      if (!event) {
-        recordAppEventAdmissionCommandFailure(options.db, {
-          eventId: queued.eventId,
-          appId: command.appId,
-          error: new Error(`Frozen App admission event ${queued.eventId} is unavailable`),
-          now: now(),
-        });
-        scheduleAdmissionPump();
-        return;
-      }
-      try {
-        dispatchAdmissionCommand(plan, command, event);
-        completeAppEventAdmissionPlan(options.db, queued.eventId, now());
-      } catch (error) {
-        options.bus.emit({
-          type: "info",
-          message: `[app-runtime:admission] event:${queued.eventId}/${command.appId}: ${error instanceof Error ? error.message : String(error)}`,
-        });
-      }
-      scheduleAdmissionPump();
-    });
-  };
-
-  const queueAdmissionPlan = (plan: AppEventAdmissionPlan, event?: AgentEvent): DeliveryResult => {
+  const admitAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
+    if (plan.status === "superseded") {
+      throw new Error(`Frozen App admission plan for event:${plan.eventId} is superseded`);
+    }
     if (plan.status === "pending") {
       for (const command of plan.commands) {
-        if (command.status !== "pending") continue;
-        const key = `${plan.eventId}/${command.appId}`;
-        if (!queuedAdmissionCommands.has(key)) {
-          queuedAdmissionCommands.set(key, {
-            eventId: plan.eventId,
-            appId: command.appId,
-            ...(event ? { event } : {}),
-          });
-        }
+        if (command.status === "pending") dispatchAdmissionCommand(plan, command, event);
       }
-      scheduleAdmissionPump();
+      if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
+        throw new Error(`Frozen App admission plan for event:${plan.eventId} still has pending commands`);
+      }
     }
-    return admissionPlanDelivery(plan, plan.status === "completed" ? "already admitted durably" : "queued durably");
+    const admitted = getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan;
+    return admissionPlanDelivery(
+      admitted,
+      plan.status === "completed" ? "already admitted durably" : "admitted durably",
+    );
   };
 
   let nextAdmissionRecoveryAt = 0;
+  let admissionRecoveryHandle: ReturnType<typeof setImmediate> | null = null;
   const recoverAdmissionPlans = (force = false): void => {
     const currentTime = now();
-    if (!force && currentTime < nextAdmissionRecoveryAt) return;
+    if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
     const plans = listPendingAppEventAdmissionPlans(options.db, {
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
-    for (const plan of plans) queueAdmissionPlan(plan);
+    if (plans.length === 0) return;
+    let index = 0;
+    const recoverNext = (): void => {
+      admissionRecoveryHandle = null;
+      if (closed) return;
+      const plan = plans[index++];
+      if (!plan) return;
+      const event = loadAdmissionEvent(options.db, plan.eventId, options.persistDir);
+      if (!event) {
+        for (const command of plan.commands) {
+          if (command.status !== "pending") continue;
+          recordAppEventAdmissionCommandFailure(options.db, {
+            eventId: plan.eventId,
+            appId: command.appId,
+            error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+            now: now(),
+          });
+        }
+      } else {
+        // EventBus re-runs only idempotent durable routes and records delivery
+        // acceptance on the original row; ordinary subscribers never replay.
+        options.bus.redeliverPersisted(event, plan.eventId);
+      }
+      if (index < plans.length) admissionRecoveryHandle = setImmediate(recoverNext);
+    };
+    admissionRecoveryHandle = setImmediate(recoverNext);
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
@@ -796,7 +779,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // must not reclassify it or report the superseded commands as pending.
       if (frozenPlan) {
         if (frozenPlan.status === "superseded") return undefined;
-        return queueAdmissionPlan(frozenPlan, event);
+        return admitAdmissionPlan(frozenPlan, event);
       }
 
       const canonical = canonicalAppEvent(event);
@@ -841,7 +824,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           ],
           now: now(),
         });
-        return queueAdmissionPlan(plan, event);
+        return admitAdmissionPlan(plan, event);
       }
 
       const inboxMatches = host.subscriptionInputs(canonical);
@@ -909,7 +892,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           routes,
           now: now(),
         });
-        return queueAdmissionPlan(plan, event);
+        return admitAdmissionPlan(plan, event);
       }
 
       const observationApps = loaded
@@ -986,14 +969,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (closed) return;
       closed = true;
       clearInterval(timer);
-      if (admissionTimer) clearTimeout(admissionTimer);
-      admissionTimer = null;
+      if (admissionRecoveryHandle) clearImmediate(admissionRecoveryHandle);
+      admissionRecoveryHandle = null;
       observerRuntime.close();
       unsubscribe();
       pending.length = 0;
       queued.clear();
       dirty.clear();
-      queuedAdmissionCommands.clear();
     },
   };
 }
