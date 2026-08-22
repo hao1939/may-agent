@@ -755,6 +755,39 @@ multi-gigabyte one-second burst, but the manual snapshot did not include every
 observer and schedule that aligns on a production interval boundary. The
 larger combined boundary therefore remains open for exact attribution.
 
+Session-end repair had one remaining broad read: a successful owner session
+loaded up to 512 attention Tasks and decoded their attempts to find failed
+executions it could release. Commit `f950638a` replaces that scan with an
+owner/failure index and reads Task context only for the exact returned IDs. A
+2,000-Task structural cohort returned only the two eligible latest attempts.
+Production correlation `execution-recovery-index-20260822-f950638a-r1`
+loaded the exact commit with matching requested/loaded artifact SHA, healthy
+status, one targeted owner-Task wake, and no duplicate deployment.
+
+An active 48.556-second sample after that deployment averaged 5.293% of one
+CPU for the May main process. RSS stayed between 403,704 and 406,920 KiB and
+heap used was roughly 83-85 MiB. The simultaneously running AKS App child used
+about 113% CPU and 780-820 MiB RSS for its full repository check. This
+separates expensive App execution from the EventHub/Task core, but it is not an
+idle proof.
+
+The AKS watcher now projects Azure DevOps run responses to only `id`, `status`,
+and `result` before publishing them (`1bca14b`). Verification also clarified
+the publication boundary: Apps execute their published `.state/bundle`, so a
+source edit alone cannot affect the running watcher; an explicit reload or Host
+deployment must publish that source before live behavior is judged. Repeated
+nonterminal run-level facts remain deliberate minute-level recovery insurance
+for Conditions registered after an earlier observation. They should not be
+removed without a replacement proof for long-running Conditions.
+
+The human Task page now has an explicit continuation instead of a misleading
+generic next-page hint. Console and each Telegram chat/topic retain only the
+opaque cursor for their own prior App/state query; `/tasks more` continues that
+exact query. Long shell commands now inspect capture progress once per visible
+one-second progress interval instead of ten times per second. This removes
+timer and allocation churn without reducing observable progress; the full Host
+suite passes 2,363 tests.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and

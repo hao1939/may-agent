@@ -36,7 +36,7 @@ Every human adapter exposes the same small meanings:
 | Meaning             | Console form              | Telegram form                         |
 | ------------------- | ------------------------- | ------------------------------------- |
 | list Apps           | `/apps [app]`             | native `/apps [app]`                  |
-| list Tasks          | `/tasks [app] [all]`      | native `/tasks [app] [all]`           |
+| list Tasks          | `/tasks [app] [all]`, then `/tasks more` | native `/tasks [app] [all]`, then `/tasks more` |
 | read one Task       | `/task <ref>`             | native `/task <ref>`                  |
 | watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
 | stop watching       | `/unwatch`                | `/unwatch`                            |
@@ -139,7 +139,9 @@ Human reads do not invoke a model and do not reconstruct Conversation history:
 - repeated Conversation wakes coalesce to one active read plus one dirty retry;
 - each adapter keeps only a bounded deduplication window larger than its read page;
 - `/task` uses one indexed reference lookup and one exact resource read;
-- `/tasks` is a bounded indexed page ordered by semantic update time;
+- `/tasks` is a bounded indexed page ordered by semantic update time; each
+  surface retains only its next opaque cursor and `/tasks more` continues the
+  exact prior App/state query without asking the human to copy that cursor;
 - `/apps` reads the loaded registry plus aggregate active counts;
 - Task reference hashes are indexed at Task creation/import; and
 - watch is push-to-read with one coalesced in-flight read.

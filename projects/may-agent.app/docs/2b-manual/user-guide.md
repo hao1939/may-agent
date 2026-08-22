@@ -87,7 +87,8 @@ a child task, or an exact dependency before the current attempt ends.
 | Command               | Action                                                    |
 | --------------------- | --------------------------------------------------------- |
 | `/apps [app]`         | List Apps and active Task counts                          |
-| `/tasks [app] [all]`  | List active Tasks, optionally with recent terminal Tasks  |
+| `/tasks [app] [all]`  | List the first page of active Tasks, optionally with recent terminal Tasks |
+| `/tasks more`         | Continue the exact prior Task list when another page exists |
 | `/task <ref>`         | Read one exact Task                                       |
 | `/watch [ref]`        | Watch or show one Task                                    |
 | `/unwatch`            | Leave the watch without changing the Task                 |
