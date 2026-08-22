@@ -1771,6 +1771,82 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it("lets a registered executor replace a built-in CLI adapter", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let cliRequests = 0;
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "cli.task.requested") return;
+      cliRequests += 1;
+      return { accepted: true, by: "unexpected-cli-runner", route: "direct" };
+    });
+    let calls = 0;
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        codex: async (attempt) => {
+          calls += 1;
+          expect(attempt.task.executor).toBe("codex");
+          return {
+            state: "converged",
+            summary: "Replacement Codex adapter completed the Task",
+            evidence: ["test:replacement-codex"],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:replacement-executor",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/replacement-executor",
+          parentId: "operations",
+          outcome: "Use the Host-provided Codex adapter",
+          acceptance: ["The replacement adapter returns evidence"],
+          mode: "achieve",
+          owner: "sample-owner",
+          executor: "codex",
+        },
+      },
+      idempotencyKey: "attach:replacement-executor",
+      request: {
+        id: "request-replacement-executor",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const deadline = Date.now() + 2_000;
+    while (!readTaskState(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
+      await Bun.sleep(5);
+    }
+    expect(calls).toBe(1);
+    expect(cliRequests).toBe(0);
+    expect(readTaskState(config).receipts?.["work/replacement-executor"]).toMatchObject({
+      handler: "executor:codex",
+      executor: "codex",
+      summary: "Replacement Codex adapter completed the Task",
+      evidence: ["test:replacement-codex"],
+    });
+  });
+
   it("coalesces an exact-task event storm into bounded fresh reconciliations", async () => {
     const f = fixture();
     const bus = eventBus();
