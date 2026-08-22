@@ -54,6 +54,66 @@ export const platformInputSchema = Type.Union([
   ),
   Type.Object(
     {
+      kind: Type.Literal("dependency-authority-runtime-review"),
+      data: Type.Object(
+        {
+          outcome: nonEmptyString,
+          acceptance: stringList,
+          sourceRequestId: Type.Literal("appdep_b0fced12cada9800c8035457"),
+          requestingAppId: Type.Literal("aks-rp-e2e"),
+          requestingTaskId: Type.Literal("runtime/owner-review"),
+          requestingTaskGeneration: Type.Literal(154),
+          sourceEventIds: Type.Tuple([
+            Type.Literal(5810518),
+            Type.Literal(5810519),
+          ]),
+          historicalSessionId: Type.Literal("s_1787054895397_14"),
+          suppliedDependencyAuthority: Type.Literal(true),
+          hostPrivateProjectionReadsAllowed: Type.Literal(false),
+          safetyBounds: stringList,
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("installed-app-resolver-observation"),
+      data: Type.Object(
+        {
+          outcome: nonEmptyString,
+          acceptance: stringList,
+          sourceRequestId: Type.Literal("appdep_c486e1db18a2121dd83a2d69"),
+          requestingAppId: Type.Literal("aks-rp-e2e"),
+          requestingTaskId: Type.Literal(
+            "ops/verify-loaded-runtime-master-validation-authority-parity-20260820",
+          ),
+          targetAppId: Type.Literal("aks-rp-e2e"),
+          syntheticEvent: Type.Object(
+            {
+              type: Type.Literal("project.task.tick"),
+              action: Type.Literal("master-validation-compact"),
+              taskId: Type.Literal("master-validation-compact"),
+              data: Type.Object(
+                { taskId: Type.Literal("master-validation-compact") },
+                { additionalProperties: false },
+              ),
+            },
+            { additionalProperties: false },
+          ),
+          evidenceArtifact: Type.Literal(
+            "agents/app-ops/workspace/verify-loaded-runtime-master-validation-authority-parity-20260820/compatibility-gap.md",
+          ),
+          safetyBounds: stringList,
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
       kind: Type.Literal("app-deployment-adjudication"),
       data: Type.Intersect([
         platformObligationDataSchema,
@@ -260,6 +320,8 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     }
     case "runtime-deployment.adjudicate-current-host-state":
     case "runtime-capability-request":
+    case "dependency-authority-runtime-review":
+    case "installed-app-resolver-observation":
     case "app-deployment-adjudication":
     case "runtime-source-deployment-request":
     case "protected-agent-config-repair":
@@ -334,6 +396,22 @@ export function taskForMayAgentInput(
   ) {
     throw new Error(
       "protected-agent-config-repair is accepted only from App evaluation",
+    );
+  }
+  if (
+    admitted.input.kind === "dependency-authority-runtime-review" &&
+    (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
+  ) {
+    throw new Error(
+      "dependency-authority-runtime-review is accepted only from App aks-rp-e2e",
+    );
+  }
+  if (
+    admitted.input.kind === "installed-app-resolver-observation" &&
+    (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
+  ) {
+    throw new Error(
+      "installed-app-resolver-observation is accepted only from App aks-rp-e2e",
     );
   }
   if (

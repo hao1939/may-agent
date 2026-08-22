@@ -319,6 +319,144 @@ describe("may-agent task routing", () => {
     }
   });
 
+  it("golden-traces the rejected dependency-authority request through one finite AKS-only May task", () => {
+    const input: AppInput = {
+      kind: "dependency-authority-runtime-review",
+      data: {
+        outcome:
+          "Adjudicate the historical Host test and dependency authority behavior.",
+        acceptance: [
+          "Return current-source, regression, App-result, and requesting-task proof.",
+        ],
+        sourceRequestId: "appdep_b0fced12cada9800c8035457",
+        requestingAppId: "aks-rp-e2e",
+        requestingTaskId: "runtime/owner-review",
+        requestingTaskGeneration: 154,
+        sourceEventIds: [5810518, 5810519],
+        historicalSessionId: "s_1787054895397_14",
+        suppliedDependencyAuthority: true,
+        hostPrivateProjectionReadsAllowed: false,
+        safetyBounds: [
+          "Preserve unknown-input rejection and May-owned activation authority.",
+          "Do not inspect Host-private task projections to refine a supplied dependency observation.",
+        ],
+      },
+    };
+
+    expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(
+      taskForMayAgentInput({
+        id: "dependency-authority-replacement-1",
+        source: { kind: "app", id: "aks-rp-e2e" },
+        input,
+      }),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "app-request/dependency-authority-replacement-1",
+        owner: "may",
+        mode: "achieve",
+        input: {
+          kind: "dependency-authority-runtime-review",
+          data: {
+            sourceRequestId: "appdep_b0fced12cada9800c8035457",
+            suppliedDependencyAuthority: true,
+            hostPrivateProjectionReadsAllowed: false,
+          },
+        },
+      },
+    });
+
+    for (const malformed of [
+      { ...input, kind: "owner-request" },
+      { ...input, data: { ...input.data, requestingAppId: "other-app" } },
+      { ...input, data: { ...input.data, requestingTaskId: "other-task" } },
+      { ...input, data: { ...input.data, sourceEventIds: [5810518] } },
+      { ...input, data: { ...input.data, suppliedDependencyAuthority: false } },
+      {
+        ...input,
+        data: { ...input.data, hostPrivateProjectionReadsAllowed: true },
+      },
+      { ...input, data: { ...input.data, unrelatedProject: "may-agent" } },
+    ]) {
+      expect(Check(app.inputSchema, malformed)).toBeFalse();
+    }
+    expect(() =>
+      taskForMayAgentInput({
+        id: "dependency-authority-wrong-source",
+        source: { kind: "app", id: "other-app" },
+        input,
+      }),
+    ).toThrow(
+      "dependency-authority-runtime-review is accepted only from App aks-rp-e2e",
+    );
+  });
+
+  it("golden-traces the rejected installed resolver request through one finite AKS-only May task", () => {
+    const input: AppInput = {
+      kind: "installed-app-resolver-observation",
+      data: {
+        outcome: "Return the installed full TaskIntent without mutation.",
+        acceptance: ["Return snapshot identity and the full TaskIntent input."],
+        sourceRequestId: "appdep_c486e1db18a2121dd83a2d69",
+        requestingAppId: "aks-rp-e2e",
+        requestingTaskId:
+          "ops/verify-loaded-runtime-master-validation-authority-parity-20260820",
+        targetAppId: "aks-rp-e2e",
+        syntheticEvent: {
+          type: "project.task.tick",
+          action: "master-validation-compact",
+          taskId: "master-validation-compact",
+          data: { taskId: "master-validation-compact" },
+        },
+        evidenceArtifact:
+          "agents/app-ops/workspace/verify-loaded-runtime-master-validation-authority-parity-20260820/compatibility-gap.md",
+        safetyBounds: [
+          "Read only from the installed immutable registry snapshot.",
+          "Do not publish an event or mutate persisted state.",
+        ],
+      },
+    };
+
+    expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(
+      taskForMayAgentInput({
+        id: "installed-observation-replacement-1",
+        source: { kind: "app", id: "aks-rp-e2e" },
+        input,
+      }),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "app-request/installed-observation-replacement-1",
+        owner: "may",
+        mode: "achieve",
+        input: {
+          kind: "installed-app-resolver-observation",
+          data: { sourceRequestId: "appdep_c486e1db18a2121dd83a2d69" },
+        },
+      },
+    });
+
+    for (const malformed of [
+      { ...input, kind: "installed-app-definition-read" },
+      { ...input, data: { ...input.data, targetAppId: "may-agent" } },
+      { ...input, data: { ...input.data, mutateTask: true } },
+      { ...input, data: { ...input.data, sourceRequestId: "other" } },
+    ]) {
+      expect(Check(app.inputSchema, malformed)).toBeFalse();
+    }
+    expect(() =>
+      taskForMayAgentInput({
+        id: "installed-observation-wrong-source",
+        source: { kind: "system", id: "test" },
+        input,
+      }),
+    ).toThrow(
+      "installed-app-resolver-observation is accepted only from App aks-rp-e2e",
+    );
+  });
+
   it("golden-traces the rejected status activation request through the exact finite May-agent consumer", () => {
     const input: AppInput = {
       kind: "status-readonly-supervisor-activation",
