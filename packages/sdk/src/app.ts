@@ -153,8 +153,6 @@ export type AppTaskInput<TData = unknown> = {
 
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
 
-export type AppInboxBatchMode = "single" | "coalesce-compatible";
-
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */
   id: string;
@@ -229,7 +227,7 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
    * records a terminal no-op only after all actionable routes are evaluated.
    */
   observations?: EventSelector[];
-  inbox?: { batch?: AppInboxBatchMode; maxConcurrent?: number };
+  inbox?: { maxConcurrent?: number };
   schedules?: AppSchedule[];
   observers?: AppObserver[];
   actions?: Record<string, AppAction>;

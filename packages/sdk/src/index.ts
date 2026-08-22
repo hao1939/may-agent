@@ -22,7 +22,6 @@ export type {
   AppEvent,
   AppEventSubscription,
   AppEventTarget,
-  AppInboxBatchMode,
   AppInput,
   AppInputSource,
   AppObserver,

@@ -31,13 +31,12 @@ function desiredTask(id: string): AppTaskAttachment {
   };
 }
 
-function app(id = "evaluation", batch: "single" | "coalesce-compatible" = "single"): AppDefinition {
+function app(id = "evaluation"): AppDefinition {
   return defineApp({
     id,
     version: 1,
     owner: `${id}-owner`,
     inputSchema: probeInput,
-    inbox: { batch },
     task: (input) => desiredTask(input.id),
     tasks: {},
   });
@@ -335,7 +334,7 @@ describe("App inbox host", () => {
   it("re-observes each canonical Task dependency once and wakes only its App", async () => {
     const constantTaskApp = (id: string) =>
       defineApp({
-        ...app(id, "coalesce-compatible"),
+        ...app(id),
         task: () => ({ kind: "existing" as const, taskId: "runtime/owner-review" }),
       });
     const reads: string[] = [];
@@ -358,6 +357,7 @@ describe("App inbox host", () => {
     admit(host, "evaluation-1", "evaluation");
     admit(host, "evaluation-2", "evaluation");
     admit(host, "aks-1", "alpha-project");
+    await host.reconcileOnce("evaluation");
     await host.reconcileOnce("evaluation");
     await host.reconcileOnce("alpha-project");
 
@@ -436,12 +436,12 @@ describe("App inbox host", () => {
     expect(bounded.work?.some((item) => item.requestId === "current")).toBeFalse();
   });
 
-  it("retries independent batch items independently when one Task resolver fails", async () => {
+  it("continues with the next request after one Task resolver fails", async () => {
     const host = new AppInboxHost({
       db,
       apps: [
         defineApp({
-          ...app("evaluation", "coalesce-compatible"),
+          ...app("evaluation"),
           task: ({ id }) => {
             if (id === "bad") throw new Error("bad input");
             return desiredTask(id);
@@ -451,16 +451,17 @@ describe("App inbox host", () => {
       attachTask: async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
       }),
-      retryAfterMs: 0,
-      maxBatchSize: 2,
+      retryAfterMs: 10_000,
     });
     admit(host, "bad");
     admit(host, "good");
 
-    const outcome = await host.reconcileOnce("evaluation");
+    const failed = await host.reconcileOnce("evaluation");
+    const admitted = await host.reconcileOnce("evaluation");
 
-    expect(outcome).toMatchObject({ claimed: 2, admitted: 1, released: 1 });
-    expect(outcome.errors).toEqual(["Request bad: bad input"]);
+    expect(failed).toMatchObject({ claimed: 1, admitted: 0, released: 1 });
+    expect(failed.errors).toEqual(["Request bad: bad input"]);
+    expect(admitted).toMatchObject({ claimed: 1, admitted: 1, released: 0, errors: [] });
     expect(host.get("good")?.waitingOn).toEqual({ kind: "task", id: "probe/good" });
     expect(host.get("bad")?.status).toBe("pending");
   });

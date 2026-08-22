@@ -69,8 +69,8 @@ export function validateAppDefinition(definition: unknown): string[] {
     const inbox = record(app.inbox);
     if (!inbox) errors.push(`App ${appId} inbox must be an object`);
     else {
-      if (inbox.batch !== undefined && inbox.batch !== "single" && inbox.batch !== "coalesce-compatible") {
-        errors.push(`App ${appId} inbox batch must be single or coalesce-compatible`);
+      if (inbox.batch !== undefined) {
+        errors.push(`App ${appId} inbox batch is retired; each reconciliation handles one request`);
       }
       if (inbox.maxConcurrent !== undefined && !positiveInteger(inbox.maxConcurrent)) {
         errors.push(`App ${appId} inbox maxConcurrent must be a positive safe integer`);
