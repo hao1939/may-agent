@@ -307,13 +307,17 @@ export function attachMetricSourceMeasurement(options: {
     // commands finish, one latest observation is sufficient.
     pending = request;
     if (drain) return;
-    drain = (async () => {
-      while (pending) {
-        const current = pending;
-        pending = undefined;
-        await measureSourceMetrics({ ...options, ...current });
-      }
-    })()
+    // Calling an async function does not defer its synchronous prefix. Start
+    // on the next event-loop turn so opening the DB and discovering sources
+    // can never extend EventBus.emit()/EventInterface.publish() latency.
+    drain = new Promise<void>((resolve) => setImmediate(resolve))
+      .then(async () => {
+        while (pending) {
+          const current = pending;
+          pending = undefined;
+          await measureSourceMetrics({ ...options, ...current });
+        }
+      })
       .catch((error) => {
         log("warn", `[metrics] source measurement failed: ${error instanceof Error ? error.message : String(error)}`);
       })
