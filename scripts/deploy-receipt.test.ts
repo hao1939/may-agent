@@ -224,6 +224,7 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain(
       "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
     );
+    expect(deploy).toContain('MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle');
     expect(deploy).toContain("$bundle_dir/may-agent.provenance.json");
     expect(deploy).toContain('"$artifact_sha" "$source_commit"');
     expect(deploy).toContain('sdk_release_name="sdk-$source_commit"');

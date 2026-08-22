@@ -6,8 +6,8 @@
 // production binary.
 import "./sdk-resolver-plugin.js";
 
+import packageJson from "../../package.json" with { type: "json" };
 import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 import { createIdentityWriter } from "./daemon.js";
 import { runEmitMode } from "./modes/emit.js";
 import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
@@ -17,6 +17,8 @@ import { runAppRuntime } from "./app-runtime.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
+
+declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
 
 // Keep informational CLI modes and their syntax validation ahead of runtime-root
 // resolution, identity creation, and app startup. Runtime startup performs stale
@@ -59,14 +61,18 @@ Options:
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
-  const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf-8"));
-  let gitSha = "unknown";
-  try {
-    gitSha = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
-  } catch {
-    // Not inside a git repo or git not available — fall back to "unknown"
+  let gitSha =
+    typeof __MAY_AGENT_BUILD_COMMIT__ === "string" && /^[0-9a-f]{40}$/.test(__MAY_AGENT_BUILD_COMMIT__)
+      ? __MAY_AGENT_BUILD_COMMIT__.slice(0, 8)
+      : "unknown";
+  if (gitSha === "unknown") {
+    try {
+      gitSha = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+    } catch {
+      // Development outside a Git checkout has no source identity.
+    }
   }
-  console.log(`${pkg.name} v${pkg.version} (${gitSha})`);
+  console.log(`${packageJson.name} v${packageJson.version} (${gitSha})`);
   process.exit(0);
 }
 
