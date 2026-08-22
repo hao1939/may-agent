@@ -9,6 +9,7 @@ import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "./app-eve
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import {
   EVENT_DEDUPLICATED,
+  EVENT_DELIVERY_RESULT,
   EVENT_RECORD_ONLY,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
@@ -310,7 +311,7 @@ describe("App inbox runtime", () => {
     expect(task.attached).toEqual([`probe/${row.id}`]);
   });
 
-  it("accepts a frozen plan before slow Task admission runs", async () => {
+  it("accepts an App event only after its exact Task link is durable", async () => {
     const bus = persistentBus();
     let admitted = 0;
     runtime = await startAppInboxRuntime({
@@ -319,28 +320,21 @@ describe("App inbox runtime", () => {
       bus,
       admitTaskEvent: () => {
         admitted += 1;
-        const until = performance.now() + 75;
-        while (performance.now() < until) {
-          // Simulate the retained task store's large synchronous projection write.
-        }
         return { accepted: true, by: "test-task", route: "direct" };
       },
       previewTaskEvent: () => ["waiting-task"],
       scanIntervalMs: 10_000,
     });
 
-    const startedAt = performance.now();
-    bus.emit({
+    const emitted = bus.emit({
       type: "provider.changed",
       source: "provider",
       owner: "app:evaluation",
       data: { project: "evaluation", value: "changed" },
     });
-    const elapsed = performance.now() - startedAt;
 
-    expect(admitted).toBe(0);
-    expect(elapsed).toBeLessThan(25);
-    await waitUntil(() => admitted === 1);
+    expect(admitted).toBe(1);
+    expect(emitted[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, route: "direct" });
     expect(db.prepare("SELECT status FROM app_event_admission_plans WHERE event_id = 1").get()).toEqual({
       status: "completed",
     });
@@ -385,13 +379,26 @@ describe("App inbox runtime", () => {
       scanIntervalMs: 10_000,
     };
 
-    runtime = await startAppInboxRuntime({ ...options, bus: persistentBus() });
+    const receipts: number[] = [];
+    const firstBus = persistentBus();
+    firstBus.setDeliveryRecorder((event) => {
+      const id = Number(event[EVENT_ROW_ID]);
+      if (Number.isSafeInteger(id)) receipts.push(id);
+    });
+    runtime = await startAppInboxRuntime({ ...options, bus: firstBus });
     await waitUntil(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed");
     expect(admitted).toBe(1);
+    expect(receipts).toEqual([eventId]);
     runtime.close();
-    runtime = await startAppInboxRuntime({ ...options, bus: persistentBus() });
+    const secondBus = persistentBus();
+    secondBus.setDeliveryRecorder((event) => {
+      const id = Number(event[EVENT_ROW_ID]);
+      if (Number.isSafeInteger(id)) receipts.push(id);
+    });
+    runtime = await startAppInboxRuntime({ ...options, bus: secondBus });
     await Bun.sleep(20);
     expect(admitted).toBe(1);
+    expect(receipts).toEqual([eventId]);
   });
 
   it("keeps an explicit malformed exact-task target visible as subscriber failure", async () => {
@@ -425,7 +432,7 @@ describe("App inbox runtime", () => {
     expect(task.attached).toEqual([]);
   });
 
-  it("records an unavailable exact Task target without blocking event delivery", async () => {
+  it("keeps an event unaccepted when its exact Task link is unavailable", async () => {
     const bus = persistentBus();
     const failures: Array<Record<string, unknown>> = [];
     let admissionAttempts = 0;
@@ -444,21 +451,20 @@ describe("App inbox runtime", () => {
       scanIntervalMs: 5,
     });
 
-    const startedAt = performance.now();
-    bus.emit({
+    const emitted = bus.emit({
       type: "project.task.tick",
       source: "test",
       owner: "app:evaluation",
       target: { appId: "evaluation", taskId: "missing-task" },
       data: {},
     });
-    const elapsed = performance.now() - startedAt;
 
-    expect(elapsed).toBeLessThan(25);
-    expect(failures).toHaveLength(0);
-    await waitUntil(
-      () => getAppEventAdmissionPlan(db, 1)?.lastError?.includes("did not durably admit frozen missing-task") === true,
-    );
+    expect(emitted[EVENT_DELIVERY_RESULT]).toBeUndefined();
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatchObject({
+      originalEventType: "project.task.tick",
+      error: expect.stringContaining("did not durably admit frozen missing-task"),
+    });
     expect(getAppEventAdmissionPlan(db, 1)).toMatchObject({
       status: "pending",
       commands: [
@@ -469,6 +475,7 @@ describe("App inbox runtime", () => {
         }),
       ],
     });
+    expect(admissionAttempts).toBe(1);
     await Bun.sleep(30);
     expect(admissionAttempts).toBe(1);
   });
