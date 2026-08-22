@@ -274,13 +274,16 @@ Executor adapters only translate this contract:
 - every adapter returns the same `TaskReconcileResult` for the same Host
   validation and fenced commit.
 
-Executor selection is small App/Host policy. Process IDs, native session IDs,
-prompts, worker artifacts, and adapter retries remain attempt evidence; they do
-not enter Task desired state or create a second work lifecycle. Adding an
-executor therefore adds one adapter, not another scheduler, queue, task type,
-or recovery system. Runtime implements this as a small `name -> TaskExecutor`
-registry. Unknown names become visible attention; Codex and Claude are default
-entries behind the same boundary.
+Executor selection is small App/Host policy. Runtime creates one fenced
+attempt, then gives that same object to the selected adapter. Omitted or
+`agent` selects the managed-agent adapter. For another name, a Host registration
+takes precedence over the built-in `codex` and `claude` adapters, which makes
+both native CLIs replaceable through the same interface. Process IDs, native
+session IDs, prompts, worker artifacts, and adapter retries remain attempt
+evidence; they do not enter Task desired state or create a second work
+lifecycle. Adding an executor therefore adds one function, not another
+scheduler, queue, task type, or recovery system. Unknown names become visible
+attention.
 
 ### Recovery is insurance, not ordinary scheduling
 

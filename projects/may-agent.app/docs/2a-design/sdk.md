@@ -278,8 +278,12 @@ Task-owned workflows expose these as `ctx.events.emit` and
 `ctx.events.onEvent`; Runtime removes live listeners when the bounded workflow
 ends. The returned result is the only Task state transition.
 
-Runtime holds only a name-to-function executor registry. Registering an
-executor adds an adapter, not a queue, worker lifecycle, retry policy, or store.
+Runtime creates one fenced attempt, then hands that same object to the selected
+adapter. Omitted or `agent` selects the managed-agent adapter. For another
+name, a Host registration takes precedence over the built-in `codex` and
+`claude` adapters, so either native CLI can be replaced without changing Task
+state or reconciliation. Registering an executor adds a function, not a queue,
+worker lifecycle, retry policy, or store.
 
 One fenced reconciliation attempt returns a typed state, summary, evidence,
 optional caller-facing response, task changes, Conditions, and typed cross-App

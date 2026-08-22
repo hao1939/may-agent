@@ -62,9 +62,11 @@ feedback, approval, or steering for that Task. Live forwarding is optional:
 managed sessions support it, while a headless CLI that cannot accept a live
 message receives the event on the next attempt.
 
-The Host registry is only `name -> TaskExecutor`. A missing name becomes
-attention. It never falls back to another executor and never creates another
-scheduler or recovery system.
+Runtime creates one fenced attempt and gives it to the selected adapter.
+Omitted or `agent` selects the managed-agent adapter. For another name, a Host
+registration takes precedence over the built-in `codex` and `claude` adapters.
+A missing name becomes attention. Selection never creates another scheduler or
+recovery system.
 
 Codex/Claude process records, native session IDs, prompts, and output files are
 attempt evidence only. They do not create another Task, retry policy, queue, or
