@@ -177,6 +177,53 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "runtime.reload.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.restart.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.shutdown.requested": { delivery: "required", validate: validateOptionalReason },
+  "evaluation.session.requested": {
+    delivery: "record",
+    validate: (input, options) => {
+      const appId = requiredTarget(input, "appId");
+      const sessionId = requiredTarget(input, "sessionId");
+      if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
+      if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
+      requiredText(input.data.source, "evaluation.session.requested data.source");
+      requiredText(input.data.instructions, "evaluation.session.requested data.instructions");
+    },
+  },
+  "heartbeat.trigger": {
+    delivery: "record",
+    validate: (input, options) => {
+      const agent = requiredText(input.data.agent, "heartbeat.trigger data.agent");
+      if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
+      optionalTextField(input.data, "requestedBy", "heartbeat.trigger data.requestedBy");
+    },
+  },
+  "metric.threshold_changed": {
+    delivery: "record",
+    validate: (input) => {
+      requiredText(input.data.metricId, "metric.threshold_changed data.metricId");
+      if (typeof input.data.to !== "number" || !Number.isFinite(input.data.to)) {
+        throw new Error("metric.threshold_changed data.to must be a finite number");
+      }
+      if (
+        input.data.from !== undefined &&
+        input.data.from !== null &&
+        (typeof input.data.from !== "number" || !Number.isFinite(input.data.from))
+      ) {
+        throw new Error("metric.threshold_changed data.from must be a finite number or null");
+      }
+    },
+  },
+  "metric.alert_resolved": {
+    delivery: "record",
+    validate: (input) => {
+      requiredText(input.data.metricId, "metric.alert_resolved data.metricId");
+      if (!Number.isSafeInteger(input.data.alertId) || Number(input.data.alertId) <= 0) {
+        throw new Error("metric.alert_resolved data.alertId must be a positive integer");
+      }
+      if (input.data.reason !== undefined && input.data.reason !== null) {
+        optionalTextField(input.data, "reason", "metric.alert_resolved data.reason");
+      }
+    },
+  },
   "project.owner.requested": {
     delivery: "record",
     validate: (input) => {

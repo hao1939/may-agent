@@ -211,7 +211,7 @@ describe("May Console", () => {
                 },
               })}\n`,
             );
-          } else if (frame.type === "runtime.reload.requested") {
+          } else if (frame.type === "publish" && frame.event?.type === "runtime.reload.requested") {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 43 })}\n`);
             socket.write(
               `${JSON.stringify({
@@ -219,7 +219,7 @@ describe("May Console", () => {
                 source: "runtime",
                 owner: "agent:may",
                 data: {
-                  requestId: frame.data.requestId,
+                  requestId: frame.event.data.requestId,
                   ok: true,
                   summary: "[reload] 6 task-enabled App(s)",
                 },
@@ -499,13 +499,18 @@ describe("May Console", () => {
     await waitFor(() => output.includes("\nyou> Message sent from another Console\n\n"));
 
     child.stdin.write("/reload\n");
-    await waitFor(() => frames.some((frame) => frame.type === "runtime.reload.requested"));
-    const reload = frames.find((frame) => frame.type === "runtime.reload.requested");
+    await waitFor(() =>
+      frames.some((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested"),
+    );
+    const reload = frames.find((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested");
     expect(reload).toMatchObject({
-      source: "may-console",
-      owner: "agent:may",
-      data: {
-        requestId: expect.stringMatching(/^may-console:[0-9a-f-]{36}:[0-9a-f-]{36}$/),
+      type: "publish",
+      event: {
+        type: "runtime.reload.requested",
+        data: {
+          requestId: expect.stringMatching(/^may-console:[0-9a-f-]{36}:[0-9a-f-]{36}$/),
+        },
+        idempotencyKey: expect.stringMatching(/^may-console:[0-9a-f-]{36}:[0-9a-f-]{36}$/),
       },
     });
     await waitFor(() => output.includes("[reload] 6 task-enabled App(s)"));

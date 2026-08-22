@@ -141,7 +141,6 @@ describe("readIdentity", () => {
     expect(result!.exitCode).toBe(0);
   });
 });
-
 // ── sendSocketCommand() tests ──────────────────────────────────────────
 
 describe("sendSocketCommand", () => {
@@ -212,12 +211,19 @@ describe("sendSocketCommand", () => {
           socket.write(JSON.stringify({ type: "info", message: "loading..." }) + "\n");
           socket.write(JSON.stringify({ type: "text", agent: "bob", text: "Hello" }) + "\n");
           // Then the actual response
-          socket.write(JSON.stringify({ type: "ok", command: "cancel" }) + "\n");
+          socket.write(JSON.stringify({ type: "ok", command: "publish" }) + "\n");
         }
       });
     });
 
-    const result = await sendSocketCommand(endpoint, { type: "cancel", sessionId: "s_1" });
+    const result = await sendSocketCommand(endpoint, {
+      type: "publish",
+      event: {
+        type: "session.cancel.requested",
+        target: { sessionId: "s_1" },
+        data: { reason: "test cancellation" },
+      },
+    });
     expect(result.type).toBe("ok");
   });
 });

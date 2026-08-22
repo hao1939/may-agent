@@ -45,7 +45,6 @@ export interface AgentsToolManagerDeps {
     ): void;
   };
 }
-
 export interface CreateAgentsToolOptions {
   /** Returns the current caller's session ID for parent→child linking. */
   getCallerSessionId?: () => string | undefined;
@@ -463,7 +462,15 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 const cancelIdentity = readIdentity(manager.registry.persistDir, cancelMeta.instance);
                 if (cancelIdentity?.socket) {
                   try {
-                    await sendSocketCommand(cancelIdentity.socket, { type: "cancel", sessionId: params.sessionId });
+                    await sendSocketCommand(cancelIdentity.socket, {
+                      type: "publish",
+                      event: {
+                        type: "session.cancel.requested",
+                        target: { sessionId: params.sessionId },
+                        data: { reason: "agent tool requested cancellation" },
+                        idempotencyKey: `agents-tool-cancel:${params.sessionId}`,
+                      },
+                    });
                     manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
                     return textResult(JSON.stringify({ cancelled: params.sessionId, method: "socket" }));
                   } catch {
