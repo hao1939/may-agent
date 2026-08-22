@@ -32,9 +32,18 @@ describe("app runtime startup order", () => {
     expect(source).toContain("startInitialTask");
   });
 
-  it("enters readline only when the console interface is enabled", () => {
+  it("attaches the in-process Console only for a real TTY", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("else if (CONSOLE_ENABLED && process.stdin.isTTY)");
+    expect(source).toContain("const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY");
+    expect(source).toContain("if (interactiveConsole) {");
+    expect(source).toContain("interactiveMode: interactiveConsole");
+    expect(source).toContain("else if (interactiveConsole)");
+  });
+
+  it("keeps the production daemon on background and socket interfaces", () => {
+    const entrypoint = readFileSync(new URL("../../container/entrypoint.sh", import.meta.url), "utf8");
+    const defaultArgs = entrypoint.match(/export MAY_ARGS="\$\{MAY_ARGS:-(.*?)\}"/)?.[1] ?? "";
+    expect(defaultArgs.trim()).toBe("--cron --telegram --socket");
   });
 
   it("does not couple Task completion to a transport delivery gate", () => {
