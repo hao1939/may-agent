@@ -8,7 +8,7 @@ and semantic failures. Retained history may still require explicit backfill.
 
 ## Purpose
 
-May-agent should make event flow easy to program and easy to inspect.
+The Host should make event flow easy to program and easy to inspect.
 
 Use mature tracing language:
 
@@ -576,16 +576,16 @@ event without known parent -> trace_id = event:<event_id>
 
 Then apply stronger relations:
 
-| Existing evidence                                         | Backfill action                                                                                                                                                                             |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `event_pair_runs.open_event_id` and `close_event_id`      | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
-| Payload has `openEventId` / `open_event_id`               | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise.                                                        |
-| Same `sessionId`                                          | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace.                                        |
-| Same `workflowRunId`                                      | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace.                                                                                |
-| Same `taskId` plus `attemptId`                            | Link reconciliation start/result events, managed sessions or native-worker evidence, and any retained historical task-attempt records.                                                      |
-| Same `metricId` / `alertId`                               | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events.                                                                                          |
-| Telegram message coordinates and reply context            | Link current `conversation.message.created` input/output to provider message IDs; retain historical `human.input.received` reply links only as compatibility evidence.                       |
-| Legacy `escalationId`                                     | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity.                                                        |
+| Existing evidence                                    | Backfill action                                                                                                                                                                             |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `event_pair_runs.open_event_id` and `close_event_id` | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
+| Payload has `openEventId` / `open_event_id`          | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise.                                                        |
+| Same `sessionId`                                     | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace.                                        |
+| Same `workflowRunId`                                 | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace.                                                                                |
+| Same `taskId` plus `attemptId`                       | Link reconciliation start/result events, managed sessions or native-worker evidence, and any retained historical task-attempt records.                                                      |
+| Same `metricId` / `alertId`                          | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events.                                                                                          |
+| Telegram message coordinates and reply context       | Link current `conversation.message.created` input/output to provider message IDs; retain historical `human.input.received` reply links only as compatibility evidence.                      |
+| Legacy `escalationId`                                | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity.                                                        |
 
 Backfill should not invent domain outcomes. If a historical escalation pair has
 no closer, the graph shows it as an open compatibility chain; it does not create
@@ -745,13 +745,13 @@ conversation.message.created
 
 The trace should make review concrete:
 
-| Question                                   | Trace answer                                                                                                |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Did the event reach its declared route?    | Event delivery records show input-to-task admission, exact wake, or observation.                            |
-| Did May receive the human reply?           | A human `conversation.message.created` exists with its reply/context anchor and linked May request.         |
-| Did May answer the human request?          | The exact May request has a correlated persisted result in Conversation; adapter rendering is not semantic work.             |
-| Did the source consume the result?         | Its dependency is completed and the exact parent App request/task resumed.                                  |
-| Did the LLM/tool fail?                     | Detail nodes show missing or failed `tool.call.completed`.                                                  |
+| Question                                | Trace answer                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Did the event reach its declared route? | Event delivery records show input-to-task admission, exact wake, or observation.                                 |
+| Did May receive the human reply?        | A human `conversation.message.created` exists with its reply/context anchor and linked May request.              |
+| Did May answer the human request?       | The exact May request has a correlated persisted result in Conversation; adapter rendering is not semantic work. |
+| Did the source consume the result?      | Its dependency is completed and the exact parent App request/task resumed.                                       |
+| Did the LLM/tool fail?                  | Detail nodes show missing or failed `tool.call.completed`.                                                       |
 
 Broken chains should be visible without guessing:
 

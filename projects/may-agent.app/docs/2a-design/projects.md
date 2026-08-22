@@ -42,8 +42,8 @@ projects/<id>.app/
   .state/                   # host-managed runtime state
 ```
 
-The `.app` folder is the May-agent control plane. Domain product source and
-artifacts stay in the portable workspace.
+The `.app` folder is an App's durable policy and control surface. Domain
+product source and artifacts stay in the portable workspace.
 
 ## Project Manifest
 

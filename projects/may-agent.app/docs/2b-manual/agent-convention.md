@@ -39,16 +39,16 @@ shared/
   skills/<name>/SKILL.md  # Fleet-wide reusable procedures.
 
 projects/may-agent.app/docs/
-  ...                     # May-agent architecture, design, and operator docs.
+  ...                     # May and Host architecture, design, and operator docs.
 ```
 
 ## Prompt Files
 
 Only two authored files are always loaded into the normal system prompt:
 
-| File | Purpose | Loaded |
-|------|---------|--------|
-| `shared/common-sense.md` | Shared behavioral fundamentals and repo conventions | Every agent session |
+| File                      | Purpose                                                         | Loaded                |
+| ------------------------- | --------------------------------------------------------------- | --------------------- |
+| `shared/common-sense.md`  | Shared behavioral fundamentals and repo conventions             | Every agent session   |
 | `agents/<name>/AGENTS.md` | Agent identity, responsibility, constraints, escalation posture | That agent's sessions |
 
 Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
@@ -69,17 +69,17 @@ event. See [workflows.md](../2a-design/workflows.md).
 
 ## What Goes Where
 
-| Content | Location | Reason |
-|---------|----------|--------|
-| "I am Bob, the system architect" | `AGENTS.md` | Stable identity |
-| "Own architecture tradeoffs and escalation briefs" | `AGENTS.md` | Durable responsibility |
-| "Use evidence before changing evaluation criteria" | `AGENTS.md` | Always-on constraint |
-| "Long metric debugging recipe" | `knowledge/*.md` | Situational reference |
-| "Read X when handling Y" | `knowledge/INDEX.md` | Discovery routing |
-| "Use this procedure when task X appears" | `skills/<name>/SKILL.md` | Situational reusable method |
-| Heartbeat investigation prompts | `heartbeat.md` | Heartbeat workflow only |
-| Recent notes, drafts, temporary plans | `workspace/` | Runtime scratch |
-| Generated session continuity | `last-session.md` | Runtime/session context |
+| Content                                            | Location                 | Reason                      |
+| -------------------------------------------------- | ------------------------ | --------------------------- |
+| "I am Bob, the system architect"                   | `AGENTS.md`              | Stable identity             |
+| "Own architecture tradeoffs and escalation briefs" | `AGENTS.md`              | Durable responsibility      |
+| "Use evidence before changing evaluation criteria" | `AGENTS.md`              | Always-on constraint        |
+| "Long metric debugging recipe"                     | `knowledge/*.md`         | Situational reference       |
+| "Read X when handling Y"                           | `knowledge/INDEX.md`     | Discovery routing           |
+| "Use this procedure when task X appears"           | `skills/<name>/SKILL.md` | Situational reusable method |
+| Heartbeat investigation prompts                    | `heartbeat.md`           | Heartbeat workflow only     |
+| Recent notes, drafts, temporary plans              | `workspace/`             | Runtime scratch             |
+| Generated session continuity                       | `last-session.md`        | Runtime/session context     |
 
 If a lesson must affect every session, promote the distilled invariant into
 `AGENTS.md`. If it is situational, keep it in `knowledge/` and
@@ -93,21 +93,27 @@ Keep `AGENTS.md` concise and durable:
 # AGENTS — <Name>
 
 ## Identity
+
 Who this agent is.
 
 ## Responsibility
+
 What this agent owns and is accountable for.
 
 ## Operating Model
+
 How it approaches work.
 
 ## Delegation and Escalation
+
 Who it should involve and when.
 
 ## Constraints
+
 Stable rules that must apply every session.
 
 ## References
+
 Pointers to knowledge files, not copied knowledge.
 ```
 
@@ -140,7 +146,7 @@ sessions, not normal agent configuration.
   "domain": "may-agent implementation",
   "model": "claude-opus-5",
   "tools": ["coding", "agents", "finish"],
-  "compaction": true
+  "compaction": true,
 }
 ```
 

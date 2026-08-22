@@ -73,29 +73,49 @@ Humans normally talk to May or invoke a named App command and then track the
 request. They inspect a related task only when they need progress or diagnostic
 detail.
 
-### May-specific names
+### May in one flow
 
-The user-facing model has only May, Apps, and the Host:
+```text
+human talks to May
+  -> May App (`app:may`) owns the Conversation Task
+  -> Host runs a bounded worker such as `agent:may`
+  -> May App accepts the answer or routes typed work to another App
+```
 
-| Name | Meaning |
-| ---- | ------- |
-| **May / May App** (`appId: may`) | One concept at two levels: May is the name people talk to; May App is the code that owns those Conversation requests, understands intent, answers, or routes typed work. |
-| **Host** | Persists, schedules, runs, recovers, and delivers work for every App. |
-| **Host Operations App** (`appId: may-agent`) | An ordinary App whose domain is changing or operating the Host itself. |
+The names describe different responsibilities:
 
-There is no architectural component called **May agent**. An agent run named
-`may` is only one bounded executor used by an App. It is not a durable owner.
-The technical identifier `may-agent` remains on the Host repository, binary,
-container, and Host Operations App for compatibility; context identifies which
-artifact it names. New explanatory prose should say May, May App, Host, Host
-Operations App, or agent run instead.
+| Name                                      | Meaning                                                                                          |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **May**                                   | The human-facing assistant: the name people talk to.                                             |
+| **May App** (`app:may`)                   | The durable owner of May's Conversation Tasks and routing contract.                              |
+| **May worker** (`agent:may`)              | The current replaceable reasoning executor for one bounded attempt. It owns no durable work.     |
+| **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
+| **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
+
+The May App and May worker together implement May's behavior, but they are not
+peers. The App owns the obligation across retries and restarts; the worker only
+attempts it. The worker can change, fail, or be replaced without changing the
+Conversation Task. In code, unqualified `owner: "may"` selects this worker;
+durable Task identity remains namespaced by its App.
+
+Current design prose uses **App** as the architectural term. Retained names such
+as `agent-app`, the `Agent App` document title, and project type values are
+compatibility vocabulary; they mean an App that can use agents, not a second
+kind of App and not an agent that owns durable work.
+
+There is no architectural component called **May agent**. New explanatory
+prose should say May, May App, May worker, Host, or Host Operations App. The
+technical identifier `may-agent` remains on compatibility surfaces: the Host
+repository, binary, container, package scope, and Host Operations App ID. It
+does not mean that the Host is May's worker.
 
 The repository `projects/may-agent` contains the Host implementation. The App
 at `projects/may-agent.app` owns desired operational outcomes for that Host.
+The separate `projects/may.app` owns human conversation.
 
-May coordinates a cross-App request, but the responsible App owns the resulting
-Task. For example, May may understand and route a deployment request, while the
-Host Operations App owns and reconciles the deployment Task.
+May may coordinate a cross-App request, but the responsible App owns the
+resulting Task. For example, May can understand a deployment request and route
+it, while the Host Operations App owns and reconciles the deployment Task.
 
 ## Implementation words
 

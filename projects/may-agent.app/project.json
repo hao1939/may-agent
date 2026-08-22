@@ -8,9 +8,9 @@
     "id": "may-agent",
     "path": "../may-agent"
   },
-  "goal": "Drive the May-agent platform through one canonical Agent App: keep event-driven task reconciliation, persistence, Runtime capabilities, SDK, shared UI, and App conventions coherent, tested, and reusable.",
+  "goal": "Keep the May Host coherent, tested, reusable, and easy to operate through one Host Operations App.",
   "strategy": [
-    "Keep platform design and principles in this app's docs/ tree.",
+    "Keep May and Host design and principles in this app's docs/ tree.",
     "Resolve every addressed input to one durable task; use events as persisted new information that creates or wakes work, and never edit host-private task persistence directly.",
     "Use ../may-agent as the portable domain/runtime code workspace.",
     "Route human steering through typed App input and translate facts into explicit task input, exact task or Condition wakes, or observation-only records.",

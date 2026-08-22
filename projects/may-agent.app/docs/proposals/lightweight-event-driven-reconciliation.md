@@ -2,7 +2,7 @@
 
 **Status:** Accepted; migration in progress
 
-**Scope:** the smallest useful May-agent core, immediate event coordination,
+**Scope:** the smallest useful Host core, immediate event coordination,
 human response latency, recovery, and migration from the current Host
 
 ## Decision
@@ -233,8 +233,7 @@ type TaskAttempt = {
   onEvent(listener: (event: AppEvent) => void): () => void;
 };
 
-type TaskExecutor =
-  (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
+type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
 
 `appId` scopes the Task and `cwd` is the Runtime-selected attempt workspace.
@@ -402,24 +401,24 @@ mutating core state.
 Every retained mechanism must solve a current failure more cheaply than the
 core itself can. The desired disposition is:
 
-| Current mechanism                     | Failure it addresses                   | Decision                                                                             |
-| ------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
-| EventBus and public event interface   | durable input and change notification  | **Keep, simplify:** one persistence-first EventHub; no second event lifecycle        |
+| Current mechanism                     | Failure it addresses                   | Decision                                                                                              |
+| ------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| EventBus and public event interface   | durable input and change notification  | **Keep, simplify:** one persistence-first EventHub; no second event lifecycle                         |
 | Admission plans and commands          | recover a crash during route linking   | **Shrink:** no worker; exact links gate normal acceptance, retained rows only freeze partial recovery |
-| Inbox/request correlation             | remember which caller is owed a result | **Keep small:** create only for addressed calls; never execute policy there          |
-| Whole-App task JSON                   | task authority and restart recovery    | **Replace:** indexed resource-local task rows                                        |
-| Task controller                       | serialize and run ready tasks          | **Simplify:** one Host dispatcher with task IDs, two lanes, and per-task fencing     |
-| Conditions                            | wait for an exact observable change    | **Simplify:** task `waitFor` links and `nextCheckAt`, not a second state machine     |
-| Task tree and projections             | human review and aggregate display     | **Move off-path:** rebuild asynchronously or on read; never schedule from it         |
-| Attempts and sessions                 | fence execution and retain evidence    | **Keep bounded:** one small active attempt; archive transcript detail asynchronously |
-| Periodic resync and completion refill | recover lost in-memory wakes           | **Replace:** indexed startup/due/expired queries and a bounded safety query          |
-| P0-P3 scheduling and capacity         | urgency and overload control           | **Simplify:** trusted human/normal lanes, reserved human capacity, FIFO by default   |
-| Workflows and skills                  | reusable execution knowledge           | **Keep lazy:** load or expose only when the App chooses them                         |
-| Metrics and traces                    | observation and diagnosis              | **Move off-path:** cheap causal IDs/counters inline; aggregation is a subscriber     |
-| Evaluations, Gym, and session digests | quality and learning                   | **Move off-path:** explicit or sampled event consumers under normal capacity         |
-| Delivery receipts                     | adapter retry diagnosis                | **Keep adapter-local if needed:** never gate Conversation or task completion         |
-| Conversation projection               | shared human context across adapters   | **Keep bounded:** append messages, notify adapters, read by byte budget              |
-| Broad retention and cleanup           | storage capacity                       | **Defer safely:** first remove history from hot-path cost, then archive in pages     |
+| Inbox/request correlation             | remember which caller is owed a result | **Keep small:** create only for addressed calls; never execute policy there                           |
+| Whole-App task JSON                   | task authority and restart recovery    | **Replace:** indexed resource-local task rows                                                         |
+| Task controller                       | serialize and run ready tasks          | **Simplify:** one Host dispatcher with task IDs, two lanes, and per-task fencing                      |
+| Conditions                            | wait for an exact observable change    | **Simplify:** task `waitFor` links and `nextCheckAt`, not a second state machine                      |
+| Task tree and projections             | human review and aggregate display     | **Move off-path:** rebuild asynchronously or on read; never schedule from it                          |
+| Attempts and sessions                 | fence execution and retain evidence    | **Keep bounded:** one small active attempt; archive transcript detail asynchronously                  |
+| Periodic resync and completion refill | recover lost in-memory wakes           | **Replace:** indexed startup/due/expired queries and a bounded safety query                           |
+| P0-P3 scheduling and capacity         | urgency and overload control           | **Simplify:** trusted human/normal lanes, reserved human capacity, FIFO by default                    |
+| Workflows and skills                  | reusable execution knowledge           | **Keep lazy:** load or expose only when the App chooses them                                          |
+| Metrics and traces                    | observation and diagnosis              | **Move off-path:** cheap causal IDs/counters inline; aggregation is a subscriber                      |
+| Evaluations, Gym, and session digests | quality and learning                   | **Move off-path:** explicit or sampled event consumers under normal capacity                          |
+| Delivery receipts                     | adapter retry diagnosis                | **Keep adapter-local if needed:** never gate Conversation or task completion                          |
+| Conversation projection               | shared human context across adapters   | **Keep bounded:** append messages, notify adapters, read by byte budget                               |
+| Broad retention and cleanup           | storage capacity                       | **Defer safely:** first remove history from hot-path cost, then archive in pages                      |
 
 The default answer for a new feature is neither “put it in the core” nor
 “create another worker.” It is: consume an event, perform one bounded action,
@@ -520,19 +519,19 @@ restart and HTTP task reads left the legacy file at the same revision, size,
 and modification time. Five resource-backed task-list samples completed in
 5-29 ms while background model work saturated the daemon.
 
-The guarded rollout then cut over Gym, the May-agent platform App, Evaluation,
+The guarded rollout then cut over Gym, the Host Operations App, Evaluation,
 the human-facing May App, and AKS in that order. Each App was paused, allowed
 to drain, inspected again after the daemon stopped, imported at the final
 reviewed source revision, activated once, and resumed:
 
-| App                        | Imported Tasks | Final legacy source revision                                       |
-| -------------------------- | -------------: | ------------------------------------------------------------------ |
-| Scout knowledge library    |              7 | `672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b` |
-| Gym                        |             11 | `6dfe27f255e134e493c516836402fe50df3bb41b8a98f926c88cf34ef06b7a32` |
-| May-agent platform         |             47 | `9c0d63cdd65a72db3b44fcefc29989e823ba48e7924fb9afe6f1454abefe2d09` |
-| Evaluation                 |            668 | `542568e0782ed897427c44b5d046437ff87c1640f5f73ceabed23a9c22176fca` |
-| May human Conversation App |              0 | `6c8036378418204d41881386757ddff6c09ad59cbff69ef1eb1139cc41b890dd` |
-| AKS RP E2E                 |            541 | `d2dae7e1741afb2ea2912980ca584372f3cc661f7d56f8028fd5e8eab3ad6441` |
+| App                           | Imported Tasks | Final legacy source revision                                       |
+| ----------------------------- | -------------: | ------------------------------------------------------------------ |
+| Scout knowledge library       |              7 | `672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b` |
+| Gym                           |             11 | `6dfe27f255e134e493c516836402fe50df3bb41b8a98f926c88cf34ef06b7a32` |
+| Host Operations (`may-agent`) |             47 | `9c0d63cdd65a72db3b44fcefc29989e823ba48e7924fb9afe6f1454abefe2d09` |
+| Evaluation                    |            668 | `542568e0782ed897427c44b5d046437ff87c1640f5f73ceabed23a9c22176fca` |
+| May human Conversation App    |              0 | `6c8036378418204d41881386757ddff6c09ad59cbff69ef1eb1139cc41b890dd` |
+| AKS RP E2E                    |            541 | `d2dae7e1741afb2ea2912980ca584372f3cc661f7d56f8028fd5e8eab3ad6441` |
 
 All six restarted on resource authority without changing the source file's
 hash, size, or modification time. The human-facing May App had no live Tasks
@@ -1234,6 +1233,6 @@ state as already implemented.
 - promising exactly-once external side effects; or
 - deleting historical data before its authority and references are understood.
 
-The intended result is not a less capable May-agent. It is a small core whose
+The intended result is not a less capable May system. It is a small Host whose
 capability grows through Apps and event consumers without making every human
 turn, task transition, or idle minute more expensive.

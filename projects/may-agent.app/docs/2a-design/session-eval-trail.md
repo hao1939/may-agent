@@ -57,7 +57,10 @@ Session summary row:
         "owner": "agent:dev",
         "severity": "medium",
         "finding": "Execution/result quality needs owner review.",
-        "suggestedActions": ["rerun narrow repair", "update agent guidance if repeated"]
+        "suggestedActions": [
+          "rerun narrow repair",
+          "update agent guidance if repeated"
+        ]
       }
     ],
     "notificationDecision": {
@@ -168,7 +171,7 @@ Consumers should therefore:
   rewriting prior rows.
 
 Dated calibration findings and samples belong in the Evaluation app's
-criteria/calibration records, not in this stable May-agent contract.
+criteria/calibration records, not in this stable Host contract.
 
 ## Remaining Questions
 

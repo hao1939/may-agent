@@ -10,7 +10,7 @@ feedback, and Gym's May-improvement intake.
 
 ## Purpose
 
-May-agent learns from real work without turning evaluation into an automatic
+The May system learns from real work without turning evaluation into an automatic
 prompt writer or a second work system.
 
 ```text

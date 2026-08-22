@@ -18,11 +18,11 @@ tasks are the one App work resource
 tasks reconcile desired state across bounded attempts
 ```
 
-In May-specific names, **May** is the human-facing name of the **May App**
-(`may`), which owns Conversation Tasks. The **Host Operations App**
-(`may-agent`) owns Tasks that operate the Host. An agent execution named `may`
-is only a bounded attempt, not another durable owner. There is no separate
-architectural component called “May agent.”
+In May-specific names, **May** is who the human talks to. The **May App**
+(`app:may`) durably owns that conversation, while the replaceable **May worker**
+(`agent:may`) performs one bounded reasoning attempt. The **Host Operations
+App** (`app:may-agent`) instead owns Tasks that change the Host. There is no
+separate architectural component called “May agent.”
 
 ## Documentation tiers
 
@@ -34,7 +34,7 @@ tier.
 | `1-principles/` | Stable requirements, goals, and conventions.                            |
 | `2a-design/`    | Current architecture and subsystem contracts.                           |
 | `2b-manual/`    | How-to guidance derived from design and implementation.                 |
-| `proposals/`    | Active proposals/trackers only; absent when there are none.              |
+| `proposals/`    | Active proposals/trackers only; absent when there are none.             |
 | `archive/`      | Historical decisions, reviews, implementation records, and V2 material. |
 
 Each current design records separate `Design status` and `Implementation

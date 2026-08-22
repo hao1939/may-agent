@@ -34,7 +34,8 @@ workspace, or `.state/`.
 - `contracts/` - explicit contracts used by the system.
 - `scripts/` - reusable app-level scripts.
 
-Durable May-agent design docs should live under `projects/may-agent.app/docs/`.
+Durable May and Host design docs should live under
+`projects/may-agent.app/docs/`.
 Top-level `docs/` is legacy/ignored in this workspace and should not be used
 for new source-controlled design material.
 
@@ -45,7 +46,7 @@ notes should become knowledge base material:
 
 - Use `projects/scout-knowledge-lib/knowledge/` for Scout-curated external
   research, papers, trends, and literature-style syntheses.
-- Use `shared/knowledge/` for May-agent system knowledge that agents should
+- Use `shared/knowledge/` for May and Host knowledge that agents should
   consume directly during operation.
 - Use project-local knowledge/model folders when the material only belongs to a
   domain project, such as `projects/aks-rp-e2e/model/`.

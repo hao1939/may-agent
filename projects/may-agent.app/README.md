@@ -19,7 +19,8 @@ Its human name is **Host Operations App**. Its stable technical App ID remains
   `.state/tasks/state.json` and `.state/tasks/tree.json` files are migration
   evidence or generated projections, never runnable authority.
 - `tasks/seed.json` is used only to initialize an empty runtime state.
-- `docs/` contains May-agent design, principles, manual, and proposal docs.
+- `docs/` contains system design, principles, manuals, and proposals for May
+  and the Host.
 - `.state/` contains local runtime state. Durable understanding belongs in
   project metadata, design, workflows, receipts, and domain evidence.
 - `archive/` keeps migrated legacy platform project files for audit.

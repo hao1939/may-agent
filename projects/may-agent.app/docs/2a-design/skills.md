@@ -32,13 +32,13 @@ separate.
 
 Their controllers remain different:
 
-| Concern | Skill | Workflow |
-|---|---|---|
-| Primary source | `SKILL.md` instructions | TypeScript module |
-| Controller | Model judgment | Workflow runtime |
-| Unit of use | One model turn | One bounded workflow attempt |
-| Sequencing | Advisory | Enforced by code |
-| Closure | Enclosing session/work | Workflow terminal result |
+| Concern        | Skill                   | Workflow                     |
+| -------------- | ----------------------- | ---------------------------- |
+| Primary source | `SKILL.md` instructions | TypeScript module            |
+| Controller     | Model judgment          | Workflow runtime             |
+| Unit of use    | One model turn          | One bounded workflow attempt |
+| Sequencing     | Advisory                | Enforced by code             |
+| Closure        | Enclosing session/work  | Workflow terminal result     |
 
 A bundled skill script is an optional deterministic helper; the model still
 decides whether and how to run it through normal tools. It does not make the
@@ -56,8 +56,8 @@ Reuse the installed `@earendil-works/pi-agent-core` skill utilities:
 - `formatSkillInvocation()` for explicit per-turn invocation;
 - `NodeExecutionEnv` for filesystem access.
 
-Do not migrate May-agent's session manager from the low-level `Agent` to
-`AgentHarness` merely to gain skills. May-agent already owns session
+Do not migrate the Host's session manager from the low-level `Agent` to
+`AgentHarness` merely to gain skills. The Host already owns session
 persistence, event bridging, compaction policy, queued turns, delegation, and
 trace closure. Reuse the small skill primitives inside the existing manager.
 
@@ -114,11 +114,11 @@ optional cross-client metadata but does not depend on `agents/openai.yaml`.
 
 Use the existing scope conventions:
 
-| Priority | Scope | Location |
-|---:|---|---|
-| 1 | Owning app-local agent | `projects/<id>.app/agents/<agent>/skills/<name>/SKILL.md` |
-| 2 | Owning global agent | `agents/<agent>/skills/<name>/SKILL.md` |
-| 3 | Shared fleet skill | `shared/skills/<name>/SKILL.md` |
+| Priority | Scope                  | Location                                                  |
+| -------: | ---------------------- | --------------------------------------------------------- |
+|        1 | Owning app-local agent | `projects/<id>.app/agents/<agent>/skills/<name>/SKILL.md` |
+|        2 | Owning global agent    | `agents/<agent>/skills/<name>/SKILL.md`                   |
+|        3 | Shared fleet skill     | `shared/skills/<name>/SKILL.md`                           |
 
 An app-local agent may overlay a same-named global-agent skill; a global-agent
 skill may in turn overlay a shared skill. The closest valid definition wins.
@@ -126,7 +126,7 @@ Skills never merge.
 
 Duplicate names within one scope are invalid. Discovery returns a diagnostic
 and omits the ambiguous name rather than selecting by filesystem order.
-`loadSourcedSkills()` preserves source metadata; May-agent defines and applies
+`loadSourcedSkills()` preserves source metadata; the Host defines and applies
 the precedence policy.
 
 Symlinks may expose one canonical package to another client, but discovery
@@ -302,7 +302,7 @@ Codex: one `SKILL.md`, optional resources, and no May-specific copy of the
 body. Expose the canonical directory to Codex through a supported repository or
 user skill location, preferably by symlink.
 
-May-agent and Codex may differ in discovery roots and optional metadata. The
+The May Host and Codex may differ in discovery roots and optional metadata. The
 package is shared; each runtime owns its catalog and invocation policy. Verify
 actual CLI discovery rather than treating the existence of a symlink as proof
 that a worker loaded the skill.
@@ -312,16 +312,16 @@ that a worker loaded the skill.
 Use a skill when judgment should follow a reusable method. Promote it when
 stronger execution is justified:
 
-| Need | Mechanism |
-|---|---|
-| Situational method or domain procedure | Skill |
-| Deterministic multi-step sequencing | Workflow |
-| Mechanical observation or intervention | Guard |
-| Capability an agent calls against an external system | Tool |
-| Repeated typed automation entering an existing App | Discoverable App action that validates and admits one correlated App input |
-| Ordinary project-directed request | Project comment/intent handled by the app owner |
-| Recurring/event-driven wake-up | Schedule or handler |
-| Cross-owner decision or action | Escalation |
+| Need                                                 | Mechanism                                                                  |
+| ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| Situational method or domain procedure               | Skill                                                                      |
+| Deterministic multi-step sequencing                  | Workflow                                                                   |
+| Mechanical observation or intervention               | Guard                                                                      |
+| Capability an agent calls against an external system | Tool                                                                       |
+| Repeated typed automation entering an existing App   | Discoverable App action that validates and admits one correlated App input |
+| Ordinary project-directed request                    | Project comment/intent handled by the app owner                            |
+| Recurring/event-driven wake-up                       | Schedule or handler                                                        |
+| Cross-owner decision or action                       | Escalation                                                                 |
 
 Do not encode project state, task ownership, retries, approvals, or completion
 inside a skill. Those remain in Agent Apps, workflows, events, and sessions.

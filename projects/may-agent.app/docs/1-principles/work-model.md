@@ -2,7 +2,7 @@
 
 **Design status:** Accepted.
 
-May-agent uses one durable work model:
+The May system uses one durable work model:
 
 ```text
 project goal + signal
