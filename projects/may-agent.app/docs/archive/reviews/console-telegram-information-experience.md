@@ -1,6 +1,7 @@
 # Console and Telegram Information Experience — Evidence and Prototype
 
-**Status:** Reviewable proposal; no production activation authorized or performed
+**Status:** Superseded review evidence. The accepted Task-focused interface and
+current Tier-2 adapter designs now govern.
 **Task:** `console-telegram-ux-evidence-design`
 **Reviewed against:** `human-control-surfaces.md`, `may-console.md`, and `telegram-notifications.md`
 

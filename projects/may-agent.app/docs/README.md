@@ -27,7 +27,7 @@ tier.
 | `1-principles/` | Stable requirements, goals, and conventions.                            |
 | `2a-design/`    | Current architecture and subsystem contracts.                           |
 | `2b-manual/`    | How-to guidance derived from design and implementation.                 |
-| `3-proposals/`  | Active proposals/trackers only; absent when there are none.              |
+| `proposals/`    | Active proposals/trackers only; absent when there are none.              |
 | `archive/`      | Historical decisions, reviews, implementation records, and V2 material. |
 
 Each current design records separate `Design status` and `Implementation

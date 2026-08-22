@@ -67,6 +67,13 @@ The Host stores identity and intent before the Runtime queues work. The code cal
 
 This is why restart recovery does not depend on an in-memory queue.
 
+The admission queue is crash insurance, not a standing work loop. A newly
+accepted event enters the in-memory fast path immediately. Startup and App
+reload each recover at most 16 retained plans; the safety pass runs at most once
+per minute, selects only plans whose one-minute retry cooldown elapsed, and
+uses the `(status, updated_at)` index. A route that remains invalid therefore
+stays visible without continuously consuming CPU or rewriting its error row.
+
 ## Capacity
 
 The Host constructs one `HostCapacity` limit for task attempts. Per-App task
@@ -132,6 +139,48 @@ the envelope, then routes it to caller correlation, task resolution/wake,
 session control, or Host lifecycle control. It is not another broker, queue,
 service, or handler framework.
 
+`publish` persists and runs required semantic routes synchronously. Passive
+listeners receive persisted, non-replayed events afterward in their own
+filtered, bounded FIFOs. A slow Console, socket client, or Conversation
+mirror therefore cannot extend event acceptance, block another listener, or
+retain an unbounded backlog. These notifications are hints to reread durable
+resources, not a second guaranteed-delivery channel. App observers below are
+different: they are bounded external-state readers that produce facts.
+
+Session digest files, `last-session` summaries, terminal agent cleanup, task
+session recovery, adapter rendering, and public event streams use this passive
+path. The small session-start binding remains synchronous because the execution
+that follows immediately must see its session identity. Telegram rendering and
+network delivery are passive Conversation observation; Telegram has no
+session-output, notification-review, or approval-ordering route on event
+acceptance.
+
+The local `status` control read has an explicit diagnostics option that samples
+process heap, external memory, and RSS on demand. Normal health probes do not
+pay that observation cost.
+
+The agent-facing `system_status` dashboard is also an on-demand bounded read.
+Active sessions come from the status index and recent terminal sessions from
+the ended-time index, with fixed limits. It never enumerates or parses retained
+session directories merely to render a dashboard.
+
+Shell output is execution evidence, not a stream the Host must repeatedly
+materialize. The complete capture stays on disk. While the command runs, the
+Host observes file-size growth without reading output and emits at most one
+small progress pulse per second. After the process group drains, it reads one
+bounded recent tail for the final result. Host read volume therefore does not
+grow with command verbosity.
+
+Process-group cleanup uses cheap kernel group probes while waiting. It walks
+`/proc` only at a signal-phase boundary to distinguish a live descendant from
+a zombie-only group; cleanup cost therefore does not multiply the Host process
+count by a 20 ms polling loop.
+
+Detached Codex and Claude workers follow the same boundary. Their complete
+native JSONL stream is written directly to one evidence file, while the Host
+parses protocol lines incrementally and retains only a bounded diagnostic
+tail. No worker stdout or stderr array grows for the lifetime of the process.
+
 An App schedule has exactly one event destination: an App input request or a
 fact. An observer has one job: read external state and return facts. Both are
 replaced atomically with their App generation.
@@ -153,6 +202,16 @@ Host detects failed session
   -> only a repeated platform-contract defect becomes a may-agent App task
 ```
 
+The Host does not call a model to decide mechanical recovery. Consecutive
+error-only turns cause one bounded cancellation, interrupted unbound sessions
+receive at most two delayed resume attempts, and exhaustion emits an
+escalation. Any semantic decision after that belongs to the accountable App or
+human, not infrastructure.
+
+The separate maintenance process also performs the small 30-second delivery
+expiry and lifecycle-pair repair pass. Keeping it out of `DbWriter`'s insert
+path prevents a periodic history query from taxing the next incoming event.
+
 ## Recovery
 
 At startup the Host:
@@ -169,6 +228,10 @@ query. The safety query advances an indexed cursor across bounded pages so a
 large lost ready set cannot starve rows beyond the first page. Events remain
 the ordinary trigger. The Runtime does not continuously deserialize every App
 task or refill the ready set by scanning the whole tree.
+
+The same rule applies before a task exists. Interrupted event-to-App admission
+is recovered in bounded due batches with a retry cooldown. The ordinary event
+path does not wait for that recovery timer.
 
 Recovery preserves request and task identities. Requests correlate callers;
 tasks own App work. Logs and traces are evidence, not reconstruction authority.

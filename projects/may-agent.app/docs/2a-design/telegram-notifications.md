@@ -2,9 +2,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Shared Conversation admission, stable reply identity,
-correlated outbound delivery, restart-safe lookup, native work reads, and
-bounded concurrent turns are implemented. Additional presentation/noise tuning
-does not change the ownership contract.
+correlated outbound delivery, native App/Task reads, one Task watch per
+chat/topic, focused feedback, and Task cancellation are implemented.
 
 ## Purpose
 
@@ -89,9 +88,12 @@ state does not change the request result.
 ## Reply Context
 
 Every ordinary inbound Telegram message creates its own fenced May request. A
-Telegram reply anchor does not reopen, steer, or replace another request. It is
-attached as bounded context so May can understand references and decide whether
-to answer, clarify, or delegate.
+Telegram reply anchor does not reopen, steer, or replace another request. The
+adapter attaches only the provider message ID and at most 2,000 characters of
+quoted text. It does not reopen notification rows, reconstruct a session or
+trace, or choose a project from old metadata. May understands the reply from
+that bounded quote, the shared Conversation, and an exact focused Task when one
+is being watched.
 
 May reads the same bounded Conversation and active-work projection available to
 Console. Never choose the most recent session, latest event, or fuzzy text match
@@ -113,8 +115,8 @@ type ChannelMessageLink = {
 };
 ```
 
-Legacy context fields may be projected for history, but new admission uses the
-shared Conversation and canonical May request/delivery identities.
+Legacy context fields remain read-only history. New admission uses the shared
+Conversation and canonical May request identity.
 
 ## May Execution And Session Loss
 
@@ -214,21 +216,32 @@ trace or conversation.
 
 ## Controls
 
-Explicit Telegram commands may map to deterministic typed controls such as:
+Telegram exposes the same small Task meanings as Console:
 
-- read `/work`, `/work all`, or an exact work item from the shared Conversation;
-- steer/cancel an exact session;
-- invoke a declared App action;
-- submit an exact approval/Condition response;
-- status; and
-- authorized reload/restart.
+- `/apps [app]`;
+- `/tasks [app] [all]`;
+- `/task <ref>`;
+- `/watch [ref]` and `/unwatch`;
+- `/cancel [ref]`; and
+- authorized Runtime reload.
+
+The presentation may use native buttons without changing the resource API.
+`/work` remains a hidden compatibility view of old May requests. Ordinary help
+does not expose session listing, steering, or session cancellation.
+
+One chat/topic watches at most one Task. While watched, ordinary text remains a
+May Conversation turn with exact `context.focusedTask`; it is never sent
+directly to an execution session. Semantic Task events wake one coalesced exact
+read. Passive Conversation synchronization reads messages without rebuilding
+the hidden request-work view. Idle watch has no poller, timer, workflow,
+session, or model call.
 
 The adapter validates the exact target and records the control result. A
 human-requested read result that may shape the next turn is appended as a
 command-authored Conversation message only after Telegram has actually shown
-it; it creates no work. Bare cancel never expands to cancel-all. Ordinary
-language still enters Conversation admission rather than a command-specific
-ownership path.
+it; it creates no work. Bare cancel targets only the watched Task and never
+expands to cancel-all. Ordinary language still enters Conversation admission
+rather than a command-specific ownership path.
 
 ## Secrets And Presentation
 
@@ -283,7 +296,9 @@ Telegram integration tests prove:
 - original session loss creates a fresh session for the same request;
 - proactive attention is one May child request, not an event-pair lifecycle;
 - uncertain sends do not duplicate blindly;
-- explicit controls target exact identities; and
+- Task controls target exact identities and never list-position/session guesses;
+- focused watch feedback reaches May with exact canonical Task context;
+- idle watch performs no polling and coalesces concurrent wakes;
 - secrets never enter prompts, facts, traces, or outbound diagnostics;
 - persisted output is readable from Console even if Telegram delivery fails;
 - restart reconstructs the same Conversation projection; and

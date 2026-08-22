@@ -72,7 +72,21 @@ Each admitted event type has one delivery contract:
 Required types are explicitly defined and validated before persistence. Trusted
 internal producers may publish an unregistered record-only fact. External
 adapters admit only explicit type/schema allowlists. Logging, metrics, tracing,
-and stream observers never count as the one required accepter.
+and passive stream listeners never count as the one required accepter.
+
+Persistence and required routing finish inside `publish`. Passive listeners
+run afterward for persisted, non-replayed events. Each listener has its own filtered, bounded FIFO, so socket
+streams, Console rendering, Conversation mirroring, and similar presentation
+cannot add latency to semantic acceptance or block one another. When a listener
+falls behind, stale notifications may be dropped with a warning; the durable
+event and resource remain available for resynchronization. A listener failure
+is observable but cannot undo the accepted event. A listener that actually owns
+routing or ordered adapter state is not passive and stays on the synchronous
+route until that responsibility is split out.
+
+Expiry repair for pending delivery and lifecycle-pair records runs in the
+separate maintenance process. Event persistence never performs that periodic
+history sweep before inserting a new event.
 
 `conversation.message.created`, `app.input.requested`, direct-agent
 `chat.start.requested`, exact session controls, and Host lifecycle controls are
@@ -348,7 +362,7 @@ Detailed procedures live in
 - Every fact-to-work transition is explicitly declared and idempotent.
 - App subscriptions translate facts through the shared input-to-task resolver;
   exact task targets wake only the named task.
-- Passive observers never satisfy semantic delivery.
+- Passive listeners never satisfy semantic delivery or delay acceptance.
 - Event acceptance never implies request/task/domain completion.
 - No unhandled fact falls back to a generic owner inbox.
 - No request or task lifecycle is represented by an event pair.

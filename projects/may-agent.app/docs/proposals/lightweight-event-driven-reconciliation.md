@@ -193,6 +193,12 @@ The safety query does not reconcile every task and does not deserialize whole
 App state. Repeated failure backs off. An operator may request a deeper audit,
 but that audit is not a standing loop.
 
+Pre-task App admission follows the same shape. The event fast path queues a new
+frozen admission immediately. Restart and reload recover one bounded batch;
+the background safety pass reads at most 16 due plans once per minute through
+the existing `(status, updated_at)` index. Failed plans remain durable evidence,
+but a permanently invalid route cannot create a five-second retry storm.
+
 ### The ready set is intentionally small
 
 The Dispatcher is not durable authority. It contains task IDs and can be
@@ -404,8 +410,8 @@ the human-facing May App, and AKS in that order. Each App was paused, allowed
 to drain, inspected again after the daemon stopped, imported at the final
 reviewed source revision, activated once, and resumed:
 
-| App                        | Imported Tasks | Final legacy source revision                                             |
-| -------------------------- | -------------: | ------------------------------------------------------------------------ |
+| App                        | Imported Tasks | Final legacy source revision                                       |
+| -------------------------- | -------------: | ------------------------------------------------------------------ |
 | Scout knowledge library    |              7 | `672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b` |
 | Gym                        |             11 | `6dfe27f255e134e493c516836402fe50df3bb41b8a98f926c88cf34ef06b7a32` |
 | May-agent platform         |             47 | `9c0d63cdd65a72db3b44fcefc29989e823ba48e7924fb9afe6f1454abefe2d09` |
@@ -463,6 +469,11 @@ daemon log writes or slow `app-inbox-route` warnings. The live schema held
 1,284 resource Tasks and 151 normalized Condition routes with zero missing
 links. All five retained legacy source files still had their reviewed hashes.
 
+The shared human Task interface then confirmed that read-side caching is not
+the next optimization: with 20,000 Task rows, exact Task p95 was about 0.20 ms,
+active-list p95 11.34 ms, all-history p95 24.89 ms, and App-list p95 7.80 ms.
+The interface performs no model call, polling, or legacy work-projection rebuild.
+
 A later active-work sample found a separate execution-boundary cost: one shell
 command produced hundreds of megabytes, wrote a complete capture, and then made
 the Host synchronously replay that capture through transient tool updates while
@@ -485,13 +496,155 @@ Profiling still observes substantial AKS, Git, Azure CLI, and other file-read
 work during active reconciliation, which remains a separate cost audit rather
 than a reason to put scheduling or another queue into the core.
 
+A later live active-load sample showed the remaining acceptance problem more
+precisely. The daemon was memory/CPU saturated while only one or two agent
+sessions were active; durable event writes commonly took 30-200 ms, while the
+session lifecycle subscriber took 30-350 ms. Task queries were not responsible.
+The EventBus now has a passive `listen` path that runs only after persistence
+and required routing. Each listener owns a filtered FIFO capped at 256 pending
+notifications and drains at most 64 per event-loop turn. A slow listener cannot
+block another or retain an unbounded event backlog; overflow keeps the newest
+notifications and warns because consumers can reread durable resources. Socket
+streams, Console output, Conversation mirroring, and task-session recovery use
+this path, so their work and failures cannot extend the producer's `emit`.
+The old Telegram outbound compatibility machine has been removed. It watched
+raw session text, child-session completion, and human-targeted
+`message.created` events; ran a second May review session; and maintained
+adapter-local reply, approval, deduplication, and delivery state. That duplicated
+the accepted Conversation/Task lifecycle and made Telegram behavior different
+from Console. Explicit runtime and cron notices now append tool-authored
+messages to `Conversation may:primary`; ordinary answers and proactive May
+attention are persisted Conversation results. Telegram only observes the
+bounded Conversation and Task resources, so no Telegram listener remains on
+semantic event acceptance.
+
+Telegram reply routing is smaller too. A reply no longer opens a notification
+row to reconstruct project, session, approval, and trace state or lets the
+adapter choose an App. It carries only the provider reply ID and a bounded
+quote into the same May Conversation request. Conversation context and an
+optional exact watched Task are the semantic inputs.
+The unreachable legacy reconstruction query and its Telegram-specific focused
+view have now been removed from the compatibility command router as well.
+
+The local status read also has an opt-in process diagnostic sample. It exposes
+heap used/total, external and array-buffer memory, and RSS without adding work
+to ordinary health probes. This is the next live measurement needed to tell
+retained JavaScript data from allocator capacity before changing caches or
+retention.
+
+The periodic delivery/pair sweep has also left the persistence boundary. It
+previously ran before the first event insert after each 30-second interval, so
+that caller inherited queries and updates over retained delivery history. The
+existing separate maintenance process now owns the same repair pass; event
+insertion only persists the current event.
+
+Session digest and `last-session` projection writes plus terminal agent cleanup
+now use the same passive listener path. The session-start identity binding stays
+synchronous because execution begins immediately after that event; separating
+that tiny ordering responsibility avoids hiding a real race behind the word
+"observer."
+
+The remaining synchronous EventBus handlers are limited to work that changes
+the meaning or acceptance of the current event: persistence; durable App and
+command routing; CLI/cron admission; metric mutation/admission; bounded
+stuck/recovery and escalation state; session-start identity binding; and the
+small ordering-critical runtime indexes. Console/Telegram presentation,
+socket streams, projections, cleanup, digests, and network delivery are not on
+that boundary.
+
+Generic session recovery is deterministic again. The Host no longer invokes a
+digest/evaluator model to choose whether a stuck session should be cancelled or
+an interrupted session resumed. It counts consecutive error-only turns,
+cancels at the fixed bound, performs at most two delayed resumes for eligible
+unbound sessions, and emits an escalation on exhaustion. Judgment then belongs
+to the owning App or human. This removes model latency, transcript synthesis,
+and evaluator availability from a mechanical infrastructure path.
+
+The subsequent active-load sample also found allocation churn in shell
+progress: every output poll rebuilt, decoded, truncated, and published the
+rolling tail even though runtime consumers used the event only for liveness.
+Running commands now observe only capture-file size and emit one small progress
+pulse per second. After the process group drains, the Host reads one bounded
+tail exactly once; the complete capture remains on disk. A paced 320 KiB
+structural test proves Host reads stay at or below the configured tail even
+when output arrives slowly enough that an older poller would have copied every
+byte. A parent-only `strace` comparison over an 8 MiB capture recorded 237
+`read`/`pread64` calls versus 236 for an otherwise identical `true` command:
+the verbose command added one bounded tail read, not a stream-sized replay.
+
+The same live sample exposed a separate cleanup multiplier. Process-group
+drain polled every 20 ms by walking all of `/proc` and reading every process's
+`stat` record so it could ignore zombie-only groups. On the busy Host, one
+settlement produced hundreds of thousands of reads. Drain now uses the
+kernel's process-group probe during each bounded grace period and performs one
+member walk only at a phase boundary. A descendant-drain `strace` now records
+511 parent reads, versus a 214-read `true` baseline; the remaining difference
+is one verification walk, not one walk per poll.
+
+The detached native CLI runner had the same unbounded shape in a different
+form: it appended every Codex/Claude stdout and stderr chunk to arrays, joined
+the full stream, and parsed it again at completion. It now writes the complete
+JSONL stream directly to evidence, parses protocol lines incrementally, and
+retains only 64 KiB of diagnostics. A multi-megabyte protocol test proves that
+early failure signals, session identity, terminal protocol state, and final
+text survive while retained diagnostics remain bounded.
+
+Conversation observation is bounded as well. Telegram now coalesces a burst of
+`conversation.updated` hints into one active sync plus one dirty retry instead
+of chaining one database read and network pass per wake. Console and Telegram
+keep fixed deduplication windows larger than their bounded Conversation pages,
+so append-only history cannot become adapter heap growth.
+
+The retained session index exposed another history-proportional diagnostic
+path. Production currently has 23,671 `meta.json` records totaling about
+763 MB; a single `trace()` or session-tree read parsed every record before
+selecting one session. That transient object graph can explain the observed
+roughly 1.5 GB anonymous RSS and sustained heap-helper activity even though
+ordinary Task reads are cheap. The source now reads the named metadata record
+directly and discovers only its children through the indexed `sessions`
+parent key. A 100-read sample against the live retained corpus measured about
+0.15 ms p95 for the exact metadata plus child query. Structural tests prevent
+these interactive reads from falling back to the whole-history registry scan.
+Workflow trace expansion had the same shape: 25,015 retained workflow rows
+and about 388 MB of artifacts were enumerated for every node. It now follows
+the exact parent-workflow index and reads only nodes in the requested tree.
+Startup recovery also used that complete enumeration merely to locate old
+`running` workflows. It now selects only `running` rows older than the current
+process through a `status, startedAt` index before reading the small candidate
+set.
+The explicit deep health audit is now history-independent as well. Session, evaluation, and
+workflow counts are computed by SQLite aggregates, and stale-session detail is
+selected only from active-status rows with a 1,000-row bound. It no longer
+loads every `meta.json`, performs one evaluation lookup per historical session,
+or reads every workflow artifact. The report exposes
+`staleSessionsTruncated` when its detail bound is reached; retained history is
+unchanged.
+
+The agent-facing `system_status` dashboard had one similar fallback: each call
+enumerated every retained session directory, checked every active marker, and
+sorted all directory names before reading a small page. It now reads active
+sessions through the status index and at most 100 recent terminal sessions
+through an ended-time index. A projection-only test succeeds with no session
+artifact directory, proving that this optional dashboard no longer turns
+retained history into foreground filesystem work.
+
+Production retained 68 invalid frozen admission plans. The old five-second
+scan retried every one of them and continuously rewrote `updated_at`. Recovery
+now selects at most 16 plans after a one-minute cooldown; its query is covered
+by `idx_app_event_admission_plan_status` and averaged about 0.014 ms over 1,000
+reads against the retained 1.9 GiB database. New events still take the immediate
+admission path, and no historical plan was deleted or silently terminalized.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
-hold the resource-backed cohort through idle-resource, event-storm, and
-due-recovery proof; extend fenced mid-attempt emission beyond direct task-owned
-workflows only when a concrete agent use case needs it; provide a resource-
-native bootstrap for a brand-new App; and only then remove legacy JSON/resync
-compatibility after its last reader moves.
+hold the resource-backed cohort through live idle-resource, event-storm, and
+due-recovery proof; deploy and validate the bounded shell, native CLI,
+process-group cleanup, Conversation sync, and indexed diagnostic paths under
+the same live load that exposed the heap/GC pressure;
+extend fenced mid-attempt emission beyond direct task-owned workflows only when
+a concrete agent use case needs it; provide a resource-native bootstrap for a
+brand-new App; and only then remove legacy JSON/resync compatibility after its
+last reader moves.
 
 ### Phase 0: freeze the contract and expose cost
 

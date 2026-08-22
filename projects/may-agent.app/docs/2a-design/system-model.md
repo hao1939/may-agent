@@ -181,8 +181,9 @@ Queues, leases, traces, metrics, sessions, and projections support these
 records. They never become alternate work owners.
 
 The App inbox is the Host's request-correlation store. It does not execute a
-second App work loop or gate completion on a transport receipt. `/work` and equivalent human views
-list May requests, not tasks or queue entries.
+second App work loop or gate completion on a transport receipt. Ordinary human
+views use `/tasks` and exact Task resources. The hidden compatibility `/work`
+view lists May requests and must not be confused with Tasks or queue entries.
 
 `Conversation may:primary` is one such projection. It reconstructs shared human
 context and work views from messages, May App requests, dependencies, and

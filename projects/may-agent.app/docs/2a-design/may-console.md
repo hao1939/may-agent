@@ -1,352 +1,129 @@
-# Design: May Console
+# May Console
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for the focused terminal contract below.
-**Aligned with:** `human-control-surfaces.md`, `runtime.md`, `sessions.md`,
-`events.md`, `webui.md`, `web-terminal.md`
+**Implementation status:** Implemented.
 
-## Purpose
-
-May Console is the terminal conversation surface for the running May daemon.
-The Web terminal hosts this same console in a browser. A local terminal may run
-it directly.
-
-The mental model is deliberately small:
-
-> Bare text always goes to May. A session is inspected, steered, or cancelled
-> only by an explicit command that names that session.
-
-The console is a small REPL attached to the daemon control socket. It does not
-run May, own work, select an implicit worker, or persist a second conversation.
-The daemon owns event routing and execution. Apps own durable work.
+May Console is a small terminal adapter for the running daemon. It owns
+readline, rendering, reconnect, completion, one local Task watch, and typed
+resource commands. It does not run May, own Tasks, or manage sessions.
 
 ```text
-human text
-  -> may-console
-  -> Conversation may:primary
-  -> one May request and task
-  -> one or more bounded reconciliation attempts
-  -> later material update, decision, or verified closeout
+terminal -> may-console -> daemon socket -> Conversation and Task resources
 ```
 
-Opening the console is passive. It connects, subscribes, and reads status. No
-agent work starts until the human enters text or an explicit control command.
+## Starting it
 
-## Non-goals
+Inside the container:
 
-- It is not a shell. `/shell` deliberately leaves the console.
-- It is not a session manager.
-- It is not a persistent May agent session.
-- It does not implement project, task, workflow, metric, or approval state.
-- It does not infer that the latest session is the target of new text.
-- It does not create terminal-only request or conversation records.
-
-## User experience
-
-The console should feel as direct as Claude Code or Codex without copying their
-runtime model:
-
-- the terminal process is long-lived;
-- the prompt has one obvious meaning;
-- scrollback, copy/paste, history, and reconnect behave like a terminal;
-- ordinary output is readable rather than a raw event stream;
-- startup never surprises the user with agent work.
-
-The prompt is intentionally stable:
-
-```text
-may>
+```bash
+may-console
 ```
 
-When the daemon is unavailable:
+From the Runtime source checkout:
 
-```text
-may[disconnected]>
+```bash
+node packages/terminal/bin/may-console.cjs
 ```
 
-The prompt never contains a session ID. Seeing or watching a session does not
-change where bare text goes.
-
-## Process boundary
-
-```text
-browser or terminal
-  -> may-console process
-      -> daemon Unix socket
-      -> Event Interface
-        -> May task admission or explicit session control
-```
-
-| Layer               | Responsibility                                              |
-| ------------------- | ----------------------------------------------------------- |
-| `may-console`       | Readline, command parsing, quiet event rendering, reconnect |
-| daemon socket       | Framing, read controls, durable intent ingress              |
-| Event Interface     | Persist and route one validated event                       |
-| App request store   | Fence each human message and correlate its eventual result  |
-| May task controller | Reconcile the task with shared Conversation context         |
-| May task policy     | Judge, act, wait, and accept task outcomes                  |
-| execution manager   | Run, steer, cancel, resume, and persist session attempts    |
-
-The console never calls execution-manager methods directly.
-
-## Startup contract
-
-The socket path comes from:
-
-| Input                           | Meaning                           |
-| ------------------------------- | --------------------------------- |
-| `STATE_DIR`                     | State root, default `/app/.state` |
-| `DAEMON_INSTANCE` or `INSTANCE` | Instance, default `background`    |
-| `DAEMON_AGENT`                  | Interface agent, default `may`    |
-
-On connection, the console subscribes for May delivery, reads status, and
-restores the bounded Conversation resource, including its active-work
-projection. All three operations are passive:
-
-```json
-{
-  "type": "subscribe",
-  "sessions": [],
-  "conversations": ["may:primary"]
-}
-```
-
-```json
-{ "type": "status" }
-```
-
-```json
-{
-  "type": "app.conversation.get",
-  "appId": "may",
-  "conversationId": "may:primary"
-}
-```
-
-Bounded May turns are separate execution sessions. Normal mode subscribes only
-to May's exact delivery channel; `/watch` explicitly adds session streams when
-the human asks to inspect them.
-
-Startup must not emit a state-changing event.
-
-## Ordinary input
-
-Bare text always emits one human boundary event for the logical terminal
-conversation:
-
-```json
-{
-  "type": "conversation.message.created",
-  "target": { "appId": "may" },
-  "data": {
-    "conversationId": "may:primary",
-    "author": { "kind": "human", "id": "may-console:local-terminal:..." },
-    "text": "review Gym",
-    "metadata": { "channel": "may-console" }
-  }
-}
-```
-
-The event does not contain a session target. The Event Interface persists it;
-the Runtime admits exactly one fenced May request and linked task; and May
-reconciles that task with the shared Conversation. A short answer may converge
-during the first attempt. If another App owns durable work, the May task waits
-on that child task. Later progress or closeout does not depend on resuming the
-same May session.
-
-The console does not print the transport-level `ok` receipt in normal mode.
-That receipt proves admission, not useful conversational progress. May's
-durable acknowledgement, answer, or `/work` view is the human-visible state.
-
-## Explicit session control
-
-Watching and controlling are separate operations:
-
-```text
-/watch s_123456
-/steer s_123456 continue from the failed test
-/cancel s_123456
-```
-
-`/watch` changes output only. It never changes the target of bare text.
-`/steer` and `/cancel` name their session on every invocation. The daemon owns
-active, idle, cold-resume, terminal, and rejection behavior.
-
-If the human enters bare text while watching one session, the console first
-returns to the quiet May view so the new bounded turn and its response remain
-visible. The text still goes to May; it never steers the watched session.
-
-Session IDs may be abbreviated only when the latest status contains one
-unambiguous match. Unknown or ambiguous IDs fail locally.
+The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
+`DAEMON_AGENT`. Opening or reconnecting is passive and creates no work.
 
 ## Commands
 
-| Command                        | Behavior                                                    |
-| ------------------------------ | ----------------------------------------------------------- |
-| `/help`                        | Print local help                                            |
-| `/status`                      | Read compact daemon status                                  |
-| `/sessions`                    | List known execution sessions                               |
-| `/work`                        | Show active May work                                        |
-| `/work all`                    | Show all May work, newest first                             |
-| `/work N`                      | Show item `N` from the last work list, including its result |
-| `/watch may`                   | Return to the quiet May view                                |
-| `/watch all`                   | Show all subscribed runtime events                          |
-| `/watch <sessionId>`           | Show one session without changing input routing             |
-| `/steer <sessionId> <message>` | Explicitly steer one session                                |
-| `/cancel <sessionId>`          | Explicitly cancel one session                               |
-| `/cancel all`                  | Explicitly cancel all running sessions                      |
-| `/debug`                       | Toggle compact session and tool details                     |
-| `/raw`                         | Toggle raw JSON rendering                                   |
-| `/reload`                      | Request runtime reload                                      |
-| `/restart`                     | Request runtime restart                                     |
-| `/shell`                       | Leave May Console for an interactive shell                  |
-| `/exit`                        | Close the console                                           |
+| Command                | Meaning                                               |
+| ---------------------- | ----------------------------------------------------- |
+| `/apps [app]`          | List Apps or show one App                             |
+| `/tasks [app] [all]`   | List active Tasks, optionally including recent history |
+| `/task <ref>`          | Read one exact Task                                   |
+| `/watch [ref]`         | Watch a Task or show the current watched Task         |
+| `/unwatch`             | Stop watching without changing the Task               |
+| `/cancel [ref]`        | Cancel the named or currently watched Task            |
+| `/help`                | Show the ordinary interface                           |
+| `/reload`, `/restart`  | Typed Runtime controls                                |
+| `/shell`               | Leave Console for an interactive shell                |
+| `/exit`                | Close only this adapter                               |
 
-`/use`, `/may`, and `/new` remain harmless compatibility guidance only. They
-never create a sticky input target. Commands require `/`; the word `status` in
-ordinary text is a message to May, while `/status` is the read-only control.
+Command, App, and recently rendered Task references support tab completion.
+Completion uses bounded local caches; it never asks a model to interpret a
+command.
 
-Read commands remain part of the Conversation the human sees. The Console
-appends an explicitly requested view as a command-authored durable message, so
-May receives the same text the human saw even when the next turn arrives from
-Telegram. Automatic reconnect snapshots use `transient: true` and do not enter
-May's bounded context. Neither path creates Console-local presentation state,
-a selection protocol, or a work store.
+`/work` is a temporary hidden diagnostic alias for old Host-request views.
+Session listing, steering, and session cancellation are not ordinary Console
+commands. Diagnostic raw/session output remains behind explicit developer
+debug controls and is not shown in help.
 
-The recorded command message also carries the rendered list's ordered request
-IDs. `/work` shows relative age; `/work N` shows exact created, first-started,
-and last-semantic-change times plus the current execution/dependency links.
-Lease heartbeats and channel delivery receipts are intentionally absent.
+## Ordinary conversation
 
-This is a semantic contract, not a cross-channel rendering contract. Console
-owns terminal command parsing and text layout. Telegram may use native commands,
-buttons, and a different layout while reading the same Conversation projection
-and appending the semantic view its human received.
+Bare text always enters `Conversation may:primary` as one durable human
+message. It has no session target. Transport `ok` receipts stay hidden because
+they prove admission, not useful progress.
 
-## Rendering
+The normal prompt is:
 
-Normal mode is a human conversation, not an operations log. It shows:
-
-- connection state;
-- May's streamed response or terminal summary;
-- human-directed messages;
-- failed May turns;
-- requested status/session output.
-
-It hides successful tool calls, unrelated sessions, heartbeats, and generic
-daemon chatter. `/debug`, `/watch all`, and `/raw` progressively expose more
-detail.
-
-When `conversation.updated` arrives, Console re-reads `may:primary` and renders
-unseen messages. Messages from another adapter include a compact source label,
-for example `you[telegram]>`. The current Console records the stable IDs it has
-already rendered locally, so it suppresses its own echoes without hiding a turn
-from another Console process. This is presentation-only and does not append an
-echo message.
-
-| Event                             | Normal rendering                     |
-| --------------------------------- | ------------------------------------ |
-| `connected`                       | One connection line                  |
-| `ok` for `publish`                | Hidden transport bookkeeping         |
-| `status`                          | Requested session table              |
-| May `text`                        | Stream response text                 |
-| May `session.end`                 | Fallback summary, or visible failure |
-| `message.created` to the human    | Human-directed message               |
-| unrelated session/tool/info event | Hidden                               |
-| unknown                           | Hidden unless raw mode is on         |
-
-The renderer coordinates with readline so asynchronous output does not corrupt
-the current input line.
-
-## Web terminal hosting
-
-The Web terminal is a PTY host for May Console, not a separate chat client.
-Its May profile opens this console and offers shortcuts for status, sessions,
-May-only watching, all-event watching, and debug mode. Browser code does not
-route human intent itself.
-
-A browser refresh reattaches to the warm PTY/tmux process while the terminal
-manager's idle TTL remains open. The terminal host does not replay an arbitrary
-raw ANSI tail as durable conversation history. Durable review comes from
-messages, traces, app tasks, and session transcripts.
-
-The transport, resize, focus, and multi-client rules remain in
-`web-terminal.md`.
-
-## Reconnect
-
-If the daemon socket closes, May Console:
-
-1. reports disconnection once;
-2. keeps the prompt and terminal process alive;
-3. retries with bounded backoff;
-4. restores the current watch subscription;
-5. requests fresh status and the current Conversation resource.
-
-Input while disconnected fails locally and is not queued. Reconnect preserves
-presentation preferences such as watch, debug, and raw mode. It does not
-restore an input session because no such mode exists.
-
-## Canonical events
-
-State-changing commands use the same event contracts as other human surfaces:
-
-```json
-{
-  "type": "session.steer.requested",
-  "source": "may-console",
-  "owner": "agent:may",
-  "data": { "sessionId": "s_123456", "message": "continue" }
-}
+```text
+you>
 ```
 
-```json
-{
-  "type": "session.cancel.requested",
-  "source": "may-console",
-  "owner": "agent:may",
-  "urgency": "high",
-  "data": { "sessionId": "s_123456" }
-}
+While watching a Task:
+
+```text
+you[task 8f12ac90]>
 ```
 
-Socket-local `subscribe` and `status` frames remain read controls. Older socket
-shortcut frames remain compatibility ingress for older clients; May Console
-does not use them.
+Bare text in the second prompt is still a May Conversation turn. Console adds
+the exact `{ appId, taskId }` under `context.focusedTask`; May interprets the
+feedback and the owning App decides how it changes the Task.
 
-## Implementation ownership
+## Reads and rendering
 
-- `projects/may-agent/packages/terminal/bin/may-console.cjs` owns terminal
-  interaction and canonical intent emission.
-- `projects/may-agent/packages/terminal` owns Web terminal PTY profiles.
-- `projects/may-agent/packages/control` owns socket framing and persistence
-  acknowledgment.
-- the Event Interface and App runtime own durable admission and routing.
-- the May App owns bounded May turns and interpretation of Conversation context.
-- apps own durable work and its evidence.
+Console sends typed socket reads:
 
-## Test contract
+```json
+{ "type": "apps.list" }
+{ "type": "tasks.list", "appId": "evaluation", "limit": 30 }
+{ "type": "task.get", "ref": "8f12ac90" }
+```
 
-Tests cover the behavior boundary:
+Explicitly requested views are appended to Conversation after presentation,
+with canonical `taskRefs` metadata. This lets a later Console or Telegram turn
+refer naturally to what the human saw. Automatic watch refreshes are transient.
 
-- startup sends only passive subscription, status, and Conversation-read frames;
-- bare text emits `conversation.message.created` for `may:primary` with no session target;
-- each bare message requests a bounded May turn even when old sessions exist;
-- transport admission receipts stay hidden in normal conversation mode;
-- Console command views become durable Conversation messages that a later Telegram turn can reference;
-- `/watch <id>` does not change bare-input routing;
-- bare text from a session-only watch returns to the May view before starting
-  the turn, so May's response is visible;
-- `/steer <id> <message>` emits one explicit steer event;
-- `/cancel <id>` emits one explicit cancel event;
-- missing, unknown, and ambiguous session IDs fail locally;
-- reconnect restores watching and status without starting work;
-- a Telegram-origin message update is re-read and rendered once without
-  creating Console work or a duplicate message;
-- two Console processes use distinct message IDs and can render one another's
-  turns without echoing their own;
-- normal rendering hides unrelated session and successful tool noise;
-- raw mode preserves full diagnostic access.
+Normal rendering hides unrelated sessions, successful tool calls, heartbeats,
+queue movement, and delivery bookkeeping.
 
-The essential guarantee is simple: opening and watching are passive, bare text
-always goes to May, and controlling an execution session is always explicit.
+## Watch
+
+Console subscribes to one exact canonical Task identity. A semantic Task event
+produces `app.task.updated(appId, taskId)` on the socket; the wake contains no
+Task body. Console then re-reads the exact resource.
+
+Only one read may be in flight. Further wakes set one dirty bit, resulting in
+at most one additional read. There is no polling timer. Completion or
+cancellation shows the terminal result and automatically clears the watch.
+
+Reconnect preserves the in-process watch preference, resubscribes, and reads
+current truth. A missed wake is harmless.
+
+## Cancellation
+
+`/cancel <ref>` or focused `/cancel` invokes typed Task cancellation. It never
+means “kill this session.” The daemon persists cancellation, fences stale
+attempt results, removes recovery readiness, interrupts a linked local session,
+and returns the retained Task cancellation view.
+
+## Conversation synchronization
+
+Console listens for `conversation.updated`, reads the bounded Conversation, and
+renders unseen stable message IDs. Messages from Telegram use a source label
+such as `you[telegram]>`. A Console process suppresses only messages it already
+rendered; another Console process may still display the same shared message.
+Passive synchronization requests messages only; it does not rebuild the hidden
+legacy request-work view.
+
+## Failure behavior
+
+- disconnected input is queued only until the initial Conversation snapshot;
+- reconnect uses bounded backoff;
+- ambiguous or invalid Task refs fail locally with no mutation;
+- a slow socket client is disconnected before it can block the daemon; and
+- closing Console changes no Task, Conversation, or session.

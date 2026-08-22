@@ -583,7 +583,7 @@ Then apply stronger relations:
 | Same `workflowRunId`                                      | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace.                                                                                |
 | Same `taskId` plus `attemptId`                            | Link reconciliation start/result events, the owner or workflow session, and any retained historical task-attempt records.                                                                   |
 | Same `metricId` / `alertId`                               | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events.                                                                                          |
-| `notification_messages.telegram_msg_id` and reply context | Link notification delivery to `message.created`; link `human.input.received` to the message it replied to.                                                                                  |
+| Telegram message coordinates and reply context            | Link current `conversation.message.created` input/output to provider message IDs; retain historical `human.input.received` reply links only as compatibility evidence.                       |
 | Legacy `escalationId`                                     | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity.                                                        |
 
 Backfill should not invent domain outcomes. If a historical escalation pair has
@@ -748,7 +748,7 @@ The trace should make review concrete:
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | Did the event reach its declared route?    | Event delivery records show input-to-task admission, exact wake, or observation.                            |
 | Did May receive the human reply?           | A human `conversation.message.created` exists with its reply/context anchor and linked May request.         |
-| Did May close the human-attention request? | The exact May App child has a correlated persisted result; adapter delivery is a separate operational edge. |
+| Did May answer the human request?          | The exact May request has a correlated persisted result in Conversation; adapter rendering is not semantic work.             |
 | Did the source consume the result?         | Its dependency is completed and the exact parent App request/task resumed.                                  |
 | Did the LLM/tool fail?                     | Detail nodes show missing or failed `tool.call.completed`.                                                  |
 

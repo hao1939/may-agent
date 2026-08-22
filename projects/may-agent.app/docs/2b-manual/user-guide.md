@@ -39,7 +39,7 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 | `--console`                      | Enable the built-in development readline console                        |
 | `--socket`                       | Enable Unix socket for external control                                 |
 | `--cron`                         | Enable cron jobs (heartbeats, JS handlers, scheduled tasks)             |
-| `--telegram`                     | Enable Telegram bot for notifications                                   |
+| `--telegram`                     | Enable the Telegram Conversation and Task adapter                        |
 | `--web`                          | Enable web UI                                                           |
 | `--status`                       | Print system dashboard and exit (agent quality, process health, trends) |
 | `--status --notify`              | Print dashboard and also send it to Telegram                            |
@@ -82,20 +82,22 @@ Conversation context can relate the requests, but it never substitutes for a
 durable dependency. Long-running work must be represented by the current task,
 a child task, or an exact dependency before the current attempt ends.
 
-### May Console Controls
+### May Console controls
 
-| Command                      | Action                                                      |
-| ---------------------------- | ----------------------------------------------------------- |
-| `cancel all`                 | Cancel all running sessions explicitly                      |
-| `/steer <session> <message>` | Steer one named execution session                           |
-| `/cancel <session>`          | Cancel one named execution session                          |
-| `reload`                     | Reload agent and App definitions                            |
-| `close`                      | Shut down the runtime                                       |
-| `restart`                    | Graceful restart (exit code 100)                            |
-| `Ctrl+C`                     | Cancel running sessions on first press, shut down otherwise |
+| Command               | Action                                                    |
+| --------------------- | --------------------------------------------------------- |
+| `/apps [app]`         | List Apps and active Task counts                          |
+| `/tasks [app] [all]`  | List active Tasks, optionally with recent terminal Tasks  |
+| `/task <ref>`         | Read one exact Task                                       |
+| `/watch [ref]`        | Watch or show one Task                                    |
+| `/unwatch`            | Leave the watch without changing the Task                 |
+| `/cancel [ref]`       | Cancel the named or currently watched Task                |
+| `/reload`, `/restart` | Reload definitions or restart the Runtime                 |
+| `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
 
-Bare text never implicitly steers the latest session. Use the explicit session
-controls when you intend to operate on execution state.
+Bare text always goes through May. While watching, Console attaches the exact
+Task identity so the text becomes natural Task feedback through May; it never
+steers an execution session directly.
 
 ## Agents
 

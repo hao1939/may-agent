@@ -55,6 +55,12 @@ Other authors use the same message envelope with different behavior:
 | `command`                         | Yes, when the human may refer to the view |                     No |
 | Any author with `transient: true` |                                        No |                     No |
 
+The runtime `notify()` capability and cron-handler failure notice append one
+tool-authored message to `may:primary`. They do not emit a raw human-targeted
+message, start a hidden review session, or call a transport directly. This
+keeps explicit human-visible notices shared across Console and Telegram and
+available as bounded context to May.
+
 Transient messages may drive a progress bar, reconnect notice, or notification,
 but do not advance Conversation version, replay after restart, or enter May's
 context.
@@ -122,8 +128,8 @@ mechanisms, not Conversation-owned work.
 `createdAt`, first `startedAt`, and semantic `changedAt` make request age and
 stale progress visible. Infrastructure heartbeats do not count as semantic
 change. Completion removes an item from the ordinary active projection; the
-result remains a durable Conversation message and `/work all` can still derive
-the historical item.
+result remains a durable Conversation message. A hidden diagnostic request
+view can still derive the historical correlation when an operator needs it.
 
 There is no separate Conversation database. Adapter delivery state is not
 projected into May's answer or the human work lifecycle. Restart must
@@ -137,13 +143,13 @@ message IDs they have not already shown. Adapters do not forward content to one
 another, and rendering the same message on another surface does not append a
 duplicate.
 
-`/work`, `/work all`, and `/work N` are Console read shortcuts over this
-projection. Telegram may expose native commands, buttons, or different layout.
-When a requested view may shape the next turn, the adapter records a concise
-command-authored semantic message representing what its human saw. Formatting
-and markup stay adapter-local. Ordered request IDs accompany numbered work
-views so “work 1” resolves against the last rendered view rather than a later
-ordering of active work.
+The ordinary human interface reads Apps and Tasks through `/apps`, `/tasks`,
+and `/task <ref>`. When a requested view may shape the next turn, the adapter
+records a concise command-authored semantic message representing what its human
+saw. Formatting and markup stay adapter-local. Ordered canonical `taskRefs`
+accompany Task views so a later natural-language turn has the exact resources
+the human saw. The old numbered `/work` request projection remains a hidden
+diagnostic compatibility view only; it is not a second work model.
 
 ## Presentation
 
@@ -154,7 +160,7 @@ ordering of active work.
 - Each adapter observes Conversation updates and renders independently. No
   adapter acknowledgement is required for semantic completion.
 - Provider send failures and receipts may remain available to operational
-  diagnostics, but normal conversation and `/work` views never replace a result
+  diagnostics, but normal Conversation and Task views never replace a result
   with delivery prose.
 - A later human turn may arrive from another adapter; it still sees the shared
   durable Conversation.

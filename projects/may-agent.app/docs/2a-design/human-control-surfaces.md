@@ -1,279 +1,155 @@
 # Human Control Surfaces
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for May Console and Telegram; legacy
-socket shortcuts remain compatibility ingress.
+**Implementation status:** Implemented for May Console and Telegram.
 
-**Aligned with:** [message-lifecycle.md](message-lifecycle.md),
-[may-console.md](may-console.md), [events.md](events.md), and
-[sessions.md](sessions.md).
+**Aligned with:** [system-model.md](system-model.md),
+[message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
+and [telegram-notifications.md](telegram-notifications.md).
 
-## Purpose
+## Mental model
 
-Human surfaces are adapters over system resources. They own interaction and
-presentation, not work state or meaning.
-
-The human vocabulary is deliberately small:
-
-- talk to May or invoke a plain App command;
-- track the resulting work item, which is an App request;
-- open a related task only for progress or diagnostic detail.
-
-Humans do not operate action lifecycles or task trees. Commands are typed
-request entrypoints, and a tree is only one possible task layout.
-
-For May conversation:
+Console and Telegram are adapters over the same May Conversation and the same
+App Tasks. They own presentation, provider coordinates, and local watch state.
+They do not own work.
 
 ```text
 Console ──┐
-          ├─> Conversation may:primary ─> May App request/reconciliation
-Telegram ─┘
+          ├─> Conversation may:primary ─> May
+Telegram ─┘                                │
+                                           └─> App Tasks
 ```
 
-Console and Telegram may look and behave differently. Console may parse slash
-commands and render aligned terminal text. Telegram may use native commands,
-buttons, reply anchors, Markdown, or compact messages. Both publish and read the
-same semantic Conversation contract.
+The ordinary human objects are:
 
-They also watch the same resource. After a message or work change becomes
-durably visible, the Host emits a wake-only `conversation.updated` observation.
-Adapters re-read the Conversation and render unseen stable message IDs using
-their own presentation. The wake is not a delivery guarantee, and adapters
-never forward adapter events directly to one another.
+- an App, which owns a responsibility;
+- a Task, which is durable work reconciled by an App; and
+- a Conversation message, which is how a human talks with May.
 
-## Shared boundary
+A Host request correlates one caller with its eventual result. A session is a
+replaceable execution attempt. Neither is the ordinary human control target.
 
-Ordinary human text publishes:
+## Shared resource interface
 
-```text
-conversation.message.created
+Every human adapter exposes the same small meanings:
+
+| Meaning             | Console form              | Telegram form                         |
+| ------------------- | ------------------------- | ------------------------------------- |
+| list Apps           | `/apps [app]`             | native `/apps [app]`                  |
+| list Tasks          | `/tasks [app] [all]`      | native `/tasks [app] [all]`           |
+| read one Task       | `/task <ref>`             | native `/task <ref>`                  |
+| watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
+| stop watching       | `/unwatch`                | `/unwatch`                            |
+| cancel one Task     | `/cancel [ref]`           | `/cancel [ref]`                       |
+| talk or give feedback | bare text               | ordinary message                      |
+
+Adapters may render these resources differently. Console uses aligned text and
+tab completion. Telegram uses compact messages and may add native buttons.
+The Host resolves Apps and Task references and revalidates canonical identity.
+
+`/work` remains a temporary hidden diagnostic alias for the old May-request
+projection. It is not another Task interface and is absent from ordinary help.
+`/session`, `/sessions`, and `/steer` are not ordinary human commands.
+
+## Stable Task identity
+
+The canonical Task identity is `{ appId, taskId }`. Humans normally see an
+eight-character SHA-256 alias such as `8f12ac90`. The Host indexes the full
+digest from a versioned, length-safe encoding of the canonical identity.
+
+- eight characters are shown while unique;
+- colliding aliases expand to sixteen, then the full digest;
+- ambiguous input fails and never chooses by list position; and
+- a retained completion or cancellation stays addressable by the same alias.
+
+Numbers shown for visual layout are never accepted as identity.
+
+## Conversation
+
+Ordinary text publishes one durable `conversation.message.created` event for
+`may:primary`. Console and Telegram both listen for `conversation.updated`,
+re-read the append-only Conversation, and render stable message IDs they have
+not shown on that surface.
+
+An explicitly requested App or Task view is appended as a command-authored
+Conversation message only after it is shown successfully. Its bounded metadata
+contains ordered canonical `taskRefs`, so the next May turn receives the view
+the human actually saw. Automatic watch progress, reconnect notices, typing
+indicators, and delivery notices are transient.
+
+Provider delivery is observational. A failed or uncertain adapter send cannot
+change a Conversation result or a Task.
+
+## One focused watch
+
+Each Console process or Telegram chat/topic may watch at most one Task. Watch
+state belongs to the adapter surface; it is not a Task field and does not force
+another surface to watch.
+
+While watching, bare text still goes through May. The adapter attaches:
+
+```json
+{
+  "focusedTask": {
+    "appId": "evaluation",
+    "taskId": "review/docs"
+  }
+}
 ```
 
-Required data is:
+May therefore receives natural human language plus an exact Task identity. May
+interprets the feedback and sends a typed Task-targeted event to the owning App.
+The adapter never steers a temporary session and May never edits another App's
+Task storage directly.
 
-- `conversationId: "may:primary"`;
-- `author: { kind: "human", id: <stable channel message identity> }`;
-- the raw human `text`;
-- optional `replyTo` and channel delivery metadata.
+A semantic Task transition emits an identity-only wake. The adapter coalesces
+updates, performs at most one read at a time, and renders the latest Task. A
+terminal result ends the watch automatically. `/unwatch` changes only local
+presentation.
 
-The Host durably admits one fenced May request and task from the human message.
-May decides during reconciliation whether it starts independent work or returns
-a typed revision/dependency for represented active work. Retrying the same
-adapter message returns the original receipt. Opening a surface, reconnecting,
-reading status, or rendering a view creates no human work.
+Watch does not poll and owns no timer, workflow, session, or model turn.
 
-State-changing controls use their existing typed events, such as
-`session.steer.requested`, `session.cancel.requested`, project App actions, and
-runtime operations. Read-only controls may remain local reads.
+## Cancellation
+
+`/cancel` changes the named or watched Task, not its current session. The Host:
+
+1. persists a cancellation record;
+2. advances the Task resource fence;
+3. removes it from ready and recovery indexes;
+4. interrupts the current local session when one exists; and
+5. retains a cancellation result distinct from accepted achievement.
+
+An in-flight stale result cannot cross the new resource fence. A maintained
+responsibility may refuse generic cancellation and name its App-specific
+control instead. `/unwatch` is never cancellation.
+
+## Performance boundary
+
+Human reads do not invoke a model and do not reconstruct Conversation history:
+
+- passive Conversation synchronization reads bounded messages only;
+- repeated Conversation wakes coalesce to one active read plus one dirty retry;
+- each adapter keeps only a bounded deduplication window larger than its read page;
+- `/task` uses one indexed reference lookup and one exact resource read;
+- `/tasks` is a bounded indexed page ordered by semantic update time;
+- `/apps` reads the loaded registry plus aggregate active counts;
+- Task reference hashes are indexed at Task creation/import; and
+- watch is push-to-read with one coalesced in-flight read.
+
+Lease renewals, tool chunks, transcript text, queue movement, and delivery
+events do not wake human Task watches. The hidden request-work projection is
+computed only when explicitly requested. Slow adapters never block Task commit.
 
 ## Adapter responsibilities
 
-An adapter may:
+An adapter may parse native commands, cache bounded completions, choose layout,
+and keep one local watch. It must not own a work queue, infer a Task from the
+latest session, make delivery part of Task state, poll for watch progress, or
+send slash-command ambiguity to a model.
 
-- parse channel-native controls;
-- attach provider reply and delivery coordinates;
-- watch Conversation changes and render unseen messages;
-- choose layout, markup, buttons, pagination, and notification style;
-- query the bounded Conversation projection;
-- append a durable semantic command/tool view when the human may refer to it;
-- emit transient progress or reconnect presentation.
+## Verification
 
-An adapter must not:
-
-- invent a different Conversation identity for its channel;
-- infer work from the latest session;
-- own a request queue, work archive, or selected-context protocol;
-- turn provider delivery state into Conversation or work state;
-- make transient presentation part of May's durable context.
-
-## Resource synchronization
-
-Conversation synchronization follows the ordinary resource-watch pattern:
-
-```text
-durable message, persisted result, or visible active-work change
-  -> conversation.updated(appId, conversationId)
-  -> adapter reads Conversation
-  -> adapter skips message IDs already rendered on that surface
-  -> adapter renders the remaining messages in its native style
-```
-
-`conversation.updated` is only a wake signal. It carries no message content and
-does not own state. Several updates may coalesce into one read without losing a
-message because the append-only Conversation projection is authoritative.
-Mirroring one existing message to another surface does not append another
-Conversation message and creates no May work.
-
-Startup presentation is adapter-specific. Console restores bounded history for
-a new terminal. Telegram seeds its rendered-ID set from current Conversation
-truth without replaying old messages into a chat whose provider already keeps
-history. New cross-surface messages are then presented live.
-
-Adapter instances deduplicate by exact stable message ID, not merely by channel
-name. This lets two Console processes share the same Conversation while each
-suppresses only content it already rendered itself.
-
-## Conversation and work reads
-
-The public read is one May-owned Conversation resource. It contains bounded
-durable messages and a derived work projection. It does not mutate state.
-
-```text
-app.conversation.get(appId, conversationId, options)
-```
-
-Work views are projections, not objects with another lifecycle:
-
-- active work shows unfinished human App requests;
-- all work shows active and finished requests, newest first;
-- completed work includes its bounded result;
-- one exact work read includes that request's full result.
-
-If a request depends on a task, work detail may show the task ID, outcome,
-phase, summary, and a link to its exact task view. The task does not replace the
-work item and must not appear as a second human commitment.
-
-A human message is Conversation input and deterministically resolves to a small
-May task. If May determines during reconciliation that it is feedback about
-active work represented in the bounded Conversation, May returns a typed
-revision, wake, or dependency for that work. The Host fences the target to the
-same App and Conversation. The new message remains durable context, but it may
-be presented as feedback rather than a second independent `/work` item.
-
-```text
-human feedback -> deterministic May input task
-  -> reconciliation reads bounded Conversation
-  -> May selects referenced task
-  -> Runtime fences and applies the typed revision/wake/dependency
-  -> keep caller correlation linked to the input task and accepted result
-```
-
-This is not a selected-work mode and does not add another work loop. A later
-reconciliation is needed only when the task remains unconverged. Sessions,
-children, and analyses may be replaced; the task remains the work identity and
-the original human request remains caller correlation.
-
-The task remains the work identity. A request correlates the human and result;
-a session, child App task, or analysis is a resource used to fulfil it and may
-be replaced across attempts. Each projected item therefore carries the current bounded
-links: its most recent `executor`, when known, and exact `dependency`, when it
-is waiting. Historical attempts remain discoverable by `requestId`; they are
-not copied into Conversation.
-
-Work timing has three precise meanings:
-
-- `createdAt` is durable request admission;
-- `startedAt` is the first processing claim, when known;
-- `changedAt` is the last human-visible state, progress, resource-link, or
-  result change.
-
-Lease renewal and delivery bookkeeping never advance `changedAt`. Adapters may
-show relative age in a list and exact local time in a detail view. Age is
-evidence for human review, not a new `stuck` lifecycle state.
-
-Console exposes `/work`, `/work all`, and `/work N`. Telegram may expose the
-same meanings through native commands or controls and may render each item
-differently. The shared contract is the selected work identity and semantic
-content, not byte-identical output.
-
-When a human explicitly requests a view, the adapter records a concise
-`author.kind: "command"` Conversation message after delivery succeeds. A later
-turn on either channel can then understand references such as “the first one”
-or “show me that result.” Automatic startup/reconnect views use
-`transient: true`.
-
-That message metadata retains the ordered `requestIds` represented by the
-rendered view. Ordinal language refers to what the human actually saw, even if
-the active list changes later. The visible text remains the primary context;
-the IDs provide exact navigation and bounded resource lookup without creating
-a selected-work controller.
-
-## Console contract
-
-- Bare text is a human `conversation.message.created` message for
-  `may:primary`.
-- `/work` commands are cheap Conversation reads, not May work.
-- `/status`, `/sessions`, and debug rendering remain local read/control
-  behavior.
-- `/steer <sessionId> <message>` and `/cancel <sessionId>` explicitly target an
-  execution session; bare text never silently steers the watched session.
-- Closing the Console closes only the adapter.
-
-See [may-console.md](may-console.md) for terminal presentation details.
-
-## Telegram contract
-
-- Ordinary text is a human `conversation.message.created` message for
-  `may:primary`.
-- Chat/topic/message IDs are retained as delivery and reply coordinates only.
-- `channelTargetId`, `channelThreadId`, and `channelMessageId` are opaque Host
-  delivery mechanics; they are not App meaning or Conversation identity.
-- Reply metadata is attached as context so May can interpret the human's
-  intention; it does not replace Conversation or work identity.
-- Native commands may answer through direct Conversation reads.
-- Immediate replies target the incoming message. Conversation synchronization
-  renders new shared messages using the adapter's current presentation context;
-  provider coordinates remain adapter-local.
-- Unknown native commands show help or fail locally.
-
-Telegram owns its presentation. A work list may use buttons, Markdown, or one
-message per item without requiring Console to do the same.
-
-## Web and other adapters
-
-A future Web chat should use the same May Conversation boundary. Session and
-project pages may still expose explicit controls for those resources. HTTP or
-socket route names may be ergonomic, but state-changing actions normalize into
-typed events or validated App input before runtime logic.
-
-Direct and Gym agent runs are portable execution surfaces, not May human
-conversation adapters, and do not require this Conversation contract.
-
-## Presentation and restart
-
-- Inbound human acceptance requires durable request-to-task admission.
-- Persisting the accepted May task result completes its request and makes the result a shared
-  Conversation message immediately.
-- Console and Telegram listen for `conversation.updated`, reread the resource,
-  and render unseen messages independently. Their acknowledgements do not feed
-  back into work state.
-- Provider delivery failures may be inspected operationally, but are not shown
-  as May's answer and do not change `/work` status.
-- Restart reconstructs the Conversation from durable events, requests, tasks,
-  dependencies, and results.
-- Correctness never depends on a mutable persistent May chat session or an
-  adapter receipt.
-
-## Test contract
-
-Every May human adapter must prove:
-
-1. ordinary text maps to `Conversation may:primary`;
-2. retry admits one human App request;
-3. opening or reconnecting creates no work;
-4. command/tool messages add context without work;
-5. transient presentation adds neither context nor work;
-6. explicit session controls do not change bare-text routing;
-7. a persisted result is readable from another adapter without delivery state;
-8. failed or uncertain adapter delivery does not change work or result content;
-9. requested command views are visible to a later May turn;
-10. restart reconstructs the same Conversation resource.
-11. a new message from one adapter is rendered by the other without creating a
-    duplicate Conversation message or May request.
-12. feedback about represented active work advances that request in the same
-    May turn and does not appear as another work item.
-
-The goal is semantic consistency with channel-appropriate interaction—not
-identical UI.
-
-## Compatibility
-
-Older socket shortcut frames may remain temporarily, but they normalize at the
-socket boundary. They are not an alternate lifecycle and new adapters should
-use event publication, validated App admission/action invocation, and the
-bounded Conversation read directly.
-
-The socket boundary also normalizes exact May `/reload` and `/restart` text
-from stale clients into their typed Runtime controls before persistence. A
-client-version mismatch therefore cannot turn a control into conversational
-work.
+Tests must prove stable collision-aware references, bounded indexed reads,
+one-watch replacement, focused feedback through May, wake coalescing, automatic
+terminal exit, durable Task cancellation, stale-attempt fencing, cross-surface
+Conversation context, and independence from adapter delivery.

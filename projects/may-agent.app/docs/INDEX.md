@@ -111,8 +111,13 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
-There are no active proposals or trackers. The three reviewed drafts were
-resolved as follows:
+Active reviews are:
+
+- [lightweight-event-driven-reconciliation.md](proposals/lightweight-event-driven-reconciliation.md)
+  — rebuild the Host from a small EventHub/task loop, make emitted events
+  visible immediately, foreground human work, and remove history-sized cost.
+
+Earlier reviewed drafts were resolved as follows:
 
 - service composition: accepted only as explicit typed Host-internal
   composition; the public service-loader/service-locator proposal was rejected;
@@ -124,7 +129,8 @@ resolved as follows:
 The decision records and current authorities are indexed under
 [archive/](archive/README.md).
 
-Completed proposals do not remain in the active proposal folder.
+Completed proposals do not remain in the active proposal folder. The Task
+interface decision and its earlier presentation evidence are archived below.
 
 ## Historical material
 
