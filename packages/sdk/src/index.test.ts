@@ -13,7 +13,6 @@ const expectedRootExports = [
   "AppEvent",
   "AppEventSubscription",
   "AppEventTarget",
-  "AppInboxBatchMode",
   "AppInput",
   "AppInputSource",
   "AppObserver",

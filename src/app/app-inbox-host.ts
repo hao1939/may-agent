@@ -102,7 +102,6 @@ export type AppInboxHostOptions = {
   workerId?: string;
   leaseMs?: number;
   retryAfterMs?: number;
-  maxBatchSize?: number;
   now?: () => number;
   /** Wake-only notification after a visible Conversation projection change. */
   onConversationChanged?: (appId: string, conversationId: string) => void;
@@ -230,7 +229,6 @@ export class AppInboxHost {
   readonly #workerId: string;
   readonly #leaseMs: number;
   readonly #retryAfterMs: number;
-  readonly #maxBatchSize: number;
   readonly #now: () => number;
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
@@ -243,7 +241,6 @@ export class AppInboxHost {
     this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
     this.#leaseMs = options.leaseMs ?? 60_000;
     this.#retryAfterMs = options.retryAfterMs ?? 1_000;
-    this.#maxBatchSize = options.maxBatchSize ?? 8;
     this.#now = options.now ?? Date.now;
     this.#onConversationChanged = options.onConversationChanged;
     this.#onRequestCompleted = options.onRequestCompleted;
@@ -251,10 +248,6 @@ export class AppInboxHost {
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
     }
-    if (!Number.isSafeInteger(this.#maxBatchSize) || this.#maxBatchSize <= 0) {
-      throw new Error("App host maxBatchSize must be a positive safe integer");
-    }
-
     this.#apps = new Map();
     this.replaceApps(options.apps);
   }
@@ -538,47 +531,44 @@ export class AppInboxHost {
 
   async reconcileOnce(appId: string): Promise<AppInboxReconcileResult> {
     const app = this.#requiredApp(appId);
-    const claims = this.#claimBatch(app);
-    if (claims.length === 0) return { claimed: 0, admitted: 0, released: 0, errors: [] };
-    this.#notifyConversationChanges(claims.map((claim) => claim.item));
+    const claim = claimNextAppInboxItem(this.#db, app.id, this.#workerId, this.#leaseMs, this.#now());
+    if (!claim) return { claimed: 0, admitted: 0, released: 0, errors: [] };
+    this.#notifyConversationChanges([claim.item]);
 
-    const stopRenewing = this.#renewClaims(claims);
-    const outcome: AppInboxReconcileResult = { claimed: claims.length, admitted: 0, released: 0, errors: [] };
+    const stopRenewing = this.#renewClaim(claim);
+    const outcome: AppInboxReconcileResult = { claimed: 1, admitted: 0, released: 0, errors: [] };
     const conversationIds = new Set<string>();
     try {
-      for (const claim of claims) {
-        try {
-          const request = await this.#authorRequest(claim.item);
-          const terminalTaskDependency =
-            request.dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(request.dependency.status)
-              ? request.dependency
-              : undefined;
-          const changedConversation = terminalTaskDependency
-            ? this.#completeRequest(claim, {
-                summary:
-                  terminalTaskDependency.summary ??
-                  (terminalTaskDependency.status === "done"
-                    ? `${request.input.kind} completed`
-                    : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
-                response: terminalTaskDependency.response,
-                evidence: terminalTaskDependency.evidence,
-              })
-            : await this.#attachRequestTask(app, claim, request);
-          if (changedConversation) conversationIds.add(changedConversation);
-          outcome.admitted += 1;
-        } catch (error) {
-          const message = `Request ${claim.item.id}: ${errorMessage(error)}`;
-          outcome.errors.push(message);
-          if (
-            releaseAppInboxClaim(this.#db, claim, {
-              retryAfterMs: this.#retryAfterMs,
-              now: this.#now(),
+      try {
+        const request = await this.#authorRequest(claim.item);
+        const terminalTaskDependency =
+          request.dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(request.dependency.status)
+            ? request.dependency
+            : undefined;
+        const changedConversation = terminalTaskDependency
+          ? this.#completeRequest(claim, {
+              summary:
+                terminalTaskDependency.summary ??
+                (terminalTaskDependency.status === "done"
+                  ? `${request.input.kind} completed`
+                  : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
+              response: terminalTaskDependency.response,
+              evidence: terminalTaskDependency.evidence,
             })
-          ) {
-            outcome.released += 1;
-            if (claim.item.source.kind === "human" && claim.item.conversationId) {
-              conversationIds.add(claim.item.conversationId);
-            }
+          : await this.#attachRequestTask(app, claim, request);
+        if (changedConversation) conversationIds.add(changedConversation);
+        outcome.admitted = 1;
+      } catch (error) {
+        outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
+        if (
+          releaseAppInboxClaim(this.#db, claim, {
+            retryAfterMs: this.#retryAfterMs,
+            now: this.#now(),
+          })
+        ) {
+          outcome.released = 1;
+          if (claim.item.source.kind === "human" && claim.item.conversationId) {
+            conversationIds.add(claim.item.conversationId);
           }
         }
       }
@@ -662,22 +652,10 @@ export class AppInboxHost {
     return observed ?? null;
   }
 
-  #claimBatch(app: RegisteredApp): AppInboxClaim[] {
-    const limit = app.inbox?.batch === "coalesce-compatible" ? this.#maxBatchSize : 1;
-    const claims: AppInboxClaim[] = [];
-    for (let index = 0; index < limit; index += 1) {
-      const claim = claimNextAppInboxItem(this.#db, app.id, this.#workerId, this.#leaseMs, this.#now());
-      if (!claim) break;
-      claims.push(claim);
-    }
-    return claims;
-  }
-
-  #renewClaims(claims: AppInboxClaim[]): () => void {
+  #renewClaim(claim: AppInboxClaim): () => void {
     const intervalMs = Math.max(10, Math.floor(this.#leaseMs / 3));
     const timer = setInterval(() => {
-      const now = this.#now();
-      for (const claim of claims) renewAppInboxClaim(this.#db, claim, this.#leaseMs, now);
+      renewAppInboxClaim(this.#db, claim, this.#leaseMs, this.#now());
     }, intervalMs);
     timer.unref?.();
     return () => clearInterval(timer);

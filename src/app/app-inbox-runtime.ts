@@ -76,7 +76,6 @@ export type StartAppInboxRuntimeOptions = {
   scanIntervalMs?: number;
   leaseMs?: number;
   retryAfterMs?: number;
-  maxBatchSize?: number;
   now?: () => number;
   observerContext?: (appId: string, appDir: string) => ObserverContext;
   /** State root used to restore an oversized event body while resuming a frozen plan. */
@@ -280,7 +279,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       : undefined,
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
-    maxBatchSize: options.maxBatchSize,
     onConversationChanged: notifyConversationUpdated,
     onRequestCompleted(item, result) {
       if (item.source.kind !== "app") return;
@@ -372,7 +370,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       active.set(appId, appActive + 1);
       dirty.delete(appId);
       const work = host.reconcileOnce(appId);
-      // reconcileOnce claims its batch before its first asynchronous boundary.
+      // reconcileOnce claims its item before its first asynchronous boundary.
       // Requeue immediately when another independent item is ready and both
       // the App and Host still have room.
       if (host.readyCount(appId) > 0) schedule(appId);
