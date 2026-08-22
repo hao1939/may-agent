@@ -940,7 +940,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
     });
   };
 
-  const unsubscribe = opts.bus.subscribe((event: AgentEvent): SubscriberResult => {
+  const unsubscribe = opts.bus.subscribeDurableRoute((event: AgentEvent): SubscriberResult => {
     if (event.type !== "cli.task.requested") return;
     const data = eventData(event) as Record<string, unknown>;
     const taskId = safeTaskId(data.taskId, now);
