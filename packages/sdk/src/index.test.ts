@@ -5,7 +5,6 @@ import ts from "typescript";
 const expectedRootExports = [
   "AgentCallOptions",
   "AppAction",
-  "AppWorkView",
   "AppConversationMessage",
   "AppConversationResource",
   "AppDefinition",
@@ -18,7 +17,6 @@ const expectedRootExports = [
   "AppObserver",
   "AppRead",
   "AppRequest",
-  "AppResourceRef",
   "AppResult",
   "AppSchedule",
   "AppTaskAttachment",

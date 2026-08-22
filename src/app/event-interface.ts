@@ -105,17 +105,6 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
         }
         optionalTextField(metadata, "requestId", "conversation.message.created data.metadata.requestId");
         optionalTextField(metadata, "command", "conversation.message.created data.metadata.command");
-        if (metadata.requestIds !== undefined) {
-          if (
-            !Array.isArray(metadata.requestIds) ||
-            metadata.requestIds.length > 100 ||
-            metadata.requestIds.some((value) => typeof value !== "string" || !value.trim())
-          ) {
-            throw new Error(
-              "conversation.message.created data.metadata.requestIds must be an array of at most 100 non-empty strings",
-            );
-          }
-        }
         if (
           metadata.taskRefs !== undefined &&
           (!Array.isArray(metadata.taskRefs) ||

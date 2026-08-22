@@ -40,7 +40,6 @@ function rememberRenderedConversationMessage(messageId) {
   }
 }
 let lastConversationSequence = Date.now();
-let lastWork = [];
 const pendingConversationReads = [];
 let conversationSyncDirty = false;
 const pendingAppReads = [];
@@ -222,30 +221,6 @@ function requestConversation(kind = "startup") {
       appId: "may",
       conversationId,
       limit: 30,
-      includeWork: false,
-    },
-    { silent: true },
-  );
-  if (!sent) pendingConversationReads.pop();
-  return sent;
-}
-
-function requestWork(options = {}) {
-  const detailRequestId = typeof options.detailRequestId === "string" ? options.detailRequestId : null;
-  const all = options.all === true;
-  const transient = options.transient === true;
-  const command = typeof options.command === "string" ? options.command : "/work";
-  const pending = detailRequestId
-    ? { kind: "detail", requestId: detailRequestId, command, transient }
-    : { kind: "list", all, command, transient };
-  pendingConversationReads.push(pending);
-  const sent = sendFrame(
-    {
-      type: "app.conversation.get",
-      appId: "may",
-      conversationId,
-      ...(detailRequestId ? { workRequestId: detailRequestId } : {}),
-      ...(all ? { allWork: true } : {}),
     },
     { silent: true },
   );
@@ -336,7 +311,6 @@ function presentView(command, text, options = {}) {
     transient: options.transient === true,
     metadata: {
       command,
-      ...(Array.isArray(options.requestIds) && options.requestIds.length > 0 ? { requestIds: options.requestIds } : {}),
       ...(Array.isArray(options.taskRefs) && options.taskRefs.length > 0 ? { taskRefs: options.taskRefs } : {}),
     },
   });
@@ -450,59 +424,6 @@ function refreshWatchedTask() {
   });
 }
 
-function renderWorkList(work, pending) {
-  if (!Array.isArray(work)) return;
-  lastWork = work;
-  const all = pending?.all === true;
-  const command = pending?.command || (all ? "/work all" : "/work");
-  const title = all ? "All work (newest first):" : "Active work:";
-  if (work.length === 0) {
-    presentView(command, `\n${title} nothing.\n`, { transient: pending?.transient === true });
-    return;
-  }
-  const lines = ["", title];
-  work.forEach((item, index) => {
-    const message = typeof item.message === "string" && item.message.trim() ? item.message.trim() : "Request";
-    const state = workStateLabel(item.state);
-    const baseline = Number(item.startedAt ?? item.createdAt);
-    const changedAt = Number(item.changedAt);
-    const age = formatWorkAge(baseline);
-    const changed = formatWorkAge(item.changedAt);
-    const showChanged = Number.isFinite(baseline) && Number.isFinite(changedAt) && changedAt > baseline;
-    lines.push(`  ${index + 1}. ${message} — ${state} · ${age}${showChanged ? ` · changed ${changed}` : ""}`);
-    if (typeof item.progress === "string" && item.progress.trim()) {
-      lines.push(`     ${item.progress.trim()}`);
-    }
-    const result = item.result && typeof item.result === "object" ? item.result : null;
-    const resultText =
-      result && typeof result.response === "string" && result.response.trim()
-        ? result.response.trim()
-        : result && typeof result.summary === "string" && result.summary.trim()
-          ? result.summary.trim()
-          : "";
-    if (resultText) {
-      lines.push("     Result:", ...resultText.split("\n").map((line) => `       ${line}`));
-    }
-  });
-  lines.push("");
-  presentView(command, lines.join("\n"), {
-    transient: pending?.transient === true,
-    requestIds: work.map((item) => item.requestId).filter((id) => typeof id === "string" && id),
-  });
-}
-
-function workStateLabel(state) {
-  const labels = {
-    queued: "Queued",
-    working: "Working",
-    analyzing: "Analyzing",
-    waiting: "Waiting",
-    ready: "Ready",
-    done: "Done",
-  };
-  return labels[state] || "Working";
-}
-
 function formatWorkTime(value) {
   const timestamp = Number(value);
   if (!Number.isFinite(timestamp)) return "Unknown";
@@ -512,70 +433,6 @@ function formatWorkTime(value) {
     .toISOString()
     .replace("T", " ")
     .replace(/\.\d{3}Z$/, " UTC");
-}
-
-function formatWorkAge(value, now = Date.now()) {
-  const timestamp = Number(value);
-  if (!Number.isFinite(timestamp)) return "unknown age";
-  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-}
-
-function formatWorkRef(ref) {
-  if (!ref || typeof ref !== "object" || typeof ref.kind !== "string" || typeof ref.id !== "string") return null;
-  return `${ref.kind}:${ref.id}`;
-}
-
-function renderWorkDetail(work, requestId, command) {
-  if (!Array.isArray(work)) return;
-  const index = lastWork.findIndex((item) => item && item.requestId === requestId);
-  const selected = lastWork.find((item) => item && item.requestId === requestId);
-  const refreshed = work.find((item) => item && item.requestId === requestId);
-  if (!refreshed) {
-    const message = selected && typeof selected.message === "string" ? selected.message.trim() : "Selected request";
-    presentView(
-      command,
-      ["", `Work ${index >= 0 ? index + 1 : "item"}:`, `  Request: ${message}`, "  Status: Not found", ""].join("\n"),
-    );
-    return;
-  }
-  if (index >= 0) lastWork[index] = refreshed;
-  const message =
-    typeof refreshed.message === "string" && refreshed.message.trim() ? refreshed.message.trim() : "Request";
-  const progress =
-    typeof refreshed.progress === "string" && refreshed.progress.trim()
-      ? refreshed.progress.trim()
-      : "No durable progress update yet.";
-  const result = refreshed.result && typeof refreshed.result === "object" ? refreshed.result : null;
-  const resultText =
-    result && typeof result.response === "string" && result.response.trim()
-      ? result.response.trim()
-      : result && typeof result.summary === "string" && result.summary.trim()
-        ? result.summary.trim()
-        : "";
-  presentView(
-    command,
-    [
-      "",
-      `Work ${index >= 0 ? index + 1 : "item"}:`,
-      `  Request: ${message}`,
-      `  Status: ${workStateLabel(refreshed.state)}`,
-      `  Progress: ${progress}`,
-      ...(resultText ? ["  Result:", ...resultText.split("\n").map((line) => `    ${line}`)] : []),
-      `  Created: ${formatWorkTime(refreshed.createdAt)}`,
-      ...(refreshed.startedAt === undefined ? [] : [`  Started: ${formatWorkTime(refreshed.startedAt)}`]),
-      `  Changed: ${formatWorkTime(refreshed.changedAt)}`,
-      ...(formatWorkRef(refreshed.executor) ? [`  Execution: ${formatWorkRef(refreshed.executor)}`] : []),
-      ...(formatWorkRef(refreshed.dependency) ? [`  Waiting on: ${formatWorkRef(refreshed.dependency)}`] : []),
-      "",
-    ].join("\n"),
-    { requestIds: [refreshed.requestId] },
-  );
 }
 
 function renderConversation(messages) {
@@ -705,15 +562,10 @@ function handleEvent(event) {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
-          lastWork = Array.isArray(event.conversation?.work) ? event.conversation.work : [];
           conversationReady = true;
           flushPendingInput();
         } else if (pending?.kind === "sync") {
           renderConversation(event.conversation?.messages);
-        } else if (pending?.kind === "detail") {
-          renderWorkDetail(event.conversation?.work, pending.requestId, pending.command);
-        } else {
-          renderWorkList(event.conversation?.work, pending);
         }
         if (conversationSyncDirty) requestConversation("sync");
       }
@@ -940,30 +792,6 @@ function handleCommand(input) {
       }
       requestTask({ ref: rest, command: input });
       return;
-    // Temporary diagnostic alias for the old Host-request projection. It is
-    // deliberately absent from help and must not be confused with Tasks.
-    case "work":
-      if (!rest) {
-        requestWork({ command: "/work" });
-        return;
-      }
-      if (rest.toLowerCase() === "all") {
-        requestWork({ all: true, command: "/work all" });
-        return;
-      }
-      if (!/^[1-9]\d*$/.test(rest)) {
-        printLine("Usage: /work [all|positive number]");
-        return;
-      }
-      {
-        const selected = lastWork[Number(rest) - 1];
-        if (!selected || typeof selected.requestId !== "string") {
-          printLine(`[work] No item ${rest}. Use /work to refresh the list.`);
-          return;
-        }
-        requestWork({ detailRequestId: selected.requestId, command: `/work ${rest}` });
-      }
-      return;
     case "watch": {
       if (!rest) {
         if (!watchedTask) {
@@ -1062,8 +890,7 @@ function handleInput(line) {
     return;
   }
 
-  // Commands such as `/work 1` depend on the current rendered work list, and
-  // ordinary turns should follow the Conversation history the human is about
+  // Ordinary turns should follow the Conversation history the human is about
   // to see. Preserve early keystrokes until the initial Conversation snapshot
   // arrives instead of executing them against an empty local view.
   if (!connected || !conversationReady) {

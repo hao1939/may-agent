@@ -43,7 +43,7 @@ export interface AttachControlSocketOptions {
   getAppConversation?: (
     appId: string,
     conversationId: string,
-    options?: { limit?: number; includeWork?: boolean; allWork?: boolean; workRequestId?: string },
+    options?: { limit?: number },
   ) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
@@ -644,17 +644,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           const conversationId = typeof frame.conversationId === "string" ? frame.conversationId.trim() : "";
           const limit = frame.limit === undefined ? undefined : Number(frame.limit);
-          const workRequestId = typeof frame.workRequestId === "string" ? frame.workRequestId.trim() : undefined;
-          const allWork = frame.allWork === true;
-          const includeWork = frame.includeWork === undefined ? undefined : frame.includeWork === true;
-          if (frame.includeWork !== undefined && typeof frame.includeWork !== "boolean") {
-            writeFrame(socket, {
-              type: "error",
-              command: normalized.command,
-              message: "includeWork must be a boolean",
-            });
-            continue;
-          }
           if (!appId || !conversationId || !getAppConversation) {
             writeFrame(socket, {
               type: "error",
@@ -673,12 +662,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               conversationId,
-              conversation: getAppConversation(appId, conversationId, {
-                limit,
-                workRequestId,
-                allWork,
-                ...(includeWork === undefined ? {} : { includeWork }),
-              }),
+              conversation: getAppConversation(appId, conversationId, { limit }),
             });
           } catch (error) {
             writeFrame(socket, {

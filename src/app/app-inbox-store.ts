@@ -6,7 +6,6 @@ import type {
   AppInput,
   AppInputSource,
   AppResult,
-  AppWorkView,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
@@ -384,14 +383,6 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
             ...(typeof metadata.command === "string" && metadata.command.trim()
               ? { command: metadata.command.trim() }
               : {}),
-            ...(Array.isArray(metadata.requestIds)
-              ? {
-                  requestIds: metadata.requestIds
-                    .filter((value): value is string => typeof value === "string" && Boolean(value.trim()))
-                    .map((value) => value.trim())
-                    .slice(0, 100),
-                }
-              : {}),
             ...(Array.isArray(metadata.taskRefs)
               ? {
                   taskRefs: metadata.taskRefs
@@ -538,149 +529,16 @@ export function readAppConversationResource(
   db: SqliteDb,
   appId: string,
   conversationId: string,
-  options: { limit?: number; includeWork?: boolean; allWork?: boolean; workRequestId?: string } = {},
+  options: { limit?: number } = {},
 ): AppConversationResource {
   const limit = options.limit ?? 50;
   const messages = listAppConversationMessages(db, appId, conversationId, limit);
-  const workRequestId = options.workRequestId?.trim();
   return {
     id: conversationId,
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
     messages,
-    work:
-      options.includeWork === false
-        ? []
-        : listAppWork(db, appId, {
-            // `allWork` is an explicit full-history read. Keep the ordinary active
-            // view bounded by the conversation limit, but do not silently truncate
-            // the history page because message and work bounds are separate concerns.
-            limit: workRequestId ? 1 : options.allWork ? undefined : Math.min(limit, 100),
-            all: options.allWork,
-            requestId: workRequestId,
-            includeResultForRequestId: workRequestId,
-          }),
   };
-}
-
-function boundedWorkText(value: string, limit: number): string {
-  const normalized = value.replace(/\s+/g, " ").trim();
-  if (normalized.length <= limit) return normalized;
-  return `${normalized.slice(0, limit - 1).trimEnd()}…`;
-}
-
-function workMessage(item: AppInboxItem): string {
-  const data = item.input.data;
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    const record = data as Record<string, unknown>;
-    for (const field of ["message", "text"]) {
-      if (typeof record[field] === "string" && record[field].trim()) {
-        return boundedWorkText(record[field], 160);
-      }
-    }
-  }
-  return boundedWorkText(`${item.input.kind} request`, 160);
-}
-
-function workState(item: AppInboxItem): AppWorkView["state"] {
-  // A result is semantic completion. Outbound transport may still be pending,
-  // failed, or uncertain, but that is Host health—not the human's work state.
-  if (item.result) return "done";
-  if (item.status === "done") return "done";
-  if (item.status === "pending") return "queued";
-  if (item.waitingOn?.kind === "analysis" || item.waitingOn?.kind === "session") return "analyzing";
-  if (item.waitingOn) return "waiting";
-  return "working";
-}
-
-function workProgress(deliveries: AppInboxDelivery[]): string | undefined {
-  return deliveries.filter((delivery) => delivery.kind === "progress" && delivery.text?.trim()).at(-1)?.text;
-}
-
-function workDependency(item: AppInboxItem): AppWorkView["dependency"] {
-  if (!item.waitingOn) return undefined;
-  return {
-    kind: item.waitingOn.kind === "app" ? "request" : item.waitingOn.kind,
-    id: item.waitingOn.id,
-  };
-}
-
-function workResult(result: AppResult, exact: boolean): AppResult {
-  if (exact) return result;
-  return {
-    summary: boundedConversationText(result.summary, 1_000),
-    ...(result.response ? { response: boundedConversationText(result.response, 4_000) } : {}),
-    ...(result.evidence
-      ? { evidence: result.evidence.slice(0, 8).map((entry) => boundedConversationText(entry, 500)) }
-      : {}),
-  };
-}
-
-/** Read-only human work view derived from durable App requests. */
-export function listAppWork(
-  db: SqliteDb,
-  appId: string,
-  options: {
-    all?: boolean;
-    excludeRequestId?: string;
-    requestId?: string;
-    includeResultForRequestId?: string;
-    limit?: number;
-  } = {},
-): AppWorkView[] {
-  requiredText(appId, "appId");
-  const limit = options.limit;
-  if (limit !== undefined && (!Number.isSafeInteger(limit) || limit <= 0 || limit > 100)) {
-    throw new Error("Work limit must be an integer from 1 to 100");
-  }
-  const excludeRequestId = options.excludeRequestId?.trim();
-  const requestId = options.requestId?.trim();
-  const includeResultForRequestId = options.includeResultForRequestId?.trim();
-  const all = options.all === true || Boolean(requestId);
-  const rows = db
-    .prepare(
-      `SELECT * FROM app_inbox_items
-       WHERE app_id = ? AND source_kind = 'human'
-         AND continues_request_id IS NULL
-         AND (? = 1 OR (status IN ('pending', 'handling') AND result IS NULL))
-         AND (? = '' OR id != ?)
-         AND (? = '' OR id = ?)
-       ORDER BY created_at DESC, id DESC
-       ${limit === undefined ? "" : "LIMIT ?"}`,
-    )
-    .all(
-      appId,
-      all ? 1 : 0,
-      excludeRequestId ?? "",
-      excludeRequestId ?? "",
-      requestId ?? "",
-      requestId ?? "",
-      ...(limit === undefined ? [] : [limit]),
-    );
-
-  return rows.map((row) => {
-    const item = rowToItem(row);
-    const deliveries = listAppInboxDeliveries(db, item.id);
-    const state = workState(item);
-    const progress = workProgress(deliveries);
-    const dependency = workDependency(item);
-    const changedAt = deliveries
-      .filter((delivery) => delivery.kind === "progress")
-      .reduce((latest, delivery) => Math.max(latest, delivery.createdAt), item.changedAt);
-    return {
-      requestId: item.id,
-      ...(item.conversationId ? { conversationId: item.conversationId } : {}),
-      message: workMessage(item),
-      state,
-      ...(progress ? { progress: boundedWorkText(progress, 240) } : {}),
-      ...(item.result ? { result: workResult(item.result, includeResultForRequestId === item.id) } : {}),
-      ...(item.sessionId ? { executor: { kind: "session" as const, id: item.sessionId } } : {}),
-      ...(dependency ? { dependency } : {}),
-      createdAt: item.createdAt,
-      ...(item.startedAt === undefined ? {} : { startedAt: item.startedAt }),
-      changedAt,
-    };
-  });
 }
 
 /**

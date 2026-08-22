@@ -192,7 +192,7 @@ describe("simple event interface", () => {
     ).toThrow("data.to must be a finite number");
   });
 
-  it("accepts bounded ordered work references on a Conversation view", () => {
+  it("accepts bounded ordered Task references on a Conversation view", () => {
     const { events } = fixture();
     const receipt = events.publish(
       {
@@ -204,7 +204,6 @@ describe("simple event interface", () => {
           text: "Active work: two items",
           metadata: {
             command: "/tasks",
-            requestIds: ["request-2", "request-1"],
             taskRefs: [
               { appId: "evaluation", taskId: "review/docs" },
               { appId: "gym", taskId: "conversation-scenario" },
@@ -217,27 +216,11 @@ describe("simple event interface", () => {
 
     expect(events.get(receipt.eventId)?.event.data.metadata).toEqual({
       command: "/tasks",
-      requestIds: ["request-2", "request-1"],
       taskRefs: [
         { appId: "evaluation", taskId: "review/docs" },
         { appId: "gym", taskId: "conversation-scenario" },
       ],
     });
-    expect(() =>
-      events.publish(
-        {
-          type: "conversation.message.created",
-          target: { appId: "sample" },
-          data: {
-            conversationId: "sample:primary",
-            author: { kind: "command", id: "console" },
-            text: "Invalid view",
-            metadata: { requestIds: [""] },
-          },
-        },
-        { source: "control-socket" },
-      ),
-    ).toThrow("metadata.requestIds");
     expect(() =>
       events.publish(
         {
