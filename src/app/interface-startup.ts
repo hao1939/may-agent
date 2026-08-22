@@ -62,11 +62,11 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
             source: "control-socket",
             inputSource: { kind: "human", id: "control-socket" },
           }),
-        publishCompatibilityEvent: (input) =>
+        publishOperatorEvent: (input) =>
           options.events.publish(input, {
             source: "control-socket",
             inputSource: { kind: "human", id: "control-socket" },
-            allowUnregistered: true,
+            allowUnregisteredFact: true,
           }),
         getStatus: () =>
           options.getStatus().map((item) => ({
