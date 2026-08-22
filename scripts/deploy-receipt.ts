@@ -10,6 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import { Database } from "bun:sqlite";
 
 export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
 
@@ -19,26 +20,30 @@ export function validateDeployTaskTarget(path: string, project: string, taskId: 
       `May runtime deployment belongs to may-agent, not ${project}; route the runtime change through the may-agent App`,
     );
   }
-  let state: unknown;
+  if (!existsSync(path)) throw new Error(`Cannot read deploy task database ${path}: file does not exist`);
+  let db: Database | undefined;
   try {
-    state = JSON.parse(readFileSync(path, "utf8"));
+    db = new Database(path, { readonly: true });
+    db.exec("PRAGMA query_only = ON");
+    const authority = db
+      .query("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
+      .get(project) as { value?: string } | null;
+    if (authority?.value !== "resources") {
+      throw new Error(`Task resources for ${project} are not canonical in ${path}`);
+    }
+    const target = db
+      .query("SELECT 1 AS present FROM app_tasks WHERE app_id = ? AND task_id = ?")
+      .get(project, taskId);
+    if (!target) {
+      throw new Error(`Deploy task ${project}/${taskId} does not exist; refusing to emit an unresolvable targeted wake`);
+    }
   } catch (error) {
-    throw new Error(`Cannot read deploy task state ${path}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-  if (!state || typeof state !== "object" || Array.isArray(state)) {
-    throw new Error(`Deploy task state ${path} is not an object`);
-  }
-  const record = state as Record<string, unknown>;
-  if (record.project !== project) {
-    throw new Error(`Deploy task state ${path} belongs to ${String(record.project ?? "unknown")}, not ${project}`);
-  }
-  const resources = record.resources;
-  if (!resources || typeof resources !== "object" || Array.isArray(resources)) {
-    throw new Error(`Deploy task state ${path} has no resource map`);
-  }
-  const target = (resources as Record<string, unknown>)[taskId];
-  if (!target || typeof target !== "object" || Array.isArray(target)) {
-    throw new Error(`Deploy task ${project}/${taskId} does not exist; refusing to emit an unresolvable targeted wake`);
+    if (error instanceof Error && (error.message.startsWith("Deploy task ") || error.message.startsWith("Task resources "))) {
+      throw error;
+    }
+    throw new Error(`Cannot read deploy task database ${path}: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    db?.close();
   }
 }
 

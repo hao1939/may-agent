@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Database } from "bun:sqlite";
 import { deployReceiptPrompt, readDeployReceiptForTask } from "../src/app/app-task-runtime";
 import { requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
 
@@ -12,27 +13,38 @@ function fixture() {
   return { projectDir, path: join(receiptDir, "correlation-1.json") };
 }
 
+function taskDatabase(projectDir: string, appId: string, taskIds: string[]): string {
+  const path = join(projectDir, "may.db");
+  const db = new Database(path, { create: true });
+  db.exec(`
+    CREATE TABLE app_task_store_meta (
+      app_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
+      PRIMARY KEY(app_id, key)
+    );
+    CREATE TABLE app_tasks (
+      app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+      PRIMARY KEY(app_id, task_id)
+    );
+  `);
+  db.query("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'authority', 'resources')").run(appId);
+  const insert = db.query("INSERT INTO app_tasks(app_id, task_id) VALUES (?, ?)");
+  for (const taskId of taskIds) insert.run(appId, taskId);
+  db.close();
+  return path;
+}
+
 describe("restart-aware deploy receipts", () => {
   it("rejects a stale exact-task wake before deployment", () => {
     const f = fixture();
     try {
-      const statePath = join(f.projectDir, "state.json");
-      writeFileSync(
-        statePath,
-        JSON.stringify({
-          project: "may-agent",
-          resources: {
-            live: { metadata: { id: "live" }, status: { phase: "running" } },
-          },
-        }),
-      );
-      expect(() => validateDeployTaskTarget(statePath, "may-agent", "missing")).toThrow(
+      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live"]);
+      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "missing")).toThrow(
         "does not exist; refusing to emit an unresolvable targeted wake",
       );
-      expect(() => validateDeployTaskTarget(statePath, "other", "live")).toThrow(
+      expect(() => validateDeployTaskTarget(dbPath, "other", "live")).toThrow(
         "May runtime deployment belongs to may-agent, not other",
       );
-      expect(() => validateDeployTaskTarget(statePath, "may-agent", "live")).not.toThrow();
+      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).not.toThrow();
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
@@ -41,23 +53,39 @@ describe("restart-aware deploy receipts", () => {
   it("rejects a task owned by another App even when that task exists", () => {
     const f = fixture();
     try {
-      const statePath = join(f.projectDir, "state.json");
-      writeFileSync(
-        statePath,
-        JSON.stringify({
-          project: "aks-rp-e2e",
-          resources: {
-            "ops/deploy-may-runtime": {
-              metadata: { id: "ops/deploy-may-runtime" },
-              status: { phase: "running" },
-            },
-          },
-        }),
-      );
-
-      expect(() => validateDeployTaskTarget(statePath, "aks-rp-e2e", "ops/deploy-may-runtime")).toThrow(
+      const dbPath = taskDatabase(f.projectDir, "aks-rp-e2e", ["ops/deploy-may-runtime"]);
+      expect(() => validateDeployTaskTarget(dbPath, "aks-rp-e2e", "ops/deploy-may-runtime")).toThrow(
         "May runtime deployment belongs to may-agent, not aks-rp-e2e",
       );
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a database without canonical resource authority", () => {
+    const f = fixture();
+    try {
+      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live"]);
+      const db = new Database(dbPath);
+      db.query("DELETE FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'").run("may-agent");
+      db.close();
+
+      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).toThrow(
+        "Task resources for may-agent are not canonical",
+      );
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not accept retained legacy JSON as deployment authority", () => {
+    const f = fixture();
+    try {
+      const path = join(f.projectDir, "state.json");
+      const retained = '{"project":"may-agent","resources":{"live":{}}}\n';
+      writeFileSync(path, retained);
+      expect(() => validateDeployTaskTarget(path, "may-agent", "live")).toThrow("Cannot read deploy task database");
+      expect(readFileSync(path, "utf8")).toBe(retained);
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
@@ -186,7 +214,9 @@ describe("restart-aware deploy receipts", () => {
     const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
     expect(deploy).toContain('project="may-agent"');
     expect(deploy).not.toContain("MAY_AGENT_DEPLOY_PROJECT:-");
-    expect(deploy).toContain('deploy-receipt.ts validate-target "$task_state" "$project" "$task_id"');
+    expect(deploy).toContain('task_db="${MAY_AGENT_DEPLOY_TASK_DB:-${STATE_DIR:-/app/.state}/may.db}"');
+    expect(deploy).toContain('deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"');
+    expect(deploy).not.toContain("state.json");
     expect(deploy).toContain('source_commit="$(git rev-parse --verify HEAD)"');
     expect(deploy).toContain('canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"');
     expect(deploy).toContain('git merge-base --is-ancestor "$canonical_commit" "$source_commit"');

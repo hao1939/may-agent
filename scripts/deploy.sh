@@ -23,8 +23,8 @@ fi
 # An exact task wake is a reference to existing durable work, not task-creation
 # authority. Fail before building or restarting when a stale caller supplies a
 # task that the running App can never admit.
-task_state="${MAY_AGENT_DEPLOY_TASK_STATE:-$(dirname "$deploy_root")/${project}.app/.state/tasks/state.json}"
-bun scripts/deploy-receipt.ts validate-target "$task_state" "$project" "$task_id"
+task_db="${MAY_AGENT_DEPLOY_TASK_DB:-${STATE_DIR:-/app/.state}/may.db}"
+bun scripts/deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"
 
 source_commit="$(git rev-parse --verify HEAD)"
 canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"
