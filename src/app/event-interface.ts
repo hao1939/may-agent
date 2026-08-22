@@ -51,8 +51,8 @@ export type EventPublisherContext = {
   source: string;
   /** Trusted semantic source for App input. */
   inputSource?: AppInputSource;
-  /** Temporary compatibility for the old direct socket event shape. */
-  allowUnregistered?: boolean;
+  /** Operator/in-process fact ingress may publish domain types not owned by Host routing. */
+  allowUnregisteredFact?: boolean;
 };
 
 export type EventInterface = {
@@ -629,7 +629,7 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
     publish(rawInput, context) {
       const input = normalizeInput(rawInput);
       const definition = EVENT_DEFINITIONS[input.type];
-      if (!definition && !context.allowUnregistered) {
+      if (!definition && !context.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
       definition?.validate(input, options);

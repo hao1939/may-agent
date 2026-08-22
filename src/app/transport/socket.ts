@@ -18,7 +18,8 @@ export interface SocketUIOptions {
   socketPath: string;
   events: Pick<EventInterface, "get" | "subscribe">;
   publishEvent: (input: EventInput) => EventReceipt;
-  publishCompatibilityEvent: (input: EventInput) => EventReceipt;
+  /** Bounded operator fact ingress used by direct event frames and --emit. */
+  publishOperatorEvent: (input: EventInput) => EventReceipt;
   getStatus: () => ControlStatusItem[];
   reportInfo: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
@@ -44,7 +45,7 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-export function legacyEventInput(event: Record<string, unknown> & { type: string }): EventInput {
+export function operatorEventInput(event: Record<string, unknown> & { type: string }): EventInput {
   const canonicalData = event.data;
   const data =
     canonicalData && typeof canonicalData === "object" && !Array.isArray(canonicalData)
@@ -82,7 +83,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     // legacy control-socket field empty; clients subscribe explicitly.
     getSessionId: () => "",
     getStatus: opts.getStatus,
-    emitEvent: (event) => opts.publishCompatibilityEvent(legacyEventInput(event)),
+    emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
     publishEvent: opts.publishEvent,
     getEvent: events.get,
     describeProjectActions: opts.describeProjectActions,
