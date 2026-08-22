@@ -14,6 +14,13 @@ export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 export type AppInboxDeliveryStatus = "pending" | "sending" | "delivered" | "failed" | "uncertain";
 
+export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
+
+export type AppInboxTaskDependencyPage = {
+  items: AppInboxTaskDependencyKey[];
+  nextCursor?: AppInboxTaskDependencyKey;
+};
+
 export type AppInboxDelivery = {
   itemId: string;
   operationId: string;
@@ -695,6 +702,44 @@ export function listAppInboxDependencyWaits(db: SqliteDb, kind: AppInboxWaitKind
     .map(rowToItem);
 }
 
+/** One bounded page of distinct canonical Task dependencies awaiting review. */
+export function listAppInboxTaskDependencyKeys(
+  db: SqliteDb,
+  options: { after?: AppInboxTaskDependencyKey; limit?: number } = {},
+): AppInboxTaskDependencyPage {
+  const limit = options.limit ?? 256;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) {
+    throw new Error("App inbox task dependency limit must be an integer from 1 to 1000");
+  }
+  const after = options.after;
+  const rows = db
+    .prepare(
+      `SELECT app_id, waiting_on_id
+       FROM app_inbox_items INDEXED BY idx_app_inbox_task_wait_recovery
+       WHERE status = 'handling'
+         AND lease_owner IS NULL
+         AND waiting_on_kind = 'task'
+         AND waiting_on_id IS NOT NULL
+         ${after ? "AND (app_id, waiting_on_id) > (?, ?)" : ""}
+       GROUP BY app_id, waiting_on_id
+       ORDER BY app_id, waiting_on_id
+       LIMIT ?`,
+    )
+    .all(
+      ...(after ? [requiredText(after.appId, "after.appId"), requiredText(after.taskId, "after.taskId")] : []),
+      limit + 1,
+    )
+    .map((row) => ({
+      appId: requiredText(row.app_id, "app_id"),
+      taskId: requiredText(row.waiting_on_id, "waiting_on_id"),
+    }));
+  const items = rows.slice(0, limit);
+  return {
+    items,
+    ...(rows.length > limit && items.length > 0 ? { nextCursor: items[items.length - 1] } : {}),
+  };
+}
+
 /** True when the App inbox is the explicit unfinished owner of this dependency. */
 export function hasAppInboxWait(db: SqliteDb, waitingOn: { kind: AppInboxWaitKind; id: string }): boolean {
   const id = requiredText(waitingOn.id, "waitingOn.id");
@@ -1123,6 +1168,25 @@ export function wakeAppInboxItemsWaitingOn(
   waitingOn: { kind: AppInboxWaitKind; id: string },
   now = Date.now(),
 ): number {
+  return wakeAppInboxItemsWaitingOnScope(db, waitingOn, now);
+}
+
+/** Wake one dependency only inside its canonical App scope. */
+export function wakeAppInboxItemsWaitingOnApp(
+  db: SqliteDb,
+  appId: string,
+  waitingOn: { kind: AppInboxWaitKind; id: string },
+  now = Date.now(),
+): number {
+  return wakeAppInboxItemsWaitingOnScope(db, waitingOn, now, requiredText(appId, "appId"));
+}
+
+function wakeAppInboxItemsWaitingOnScope(
+  db: SqliteDb,
+  waitingOn: { kind: AppInboxWaitKind; id: string },
+  now: number,
+  appId?: string,
+): number {
   requiredText(waitingOn.id, "waitingOn.id");
   const result = db.run(
     `UPDATE app_inbox_items
@@ -1136,8 +1200,9 @@ export function wakeAppInboxItemsWaitingOn(
        AND lease_owner IS NULL
        AND waiting_on_kind = ?
        AND waiting_on_id = ?
+       ${appId ? "AND app_id = ?" : ""}
        AND (available_at IS NULL OR available_at > ? OR review_at IS NOT NULL)`,
-    [now, now, now, waitingOn.kind, waitingOn.id, now],
+    [now, now, now, waitingOn.kind, waitingOn.id, ...(appId ? [appId] : []), now],
   );
   return result.changes;
 }
