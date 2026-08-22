@@ -14,6 +14,7 @@ import { createAppTaskCapability } from "./app-task-capability.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
+  appControllerStartGate,
   appTaskOwnerProtocol,
   applyCanonicalOwnerResidueCleanup,
   attachLoadedAppTask,
@@ -47,6 +48,33 @@ import {
   readSessionMeta,
   writeSessionMeta,
 } from "../lib/persistence.js";
+
+describe("App controller replacement gates", () => {
+  it("waits only for the same App predecessor", async () => {
+    let releaseMay = () => {};
+    let releaseAks = () => {};
+    const mayDrained = new Promise<void>((resolve) => {
+      releaseMay = resolve;
+    });
+    const aksDrained = new Promise<void>((resolve) => {
+      releaseAks = resolve;
+    });
+    const previous = new Map([
+      ["may", { whenDrained: () => mayDrained }],
+      ["aks-rp-e2e", { whenDrained: () => aksDrained }],
+    ]);
+    let started = false;
+
+    void Promise.resolve(appControllerStartGate(previous, "may")).then(() => {
+      started = true;
+    });
+    releaseMay();
+    await Bun.sleep(0);
+
+    expect(started).toBeTrue();
+    releaseAks();
+  });
+});
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
