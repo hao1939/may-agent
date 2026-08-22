@@ -675,6 +675,20 @@ that the later exact dependency wake makes it claimable immediately. No inbox
 row, session, event, Task, or retained evidence was deleted or rewritten to
 apply this repair.
 
+Production correlation `event-driven-inbox-waits-20260822-fc0a91cc` then
+loaded the exact tested commit with matching requested/loaded artifact SHA
+`e0cf32bfdc670214b22a042b7aae1dafd76825d95cf94388df5578901e9b8424`,
+healthy status, a targeted owner-Task wake, and no duplicate deploy. All 155
+dependency waits initially observed after restart had no availability or review
+deadline and no lease; a later 12-second sample held all 159 then-current waits
+unchanged and unclaimed while new work continued to arrive. Console `/help`,
+`/apps`, `/tasks`, and exact `/task 9ba8995f` reads worked through the shared
+resource interface. Ten live samples measured median status, App-list,
+Task-list, and exact-Task reads at about 0.84 ms, 2.66 ms, 10.73 ms, and 2.00 ms.
+The main process held about 246-263 MiB RSS in a 29-second active-work sample.
+That sample still contained periodic CPU work and one larger active-work spike,
+so it proves removal of inbox reclaim churn, not the final idle-CPU target.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
