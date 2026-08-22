@@ -232,6 +232,24 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("loads an explicitly requested root group before the App has any task resources", () => {
+    const store = open();
+    const tree = fixture();
+    tree.resources = {};
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    store.importPausedSnapshot(tree, "revision-1");
+
+    const context = store.readTaskContext({ taskIds: ["first-request", "project"] });
+
+    expect(context.groups).toEqual({
+      project: { id: "project", parent_id: null, goal: "example" },
+    });
+    expect(context.tasks?.project).toMatchObject({ id: "project", parent_id: null });
+    expect(context.resources).toEqual({});
+    store.close();
+  });
+
   it("indexes a resource-backed Condition checkpoint and wakes it when due", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-resource-due-"));
     roots.push(root);
@@ -441,6 +459,48 @@ describe("AppTaskResourceStore", () => {
     expect(store.readTask("new-task")?.spec.outcome).toBe("handle new task");
     expect(store.readSnapshot().appTaskAdmissions?.["new-task-admission"]?.taskId).toBe("new-task");
     expect(existsSync(paths.taskStatePath)).toBeFalse();
+    store.close();
+  });
+
+  it("admits the first task into an active resource-backed App", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-resource-first-admission-"));
+    roots.push(root);
+    const appDir = join(root, "resource-first-admission.app");
+    mkdirSync(appDir, { recursive: true });
+    const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
+    const tree = fixture();
+    tree.resources = {};
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    store.importPausedSnapshot(tree, "revision-1");
+    store.activate("revision-1");
+    const paths = projectRuntimePaths(appDir, root);
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: root,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "may",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    cacheTaskStateReads(config);
+
+    expect(
+      observeAppTaskIntent(config, {
+        appOwner: "may",
+        admissionKey: "first-request-admission",
+        intent: {
+          id: "first-request",
+          parentId: "project",
+          outcome: "handle the first request",
+          acceptance: ["done"],
+          mode: "achieve",
+        },
+      }),
+    ).toMatchObject({ kind: "observed", taskId: "first-request", generation: 1 });
+    expect(store.readTask("first-request")?.spec.outcome).toBe("handle the first request");
+    expect(store.readSnapshot().appTaskAdmissions?.["first-request-admission"]?.taskId).toBe("first-request");
     store.close();
   });
 

@@ -729,9 +729,12 @@ export class AppTaskResourceStore {
     const groups: Record<string, TaskNode> = {};
     let pendingGroupIds = [
       ...new Set(
-        Object.values(resources).flatMap((resource) =>
-          resource.spec.parentId && !resources[resource.spec.parentId] ? [resource.spec.parentId] : [],
-        ),
+        [
+          ...[...requested].filter((id) => !resources[id]),
+          ...Object.values(resources).flatMap((resource) =>
+            resource.spec.parentId && !resources[resource.spec.parentId] ? [resource.spec.parentId] : [],
+          ),
+        ],
       ),
     ];
     while (pendingGroupIds.length > 0) {
