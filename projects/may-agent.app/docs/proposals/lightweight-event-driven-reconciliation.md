@@ -757,6 +757,24 @@ multi-gigabyte one-second burst, but the manual snapshot did not include every
 observer and schedule that aligns on a production interval boundary. The
 larger combined boundary therefore remains open for exact attribution.
 
+The follow-up source profile closed that attribution gap. The six Host SQL
+sources together took about 13 ms against the unchanged 2.0 GB database; the
+pressure came from the AKS App's two child samplers. The project sampler parsed
+the complete 49 MB planner journal and repeatedly serialized the same Tasks
+while resolving compatibility ownership. The focus sampler recursively walked
+149,773 retained artifact files to locate 3,866 aggregate results. App commit
+`4429248af2` now reads only the recent append-only planner suffix, reuses one
+bounded Task/spec view, selects spec ownership in one pass, batches related
+metrics, matches the watcher's canonical aggregate-result shape, and parses
+only files changed within the two-day observation guard. Standalone project
+sampling fell from 4.03 seconds/757,612 KiB peak RSS to 1.28 seconds/214,948
+KiB; focus sampling fell from 2.54 seconds/208,272 KiB to 0.39
+seconds/114,928 KiB. Live trigger event `5937151` persisted all 46 source
+metrics in 3.27 seconds and the observed child peak was 221,264 KiB. This work
+remains entirely in asynchronous App observation: event acceptance and
+semantic routing are unchanged, and no retained event, Task, session, metric,
+artifact, or historical journal row was deleted or rewritten.
+
 Session-end repair had one remaining broad read: a successful owner session
 loaded up to 512 attention Tasks and decoded their attempts to find failed
 executions it could release. Commit `f950638a` replaces that scan with an
