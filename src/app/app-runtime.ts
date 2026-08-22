@@ -128,6 +128,7 @@ export async function runAppRuntime(opts: {
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
   } = opts.appArgs;
+  const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
 
   const bus = new EventBus();
   const configuredHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
@@ -139,7 +140,7 @@ export async function runAppRuntime(opts: {
   let taskSessionId: string | undefined;
   let activeRL: { close: () => void } | null = null;
 
-  if (CONSOLE_ENABLED) {
+  if (interactiveConsole) {
     attachConsoleUI(
       bus,
       () => taskSessionId ?? null,
@@ -391,7 +392,7 @@ export async function runAppRuntime(opts: {
     manager,
     interfaceAgent,
     initialTask: INITIAL_TASK,
-    interactiveMode: CONSOLE_ENABLED,
+    interactiveMode: interactiveConsole,
     envSessionId: ENV_SESSION_ID,
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
@@ -403,7 +404,7 @@ export async function runAppRuntime(opts: {
     instance: opts.instanceLabel,
     socket: SOCKET_ENABLED ? SOCKET_PATH : "",
     startedAt: new Date().toISOString(),
-    startedBy: CONSOLE_ENABLED
+    startedBy: interactiveConsole
       ? "human"
       : opts.instance.startsWith("job-")
         ? "cron:" + opts.instance.replace("job-", "")
@@ -424,10 +425,10 @@ export async function runAppRuntime(opts: {
     startAppTaskControllers();
   }
 
-  if (!CONSOLE_ENABLED && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
+  if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
     bus.emit({ type: "info", message: "[task] Task completed. Exiting." });
     process.exit(0);
-  } else if (CONSOLE_ENABLED && process.stdin.isTTY) {
+  } else if (interactiveConsole) {
     await runInteractiveLoop({
       bus,
       manager,
