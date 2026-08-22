@@ -18,9 +18,11 @@ export CHROME_BIN=""
 [ -z "$CHROME_BIN" ] && [ -x /usr/bin/chromium ] && export CHROME_BIN=/usr/bin/chromium
 mkdir -p "${STATE_DIR}/chrome-profile"
 
-# may-agent args for supervisord. Web runs in a separate process so workflow
-# or LLM work cannot block the dashboard event loop.
-export MAY_ARGS="${MAY_ARGS:---chat --cron --telegram --console --socket}"
+# The service owns background work and socket-based interfaces. Human Console
+# processes connect through the socket; the in-process Console is only for a
+# direct TTY invocation. Web remains separate so workflow or LLM work cannot
+# block the dashboard event loop.
+export MAY_ARGS="${MAY_ARGS:---cron --telegram --socket}"
 
 # SSH config
 mkdir -p "${HOME}/.ssh"
