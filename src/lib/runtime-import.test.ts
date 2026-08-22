@@ -3,15 +3,51 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { importRuntimeModule } from "./runtime-import.js";
+import { importRuntimeModule, invalidateRuntimeModuleCache } from "./runtime-import.js";
 
 describe("importRuntimeModule", () => {
   const roots: string[] = [];
 
   afterEach(() => {
+    invalidateRuntimeModuleCache();
     for (const root of roots.splice(0)) {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it("loads one module graph per runtime generation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-import-generation-"));
+    roots.push(root);
+
+    const modulePath = join(root, "generation.ts");
+    writeFileSync(
+      modulePath,
+      `
+        globalThis.__mayRuntimeImportCount = (globalThis.__mayRuntimeImportCount ?? 0) + 1;
+        export const value = "first";
+        export const imports = globalThis.__mayRuntimeImportCount;
+      `,
+    );
+
+    const first = await importRuntimeModule<{ value: string; imports: number }>(modulePath, { forceBundle: true });
+    writeFileSync(
+      modulePath,
+      `
+        globalThis.__mayRuntimeImportCount = (globalThis.__mayRuntimeImportCount ?? 0) + 1;
+        export const value = "second";
+        export const imports = globalThis.__mayRuntimeImportCount;
+      `,
+    );
+    const cached = await importRuntimeModule<{ value: string; imports: number }>(modulePath, { forceBundle: true });
+
+    expect(cached).toBe(first);
+    expect(cached.value).toBe("first");
+    expect(cached.imports).toBe(first.imports);
+
+    invalidateRuntimeModuleCache();
+    const reloaded = await importRuntimeModule<{ value: string; imports: number }>(modulePath, { forceBundle: true });
+    expect(reloaded.value).toBe("second");
+    expect(reloaded.imports).toBe(first.imports + 1);
   });
 
   it("bundles external runtime modules through the canonical SDK boundary", async () => {
