@@ -107,6 +107,11 @@ matching Condition -> wake the task that owns that Condition
 no actionable route -> retain a valid record-only fact
 ```
 
+An exact Task identity is always `{appId, taskId}`. Internal Task-dependency
+events carry both fields, and inbox recovery reads and wakes that same scoped
+identity. A retained legacy event without `appId` may use the compatibility
+wake, but new producers must never address a Task by its App-local ID alone.
+
 An App subscription has a stable ID and produces input only when its translator
 returns a valid value. The Runtime passes that input through the App's one task
 resolver, persists the resulting task intent and an ordered task-event link,

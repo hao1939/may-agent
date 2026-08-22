@@ -456,6 +456,14 @@ named resource. Runtime commit `ad86431e` removed that second reader and now
 uses the same resource-local Task view as list/get. Its regression test removes
 the legacy file after activation and still resolves the exact dependency.
 
+A later production audit found 152 active inbox waits but only 10 distinct
+`{appId, taskId}` dependencies. Recovery had decoded every wait and repeated
+the same exact Task read as many as 118 times per minute. It also woke by local
+`taskId` alone even though that ID existed in two Apps. Recovery now pages a
+bounded indexed set of distinct canonical identities, reads each identity once,
+and scopes every new Task-dependency wake to its App. Ordinary dependency events
+remain the immediate path; this page remains once-per-minute recovery insurance.
+
 The production deploy of `ad86431e` completed through receipt
 `deploy-20260821T035008Z-2278365`: the loaded artifact matched the requested
 SHA-256, health was `healthy`, the owner wake was targeted, and no duplicate
