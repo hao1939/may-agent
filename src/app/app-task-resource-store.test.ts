@@ -168,6 +168,33 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("atomically bootstraps a new active resource authority", () => {
+    const store = open();
+    const tree = fixture();
+    tree.project_lifecycle = "active";
+
+    store.bootstrapSnapshot(tree, "seed:revision-1");
+
+    expect(store.isActive()).toBeTrue();
+    expect(store.projectLifecycle()).toBe("active");
+    expect(store.sourceRevision()).toBe("seed:revision-1");
+    expect(store.readTask("human")).toEqual(tree.resources?.human);
+    store.close();
+  });
+
+  it("does not overwrite an existing shadow authority during bootstrap", () => {
+    const store = open();
+    const tree = fixture();
+    store.importPausedSnapshot(tree, "migration-revision");
+    const seed = fixture();
+    seed.project_lifecycle = "active";
+
+    expect(() => store.bootstrapSnapshot(seed, "seed:revision-1")).toThrow("existing shadow authority");
+    expect(store.sourceRevision()).toBe("migration-revision");
+    expect(store.isActive()).toBeFalse();
+    store.close();
+  });
+
   it("updates one fenced task and exposes due work through the index", () => {
     const store = open();
     const tree = fixture();
