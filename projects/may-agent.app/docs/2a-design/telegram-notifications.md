@@ -243,6 +243,12 @@ it; it creates no work. Bare cancel targets only the watched Task and never
 expands to cancel-all. Ordinary language still enters Conversation admission
 rather than a command-specific ownership path.
 
+Authorized `/reload` follows the same rule. Telegram correlates the request by
+chat/message identity, renders the single `runtime.reload.finished` result in
+the originating chat/topic, and appends it to Conversation only after the send
+succeeds. It does not ask May to interpret reload or maintain another work
+tracker.
+
 ## Secrets And Presentation
 
 - Keep bot tokens and channel credentials out of prompts, facts, logs, traces,

@@ -58,6 +58,12 @@ Bare text always enters `Conversation may:primary` as one durable human
 message. It has no session target. Transport `ok` receipts stay hidden because
 they prove admission, not useful progress.
 
+`/reload` includes one adapter-local request identity. Console waits for the
+correlated `runtime.reload.finished` fact, renders its success or failure, and
+then records that rendered command result in Conversation. Other Console
+processes ignore the fact unless they issued that exact request; they receive
+the eventual shared Conversation message normally.
+
 The normal prompt is:
 
 ```text

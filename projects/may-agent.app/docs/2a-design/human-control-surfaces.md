@@ -41,6 +41,7 @@ Every human adapter exposes the same small meanings:
 | watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
 | stop watching       | `/unwatch`                | `/unwatch`                            |
 | cancel one Task     | `/cancel [ref]`           | `/cancel [ref]`                       |
+| reload definitions  | `/reload`                 | native `/reload`                      |
 | talk or give feedback | bare text               | ordinary message                      |
 
 Adapters may render these resources differently. Console uses aligned text and
@@ -79,6 +80,13 @@ indicators, and delivery notices are transient.
 
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
+
+Runtime reload is deterministic control, not App work. The request is accepted
+synchronously, the Runtime performs one reload, and one correlated
+`runtime.reload.finished` fact reports success or failure. Only the initiating
+adapter renders that fact. After successful presentation it appends the result
+as a command-authored Conversation message, so another surface and May can use
+what the human actually saw. Reload creates no Task, queue entry, or model turn.
 
 ## One focused watch
 

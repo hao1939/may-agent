@@ -252,8 +252,10 @@ watch it and re-read the resource. It carries no content, cannot create work,
 and may be coalesced.
 
 Direct typed runtime controls may bypass owner judgment. If their rendered
-result should inform later conversation, the adapter appends it as a command
-message only after the human actually saw it.
+result should inform later conversation, the Runtime emits one correlated
+terminal fact and the initiating adapter appends it as a command message only
+after the human actually saw it. For reload these are
+`runtime.reload.requested` and `runtime.reload.finished`.
 
 ## Core event vocabulary
 
