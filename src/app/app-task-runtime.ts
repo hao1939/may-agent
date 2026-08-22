@@ -2632,6 +2632,18 @@ function replayPersistedConditionEvents(
   return [...new Set(wakes.map((wake) => wake.taskId))];
 }
 
+export function appControllerStartGate(
+  previousControllers: ReadonlyMap<string, Pick<AppTaskController, "whenDrained">> | undefined,
+  appId: string,
+  runtimeStartAfter?: PromiseLike<void>,
+): PromiseLike<void> | undefined {
+  const previousAppDrained = previousControllers?.get(appId)?.whenDrained();
+  if (previousAppDrained && runtimeStartAfter) {
+    return Promise.all([previousAppDrained, runtimeStartAfter]).then(() => undefined);
+  }
+  return previousAppDrained ?? runtimeStartAfter;
+}
+
 function installConventionTaskControllers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
@@ -2641,13 +2653,6 @@ function installConventionTaskControllers(
   for (const controller of previousControllers?.values() ?? []) {
     controller.close();
   }
-  const previousControllersDrained = previousControllers?.size
-    ? Promise.all([...previousControllers.values()].map((controller) => controller.whenDrained())).then(() => undefined)
-    : undefined;
-  const startAfter =
-    previousControllersDrained && opts.startAfter
-      ? Promise.all([previousControllersDrained, opts.startAfter]).then(() => undefined)
-      : (previousControllersDrained ?? opts.startAfter);
   const controllers = new Map<string, AppTaskController>();
   const recoverySchedulers = new Map<string, AppTaskRecoveryScheduler>();
 
@@ -2670,10 +2675,9 @@ function installConventionTaskControllers(
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
-      // A superseded generation may still be finishing a reconcile that owns
-      // the task-state lock. Queue the replacement immediately, but do not let
-      // it claim work until every previous controller has drained.
-      startAfter,
+      // A superseded generation of this App may still own its task-state lock.
+      // Other Apps are independent and must not hold this controller closed.
+      startAfter: appControllerStartGate(previousControllers, descriptor.id, opts.startAfter),
       maxRetries: 3,
       ...(config.resourceStore
         ? {}
