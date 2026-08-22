@@ -1777,11 +1777,40 @@ export type AppTaskChildContext = {
   }>;
 };
 
+export type AppTaskSnapshotContext = {
+  taskId: string;
+  parentId: string;
+  generation: number;
+  phase: AppTaskResource["status"]["phase"];
+  outcome: string;
+  owner?: string;
+  priority?: "P0" | "P1" | "P2" | "P3";
+  category?: string;
+  dependsOn?: string[];
+  conditions: Array<Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "owner" | "reviewAfterMs">>;
+  readiness?: {
+    state:
+      | "ready"
+      | "dependency-blocked"
+      | "condition-blocked"
+      | "child-blocked"
+      | "capacity-blocked"
+      | "paused"
+      | "not-applicable";
+    reason: string;
+    relatedTaskIds: string[];
+  };
+  hasLiveChildren: boolean;
+  updatedAt?: string;
+};
+
 const MAX_LIVE_CHILD_CONTEXT = 16;
 const MAX_COMPLETED_CHILD_CONTEXT = 8;
 const MAX_APP_TASK_LIVE_SNAPSHOT = 64;
 const MAX_CHILD_EVIDENCE = 4;
 const MAX_CHILD_CONTEXT_TEXT = 512;
+const MAX_SNAPSHOT_CONTEXT_TEXT = 256;
+const MAX_SNAPSHOT_RELATED_TASK_IDS = 8;
 
 function boundedChildContextText(value: string): string {
   return value.length <= MAX_CHILD_CONTEXT_TEXT ? value : `${value.slice(0, MAX_CHILD_CONTEXT_TEXT - 3)}...`;
@@ -1839,6 +1868,50 @@ function liveTaskContext(
   };
 }
 
+function liveTaskSnapshotContext(
+  tree: TaskTree,
+  resource: AppTaskResource,
+  readiness: ReturnType<typeof buildAppTaskTreeProjection>["tasks"][string]["readiness"],
+): AppTaskSnapshotContext {
+  return {
+    taskId: resource.metadata.id,
+    parentId: resource.spec.parentId,
+    generation: resource.metadata.generation,
+    phase: resource.status.phase,
+    outcome: boundedChildContextText(resource.spec.outcome).slice(0, MAX_SNAPSHOT_CONTEXT_TEXT),
+    ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
+    ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
+    ...(resource.spec.category ? { category: resource.spec.category } : {}),
+    ...(resource.spec.dependsOn?.length ? { dependsOn: resource.spec.dependsOn.slice(0, MAX_LIVE_CHILD_CONTEXT) } : {}),
+    conditions: (resource.status.conditionIds ?? []).flatMap((conditionId) => {
+      const condition = tree.conditions?.[conditionId];
+      if (!condition) return [];
+      return [
+        {
+          id: condition.metadata.id,
+          type: condition.spec.type,
+          subject: condition.spec.subject,
+          ...(condition.spec.owner ? { owner: condition.spec.owner } : {}),
+          ...(condition.spec.reviewAfterMs === undefined ? {} : { reviewAfterMs: condition.spec.reviewAfterMs }),
+        },
+      ];
+    }),
+    ...(readiness
+      ? {
+          readiness: {
+            state: readiness.state,
+            reason: boundedChildContextText(readiness.reason).slice(0, MAX_SNAPSHOT_CONTEXT_TEXT),
+            relatedTaskIds: readiness.related_ids.slice(0, MAX_SNAPSHOT_RELATED_TASK_IDS),
+          },
+        }
+      : {}),
+    hasLiveChildren: (tree.tasks[resource.metadata.id]?.children ?? []).some((childId) =>
+      Boolean(tree.resources?.[childId]),
+    ),
+    updatedAt: resource.status.updatedAt,
+  };
+}
+
 /** Bounded current child state supplied to an executable parent reconciliation. */
 export function readAppTaskChildContext(config: TaskStateConfig, taskId: string): AppTaskChildContext {
   return withTaskStateLock(config, () => {
@@ -1874,7 +1947,7 @@ export function readAppTaskChildContext(config: TaskStateConfig, taskId: string)
 }
 
 export type AppTaskLiveSnapshot = {
-  live: AppTaskChildContext["live"];
+  live: AppTaskSnapshotContext[];
   truncated: boolean;
 };
 
@@ -1890,7 +1963,7 @@ export function readAppTaskLiveSnapshot(config: TaskStateConfig, currentTaskId: 
     return {
       live: candidates
         .slice(0, MAX_APP_TASK_LIVE_SNAPSHOT)
-        .map((resource) => liveTaskContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness)),
+        .map((resource) => liveTaskSnapshotContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness)),
       truncated: (indexedIds ? indexedIds.length : candidates.length) > MAX_APP_TASK_LIVE_SNAPSHOT,
     };
   });
