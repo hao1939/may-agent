@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
-import { HumanTaskService } from "./human-task-service.js";
+import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,
@@ -184,6 +184,37 @@ describe("Human Task service", () => {
       terminal: true,
       response: "finished result",
     });
+  });
+
+  test("keeps list cards bounded and reserves full results for exact detail", () => {
+    const db = database();
+    insertReceipt(db, "alpha", "large", 20);
+    const row = db.prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = 'alpha' AND receipt_id = 'large'").get() as {
+      receipt_json: string;
+    };
+    const receipt = JSON.parse(row.receipt_json);
+    receipt.outcome = "目".repeat(1_000);
+    receipt.summary = "摘".repeat(1_000);
+    receipt.response = "full response";
+    receipt.evidence = ["full evidence"];
+    db.prepare("UPDATE app_task_receipts SET receipt_json = ? WHERE app_id = 'alpha' AND receipt_id = 'large'").run(
+      JSON.stringify(receipt),
+    );
+    const service = new HumanTaskService(db, registry("alpha"));
+
+    const card = service.listTasks({ includeDone: true }).items[0]!;
+    expect(Buffer.byteLength(card.outcome, "utf8")).toBeLessThanOrEqual(HUMAN_TASK_LIST_TEXT_MAX_BYTES);
+    expect(Buffer.byteLength(card.summary!, "utf8")).toBeLessThanOrEqual(HUMAN_TASK_LIST_TEXT_MAX_BYTES);
+    expect(card.outcome.endsWith("…")).toBe(true);
+    expect(card.response).toBeUndefined();
+    expect(card.evidence).toBeUndefined();
+    expect(Buffer.byteLength(JSON.stringify(card), "utf8")).toBeLessThan(2_048);
+
+    const detail = service.getTask({ ref: card.ref });
+    expect(detail?.outcome).toBe(receipt.outcome);
+    expect(detail?.summary).toBe(receipt.summary);
+    expect(detail?.response).toBe("full response");
+    expect(detail?.evidence).toEqual(["full evidence"]);
   });
 
   test("persists Task-level cancellation, fences the attempt, and removes it from active work", () => {
