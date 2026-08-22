@@ -115,7 +115,7 @@ export function renderTelegramApps(apps: HumanAppView[]): string {
   ].join("\n");
 }
 
-export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean): string {
+export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean, hasMore = false): string {
   if (tasks.length === 0) return includeDone ? "No active or recent Tasks." : "No active Tasks.";
   return [
     includeDone ? "Tasks (active and recent):" : "Active Tasks:",
@@ -126,6 +126,7 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
         ...(task.terminal && result ? [`  ${result}`] : []),
       ];
     }),
+    ...(hasMore ? ["More Tasks are available; use /tasks more for the next page."] : []),
   ].join("\n");
 }
 
@@ -251,6 +252,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     string,
     { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
   >();
+  const nextTaskPageBySurface = new Map<string, { appId?: string; includeDone: boolean; cursor: string }>();
   const pendingReloads = new Map<
     string,
     { chatId: string; topicId?: number; conversationId: string; command: string }
@@ -606,15 +608,32 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (command === "/tasks") {
-      const includeDone = rest.some((part) => part.toLowerCase() === "all");
-      const appIds = rest.filter((part) => part.toLowerCase() !== "all");
-      if (appIds.length > 1) {
-        await deliverCommandView("Use: /tasks [app] [all]");
+      const more = rest.length === 1 && rest[0].toLowerCase() === "more";
+      const prior = more ? nextTaskPageBySurface.get(surface) : undefined;
+      if (more && !prior) {
+        await deliverCommandView("No next page. Use /tasks first.");
         return true;
       }
-      const page = opts.humanTasks.listTasks({ appId: appIds[0], includeDone, limit: 30 });
+      const includeDone = prior?.includeDone ?? rest.some((part) => part.toLowerCase() === "all");
+      const appIds = more ? [] : rest.filter((part) => part.toLowerCase() !== "all");
+      if (appIds.length > 1) {
+        await deliverCommandView("Use: /tasks [app] [all], or /tasks more");
+        return true;
+      }
+      const appId = prior?.appId ?? appIds[0];
+      const page = opts.humanTasks.listTasks({
+        ...(appId ? { appId } : {}),
+        includeDone,
+        limit: 30,
+        ...(prior?.cursor ? { cursor: prior.cursor } : {}),
+      });
+      if (page.nextCursor) {
+        nextTaskPageBySurface.set(surface, { ...(appId ? { appId } : {}), includeDone, cursor: page.nextCursor });
+      } else {
+        nextTaskPageBySurface.delete(surface);
+      }
       await deliverCommandView(
-        renderTelegramTasks(page.items, includeDone),
+        renderTelegramTasks(page.items, includeDone, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
       );
       return true;
@@ -771,7 +790,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
           "/apps \[app\] — Show Apps and active Task counts\n" +
-          "/tasks \[app\] \[all\] — Show Tasks\n" +
+          "/tasks \[app\] \[all\], /tasks more — Show Tasks\n" +
           "/task <ref> — Show one Task\n" +
           "/watch \[ref\] — Watch or show one Task\n" +
           "/unwatch — Stop watching without changing the Task\n" +
