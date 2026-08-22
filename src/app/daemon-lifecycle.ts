@@ -11,6 +11,11 @@ export type AppGenerationReloadResult = {
   taskApps: number;
 };
 
+export type RuntimeReloadResult = {
+  ok: boolean;
+  summary: string;
+};
+
 type ExecFileFn = (
   file: string,
   args: string[],
@@ -126,7 +131,7 @@ export function createDaemonLifecycle(opts: {
     startSupervisorRestarter(opts.bus);
   };
 
-  const handleReload = async (reloadOptions: { throwOnError?: boolean } = {}): Promise<void> => {
+  const handleReload = async (reloadOptions: { throwOnError?: boolean } = {}): Promise<RuntimeReloadResult> => {
     const result = await reloadAgents(opts.loaderOpts);
     let appGeneration: AppGenerationReloadResult | undefined;
     try {
@@ -155,9 +160,11 @@ export function createDaemonLifecycle(opts: {
     // mode) or attachDaemonInfoLog (default daemon mode). See
     // src/app/transport/daemon-info-log.ts.
     opts.bus.emit({ type: "info", message: summary });
-    if (reloadOptions.throwOnError && result.errors.length > 0) {
+    const ok = result.errors.length === 0;
+    if (reloadOptions.throwOnError && !ok) {
       throw new Error(summary);
     }
+    return { ok, summary };
   };
 
   const installProcessHandlers = () => {

@@ -533,7 +533,7 @@ describe("telegram reply e2e", () => {
         type: "runtime.reload.requested",
         source: "telegram",
         owner: "agent:may",
-        data: {},
+        data: { requestId: "telegram:12345:1002:reload" },
       });
       expect(events).toContainEqual({
         type: "runtime.shutdown.requested",

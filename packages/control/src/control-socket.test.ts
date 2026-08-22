@@ -756,6 +756,30 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("forwards correlated reload results without requiring a session subscription", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    stream.write(JSON.stringify({ type: "subscribe", sessions: [], conversations: ["may:primary"] }) + "\n");
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+
+    const result = {
+      type: "runtime.reload.finished",
+      source: "runtime",
+      owner: "agent:may",
+      data: {
+        requestId: "may-console:reload-1",
+        ok: true,
+        summary: "[reload] 6 task-enabled App(s)",
+      },
+    };
+    core.getBroadcast()?.(result);
+
+    await expect(nextFrame(stream)).resolves.toEqual(result);
+    stream.destroy();
+  });
+
   it("forwards updates only for watched Conversation resources", async () => {
     const core = createCore();
     const stream = (core.endpoint as () => Duplex)();

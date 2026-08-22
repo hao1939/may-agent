@@ -251,6 +251,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     string,
     { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
   >();
+  const pendingReloads = new Map<
+    string,
+    { chatId: string; topicId?: number; conversationId: string; command: string }
+  >();
   const watchReads = new Set<string>();
   const dirtyWatches = new Set<string>();
   const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
@@ -382,6 +386,28 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const unsubscribeConversation = bus.listen(
     (event: any) => {
       const data = event && typeof event.data === "object" && event.data ? event.data : {};
+      if (event.type === "runtime.reload.finished") {
+        const requestId = typeof data.requestId === "string" ? data.requestId : "";
+        const pending = pendingReloads.get(requestId);
+        if (!pending) return;
+        pendingReloads.delete(requestId);
+        void sendMessage(pending.chatId, String(data.summary || "[reload] Finished"), undefined, {
+          eventType: "runtime.reload.finished",
+          agent: opts.interfaceAgent,
+          messageThreadId: pending.topicId,
+        }).then((messageId) => {
+          if (!messageId) return;
+          recordConversationMessage({
+            conversationId: pending.conversationId,
+            text: String(data.summary || "[reload] Finished"),
+            command: pending.command,
+            messageId,
+            chatId: pending.chatId,
+            topicId: pending.topicId,
+          });
+        });
+        return;
+      }
       if (event.type === "conversation.updated") {
         if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) queueConversationSync();
         return;
@@ -394,7 +420,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     },
     {
       label: "telegram-conversation",
-      types: ["conversation.updated", ...TASK_UPDATE_EVENT_TYPES],
+      types: ["conversation.updated", "runtime.reload.finished", ...TASK_UPDATE_EVENT_TYPES],
     },
   );
 
@@ -532,15 +558,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
       };
     }
-    emitChatStart(
-      text,
-      msg.message_id,
-      inputContext,
-      chatIdStr,
-      topicId,
-      conversationId,
-      replyToMsgId,
-    );
+    emitChatStart(text, msg.message_id, inputContext, chatIdStr, topicId, conversationId, replyToMsgId);
   }
 
   async function handleTelegramCommand(
@@ -767,11 +785,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (command === "/reload") {
+      const requestId = `telegram:${chatIdStr}:${msg.message_id}:reload`;
+      pendingReloads.set(requestId, {
+        chatId: chatIdStr,
+        ...(topicId === undefined ? {} : { topicId }),
+        conversationId,
+        command: text,
+      });
       bus.emit({
         type: "runtime.reload.requested",
         source: "telegram",
         owner: normalizeEventOwner(opts.interfaceAgent),
-        data: {},
+        data: { requestId },
       } as any);
       return true;
     }

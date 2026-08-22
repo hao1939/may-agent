@@ -175,6 +175,9 @@ function runtimeDiagnostics(): Record<string, unknown> {
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.subscribed) return false;
   const data = eventPayload(event);
+  // Runtime control results are correlated by requestId in the initiating
+  // adapter rather than by an agent session.
+  if (event.type === "runtime.reload.finished") return true;
   if (event.type === "conversation.updated") {
     return typeof data.conversationId === "string" && client.conversations.has(data.conversationId);
   }

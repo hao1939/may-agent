@@ -8,7 +8,13 @@ import { closeDb, getDb } from "../lib/requests.js";
 import { attachCommandRouter } from "./command-router.js";
 import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
 
-function fixture(acceptsAppInput: (appId: string, input: AppInput) => boolean = () => false) {
+function fixture(
+  acceptsAppInput: (appId: string, input: AppInput) => boolean = () => false,
+  reload: () => { ok: boolean; summary: string } | Promise<{ ok: boolean; summary: string }> = () => ({
+    ok: true,
+    summary: "[reload] No changes",
+  }),
+) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
   const writer = new DbWriter(root);
@@ -39,7 +45,7 @@ function fixture(acceptsAppInput: (appId: string, input: AppInput) => boolean = 
     clearCancelLatch: () => undefined,
     projectRoot: root,
     acceptsAppInput,
-    reload: () => undefined,
+    reload,
     restart: () => undefined,
     shutdown: () => undefined,
   });
@@ -53,6 +59,78 @@ function cleanup(root: string, router: { close(): void }): void {
 }
 
 describe("command router", () => {
+  it("accepts reload synchronously and emits one correlated terminal result", async () => {
+    const f = fixture(
+      () => false,
+      async () => ({ ok: true, summary: "[reload] 6 task-enabled App(s)" }),
+    );
+    const observed: any[] = [];
+    const unsubscribe = f.bus.subscribe((event) => observed.push(event));
+    try {
+      const request = f.bus.emit({
+        type: "runtime.reload.requested",
+        source: "may-console",
+        owner: "agent:may",
+        data: { requestId: "console-reload-1" },
+      } as any);
+
+      expect(
+        getDb(f.root)
+          .prepare("SELECT delivery_status, accepted_by FROM events WHERE id = ?")
+          .get(Number(request[EVENT_ROW_ID])),
+      ).toEqual({ delivery_status: "accepted", accepted_by: "command-router:runtime-reload" });
+      await Bun.sleep(0);
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "runtime.reload.finished",
+          source: "runtime",
+          owner: "agent:may",
+          data: {
+            requestId: "console-reload-1",
+            ok: true,
+            summary: "[reload] 6 task-enabled App(s)",
+          },
+        }),
+      );
+    } finally {
+      unsubscribe();
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("turns a reload exception into a terminal failure result", async () => {
+    const f = fixture(
+      () => false,
+      async () => {
+        throw new Error("invalid App manifest");
+      },
+    );
+    const observed: any[] = [];
+    const unsubscribe = f.bus.subscribe((event) => observed.push(event));
+    try {
+      f.bus.emit({
+        type: "runtime.reload.requested",
+        source: "telegram",
+        owner: "agent:may",
+        data: { requestId: "telegram-reload-1" },
+      } as any);
+      await Bun.sleep(0);
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "runtime.reload.finished",
+          data: expect.objectContaining({
+            requestId: "telegram-reload-1",
+            ok: false,
+            summary: "[reload] Failed: invalid App manifest",
+          }),
+        }),
+      );
+    } finally {
+      unsubscribe();
+      cleanup(f.root, f.router);
+    }
+  });
+
   it("admits ordinary May input to the durable conversation App", () => {
     const f = fixture((appId) => appId === "may");
     const observed: unknown[] = [];

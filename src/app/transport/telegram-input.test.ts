@@ -1,5 +1,24 @@
 import { describe, expect, it } from "bun:test";
-import { renderTelegramApps, renderTelegramTask, renderTelegramTasks, telegramMayInputEvent } from "./telegram.js";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { closeDb } from "../../lib/requests.js";
+import { EventBus } from "../event-bus.js";
+import {
+  attachTelegramBot,
+  renderTelegramApps,
+  renderTelegramTask,
+  renderTelegramTasks,
+  telegramMayInputEvent,
+} from "./telegram.js";
+
+async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for Telegram adapter");
+    await Bun.sleep(10);
+  }
+}
 
 describe("Telegram May input", () => {
   it("maps one Telegram turn to one durable May request with exact reply identity", () => {
@@ -46,17 +65,103 @@ describe("Telegram May input", () => {
       terminal: false,
       cancellable: true,
     };
-    expect(renderTelegramApps([
-      {
-        id: "evaluation",
-        owner: "evaluator",
-        activeTasks: 1,
-        attentionTasks: 0,
-        runningTasks: 1,
-        waitingTasks: 0,
-      },
-    ])).toContain("evaluation — 1 active · 1 running");
+    expect(
+      renderTelegramApps([
+        {
+          id: "evaluation",
+          owner: "evaluator",
+          activeTasks: 1,
+          attentionTasks: 0,
+          runningTasks: 1,
+          waitingTasks: 0,
+        },
+      ]),
+    ).toContain("evaluation — 1 active · 1 running");
     expect(renderTelegramTasks([task], false)).toContain("8f12ac90 · evaluation · running");
     expect(renderTelegramTask(task)).toContain("Progress:\nReviewing current behavior");
+  });
+
+  it("returns a correlated reload result and records the rendered command in Conversation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-reload-"));
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    const calls: Array<{ method: string; body?: Record<string, any> }> = [];
+    let updatePolls = 0;
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const method = String(url).split("/").at(-1) ?? "";
+      const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+      calls.push({ method, body });
+      if (method === "getMe")
+        return { json: async () => ({ ok: true, result: { username: "may", first_name: "May" } }) } as Response;
+      if (method === "getUpdates" && updatePolls++ === 0) {
+        return {
+          json: async () => ({
+            ok: true,
+            result: [
+              {
+                update_id: 1,
+                message: { message_id: 502, message_thread_id: 7, chat: { id: 123 }, text: "/reload" },
+              },
+            ],
+          }),
+        } as Response;
+      }
+      if (method === "getUpdates") return await new Promise<Response>(() => {});
+      if (method === "sendMessage")
+        return { json: async () => ({ ok: true, result: { message_id: 900 } }) } as Response;
+      throw new Error(`Unexpected Telegram method ${method}`);
+    }) as typeof fetch;
+    process.env.TELEGRAM_BOT_TOKEN = "test-token";
+    process.env.TELEGRAM_CHAT_ID = "123";
+
+    const bus = new EventBus();
+    const observed: any[] = [];
+    const unsubscribe = bus.subscribe((event) => observed.push(event));
+    const bot = attachTelegramBot({ bus, interfaceAgent: "may", persistDir: root, humanTasks: {} as any });
+    try {
+      await waitFor(() => observed.some((event) => event.type === "runtime.reload.requested"));
+      expect(observed.find((event) => event.type === "runtime.reload.requested")).toMatchObject({
+        source: "telegram",
+        owner: "agent:may",
+        data: { requestId: "telegram:123:502:reload" },
+      });
+
+      bus.emit({
+        type: "runtime.reload.finished",
+        source: "runtime",
+        owner: "agent:may",
+        data: {
+          requestId: "telegram:123:502:reload",
+          ok: true,
+          summary: "[reload] 6 task-enabled App(s)",
+        },
+      });
+
+      await waitFor(() => calls.some((call) => call.method === "sendMessage"));
+      expect(calls.find((call) => call.method === "sendMessage")?.body).toMatchObject({
+        chat_id: "123",
+        text: "[reload] 6 task-enabled App(s)",
+        message_thread_id: 7,
+      });
+      await waitFor(() =>
+        observed.some(
+          (event) =>
+            event.type === "conversation.message.created" &&
+            event.data?.author?.kind === "command" &&
+            event.data?.metadata?.command === "/reload",
+        ),
+      );
+    } finally {
+      bot.close();
+      unsubscribe();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
   });
 });
