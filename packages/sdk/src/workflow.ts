@@ -221,9 +221,15 @@ export type TaskEventReceipt = { eventId: number };
 
 /** The complete bounded contract shared by every Task executor adapter. */
 export type TaskAttempt = {
+  /** App scope makes Task ids unambiguous to a reusable executor. */
+  appId: string;
   task: TaskDetail;
+  /** Attempt-scoped working directory selected by Runtime. */
+  cwd: string;
   events: TaskReconciliationEvents;
+  /** Publish a durable progress/finding fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
+  /** Observe live feedback addressed to this Task; events remain durable for retry. */
   onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
 };
 

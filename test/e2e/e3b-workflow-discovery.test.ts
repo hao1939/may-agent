@@ -66,9 +66,16 @@ describe("E3b: workflow discovery and scheduled execution", () => {
 
         expect(result.ran.length).toBeGreaterThanOrEqual(1);
 
-        // workflow_runs row materialized.
-        const runs = queryWorkflowRuns(db, { workflow: "e2e-noop-workflow", since: t0 });
-        expect(runs.length).toBeGreaterThanOrEqual(1);
+        // The domain event is emitted inside the workflow, before its terminal
+        // row is finalized. Wait for the terminal projection instead of racing
+        // that valid ordering.
+        const runs = await pollUntil(
+          () => {
+            const observed = queryWorkflowRuns(db, { workflow: "e2e-noop-workflow", since: t0 });
+            return observed[0]?.status === "done" ? observed : null;
+          },
+          { timeoutMs: 10_000, intervalMs: 100, description: "terminal workflow run" },
+        );
         expect(runs[0].status).toBe("done");
         expect(runs[0].endedAt).not.toBeNull();
       } finally {

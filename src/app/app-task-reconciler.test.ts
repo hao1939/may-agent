@@ -521,7 +521,7 @@ describe("App task reconciler state", () => {
         appOwner: "app-owner",
         handler: "auto",
       }),
-    ).toMatchObject({ kind: "claimed", handler: "cli:codex" });
+    ).toMatchObject({ kind: "claimed", handler: "executor:codex" });
   });
 
   it("rejects ambiguous workflow and CLI executor intent", () => {

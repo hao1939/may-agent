@@ -207,16 +207,16 @@ describe("project task handler contract", () => {
         actions: [
           {
             kind: "create-task",
-            id: "work/codex",
+            id: "work/review",
             outcome: "Implement the bounded change.",
             acceptance: ["The change is verified."],
-            executor: "codex",
+            executor: "reviewer",
           },
         ],
       },
       workflowOptions,
     );
-    expect(selected.ok && selected.result.actions?.[0]).toMatchObject({ executor: "codex" });
+    expect(selected.ok && selected.result.actions?.[0]).toMatchObject({ executor: "reviewer" });
 
     expect(
       admitTaskReconcileResult(
@@ -238,6 +238,29 @@ describe("project task handler contract", () => {
         workflowOptions,
       ),
     ).toEqual({ ok: false, error: "actions[0] cannot configure both workflow and executor" });
+
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "Invalid executor",
+          evidence: [],
+          actions: [
+            {
+              kind: "create-task",
+              id: "work/invalid-executor",
+              outcome: "Do work.",
+              acceptance: ["Done."],
+              executor: "Bad Name",
+            },
+          ],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "actions[0].executor must be a lowercase name of at most 64 characters when present",
+    });
   });
 
   it("rejects the removed expectedRevision action field", () => {

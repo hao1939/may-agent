@@ -22,6 +22,7 @@ import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { writeAppTaskConditionRouteIndex } from "./app-task-condition-index.js";
 import { currentProcessInstance, isProcessInstanceAlive } from "../lib/process-identity.js";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "./app-task-resource-store.js";
+import type { TaskExecutorName } from "@may-agent/sdk";
 
 export type TaskNode = {
   id: string;
@@ -32,7 +33,7 @@ export type TaskNode = {
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   workflow?: string;
-  executor?: "agent" | "codex" | "claude";
+  executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   conflict_scope?: string[] | string;
   goal?: string;
@@ -95,7 +96,7 @@ export type AppTaskProjectionItem = {
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   workflow?: string;
-  executor?: "agent" | "codex" | "claude";
+  executor?: TaskExecutorName;
   mode?: "achieve" | "maintain";
   generation?: number;
   resource_version?: number;
@@ -165,7 +166,7 @@ export type TaskCompletionReceipt = {
   acceptance: string[];
   owner: string;
   workflow?: string;
-  executor?: "agent" | "codex" | "claude";
+  executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   priority?: "P0" | "P1" | "P2" | "P3";
   handler: string;

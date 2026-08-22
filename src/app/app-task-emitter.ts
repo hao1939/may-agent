@@ -13,6 +13,7 @@ export type AppTaskEmission = {
   data?: Record<string, unknown>;
   target?: Record<string, unknown>;
   owner?: string;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
 };
@@ -124,6 +125,7 @@ export function createAppTaskEmitter(input: {
         source: `app-task:${appId}`,
         owner: emitted.owner ?? `agent:${input.claim.owner}`,
         ...(emitted.target ? { target: emitted.target } : {}),
+        ...(emitted.action ? { action: emitted.action } : {}),
         ...(emitted.urgency ? { urgency: emitted.urgency } : {}),
         ...(typeof emitted.ttl_ms === "number" ? { ttl_ms: emitted.ttl_ms } : {}),
         data: {
