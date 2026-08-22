@@ -74,6 +74,21 @@ describe("source-query metric measurement", () => {
     });
   });
 
+  it("registers source measurement as passive observation, not synchronous acceptance", () => {
+    const isolatedBus = new EventBus();
+    let synchronousRegistrations = 0;
+    const subscribe = isolatedBus.subscribe.bind(isolatedBus);
+    isolatedBus.subscribe = ((...args: Parameters<EventBus["subscribe"]>) => {
+      synchronousRegistrations += 1;
+      return subscribe(...args);
+    }) as EventBus["subscribe"];
+
+    attachMetricSourceMeasurement({ bus: isolatedBus, persistDir });
+
+    expect(synchronousRegistrations).toBe(0);
+    expect(isolatedBus.listenerCount).toBe(1);
+  });
+
   it("persists, measures, and alerts on the rolling subscriber failure source without hiding malformed targets", async () => {
     const db = getDb(persistDir);
     expect(
