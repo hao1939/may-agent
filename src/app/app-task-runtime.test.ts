@@ -42,6 +42,7 @@ import { readTaskState, saveTaskState } from "./app-task-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { getDb } from "../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
   addSessionBashProcessGroup,
   readSessionBashProcessGroups,
@@ -763,6 +764,21 @@ describe("canonical App task runtime", () => {
       workspace: { kind: "local", localPath: "." },
       tasks: { subscriptions: [] },
     });
+    // This test deliberately exercises the retained legacy reader boundary.
+    // Establish both legacy authorities before Runtime discovery so the new-App
+    // resource bootstrap does not change the scenario under test.
+    taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    taskReconciliationConfig({
+      appDir: foreignAppDir,
+      projectDir: foreignAppDir,
+      owner: "foreign-owner",
+      maxConcurrent: 1,
+    });
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
@@ -898,6 +914,56 @@ describe("canonical App task runtime", () => {
     expect(existsSync(legacyConfig.statePath)).toBeFalse();
   });
 
+  it("bootstraps a brand-new App directly into resource authority", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const statePath = projectRuntimePaths(f.appDir).taskStatePath;
+
+    const result = await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: {
+        id: "boot:new-resource-store",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    const store = result.installed[0]?.resourceStore;
+    expect(store?.isActive()).toBeTrue();
+    expect(store?.projectLifecycle()).toBe("active");
+    expect(store?.sourceRevision()).toMatch(/^seed:[0-9a-f]{64}$/);
+    expect(store?.readSnapshot().root_task_id).toBe("root");
+    expect(existsSync(statePath)).toBeFalse();
+  });
+
+  it("does not treat an existing legacy App as a new resource bootstrap", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const legacy = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+
+    const result = await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: {
+        id: "boot:retained-legacy-store",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    expect(result.installed[0]?.resourceStore).toBeUndefined();
+    expect(existsSync(legacy.statePath)).toBeTrue();
+    expect(AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample")).toBeNull();
+  });
+
   it("yields readiness inside one large reconciliation after claim persistence", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -1019,13 +1085,13 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     };
-    await installAppTaskRuntimes(runtimeOptions);
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
       owner: "sample-owner",
       maxConcurrent: 1,
     });
+    await installAppTaskRuntimes(runtimeOptions);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/resumable",

@@ -175,7 +175,6 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
       },
       get: getTask,
     },
-    task: getTask,
     async execution(executionId) {
       return readRuntimeExecutionView(opts, executionId);
     },

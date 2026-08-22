@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { AppEvent, TaskIntent } from "@may-agent/sdk";
+import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
 import { loadAppDefinitions, type LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistrySnapshot = Readonly<{
@@ -76,6 +77,10 @@ export class AppRegistry {
   private async performReload(
     apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
   ): Promise<LoadedAppDefinition[]> {
+    // Discovery is part of the serialized reload transaction. Invalidating
+    // here makes a rejected generation retryable and prevents a queued reload
+    // from reusing the module graph discovered by its predecessor.
+    invalidateRuntimeModuleCache();
     const next = await loadAppDefinitions(this.projectsRoot);
     const generation = this.current.generation + 1;
     const prospective = Object.freeze({

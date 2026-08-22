@@ -49,7 +49,7 @@ import {
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths, readTaskStateLifecycle } from "./app-task-runtime-state.js";
-import { cacheTaskStateReads, readTaskState, refreshAppTaskTreeProjection } from "./app-task-store.js";
+import { cacheTaskStateReads, readTaskState, refreshAppTaskTreeProjection, type TaskTree } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
@@ -3384,6 +3384,41 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   }
 }
 
+function discoverAppTaskResourceStore(
+  persistDir: string | undefined,
+  appId: string,
+  appDir: string,
+): AppTaskResourceStore | null {
+  if (!persistDir) return null;
+  const db = getDb(persistDir);
+  const active = AppTaskResourceStore.activeFromDb(db, appId);
+  if (active) return active;
+  if (existsSync(projectRuntimePaths(appDir).taskStatePath)) return null;
+
+  const seedPath = join(appDir, "tasks", "seed.json");
+  const seedText = existsSync(seedPath) ? readFileSync(seedPath, "utf8") : "{}";
+  const parsed = JSON.parse(seedText) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`App ${appId} task seed must be a JSON object`);
+  }
+  const seed = parsed as Record<string, unknown>;
+  const tree = {
+    ...seed,
+    project: typeof seed.project === "string" && seed.project.trim() ? seed.project : appId,
+    project_lifecycle: seed.project_lifecycle === "paused" ? "paused" : "active",
+    groups: seed.groups && typeof seed.groups === "object" && !Array.isArray(seed.groups) ? seed.groups : {},
+    resources:
+      seed.resources && typeof seed.resources === "object" && !Array.isArray(seed.resources) ? seed.resources : {},
+    tasks: {},
+  } as TaskTree;
+  const sourceRevision = `seed:${createHash("sha256").update(seedText).digest("hex")}`;
+  const store = AppTaskResourceStore.fromDb(db, appId);
+  store.bootstrapSnapshot(tree, sourceRevision);
+  const bootstrapped = AppTaskResourceStore.activeFromDb(db, appId);
+  if (!bootstrapped) throw new Error(`App ${appId} task resource bootstrap did not publish authority`);
+  return bootstrapped;
+}
+
 async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Promise<AppTaskRuntimeDescriptor[]> {
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
@@ -3393,7 +3428,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
     const id = app.id;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
-    const resourceStore = opts.persistDir ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), id) : null;
+    const resourceStore = discoverAppTaskResourceStore(opts.persistDir, id, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
