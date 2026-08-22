@@ -1,5 +1,6 @@
 # May App
 
-The May App is the durable conversation address for human requests and explicit
-human-decision obligations. It owns no platform task policy; platform convergence
-belongs to the separate `may-agent` App.
+May is the human-facing name of this App. It is the durable conversation
+address for human requests and explicit human-decision obligations. It owns no
+Host operations policy; those outcomes belong to the separate Host Operations
+App (stable technical `appId: may-agent`).

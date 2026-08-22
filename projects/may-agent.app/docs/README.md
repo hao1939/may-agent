@@ -1,21 +1,28 @@
-# may-agent Documentation
+# May System Documentation
 
 This directory is the single design and operating-documentation home for the
-May-agent platform, including the runtime in `projects/may-agent`. Runtime code
+May system, including the Host in `projects/may-agent`. Runtime code
 repositories do not keep parallel design folders. When code changes a
 contract, update the corresponding document here in the same change.
 
-May-agent is easiest to understand as:
+The system is easiest to understand as:
 
 ```text
 events carry input and facts
 metrics expose signals
 agents judge and act
 workflows enforce a learned bounded process
-apps own durable domain results
+apps own durable outcomes and results
 projects hold goal and posture
-tasks optionally reconcile desired state across bounded attempts
+tasks are the one App work resource
+tasks reconcile desired state across bounded attempts
 ```
+
+In May-specific names, **May** is the human-facing name of the **May App**
+(`may`), which owns Conversation Tasks. The **Host Operations App**
+(`may-agent`) owns Tasks that operate the Host. An agent execution named `may`
+is only a bounded attempt, not another durable owner. There is no separate
+architectural component called “May agent.”
 
 ## Documentation tiers
 

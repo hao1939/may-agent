@@ -28,7 +28,7 @@ function admittedInput(input: AppInput) {
   };
 }
 
-describe("canonical may-agent platform App", () => {
+describe("Host Operations App", () => {
   it("owns one manifest and keeps addressed work separate from task wakes", () => {
     expect(app).toMatchObject({
       id: "may-agent",

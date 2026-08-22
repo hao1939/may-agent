@@ -132,7 +132,9 @@ without confirming that `/proc/<pid>/cmdline` is the running daemon.
 
 ## Runtime deployment target
 
-A correlated Runtime deployment must name an existing `may-agent` Task. Before
+A correlated Runtime deployment must name an existing **Host Operations App**
+Task with `appId: may-agent`. A May App (`appId: may`) Conversation Task is not
+deployment authority even when May created or routed the request. Before
 building or restarting, the deploy preflight reads that exact `{appId, taskId}`
 from the Host database (`$STATE_DIR/may.db`, normally `/app/.state/may.db`) and
 verifies that `app_task_store_meta.authority` is `resources`. The read is
@@ -142,7 +144,10 @@ Task fails closed before any artifact or process changes.
 The archive build passes its validated source commit explicitly into the
 compiler. `may-agent --version` must work without a source checkout and report
 that embedded short commit; the deployment receipt remains the authoritative
-full source-commit/artifact-hash binding.
+full source-commit/artifact-hash binding. The same archive stages an explicit
+versioned UI release. The supervisor activates binary, Console, SDK, and UI as
+one set and restores the prior set on failed readiness; the build must not
+write through an archive-relative path into retained `.state`.
 
 The retained App-local `.state/tasks/state.json` is migration evidence after
 cutover. Deployment must not consult, recreate, or mutate it.

@@ -56,10 +56,12 @@ The Host has five jobs:
 
 The Host also validates and loads complete App definitions. Reload either
 publishes a complete replacement or keeps the previous definition active.
-Replacing Host code is different: deployment is owned by the `may-agent` App,
-requires a May-owned task, and accepts only a candidate containing current
-canonical May source. An App may request that change but cannot deploy the Host
-from its own task.
+Replacing Host code is different: deployment is owned by the **Host Operations
+App** (stable `appId: may-agent`), requires a Task whose canonical identity has
+that App ID, and accepts only a candidate containing current canonical May
+source. The May App may understand and route the human request, but its own
+`appId: may` Task cannot authorize a Host deployment. A domain App may request
+the change but cannot deploy the Host from its own Task.
 
 Host maintenance may inspect and repair Host-owned state. If it discovers a
 domain decision, it publishes a fact to an App. A maintenance file cannot

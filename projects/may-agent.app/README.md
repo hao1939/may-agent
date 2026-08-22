@@ -1,20 +1,23 @@
-# May-agent Agent App
+# Host Operations App (`may-agent`)
 
-This directory is the canonical Agent App/control plane for the `may-agent`
-domain workspace.
+This directory contains the ordinary App that owns operation of the May Host.
+Its human name is **Host Operations App**. Its stable technical App ID remains
+`may-agent` so retained Task identities do not change.
 
 ## Boundary
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a
   normal portable repo.
-- `app.ts` is the single canonical platform App manifest: addressed input,
-  event schedules, task subscriptions, actions, and task policy.
-- `../may.app/app.ts` is the separate `may` conversation App: one durable human
-  message at a time, with no schedules, observers, or App tasks.
+- `app.ts` is the single canonical Host Operations App manifest: addressed
+  input, event schedules, task subscriptions, actions, and task policy.
+- `../may.app/app.ts` is the separate May App (`appId: may`): it owns human
+  Conversation Tasks, answers directly, or requests typed work from the
+  responsible App.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
-- `.state/tasks/state.json` is the sole mutable task-resource authority;
-  `.state/tasks/tree.json` is a generated read-only projection.
+- Host Task resources are the sole mutable work authority. Retained
+  `.state/tasks/state.json` and `.state/tasks/tree.json` files are migration
+  evidence or generated projections, never runnable authority.
 - `tasks/seed.json` is used only to initialize an empty runtime state.
 - `docs/` contains May-agent design, principles, manual, and proposal docs.
 - `.state/` contains local runtime state. Durable understanding belongs in

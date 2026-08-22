@@ -381,7 +381,7 @@ const app = defineApp({
   version: 1,
   owner: projectOwnerAgent,
   description:
-    "May-agent platform App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
+    "Host Operations App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
   inbox: { maxConcurrent: 2 },
   task: taskForMayAgentInput,
@@ -446,8 +446,7 @@ const app = defineApp({
   ],
   actions: {
     "advance-project": {
-      description:
-        "Ask May to review and advance the May-agent platform project.",
+      description: "Request review and advancement of the May Host project.",
       inputSchema: Type.Object({}, { additionalProperties: true }),
       toInput: (data) =>
         platformOwnerReview("manual-advance", { params: data }),

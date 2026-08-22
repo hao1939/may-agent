@@ -6,7 +6,7 @@ installed App resolves admitted input to a Task, and only Task reconciliation
 executes App policy. Scoped Task list/get reads are implemented in the SDK,
 agent tool, control socket, and HTTP adapter.
 
-May-agent has one App work object, one durable source of change, and three
+The May system has one App work object, one durable source of change, and three
 responsibility areas:
 
 ```text
@@ -72,6 +72,30 @@ Two common words are deliberately not resources:
 Humans normally talk to May or invoke a named App command and then track the
 request. They inspect a related task only when they need progress or diagnostic
 detail.
+
+### May-specific names
+
+The user-facing model has only May, Apps, and the Host:
+
+| Name | Meaning |
+| ---- | ------- |
+| **May / May App** (`appId: may`) | One concept at two levels: May is the name people talk to; May App is the code that owns those Conversation requests, understands intent, answers, or routes typed work. |
+| **Host** | Persists, schedules, runs, recovers, and delivers work for every App. |
+| **Host Operations App** (`appId: may-agent`) | An ordinary App whose domain is changing or operating the Host itself. |
+
+There is no architectural component called **May agent**. An agent run named
+`may` is only one bounded executor used by an App. It is not a durable owner.
+The technical identifier `may-agent` remains on the Host repository, binary,
+container, and Host Operations App for compatibility; context identifies which
+artifact it names. New explanatory prose should say May, May App, Host, Host
+Operations App, or agent run instead.
+
+The repository `projects/may-agent` contains the Host implementation. The App
+at `projects/may-agent.app` owns desired operational outcomes for that Host.
+
+May coordinates a cross-App request, but the responsible App owns the resulting
+Task. For example, May may understand and route a deployment request, while the
+Host Operations App owns and reconciles the deployment Task.
 
 ## Implementation words
 
@@ -229,6 +253,12 @@ between request admission and parent deferral, attempt recovery repeats only
 the same idempotent command; if the child finished before the Condition was
 installed, persisted-event replay closes the race. No App polls another App's
 store or owns a second loop.
+
+The parent must construct input accepted by the target App's declared schema.
+It cannot wrap arbitrary structured fields in a generic `message` input unless
+that target schema explicitly declares `message`. Schema rejection creates no
+Task and remains visible on the parent dependency; Runtime never guesses a
+translation.
 
 An accepted task result separates `summary` from `response`. `summary` explains
 the task state to operators and future attempts. `response` is the optional

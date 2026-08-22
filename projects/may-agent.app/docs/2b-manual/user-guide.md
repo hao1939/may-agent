@@ -65,8 +65,9 @@ For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 ## Human Requests
 
 Console, Web, Telegram, and control-socket text all admit one durable request
-linked to one `may` task. Each reconciliation attempt is a bounded job session;
-the task, not the session, owns eventual handling and restart recovery.
+linked to one May App (`appId: may`) Task. Each reconciliation attempt is a
+bounded job session; the task, not the session, owns eventual handling and
+restart recovery.
 
 ```
 may> implement a retry mechanism for failed API calls
@@ -81,6 +82,11 @@ may> now add tests for it
 Conversation context can relate the requests, but it never substitutes for a
 durable dependency. Long-running work must be represented by the current task,
 a child task, or an exact dependency before the current attempt ends.
+
+May may answer directly or send typed input to the responsible App. The target
+App then owns its own Task. For example, Runtime deployment work belongs to the
+Host Operations App (`appId: may-agent`), not to the May Conversation Task and
+not to the bounded agent run named `may`.
 
 ### May Console controls
 

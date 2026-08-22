@@ -222,11 +222,23 @@ request identity, idempotency, completion Condition, and result Event. The App
 does not emit `app.input.requested`, wait on a delivery receipt, or query the
 target App directly.
 
-The `may` App owns ordinary human conversation and reconciles each human task.
+`input` must already satisfy the target App's declared `inputSchema`. A source
+App cannot use `{ kind: "message", data: ... }` as a universal cross-App
+envelope. `message` is valid only for Apps that declare it. Invalid typed input
+is rejected before Task creation, and the source task must replan without
+claiming that the target owns work.
+
+The **May App** (stable `appId: may`) owns ordinary human conversation and
+reconciles each human task.
 It may converge in one attempt or use another App, analysis, agent, or workflow
 as a bounded capability. Console and Telegram independently render the
 resulting Conversation message; their delivery state is Host concern, not part
 of May's task outcome.
+
+The **Host Operations App** (stable `appId: may-agent`) is a different App. It
+owns platform/runtime Tasks such as a correlated Host deployment. May may route
+a human request to it, but the resulting Task belongs to `may-agent`; an agent
+execution named `may` remains only a replaceable attempt.
 
 ## Events and subscriptions
 

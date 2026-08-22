@@ -49,7 +49,9 @@ subscriptions, and workers are closed when replaced.
 ## Deployment
 
 Reload applies current agent and App definitions; it does not replace Host
-code. A Host deployment belongs to a live `may-agent` App task. The immutable
+code. A Host deployment belongs to a live **Host Operations App** Task whose
+stable App ID is `may-agent`; it never belongs to the May Conversation App
+merely because May routed the request. The immutable
 candidate must contain the current canonical May commit before it may replace
 the process binary and SDK. A project App may report a Host compatibility gap,
 but its task cannot authorize a global May deployment. Historical releases and
@@ -58,7 +60,11 @@ worktrees are evidence, never rollout targets.
 The build embeds the immutable source commit in the compiled binary; it does
 not infer identity from whichever checkout is the process working directory.
 The deployment receipt separately binds that source commit to the artifact
-hash and the matching SDK release.
+hash and the matching SDK release. The Web UI is also a versioned release
+artifact. An immutable archive build stages it under an explicit output path;
+it never derives a writable live path from the archive's parent directory. The
+supervisor switches binary, Console, SDK, and UI together and restores the
+previous set when readiness fails.
 
 ## Store first, then run
 

@@ -15,9 +15,9 @@ They do not own work.
 
 ```text
 Console ──┐
-          ├─> Conversation may:primary ─> May
+          ├─> Conversation may:primary ─> May App (`may`)
 Telegram ─┘                                │
-                                           └─> App Tasks
+                                           └─> responsible App Tasks
 ```
 
 The ordinary human objects are:
@@ -28,6 +28,8 @@ The ordinary human objects are:
 
 A Host request correlates one caller with its eventual result. A session is a
 replaceable execution attempt. Neither is the ordinary human control target.
+The May App owns Conversation Tasks; the Host Operations App (`may-agent`) owns
+platform Tasks. An agent run named `may` is only an attempt used by either App.
 
 ## Shared resource interface
 

@@ -53,8 +53,8 @@ parse ANSI output or keep a parallel screen model. Normal terminal rules apply:
 - the active browser controls the shared terminal dimensions;
 - simultaneous browsers see the same Herdr state and may affect one another's
   cursor, input, and size;
-- this is intentional because May-agent has one operator, possibly using
-  several browser locations; and
+- this is intentional because this installation has one operator, possibly
+  using several browser locations; and
 - the terminal is a whole-window route, not an embedded application tab.
 
 ## Clipboard
