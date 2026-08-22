@@ -48,8 +48,7 @@ Adapters may render these resources differently. Console uses aligned text and
 tab completion. Telegram uses compact messages and may add native buttons.
 The Host resolves Apps and Task references and revalidates canonical identity.
 
-`/work` remains a temporary hidden diagnostic alias for the old May-request
-projection. It is not another Task interface and is absent from ordinary help.
+Host request history is diagnostic data, not a second work interface.
 `/session`, `/sessions`, and `/steer` are not ordinary human commands.
 
 ## Stable Task identity
@@ -153,8 +152,7 @@ Human reads do not invoke a model and do not reconstruct Conversation history:
 - watch is push-to-read with one coalesced in-flight read.
 
 Lease renewals, tool chunks, transcript text, queue movement, and delivery
-events do not wake human Task watches. The hidden request-work projection is
-computed only when explicitly requested. Slow adapters never block Task commit.
+events do not wake human Task watches. Slow adapters never block Task commit.
 
 ## Adapter responsibilities
 

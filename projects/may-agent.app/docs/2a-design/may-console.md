@@ -47,10 +47,9 @@ Command, App, and recently rendered Task references support tab completion.
 Completion uses bounded local caches; it never asks a model to interpret a
 command.
 
-`/work` is a temporary hidden diagnostic alias for old Host-request views.
-Session listing, steering, and session cancellation are not ordinary Console
-commands. Diagnostic raw/session output remains behind explicit developer
-debug controls and is not shown in help.
+Host request history, session listing, steering, and session cancellation are
+not ordinary Console commands. Diagnostic raw/session output remains behind
+explicit developer debug controls and is not shown in help.
 
 ## Ordinary conversation
 
@@ -123,8 +122,8 @@ Console listens for `conversation.updated`, reads the bounded Conversation, and
 renders unseen stable message IDs. Messages from Telegram use a source label
 such as `you[telegram]>`. A Console process suppresses only messages it already
 rendered; another Console process may still display the same shared message.
-Passive synchronization requests messages only; it does not rebuild the hidden
-legacy request-work view.
+Passive synchronization reads messages only; it does not query Host request
+history or Task resources.
 
 The event journal retains prior command views, but the Conversation read
 returns only the newest view for each Console or Telegram surface. This keeps

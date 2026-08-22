@@ -95,10 +95,11 @@ trace, or choose a project from old metadata. May understands the reply from
 that bounded quote, the shared Conversation, and an exact focused Task when one
 is being watched.
 
-May reads the same bounded Conversation and active-work projection available to
-Console. Never choose the most recent session, latest event, or fuzzy text match
-as durable routing. If the human's meaning remains ambiguous, May asks one
-focused clarification inside the new request.
+May reads the same bounded Conversation available to Console, including the
+latest command view each surface actually showed. Task views carry exact Task
+references. Never choose the most recent session, latest event, or fuzzy text
+match as durable routing. If the human's meaning remains ambiguous, May asks
+one focused clarification inside the new request.
 
 The channel-message index records at least:
 
@@ -231,15 +232,14 @@ remain auditable, while the Conversation projection carries only the newest
 command view for each chat/topic.
 
 The presentation may use native buttons without changing the resource API.
-`/work` remains a hidden compatibility view of old May requests. Ordinary help
-does not expose session listing, steering, or session cancellation.
+Ordinary help does not expose Host request history, session listing, steering,
+or session cancellation.
 
 One chat/topic watches at most one Task. While watched, ordinary text remains a
 May Conversation turn with exact `context.focusedTask`; it is never sent
 directly to an execution session. Semantic Task events wake one coalesced exact
-read. Passive Conversation synchronization reads messages without rebuilding
-the hidden request-work view. Idle watch has no poller, timer, workflow,
-session, or model call.
+read. Passive Conversation synchronization reads bounded messages only. Idle
+watch has no poller, timer, workflow, session, or model call.
 
 The adapter validates the exact target and records the control result. A
 human-requested read result that may shape the next turn is appended as a

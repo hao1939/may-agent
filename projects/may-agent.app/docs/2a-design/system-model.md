@@ -182,14 +182,13 @@ records. They never become alternate work owners.
 
 The App inbox is the Host's request-correlation store. It does not execute a
 second App work loop or gate completion on a transport receipt. Ordinary human
-views use `/tasks` and exact Task resources. The hidden compatibility `/work`
-view lists May requests and must not be confused with Tasks or queue entries.
+views use `/tasks` and exact Task resources. Request rows remain private
+correlation and history; they are not another human work view.
 
 `Conversation may:primary` is one such projection. It reconstructs shared human
-context and work views from messages, May App requests, dependencies, and
-accepted results; it is not another database or owner. Adapters observe its
-updates and render independently, so their delivery state never gates a human
-request's semantic completion.
+context from durable messages and accepted results; it is not another database,
+work list, or owner. Adapters observe its updates and render independently, so
+their delivery state never gates a human request's semantic completion.
 
 ## Events and time
 

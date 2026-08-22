@@ -72,8 +72,8 @@ May receives the current request plus one bounded Conversation projection:
 ```text
 human message
   -> one May request linked to one May task
-  -> task reconciliation reads Conversation context + other active work
-  -> new task intent, or revision/wake of represented active work
+  -> task reconciliation reads the current Task + bounded Conversation context
+  -> new task intent, or revision/wake of an exactly referenced Task
   -> first-attempt result or bounded capability/dependency
   -> a reviewable dependency observation wakes the same task
   -> accepted task result completes the linked request
@@ -112,44 +112,34 @@ different Conversation ID is still rejected.
 
 The Conversation is reconstructed from existing durable evidence:
 
-- admitted human requests and their linked tasks;
+- human messages recorded by admitted requests;
 - accepted May results;
-- durable agent/tool/command Conversation events;
-- active or historical human work derived from task and dependency state.
+- durable agent/tool Conversation events; and
+- the newest durable command view for each adapter surface.
 
-An ordinary Conversation read contains the active-work projection derived from
-unfinished root human requests. A later human turn linked as feedback is a
-durable message, but not another projected work item. The projection is never
-persisted or reconciled separately.
-Each item is rooted at its stable request ID and may expose its most recent
-execution resource and exact dependency. Sessions and tasks remain replaceable
-mechanisms, not Conversation-owned work.
-
-`createdAt`, first `startedAt`, and semantic `changedAt` make request age and
-stale progress visible. Infrastructure heartbeats do not count as semantic
-change. Completion removes an item from the ordinary active projection; the
-result remains a durable Conversation message. A hidden diagnostic request
-view can still derive the historical correlation when an operator needs it.
+An ordinary Conversation read is only a bounded ordered message list. It does
+not contain a work projection, Task status, session state, delivery state, or
+another scheduler. Host request rows remain the private correlation/history
+that lets the projection reconstruct human messages and accepted results.
+Apps and Tasks are read through their own resource interface.
 
 There is no separate Conversation database. Adapter delivery state is not
 projected into May's answer or the human work lifecycle. Restart must
 reconstruct the same bounded resource from durable state.
 
-After durable admission of a human/command/tool message, a visible active-work
-change, or a persisted May result, the Host emits `conversation.updated`. This
-is a coalescible wake signal, not another message or a delivery guarantee.
-Console and Telegram respond by reading the Conversation and rendering stable
-message IDs they have not already shown. Adapters do not forward content to one
-another, and rendering the same message on another surface does not append a
-duplicate.
+After durable admission of a human/command/tool message or a persisted May
+result, the Host emits `conversation.updated`. This is a coalescible wake
+signal, not another message or a delivery guarantee. Console and Telegram
+respond by reading the Conversation and rendering stable message IDs they have
+not already shown. Adapters do not forward content to one another, and
+rendering the same message on another surface does not append a duplicate.
 
 The ordinary human interface reads Apps and Tasks through `/apps`, `/tasks`,
 and `/task <ref>`. When a requested view may shape the next turn, the adapter
 records a concise command-authored semantic message representing what its human
 saw. Formatting and markup stay adapter-local. Ordered canonical `taskRefs`
 accompany Task views so a later natural-language turn has the exact resources
-the human saw. The old numbered `/work` request projection remains a hidden
-diagnostic compatibility view only; it is not a second work model.
+the human saw. Host request history is not exposed as a second work model.
 
 The journal retains every command view. The bounded Conversation projection
 keeps only the newest durable command view for each adapter surface
