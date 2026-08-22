@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import type { AppEvent, AppInput, AppTaskInput } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
+import mayCanary from "./config/may-alignment-canary.json";
+import benchmarkMayCanary from "../gym/benchmarks/may-alignment/canary.json";
 import gymApp, { resolveGymTask, taskForGymInput } from "./app.ts";
 
 function event(
@@ -27,6 +28,10 @@ function admitted(input: AppInput, id = "request-1"): AppTaskInput {
 }
 
 describe("canonical Gym App", () => {
+  test("keeps the operational canary selection aligned with the Gym benchmark", () => {
+    expect(mayCanary).toEqual(benchmarkMayCanary);
+  });
+
   test("keeps May conversational while Gym owns standing operations", () => {
     const mayConfig = JSON.parse(
       readFileSync(

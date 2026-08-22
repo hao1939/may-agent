@@ -834,8 +834,10 @@ Tracing that remaining periodic work found a separate compatibility loop. Every
 five seconds it reopened and hashed every App manifest, watcher, agent
 configuration, workflow, and legacy lifecycle file to discover source changes.
 The loop has been removed rather than replaced with another watcher. App
-generations now change only through explicit `/reload` atomic publication or a
-deployment restart. Handler, workflow, guard, and App modules resolve lazily
+generations now change only through explicit `/reload` atomic publication. A
+Host deployment or restart restores the previously activated committed App
+source release; it does not discover new App behavior from the mutable
+checkout. Handler, workflow, guard, and App modules resolve lazily
 once per published runtime generation and remain loaded until the next explicit
 `/reload` or restart. The App inbox
 safety scan now defaults to one minute and exists only for recovery, schedules,

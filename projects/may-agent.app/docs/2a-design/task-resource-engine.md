@@ -470,7 +470,9 @@ completion.
 Hot reload publishes one validated App generation. Prior active attempts retain
 their capacity claims until they end, while the replacement controller may use
 remaining capacity. Generation and attempt fences prevent duplicate execution
-or stale completion.
+or stale completion. The durable App source link changes at the same publication
+boundary, so a later restart restores the accepted generation rather than the
+checkout that happens to be present.
 
 Recovery follows one ladder:
 

@@ -9,7 +9,7 @@ import {
   type EventSelector,
   type TaskIntent,
 } from "@may-agent/sdk";
-import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
+import mayCanary from "./config/may-alignment-canary.json";
 
 const projectId = "gym";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });

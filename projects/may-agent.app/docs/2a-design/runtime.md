@@ -36,6 +36,7 @@ recovery.
 
 ```text
 open stores
+  -> restore the explicitly activated App source release
   -> load agents and Apps
   -> validate one complete App generation
   -> attach event routes, schedules, observers, and task workers
@@ -43,13 +44,19 @@ open stores
   -> attach external ingress and Conversation adapters
 ```
 
-Reload prepares a full replacement before publication. Generation-owned timers,
-subscriptions, and workers are closed when replaced.
+Reload stages committed App source, prepares a full replacement, and atomically
+publishes both the in-memory registry and its durable `current` release link.
+Generation-owned timers, subscriptions, and workers are closed when replaced.
+A restart restores that link; it never discovers newer App behavior from the
+mutable checkout. App state and execution workspaces remain at their canonical
+writable paths and are not copied into source releases.
 
 ## Deployment
 
-Reload applies current agent and App definitions; it does not replace Host
-code. A Host deployment belongs to a live **Host Operations App** Task whose
+Reload applies current agent definitions and one committed App source release;
+it rejects uncommitted executable App changes and does not replace Host code.
+A Host deployment does not imply App activation. It belongs to a live **Host
+Operations App** Task whose
 stable App ID is `may-agent`; it never belongs to the May Conversation App
 merely because May routed the request. The immutable
 candidate must contain the current canonical May commit before it may replace
