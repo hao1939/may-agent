@@ -6,8 +6,7 @@ import { join } from "node:path";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { EventBus, type AgentEvent } from "./event-bus.js";
-import { EVENT_ROW_ID } from "./event-bus.js";
+import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { createAppInboxItem } from "./app-inbox-store.js";
 import { AppRegistry } from "./app-registry.js";
@@ -1769,6 +1768,121 @@ describe("canonical App task runtime", () => {
       executor: "reviewer",
       summary: "Registered executor completed the Task",
       evidence: ["test:reviewer:2"],
+    });
+  });
+
+  it("coalesces an exact-task event storm into bounded fresh reconciliations", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let nextEventId = 1;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: nextEventId++, configurable: true });
+    });
+    let calls = 0;
+    const followUpBatchSizes: number[] = [];
+    let releaseFirst = () => {};
+    let announceFirst = () => {};
+    const firstStarted = new Promise<void>((resolve) => {
+      announceFirst = resolve;
+    });
+    const firstBlocked = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        storm: async (attempt) => {
+          calls += 1;
+          if (calls === 1) {
+            announceFirst();
+            await firstBlocked;
+          } else {
+            followUpBatchSizes.push(
+              attempt.events.items.filter((item) => item.event.type === "sample.feedback").length,
+            );
+          }
+          return {
+            state: "converged",
+            summary: "Event storm was reconciled",
+            evidence: [`test:storm:${calls}`],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:event-storm",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/event-storm",
+          parentId: "operations",
+          outcome: "Reconcile every exact feedback event",
+          acceptance: ["Every linked event is observed"],
+          mode: "achieve",
+          owner: "sample-owner",
+          executor: "storm",
+        },
+      },
+      idempotencyKey: "attach:event-storm",
+      request: {
+        id: "request-event-storm",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    await firstStarted;
+    const admissions = [];
+    for (let index = 0; index < 64; index++) {
+      const feedback = {
+        type: "sample.feedback",
+        source: "test",
+        owner: "agent:sample-owner",
+        target: { appId: "sample", taskId: "work/event-storm" },
+        data: { index },
+      } as AgentEvent;
+      // Model the durable EventHub boundary: persistence assigns the row id
+      // before the exact Task route links and wakes the owner.
+      Object.defineProperty(feedback, EVENT_ROW_ID, { value: nextEventId++, configurable: true });
+      admissions.push(
+        admitLoadedCanonicalAppTaskEvent({
+          bus,
+          appId: "sample",
+          event: feedback,
+          intent: null,
+          targetedTaskId: "work/event-storm",
+        }),
+      );
+    }
+    releaseFirst();
+    expect(admissions).toHaveLength(64);
+    expect(admissions.every((admission) => admission?.accepted && admission.route === "direct")).toBeTrue();
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const deadline = Date.now() + 3_000;
+    while (!readTaskState(config).receipts?.["work/event-storm"] && Date.now() < deadline) await Bun.sleep(5);
+
+    expect(calls).toBe(3);
+    expect(followUpBatchSizes).toEqual([32, 32]);
+    expect(readTaskState(config).receipts?.["work/event-storm"]).toMatchObject({
+      handler: "executor:storm",
+      summary: "Event storm was reconciled",
+      evidence: ["test:storm:3"],
     });
   });
 
