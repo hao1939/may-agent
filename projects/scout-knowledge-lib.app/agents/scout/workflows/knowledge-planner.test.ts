@@ -81,6 +81,7 @@ describe("Scout owner reconciliation boundary", () => {
           acceptance: ["One bounded decision is recorded"],
           input: {},
           children: { live: [], completed: [] },
+          events: { items: [], truncated: false },
         },
         workspace: {
           appRoot: "/app/projects/scout-knowledge-lib.app",
@@ -167,12 +168,20 @@ describe("Scout owner reconciliation boundary", () => {
           acceptance: ["One bounded decision is recorded"],
           input: {},
           children: { live: [], completed: [] },
-          trigger: {
-            type: "project.owner.requested",
-            data: {
-              project: "scout-knowledge-lib",
-              reason: "experience-review",
-            },
+          events: {
+            items: [
+              {
+                observedAt: "2026-08-21T00:00:00.000Z",
+                event: {
+                  type: "project.owner.requested",
+                  data: {
+                    project: "scout-knowledge-lib",
+                    reason: "experience-review",
+                  },
+                },
+              },
+            ],
+            truncated: false,
           },
         },
         workspace: {

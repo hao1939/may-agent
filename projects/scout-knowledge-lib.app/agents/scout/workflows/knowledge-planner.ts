@@ -39,7 +39,7 @@ export function admitExperienceReviewResult(
 }
 
 function isExperienceReview(ctx: WorkflowContext): boolean {
-  const data = ctx.reconciliation?.trigger?.data;
+  const data = ctx.reconciliation?.events.items.at(-1)?.event.data;
   return Boolean(
     data &&
     typeof data === "object" &&

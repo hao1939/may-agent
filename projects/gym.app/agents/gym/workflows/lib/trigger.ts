@@ -11,7 +11,9 @@ function record(value: unknown): Record<string, unknown> | null {
 export function extractTrigger(
   source: TriggerSource,
 ): Record<string, unknown> | null {
-  if (typeof source !== "string") return record(source.reconciliation?.trigger);
+  if (typeof source !== "string") {
+    return record(source.reconciliation?.events.items.at(-1)?.event);
+  }
   const task = source;
   const header = "## Trigger Event";
   const lineIndex = task.lastIndexOf(`\n${header}`);

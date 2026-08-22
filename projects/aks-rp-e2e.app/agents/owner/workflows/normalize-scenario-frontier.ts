@@ -376,7 +376,8 @@ function repositoryCheckOwnerFile(
 
 function desiredRunnableMin(ctx: WorkflowContext): number {
   const fallback = 3;
-  const raw = ctx.reconciliation?.trigger?.data.desiredRunnableLeaves;
+  const raw =
+    ctx.reconciliation?.events.items.at(-1)?.event.data.desiredRunnableLeaves;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const min = Number((raw as { min?: unknown }).min);
     if (Number.isFinite(min) && min >= 1) return Math.floor(min);

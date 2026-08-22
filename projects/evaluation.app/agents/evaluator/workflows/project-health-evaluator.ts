@@ -668,7 +668,7 @@ function writeReport(
 }
 
 function triggerReason(ctx: WorkflowContext<ProjectHealthInput>): string {
-  const data = record(ctx.reconciliation?.trigger?.data);
+  const data = record(ctx.reconciliation?.events.items.at(-1)?.event.data);
   return text(data.reason) || "scheduled";
 }
 
@@ -752,7 +752,7 @@ export async function execute(
     "evaluator",
     projectHealthEvaluatorAgentPrompt(
       { targetProject, reason },
-      ctx.reconciliation.trigger ?? null,
+      ctx.reconciliation.events.items.at(-1)?.event ?? null,
     ),
     { schema: projectHealthJudgmentSchema },
   );

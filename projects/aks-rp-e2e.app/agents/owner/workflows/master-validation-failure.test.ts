@@ -152,7 +152,17 @@ function workflowContext(options: TestContextOptions = {}): WorkflowContext {
           ? (children.completed as never[])
           : [],
       },
-      ...(options.trigger ? { trigger: options.trigger } : {}),
+      events: {
+        items: options.trigger
+          ? [
+              {
+                observedAt: "2026-08-21T00:00:00.000Z",
+                event: options.trigger,
+              },
+            ]
+          : [],
+        truncated: false,
+      },
     },
     ...(callAgent ? { callAgent } : {}),
     ...(options.dispatchEvent

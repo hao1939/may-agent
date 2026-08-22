@@ -143,13 +143,21 @@ function context(appDir: string, projectDir: string, resourceVersion = 1) {
       acceptance: [],
       input: { frontierLimit: 5, maxConcurrent: 80 },
       children: { live, completed },
-      trigger: {
-        type: "project.task.tick",
-        data: {
-          action: "spec-loop",
-          taskId: "aks-spec-verification-loop",
-          maxConcurrent: 80,
-        },
+      events: {
+        items: [
+          {
+            observedAt: "2026-08-21T00:00:00.000Z",
+            event: {
+              type: "project.task.tick",
+              data: {
+                action: "spec-loop",
+                taskId: "aks-spec-verification-loop",
+                maxConcurrent: 80,
+              },
+            },
+          },
+        ],
+        truncated: false,
       },
     },
     workspace: {

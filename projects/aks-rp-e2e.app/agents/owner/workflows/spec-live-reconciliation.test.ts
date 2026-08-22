@@ -217,7 +217,17 @@ function testReconciliation(
         : [],
     },
     taskSnapshot: { live: [], truncated: false },
-    ...(input.trigger ? { trigger: input.trigger } : {}),
+    events: {
+      items: input.trigger
+        ? [
+            {
+              observedAt: "2026-08-21T00:00:00.000Z",
+              event: input.trigger,
+            },
+          ]
+        : [],
+      truncated: false,
+    },
   };
 }
 

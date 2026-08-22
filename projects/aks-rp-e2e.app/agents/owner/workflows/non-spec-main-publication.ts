@@ -635,7 +635,8 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     const prState = pullRequestState(currentPr);
     const mergeStatus = pullRequestMergeStatus(currentPr);
     const review = pullRequestReviewTrigger(
-      (reconciliation.trigger as Record<string, unknown> | undefined) ?? null,
+      (reconciliation.events.items.at(-1)?.event as
+        Record<string, unknown> | undefined) ?? null,
       existingPrId,
     );
     if (prState === "completed") {

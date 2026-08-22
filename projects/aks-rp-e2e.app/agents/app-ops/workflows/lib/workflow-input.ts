@@ -117,7 +117,10 @@ function matchingJsonObject(text: string, start: number): string | null {
 
 export function parseTriggerEvent(raw: WorkflowSource): TriggerEvent | null {
   if (isWorkflowContext(raw)) {
-    return (raw.reconciliation?.trigger as TriggerEvent | undefined) ?? null;
+    return (
+      (raw.reconciliation?.events.items.at(-1)?.event as
+        TriggerEvent | undefined) ?? null
+    );
   }
   const marker = raw.indexOf("## Trigger Event");
   if (marker < 0) return null;
@@ -151,7 +154,7 @@ export function parseReconciliationTaskPayload(
       acceptance: reconciliation.acceptance,
       input: reconciliation.input,
       children: reconciliation.children,
-      ...(reconciliation.trigger ? { trigger: reconciliation.trigger } : {}),
+      events: reconciliation.events,
     };
   }
   const marker = raw.indexOf("## Reconciliation Task");
@@ -250,8 +253,9 @@ export function resultText(result: unknown): string {
 
 export function triggerBlock(raw: WorkflowSource): string {
   if (isWorkflowContext(raw)) {
-    return raw.reconciliation?.trigger
-      ? `## Trigger Event\n\`\`\`json\n${JSON.stringify(raw.reconciliation.trigger, null, 2)}\n\`\`\``
+    const latestEvent = raw.reconciliation?.events.items.at(-1)?.event;
+    return latestEvent
+      ? `## Trigger Event\n\`\`\`json\n${JSON.stringify(latestEvent, null, 2)}\n\`\`\``
       : "";
   }
   return raw.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";

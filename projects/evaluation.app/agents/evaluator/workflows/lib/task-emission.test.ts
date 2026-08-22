@@ -37,7 +37,6 @@ function reconciliation(
       throughEventId: eventId,
       truncated: false,
     },
-    trigger: event,
   };
 }
 

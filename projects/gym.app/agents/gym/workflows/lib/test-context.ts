@@ -55,7 +55,6 @@ export function canonicalGymTestContext(
         list: async () => ({ items: [] }),
         get: async () => null,
       },
-      task: async () => null,
       execution: async () => null,
       metric: async () => null,
     },
@@ -199,7 +198,6 @@ export function canonicalGymTestContext(
           : [],
         truncated: false,
       },
-      ...(trigger ? { trigger } : {}),
     };
   };
   Object.defineProperty(ctx, "task", {

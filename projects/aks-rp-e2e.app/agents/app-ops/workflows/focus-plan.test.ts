@@ -352,13 +352,21 @@ function context(input: {
       input: {},
       children: { live: [], completed: [] },
       taskSnapshot: reconciliationTaskSnapshot(input.appDir),
-      trigger: {
-        type,
-        target,
-        data: {
-          ...legacyData,
-          ...(data && typeof data === "object" ? data : {}),
-        },
+      events: {
+        items: [
+          {
+            observedAt: "2026-08-21T00:00:00.000Z",
+            event: {
+              type,
+              target,
+              data: {
+                ...legacyData,
+                ...(data && typeof data === "object" ? data : {}),
+              },
+            },
+          },
+        ],
+        truncated: false,
       },
     },
     workspace: {

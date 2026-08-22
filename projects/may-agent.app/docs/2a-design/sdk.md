@@ -162,8 +162,8 @@ ordered by durable event identity. `throughEventId` is the highest event in the
 presented batch, not a caller-controlled acknowledgment. Runtime advances the
 task checkpoint only when it accepts the reconciliation result. A failed,
 interrupted, rejected, or stale result observes nothing. Compatibility may
-also expose the final item as singular `trigger` while Apps migrate, but new
-App code reads `events`.
+exist only in retained Host persistence; App code reads the ordered `events`
+batch and uses its final item when it needs the most recent event.
 
 `read` contains exact bounded projections. Ordinary resources use one
 collection shape: bounded summary pages from `list` plus explicit detail from

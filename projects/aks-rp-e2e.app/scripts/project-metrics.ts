@@ -3328,6 +3328,15 @@ export function terminalOwnerAttemptHasExpiredLease(
   return Number.isFinite(expiresAt) && expiresAt <= nowMs;
 }
 
+function latestReconciliationEvent(
+  reconciliation: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  const events = recordValue(reconciliation?.events);
+  const items = Array.isArray(events?.items) ? events.items : [];
+  const latestItem = recordValue(items.at(-1));
+  return recordValue(latestItem?.event) ?? recordValue(reconciliation?.trigger);
+}
+
 export function activeTaskSessionId(
   task: TaskNode,
   tree = loadTaskTree(),
@@ -3337,7 +3346,7 @@ export function activeTaskSessionId(
   }
   const trace = recordValue(task.trace);
   const reconciliation = recordValue(trace?.reconciliation);
-  const trigger = recordValue(reconciliation?.trigger);
+  const trigger = latestReconciliationEvent(reconciliation);
   const triggerData = recordValue(trigger?.data) ?? trigger;
   for (const key of ["sessionId", "session_id"]) {
     const value = triggerData?.[key];
@@ -3626,7 +3635,7 @@ function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
   const trace = recordValue(task.trace);
   const activeAttempt = recordValue(task.active_attempt);
   const reconciliation = recordValue(trace?.reconciliation);
-  const trigger = recordValue(reconciliation?.trigger);
+  const trigger = latestReconciliationEvent(reconciliation);
   const triggerData = recordValue(trigger?.data) ?? trigger;
   const resource = activeTaskResource(task);
   const status = recordValue(resource?.status);

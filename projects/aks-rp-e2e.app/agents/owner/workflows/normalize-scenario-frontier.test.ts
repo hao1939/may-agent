@@ -293,13 +293,21 @@ function context(
       acceptance: ["The current scenario frontier is accounted for."],
       input,
       children: { live, completed },
-      trigger: {
-        type: "project.task.tick",
-        target: {
-          project: "aks-rp-e2e",
-          taskId: "scenario-normalization",
-        },
-        data: { desiredRunnableLeaves: { min: 3, max: 5 } },
+      events: {
+        items: [
+          {
+            observedAt: "2026-08-21T00:00:00.000Z",
+            event: {
+              type: "project.task.tick",
+              target: {
+                project: "aks-rp-e2e",
+                taskId: "scenario-normalization",
+              },
+              data: { desiredRunnableLeaves: { min: 3, max: 5 } },
+            },
+          },
+        ],
+        truncated: false,
       },
     },
     workspace: {

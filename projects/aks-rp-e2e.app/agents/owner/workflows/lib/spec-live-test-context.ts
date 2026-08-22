@@ -41,9 +41,18 @@ export function createSpecLiveTestContext(
         live: options.liveChildren ?? [],
         completed: options.completedChildren ?? [],
       },
-      events: { items: [], truncated: false },
+      events: {
+        items: options.trigger
+          ? [
+              {
+                observedAt: "2026-08-21T00:00:00.000Z",
+                event: options.trigger,
+              },
+            ]
+          : [],
+        truncated: false,
+      },
       taskSnapshot: { live: [], truncated: false },
-      ...(options.trigger ? { trigger: options.trigger } : {}),
     },
     ...(options.callAgent ? { callAgent: options.callAgent } : {}),
     workspace: {

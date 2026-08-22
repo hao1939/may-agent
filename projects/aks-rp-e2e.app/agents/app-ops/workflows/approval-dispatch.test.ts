@@ -36,7 +36,17 @@ function context(input: {
       acceptance: ["The exact decision route is admitted."],
       input: input.taskInput,
       children: { live: [], completed: [] },
-      ...(input.trigger ? { trigger: input.trigger } : {}),
+      events: {
+        items: input.trigger
+          ? [
+              {
+                observedAt: "2026-08-21T00:00:00.000Z",
+                event: input.trigger,
+              },
+            ]
+          : [],
+        truncated: false,
+      },
     },
     workspace: {
       appRoot: input.appDir,

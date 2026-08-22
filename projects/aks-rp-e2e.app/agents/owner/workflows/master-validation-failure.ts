@@ -1300,7 +1300,7 @@ export function latestPassingRecoveryObservation(
   options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
   return passingRecoveryObservation(
-    ctx.reconciliation?.trigger,
+    ctx.reconciliation?.events.items.at(-1)?.event,
     input,
     options,
   );
@@ -2281,8 +2281,9 @@ export async function execute(
     ]);
   }
   input.campaignRepairReplay =
-    campaignRepairReplayObservation(ctx.reconciliation.trigger) ??
-    input.campaignRepairReplay;
+    campaignRepairReplayObservation(
+      ctx.reconciliation.events.items.at(-1)?.event,
+    ) ?? input.campaignRepairReplay;
 
   if (input.progressiveObservation && !input.artifactPath) {
     const summary = `Observed an early progressive placeholder for ${input.specId} in aggregate run ${input.pipelineRunId}; wait for the later artifact-backed pipeline.failure.observed event before any classification, source edit, or PR action.`;
@@ -2703,7 +2704,7 @@ export async function execute(
       : pullRequests(repoDir, sourceBranch)[0];
     const existingPrId = text(existingPr?.pullRequestId);
     const reviewTrigger = pullRequestReviewTrigger(
-      ctx.reconciliation?.trigger,
+      ctx.reconciliation?.events.items.at(-1)?.event,
       existingPrId,
     );
     const sourceIsInTarget =

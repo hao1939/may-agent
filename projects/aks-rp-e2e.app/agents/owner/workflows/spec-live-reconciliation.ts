@@ -9934,7 +9934,7 @@ export async function reconcileSpecLive(
     if (
       waitingForReview &&
       pullRequestReviewTriggeredForJudgment(
-        ctx.reconciliation.trigger,
+        ctx.reconciliation.events.items.at(-1)?.event,
         prId,
         review,
       )

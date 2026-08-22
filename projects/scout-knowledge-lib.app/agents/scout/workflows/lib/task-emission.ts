@@ -37,8 +37,9 @@ function reconciliationCycleKey(reconciliation: ReconciliationView): string {
     .reverse()
     .find((item) => Number.isSafeInteger(item.eventId))?.eventId;
   if (eventId !== undefined) return `event-${eventId}`;
-  if (reconciliation.trigger) {
-    return `trigger-${fingerprint(reconciliation.trigger)}`;
+  const latestEvent = events?.items.at(-1)?.event;
+  if (latestEvent) {
+    return `event-${fingerprint(latestEvent)}`;
   }
   return `state-${reconciliation.resourceVersion}`;
 }

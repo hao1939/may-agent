@@ -174,7 +174,17 @@ function context(overrides: ContextOverrides = {}): WorkflowContext {
       acceptance: [],
       input: task.input,
       children: { live: [], completed: [] },
-      ...(task.trigger ? { trigger: task.trigger } : {}),
+      events: {
+        items: task.trigger
+          ? [
+              {
+                observedAt: "2026-08-21T00:00:00.000Z",
+                event: task.trigger,
+              },
+            ]
+          : [],
+        truncated: false,
+      },
     },
     callAgent: runAgent,
     workspace: {

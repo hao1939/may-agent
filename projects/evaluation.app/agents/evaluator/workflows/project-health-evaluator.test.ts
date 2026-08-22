@@ -72,7 +72,6 @@ function reconciliation(reason = "scheduled") {
       throughEventId: 73,
       truncated: false,
     },
-    trigger,
   };
 }
 
@@ -80,7 +79,7 @@ describe("canonical project-health evaluator", () => {
   test("builds a bounded inspection prompt without runtime-private paths", () => {
     const prompt = projectHealthEvaluatorAgentPrompt(
       { targetProject: "gym.app", reason: "scheduled" },
-      reconciliation().trigger,
+      reconciliation().events.items.at(-1)?.event,
     );
     expect(prompt).toStartWith(PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE);
     expect(prompt).toContain("Agent App gym.app");

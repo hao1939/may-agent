@@ -60,13 +60,21 @@ function context(input: {
       acceptance: ["One structured liveness judgment is emitted."],
       input: {},
       children: { live: [], completed: [] },
-      trigger: {
-        type,
-        target,
-        data: {
-          ...legacyData,
-          ...(data && typeof data === "object" ? data : {}),
-        },
+      events: {
+        items: [
+          {
+            observedAt: "2026-08-21T00:00:00.000Z",
+            event: {
+              type,
+              target,
+              data: {
+                ...legacyData,
+                ...(data && typeof data === "object" ? data : {}),
+              },
+            },
+          },
+        ],
+        truncated: false,
       },
     },
     workspace: {

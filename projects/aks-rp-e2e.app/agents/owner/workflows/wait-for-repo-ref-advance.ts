@@ -432,7 +432,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     input: reconciliation.input as Record<string, unknown>,
     paths: { projectDir: ctx.workspace?.projectRoot },
   };
-  const trigger = reconciliation.trigger ?? null;
+  const trigger = reconciliation.events.items.at(-1)?.event ?? null;
   const taskId = nonEmptyString(payload?.taskId) || "unknown-task";
   const workflowInput = payload?.input ?? {};
   const repoRef = nonEmptyString(workflowInput.baseRef) || "origin/dev";

@@ -133,6 +133,7 @@ function ownerPacket(
   input: OwnerReviewInput,
   reconciliation: TaskReconciliationContext<OwnerReviewInput>,
 ): Record<string, unknown> {
+  const latestEvent = reconciliation.events.items.at(-1)?.event ?? null;
   return {
     appId: reconciliation.appId,
     taskId: reconciliation.taskId,
@@ -143,7 +144,7 @@ function ownerPacket(
     outcome: reconciliation.outcome,
     acceptance: reconciliation.acceptance,
     input,
-    trigger: reconciliation.trigger ?? null,
+    latestEvent,
     children: reconciliation.children,
   };
 }
@@ -176,7 +177,7 @@ export async function execute(
     );
   }
 
-  const triggerType = reconciliation.trigger?.type ?? null;
+  const triggerType = reconciliation.events.items.at(-1)?.event.type ?? null;
   await ctx.events.emit({
     type: "evaluation.owner_review_started",
     localKey: taskEmissionKey(ctx, "owner-review-started"),

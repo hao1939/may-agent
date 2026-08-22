@@ -188,12 +188,20 @@ function context(appDir: string, projectDir: string) {
       acceptance: [],
       input: {},
       children: { live: [...liveById.values()], completed },
-      trigger: {
-        type: "project.task.tick",
-        data: {
-          action: "feature-compact-loop",
-          taskId: "aks-feature-compact-loop",
-        },
+      events: {
+        items: [
+          {
+            observedAt: "2026-08-21T00:00:00.000Z",
+            event: {
+              type: "project.task.tick",
+              data: {
+                action: "feature-compact-loop",
+                taskId: "aks-feature-compact-loop",
+              },
+            },
+          },
+        ],
+        truncated: false,
       },
     },
     workspace: {

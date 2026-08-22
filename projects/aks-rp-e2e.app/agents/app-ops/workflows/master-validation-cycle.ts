@@ -1159,7 +1159,7 @@ export async function execute(
   const payload = taskPayload(ctx.reconciliation);
   try {
     const campaign = readCampaignReceipt(appDir);
-    const trigger = ctx.reconciliation.trigger;
+    const trigger = ctx.reconciliation.events.items.at(-1)?.event;
     const directVerification =
       fixVerificationTrigger(trigger) ??
       campaignPassVerificationTrigger(campaign, record(trigger));
