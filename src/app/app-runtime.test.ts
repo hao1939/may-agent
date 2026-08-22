@@ -129,13 +129,12 @@ describe("canonical project actions", () => {
   it("admits a canonical action as App input and rejects unknown Apps", () => {
     const admitted: unknown[] = [];
     const access = createProjectActionAccess({
-      events: { publish: (() => null) as never },
       getRuntime: () =>
         ({
           host: {
             hasApp: (id: string) => id.replace(/\.app$/, "") === "evaluation",
             describeActions: () => [{ id: "review", description: "Review", inputSchema: { type: "object" } }],
-            invokeAction: () => ({ kind: "input", input: { kind: "review", data: { scope: "current" } } }),
+            invokeAction: () => ({ kind: "review", data: { scope: "current" } }),
           },
         }) as never,
       admit: (input) => {
@@ -162,73 +161,5 @@ describe("canonical project actions", () => {
     expect(() => access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toThrow(
       "App legacy is not loaded",
     );
-  });
-
-  it("returns a declared semantic event receipt without creating an App input", () => {
-    const emitted: Record<string, unknown>[] = [];
-    let admissions = 0;
-    const access = createProjectActionAccess({
-      events: {
-        publish: ((event: Record<string, unknown>, context: Record<string, unknown>) => {
-          emitted.push({ event, context });
-          return {
-            eventId: 73,
-            eventType: "evaluation.project.review.requested",
-            delivery: "accepted",
-            links: [{ kind: "task", id: "evaluation/runtime/project-audit/alpha-project.app" }],
-          };
-        }) as never,
-      },
-      getRuntime: () =>
-        ({
-          host: {
-            hasApp: () => true,
-            invokeAction: () => ({
-              kind: "event",
-              event: {
-                type: "evaluation.project.review.requested",
-                data: { targetProject: "alpha-project.app", reason: "manual-proof" },
-                target: { appId: "evaluation", project: "evaluation" },
-              },
-            }),
-          },
-        }) as never,
-      admit: (() => {
-        admissions += 1;
-        return { eventId: 0, eventType: "app.input.requested" };
-      }) as never,
-    });
-
-    expect(
-      access.invoke({
-        projectId: "evaluation.app",
-        actionId: "publish-project-review",
-        params: { targetProject: "alpha-project.app", reason: "manual-proof" },
-        idempotencyKey: "publish-project-review:73",
-      }),
-    ).toEqual({
-      eventId: 73,
-      eventType: "evaluation.project.review.requested",
-      delivery: "accepted",
-      links: [{ kind: "task", id: "evaluation/runtime/project-audit/alpha-project.app" }],
-    });
-    expect(admissions).toBe(0);
-    expect(emitted).toEqual([
-      {
-        event: {
-          type: "evaluation.project.review.requested",
-          data: {
-            targetProject: "alpha-project.app",
-            reason: "manual-proof",
-          },
-          target: { appId: "evaluation", project: "evaluation" },
-          idempotencyKey: "publish-project-review:73",
-        },
-        context: {
-          source: "app:evaluation:action:publish-project-review",
-          allowUnregistered: true,
-        },
-      },
-    ]);
   });
 });

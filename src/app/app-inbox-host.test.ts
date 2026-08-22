@@ -92,8 +92,8 @@ describe("App inbox host", () => {
       expect.objectContaining({ id: "probe", description: "Submit a typed probe" }),
     ]);
     expect(host.invokeAction("evaluation", "probe", { value: "ready" })).toEqual({
-      kind: "input",
-      input: { kind: "probe", data: { value: "ready" } },
+      kind: "probe",
+      data: { value: "ready" },
     });
   });
 
