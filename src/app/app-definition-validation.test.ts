@@ -21,7 +21,7 @@ describe("canonical App definition validation", () => {
           mode: "achieve",
         },
       }),
-      inbox: { batch: "single", maxConcurrent: 2 },
+      inbox: { maxConcurrent: 2 },
       subscriptions: [
         {
           id: "evaluation-request",
@@ -72,6 +72,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         owner: "owner",
         inputSchema: {},
+        inbox: { batch: "single", maxConcurrent: 0 },
         subscriptions: [
           { id: "same", event: "one" },
           { id: "same", event: {}, toInput() {} },
@@ -111,6 +112,8 @@ describe("canonical App definition validation", () => {
         "App broken subscription same requires toInput",
         "App broken subscription same requires a valid event selector",
         "App broken observations must contain valid event selectors",
+        "App broken inbox batch is retired; each reconciliation handles one request",
+        "App broken inbox maxConcurrent must be a positive safe integer",
         "App broken action missing requires toInput",
         "App broken action legacy requires toInput",
         "App broken action legacy cannot use retired toEvent",
