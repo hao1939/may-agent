@@ -31,6 +31,9 @@ export type HumanTaskView = {
 
 export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string };
 
+/** List cards stay small; `/task <ref>` is the exact detail read. */
+export const HUMAN_TASK_LIST_TEXT_MAX_BYTES = 512;
+
 export type HumanAppView = {
   id: string;
   owner: string;
@@ -107,7 +110,33 @@ function taskStatus(phase: string | undefined, terminal: boolean): HumanTaskStat
   throw new Error(`Invalid Task phase: ${String(phase)}`);
 }
 
-function projectTask(row: TaskRow, ref: string): HumanTaskView | null {
+function boundedUtf8Text(value: string, maxBytes: number): string {
+  if (Buffer.byteLength(value, "utf8") <= maxBytes) return value;
+  const suffix = "…";
+  const budget = maxBytes - Buffer.byteLength(suffix, "utf8");
+  let bytes = 0;
+  let result = "";
+  for (const character of value) {
+    const size = Buffer.byteLength(character, "utf8");
+    if (bytes + size > budget) break;
+    result += character;
+    bytes += size;
+  }
+  return result + suffix;
+}
+
+function listCard(view: HumanTaskView): HumanTaskView {
+  const { response: _response, evidence: _evidence, ...card } = view;
+  return {
+    ...card,
+    outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
+    ...(view.summary
+      ? { summary: boundedUtf8Text(view.summary, HUMAN_TASK_LIST_TEXT_MAX_BYTES) }
+      : {}),
+  };
+}
+
+function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | null {
   const appId = row.app_id;
   const taskId = row.task_id;
   if (!appId || !taskId) return null;
@@ -115,7 +144,7 @@ function projectTask(row: TaskRow, ref: string): HumanTaskView | null {
   if (row.terminal === 2) {
     const cancellation = parseJson<TaskCancellation>(row.payload);
     if (!cancellation) return null;
-    return {
+    const view: HumanTaskView = {
       appId,
       taskId,
       ref,
@@ -128,11 +157,12 @@ function projectTask(row: TaskRow, ref: string): HumanTaskView | null {
       terminal: true,
       cancellable: false,
     };
+    return detail ? view : listCard(view);
   }
   if (terminal) {
     const receipt = parseJson<TaskCompletionReceipt>(row.payload);
     if (!receipt) return null;
-    return {
+    const view: HumanTaskView = {
       appId,
       taskId,
       ref,
@@ -147,11 +177,12 @@ function projectTask(row: TaskRow, ref: string): HumanTaskView | null {
       terminal: true,
       cancellable: false,
     };
+    return detail ? view : listCard(view);
   }
   const resource = parseJson<AppTaskResource>(row.payload);
   if (!resource) return null;
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
-  return {
+  const view: HumanTaskView = {
     appId,
     taskId,
     ref,
@@ -174,6 +205,7 @@ function projectTask(row: TaskRow, ref: string): HumanTaskView | null {
         }
       : {}),
   };
+  return detail ? view : listCard(view);
 }
 
 function rowIdentity(row: TaskRow): { appId: string; taskId: string } | null {
@@ -325,7 +357,7 @@ export class HumanTaskService {
       const identity = rowIdentity(row);
       if (!identity) return [];
       const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
-      const view = ref ? projectTask(row, ref) : null;
+      const view = ref ? projectTask(row, ref, false) : null;
       return view ? [view] : [];
     });
     const last = pageRows.at(-1);

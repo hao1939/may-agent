@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { admitTaskReconcileResult, admitTaskVerificationResult } from "./task-contract.js";
+import { Check } from "typebox/value";
+import {
+  admitTaskReconcileResult,
+  admitTaskVerificationResult,
+  taskOwnerResultSchema,
+} from "./task-contract.js";
 
 const workflowOptions = { allowNeedsOwner: true, defaultParentId: "app-root" };
 
@@ -297,6 +302,25 @@ describe("project task handler contract", () => {
         workflowOptions,
       ).ok,
     ).toBe(true);
+
+    const untypedConditionResult = {
+      state: "waiting",
+      summary: "Waiting for approval",
+      evidence: [],
+      conditions: [
+        {
+          id: "approval",
+          type: "approval.granted",
+          subject: "approval",
+          expected: true,
+        },
+      ],
+    };
+    expect(Check(taskOwnerResultSchema, untypedConditionResult)).toBe(false);
+    expect(admitTaskReconcileResult(untypedConditionResult, workflowOptions)).toEqual({
+      ok: false,
+      error: "conditions[0].subject must be a typed subject",
+    });
 
     expect(
       admitTaskReconcileResult(

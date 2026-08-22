@@ -16,6 +16,13 @@ const stringArraySchema = Type.Array(nonEmptyStringSchema);
 const taskModeSchema = Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]);
 const taskPrioritySchema = Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]);
 const nullableStringSchema = Type.Union([nonEmptyStringSchema, Type.Null()]);
+const TYPED_CONDITION_SUBJECT_PATTERN = "^\\s*[A-Za-z][A-Za-z0-9_.-]*:[\\s\\S]*\\S\\s*$";
+const typedConditionSubjectPattern = new RegExp(TYPED_CONDITION_SUBJECT_PATTERN);
+const typedConditionSubjectSchema = Type.String({
+  minLength: 3,
+  pattern: TYPED_CONDITION_SUBJECT_PATTERN,
+  description: "Typed resource identity in kind:value form, for example credential:xhs or pipeline-run:42",
+});
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
   additionalProperties: true,
@@ -83,7 +90,7 @@ export const conditionSchema = Type.Object(
   {
     id: nonEmptyStringSchema,
     type: nonEmptyStringSchema,
-    subject: nonEmptyStringSchema,
+    subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
     owner: Type.Optional(nonEmptyStringSchema),
     reviewAfterMs: Type.Optional(Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS })),
@@ -351,9 +358,7 @@ function normalizeAction(value: unknown, options: TaskReconcileAdmissionOptions,
 }
 
 export function isTypedConditionSubject(subject: string): boolean {
-  const separator = subject.indexOf(":");
-  if (separator <= 0 || separator === subject.length - 1) return false;
-  return /^[A-Za-z][A-Za-z0-9_.-]*$/.test(subject.slice(0, separator));
+  return typedConditionSubjectPattern.test(subject);
 }
 
 const INTERNAL_TASK_SCHEDULING_CONDITION_TYPES = new Set([
