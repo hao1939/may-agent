@@ -643,6 +643,24 @@ by `idx_app_event_admission_plan_status` and averaged about 0.014 ms over 1,000
 reads against the retained 1.9 GiB database. New events still take the immediate
 admission path, and no historical plan was deleted or silently terminalized.
 
+The first production activation of this cohort, correlation
+`lightweight-runtime-20260822-fe8725b6`, rolled back healthy because the new
+Task-reference index attempted its retained-identity backfill as about 22,800
+separate autocommit writes and missed the startup health window. The failure
+was not hidden by a longer timeout. The backfill is now one atomic transaction;
+an isolated 20,000-row proof completed in about 205 ms and verifies rollback on
+insertion failure plus idempotence. The fresh correlation
+`lightweight-runtime-retry-20260822-181704c9` became ready and settled
+successfully in about 19 seconds with requested and loaded artifact SHA
+`6ad97f88188165048c75c7d7dd8d3976726b9d62bbdbbf46b37daf2579a7c551`,
+healthy status, a targeted Task wake, and no duplicate deploy. On the loaded
+production state, exact control status, App list, bounded Task list, and exact
+Task detail measured about 12.4 ms, 2.4 ms, 6.7 ms, and 1.4 ms respectively.
+The main process settled near 310-325 MiB RSS rather than the prior roughly
+2.9 GiB; a ten-second production sample with scheduled recovery still active
+averaged 5% of one CPU and no physical reads. Retained history and the 68
+invalid admission plans remain intact.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
