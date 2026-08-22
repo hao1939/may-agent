@@ -190,27 +190,11 @@ export type AppObserver = {
   run(context: ObserverContext): Promise<AppEvent[]>;
 };
 
-type AppInputAction<TInputSchema extends TSchema = TSchema> = {
+export type AppAction<TInputSchema extends TSchema = TSchema> = {
   description: string;
   inputSchema: TInputSchema;
   toInput(input: Static<TInputSchema>): AppInput;
-  toEvent?: never;
 };
-
-type AppSemanticEventAction<TInputSchema extends TSchema = TSchema> = {
-  description: string;
-  inputSchema: TInputSchema;
-  /**
-   * Narrow compatibility path for a typed action whose established receipt is
-   * the declared semantic event. The host supplies trusted source, owner, and
-   * idempotency fields before publishing it.
-   */
-  toEvent(input: Static<TInputSchema>): AppEvent<Record<string, unknown>>;
-  toInput?: never;
-};
-
-export type AppAction<TInputSchema extends TSchema = TSchema> =
-  AppInputAction<TInputSchema> | AppSemanticEventAction<TInputSchema>;
 
 export type AppWorkspace = {
   kind: "git" | "local";

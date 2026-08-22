@@ -61,9 +61,6 @@ export type AppActionDescription = {
   inputSchema: Record<string, unknown>;
 };
 
-export type AppActionInvocation =
-  { kind: "input"; input: AppInput } | { kind: "event"; event: AppEvent<Record<string, unknown>> };
-
 export type AdmitAppInput = {
   id?: string;
   appId: string;
@@ -281,7 +278,7 @@ export class AppInboxHost {
     }));
   }
 
-  invokeAction(appId: string, actionId: string, params: unknown): AppActionInvocation {
+  invokeAction(appId: string, actionId: string, params: unknown): AppInput {
     const normalized = appId.trim().replace(/\.app$/, "");
     const app = this.#apps.get(normalized);
     if (!app) throw new Error(`App ${appId} is not loaded`);
@@ -291,22 +288,9 @@ export class AppInboxHost {
       const first = [...Errors(action.inputSchema, params)][0];
       throw new Error(`Invalid input for ${normalized}.${actionId}: ${first?.message ?? "schema mismatch"}`);
     }
-    if (action.toInput) {
-      const input = action.toInput(params as never);
-      validateInput(app, input);
-      return { kind: "input", input };
-    }
-    const event = action.toEvent(params as never);
-    if (
-      !event ||
-      typeof event !== "object" ||
-      Array.isArray(event) ||
-      typeof event.type !== "string" ||
-      !event.type.trim()
-    ) {
-      throw new Error(`Semantic action ${normalized}.${actionId} requires an event with a non-empty type`);
-    }
-    return { kind: "event", event };
+    const input = action.toInput(params as never);
+    validateInput(app, input);
+    return input;
   }
 
   /** Atomically replace the live App definitions after a validated reload. */
