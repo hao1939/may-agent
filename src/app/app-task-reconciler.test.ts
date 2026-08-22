@@ -524,6 +524,25 @@ describe("App task reconciler state", () => {
     ).toMatchObject({ kind: "claimed", handler: "executor:codex" });
   });
 
+  it("treats the explicit agent executor as the managed owner adapter", () => {
+    const { config } = fixture();
+    const agentIntent: AppTaskIntent = {
+      ...intent(),
+      id: "work/managed-agent",
+      workflow: undefined,
+      executor: "agent",
+    };
+    observeAppTaskIntent(config, { intent: agentIntent, appOwner: "app-owner" });
+
+    expect(
+      claimObservedAppTask(config, {
+        taskId: agentIntent.id,
+        appOwner: "app-owner",
+        handler: "auto",
+      }),
+    ).toMatchObject({ kind: "claimed", handler: "owner:branch-owner" });
+  });
+
   it("rejects ambiguous workflow and CLI executor intent", () => {
     const { config } = fixture();
     expect(() =>

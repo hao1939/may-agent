@@ -15,7 +15,7 @@ export type TaskIntent = {
   mode: TaskMode;
   owner?: string;
   workflow?: string;
-  /** Bounded executor adapter. Defaults to the managed owner agent. */
+  /** Bounded executor adapter. Omit or use `agent` for the managed owner; `codex` and `claude` are built in. */
   executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   outputs?: string[];

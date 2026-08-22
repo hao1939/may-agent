@@ -226,10 +226,11 @@ export type TaskAttempt = {
   task: TaskDetail;
   /** Attempt-scoped working directory selected by Runtime. */
   cwd: string;
+  /** Ordered durable Task input not yet accepted by this Task generation. */
   events: TaskReconciliationEvents;
-  /** Publish a durable progress/finding fact with a retry-stable local key. */
+  /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
-  /** Observe live feedback addressed to this Task; events remain durable for retry. */
+  /** Observe live feedback, approval, steering, or cancellation addressed to this Task; input remains durable. */
   onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
 };
 
