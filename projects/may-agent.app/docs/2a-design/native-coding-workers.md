@@ -18,6 +18,10 @@ returns an accepted worker record and the caller must await/review its terminal
 evidence before using it. Work that must outlive the caller belongs to a Task
 or cross-App dependency, never a detached CLI process.
 
+Codex and Claude are default entries behind the same named executor boundary
+used by Host extensions. Replacing one adapter does not change Task intent,
+events, result admission, or recovery.
+
 ## Mental Model
 
 ```text

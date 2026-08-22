@@ -240,7 +240,7 @@ type TaskIntent = {
   mode: "achieve" | "maintain";
   owner?: string;
   workflow?: string;
-  executor?: "agent" | "codex" | "claude";
+  executor?: string;
   input?: Record<string, unknown>;
   outputs?: string[];
   dependsOn?: string[];
@@ -249,15 +249,18 @@ type TaskIntent = {
 };
 ```
 
-`executor` selects a built-in bounded adapter. Omitted or `agent` uses the
-managed owner agent; `codex` and `claude` use the native CLI adapter. A Task
-cannot set both `workflow` and `executor`.
+`executor` selects a lowercase registered adapter name. Omitted or `agent`
+uses the managed owner agent; `codex` and `claude` are built-in native CLI
+adapters. A Task cannot set both `workflow` and `executor`. An unknown name
+becomes visible attention instead of silently falling back.
 
 All executor adapters translate one small contract:
 
 ```ts
 type TaskAttempt = {
+  appId: string;
   task: TaskDetail;
+  cwd: string;
   events: TaskReconciliationEvents;
   publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
   onEvent(listener: (event: AppEvent) => void): () => void;
@@ -267,12 +270,16 @@ type TaskExecutor =
   (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
 
+`appId` scopes the Task identity and `cwd` is the attempt working directory.
 `publish` is immediate, durable, idempotent within the Task generation, and
 rejected after the attempt fence expires. `onEvent` is only a live convenience;
 the addressed event is also durable Task input for replay on a later attempt.
 Task-owned workflows expose these as `ctx.events.emit` and
 `ctx.events.onEvent`; Runtime removes live listeners when the bounded workflow
 ends. The returned result is the only Task state transition.
+
+Runtime holds only a name-to-function executor registry. Registering an
+executor adds an adapter, not a queue, worker lifecycle, retry policy, or store.
 
 One fenced reconciliation attempt returns a typed state, summary, evidence,
 optional caller-facing response, task changes, Conditions, and typed cross-App

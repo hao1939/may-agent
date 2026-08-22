@@ -222,7 +222,9 @@ same small attempt contract:
 
 ```ts
 type TaskAttempt = {
+  appId: string;
   task: TaskDetail;
+  cwd: string;
   events: TaskEventBatch;
   publish(localKey: string, event: AppEvent): Promise<EventReceipt>;
   onEvent(listener: (event: AppEvent) => void): () => void;
@@ -232,6 +234,7 @@ type TaskExecutor =
   (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
 
+`appId` scopes the Task and `cwd` is the Runtime-selected attempt workspace.
 `task` is current bounded state. `events` is the ordered, unobserved input
 already owned by that Task. `publish` is the existing fenced, idempotent event
 commit. `onEvent` observes new events addressed to the running Task; it is a
@@ -272,7 +275,9 @@ Executor selection is small App/Host policy. Process IDs, native session IDs,
 prompts, worker artifacts, and adapter retries remain attempt evidence; they do
 not enter Task desired state or create a second work lifecycle. Adding an
 executor therefore adds one adapter, not another scheduler, queue, task type,
-or recovery system.
+or recovery system. Runtime implements this as a small `name -> TaskExecutor`
+registry. Unknown names become visible attention; Codex and Claude are default
+entries behind the same boundary.
 
 ### Recovery is insurance, not ordinary scheduling
 
@@ -1079,6 +1084,9 @@ does not require parsing an App task tree.
 - **Done:** define the executor-neutral `TaskAttempt` boundary, expose fenced
   publish/live input to managed execution, and place Codex and Claude behind
   the same Task result fence and durable event batch.
+- **Done:** allow named Host executors through the same contract; focused proof
+  covers progress publication, live feedback, durable retry input, and normal
+  result admission without another lifecycle.
 - Forward live Task input only when an executor supports it; always retain the
   durable next-attempt path as authority. Headless Codex/Claude currently use
   that durable replay path rather than a second steering protocol.

@@ -50,9 +50,10 @@ attempt state are sufficient to recover it.
 ## One attempt interface
 
 Executor choice does not change Task semantics. A Task may use its managed
-owner agent by default, name a workflow, or select the built-in `codex` or
-`claude` adapter. `workflow` and `executor` are mutually exclusive; omitting
-both means the managed owner agent.
+owner agent by default, name a workflow, or select a registered executor;
+`codex` and `claude` are the built-in native adapters. `workflow` and
+`executor` are mutually exclusive; omitting both means the managed owner
+agent.
 
 Every adapter receives the same bounded Task detail and ordered event batch,
 may publish a fact through the current generation/attempt fence, and returns
@@ -60,6 +61,10 @@ one `TaskReconcileResult`. An event addressed to `{ appId, taskId }` is durable
 feedback, approval, or steering for that Task. Live forwarding is optional:
 managed sessions support it, while a headless CLI that cannot accept a live
 message receives the event on the next attempt.
+
+The Host registry is only `name -> TaskExecutor`. A missing name becomes
+attention. It never falls back to another executor and never creates another
+scheduler or recovery system.
 
 Codex/Claude process records, native session IDs, prompts, and output files are
 attempt evidence only. They do not create another Task, retry policy, queue, or

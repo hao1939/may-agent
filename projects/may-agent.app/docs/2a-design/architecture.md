@@ -88,12 +88,14 @@ Task handler selection is direct:
 ```text
 owner = task owner, else nearest parent owner, else App owner
 workflow present = run that owner's named workflow
-executor codex/claude = run that bounded CLI adapter
+executor present = run that named Host adapter
 neither present = run that owner once
 ```
 
 Missing workflows or unavailable executors become visible attention. The Host
-does not silently choose another executor or owner.
+does not silently choose another executor or owner. Codex and Claude are the
+built-in native CLI adapters; a Host extension registers another name against
+the same `TaskExecutor` function contract.
 
 ## Events and schedules
 
@@ -110,8 +112,8 @@ or mutate App task state.
 ## Execution
 
 All Task executors enter and leave through one bounded Task-attempt contract.
-Managed agents and workflows use the agent runtime; Codex and Claude use the
-native CLI runner behind a thin adapter. Neither path creates another Task
+Managed agents and workflows use the agent runtime; Codex, Claude, and any
+registered replacement use thin adapters. No path creates another Task
 lifecycle.
 
 One `HostCapacity` object limits task attempts. Each App may declare a smaller
