@@ -460,8 +460,7 @@ async function emitProjectPlanningRequest() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'project.owner.requested',
-        source: 'web-ui',
-        owner: _currentProjectDetail?.owner || 'may',
+        target: { appId: project },
         data: { project, projectId: project, reason: 'manual-functions-page' },
       }),
     });

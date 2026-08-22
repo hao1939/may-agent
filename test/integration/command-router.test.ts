@@ -29,9 +29,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
   const router = attachCommandRouter({
     bus,
     manager,
-    clearCancelLatch: () => {},
     projectRoot,
-    acceptsAppInput: (appId) => appId === "may",
     reload: () => ({ ok: true, summary: "[reload] No changes" }),
     restart: () => {},
     shutdown: () => {},
@@ -40,14 +38,13 @@ function harness(overrides: Partial<SubagentManager> = {}) {
 }
 
 describe("command router integration", () => {
-  it("normalizes human, console, and May fork ingress to the conversation App", () => {
+  it("normalizes direct console input to the May App", () => {
     const h = harness();
     h.router.handleInput("from console", "console");
-    h.bus.emit({ type: "fork", agent: "may", task: "from socket", opts: { source: "socket" } });
 
     const inputs = h.emitted.filter((event) => event.type === "app.input.requested");
-    expect(inputs).toHaveLength(2);
-    expect(inputs.map((event) => (event as any).data.input.data.message)).toEqual(["from console", "from socket"]);
+    expect(inputs).toHaveLength(1);
+    expect(inputs.map((event) => (event as any).data.input.data.message)).toEqual(["from console"]);
     h.router.close();
   });
 
@@ -60,7 +57,13 @@ describe("command router integration", () => {
       },
     } as Partial<SubagentManager>);
 
-    h.bus.emit({ type: "steer", sessionId: "s_cold", message: "follow up", source: "telegram" });
+    h.bus.emit({
+      type: "session.steer.requested",
+      source: "telegram",
+      owner: "agent:may",
+      target: { sessionId: "s_cold" },
+      data: { message: "follow up" },
+    });
     expect(resumed).toEqual([
       {
         sessionId: "s_cold",
@@ -121,44 +124,6 @@ describe("command router integration", () => {
     });
     expect(readFileSync(join(projectDir, "discussion.md"), "utf8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf8")).toContain("status: active");
-    h.router.close();
-  });
-
-  it("projects exact approval replies before App admission", () => {
-    const h = harness();
-    const appDir = join(h.projectRoot, "projects/aks-rp-e2e.app");
-    mkdirSync(appDir, { recursive: true });
-    writeFileSync(join(appDir, "project.json"), JSON.stringify({ owner: "app-ops" }));
-
-    h.bus.emit({
-      type: "human.input.received",
-      source: "telegram",
-      owner: "agent:may",
-      data: {
-        text: "approve",
-        target: { projectPath: "projects/aks-rp-e2e.app" },
-        context: {
-          telegramReply: {
-            conversationId: "approval:123",
-            originalIssue: {
-              eventType: "project.approval.requested",
-              approvalId: "approval-123",
-              expectedResponse: { target: { project: "aks-rp-e2e" } },
-            },
-            expectedClosure: ["project.approval.submitted"],
-          },
-        },
-      },
-    } as any);
-
-    expect(h.emitted).toContainEqual(
-      expect.objectContaining({
-        type: "project.approval.submitted",
-        owner: "agent:app-ops",
-        target: { project: "aks-rp-e2e" },
-        data: expect.objectContaining({ approvalId: "approval-123", decision: "approve" }),
-      }),
-    );
     h.router.close();
   });
 });

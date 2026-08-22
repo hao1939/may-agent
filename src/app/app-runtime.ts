@@ -306,11 +306,7 @@ export async function runAppRuntime(opts: {
   const commandRouter = attachCommandRouter({
     bus,
     manager,
-    clearCancelLatch: () => {
-      cancelledOnce = false;
-    },
     projectRoot: opts.projectRoot,
-    acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,
@@ -322,17 +318,6 @@ export async function runAppRuntime(opts: {
     process.exit(1);
   }
 
-  // Open the Conversation adapter before external ingress or cron work so it
-  // can observe every later shared Conversation update.
-  telegramBot = TELEGRAM_ENABLED
-    ? attachTelegramBot({
-        bus,
-        persistDir: opts.persistDir,
-        interfaceAgent,
-        humanTasks,
-      })
-    : { close: () => {} };
-
   const events = createEventInterface({
     bus,
     db: getDb(opts.persistDir),
@@ -343,6 +328,23 @@ export async function runAppRuntime(opts: {
       manager.getSessionSummary(sessionId).status !== "unknown" ||
       Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
   });
+
+  // Open the Conversation adapter before external ingress or cron work so it
+  // can observe every later shared Conversation update. Its writes use the
+  // same semantic event boundary as Console and HTTP.
+  telegramBot = TELEGRAM_ENABLED
+    ? attachTelegramBot({
+        bus,
+        persistDir: opts.persistDir,
+        interfaceAgent,
+        humanTasks,
+        publishEvent: (input) =>
+          events.publish(input, {
+            source: "telegram",
+            inputSource: { kind: "human", id: "telegram" },
+          }),
+      })
+    : { close: () => {} };
   const admitAppInput = createAppInputAdmission({ events });
   const projectActions = createProjectActionAccess({
     events,

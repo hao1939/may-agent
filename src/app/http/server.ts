@@ -28,7 +28,7 @@ import {
   type SocketEndpoint,
   type SocketResponse,
 } from "../../../packages/control/src/client.js";
-import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
+import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
 import { loadProjectReadModel, projectRuntimePaths } from "../app-task-runtime-state.js";
 import type {
   AppTaskIntegrityFinding,
@@ -98,6 +98,25 @@ type DaemonFrameResult = {
   links?: unknown[];
 };
 
+export function buildPublishFrame(
+  type: string,
+  data: Record<string, unknown>,
+  options: {
+    target?: { appId?: string; taskId?: string; sessionId?: string };
+    idempotencyKey?: string;
+  } = {},
+): Record<string, unknown> {
+  return {
+    type: "publish",
+    event: {
+      type,
+      ...(options.target ? { target: options.target } : {}),
+      data,
+      ...(options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
+    },
+  };
+}
+
 export function buildEventIngressFrame(body: Record<string, unknown>): Record<string, unknown> {
   const envelope = buildCanonicalEventEnvelope(String(body.type ?? "").trim(), {
     ...body,
@@ -131,15 +150,10 @@ export function buildEventIngressFrame(body: Record<string, unknown>): Record<st
     (typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()) ||
     undefined;
   delete data.idempotencyKey;
-  return {
-    type: "publish",
-    event: {
-      type: envelope.type,
-      ...(Object.values(target).some(Boolean) ? { target } : {}),
-      data,
-      ...(idempotencyKey ? { idempotencyKey } : {}),
-    },
-  };
+  return buildPublishFrame(String(envelope.type), data, {
+    ...(Object.values(target).some(Boolean) ? { target } : {}),
+    ...(idempotencyKey ? { idempotencyKey } : {}),
+  });
 }
 
 export function buildAppAdmissionCommand(input: {
@@ -1512,18 +1526,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     ]
       .filter(Boolean)
       .join("\n");
-    const evaluator = await sendDaemonFrame({
-      type: "evaluation.session.requested",
-      source: "web-ui",
-      owner: "agent:evaluator",
-      data: {
-        sessionId,
-        source: resolved.source,
-        focusLine: hasFocusLine ? focusLine : null,
-        focusRaw: hasFocusLine ? focusRaw : null,
-        instructions: task,
-      },
-    });
+    const evaluator = await sendDaemonFrame(
+      buildPublishFrame(
+        "evaluation.session.requested",
+        {
+          project: "evaluation",
+          source: resolved.source,
+          focusLine: hasFocusLine ? focusLine : null,
+          focusRaw: hasFocusLine ? focusRaw : null,
+          instructions: task,
+        },
+        { target: { appId: "evaluation", sessionId } },
+      ),
+    );
 
     return json({
       sessionId,
@@ -3327,19 +3342,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         }
       }
 
-      const trigger = await sendDaemonFrame({
-        type: "project.comment.created",
-        source: "web-ui",
-        owner: normalizeEventOwner(owner),
-        data: {
-          projectPath: path,
-          project: projectId,
-          projectId,
-          comment,
-          author: "hao",
-          idempotencyKey,
-        },
-      });
+      const trigger = await sendDaemonFrame(
+        buildPublishFrame(
+          "project.comment.created",
+          {
+            projectPath: path,
+            project: projectId,
+            projectId,
+            comment,
+            author: "hao",
+            requestedOwner: owner,
+          },
+          { target: { appId: projectId }, idempotencyKey },
+        ),
+      );
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
       return json(
@@ -3768,14 +3784,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
-    const result = await sendDaemonFrame({
-      type: "session.cancel.requested",
-      source: "web-ui",
-      owner: "agent:may",
-      urgency: "high",
-      target: { sessionId },
-      data: {},
-    });
+    const result = await sendDaemonFrame(buildPublishFrame("session.cancel.requested", {}, { target: { sessionId } }));
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId });
   }
@@ -3792,17 +3801,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!content) return json({ error: "content required" }, 400);
     // The daemon owns active/idle/cold routing: active/idle sessions receive
     // manager.send(); terminal-but-resumable sessions attempt resumeSession().
-    const result = await sendDaemonFrame({
-      type: "human.input.received",
-      source: "web-ui",
-      owner: "agent:may",
-      data: {
-        actor: "human",
-        text: content,
-        conversation: { channel: "web-ui" },
-        target: { sessionId },
-      },
-    });
+    const result = await sendDaemonFrame(
+      buildPublishFrame("session.steer.requested", { message: content, channel: "web-ui" }, { target: { sessionId } }),
+    );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
   }
@@ -4132,17 +4133,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const resolveResp = handleAgentDefaultSession(agentName);
       const resolved = (await resolveResp.json()) as { agent: string; sessionId: string | null };
       if (resolved.sessionId) {
-        const result = await sendDaemonFrame({
-          type: "human.input.received",
-          source: "web-ui",
-          owner: normalizeEventOwner(agentName),
-          data: {
-            actor: "human",
-            text: content,
-            conversation: { channel: "web-ui" },
-            target: { agent: agentName, sessionId: resolved.sessionId },
-          },
-        });
+        const result = await sendDaemonFrame(
+          buildPublishFrame(
+            "session.steer.requested",
+            { message: content, channel: "web-ui" },
+            { target: { sessionId: resolved.sessionId } },
+          ),
+        );
         if (!result.ok) return json({ error: result.error }, 503);
         return json({
           ok: true,
@@ -4155,18 +4152,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
 
     // No prior session — request a create-or-bind chat start from the daemon.
-    const result = await sendDaemonFrame({
-      type: "human.input.received",
-      source: "web-ui",
-      owner: normalizeEventOwner(agentName),
-      data: {
-        actor: "human",
-        text: content,
-        conversation: { channel: "web-ui" },
-        target: { agent: agentName },
-        context: { forceNew },
-      },
-    });
+    const result = await sendDaemonFrame(
+      agentName === "may"
+        ? buildPublishFrame(
+            "app.input.requested",
+            {
+              input: { kind: "message", data: { message: content, context: { forceNew } } },
+              channel: "web-ui",
+            },
+            { target: { appId: "may" } },
+          )
+        : buildPublishFrame("chat.start.requested", {
+            agent: agentName,
+            message: content,
+            channel: "web-ui",
+            forceNew,
+          }),
+    );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
   }
@@ -4181,12 +4183,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     } catch {
       /* body optional */
     }
-    const result = await sendDaemonFrame({
-      type: "heartbeat.trigger",
-      source: actor,
-      owner: normalizeEventOwner(agentName),
-      data: { agent: agentName },
-    });
+    const result = await sendDaemonFrame(
+      buildPublishFrame("heartbeat.trigger", { agent: agentName, requestedBy: actor }),
+    );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, triggeredAt: Date.now() });
   }
@@ -4205,16 +4204,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const existing = _db().prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as
       { id: string; owner?: string | null; threshold: number | null } | undefined;
     if (!existing) return json({ error: "metric not found" }, 404);
-    const result = await sendDaemonFrame({
-      type: "metric.threshold_changed",
-      source: "web-ui",
-      owner: normalizeEventOwner(existing.owner ?? "may"),
-      data: {
+    const result = await sendDaemonFrame(
+      buildPublishFrame("metric.threshold_changed", {
         metricId,
         from: existing.threshold,
         to: body.threshold,
-      },
-    });
+        metricOwner: existing.owner ?? "may",
+      }),
+    );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, accepted: true, metric: metricId, from: existing.threshold, to: body.threshold });
   }
@@ -4238,16 +4235,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       .get(id) as { id: number; metric_id: string; owner?: string | null; resolved_at: number | null } | undefined;
     if (!existing) return json({ error: "alert not found" }, 404);
     if (existing.resolved_at !== null) return json({ ok: true, alreadyResolved: true });
-    const result = await sendDaemonFrame({
-      type: "metric.alert_resolved",
-      source: "web-ui",
-      owner: normalizeEventOwner(existing.owner ?? "may"),
-      data: {
+    const result = await sendDaemonFrame(
+      buildPublishFrame("metric.alert_resolved", {
         metricId: existing.metric_id,
         alertId: id,
         reason: body.reason ?? null,
-      },
-    });
+        metricOwner: existing.owner ?? "may",
+      }),
+    );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, accepted: true, alertId: id });
   }

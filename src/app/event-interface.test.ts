@@ -164,6 +164,34 @@ describe("simple event interface", () => {
     expect(events.get(receipt.eventId)?.delivery.acceptedBy).toBeUndefined();
   });
 
+  it("validates the record-only events exposed by HTTP controls", () => {
+    const { events } = fixture();
+    const inputs = [
+      {
+        type: "evaluation.session.requested",
+        target: { appId: "sample", sessionId: "s_known" },
+        data: { source: "session.jsonl", instructions: "Review this session" },
+      },
+      { type: "heartbeat.trigger", data: { agent: "may", requestedBy: "human" } },
+      { type: "metric.threshold_changed", data: { metricId: "health", from: null, to: 2 } },
+      { type: "metric.alert_resolved", data: { metricId: "health", alertId: 7, reason: "reviewed" } },
+    ];
+
+    for (const input of inputs) {
+      expect(events.publish(input, { source: "control-socket" })).toMatchObject({
+        eventType: input.type,
+        delivery: "recorded",
+      });
+    }
+
+    expect(() =>
+      events.publish(
+        { type: "metric.threshold_changed", data: { metricId: "health", to: Number.NaN } },
+        { source: "control-socket" },
+      ),
+    ).toThrow("data.to must be a finite number");
+  });
+
   it("accepts bounded ordered work references on a Conversation view", () => {
     const { events } = fixture();
     const receipt = events.publish(
