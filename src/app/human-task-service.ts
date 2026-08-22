@@ -32,7 +32,7 @@ export type HumanTaskView = {
 export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string };
 
 /** List cards stay small; `/task <ref>` is the exact detail read. */
-export const HUMAN_TASK_LIST_TEXT_MAX_BYTES = 512;
+export const HUMAN_TASK_LIST_TEXT_MAX_BYTES = 96;
 
 export type HumanAppView = {
   id: string;
