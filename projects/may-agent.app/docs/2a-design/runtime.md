@@ -55,6 +55,11 @@ the process binary and SDK. A project App may report a Host compatibility gap,
 but its task cannot authorize a global May deployment. Historical releases and
 worktrees are evidence, never rollout targets.
 
+The build embeds the immutable source commit in the compiled binary; it does
+not infer identity from whichever checkout is the process working directory.
+The deployment receipt separately binds that source commit to the artifact
+hash and the matching SDK release.
+
 ## Store first, then run
 
 The Host stores identity and intent before the Runtime queues work. The code calls this

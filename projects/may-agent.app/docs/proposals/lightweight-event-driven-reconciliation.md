@@ -1096,6 +1096,14 @@ window was correctly rejected when the minute daemon heartbeat appended an
 event. The immediate quiet retry was valid at 0.53% CPU, 104,747,008 bytes RSS,
 zero active executions, attempts, workflows, or children, and no durable state
 change. This proves the current empty core meets its local idle targets.
+
+The exact compiled binary was then exercised against the same empty App/state
+root. A valid 30-second window used 0.83% CPU, held RSS between 93,638,656 and
+98,447,360 bytes, and had no execution, attempt, workflow, child, event, or
+resource activity. Artifact validation also found and fixed a compiled-only
+CLI bug: `--version` tried to open `/package.json` from Bun's virtual filesystem.
+Package metadata is now embedded, and the archive build injects the immutable
+source commit instead of inferring identity from the runtime working tree.
 Production activation and a retained-state quiet window remain outstanding.
 
 ### Phase 0: freeze the contract and expose cost

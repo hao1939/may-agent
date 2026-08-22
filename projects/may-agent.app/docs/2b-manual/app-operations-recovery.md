@@ -139,6 +139,11 @@ verifies that `app_task_store_meta.authority` is `resources`. The read is
 query-only. A missing database, missing resource authority, wrong App, or stale
 Task fails closed before any artifact or process changes.
 
+The archive build passes its validated source commit explicitly into the
+compiler. `may-agent --version` must work without a source checkout and report
+that embedded short commit; the deployment receipt remains the authoritative
+full source-commit/artifact-hash binding.
+
 The retained App-local `.state/tasks/state.json` is migration evidence after
 cutover. Deployment must not consult, recreate, or mutate it.
 
