@@ -661,6 +661,13 @@ that caller inherited queries and updates over retained delivery history. The
 existing separate maintenance process now owns the same repair pass; event
 insertion only persists the current event.
 
+Source-metric measurement now enters through the passive listener path as
+well. A snapshot event is durably accepted without running any measurement
+callback; the filtered listener coalesces newer requests and begins source
+discovery on a later event-loop turn. Metric mutation and alert admission stay
+synchronous because they change the accepted meaning of the current metric
+event, while source commands and observation reads do not.
+
 Session digest and `last-session` projection writes plus terminal agent cleanup
 now use the same passive listener path. The session-start identity binding stays
 synchronous because execution begins immediately after that event; separating
