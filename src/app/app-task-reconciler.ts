@@ -2299,8 +2299,9 @@ export function listHandlerExecutionFailedAppTasks(
   config: TaskStateConfig,
   candidateTaskIds?: Iterable<string>,
 ): AppTaskExecutionRepairCandidate[] {
+  const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
+  if (candidates?.length === 0) return [];
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
     const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
     return Object.values(tree.resources ?? {})
       .flatMap((resource): AppTaskExecutionRepairCandidate[] => {

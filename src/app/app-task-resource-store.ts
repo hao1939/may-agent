@@ -885,6 +885,53 @@ export class AppTaskResourceStore {
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
+  /** Exact failed attempts that one later successful owner session may repair. */
+  listHandlerExecutionRecoveryTaskIds(owner: string, limit = 256): string[] {
+    const normalizedOwner = owner.trim();
+    if (!normalizedOwner) return [];
+    const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
+    return (
+      this.db
+        .prepare(
+          `SELECT failed.task_id
+           FROM app_task_attempts failed INDEXED BY idx_app_task_attempts_execution_failure
+           JOIN app_tasks task
+             ON task.app_id = failed.app_id AND task.task_id = failed.task_id
+           WHERE failed.app_id = ?
+             AND json_extract(failed.attempt_json, '$.owner') = ?
+             AND json_extract(failed.attempt_json, '$.failureReason')
+               IN ('HandlerExecutionFailed', 'handler-blocked')
+             AND task.phase = 'attention'
+             AND failed.task_generation = task.generation
+             AND typeof(json_extract(failed.attempt_json, '$.finishedAt')) = 'text'
+             AND json_extract(failed.attempt_json, '$.finishedAt') <> ''
+             AND typeof(json_extract(failed.attempt_json, '$.sessionId')) = 'text'
+             AND json_extract(failed.attempt_json, '$.sessionId') <> ''
+             AND (
+               json_extract(failed.attempt_json, '$.failureReason') = 'HandlerExecutionFailed'
+               OR json_extract(failed.attempt_json, '$.handler') =
+                 'owner:' || json_extract(failed.attempt_json, '$.owner')
+             )
+             AND failed.attempt_id = (
+               SELECT latest.attempt_id
+               FROM app_task_attempts latest INDEXED BY idx_app_task_attempts_task
+               WHERE latest.app_id = failed.app_id
+                 AND latest.task_id = failed.task_id
+                 AND latest.task_generation = failed.task_generation
+               ORDER BY latest.started_at DESC, latest.attempt_id DESC
+               LIMIT 1
+             )
+             AND NOT EXISTS (
+               SELECT 1 FROM app_task_cancellations cancelled
+               WHERE cancelled.app_id = task.app_id AND cancelled.task_id = task.task_id
+             )
+           ORDER BY failed.started_at, failed.task_id
+           LIMIT ?`,
+        )
+        .all(this.appId, normalizedOwner, boundedLimit) as Array<{ task_id?: string }>
+    ).flatMap((row) => (row.task_id ? [row.task_id] : []));
+  }
+
   listLiveTaskIds(excludeTaskId: string, limit = 64): string[] {
     const boundedLimit = Math.max(1, Math.min(1_000, Math.floor(limit)));
     return (
