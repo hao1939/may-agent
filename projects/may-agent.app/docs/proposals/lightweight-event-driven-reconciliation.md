@@ -788,6 +788,21 @@ one-second progress interval instead of ten times per second. This removes
 timer and allocation churn without reducing observable progress; the full Host
 suite passes 2,363 tests.
 
+Production correlation `task-interface-pagination-20260822-4a4f66d5-r1`
+loaded commit `4a4f66d5` with matching requested/loaded artifact SHA
+`155ceae06a6b2c5aec65a083c3015a7ed3873acd1e0b4b51eda6c71f819fbf33`,
+healthy status, a targeted owner-Task wake, and no duplicate deployment. Live
+Console `/help` exposed the new command, `/tasks all` returned one bounded page
+with an explicit continuation, and `/tasks more` returned the next distinct
+page while preserving the prior query.
+
+A following 45-second no-agent sample averaged 7.778% of one CPU, peaked once
+at 79%, and held RSS between 258,464 and 336,240 KiB. The same window crossed a
+scheduled platform metric snapshot, four AKS pipeline observations, a pull
+request observation, a metric breach, and the resulting bounded Task checks.
+It therefore attributes the spike to scheduled App observation and is not the
+still-required quiet-window idle proof.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
