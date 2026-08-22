@@ -74,6 +74,15 @@ internal producers may publish an unregistered record-only fact. External
 adapters admit only explicit type/schema allowlists. Logging, metrics, tracing,
 and passive stream listeners never count as the one required accepter.
 
+The operator-only `may-agent --emit` path is a bounded compatibility exception:
+deployed App operations still use it for unregistered record-only facts and
+explicit `trigger.*` controls. It accepts a canonical trusted envelope at the
+socket boundary. It is not a human-input path and must not grow new routing
+semantics. Console, Telegram, HTTP, Web UI, `--send`, runtime controls, and
+session controls use `publish(EventInput)`; the retired flat `input`, `steer`,
+`cancel`, `cancel_all`, `fork`, `reload`, `restart`, and `shutdown` socket
+shortcuts are rejected.
+
 Persistence and required routing finish inside `publish`. Passive listeners
 run afterward for persisted, non-replayed events. Each listener has its own filtered, bounded FIFO, so socket
 streams, Console rendering, Conversation mirroring, and similar presentation

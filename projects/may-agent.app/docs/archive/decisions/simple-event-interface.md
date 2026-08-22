@@ -444,9 +444,13 @@ the same small shape:
 - Apps receive typed SDK capabilities, never the Host event interface or raw
   `EventBus`.
 
-Old socket frames and Telegram reply interpretation remain compatibility
-adapters. They construct the same typed events and do not define a second
-lifecycle. Compatibility can be removed per client after usage is measured.
+Console, Telegram, HTTP, Web UI, direct chat, runtime controls, and session
+controls now construct semantic `EventInput` and use `publish`. The old human
+socket shortcuts have been removed after repository and retained-event audits
+showed no live caller. Canonical operator events and `trigger.*` remain a narrow
+compatibility boundary for `may-agent --emit`; retained evidence shows that
+deployed App operations still publish unregistered facts through it. That path
+does not define another human or task lifecycle.
 
 Do not replace the App inbox, task engine, session manager, delivery outbox, or
 read models. Do not add a broker, command framework, plugin loader, identity

@@ -5,6 +5,27 @@ the accepted Conversation and App inbox model. It is an inventory, not a new
 design. The rule is to remove a path only after its live responsibility has a
 replacement and deployed callers no longer use it.
 
+## Post-audit update — 2026-08-22
+
+Console, Telegram, HTTP, Web UI, `--send`, runtime controls, and exact session
+controls now use `publish(EventInput)`. The flat socket `input`, `steer`,
+`cancel`, `cancel_all`, `fork`, `reload`, `restart`, and `shutdown` shortcuts
+are rejected, and a flat `session.cancel.requested` no longer receives special
+translation.
+
+The raw canonical operator-event boundary remains intentionally. A seven-day
+retained-event read showed current `control-socket` use for unregistered App
+facts such as `scout.digest`, `project.library_health.tick`, evaluation facts,
+metric facts, `project.task.tick`, and explicit `trigger.*` controls. Removing
+that boundary would break the deployed `may-agent --emit` operator contract.
+It remains isolated from human Conversation and exact control ingress while
+those producers move to explicit public definitions or in-process App emitters.
+
+Legacy `human.input.received` and related command-router cases are no longer
+accepted in process. The inventory below records the audit baseline rather
+than current runtime behavior. Historical event rows remain untouched as graph
+evidence.
+
 ## Result
 
 May's human conversation is canonical: Console and Telegram publish

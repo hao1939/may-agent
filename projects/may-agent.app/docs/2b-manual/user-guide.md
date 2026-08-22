@@ -212,15 +212,12 @@ Control a running instance via Unix socket:
 # Watch events
 socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Send input through the compatibility socket frame. May Console and Telegram
-# instead publish one human conversation.message.created event for may:primary.
-echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+# Send May input through the shared semantic event operation.
+echo '{"type":"publish","event":{"type":"app.input.requested","target":{"appId":"may"},"data":{"input":{"kind":"message","data":{"message":"check status"}},"channel":"operator"},"idempotencyKey":"operator-check-status-1"}}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Send a canonical async message
-echo '{"type":"message.created","source":"human:operator","owner":"agent:dev","data":{"from":"human","to":"dev","content":"fix the test","intent":"notify","priority":"P2"}}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
-
-# Legacy operator shortcut to start a background agent session
-echo '{"type":"fork","agent":"dev","task":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+# Start or bind direct agent chat through the same operation. The Host derives
+# source, owner, time, and trace; callers do not author that envelope.
+echo '{"type":"publish","event":{"type":"chat.start.requested","data":{"agent":"dev","message":"fix the test","channel":"operator"},"idempotencyKey":"operator-dev-chat-1"}}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
@@ -236,8 +233,7 @@ DAEMON_INSTANCE=background may-agent --emit 'trigger.<entry-name>' '{}'
 # socket namespace, execute the same control command inside the container.
 docker exec may-agent may-agent --emit 'trigger.<entry-name>' '{}'
 
-# Send a compatibility agent notification through the running daemon.
-# This does not create durable App work.
+# Send direct agent chat through the running daemon.
 DAEMON_INSTANCE=background may-agent --send scout --message "review your active project"
 
 # From a source checkout

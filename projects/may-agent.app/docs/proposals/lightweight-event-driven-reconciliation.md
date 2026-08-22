@@ -854,15 +854,29 @@ quiet-window idle proof, and child App commands remain accountable to their
 Apps rather than the EventHub core.
 
 All six Apps have completed the guarded production cutover. Historical JSON
-snapshots and retained evidence have not been deleted. Remaining work is to
+snapshots and retained evidence have not been deleted. A brand-new App now
+atomically establishes resource authority from its declarative seed without
+creating a legacy mutable `state.json`; an App that already has legacy state
+still requires guarded cutover. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
 due-recovery proof; validate the bounded execution, Conversation sync, indexed
 diagnostic, and runtime-generation module paths under longer representative
 load;
 extend fenced mid-attempt emission beyond direct task-owned workflows only when
-a concrete agent use case needs it; provide a resource-native bootstrap for a
-brand-new App; and only then remove legacy JSON/resync compatibility after its
-last reader moves.
+a concrete agent use case needs it; and remove legacy JSON/resync compatibility
+only after its last retained-data or operator reader moves.
+
+The human-adapter event boundary is now narrower as well. Console, Telegram,
+HTTP, Web UI, `--send`, runtime controls, and exact session controls all submit
+semantic `EventInput` through `publish`; Telegram keeps only passive bus reads
+for Conversation and Task rendering. Repository search plus a seven-day
+retained-event audit allowed deletion of the flat socket `input`, `steer`,
+`cancel`, `cancel_all`, `fork`, `reload`, `restart`, and `shutdown`
+translators. The canonical operator-event path remains because deployed
+`--emit` calls still publish
+unregistered App facts and explicit `trigger.*` controls. This removes unused
+human compatibility without pretending the still-used operator contract is
+dead or deleting any retained event.
 
 ### Phase 0: freeze the contract and expose cost
 
