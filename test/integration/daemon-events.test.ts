@@ -124,7 +124,7 @@ describe("daemon event subscribers", () => {
     }
   });
 
-  it("emits canonical escalation.created when auto-resume attempts are exhausted", () => {
+  it("emits canonical escalation.created when auto-resume attempts are exhausted", async () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-resume-"));
     const bus = new EventBus();
     const events: any[] = [];
@@ -165,6 +165,7 @@ describe("daemon event subscribers", () => {
       bus.emit(interrupted);
       bus.emit(interrupted);
       bus.emit(interrupted);
+      await new Promise<void>((resolve) => setImmediate(resolve));
 
       const escalation = events.find((event) => event.type === "escalation.created");
       expect(escalation).toMatchObject({

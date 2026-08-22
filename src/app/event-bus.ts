@@ -1004,7 +1004,13 @@ export class EventBus {
   private pendingFailureEvents: AgentEvent[] = [];
   private subscriberLabels = new WeakMap<Subscriber | EventListener, string>();
 
-  /** Subscribe to all events. Returns unsubscribe function. */
+  /**
+   * Register a bounded synchronous acceptance route.
+   *
+   * This path may only persist correlation, update a small ordering-critical
+   * index, or schedule durable work. Actual event handling belongs in a Task
+   * or `listen()` so it cannot extend publication latency.
+   */
   subscribe(fn: Subscriber, opts?: SubscribeOptions): () => void {
     const list = opts?.priority === "first" ? this.firstSubscribers : this.normalSubscribers;
     if (opts?.label?.trim()) this.subscriberLabels.set(fn, opts.label.trim());
@@ -1018,7 +1024,9 @@ export class EventBus {
   /**
    * Listen to persisted events after the synchronous persistence and routing
    * boundary. Listeners are non-authoritative: they cannot accept delivery,
-   * and their FIFO work never extends emit() latency.
+   * and their independent FIFO work never extends emit() latency or another
+   * listener's await chain. Like a Node.js event-loop callback, a listener must
+   * still yield or offload CPU-heavy synchronous work.
    */
   listen(fn: EventListener, opts?: ListenOptions): () => void {
     const state: EventListenerState = {
