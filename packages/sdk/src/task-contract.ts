@@ -16,7 +16,8 @@ const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
 const taskModeSchema = Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]);
 const taskPrioritySchema = Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]);
-const taskExecutorSchema = Type.Union([Type.Literal("agent"), Type.Literal("codex"), Type.Literal("claude")]);
+const TASK_EXECUTOR_PATTERN = "^[a-z][a-z0-9-]{0,63}$";
+const taskExecutorSchema = Type.String({ minLength: 1, maxLength: 64, pattern: TASK_EXECUTOR_PATTERN });
 const nullableStringSchema = Type.Union([nonEmptyStringSchema, Type.Null()]);
 const TYPED_CONDITION_SUBJECT_PATTERN = "^\\s*[A-Za-z][A-Za-z0-9_.-]*:[\\s\\S]*\\S\\s*$";
 const typedConditionSubjectPattern = new RegExp(TYPED_CONDITION_SUBJECT_PATTERN);
@@ -194,7 +195,7 @@ function validPriority(value: unknown): value is "P0" | "P1" | "P2" | "P3" {
 }
 
 function validExecutor(value: unknown): value is TaskExecutorName {
-  return value === "agent" || value === "codex" || value === "claude";
+  return typeof value === "string" && new RegExp(TASK_EXECUTOR_PATTERN).test(value);
 }
 
 function optionalString(value: Record<string, unknown>, key: string): { ok: true; value?: string } | { ok: false } {
@@ -238,7 +239,7 @@ function normalizeCreateTaskAction(
   }
   const executor = value.executor === undefined ? undefined : value.executor;
   if (executor !== undefined && !validExecutor(executor)) {
-    return `actions[${index}].executor must be agent, codex, or claude when present`;
+    return `actions[${index}].executor must be a lowercase name of at most 64 characters when present`;
   }
   if (workflow.value && executor !== undefined) {
     return `actions[${index}] cannot configure both workflow and executor`;
@@ -330,7 +331,7 @@ function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number
   }
   if ("executor" in value) {
     if (value.executor !== null && !validExecutor(value.executor)) {
-      return `actions[${index}].executor must be agent, codex, claude, or null when present`;
+      return `actions[${index}].executor must be a lowercase name of at most 64 characters or null when present`;
     }
     action.executor = value.executor as TaskExecutorName | null;
   }

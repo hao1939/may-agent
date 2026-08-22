@@ -3,8 +3,8 @@ import type { AppInput } from "./app.js";
 
 export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
-/** Built-in executor adapter selected by durable Task intent. */
-export type TaskExecutorName = "agent" | "codex" | "claude";
+/** Stable executor adapter name selected by durable Task intent. */
+export type TaskExecutorName = string;
 
 /** Desired durable outcome handed to the task reconciler. */
 export type TaskIntent = {

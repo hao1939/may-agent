@@ -45,6 +45,9 @@ import {
   type TaskAction as AppTaskAction,
   type TaskAppDependency,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
+  type TaskAttempt,
+  type TaskExecutor,
+  type TaskExecutorName,
   type TaskIntent as AppTaskIntent,
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskVerifier as AppTaskVerifier,
@@ -61,7 +64,7 @@ import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { createAppTaskEvents, type AppTaskEmission } from "./app-task-emitter.js";
+import { createAppTaskEvents, type AppTaskEmission, type AppTaskEvents } from "./app-task-emitter.js";
 import { executeTaskWithCli, type TaskCliTool } from "./app-task-cli-executor.js";
 import { HostCapacity } from "./host-capacity.js";
 import type { AppTaskQueueOptions } from "./app-task-queue.js";
@@ -206,6 +209,8 @@ export interface AppTaskRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   hostCapacity: HostCapacity;
+  /** Optional host adapters selected by Task intent. Built-ins remain replaceable. */
+  executors?: Readonly<Record<string, TaskExecutor>>;
   appRegistry?: AppRegistry;
   /** Prospective canonical generation used during one coordinated reload. */
   appRegistrySnapshot?: AppRegistrySnapshot;
@@ -722,7 +727,14 @@ async function runTaskCapability(input: {
   observer?: AppTaskExecutionObserver;
 }): Promise<TaskCapabilityRun> {
   const { opts, descriptor, capability, intent, claim, event } = input;
-  const reconciliationEvents = projectAppTaskReconciliationEvents(claim);
+  const taskAttempt = runtimeTaskAttempt({
+    opts,
+    descriptor,
+    claim,
+    cwd: input.executionPaths.workspaceDir,
+    ...(event ? { event } : {}),
+  });
+  const reconciliationEvents = taskAttempt.attempt.events;
   const runtime = requireWorkflowRuntimeOptions(opts);
   const agentName = capability.agent ?? claim.owner;
   const trace = childEventTrace(event);
@@ -838,12 +850,7 @@ async function runTaskCapability(input: {
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
       ...(descriptor.resourceStore
         ? {
-            taskEmitter: createAppTaskEvents({
-              bus: opts.bus,
-              appId: descriptor.id,
-              claim,
-              ...(event ? { parentEvent: event as AgentEvent } : {}),
-            }),
+            taskEmitter: taskAttempt.events,
           }
         : {}),
       trace,
@@ -962,6 +969,7 @@ async function runTaskCapability(input: {
     };
   } finally {
     if (workflowLeaseTimer) clearInterval(workflowLeaseTimer);
+    taskAttempt.close();
     if (providerStarted) input.observer?.providerFinished();
   }
 }
@@ -989,6 +997,73 @@ export function projectAppTaskReconciliationEvents(claim: AppTaskClaim): {
     items,
     ...(eventIds.length === items.length && eventIds.length > 0 ? { throughEventId: Math.max(...eventIds) } : {}),
     truncated: claim.eventsTruncated,
+  };
+}
+
+type RuntimeTaskAttempt = {
+  attempt: TaskAttempt;
+  events: AppTaskEvents;
+  close(): void;
+};
+
+/** Build the one fenced Task interface shared by every executor adapter. */
+function runtimeTaskAttempt(input: {
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  claim: AppTaskClaim;
+  cwd: string;
+  event?: EventEnvelope;
+}): RuntimeTaskAttempt {
+  const { opts, descriptor, claim } = input;
+  const task = readRuntimeTaskView(
+    {
+      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
+      taskStateConfig: appTaskConfig(descriptor),
+    },
+    claim.taskId,
+  );
+  if (!task || task.generation !== claim.generation) {
+    throw new Error(`Task ${descriptor.id}/${claim.taskId} is no longer current`);
+  }
+  const events = createAppTaskEvents({
+    bus: opts.bus,
+    appId: descriptor.id,
+    claim,
+    ...(input.event ? { parentEvent: input.event as AgentEvent } : {}),
+  });
+  const subscriptions = new Set<() => void>();
+  let closed = false;
+  return {
+    events,
+    attempt: {
+      appId: descriptor.id,
+      task: structuredClone(task),
+      cwd: input.cwd,
+      events: projectAppTaskReconciliationEvents(claim),
+      async publish(localKey, event) {
+        if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
+        const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
+        return { eventId: events.publish(localKey, emitted as AppTaskEmission) };
+      },
+      onEvent(listener) {
+        if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
+        const unsubscribe = events.onEvent((incoming) => listener(canonicalAppEvent(incoming)));
+        let subscribed = true;
+        const stop = () => {
+          if (!subscribed) return;
+          subscribed = false;
+          subscriptions.delete(stop);
+          unsubscribe();
+        };
+        subscriptions.add(stop);
+        return stop;
+      },
+    },
+    close() {
+      if (closed) return;
+      closed = true;
+      for (const unsubscribe of [...subscriptions]) unsubscribe();
+    },
   };
 }
 
@@ -1705,7 +1780,14 @@ async function runTaskOwner(input: {
   observer?: AppTaskExecutionObserver;
 }): Promise<TaskCapabilityRun> {
   const { opts, descriptor, intent, claim, event } = input;
-  const reconciliationEvents = projectAppTaskReconciliationEvents(claim);
+  const taskAttempt = runtimeTaskAttempt({
+    opts,
+    descriptor,
+    claim,
+    cwd: input.executionPaths.workspaceDir,
+    ...(event ? { event } : {}),
+  });
+  const reconciliationEvents = taskAttempt.attempt.events;
   const trace = childEventTrace(event);
   const prompt = [
     appTaskOwnerProtocol(descriptor.id),
@@ -1752,12 +1834,6 @@ async function runTaskOwner(input: {
     timeout: APP_TASK_OWNER_TIMEOUT_MS,
     executionRoot: input.executionPaths.workspaceDir,
   };
-  const taskEvents = createAppTaskEvents({
-    bus: opts.bus,
-    appId: descriptor.id,
-    claim,
-    ...(event ? { parentEvent: event as AgentEvent } : {}),
-  });
   const dispatchOwner = async () =>
     typeof opts.manager.run === "function" &&
     typeof opts.manager.waitFor === "function" &&
@@ -1782,7 +1858,7 @@ async function runTaskOwner(input: {
             executionRoot: ownerOptions.executionRoot,
           });
           recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, sessionId);
-          const unsubscribe = taskEvents.onEvent((incoming) => {
+          const unsubscribe = taskAttempt.events.onEvent((incoming) => {
             try {
               opts.manager.send(sessionId, liveTaskEventMessage(incoming), { trace: childEventTrace(incoming) });
             } catch {
@@ -1809,6 +1885,7 @@ async function runTaskOwner(input: {
     result = await dispatchOwner();
   } finally {
     input.observer?.providerFinished();
+    taskAttempt.close();
     const cleanupPlan = planCanonicalOwnerResidueCleanup(residueGuard);
     restoredOwnerResidue = applyCanonicalOwnerResidueCleanup(cleanupPlan);
   }
@@ -1880,7 +1957,14 @@ async function runTaskCli(input: {
       unavailable: true,
     };
   }
-  const reconciliationEvents = projectAppTaskReconciliationEvents(claim);
+  const taskAttempt = runtimeTaskAttempt({
+    opts,
+    descriptor,
+    claim,
+    cwd: input.executionPaths.workspaceDir,
+    ...(input.event ? { event: input.event } : {}),
+  });
+  const reconciliationEvents = taskAttempt.attempt.events;
   const prompt = [
     appTaskCliProtocol(descriptor.id),
     "",
@@ -1943,6 +2027,7 @@ async function runTaskCli(input: {
     });
   } finally {
     clearInterval(leaseTimer);
+    taskAttempt.close();
     input.observer?.providerFinished();
     restoredResidue = finishCanonicalOwnerResidueGuard(residueGuard);
   }
@@ -1975,6 +2060,70 @@ async function runTaskCli(input: {
     runId: execution.cliTaskId,
     ...(handlerResult.state === "error" ? { executionFailed: true } : {}),
   };
+}
+
+async function runRegisteredTaskExecutor(input: {
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  claim: AppTaskClaim;
+  defaultParentId: string;
+  executionPaths: AppTaskExecutionPaths;
+  event?: EventEnvelope;
+  observer?: AppTaskExecutionObserver;
+  name: TaskExecutorName;
+  execute: TaskExecutor;
+}): Promise<TaskCapabilityRun> {
+  const taskAttempt = runtimeTaskAttempt({
+    opts: input.opts,
+    descriptor: input.descriptor,
+    claim: input.claim,
+    cwd: input.executionPaths.workspaceDir,
+    ...(input.event ? { event: input.event } : {}),
+  });
+  const leaseTimer = setInterval(
+    () => {
+      try {
+        if (!renewAppTaskAttemptLease(appTaskConfig(input.descriptor), input.claim)) clearInterval(leaseTimer);
+      } catch {
+        clearInterval(leaseTimer);
+      }
+    },
+    Math.floor(APP_TASK_ATTEMPT_LEASE_DURATION_MS / 3),
+  );
+  leaseTimer.unref();
+  const runId = `executor:${input.name}:${input.claim.attemptId}`;
+  try {
+    input.observer?.providerStarted(0);
+    const result = await input.execute(taskAttempt.attempt);
+    return {
+      handlerResult: normalizeTaskHandlerResult(
+        result,
+        { type: "done", summary: `${input.name} executor completed`, runId },
+        {
+          allowNeedsOwner: true,
+          defaultParentId: input.defaultParentId,
+          rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+          validateAction: input.descriptor.app.tasks?.validateAction,
+        },
+      ),
+      runId,
+    };
+  } catch (error) {
+    return {
+      handlerResult: {
+        state: "error",
+        summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
+        evidence: [],
+        actions: [],
+      },
+      runId,
+      executionFailed: true,
+    };
+  } finally {
+    clearInterval(leaseTimer);
+    taskAttempt.close();
+    input.observer?.providerFinished();
+  }
 }
 
 const MAX_PROMPT_CHILD_TEXT = 256;
@@ -2365,7 +2514,11 @@ async function reconcileTask(input: {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
-    const cliKey = primary.handler.startsWith("cli:") ? primary.handler.slice("cli:".length) : "";
+    const executorKey = primary.handler.startsWith("executor:")
+      ? primary.handler.slice("executor:".length)
+      : primary.handler.startsWith("cli:")
+        ? primary.handler.slice("cli:".length)
+        : "";
     let taskWorkspace: PreparedTaskWorkspace | undefined;
     let workspaceFinalized = false;
     const finalizeWorkspace = async (outcome: "accepted" | "waiting" | "failed") => {
@@ -2463,7 +2616,7 @@ async function reconcileTask(input: {
           : {}),
         observer,
       });
-    } else if (cliKey === "codex" || cliKey === "claude") {
+    } else if (executorKey) {
       if (descriptor.app.workspace?.kind === "git") {
         try {
           const previous = Object.values(readTaskState(config, { taskIds: [primary.taskId] }).attempts ?? {})
@@ -2499,28 +2652,54 @@ async function reconcileTask(input: {
           };
         }
       }
-      primaryResult ??= await runTaskCli({
-        opts,
-        descriptor,
-        intent,
-        claim: primary,
-        defaultParentId,
-        executionPaths,
-        declaredOutputPaths,
-        childContext,
-        event,
-        tool: cliKey,
-        ...(primary.handoff
-          ? {
-              fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-                primary.handoff.evidence.length
-                  ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
-                  : ""
-              }`,
-            }
-          : {}),
-        observer,
-      });
+      const registered = opts.executors?.[executorKey];
+      if (registered) {
+        primaryResult ??= await runRegisteredTaskExecutor({
+          opts,
+          descriptor,
+          claim: primary,
+          defaultParentId,
+          executionPaths,
+          event,
+          observer,
+          name: executorKey,
+          execute: registered,
+        });
+      } else if (executorKey === "codex" || executorKey === "claude") {
+        primaryResult ??= await runTaskCli({
+          opts,
+          descriptor,
+          intent,
+          claim: primary,
+          defaultParentId,
+          executionPaths,
+          declaredOutputPaths,
+          childContext,
+          event,
+          tool: executorKey,
+          ...(primary.handoff
+            ? {
+                fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
+                  primary.handoff.evidence.length
+                    ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                    : ""
+                }`,
+              }
+            : {}),
+          observer,
+        });
+      } else {
+        primaryResult ??= {
+          handlerResult: {
+            state: "error",
+            summary: `Task executor ${executorKey} is not registered`,
+            evidence: [],
+            actions: [],
+          },
+          runId: null,
+          unavailable: true,
+        };
+      }
     } else {
       primaryResult = await runTaskOwner({
         opts,
@@ -3549,7 +3728,7 @@ async function requeueRepairedAppTaskHandlers(
         data: {
           project: descriptor.id,
           taskId: candidate.taskId,
-          handler: candidate.workflow ? `workflow:${candidate.workflow}` : `cli:${candidate.executor}`,
+          handler: candidate.workflow ? `workflow:${candidate.workflow}` : `executor:${candidate.executor}`,
           reason: "task-workspace-preparation-succeeded-after-app-reload",
         },
       } as unknown as AgentEvent);

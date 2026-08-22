@@ -1650,6 +1650,128 @@ describe("canonical App task runtime", () => {
     ).toMatchObject({ id: "work/event", status: "pending" });
   });
 
+  it("runs a registered executor through the fenced Task event interface", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let nextEventId = 1;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: nextEventId++, configurable: true });
+    });
+    const published: AgentEvent[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "sample.progress") published.push(event);
+    });
+    let calls = 0;
+    let sawLiveFeedback = false;
+    let wakeFirstAttempt = () => {};
+    const firstAttemptReady = new Promise<void>((resolve) => {
+      wakeFirstAttempt = resolve;
+    });
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        reviewer: async (attempt) => {
+          calls += 1;
+          expect(attempt.appId).toBe("sample");
+          expect(attempt.task.id).toBe("work/registered-executor");
+          expect(attempt.cwd).toBe(f.appDir);
+          expect(
+            await attempt.publish(`pass-${calls}`, {
+              type: "sample.progress",
+              data: { pass: calls },
+            }),
+          ).toMatchObject({ eventId: expect.any(Number) });
+          if (calls === 1) {
+            await new Promise<void>((resolve) => {
+              const unsubscribe = attempt.onEvent((event) => {
+                if (event.type !== "sample.feedback") return;
+                sawLiveFeedback = true;
+                unsubscribe();
+                resolve();
+              });
+              wakeFirstAttempt();
+            });
+          } else {
+            expect(attempt.events.items.some((item) => item.event.type === "sample.feedback")).toBeTrue();
+          }
+          return {
+            state: "converged",
+            summary: "Registered executor completed the Task",
+            evidence: [`test:reviewer:${calls}`],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:registered-executor",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/registered-executor",
+          parentId: "operations",
+          outcome: "Run one replaceable executor",
+          acceptance: ["The registered executor returns evidence"],
+          mode: "achieve",
+          owner: "sample-owner",
+          executor: "reviewer",
+        },
+      },
+      idempotencyKey: "attach:registered-executor",
+      request: {
+        id: "request-registered-executor",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    await firstAttemptReady;
+    const feedback = {
+      type: "sample.feedback",
+      source: "human",
+      owner: "agent:sample-owner",
+      target: { appId: "sample", taskId: "work/registered-executor" },
+      data: { instruction: "include this review" },
+    } as AgentEvent;
+    admitLoadedCanonicalAppTaskEvent({
+      bus,
+      appId: "sample",
+      event: feedback,
+      intent: null,
+      targetedTaskId: "work/registered-executor",
+    });
+    bus.emit(feedback);
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const deadline = Date.now() + 2_000;
+    while (!readTaskState(config).receipts?.["work/registered-executor"] && Date.now() < deadline) {
+      await Bun.sleep(5);
+    }
+    expect(calls).toBe(2);
+    expect(sawLiveFeedback).toBeTrue();
+    expect(published).toHaveLength(2);
+    expect(readTaskState(config).receipts?.["work/registered-executor"]).toMatchObject({
+      handler: "executor:reviewer",
+      executor: "reviewer",
+      summary: "Registered executor completed the Task",
+      evidence: ["test:reviewer:2"],
+    });
+  });
+
   it("admits a Codex CLI result through the same fenced Task lifecycle", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -1744,7 +1866,7 @@ describe("canonical App task runtime", () => {
     expect(prompts[0]).toContain('"executor": "codex"');
     expect(prompts[1]).toContain("sample.feedback");
     expect(readTaskState(config).receipts?.["work/codex-executor"]).toMatchObject({
-      handler: "cli:codex",
+      handler: "executor:codex",
       executor: "codex",
       summary: "Codex completed the Task",
       evidence: expect.arrayContaining(["test:codex"]),

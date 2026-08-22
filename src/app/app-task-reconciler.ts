@@ -7,6 +7,7 @@ import {
   type Condition as AppTaskConditionSpec,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskAction as AppTaskAction,
+  type TaskExecutorName,
   type TaskIntent as AppTaskIntent,
 } from "@may-agent/sdk";
 import {
@@ -1404,8 +1405,8 @@ function validateIntent(intent: AppTaskIntent): void {
       );
     }
   }
-  if (intent.executor !== undefined && !["agent", "codex", "claude"].includes(intent.executor)) {
-    throw new Error(`Task ${intent.id} executor must be agent, codex, or claude`);
+  if (intent.executor !== undefined && !/^[a-z][a-z0-9-]{0,63}$/.test(intent.executor)) {
+    throw new Error(`Task ${intent.id} executor must be a lowercase name of at most 64 characters`);
   }
   if (intent.workflow && intent.executor) {
     throw new Error(`Task ${intent.id} cannot configure both workflow and executor`);
@@ -1748,7 +1749,7 @@ export type AppTaskChildContext = {
     outcome: string;
     owner?: string;
     workflow?: string;
-    executor?: "agent" | "codex" | "claude";
+    executor?: TaskExecutorName;
     input: Record<string, unknown>;
     priority?: "P0" | "P1" | "P2" | "P3";
     category?: string;
@@ -1779,7 +1780,7 @@ export type AppTaskChildContext = {
     outcome: string;
     owner: string;
     workflow?: string;
-    executor?: "agent" | "codex" | "claude";
+    executor?: TaskExecutorName;
     input: Record<string, unknown>;
     priority?: "P0" | "P1" | "P2" | "P3";
     conditions: AppTaskConditionSpec[];
@@ -1797,7 +1798,7 @@ export type AppTaskSnapshotContext = {
   phase: AppTaskResource["status"]["phase"];
   outcome: string;
   owner?: string;
-  executor?: "agent" | "codex" | "claude";
+  executor?: TaskExecutorName;
   priority?: "P0" | "P1" | "P2" | "P3";
   category?: string;
   dependsOn?: string[];
@@ -2258,7 +2259,7 @@ export type AppTaskWorkspaceRepairCandidate = {
   generation: number;
   owner: string;
   workflow?: string;
-  executor?: "codex" | "claude";
+  executor?: TaskExecutorName;
   previous?: AppTaskWorkspace;
 };
 
@@ -2275,9 +2276,7 @@ export function listWorkspacePreparationFailedAppTasks(
       .flatMap((resource): AppTaskWorkspaceRepairCandidate[] => {
         const workflow = resource.spec.workflow?.trim();
         const executor =
-          resource.spec.executor === "codex" || resource.spec.executor === "claude"
-            ? resource.spec.executor
-            : undefined;
+          resource.spec.executor && resource.spec.executor !== "agent" ? resource.spec.executor : undefined;
         if (resource.status.phase !== "attention" || (!workflow && !executor)) return [];
         const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
         if (attempt?.failureReason !== "WorkspacePreparationFailed") return [];
@@ -2602,8 +2601,8 @@ export function claimObservedAppTask(
           ? `owner:${owner}`
           : intent.workflow?.trim()
             ? `workflow:${intent.workflow.trim()}`
-            : intent.executor === "codex" || intent.executor === "claude"
-              ? `cli:${intent.executor}`
+            : intent.executor && intent.executor !== "agent"
+              ? `executor:${intent.executor}`
               : `owner:${owner}`
         : input.handler === "owner"
           ? `owner:${owner}`
