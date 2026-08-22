@@ -11,7 +11,7 @@ import {
   markOrphanedCliTasks,
   recoverMissingCliTaskRecords,
 } from "./cli-task-runner.js";
-import { EventBus, type AgentEvent } from "./event-bus.js";
+import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EventBus, type AgentEvent } from "./event-bus.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { createRunCliAgentTool } from "../lib/tools/run-cli-agent.js";
 import { getDb } from "../lib/requests.js";
@@ -1266,6 +1266,53 @@ describe("CLI task runner", () => {
         status: "completed",
         effectiveSandbox: "read-only",
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("replays durable CLI admission for a persisted pending event", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-event-redelivery-"));
+    const persistDir = join(root, ".state");
+    const directory = join(persistDir, "cli-tasks", "analysis-redelivered");
+    mkdirSync(directory, { recursive: true });
+    const promptPath = join(directory, "prompt.md");
+    writeFileSync(promptPath, "Recover the pending admission");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true });
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true });
+    });
+    bus.subscribe((event) => events.push(event));
+
+    try {
+      attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: fakeSpawn as any });
+      bus.emit({
+        type: "cli.task.requested",
+        source: "agent:may",
+        owner: "runtime:cli-task-runner",
+        data: {
+          taskId: "analysis-redelivered",
+          tool: "codex",
+          mode: "review",
+          cwd: root,
+          promptPath,
+          resultPath: join(directory, "result.md"),
+          structuredResultPath: join(directory, "result.json"),
+          eventsPath: join(directory, "events.jsonl"),
+          sandbox: "read-only",
+          timeoutMs: 10_000,
+          sourceOwner: "agent:may",
+        },
+      });
+
+      await waitFor(() => JSON.parse(readFileSync(join(directory, "task.json"), "utf8")).status === "completed");
+      expect(JSON.parse(readFileSync(join(directory, "task.json"), "utf8"))).toMatchObject({
+        taskId: "analysis-redelivered",
+        status: "completed",
+      });
+      expect(events).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

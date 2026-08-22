@@ -282,6 +282,30 @@ describe("source-query metric measurement", () => {
     });
   });
 
+  it("does not begin source discovery on the event publication stack", async () => {
+    const db = getDb(persistDir);
+    const originalPrepare = db.prepare.bind(db);
+    let publicationReturned = false;
+    let sourceDiscoveryRanInline = false;
+    db.prepare = ((sql: string) => {
+      if (sql.includes("FROM metrics") && sql.includes("source_command") && !publicationReturned) {
+        sourceDiscoveryRanInline = true;
+      }
+      return originalPrepare(sql);
+    }) as typeof db.prepare;
+
+    bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      data: { reason: "publication-boundary" },
+    });
+    publicationReturned = true;
+
+    expect(sourceDiscoveryRanInline).toBe(false);
+    await measurement.idle();
+  });
+
   it("yields control traffic between synchronously persisted metric observations", async () => {
     const db = getDb(persistDir);
     for (const id of ["yield.metric.1", "yield.metric.2"]) {
