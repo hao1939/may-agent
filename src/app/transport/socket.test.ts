@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { legacyEventInput } from "./socket.js";
+import { operatorEventInput } from "./socket.js";
 
-describe("control-socket compatibility event boundary", () => {
+describe("control-socket operator event boundary", () => {
   it("keeps lifecycle and correlation identities in data unless target is explicit", () => {
     expect(
-      legacyEventInput({
+      operatorEventInput({
         type: "trigger.metrics-snapshot",
         source: "control-socket",
         owner: "agent:may",
@@ -31,7 +31,7 @@ describe("control-socket compatibility event boundary", () => {
 
   it("preserves an explicit malformed exact-task target for subscriber failure evidence", () => {
     expect(
-      legacyEventInput({
+      operatorEventInput({
         type: "trigger.metrics-snapshot",
         target: { taskId: "missing-app-target" },
         data: { appId: "correlation-only" },
