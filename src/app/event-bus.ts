@@ -1086,6 +1086,38 @@ export class EventBus {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
   } {
+    return this.dispatch(input, true);
+  }
+
+  /**
+   * Retry the idempotent admission routes for an event already present in the
+   * journal. Recovery supplies the durable row identity, so this deliberately
+   * skips both a second append and ordinary side-effect fan-out.
+   */
+  redeliverPersisted(
+    input: AgentEvent,
+    eventId: number,
+  ): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
+    if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+      throw new Error("Persisted event redelivery requires a positive event id");
+    }
+    const event = Object.isExtensible(input) ? input : ({ ...input } as AgentEvent);
+    Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
+    Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+    Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    return this.dispatch(event, false);
+  }
+
+  private dispatch(
+    input: AgentEvent,
+    persist: boolean,
+  ): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
     const tracedEvent = inheritedEventTrace(input, eventContext.getStore());
     // DbWriter attaches the durable row id to the routed envelope. Frozen
     // producer input must not silently lose delivery and child-trace metadata.
@@ -1096,7 +1128,7 @@ export class EventBus {
     try {
       // Required durability is deliberately outside subscriber error
       // isolation. If persistence fails, no side-effect handler may run.
-      if (this.persistenceSubscriber) {
+      if (persist && this.persistenceSubscriber) {
         delivery = normalizeDeliveryResult(this.runSubscriber(event, "persistence", this.persistenceSubscriber));
       }
       // Retry-safe ingress may resolve to an already-persisted event. Return

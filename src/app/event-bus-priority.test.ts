@@ -6,7 +6,13 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import {
+  EVENT_DEDUPLICATED,
+  EVENT_DELIVERY_RESULT,
+  EVENT_REDELIVERY_REQUIRED,
+  EVENT_ROW_ID,
+  EventBus,
+} from "./event-bus.js";
 
 describe("EventBus subscriber priority", () => {
   it("reruns only explicit durable routes during pending-event redelivery", () => {
@@ -26,6 +32,25 @@ describe("EventBus subscriber priority", () => {
     bus.emit({ type: "info", message: "retry" });
 
     expect(calls).toEqual(["durable"]);
+  });
+
+  it("redelivers an existing journal row without appending or replaying side effects", () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    bus.setPersistenceSubscriber(() => calls.push("persist"));
+    bus.subscribeDurableRoute(() => {
+      calls.push("durable");
+      return { accepted: true, by: "durable-recovery" };
+    });
+    bus.subscribe(() => calls.push("ordinary"));
+    bus.listen(() => calls.push("listener"));
+    bus.setDeliveryRecorder((event) => calls.push(`receipt:${event[EVENT_ROW_ID]}`));
+
+    const recovered = bus.redeliverPersisted({ type: "info", message: "recover" }, 91);
+
+    expect(calls).toEqual(["durable", "receipt:91"]);
+    expect(recovered[EVENT_ROW_ID]).toBe(91);
+    expect(recovered[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, by: "durable-recovery" });
   });
 
   it("runs listeners later in FIFO order without extending emit", async () => {
