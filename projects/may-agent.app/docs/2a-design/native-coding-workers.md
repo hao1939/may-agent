@@ -1,19 +1,22 @@
 # Native Coding Workers
 
 **Design status:** Accepted.
-**Implementation status:** Implemented as a compatibility execution adapter
-with persistent worker records, native session reuse, classified failures,
-expected-output validation, and opt-in prepared-worktree enforcement.
+**Implementation status:** Implemented as both a direct Task executor adapter
+and a compatibility execution tool, using the same persistent worker records,
+classified failures, expected-output validation, and native process runner.
 
 Direct execution sessions can delegate bounded coding work to native coding
 agents such as Codex CLI and Claude Code. These tools are not terminal tabs,
 project owners, App requests, or tasks. They are worker runtimes behind the
 event system.
 
-A Task owner may call `run_cli_agent` inside its bounded attempt and must await
-and review the result before returning. If the native work must outlive that
-attempt, it belongs to a durable Task or cross-App dependency instead of a
-detached CLI process.
+A Task may select `executor: "codex"` or `executor: "claude"`; Runtime then
+awaits the native result inside that exact fenced attempt and admits it through
+the ordinary `TaskReconcileResult` boundary. An owner may still call
+`run_cli_agent` for a bounded second opinion, but that compatibility tool
+returns an accepted worker record and the caller must await/review its terminal
+evidence before using it. Work that must outlive the caller belongs to a Task
+or cross-App dependency, never a detached CLI process.
 
 ## Mental Model
 
@@ -41,14 +44,15 @@ cli.task.completed / cli.task.failed / cli.task.orphaned
   returns evidence to the caller for judgment
 ```
 
-The live caller decides whether to accept, retry, or return the evidence. The
-worker only reports what it did. If the caller ends before reviewing the
-result, the artifact remains observable but does not become durable unfinished
-work.
+For a direct Task executor, the Task Runtime validates and fences the returned
+JSON; for `run_cli_agent`, the live caller reviews it. In both cases the worker
+only reports what it did. Its record and native session never become durable
+unfinished work.
 
-The native worker result is not automatically accepted as truth. It is evidence
-for the bounded caller. The owning App still judges whether the answer is good
-enough and expresses any durable follow-up through its task result.
+The native worker result is never accepted merely because the process exited
+successfully. It must satisfy the declared JSON shape and then pass normal Task
+result validation and acceptance, or be reviewed by the bounded compatibility
+caller.
 
 When the purpose is a second or third opinion, independence matters:
 
@@ -75,9 +79,9 @@ The split is intentional:
 - The owner-facing completion is compact; full native output stays in
   artifacts.
 
-The runtime does not block inside the Codex or Claude process. The calling
-attempt, however, must remain open until it observes and reviews the terminal
-worker result if that result is required for its own answer.
+Event publication does not block inside the Codex or Claude process. The
+asynchronous runner owns it, while the bounded Task/caller awaits the terminal
+event when the result is required for its own decision.
 
 Accepted is not completed. Before a caller uses a result, it waits for
 `cli.task.completed`, `cli.task.failed`, or `cli.task.orphaned`, then inspects
@@ -117,18 +121,24 @@ The current runtime has two layers:
 
 | Layer            | File                                                | Responsibility                                                                                                  |
 | ---------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Task adapter     | `projects/may-agent/src/app/app-task-cli-executor.ts` | Translate one fenced Task attempt into a CLI request and return its terminal JSON to normal Task admission.     |
 | Tool surface     | `projects/may-agent/src/lib/tools/run-cli-agent.ts` | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately.                      |
 | Runtime runner   | `projects/may-agent/src/app/cli-task-runner.ts`     | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
 | Event schema     | `projects/may-agent/src/app/event-bus.ts`           | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
 | Restart recovery | `projects/may-agent/src/app/daemon-events.ts`       | Marks in-flight CLI tasks as orphaned after runtime restart.                                                    |
 
 The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
-retired. Keeping two execution paths produced different session, failure,
-recovery, and observability semantics. Native coding-agent delegation now has
-one runtime boundary: `run_cli_agent` plus `cli.task.*` events.
+retired. Both the Task adapter and compatibility tool use the same
+`cli.task.*` process boundary; only the caller and final result admission
+differ.
 
 Shipped behavior today:
 
+- `TaskIntent.executor` selects `codex` or `claude`; Runtime creates a
+  deterministic worker identity per Task attempt, renews the Task lease, and
+  admits the returned JSON through the ordinary Task fence.
+- A Git-backed direct CLI Task receives an isolated task-generation worktree;
+  process and native-session records remain attempt evidence.
 - `run_cli_agent` writes `prompt.md` and `request.json`.
 - `cli-task-runner` writes `task.json`, `events.jsonl`, `result.md`, and
   `result.json`, plus `session.json` when the native session id is known.
@@ -553,8 +563,9 @@ capacity; it cannot turn `run_cli_agent` into an asynchronous ownership path.
    failures are classified today.
 2. Expected JSON output with required fields is implemented; richer JSON Schema
    validation remains optional follow-up.
-3. Patch mode can require an explicitly prepared isolated worktree. Automatic
-   safe worktree creation and cleanup remain open.
+3. Direct CLI Task execution creates and finalizes a task-generation worktree
+   for Git-backed Apps. Compatibility `run_cli_agent` calls still require an
+   explicitly supplied prepared worktree when mutation isolation is needed.
 4. UI should show active CLI worker records with native session id, status,
    result path, and events path.
 5. Metrics should track request count, completion rate, orphan count, timeout

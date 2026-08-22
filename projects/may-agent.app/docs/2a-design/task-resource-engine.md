@@ -34,7 +34,7 @@ App input declares, revises, attaches to, or wakes TaskIntent
   -> Host persists canonical task state
   -> queue receives (appId, taskId)
   -> worker rereads and claims the current generation
-  -> one owner or workflow performs one bounded attempt
+  -> one selected executor performs one bounded attempt
   -> Host validates and atomically applies one result
   -> task converges, waits on exact evidence, or becomes visible attention
 ```
@@ -46,6 +46,25 @@ a lost in-memory wake without scanning an App tree.
 
 The queue is an in-memory hint. The persisted task, trigger, Condition, and
 attempt state are sufficient to recover it.
+
+## One attempt interface
+
+Executor choice does not change Task semantics. A Task may use its managed
+owner agent by default, name a workflow, or select the built-in `codex` or
+`claude` adapter. `workflow` and `executor` are mutually exclusive; omitting
+both means the managed owner agent.
+
+Every adapter receives the same bounded Task detail and ordered event batch,
+may publish a fact through the current generation/attempt fence, and returns
+one `TaskReconcileResult`. An event addressed to `{ appId, taskId }` is durable
+feedback, approval, or steering for that Task. Live forwarding is optional:
+managed sessions support it, while a headless CLI that cannot accept a live
+message receives the event on the next attempt.
+
+Codex/Claude process records, native session IDs, prompts, and output files are
+attempt evidence only. They do not create another Task, retry policy, queue, or
+completion authority. The Host accepts their result only through the same
+generation-fenced Task result transaction.
 
 ## Task and task view
 
@@ -137,8 +156,7 @@ generation-fenced and atomically admitted with the result.
 1. **Done:** define `TaskView`, `TaskPage`, and `TaskListOptions` once in the SDK.
 2. **Done:** build one Host reader over the loaded App registry and canonical
    task state.
-3. **Done:** bind it to the current App as `ctx.read.tasks`; retain
-   `ctx.read.task(id)` only as a temporary exact-read alias.
+3. **Done:** bind it to the current App as `ctx.read.tasks`.
 4. **Done:** expose the same reader to agents through one read-only `tasks` tool.
    App-local agents receive their App scope; a broader scope must be explicitly
    injected by the Host and cannot be requested by tool arguments.
@@ -153,17 +171,20 @@ tool, socket, and HTTP models and try to reconcile them later.
 
 ## Authority and migration
 
-| Surface                           | Role                                                                        |
-| --------------------------------- | --------------------------------------------------------------------------- |
-| EventHub SQLite resource rows     | Authority after that App completes guarded cutover                          |
-| `.state/tasks/state.json`         | Legacy authority before cutover; never recreated by resource-backed runtime |
-| `.state/tasks/tree.json`          | Disposable legacy human/UI projection                                       |
-| `tasks/seed.json`                 | Initial desired state for a new App                                         |
-| `project.json`                    | Authored project configuration, never rewritten by task operations          |
+| Surface                       | Role                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| EventHub SQLite resource rows | Authority after that App completes guarded cutover                          |
+| `.state/tasks/state.json`     | Legacy authority before cutover; never recreated by resource-backed runtime |
+| `.state/tasks/tree.json`      | Disposable legacy human/UI projection                                       |
+| `tasks/seed.json`             | Declarative initial state atomically bootstrapped into resource authority   |
+| `project.json`                | Authored project configuration, never rewritten by task operations          |
 
 One App has exactly one authority. Cutover requires pause, drained attempts,
 import, full shadow comparison, source-revision verification, activation, and
-explicit resume. Runtime discovery never imports or activates implicitly.
+explicit resume. Runtime discovery never imports or activates existing legacy
+state implicitly. A brand-new App with no legacy state atomically establishes
+resource authority from `tasks/seed.json` (or an empty seed); it never creates
+an intermediate mutable `state.json`.
 `tree.json` may be regenerated and must never restore canonical state. Task
 state retains the bounded detail needed for reconciliation and recovery;
 long-term domain evidence belongs in projects, reports, knowledge, session
@@ -179,8 +200,8 @@ attempt history.
 The stable execution key is `(appId, taskId)`. A task contains:
 
 - `metadata.id`, `generation`, and `resourceVersion`;
-- `spec` describing the outcome, mode, owner or workflow, inputs, outputs,
-  dependencies, parent, priority, and acceptance; and
+- `spec` describing the outcome, mode, owner, selected workflow or executor,
+  inputs, outputs, dependencies, parent, priority, and acceptance; and
 - `status` describing observed generation, phase, summary, evidence, current
   attempt, and linked Conditions.
 

@@ -79,7 +79,7 @@ The only App work loop is:
 typed input -> TaskIntent -> task <--- durable event
                               |             ^
                               v             |
-                       workflow or owner    |
+                       selected executor    |
                               |             |
                               +-- result ---+
 ```
@@ -87,8 +87,8 @@ typed input -> TaskIntent -> task <--- durable event
 - `TaskIntent` records the latest desired outcome; Runtime separately records
   the ordered events that declared or woke it.
 - A task preserves desired and observed state across bounded attempts.
-- A workflow applies reusable experience; otherwise the accountable owner uses
-  judgment.
+- A workflow applies reusable experience; otherwise the accountable owner or a
+  selected Codex/Claude adapter performs one bounded attempt.
 - A result advances observed state; a Condition names the exact fact required
   before work can continue.
 - Queue coalescing happens only after the latest desired intent and trigger are

@@ -240,6 +240,7 @@ type TaskIntent = {
   mode: "achieve" | "maintain";
   owner?: string;
   workflow?: string;
+  executor?: "agent" | "codex" | "claude";
   input?: Record<string, unknown>;
   outputs?: string[];
   dependsOn?: string[];
@@ -247,6 +248,31 @@ type TaskIntent = {
   category?: string;
 };
 ```
+
+`executor` selects a built-in bounded adapter. Omitted or `agent` uses the
+managed owner agent; `codex` and `claude` use the native CLI adapter. A Task
+cannot set both `workflow` and `executor`.
+
+All executor adapters translate one small contract:
+
+```ts
+type TaskAttempt = {
+  task: TaskDetail;
+  events: TaskReconciliationEvents;
+  publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
+  onEvent(listener: (event: AppEvent) => void): () => void;
+};
+
+type TaskExecutor =
+  (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
+```
+
+`publish` is immediate, durable, idempotent within the Task generation, and
+rejected after the attempt fence expires. `onEvent` is only a live convenience;
+the addressed event is also durable Task input for replay on a later attempt.
+Task-owned workflows expose these as `ctx.events.emit` and
+`ctx.events.onEvent`; Runtime removes live listeners when the bounded workflow
+ends. The returned result is the only Task state transition.
 
 One fenced reconciliation attempt returns a typed state, summary, evidence,
 optional caller-facing response, task changes, Conditions, and typed cross-App
@@ -318,6 +344,7 @@ serve different boundaries:
 | Ask another agent and await its bounded result | agent call                   | `ctx.agents.call`          |
 | Run a reusable bounded workflow                | workflow tool                | `ctx.workflows.run`        |
 | Publish a fact                                 | event tool where authorized  | `ctx.events.emit`          |
+| Publish from the current fenced Task attempt   | `tasks` publish              | `ctx.events.emit`          |
 | Record a domain sample                         | metric tool where authorized | `ctx.metrics.record`       |
 | Read this App's Tasks                          | `tasks` list/get             | `ctx.read.tasks.list/get`  |
 | Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |

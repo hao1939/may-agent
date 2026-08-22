@@ -262,9 +262,9 @@ Executor adapters only translate this contract:
 - the managed-agent adapter renders the Task/event snapshot, exposes the
   scoped publish capability, and may steer the live session;
 - the workflow adapter supplies the same values as typed context;
-- the Codex/Claude adapter serializes the snapshot and result schema, exposes
-  the same local Task-event operations, and resumes or starts a bounded native
-  process; and
+- the Codex/Claude adapter serializes the snapshot and result schema and starts
+  a bounded native process; it consumes the durable event batch, while live
+  steering remains optional until the native protocol can accept it safely;
 - every adapter returns the same `TaskReconcileResult` for the same Host
   validation and fenced commit.
 
@@ -1076,11 +1076,12 @@ does not require parsing an App task tree.
 - Keep final result admission independent from already accepted emissions.
 - Add the crash, duplicate, stale-attempt, early-child-result, and event-during-
   attempt tests.
-- Extract the executor-neutral `TaskAttempt` boundary from the current managed
-  agent/workflow paths, then place Codex and Claude behind the same result and
-  Task-event contract.
+- **Done:** define the executor-neutral `TaskAttempt` boundary, expose fenced
+  publish/live input to managed execution, and place Codex and Claude behind
+  the same Task result fence and durable event batch.
 - Forward live Task input only when an executor supports it; always retain the
-  durable next-attempt path as authority.
+  durable next-attempt path as authority. Headless Codex/Claude currently use
+  that durable replay path rather than a second steering protocol.
 
 **Exit:** Apps can break down and coordinate work through immediately visible
 events without holding an executor or losing restart safety, and changing the

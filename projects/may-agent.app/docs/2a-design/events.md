@@ -309,7 +309,10 @@ event-owner fallback.
 - domain/provider observations feed App input translators, exact task wakes, or
   projections;
 - task reconciliation lifecycle events are evidence, not scheduling commands;
-- an event with `target.taskId` is an exact wake; and
+- an event with `target.appId` and `target.taskId` is durably linked and wakes
+  that exact Task;
+- an event published by a fenced Task attempt carries Task provenance and is a
+  progress/finding/fact, not a competing completion or an automatic self-wake;
 - typed App actions create App input rather than publishing an actionable event
   shortcut.
 

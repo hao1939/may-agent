@@ -71,7 +71,7 @@ An App defines:
 
 - its address and input schema;
 - how actionable inputs and facts resolve to tasks;
-- which owner or workflow handles bounded work;
+- which bounded executor handles work;
 - the desired outcome and acceptance evidence for a task; and
 - domain reads, actions, observations, and metrics.
 

@@ -78,7 +78,7 @@ cannot replace either record.
 desired task (`TaskIntent` in code)
   -> Host stores desired state and trigger
   -> Host queues one attempt within App and Host limits
-  -> App workflow or owner checks current state
+  -> selected executor checks current state
   -> App says done, waiting, needs-owner, or requests a typed change
   -> Host validates, stores, and applies the result
 ```
@@ -88,11 +88,12 @@ Task handler selection is direct:
 ```text
 owner = task owner, else nearest parent owner, else App owner
 workflow present = run that owner's named workflow
-workflow absent  = run that owner once
+executor codex/claude = run that bounded CLI adapter
+neither present = run that owner once
 ```
 
-Missing workflows become visible attention. The Host does not silently choose
-another owner.
+Missing workflows or unavailable executors become visible attention. The Host
+does not silently choose another executor or owner.
 
 ## Events and schedules
 
@@ -108,8 +109,10 @@ or mutate App task state.
 
 ## Execution
 
-All agent and workflow calls use one bounded execution implementation. Direct
-CLI and Gym calls reuse it without starting App hosting.
+All Task executors enter and leave through one bounded Task-attempt contract.
+Managed agents and workflows use the agent runtime; Codex and Claude use the
+native CLI runner behind a thin adapter. Neither path creates another Task
+lifecycle.
 
 One `HostCapacity` object limits task attempts. Each App may declare a smaller
 local limit. Request correlation and delivery do not run a second App worker.
