@@ -49,8 +49,8 @@ import {
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
-import { loadProjectReadModel, projectRuntimePaths, readTaskStateLifecycle } from "./app-task-runtime-state.js";
-import { cacheTaskStateReads, readTaskState, refreshAppTaskTreeProjection, type TaskTree } from "./app-task-store.js";
+import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
+import { cacheTaskStateReads, readTaskState, type TaskTree } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
@@ -82,7 +82,6 @@ import {
   markAppTaskAttention,
   pendingAppTaskRecoveryAttention,
   listAppTaskIntents,
-  listRunnableAppTaskQueueEntries,
   isAppTaskActionStaleError,
   isAppTaskConverged,
   observeAppTaskIntent,
@@ -2805,17 +2804,6 @@ function installConventionTaskControllers(
     const tasks = descriptor.app.tasks;
     if (!tasks || descriptor.reconciliationPaused) continue;
     const config = appTaskConfig(descriptor);
-    try {
-      // Every canonical state save refreshes this disposable projection. On
-      // startup, preserve a projection already newer than its source instead
-      // of parsing and serializing the entire historical task tree again.
-      if (!config.resourceStore) refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
-    } catch (error) {
-      opts.bus.emit({
-        type: "info",
-        message: `[app-task:${descriptor.id}] Could not refresh task read projection: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
     let recoveryScheduler: AppTaskRecoveryScheduler | undefined;
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
@@ -2824,17 +2812,6 @@ function installConventionTaskControllers(
       // Other Apps are independent and must not hold this controller closed.
       startAfter: appControllerStartGate(previousControllers, descriptor.id, opts.startAfter),
       maxRetries: 3,
-      ...(config.resourceStore
-        ? {}
-        : {
-            resync: {
-              intervalMs: tasks.resyncIntervalMs ?? 60_000,
-              // Installation recovery seeds this queue from the same cached state
-              // pass; reparsing it when the startup gate opens only delays ingress.
-              onStart: false,
-              tasks: () => listRunnableAppTaskQueueEntries(config),
-            },
-          }),
       reconcile: async (taskId, dispatch) => {
         const dependentTaskIds = await reconcileTask({
           opts,
@@ -2873,17 +2850,16 @@ function installConventionTaskControllers(
       },
     });
     controllers.set(descriptor.id, controller);
-    if (config.resourceStore) {
-      recoveryScheduler = new AppTaskRecoveryScheduler({
-        source: config.resourceStore,
-        safetyIntervalMs: tasks.resyncIntervalMs ?? 60_000,
-        enqueue: (taskId, options) => {
-          controller.enqueue(taskId, options);
-        },
-      });
-      recoverySchedulers.set(descriptor.id, recoveryScheduler);
-      recoveryScheduler.start();
-    }
+    if (!config.resourceStore) throw new Error(`App ${descriptor.id} task resource authority is unavailable`);
+    recoveryScheduler = new AppTaskRecoveryScheduler({
+      source: config.resourceStore,
+      safetyIntervalMs: tasks.resyncIntervalMs ?? 60_000,
+      enqueue: (taskId, options) => {
+        controller.enqueue(taskId, options);
+      },
+    });
+    recoverySchedulers.set(descriptor.id, recoveryScheduler);
+    recoveryScheduler.start();
   }
 
   appTaskControllersByBus.set(opts.bus, controllers);
@@ -3225,11 +3201,6 @@ function recoverInterruptedAppTasks(
       );
       for (const attention of attentions) acknowledgeAppTaskRecoveryAttention(config, attention.taskId);
     }
-    if (controller && !descriptor.reconciliationPaused && !config.resourceStore) {
-      for (const entry of listRunnableAppTaskQueueEntries(config)) {
-        controller.enqueue(entry.taskId, entry.options);
-      }
-    }
   }
 }
 
@@ -3502,12 +3473,16 @@ function discoverAppTaskResourceStore(
   persistDir: string | undefined,
   appId: string,
   appDir: string,
-): AppTaskResourceStore | null {
-  if (!persistDir) return null;
+): AppTaskResourceStore {
+  if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);
   const db = getDb(persistDir);
   const active = AppTaskResourceStore.activeFromDb(db, appId);
   if (active) return active;
-  if (existsSync(projectRuntimePaths(appDir).taskStatePath)) return null;
+  if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
+    throw new Error(
+      `App ${appId} still has legacy task state but no active resource authority; complete the guarded resource cutover before loading it`,
+    );
+  }
 
   const seedPath = join(appDir, "tasks", "seed.json");
   const seedText = existsSync(seedPath) ? readFileSync(seedPath, "utf8") : "{}";
@@ -3550,13 +3525,9 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
       owner: configuredAppOwner(app, appDir),
       app,
       reconciliationPaused: false,
-      ...(resourceStore ? { resourceStore } : {}),
+      resourceStore,
     };
-    descriptor.reconciliationPaused = descriptor.app.tasks
-      ? resourceStore
-        ? resourceStore.projectLifecycle() === "paused"
-        : appLifecycle(descriptor.appDir) === "paused"
-      : false;
+    descriptor.reconciliationPaused = resourceStore.projectLifecycle() === "paused";
     validatePreparedAppTaskRuntime(descriptor);
     descriptors.push(descriptor);
   }
@@ -3623,8 +3594,4 @@ export async function installAppTaskRuntimes(
     }
     throw error;
   }
-}
-
-function appLifecycle(appDir: string): string {
-  return readTaskStateLifecycle(appDir);
 }

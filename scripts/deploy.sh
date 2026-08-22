@@ -97,14 +97,23 @@ mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
 deploy_in_container='install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && MAY_AGENT_DEPLOY_RECEIPT="'"$receipt"'" MAY_AGENT_DEPLOY_CORRELATION="'"$correlation"'" MAY_AGENT_DEPLOY_PROJECT="'"$project"'" MAY_AGENT_DEPLOY_TASK_ID="'"$task_id"'" supervisorctl start may-agent-restarter'
 
-if [ -S /tmp/supervisor.sock ] && command -v supervisorctl >/dev/null 2>&1; then
-  sh -lc "$deploy_in_container"
-elif command -v docker >/dev/null 2>&1; then
-  docker exec -e MAY_AGENT_DEPLOY_RECEIPT="$receipt" -e MAY_AGENT_DEPLOY_CORRELATION="$correlation" -e MAY_AGENT_DEPLOY_PROJECT="$project" -e MAY_AGENT_DEPLOY_TASK_ID="$task_id" may-agent sh -lc 'install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && supervisorctl start may-agent-restarter'
-else
-  bun scripts/deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false supervisor-unreachable
-  echo "Cannot reach the live may-agent supervisor." >&2
+fail_restarter_launch() {
+  failure="$1"
+  bun scripts/deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false "$failure"
+  echo "Cannot start the live may-agent restarter: $failure" >&2
   exit 1
+}
+
+if [ -S /tmp/supervisor.sock ] && command -v supervisorctl >/dev/null 2>&1; then
+  if ! sh -lc "$deploy_in_container"; then
+    fail_restarter_launch supervisor-launch-failed
+  fi
+elif command -v docker >/dev/null 2>&1; then
+  if ! docker exec -u root -e MAY_AGENT_DEPLOY_RECEIPT="$receipt" -e MAY_AGENT_DEPLOY_CORRELATION="$correlation" -e MAY_AGENT_DEPLOY_PROJECT="$project" -e MAY_AGENT_DEPLOY_TASK_ID="$task_id" may-agent sh -lc 'install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && supervisorctl start may-agent-restarter'; then
+    fail_restarter_launch docker-launch-failed
+  fi
+else
+  fail_restarter_launch supervisor-unreachable
 fi
 
 printf 'Correlated deploy requested: %s (%s)\n' "$correlation" "$receipt"
