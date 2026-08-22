@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   renameSync,
   writeFileSync,
 } from "node:fs";
@@ -75,12 +76,25 @@ function materialFingerprint(
   return hash(
     JSON.stringify({
       targetAppId: finding.targetAppId.trim(),
-      dedupeKey: finding.dedupeKey.trim(),
       severity: finding.severity,
       requestedHumanAction: finding.requestedHumanAction,
       tokens,
     }),
   );
+}
+
+function semanticKeyTokens(value: string): string[] {
+  return [
+    ...new Set(
+      value
+        .toLowerCase()
+        .match(/[a-z0-9]+/g)
+        ?.filter(
+          (token) =>
+            token.length > 2 && !STOP_WORDS.has(token) && !/^\d+$/.test(token),
+        ) ?? [],
+    ),
+  ].sort();
 }
 
 function dice(left: string[], right: string[]): number {
@@ -120,6 +134,52 @@ function readReceipt(path: string): FindingDeliveryReceipt | undefined {
   return undefined;
 }
 
+function findSemanticFamily(
+  appRoot: string,
+  finding: FindingDeliveryMaterial,
+  tokens: string[],
+): { path: string; receipt?: FindingDeliveryReceipt } {
+  const directPath = receiptPath(appRoot, finding);
+  const directReceipt = readReceipt(directPath);
+  if (directReceipt) return { path: directPath, receipt: directReceipt };
+
+  const directory = dirname(directPath);
+  if (!existsSync(directory)) return { path: directPath };
+  const findingKeyTokens = semanticKeyTokens(finding.dedupeKey);
+  let best:
+    | { path: string; receipt: FindingDeliveryReceipt; score: number }
+    | undefined;
+  for (const name of readdirSync(directory).filter((entry) =>
+    entry.endsWith(".json"),
+  )) {
+    const path = join(directory, name);
+    const receipt = readReceipt(path);
+    if (
+      !receipt ||
+      receipt.stableIdentity.targetAppId.trim() !== finding.targetAppId.trim()
+    ) {
+      continue;
+    }
+    const keyScore = dice(
+      semanticKeyTokens(receipt.stableIdentity.dedupeKey),
+      findingKeyTokens,
+    );
+    const materialScore = Math.max(
+      0,
+      ...receipt.variants.map((variant) =>
+        dice(variant.materialTokens, tokens),
+      ),
+    );
+    const sameFamily =
+      materialScore >= 0.55 || (keyScore >= 0.7 && materialScore >= 0.35);
+    const score = materialScore + keyScore / 2;
+    if (sameFamily && (!best || score > best.score)) {
+      best = { path, receipt, score };
+    }
+  }
+  return best ?? { path: directPath };
+}
+
 function writeReceipt(path: string, receipt: FindingDeliveryReceipt): void {
   mkdirSync(dirname(path), { recursive: true });
   const temporary = `${path}.${process.pid}.${Date.now()}.tmp`;
@@ -146,16 +206,28 @@ export function decideFindingDelivery(
   appRoot: string,
   finding: FindingDeliveryMaterial,
 ): FindingDeliveryDecision {
-  const path = receiptPath(appRoot, finding);
   const tokens = materialTokens(finding);
   const fingerprint = materialFingerprint(finding, tokens);
-  const receipt = readReceipt(path);
+  const family = findSemanticFamily(appRoot, finding, tokens);
+  const path = family.path;
+  const receipt = family.receipt;
+  const familyKeyScore = receipt
+    ? dice(
+        semanticKeyTokens(receipt.stableIdentity.dedupeKey),
+        semanticKeyTokens(finding.dedupeKey),
+      )
+    : 0;
+  const producerKeyDrift =
+    receipt?.stableIdentity.dedupeKey.trim() !== finding.dedupeKey.trim();
   const matchedVariant = receipt?.variants.findIndex(
     (variant) =>
       variant.severity === finding.severity &&
       variant.requestedHumanAction === finding.requestedHumanAction &&
       (variant.materialFingerprint === fingerprint ||
-        dice(variant.materialTokens, tokens) >= 0.55),
+        dice(variant.materialTokens, tokens) >= 0.55 ||
+        (producerKeyDrift &&
+          familyKeyScore >= 0.7 &&
+          dice(variant.materialTokens, tokens) >= 0.35)),
   );
   const existingVariant =
     matchedVariant !== undefined && matchedVariant >= 0

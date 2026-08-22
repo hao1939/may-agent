@@ -33,7 +33,28 @@ const HUMAN_ACTIONS = new Set([
 
 export type AftermathInput = {
   sessionId?: string;
+  supersedeExisting?: boolean;
+  correctionId?: string;
 };
+
+/**
+ * The first watchdog interruption is not the terminal session lifecycle: the
+ * runtime may append an auto-resume attempt to the same session and replace its
+ * result artifact. The auto-resume terminal event remains evaluable, including
+ * when that final attempt is itself interrupted.
+ */
+export function shouldDeferResumableInterruption(
+  source: unknown,
+  data: Record<string, unknown>,
+): boolean {
+  const status = text(data.status ?? data.outcome).toLowerCase();
+  const error = text(data.error);
+  return (
+    status === "interrupted" &&
+    text(source) !== "runtime:auto-resume" &&
+    /no agent observation for \d+ms/i.test(error)
+  );
+}
 
 export type AftermathEvaluation = {
   sessionId: string;
@@ -406,12 +427,19 @@ export function parseAftermathOutcome(
   };
 }
 
-export function buildAftermathTask(requestedSessionId: string): string {
+export function buildAftermathTask(
+  requestedSessionId: string,
+  supersedeExisting = false,
+): string {
   const selection = [
     `Evaluate exactly session ${requestedSessionId}; never substitute another session.`,
     "Use query_db to read its sessions row and any existing evaluations row.",
-    "If an adequate evaluation already exists, return kind=existing with its exact sessionId and verdict.",
-    "If the row cannot be evaluated for a deterministic reason, return kind=skip with the exact agent and reason.",
+    "Read /app/.state/sessions/<sessionId>/result.json after the sessions row and judge the complete, latest same-session lifecycle; a successful auto-resume terminal result supersedes an earlier interrupted attempt.",
+    supersedeExisting
+      ? "This is an explicit correction: do not return kind=existing. Return a fresh evaluation that supersedes any durable evaluation based on an earlier attempt."
+      : "Return kind=existing only when the durable evaluation already reflects the complete latest terminal lifecycle, with its exact sessionId and verdict.",
+    "If the latest lifecycle is genuinely terminal interrupted, score it from the available evidence; do not skip merely because it is interrupted.",
+    "If the row cannot be evaluated for another deterministic reason, return kind=skip with the exact agent and reason.",
   ];
   return [
     `[session-aftermath v${AFTERMATH_VERSION}] Perform one bounded, independent evaluation.`,
@@ -623,7 +651,10 @@ export async function execute(
 
   const execution = await ctx.agents.call(
     "evaluator",
-    buildAftermathTask(requestedSessionId),
+    buildAftermathTask(
+      requestedSessionId,
+      ctx.input?.supersedeExisting === true,
+    ),
     { schema: aftermathOutcomeSchema },
   );
   if (execution.status !== "done") {

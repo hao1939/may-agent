@@ -219,6 +219,18 @@ describe("canonical evaluator aftermath", () => {
     expect(prompt).toContain("finish().result");
   });
 
+  test("requires complete same-session lifecycle authority and supports explicit supersession", () => {
+    const ordinary = buildAftermathTask("s_resume_lifecycle");
+    const repair = buildAftermathTask("s_resume_lifecycle", true);
+    expect(ordinary).toContain(
+      "successful auto-resume terminal result supersedes",
+    );
+    expect(ordinary).toContain("genuinely terminal interrupted");
+    expect(repair).toContain(
+      "explicit correction: do not return kind=existing",
+    );
+  });
+
   test("publishes the complete durable evaluation projection fact", () => {
     expect(
       evaluationRecordedFact(evaluation, "s_evaluator", 1_700_000_000_000),
@@ -491,23 +503,27 @@ describe("canonical evaluator aftermath", () => {
       targetAppId: "gym",
       severity: "concern",
       summary:
-        "Gym emitted a non-canonical Condition subject for a human-approval wait.",
+        "Stable-localKey repair dispatch omitted the artifact directory required by gym-implementer.",
       message:
-        "Keep the verified Hao approval boundary, but encode future reconciliation waits with a canonical typed subject in exact <type>:<id> form and place the eight scenario filters in expected; the evaluated result used prose in subject, which can make matching unreliable.",
+        "The reconciliation task dispatched gym-implementer with `input: {}` even though its active contract requires exactly one writable agent-overlay or benchmark-snapshot directory. Redispatch with that explicit directory, and ensure any waiting Condition uses a canonical typed subject such as `artifact:<stable-id>` with path requirements in `expected`.",
       evidence: [
-        "session s_1787333775296_667 result.json condition hao-approval-selected-may-app-labels",
+        "session:s_1787349848905_805 meta.json input={}",
+        "verification:/app/projects/gym.app/agents/gym-implementer/AGENTS.md writable-artifact contract",
       ],
-      dedupeKey: "gym-noncanonical-wait-condition-subject",
+      dedupeKey: "gym-implementer-missing-artifact-directory-dispatch",
       requestedHumanAction: "none",
     };
     const equivalentFinding: AftermathFinding = {
       ...firstFinding,
-      summary: "Gym emitted a noncanonical reconciliation Condition subject.",
+      summary:
+        "Gym reconciliation routed implementation to Gym Implementer without its required writable candidate directory.",
       message:
-        "For future waits, preserve the strong human approval request but encode the Condition subject as a stable typed identity in exact <type>:<id> form and place the eight-scenario scope and matching details under expected. Evidence: session s_1787334089441_673 result.json.",
+        "Review task construction/routing for repair/stable-localkey-regression-emission. In session s_1787349957833_811, the active Gym Implementer contract required exactly one writable agent-overlay or benchmark-snapshot directory, but meta.json supplied input={} and declared absent /app/projects/gym production-style outputs. The agent could only return a partial decomposition rather than implement and verify the repair. Ensure the follow-up child is dispatched with the exact isolated artifact directory and then complete owner-run regression verification.",
       evidence: [
-        "artifact:/app/.state/sessions/s_1787334089441_673/result.json#finishParams.result.conditions[0]",
+        "artifact:/app/.state/sessions/s_1787349957833_811/result.json",
+        "verification:focused Gym overlay checks pending owner regression",
       ],
+      dedupeKey: "gym-implementer-missing-writable-artifact-directory",
     };
     const changedFinding: AftermathFinding = {
       ...firstFinding,
@@ -545,9 +561,9 @@ describe("canonical evaluator aftermath", () => {
     const equivalentEvents: AppEvent[] = [];
     const changedEvents: AppEvent[] = [];
     const repeatedChangedEvents: AppEvent[] = [];
-    await run("s_1787333775296_667", firstFinding, firstEvents);
+    await run("s_1787349848905_805", firstFinding, firstEvents);
     const equivalentResult = await run(
-      "s_1787334089441_673",
+      "s_1787349957833_811",
       equivalentFinding,
       equivalentEvents,
     );
@@ -568,8 +584,8 @@ describe("canonical evaluator aftermath", () => {
     expect(equivalentResult.output).toMatchObject({
       evidence: [
         "execution:s_evaluator",
-        "evaluated-session:s_1787334089441_673",
-        "finding-delivery-suppressed:gym:gym-noncanonical-wait-condition-subject",
+        "evaluated-session:s_1787349957833_811",
+        "finding-delivery-suppressed:gym:gym-implementer-missing-writable-artifact-directory",
         expect.stringContaining("finding-delivery-receipt:"),
       ],
     });
@@ -596,7 +612,7 @@ describe("canonical evaluator aftermath", () => {
       evidence: [
         "execution:s_evaluator",
         "evaluated-session:s_changed_repeat",
-        "finding-delivery-suppressed:gym:gym-noncanonical-wait-condition-subject",
+        "finding-delivery-suppressed:gym:gym-implementer-missing-artifact-directory-dispatch",
         expect.stringContaining("finding-delivery-receipt:"),
       ],
     });
@@ -610,11 +626,11 @@ describe("canonical evaluator aftermath", () => {
       disposition: "delivered",
       stableIdentity: {
         targetAppId: "gym",
-        dedupeKey: "gym-noncanonical-wait-condition-subject",
+        dedupeKey: "gym-implementer-missing-artifact-directory-dispatch",
       },
       variants: [
         {
-          sourceSessionId: "s_1787333775296_667",
+          sourceSessionId: "s_1787349848905_805",
           requestedHumanAction: "none",
           artifactAndVerificationContext: firstFinding.evidence,
         },

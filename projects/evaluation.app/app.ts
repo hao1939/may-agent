@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { shouldDeferResumableInterruption } from "./agents/evaluator/workflows/evaluator-aftermath.js";
 import {
   Type,
   defineApp,
@@ -12,7 +13,11 @@ import {
 const projectId = "evaluation";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const sessionSchema = Type.Object(
-  { sessionId: Type.String({ minLength: 1 }) },
+  {
+    sessionId: Type.String({ minLength: 1 }),
+    supersedeExisting: Type.Optional(Type.Boolean()),
+    correctionId: Type.Optional(Type.String({ minLength: 1 })),
+  },
   { additionalProperties: true },
 );
 const evaluationFeedbackSchema = Type.Object(
@@ -227,8 +232,13 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "evaluate-session": {
       const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;
+      const supersedeExisting = data.supersedeExisting === true;
+      const correctionId = stringValue(data.correctionId);
+      if (supersedeExisting && !correctionId) return null;
       return {
-        id: `runtime/session-aftermath/${safeTaskIdPart(sessionId)}`,
+        id: supersedeExisting
+          ? `runtime/session-aftermath-repair/${safeTaskIdPart(sessionId)}/${safeTaskIdPart(correctionId)}`
+          : `runtime/session-aftermath/${safeTaskIdPart(sessionId)}`,
         parentId: "session-audit",
         outcome: `Evaluate completed session ${sessionId} and publish its evidence-backed disposition.`,
         acceptance: [
@@ -236,8 +246,12 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Any required review emits its structured outcome, while a review-process failure remains visible as evaluation.review_failed.",
         ],
         mode: "achieve",
+        owner: "evaluator",
         workflow: "evaluator-aftermath",
-        input: { sessionId },
+        input: {
+          sessionId,
+          ...(supersedeExisting ? { supersedeExisting, correctionId } : {}),
+        },
         priority: "P1",
       };
     }
@@ -319,7 +333,11 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         ],
         mode: "maintain",
         workflow: "evaluation-feedback-projection",
-        input: { evaluation, feedbackKey },
+        input: {
+          evaluation,
+          feedbackKey,
+          ...(data.exactReplay === true ? { exactReplay: true } : {}),
+        },
         priority: "P2",
       };
     }
@@ -399,10 +417,15 @@ export function taskInputForEvent(
       const workflowRunId = stringValue(data.workflowRunId);
       const routineWorkflowSession =
         status === "done" && agent !== "may" && Boolean(workflowRunId);
+      const awaitingSameSessionAutoResume = shouldDeferResumableInterruption(
+        event.source,
+        data,
+      );
       return agent === "evaluator" ||
         agent === "judge" ||
         !sessionId ||
-        routineWorkflowSession
+        routineWorkflowSession ||
+        awaitingSameSessionAutoResume
         ? null
         : {
             kind: "evaluate-session",
@@ -540,6 +563,28 @@ const app = defineApp({
       inputSchema: sessionSchema,
       toInput: (data) => ({ kind: "evaluate-session", data }),
     },
+    "repair-session-evaluation": {
+      description:
+        "Supersede an evaluation that does not reflect the complete terminal lifecycle.",
+      inputSchema: Type.Object(
+        {
+          sessionId: Type.String({ minLength: 1 }),
+          correctionId: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => {
+        const repair = record(data);
+        return {
+          kind: "evaluate-session",
+          data: {
+            sessionId: stringValue(repair.sessionId),
+            correctionId: stringValue(repair.correctionId),
+            supersedeExisting: true,
+          },
+        };
+      },
+    },
     "snapshot-aftermath-coverage": {
       description:
         "Compute and persist one bounded trailing-3h aftermath coverage sample.",
@@ -550,6 +595,18 @@ const app = defineApp({
       description: "Run one deep evaluator review for a specific session.",
       inputSchema: sessionSchema,
       toInput: (data) => ({ kind: "deep-eval", data }),
+    },
+    "project-evaluation-feedback": {
+      description:
+        "Replay one durable evaluation fact through the canonical feedback projection task.",
+      inputSchema: Type.Object(
+        { evaluation: evaluationFeedbackSchema },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => ({
+        kind: "feedback-record",
+        data: { ...record(data), exactReplay: true },
+      }),
     },
     "review-evaluation-project": {
       description: "Run the learned evaluation owner-review workflow.",

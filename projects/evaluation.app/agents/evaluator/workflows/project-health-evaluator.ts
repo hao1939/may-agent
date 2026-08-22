@@ -667,9 +667,13 @@ function writeReport(
   return relative(workspaceRoot, reportPath);
 }
 
-function triggerReason(ctx: WorkflowContext<ProjectHealthInput>): string {
+export function triggerReason(
+  ctx: WorkflowContext<ProjectHealthInput>,
+): string {
   const data = record(ctx.reconciliation?.events.items.at(-1)?.event.data);
-  return text(data.reason) || "scheduled";
+  const requestInput = record(record(data.request).input);
+  const admittedData = record(requestInput.data);
+  return text(data.reason) || text(admittedData.reason) || "scheduled";
 }
 
 export function projectHealthEvaluatorAgentPrompt(
@@ -717,6 +721,65 @@ function reconciled(
   evidence: string[] = [],
 ): TaskReconcileResult {
   return { state: "converged", summary, evidence, actions: [] };
+}
+
+export function projectHealthOwnerFeedbackEvent(
+  targetProject: string,
+  reviewed: Record<string, unknown>,
+  judgment: ProjectHealthJudgment,
+  sourceTask: {
+    appId: string;
+    taskId: string;
+    generation: number;
+    resourceVersion: number;
+  },
+) {
+  const appId = appIdForTarget(targetProject);
+  const taskEvidence = `task:${sourceTask.appId}/${sourceTask.taskId}@generation=${sourceTask.generation}#resourceVersion=${sourceTask.resourceVersion}`;
+  const reportEvidence = `report:${text(reviewed.reportPath)}`;
+  if (appId === "scout-knowledge-lib") {
+    return {
+      type: "project.owner.requested",
+      data: {
+        project: appId,
+        // Scout admits owner-message from task-owned App publishers. Its
+        // evaluation-session-finding contract requires source=agent:evaluator,
+        // but task-owned emissions receive the canonical app-task source and
+        // therefore cannot satisfy that contract.
+        reason: "owner-message",
+        sourceSessionId: text(reviewed.executionId),
+        evaluationVerdict: judgment.verdict,
+        sourceTask,
+        finding: {
+          targetAppId: appId,
+          severity: judgment.verdict,
+          summary: judgment.mainConcern,
+          message: judgment.message,
+          evidence: [
+            reportEvidence,
+            taskEvidence,
+            ...judgment.affectedArtifacts,
+            ...judgment.verification,
+          ],
+          dedupeKey: judgment.dedupeKey,
+          requestedHumanAction: judgment.requestedHumanAction,
+        },
+        message: judgment.message,
+      },
+      target: { appId, project: appId },
+    };
+  }
+  return {
+    type: "project.owner.requested",
+    data: {
+      project: appId,
+      reason: "evaluation-project-health-feedback",
+      sourceTask,
+      finding: reviewed,
+      message: judgment.message,
+    },
+    target: { appId, project: appId },
+  };
 }
 
 export async function execute(
@@ -871,17 +934,14 @@ export async function execute(
   });
 
   if (ownerFeedback) {
-    const appId = appIdForTarget(targetProject);
     await ctx.events.emit({
-      type: "project.owner.requested",
+      ...projectHealthOwnerFeedbackEvent(targetProject, reviewed, judgment, {
+        appId: ctx.reconciliation.appId,
+        taskId: ctx.reconciliation.taskId,
+        generation: ctx.reconciliation.generation,
+        resourceVersion: ctx.reconciliation.resourceVersion,
+      }),
       localKey: taskEmissionKey(ctx, "owner-feedback-requested"),
-      data: {
-        project: appId,
-        reason: "evaluation-project-health-feedback",
-        finding: reviewed,
-        message: judgment.message,
-      },
-      target: { appId, project: appId },
     });
   }
 

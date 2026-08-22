@@ -16,6 +16,7 @@ import {
   projectHealthEvaluatorAgentPrompt,
   projectHealthInputFingerprint,
   projectHealthJudgmentFromExecution,
+  projectHealthOwnerFeedbackEvent,
   projectHealthPublication,
   projectHealthStateUpdate,
   pruneProjectHealthReports,
@@ -23,6 +24,7 @@ import {
   scheduledProjectReviewDecision,
   shouldFeedbackTargetOwner,
   shouldNotify,
+  triggerReason,
   verifyProjectHealthDurability,
   type ProjectHealthJudgment,
 } from "./project-health-evaluator.js";
@@ -107,6 +109,35 @@ describe("canonical project-health evaluator", () => {
       notify: false,
       dedupeKey: "gym.app:declared-owner-follow-up",
     });
+  });
+
+  test("preserves a manual reason admitted through an App task request", () => {
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "scout-knowledge-lib.app" },
+      reconciliation: {
+        ...reconciliation(),
+        events: {
+          items: [
+            {
+              observedAt: "2026-08-21T00:00:00.000Z",
+              event: {
+                type: "app.task.requested",
+                data: {
+                  request: {
+                    input: {
+                      kind: "project-review",
+                      data: { reason: "manual-routing-replay" },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          truncated: false,
+        },
+      },
+    });
+    expect(triggerReason(ctx)).toBe("manual-routing-replay");
   });
 
   test("uses stable semantic evidence for scheduled-review gating", () => {
@@ -277,6 +308,126 @@ describe("canonical project-health evaluator", () => {
       targetProject: "gym.app",
       lastDedupeKey: "gym.app:unresolved-task",
       lastFeedbackAt: "2026-08-15T00:00:00.000Z",
+    });
+  });
+
+  test("selects an admitted owner-feedback contract for every watched target", () => {
+    const reviewed = {
+      reportPath: "reports/project-health/target/review.md",
+      executionId: "s_project_health",
+    };
+    const sourceTask = {
+      appId: "evaluation",
+      taskId: "runtime/project-audit/target.app",
+      generation: 3,
+      resourceVersion: 7,
+    };
+    for (const targetProject of [
+      "aks-rp-e2e.app",
+      "may-agent.app",
+      "gym.app",
+      "evaluation.app",
+    ]) {
+      expect(
+        projectHealthOwnerFeedbackEvent(
+          targetProject,
+          reviewed,
+          judgment,
+          sourceTask,
+        ),
+      ).toMatchObject({
+        type: "project.owner.requested",
+        data: {
+          reason: "evaluation-project-health-feedback",
+          sourceTask,
+        },
+        target: {
+          appId: targetProject.replace(/\.app$/, ""),
+          project: targetProject.replace(/\.app$/, ""),
+        },
+      });
+    }
+
+    expect(
+      projectHealthOwnerFeedbackEvent(
+        "scout-knowledge-lib.app",
+        reviewed,
+        { ...judgment, requestedHumanAction: "none" },
+        sourceTask,
+      ),
+    ).toMatchObject({
+      type: "project.owner.requested",
+      data: {
+        project: "scout-knowledge-lib",
+        reason: "owner-message",
+        sourceSessionId: "s_project_health",
+        sourceTask,
+        finding: {
+          targetAppId: "scout-knowledge-lib",
+          requestedHumanAction: "none",
+          dedupeKey: judgment.dedupeKey,
+          message: judgment.message,
+          evidence: [
+            "report:reports/project-health/target/review.md",
+            "task:evaluation/runtime/project-audit/target.app@generation=3#resourceVersion=7",
+            ...judgment.affectedArtifacts,
+            ...judgment.verification,
+          ],
+        },
+      },
+      target: {
+        appId: "scout-knowledge-lib",
+        project: "scout-knowledge-lib",
+      },
+    });
+  });
+
+  test("uses one stable task-owned owner request key for Scout", async () => {
+    const root = mkdtempSync(join(tmpdir(), "project-health-scout-routing-"));
+    const events: Array<Record<string, unknown>> = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "scout-knowledge-lib.app" },
+      reconciliation: {
+        ...reconciliation("manual-routing-replay"),
+        taskId: "runtime/project-audit/scout-knowledge-lib.app",
+        input: { targetProject: "scout-knowledge-lib.app" },
+      },
+      workspace: { root, output: root },
+      callAgent: async () => ({
+        id: "s_scout_audit",
+        kind: "agent",
+        status: "done",
+        summary: "audited",
+        output: {
+          ...judgment,
+          dedupeKey: "scout-knowledge-lib.app:library-health-event-localkey",
+        },
+      }),
+      emit: async (event) => {
+        events.push(event as unknown as Record<string, unknown>);
+      },
+    });
+
+    await expect(execute(ctx)).resolves.toMatchObject({ status: "done" });
+    const requests = events.filter(
+      (event) => event.type === "project.owner.requested",
+    );
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      localKey: "event-73:owner-feedback-requested",
+      data: {
+        reason: "owner-message",
+        sourceTask: {
+          appId: "evaluation",
+          taskId: "runtime/project-audit/scout-knowledge-lib.app",
+          generation: 2,
+          resourceVersion: 4,
+        },
+      },
+      target: {
+        appId: "scout-knowledge-lib",
+        project: "scout-knowledge-lib",
+      },
     });
   });
 

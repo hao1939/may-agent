@@ -238,6 +238,68 @@ describe("evaluation fact admission", () => {
     ).toMatchObject({ input: { sessionId: "s-may-workflow" } });
   });
 
+  test("defers a resumable interruption and evaluates the authoritative same-session terminal event", () => {
+    const interrupted = event(
+      "session.end",
+      {
+        sessionId: "s_resume_lifecycle",
+        agent: "aks-explorer",
+        status: "interrupted",
+        error: "No agent observation for 300000ms",
+      },
+      { source: "app-task-owner" },
+    );
+    const resumedDone = event(
+      "session.end",
+      {
+        sessionId: "s_resume_lifecycle",
+        agent: "aks-explorer",
+        status: "done",
+        outcome: "done",
+      },
+      { source: "runtime:auto-resume" },
+    );
+    const terminalInterrupted = event(
+      "session.end",
+      {
+        sessionId: "s_genuinely_interrupted",
+        agent: "aks-explorer",
+        status: "interrupted",
+        error: "No agent observation for 300000ms",
+      },
+      { source: "runtime:auto-resume" },
+    );
+
+    expect(taskIntentForEvent(interrupted)).toBeNull();
+    expect(taskIntentForEvent(resumedDone)).toMatchObject({
+      id: "runtime/session-aftermath/s_resume_lifecycle",
+      input: { sessionId: "s_resume_lifecycle" },
+    });
+    expect(taskIntentForEvent(terminalInterrupted)).toMatchObject({
+      id: "runtime/session-aftermath/s_genuinely_interrupted",
+      input: { sessionId: "s_genuinely_interrupted" },
+    });
+  });
+
+  test("creates an independent correction task that cannot reuse the inaccurate evaluation", () => {
+    expect(
+      taskIntentForEvent(
+        event("evaluation.session.requested", {
+          sessionId: "s_resume_lifecycle",
+          supersedeExisting: true,
+          correctionId: "complete-terminal-lifecycle-v1",
+        }),
+      ),
+    ).toMatchObject({
+      id: "runtime/session-aftermath-repair/s_resume_lifecycle/complete-terminal-lifecycle-v1",
+      input: {
+        sessionId: "s_resume_lifecycle",
+        supersedeExisting: true,
+        correctionId: "complete-terminal-lifecycle-v1",
+      },
+    });
+  });
+
   test("rejects unscoped aftermath requests while concrete requests proceed", () => {
     expect(
       taskIntentForEvent(event("evaluation.session.requested")),
