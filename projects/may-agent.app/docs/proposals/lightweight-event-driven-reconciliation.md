@@ -694,7 +694,9 @@ five seconds it reopened and hashed every App manifest, watcher, agent
 configuration, workflow, and legacy lifecycle file to discover source changes.
 The loop has been removed rather than replaced with another watcher. App
 generations now change only through explicit `/reload` atomic publication or a
-deployment restart; workflow source remains invocation-loaded. The App inbox
+deployment restart. Handler, workflow, guard, and App modules resolve lazily
+once per published runtime generation and remain loaded until the next explicit
+`/reload` or restart. The App inbox
 safety scan now defaults to one minute and exists only for recovery, schedules,
 and observer insurance. Immediate work remains event-driven. This removes 104
 lines of polling machinery without changing retained state.
@@ -803,12 +805,42 @@ request observation, a metric breach, and the resulting bounded Task checks.
 It therefore attributes the spike to scheduled App observation and is not the
 still-required quiet-window idle proof.
 
+The next Host profile found a long-lived memory multiplier at the App execution
+boundary. Every handler and workflow invocation bundled its source again and
+imported it through a unique module URL. JavaScript modules cannot be unloaded,
+so completed bounded work left another module graph in the Host; the same
+design also repaid the bundle cost on every execution. Runtime commit
+`65227d48` keeps one in-flight or loaded module per canonical source path and
+runtime generation. A failed load is retryable, and the existing explicit
+`/reload` clears the generation cache before republishing agent and App
+definitions. No source watcher or new lifecycle was added.
+
+A real AKS `domain-task-execution` workflow took about 122 ms for the first
+bundled import; twenty later resolutions in the same generation took 0.508 ms
+total, about 0.025 ms each. Structural coverage proves unchanged source returns
+the same module, changed source remains inactive before reload, and the changed
+module appears after the reload boundary. The complete Host test suite,
+TypeScript checks, SDK check, canonical App-boundary check, and compiled bundle
+passed.
+
+Production correlation `runtime-module-cache-65227d48-20260822T1136Z` loaded
+the exact source with matching requested and loaded artifact SHA
+`cc556405f52e348f9dd4fb7451862651fcd3fd98f6bff7bb7cb4b996b8e6d313`,
+healthy status, one targeted owner-Task wake, and no duplicate deployment. A
+fresh explicit reload request at event 5936526 linked to succeeded result event
+5936527 and republished all six durable Apps. After restart, the Host reported
+about 228 MiB RSS and 39 MiB heap used while two agent sessions were active,
+down from roughly 873 MiB RSS and 194 MiB heap used in the pre-deploy active
+sample. This validates removal of the module-graph multiplier; it is not yet a
+quiet-window idle proof, and child App commands remain accountable to their
+Apps rather than the EventHub core.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
-due-recovery proof; deploy and validate the bounded shell, native CLI,
-process-group cleanup, Conversation sync, and indexed diagnostic paths under
-the same live load that exposed the heap/GC pressure;
+due-recovery proof; validate the bounded execution, Conversation sync, indexed
+diagnostic, and runtime-generation module paths under longer representative
+load;
 extend fenced mid-attempt emission beyond direct task-owned workflows only when
 a concrete agent use case needs it; provide a resource-native bootstrap for a
 brand-new App; and only then remove legacy JSON/resync compatibility after its
