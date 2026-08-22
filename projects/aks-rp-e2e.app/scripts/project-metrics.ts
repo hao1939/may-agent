@@ -1,5 +1,14 @@
 #!/usr/bin/env bun
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  fstatSync,
+  openSync,
+  readFileSync,
+  readSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +35,25 @@ type TaskTree = {
   tasks?: Record<string, TaskNode>;
   attempts?: Record<string, TaskAttempt>;
   [key: string]: any;
+};
+
+type ResourceTaskRow = {
+  task_id: string;
+  phase: string;
+  current_attempt_id: string | null;
+  updated_at: number;
+  parent_id: string | null;
+  owner: string | null;
+  workflow: string | null;
+  outcome: string | null;
+  summary: string | null;
+  input_json: string | null;
+  condition_ids_json: string | null;
+};
+
+type ResourceJsonRow = {
+  id: string;
+  json: string;
 };
 
 type TaskTreeConfigLike = {
@@ -75,6 +103,166 @@ export function composeTaskTreeMetricView(
     resources: canonical.resources,
     attempts: canonical.attempts,
   };
+}
+
+/**
+ * Build the small compatibility shape still consumed by project metrics from
+ * the authoritative resource rows. This is a read model, not another Task
+ * authority: no state is written and no resource field is synthesized back
+ * into the Host.
+ */
+export function composeResourceTaskMetricView(input: {
+  tasks: ResourceTaskRow[];
+  attempts: ResourceJsonRow[];
+  groups: ResourceJsonRow[];
+  conditions: ResourceJsonRow[];
+}): TaskTree {
+  const resources: Record<string, TaskNode> = {};
+  const tasks: Record<string, TaskNode> = {
+    project: { id: "project", phase: "active", children: [] },
+  };
+
+  for (const row of input.groups) {
+    const group = JSON.parse(row.json) as TaskNode;
+    tasks[row.id] = {
+      ...group,
+      id: row.id,
+      phase: "active",
+      children: [],
+    };
+  }
+
+  for (const row of input.tasks) {
+    const taskInput = row.input_json
+      ? (JSON.parse(row.input_json) as Record<string, unknown>)
+      : undefined;
+    const conditionIds = row.condition_ids_json
+      ? (JSON.parse(row.condition_ids_json) as unknown[])
+      : [];
+    const resource = {
+      spec: {
+        parentId: row.parent_id,
+        owner: row.owner,
+        workflow: row.workflow,
+        outcome: row.outcome,
+        input: taskInput,
+      },
+      status: {
+        phase: row.phase,
+        currentAttemptId: row.current_attempt_id,
+        conditionIds,
+        summary: row.summary,
+        updatedAt: new Date(row.updated_at).toISOString(),
+      },
+    };
+    resources[row.task_id] = resource;
+    tasks[row.task_id] = {
+      id: row.task_id,
+      phase: row.phase,
+      parent_id: row.parent_id || "project",
+      owner: row.owner ?? "",
+      workflow: row.workflow ?? "",
+      outcome: row.outcome ?? "",
+      summary: row.summary ?? "",
+      input: taskInput,
+      context: taskInput,
+      trace: row.current_attempt_id
+        ? { current_attempt_id: row.current_attempt_id }
+        : undefined,
+      children: [],
+    };
+  }
+
+  for (const [taskId, task] of Object.entries(tasks)) {
+    if (taskId === "project") continue;
+    const parentId =
+      typeof task.parent_id === "string" && tasks[task.parent_id]
+        ? task.parent_id
+        : "project";
+    tasks[parentId]!.children.push(taskId);
+  }
+  for (const task of Object.values(tasks)) task.children.sort();
+
+  const parseRows = (rows: ResourceJsonRow[]) =>
+    Object.fromEntries(
+      rows.map((row) => [row.id, JSON.parse(row.json) as TaskNode]),
+    );
+
+  return {
+    root_task_id: "project",
+    active_task_ids: input.tasks
+      .filter((row) => row.phase === "running")
+      .map((row) => row.task_id)
+      .sort(),
+    tasks,
+    resources,
+    attempts: parseRows(input.attempts),
+    conditions: parseRows(input.conditions),
+  };
+}
+
+export function resourceTaskAuthorityActive(
+  value: string | undefined,
+): boolean {
+  return value === "resources";
+}
+
+function readResourceTaskTree(): TaskTree | null {
+  const stateDir = process.env.STATE_DIR ?? "/app/.state";
+  const dbPath = join(stateDir, "may.db");
+  if (!existsSync(dbPath)) return null;
+
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const authority = db
+      .prepare(
+        "SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'",
+      )
+      .get("aks-rp-e2e") as { value?: string } | null;
+    if (!resourceTaskAuthorityActive(authority?.value)) return null;
+
+    const tasks = db
+      .prepare(
+        `SELECT task_id, phase, current_attempt_id, updated_at,
+                json_extract(resource_json, '$.spec.parentId') AS parent_id,
+                json_extract(resource_json, '$.spec.owner') AS owner,
+                json_extract(resource_json, '$.spec.workflow') AS workflow,
+                json_extract(resource_json, '$.spec.outcome') AS outcome,
+                json_extract(resource_json, '$.status.summary') AS summary,
+                json_extract(resource_json, '$.spec.input') AS input_json,
+                json_extract(resource_json, '$.status.conditionIds') AS condition_ids_json
+         FROM app_tasks WHERE app_id = ? ORDER BY task_id`,
+      )
+      .all("aks-rp-e2e") as ResourceTaskRow[];
+    const attempts = db
+      .prepare(
+        `SELECT attempt_id AS id, attempt_json AS json
+         FROM app_task_attempts
+         WHERE app_id = ? AND state = 'running'
+         ORDER BY attempt_id`,
+      )
+      .all("aks-rp-e2e") as ResourceJsonRow[];
+    const groups = db
+      .prepare(
+        `SELECT group_id AS id, group_json AS json
+         FROM app_task_groups WHERE app_id = ? ORDER BY group_id`,
+      )
+      .all("aks-rp-e2e") as ResourceJsonRow[];
+    const conditions = db
+      .prepare(
+        `SELECT condition_id AS id, condition_json AS json
+         FROM app_task_conditions WHERE app_id = ? ORDER BY condition_id`,
+      )
+      .all("aks-rp-e2e") as ResourceJsonRow[];
+    return composeResourceTaskMetricView({
+      tasks,
+      attempts,
+      groups,
+      conditions,
+    });
+  } finally {
+    db.close();
+  }
 }
 
 function readTaskTree(config: TaskTreeConfigLike): TaskTree {
@@ -156,11 +344,7 @@ export function liveTaskMetricFrontier(tree: TaskTree): {
   return { active, review, waiting, runnable, readySatisfiedWaitHolders };
 }
 
-function listRunnableBacklogTaskIds(
-  config: TaskTreeConfigLike,
-  limit = 200,
-): string[] {
-  const tree = readTaskTreeProjection(config);
+function listRunnableBacklogTaskIds(tree: TaskTree, limit = 200): string[] {
   return liveTaskMetricFrontier(tree).runnable.slice(0, limit);
 }
 
@@ -190,14 +374,7 @@ export function activeTaskAssignments(tree: TaskTree): Array<{
   });
 }
 
-function peekTaskAssignments(
-  config: TaskTreeConfigLike,
-): ReturnType<typeof activeTaskAssignments> {
-  return activeTaskAssignments(readTaskTree(config));
-}
-
-function planningPacket(config: TaskTreeConfigLike): Record<string, unknown> {
-  const tree = readTaskTree(config);
+function planningPacket(tree: TaskTree): Record<string, unknown> {
   const leaves = Object.entries(tree.tasks ?? {}).filter(
     ([taskId, task]) =>
       taskId !== tree.root_task_id &&
@@ -349,7 +526,7 @@ type RunResult = {
   } | null;
 };
 
-type PlannerRun = {
+export type PlannerRun = {
   kind?: string;
   status?: string;
   ran_agent?: boolean;
@@ -584,11 +761,59 @@ function runtimeTaskTreeConfig() {
   });
 }
 
+type MetricReadSnapshot = {
+  taskTree?: TaskTree;
+  projectionTree?: TaskTree;
+  specLoopState?: SpecLoopState;
+  featureCompactLoopState?: FeatureCompactLoopState;
+  taskStates?: WeakMap<TaskNode, string>;
+  taskSearchText?: WeakMap<TaskNode, string>;
+  taskConflictScopes?: WeakMap<TaskNode, string[]>;
+  specLoopFollowupGroupKeys?: WeakMap<TaskNode, Set<string>>;
+  specFamilies?: Map<string, string>;
+};
+
+// One metric batch describes one point-in-time observation. Reuse that exact
+// immutable view throughout the batch instead of reparsing the same large
+// retained Task files from every helper reached by an individual metric.
+let activeMetricReadSnapshot: MetricReadSnapshot | null = null;
+
 function loadTaskTree(): TaskTree {
-  return readTaskTree(runtimeTaskTreeConfig());
+  if (activeMetricReadSnapshot?.taskTree) {
+    return activeMetricReadSnapshot.taskTree;
+  }
+  const tree = readResourceTaskTree() ?? readTaskTree(runtimeTaskTreeConfig());
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.taskTree = tree;
+    activeMetricReadSnapshot.projectionTree = tree;
+  }
+  return tree;
+}
+
+function loadTaskTreeProjection(): TaskTree {
+  if (activeMetricReadSnapshot?.projectionTree) {
+    return activeMetricReadSnapshot.projectionTree;
+  }
+  if (activeMetricReadSnapshot?.taskTree) {
+    activeMetricReadSnapshot.projectionTree = activeMetricReadSnapshot.taskTree;
+    return activeMetricReadSnapshot.taskTree;
+  }
+  const resourceTree = readResourceTaskTree();
+  if (resourceTree) {
+    if (activeMetricReadSnapshot) {
+      activeMetricReadSnapshot.taskTree = resourceTree;
+      activeMetricReadSnapshot.projectionTree = resourceTree;
+    }
+    return resourceTree;
+  }
+  const tree = readTaskTreeProjection(runtimeTaskTreeConfig());
+  if (activeMetricReadSnapshot) activeMetricReadSnapshot.projectionTree = tree;
+  return tree;
 }
 
 export function taskState(task: TaskNode): string {
+  const cached = activeMetricReadSnapshot?.taskStates?.get(task);
+  if (cached != null) return cached;
   const raw =
     typeof task.state === "string"
       ? task.state
@@ -597,15 +822,23 @@ export function taskState(task: TaskNode): string {
         : typeof task.phase === "string"
           ? task.phase
           : "backlog";
-  if (raw === "accepted") return "done";
-  if (raw === "ready" || raw === "proposed") return "backlog";
-  if (raw === "superseded" || raw === "cancelled") return "done";
-  if (raw === "decomposed") return "backlog";
-  if (raw === "claimed_done" || raw === "rejected") return "review";
-  if (raw === "waiting") return "blocked";
-  if (raw === "attention") return "review";
-  if (raw === "running") return "active";
-  return raw;
+  let normalized = raw;
+  if (["accepted", "superseded", "cancelled"].includes(raw)) {
+    normalized = "done";
+  } else if (["ready", "proposed", "decomposed"].includes(raw)) {
+    normalized = "backlog";
+  } else if (["claimed_done", "rejected", "attention"].includes(raw)) {
+    normalized = "review";
+  } else if (raw === "waiting") {
+    normalized = "blocked";
+  } else if (raw === "running") {
+    normalized = "active";
+  }
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.taskStates ??= new WeakMap();
+    activeMetricReadSnapshot.taskStates.set(task, normalized);
+  }
+  return normalized;
 }
 
 function isLeaf(task: TaskNode): boolean {
@@ -762,7 +995,7 @@ function loopUnrepresentedRecordDetails(): {
   records: Record<string, unknown>[];
 } {
   const tree = loadTaskTree();
-  const projectionTree = readTaskTreeProjection(runtimeTaskTreeConfig());
+  const projectionTree = loadTaskTreeProjection();
   let value = 0;
   let authorityObservationCount = 0;
   const taskIds: string[] = [];
@@ -996,7 +1229,7 @@ function archivedCompletedTaskIds24h(): Set<string> {
 
 function blockedFrontierActionability(): BlockedFrontierActionability {
   try {
-    const packet = planningPacket(runtimeTaskTreeConfig()) as {
+    const packet = planningPacket(loadTaskTree()) as {
       blocked_frontier_summary?: {
         blocked_leaf_count?: unknown;
         parent_groups?: Array<{
@@ -1219,9 +1452,123 @@ function isOpsTask(tree: TaskTree, taskId: string): boolean {
   return false;
 }
 
+export function blockedTaskHasRegisteredCondition(
+  tree: TaskTree,
+  task: TaskNode,
+): boolean {
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  if (!taskId) return false;
+  const resource = recordValue(tree.resources?.[taskId]);
+  const status = recordValue(resource?.status);
+  const conditionIds = Array.isArray(status?.conditionIds)
+    ? status.conditionIds.filter(
+        (conditionId): conditionId is string =>
+          typeof conditionId === "string" && conditionId.trim().length > 0,
+      )
+    : [];
+  return conditionIds.some((conditionId) =>
+    Boolean(recordValue(tree.conditions?.[conditionId])),
+  );
+}
+
+type BlockedShapeOffenders = {
+  missingWaitingForTaskIds: string[];
+  missingObserverTaskIds: string[];
+  missingResumeConditionTaskIds: string[];
+  missingOwnerTaskIds: string[];
+  missingFallbackTaskIds: string[];
+};
+
+function canonicalResourcePhase(
+  resource: Record<string, unknown> | null,
+): string {
+  return stringRecordField(recordValue(resource?.status), ["phase"]);
+}
+
+function canonicalTaskHasLiveChild(tree: TaskTree, taskId: string): boolean {
+  return Object.values(tree.resources ?? {}).some((value) => {
+    const resource = recordValue(value);
+    const spec = recordValue(resource?.spec);
+    if (stringRecordField(spec, ["parentId"]) !== taskId) return false;
+    return !["converged", "done"].includes(canonicalResourcePhase(resource));
+  });
+}
+
+/**
+ * Compatibility blocker fields are authoritative only for an actual canonical
+ * waiting leaf. The projection and canonical registry are separate atomic
+ * files: during reconciliation the projection can briefly show phase=waiting
+ * and children=[] while canonical state already contains the Condition or a
+ * newly admitted direct child. Requiring canonical waiting-leaf agreement
+ * keeps that proven registration window out of the metric without excusing a
+ * stable malformed legacy wait.
+ */
+export function blockedShapeOffenders(tree: TaskTree): BlockedShapeOffenders {
+  const projectedBlockedLeaves = Object.entries(tree.tasks ?? {}).flatMap(
+    ([taskId, task]) => {
+      if (
+        taskId === tree.root_task_id ||
+        taskId.startsWith("runtime/") ||
+        !Array.isArray(task?.children) ||
+        task.children.length > 0 ||
+        projectionPhase(task) !== "waiting"
+      ) {
+        return [];
+      }
+      const resource = recordValue(tree.resources?.[taskId]);
+      const canonicalPhase = canonicalResourcePhase(resource);
+      if (
+        (canonicalPhase && canonicalPhase !== "waiting") ||
+        canonicalTaskHasLiveChild(tree, taskId) ||
+        blockedTaskHasRegisteredCondition(tree, task)
+      ) {
+        return [];
+      }
+      return [[taskId, task] as const];
+    },
+  );
+  const missing = (
+    predicate: (blocker: Record<string, unknown> | null) => boolean,
+  ) =>
+    projectedBlockedLeaves
+      .filter(([, task]) => predicate(recordValue(task.blocker)))
+      .map(([taskId]) => taskId);
+
+  return {
+    missingWaitingForTaskIds: missing(
+      (blocker) => !objectRecordField(blocker, ["waiting_for", "waitingFor"]),
+    ),
+    missingObserverTaskIds: missing(
+      (blocker) =>
+        !objectRecordField(blocker, ["observed_by", "observedBy"]) ||
+        !stringRecordField(blocker, [
+          "observation_method",
+          "observationMethod",
+        ]) ||
+        !stringRecordField(blocker, ["next_check_at", "nextCheckAt"]),
+    ),
+    missingResumeConditionTaskIds: missing(
+      (blocker) =>
+        !stringRecordField(blocker, [
+          "resume_condition",
+          "resumeCondition",
+          "waitingCondition",
+        ]),
+    ),
+    missingOwnerTaskIds: missing(
+      (blocker) => !stringRecordField(blocker, ["owner"]),
+    ),
+    missingFallbackTaskIds: missing(
+      (blocker) =>
+        !stringRecordField(blocker, ["fallback_at", "fallbackAt"]) ||
+        !stringRecordField(blocker, ["fallback_action", "fallbackAction"]),
+    ),
+  };
+}
+
 function taskCounts() {
   const tree = loadTaskTree();
-  const projectionTree = readTaskTreeProjection(runtimeTaskTreeConfig());
+  const projectionTree = loadTaskTreeProjection();
   const liveFrontier = liveTaskMetricFrontier(projectionTree);
   const taskMap = tree.tasks ?? {};
   const tasks = Object.values(tree.tasks ?? {});
@@ -1268,54 +1615,13 @@ function taskCounts() {
     tree,
     runtimeTasks,
   );
-  const blockedMissingWaitingForTaskIds = blockedLeafTasks.flatMap(
-    (task, index) => {
-      const blocker = recordValue(task.blocker);
-      return objectRecordField(blocker, ["waiting_for", "waitingFor"])
-        ? []
-        : [taskIdOrFallback(task, index)];
-    },
-  );
-  const blockedMissingObserverTaskIds = blockedLeafTasks.flatMap(
-    (task, index) => {
-      const blocker = recordValue(task.blocker);
-      return !objectRecordField(blocker, ["observed_by", "observedBy"]) ||
-        !stringRecordField(blocker, [
-          "observation_method",
-          "observationMethod",
-        ]) ||
-        !stringRecordField(blocker, ["next_check_at", "nextCheckAt"])
-        ? [taskIdOrFallback(task, index)]
-        : [];
-    },
-  );
-  const blockedMissingResumeConditionTaskIds = blockedLeafTasks.flatMap(
-    (task, index) => {
-      const blocker = recordValue(task.blocker);
-      return !stringRecordField(blocker, [
-        "resume_condition",
-        "resumeCondition",
-        "waitingCondition",
-      ])
-        ? [taskIdOrFallback(task, index)]
-        : [];
-    },
-  );
-  const blockedMissingOwnerTaskIds = blockedLeafTasks.flatMap((task, index) => {
-    const blocker = recordValue(task.blocker);
-    return !stringRecordField(blocker, ["owner"])
-      ? [taskIdOrFallback(task, index)]
-      : [];
-  });
-  const blockedMissingFallbackTaskIds = blockedLeafTasks.flatMap(
-    (task, index) => {
-      const blocker = recordValue(task.blocker);
-      return !stringRecordField(blocker, ["fallback_at", "fallbackAt"]) ||
-        !stringRecordField(blocker, ["fallback_action", "fallbackAction"])
-        ? [taskIdOrFallback(task, index)]
-        : [];
-    },
-  );
+  const blockedShape = blockedShapeOffenders(tree);
+  const blockedMissingWaitingForTaskIds = blockedShape.missingWaitingForTaskIds;
+  const blockedMissingObserverTaskIds = blockedShape.missingObserverTaskIds;
+  const blockedMissingResumeConditionTaskIds =
+    blockedShape.missingResumeConditionTaskIds;
+  const blockedMissingOwnerTaskIds = blockedShape.missingOwnerTaskIds;
+  const blockedMissingFallbackTaskIds = blockedShape.missingFallbackTaskIds;
   const blockedMissingWaitingFor = blockedMissingWaitingForTaskIds.length;
   const blockedMissingObserver = blockedMissingObserverTaskIds.length;
   const blockedMissingResumeCondition =
@@ -1727,10 +2033,6 @@ function blockedPathCount(): number {
   }).length;
 }
 
-function countSpecs(): number {
-  return specMetrics().total;
-}
-
 function normalizeSpecStatus(value: string | undefined): string {
   return (value ?? "unknown").trim().toLowerCase().replace(/_/g, "-");
 }
@@ -1835,17 +2137,29 @@ function hasOpenSpecVerificationWork(
 }
 
 function loadSpecLoopState(): SpecLoopState {
-  return readJson<SpecLoopState>(
+  if (activeMetricReadSnapshot?.specLoopState) {
+    return activeMetricReadSnapshot.specLoopState;
+  }
+  const state = readJson<SpecLoopState>(
     join(effectiveAppDir, ".state", "spec-loop", "state.json"),
     { specs: {} },
   );
+  if (activeMetricReadSnapshot) activeMetricReadSnapshot.specLoopState = state;
+  return state;
 }
 
 function loadFeatureCompactLoopState(): FeatureCompactLoopState {
-  return readJson<FeatureCompactLoopState>(
+  if (activeMetricReadSnapshot?.featureCompactLoopState) {
+    return activeMetricReadSnapshot.featureCompactLoopState;
+  }
+  const state = readJson<FeatureCompactLoopState>(
     join(effectiveAppDir, ".state", "feature-compact-loop", "state.json"),
     { features: {} },
   );
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.featureCompactLoopState = state;
+  }
+  return state;
 }
 
 function taskContext(task: TaskNode | undefined): Record<string, unknown> {
@@ -1857,11 +2171,19 @@ function taskContext(task: TaskNode | undefined): Record<string, unknown> {
 }
 
 function taskConflictScopes(task: TaskNode | undefined): string[] {
+  if (!task) return [];
+  const cached = activeMetricReadSnapshot?.taskConflictScopes?.get(task);
+  if (cached) return cached;
   const scopes = (task as { conflict_scope?: unknown } | undefined)
     ?.conflict_scope;
-  return Array.isArray(scopes)
+  const normalized = Array.isArray(scopes)
     ? scopes.filter((scope): scope is string => typeof scope === "string")
     : [];
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.taskConflictScopes ??= new WeakMap();
+    activeMetricReadSnapshot.taskConflictScopes.set(task, normalized);
+  }
+  return normalized;
 }
 
 function structuredBlockedTaskIds(task: TaskNode | undefined): string[] {
@@ -1898,12 +2220,18 @@ function structuredBlockedTaskIds(task: TaskNode | undefined): string[] {
 }
 
 function specFamily(specId: string): string {
-  return (
+  const cached = activeMetricReadSnapshot?.specFamilies?.get(specId);
+  if (cached) return cached;
+  const family =
     specId
       .replace(/^spec\./, "")
       .split(".")[0]
-      ?.trim() || "unknown"
-  );
+      ?.trim() || "unknown";
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.specFamilies ??= new Map();
+    activeMetricReadSnapshot.specFamilies.set(specId, family);
+  }
+  return family;
 }
 
 function specLoopTask(
@@ -1960,8 +2288,10 @@ function isRetryExhaustedSpec(
 }
 
 function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
+  if (!task) return new Set();
+  const cached = activeMetricReadSnapshot?.specLoopFollowupGroupKeys?.get(task);
+  if (cached) return cached;
   const keys = new Set<string>();
-  if (!task) return keys;
   const context = taskContext(task);
   if (context.specLoopFollowup === true) {
     const status = context.status;
@@ -1977,6 +2307,10 @@ function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
     if (statusPart?.trim() && familyPart?.trim()) {
       keys.add(`${statusPart.trim()}:${familyPart.trim()}`);
     }
+  }
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.specLoopFollowupGroupKeys ??= new WeakMap();
+    activeMetricReadSnapshot.specLoopFollowupGroupKeys.set(task, keys);
   }
   return keys;
 }
@@ -2008,6 +2342,12 @@ function taskTextMentionsSpecId(
   specId: string,
 ): boolean {
   if (!task) return false;
+  return taskSearchText(task).includes(specId.toLowerCase());
+}
+
+function taskSearchText(task: TaskNode): string {
+  const cached = activeMetricReadSnapshot?.taskSearchText?.get(task);
+  if (cached != null) return cached;
   const taskRecord = task as TaskNode & {
     acceptance?: unknown;
     inputs?: unknown;
@@ -2019,7 +2359,11 @@ function taskTextMentionsSpecId(
     context: task.context,
     blocker: task.blocker,
   }).toLowerCase();
-  return haystack.includes(specId.toLowerCase());
+  if (activeMetricReadSnapshot) {
+    activeMetricReadSnapshot.taskSearchText ??= new WeakMap();
+    activeMetricReadSnapshot.taskSearchText.set(task, haystack);
+  }
+  return haystack;
 }
 
 function taskTextMentionsSpecFamily(
@@ -2029,18 +2373,7 @@ function taskTextMentionsSpecFamily(
   if (!task) return false;
   const family = specFamily(specId).trim().toLowerCase();
   if (!family) return false;
-  const taskRecord = task as TaskNode & {
-    acceptance?: unknown;
-    inputs?: unknown;
-  };
-  const haystack = JSON.stringify({
-    goal: task.goal,
-    acceptance: taskRecord.acceptance,
-    inputs: taskRecord.inputs,
-    context: task.context,
-    blocker: task.blocker,
-  }).toLowerCase();
-  return haystack.includes(family);
+  return taskSearchText(task).includes(family);
 }
 
 function taskTextMentionCountsAsSpecOwner(
@@ -2082,104 +2415,69 @@ function exactSpecLoopOwnerTaskId(input: {
   ]);
   const isRepresenting = (task: TaskNode | undefined): task is TaskNode =>
     !!task && representingStates.has(taskState(task));
-  const exactDirectProjectedHolderTaskId = (): string | null => {
-    const loopTaskId = input.state.loopTaskId || "aks-spec-verification-loop";
-    const representingProjectionPhases = new Set([
-      "pending",
-      "running",
-      "waiting",
-    ]);
-    for (const [taskId, task] of Object.entries(input.tree.tasks ?? {})) {
-      const taskInput = recordValue(task.input) ?? recordValue(task.inputs);
-      if (
-        task.parent_id === loopTaskId &&
-        representingProjectionPhases.has(projectionPhase(task)) &&
-        stringRecordField(taskInput, ["specId", "spec_id"]) === input.specId
-      ) {
-        return taskId;
-      }
-    }
-    return null;
-  };
-
   const candidateSpecTaskId =
     typeof spec?.taskId === "string" && spec.taskId.trim()
       ? spec.taskId.trim()
       : null;
+  const loopTaskId = input.state.loopTaskId || "aks-spec-verification-loop";
+  let directProjectedHolder: string | null = null;
+  let best:
+    | {
+        taskId: string;
+        exact: boolean;
+        structured: boolean;
+        candidate: boolean;
+      }
+    | undefined;
 
-  const taskIds = new Set<string>();
-  if (candidateSpecTaskId) {
-    taskIds.add(candidateSpecTaskId);
-  }
-  for (const task of Object.values(input.tree.tasks ?? {})) {
-    if (!isRepresenting(task)) continue;
-    if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
-      taskIds.add(task.id ?? "");
-      continue;
-    }
-    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
-      taskIds.add(task.id ?? "");
-      continue;
-    }
-    if (taskTextMentionsSpecFamily(task, input.specId)) {
-      taskIds.add(task.id ?? "");
-    }
-  }
+  const ranksBefore = (
+    left: NonNullable<typeof best>,
+    right: NonNullable<typeof best>,
+  ): boolean => {
+    if (left.exact !== right.exact) return left.exact;
+    if (left.structured !== right.structured) return left.structured;
+    if (left.candidate !== right.candidate) return !left.candidate;
+    return left.taskId.localeCompare(right.taskId) < 0;
+  };
 
-  const orderedTaskIds = [...taskIds].sort((leftId, rightId) => {
-    const left = input.tree.tasks?.[leftId];
-    const right = input.tree.tasks?.[rightId];
-    const leftExact = left
-      ? taskConflictScopes(left).includes(`spec:${input.specId}`) ||
-        taskTextMentionCountsAsSpecOwner(left, input.specId)
-      : false;
-    const rightExact = right
-      ? taskConflictScopes(right).includes(`spec:${input.specId}`) ||
-        taskTextMentionCountsAsSpecOwner(right, input.specId)
-      : false;
-    if (leftExact !== rightExact) return leftExact ? -1 : 1;
-    const leftStructured = left
-      ? taskHasStructuredBlocker(left) ||
-        specLoopFollowupGroupKeys(left).size > 0
-      : false;
-    const rightStructured = right
-      ? taskHasStructuredBlocker(right) ||
-        specLoopFollowupGroupKeys(right).size > 0
-      : false;
-    if (leftStructured !== rightStructured) return leftStructured ? -1 : 1;
-    if (leftId === candidateSpecTaskId && rightId !== candidateSpecTaskId)
-      return 1;
-    if (rightId === candidateSpecTaskId && leftId !== candidateSpecTaskId)
-      return -1;
-    return leftId.localeCompare(rightId);
-  });
-
-  for (const taskId of orderedTaskIds) {
-    const task = input.tree.tasks?.[taskId];
-    if (!isRepresenting(task)) continue;
-    if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
-      return taskId;
-    }
-    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
-      return taskId;
-    }
-    if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
+  for (const [taskId, task] of Object.entries(input.tree.tasks ?? {})) {
+    const taskInput = recordValue(task.input) ?? recordValue(task.inputs);
     if (
-      taskHasStructuredBlocker(task) &&
-      taskTextMentionsSpecFamily(task, input.specId)
+      directProjectedHolder == null &&
+      task.parent_id === loopTaskId &&
+      ["pending", "running", "waiting"].includes(projectionPhase(task)) &&
+      stringRecordField(taskInput, ["specId", "spec_id"]) === input.specId
     ) {
-      return taskId;
+      directProjectedHolder = taskId;
     }
-    if (
-      spec?.taskId === taskId &&
-      specLoopSpecHasStructuredSuccessor(spec) &&
-      taskHasStructuredBlocker(task)
-    ) {
-      return taskId;
-    }
+    if (!isRepresenting(task)) continue;
+
+    const explicit = taskConflictScopes(task).includes(`spec:${input.specId}`);
+    const textExact = taskTextMentionCountsAsSpecOwner(task, input.specId);
+    const family = taskTextMentionsSpecFamily(task, input.specId);
+    const candidate = taskId === candidateSpecTaskId;
+    if (!explicit && !textExact && !family && !candidate) continue;
+
+    const followup = specLoopFollowupGroupKeys(task).size > 0;
+    const blocked = taskHasStructuredBlocker(task);
+    const qualifies =
+      explicit ||
+      textExact ||
+      followup ||
+      (blocked && family) ||
+      (candidate && specLoopSpecHasStructuredSuccessor(spec) && blocked);
+    if (!qualifies) continue;
+
+    const entry = {
+      taskId,
+      exact: explicit || textExact,
+      structured: blocked || followup,
+      candidate,
+    };
+    if (!best || ranksBefore(entry, best)) best = entry;
   }
 
-  return exactDirectProjectedHolderTaskId();
+  return best?.taskId ?? directProjectedHolder;
 }
 
 export function specLoopRepresentationAuthority(input: {
@@ -3064,7 +3362,7 @@ function activeTaskQueuedAssignmentMatches(task: TaskNode): boolean {
   if (!taskId) return false;
   const attemptId = activeTaskAttemptId(task);
   if (!attemptId) return false;
-  return peekTaskAssignments(runtimeTaskTreeConfig()).some(
+  return activeTaskAssignments(loadTaskTree()).some(
     (assignment) =>
       assignment.taskId === taskId && assignment.attemptId === attemptId,
   );
@@ -3265,7 +3563,7 @@ function assignmentNotConsumedDetails(): Array<{
   taskState: string | null;
 }> {
   const tree = loadTaskTree();
-  return peekTaskAssignments(runtimeTaskTreeConfig()).flatMap((assignment) => {
+  return activeTaskAssignments(tree).flatMap((assignment) => {
     const taskId = assignment.taskId.trim();
     const attemptId = assignment.attemptId.trim();
     const assignedAt = assignment.assignedAt.trim();
@@ -3861,28 +4159,22 @@ function runningActiveTaskCount(): number {
 }
 
 function hasLiveExecutionRunnableBacklog(): boolean {
-  return listRunnableBacklogTaskIds(
-    taskTreeConfig({
-      appDir: effectiveAppDir,
-      projectDir,
-      worker: "aks-explorer",
-      maxConcurrent: desiredParallelism,
-    }),
-    200,
-  ).some((taskId) => {
-    const haystack = taskId.toLowerCase();
-    return [
-      "staging",
-      "execute",
-      "execution",
-      "verify",
-      "verification",
-      "frontier",
-      "spec-runner",
-      "ready-spec-execution",
-      "live",
-    ].some((signal) => haystack.includes(signal));
-  });
+  return listRunnableBacklogTaskIds(loadTaskTreeProjection(), 200).some(
+    (taskId) => {
+      const haystack = taskId.toLowerCase();
+      return [
+        "staging",
+        "execute",
+        "execution",
+        "verify",
+        "verification",
+        "frontier",
+        "spec-runner",
+        "ready-spec-execution",
+        "live",
+      ].some((signal) => haystack.includes(signal));
+    },
+  );
 }
 
 function runResults(): RunResult[] {
@@ -3948,32 +4240,67 @@ function duplicateArtifactCount(): number {
   return [...groups.values()].filter((count) => count > 3).length;
 }
 
-function plannerRuns(): PlannerRun[] {
-  const plannerRunsPath = join(effectiveAppDir, ".state", "planner-runs.jsonl");
-  if (!existsSync(plannerRunsPath)) return [];
-  try {
-    return readFileSync(plannerRunsPath, "utf-8")
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as PlannerRun)
-      .filter((row) => row.kind === "planner_wake");
-  } catch {
-    return [];
-  }
-}
-
 function plannerRunTimestamp(run: PlannerRun): number | null {
   const parsed = typeof run.ts === "string" ? Date.parse(run.ts) : Number.NaN;
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * Read the recent suffix of the append-only planner journal without loading
+ * its retained history. Planner runs are appended in occurrence order, so the
+ * first older timestamp reached while walking backwards is the window bound.
+ */
+export function recentPlannerRunsFromFile(
+  path: string,
+  since: number,
+): PlannerRun[] {
+  if (!existsSync(path)) return [];
+  const fd = openSync(path, "r");
+  const runs: PlannerRun[] = [];
+  const chunkBytes = 64 * 1024;
+  try {
+    let position = fstatSync(fd).size;
+    let lineSuffix = "";
+    let reachedWindowBoundary = false;
+
+    while (position > 0 && !reachedWindowBoundary) {
+      const start = Math.max(0, position - chunkBytes);
+      const buffer = Buffer.allocUnsafe(position - start);
+      readSync(fd, buffer, 0, buffer.length, start);
+      const lines = `${buffer.toString("utf8")}${lineSuffix}`.split(/\r?\n/);
+      lineSuffix = start > 0 ? (lines.shift() ?? "") : "";
+
+      for (let index = lines.length - 1; index >= 0; index--) {
+        const line = lines[index]!.trim();
+        if (!line) continue;
+        let run: PlannerRun;
+        try {
+          run = JSON.parse(line) as PlannerRun;
+        } catch {
+          continue;
+        }
+        const timestamp = plannerRunTimestamp(run);
+        if (timestamp == null) continue;
+        if (timestamp < since) {
+          reachedWindowBoundary = true;
+          break;
+        }
+        if (run.kind === "planner_wake") runs.push(run);
+      }
+      position = start;
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return runs.reverse();
+}
+
 function recentPlannerRuns(hours: number): PlannerRun[] {
   const since = now - hours * 60 * 60 * 1000;
-  return plannerRuns().filter((run) => {
-    const ts = plannerRunTimestamp(run);
-    return ts != null && ts >= since;
-  });
+  return recentPlannerRunsFromFile(
+    join(effectiveAppDir, ".state", "planner-runs.jsonl"),
+    since,
+  );
 }
 
 function plannerTimedOut(run: PlannerRun): boolean {
@@ -4006,7 +4333,7 @@ function isSlowPlannerRun(run: PlannerRun): boolean {
   return status === "interrupted" || status === "cancelled";
 }
 
-export function metricSampleOutputsFor(
+function computeMetricSampleOutputsFor(
   metricIds: string[],
 ): Record<string, MetricSampleOutput> {
   const tasks = taskCounts();
@@ -4084,7 +4411,7 @@ export function metricSampleOutputsFor(
       value: tasks.runnable,
       sampleSize: tasks.runnable,
       note: JSON.stringify({
-        taskIds: listRunnableBacklogTaskIds(runtimeTaskTreeConfig(), 200),
+        taskIds: listRunnableBacklogTaskIds(loadTaskTreeProjection(), 200),
         readySatisfiedWaitHolderIds: tasks.readySatisfiedWaitHolderIds,
       }),
     }),
@@ -4295,7 +4622,7 @@ export function metricSampleOutputsFor(
     "aks-rp-e2e.feature.unknown-count": () => ({
       value: (featureStatus.unknown ?? 0) + (featureStatus.partial ?? 0),
     }),
-    "aks-rp-e2e.spec.total-count": () => ({ value: countSpecs() }),
+    "aks-rp-e2e.spec.total-count": () => ({ value: specs.total }),
     "aks-rp-e2e.spec.verified-count": () => ({ value: specs.verified }),
     "aks-rp-e2e.spec.reviewed-exception-count": () => ({
       value: specs.reviewedException,
@@ -4365,6 +4692,18 @@ export function metricSampleOutputsFor(
       return [metricId, { measuredAt, treePath, ...compute() }];
     }),
   );
+}
+
+export function metricSampleOutputsFor(
+  metricIds: string[],
+): Record<string, MetricSampleOutput> {
+  const previous = activeMetricReadSnapshot;
+  activeMetricReadSnapshot = {};
+  try {
+    return computeMetricSampleOutputsFor(metricIds);
+  } finally {
+    activeMetricReadSnapshot = previous;
+  }
 }
 
 export function metricSampleOutputFor(metricId: string): MetricSampleOutput {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sampleFocusMetric } from "./focus-metrics.js";
+import { sampleFocusMetric, sampleFocusMetricBatch } from "./focus-metrics.js";
 
 describe("focus metrics", () => {
   test("counts current live pipeline artifacts without double-counting nested probe results", () => {
@@ -56,6 +56,24 @@ describe("focus metrics", () => {
           appDir,
         }),
       ).toMatchObject({ value: 1, sampleSize: 1 });
+
+      const batch = sampleFocusMetricBatch(
+        projectDir,
+        [
+          "aks-rp-e2e.run.live-started-24h",
+          "aks-rp-e2e.run.live-succeeded-24h",
+        ],
+        { appDir },
+      );
+      expect(batch["aks-rp-e2e.run.live-started-24h"]).toMatchObject({
+        value: 1,
+        sampleSize: 1,
+      });
+      expect(batch["aks-rp-e2e.run.live-succeeded-24h"]).toMatchObject({
+        value: 1,
+        sampleSize: 1,
+        measuredAt: batch["aks-rp-e2e.run.live-started-24h"]!.measuredAt,
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

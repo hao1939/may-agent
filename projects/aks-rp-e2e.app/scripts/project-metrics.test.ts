@@ -1,16 +1,24 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   activeTaskAssignments,
   activeTaskAttemptId,
   activeTaskSessionId,
+  blockedTaskHasRegisteredCondition,
+  blockedShapeOffenders,
+  composeResourceTaskMetricView,
   composeTaskTreeMetricView,
   assignmentStillLooksUnconsumed,
   liveTaskMetricFrontier,
+  resourceTaskAuthorityActive,
   normalizeWorkflowTaskLivenessRow,
   ownerSessionRecentCompletionGapLooksHealthy,
   ownerTaskSessionMatchesTaskId,
   representedWaitCoveredFrontierDisposition,
+  recentPlannerRunsFromFile,
   specLoopRepresentationAuthority,
   taskState,
   terminalOwnerAttemptHasExpiredLease,
@@ -18,6 +26,45 @@ import {
   workflowDispatchRecentStartLooksHealthy,
   workflowRunRecentSessionGapLooksHealthy,
 } from "./project-metrics.ts";
+
+describe("recentPlannerRunsFromFile", () => {
+  it("reads only the recent suffix of the retained append-only journal", () => {
+    const dir = mkdtempSync(join(tmpdir(), "aks-planner-metric-"));
+    const path = join(dir, "planner-runs.jsonl");
+    const since = Date.parse("2026-08-22T10:00:00Z");
+    writeFileSync(
+      path,
+      [
+        JSON.stringify({
+          ts: "2026-08-21T09:00:00Z",
+          kind: "planner_wake",
+          result: "old",
+          detail: "x".repeat(70_000),
+        }),
+        JSON.stringify({
+          ts: "2026-08-22T10:00:00Z",
+          kind: "planner_wake",
+          result: "at-boundary",
+        }),
+        "not-json",
+        JSON.stringify({
+          ts: "2026-08-22T11:00:00Z",
+          kind: "other",
+          result: "not-a-planner-run",
+        }),
+        JSON.stringify({
+          ts: "2026-08-22T12:00:00Z",
+          kind: "planner_wake",
+          result: "recent",
+        }),
+      ].join("\n") + "\n",
+    );
+
+    expect(
+      recentPlannerRunsFromFile(path, since).map((run) => run.result),
+    ).toEqual(["at-boundary", "recent"]);
+  });
+});
 
 describe("composeTaskTreeMetricView", () => {
   it("combines projected root/tasks with canonical resources/attempts", () => {
@@ -53,9 +100,211 @@ describe("composeTaskTreeMetricView", () => {
   });
 });
 
+describe("composeResourceTaskMetricView", () => {
+  it("derives the bounded metric projection from current resource rows", () => {
+    const taskId = "ops/current";
+    const attemptId = "attempt-current";
+    const conditionId = "condition:ops/current:pipeline";
+    const view = composeResourceTaskMetricView({
+      tasks: [
+        {
+          task_id: taskId,
+          phase: "running",
+          current_attempt_id: attemptId,
+          updated_at: Date.parse("2026-08-22T10:00:00Z"),
+          parent_id: "group/app-operations",
+          owner: "app-ops",
+          workflow: null,
+          outcome: "Repair the current issue",
+          summary: "Repairing",
+          input_json: JSON.stringify({ scope: "current" }),
+          condition_ids_json: JSON.stringify([conditionId]),
+        },
+      ],
+      attempts: [
+        {
+          id: attemptId,
+          json: JSON.stringify({
+            metadata: { id: attemptId },
+            taskId,
+            state: "running",
+            sessionId: "session-current",
+          }),
+        },
+      ],
+      groups: [
+        {
+          id: "group/app-operations",
+          json: JSON.stringify({
+            id: "group/app-operations",
+            owner: "app-ops",
+            parent_id: "project",
+          }),
+        },
+      ],
+      conditions: [
+        {
+          id: conditionId,
+          json: JSON.stringify({ id: conditionId, state: "waiting" }),
+        },
+      ],
+    });
+
+    expect(view.root_task_id).toBe("project");
+    expect(view.active_task_ids).toEqual([taskId]);
+    expect(view.tasks?.project.children).toEqual(["group/app-operations"]);
+    expect(view.tasks?.["group/app-operations"].children).toEqual([taskId]);
+    expect(view.tasks?.[taskId]).toMatchObject({
+      id: taskId,
+      phase: "running",
+      parent_id: "group/app-operations",
+      owner: "app-ops",
+      summary: "Repairing",
+      trace: { current_attempt_id: attemptId },
+      children: [],
+    });
+    expect(view.resources?.[taskId]).toEqual({
+      spec: {
+        parentId: "group/app-operations",
+        owner: "app-ops",
+        workflow: null,
+        outcome: "Repair the current issue",
+        input: { scope: "current" },
+      },
+      status: {
+        phase: "running",
+        currentAttemptId: attemptId,
+        conditionIds: [conditionId],
+        summary: "Repairing",
+        updatedAt: "2026-08-22T10:00:00.000Z",
+      },
+    });
+    expect(view.attempts?.[attemptId].sessionId).toBe("session-current");
+    expect(view.conditions?.[conditionId]).toEqual({
+      id: conditionId,
+      state: "waiting",
+    });
+  });
+});
+
+describe("resourceTaskAuthorityActive", () => {
+  it("uses the exact production authority value", () => {
+    expect(resourceTaskAuthorityActive("resources")).toBe(true);
+    expect(resourceTaskAuthorityActive("resource")).toBe(false);
+    expect(resourceTaskAuthorityActive(undefined)).toBe(false);
+  });
+});
+
 describe("activeTaskAttemptId", () => {
   it("does not dereference a missing projected task while canonical attempts roll up", () => {
     expect(activeTaskAttemptId(undefined)).toBe("");
+  });
+});
+
+describe("blockedTaskHasRegisteredCondition", () => {
+  it("recognizes a canonical registered Condition as the wait and fallback authority", () => {
+    const tree = {
+      resources: {
+        "ops/wait": {
+          status: { conditionIds: ["condition:ops/wait:approval"] },
+        },
+      },
+      conditions: {
+        "condition:ops/wait:approval": {
+          id: "condition:ops/wait:approval",
+          type: "approval.state",
+        },
+      },
+    };
+
+    expect(blockedTaskHasRegisteredCondition(tree, { id: "ops/wait" })).toBe(
+      true,
+    );
+    expect(
+      blockedTaskHasRegisteredCondition(tree, { id: "ops/legacy-wait" }),
+    ).toBe(false);
+  });
+});
+
+describe("blockedShapeOffenders", () => {
+  const empty = {
+    missingWaitingForTaskIds: [],
+    missingObserverTaskIds: [],
+    missingResumeConditionTaskIds: [],
+    missingOwnerTaskIds: [],
+    missingFallbackTaskIds: [],
+  };
+
+  it("keeps a Condition-backed wait at zero across a projected waiting transition", () => {
+    const taskId = "ops/condition-wait";
+    const conditionId = "condition:ops/condition-wait:pipeline";
+    expect(
+      blockedShapeOffenders({
+        root_task_id: "project",
+        tasks: {
+          project: { id: "project", children: [taskId] },
+          [taskId]: { id: taskId, children: [], phase: "waiting" },
+        },
+        resources: {
+          [taskId]: {
+            spec: { parentId: "project" },
+            status: { phase: "waiting", conditionIds: [conditionId] },
+          },
+        },
+        conditions: { [conditionId]: { id: conditionId } },
+      }),
+    ).toEqual(empty);
+  });
+
+  it("does not mistake a stale projected leaf for a malformed wait after its direct child is admitted", () => {
+    const taskId = "ops/parent-wait";
+    const childId = "ops/parent-wait/repair";
+    expect(
+      blockedShapeOffenders({
+        root_task_id: "project",
+        tasks: {
+          project: { id: "project", children: [taskId] },
+          [taskId]: { id: taskId, children: [], phase: "waiting" },
+        },
+        resources: {
+          [taskId]: {
+            spec: { parentId: "project" },
+            status: { phase: "waiting", conditionIds: [] },
+          },
+          [childId]: {
+            spec: { parentId: taskId },
+            status: { phase: "pending", conditionIds: [] },
+          },
+        },
+        conditions: {},
+      }),
+    ).toEqual(empty);
+  });
+
+  it("retains a stable malformed compatibility wait and its exact offender id", () => {
+    const taskId = "ops/malformed-legacy-wait";
+    const offenders = blockedShapeOffenders({
+      root_task_id: "project",
+      tasks: {
+        project: { id: "project", children: [taskId] },
+        [taskId]: { id: taskId, children: [], phase: "waiting" },
+      },
+      resources: {
+        [taskId]: {
+          spec: { parentId: "project" },
+          status: { phase: "waiting", conditionIds: [] },
+        },
+      },
+      conditions: {},
+    });
+
+    expect(offenders).toEqual({
+      missingWaitingForTaskIds: [taskId],
+      missingObserverTaskIds: [taskId],
+      missingResumeConditionTaskIds: [taskId],
+      missingOwnerTaskIds: [taskId],
+      missingFallbackTaskIds: [taskId],
+    });
   });
 });
 

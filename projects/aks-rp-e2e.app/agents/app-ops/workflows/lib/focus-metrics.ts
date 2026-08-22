@@ -78,6 +78,22 @@ function listFiles(
   return out;
 }
 
+/**
+ * Pipeline downloads have one canonical aggregate result per slice beneath
+ * <build>/<artifact>/runs/test-results/<run>. Match that exact shape so a
+ * metric sample does not walk every retained artifact and nested probe file.
+ */
+export function listPipelineAggregateResults(root: string): string[] {
+  if (!existsSync(root)) return [];
+  return [
+    ...new Bun.Glob("*/*/runs/test-results/*/result.json").scanSync({
+      cwd: root,
+      absolute: true,
+      onlyFiles: true,
+    }),
+  ].sort((a, b) => a.localeCompare(b));
+}
+
 function normalizedStatus(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase().replace(/_/g, "-");
 }
@@ -216,6 +232,7 @@ function specMetrics(projectDir: string): {
 function runResults(
   projectDir: string,
   appDir?: string,
+  modifiedSince = 0,
 ): Array<RunResult & { path: string }> {
   const roots: Array<{ root: string; aggregateOnly?: boolean }> = [
     { root: join(projectDir, "runs", "executions") },
@@ -231,15 +248,25 @@ function runResults(
   ];
   const seen = new Set<string>();
   return roots.flatMap(({ root, aggregateOnly }) =>
-    listFiles(root, (path) => {
-      if (!path.endsWith("/result.json")) return false;
-      if (!aggregateOnly) return true;
-      return /\/runs\/test-results\/[^/]+\/result\.json$/.test(path);
-    })
+    (aggregateOnly
+      ? listPipelineAggregateResults(root)
+      : listFiles(root, (path) => path.endsWith("/result.json"))
+    )
       .filter((path) => {
         if (seen.has(path)) return false;
         seen.add(path);
         return true;
+      })
+      // A result cannot describe a newly completed run if its durable file has
+      // not changed. Keep one extra day of clock/extraction grace, then parse
+      // only plausible candidates instead of every retained result body.
+      .filter((path) => {
+        try {
+          const stat = statSync(path);
+          return Math.max(stat.mtimeMs, stat.ctimeMs) >= modifiedSince;
+        } catch {
+          return false;
+        }
       })
       .map((path) => ({ ...readJson<RunResult>(path, {}), path })),
   );
@@ -276,7 +303,8 @@ function liveRuns24h(
   appDir?: string,
 ): Array<RunResult & { path: string }> {
   const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-  return runResults(projectDir, appDir).filter((run) => {
+  const candidateSince = dayAgo - 24 * 60 * 60 * 1000;
+  return runResults(projectDir, appDir, candidateSince).filter((run) => {
     if (!isLiveRun(run)) return false;
     const ts = runTime(run);
     return ts != null && ts >= dayAgo;
@@ -288,83 +316,110 @@ export function sampleFocusMetric(
   metricId: FocusMetricId,
   options: { appDir?: string } = {},
 ): MetricSample {
-  switch (metricId) {
-    case "aks-rp-e2e.model.unknown-path-count":
-      return modelUnknownPathCount(projectDir);
-    case "aks-rp-e2e.spec.unverified-count": {
-      const metrics = specMetrics(projectDir);
-      return {
-        value: metrics.unverified,
-        measuredAt: Date.now(),
-        sampleSize: metrics.total,
-        note: { source: "feature-owned spec catalog" },
-      };
-    }
-    case "aks-rp-e2e.spec.failed-count": {
-      const metrics = specMetrics(projectDir);
-      return {
-        value: metrics.failed,
-        measuredAt: Date.now(),
-        sampleSize: metrics.total,
-        note: { source: "feature-owned spec catalog" },
-      };
-    }
-    case "aks-rp-e2e.run.live-started-24h": {
-      const live = liveRuns24h(projectDir, options.appDir);
-      return {
-        value: live.length,
-        measuredAt: Date.now(),
-        sampleSize: live.length,
-        note: {
-          source: "project executions and app pipeline artifacts",
-          samplePaths: live.slice(0, 5).map((run) => run.path),
-        },
-      };
-    }
-    case "aks-rp-e2e.run.live-succeeded-24h": {
-      const live = liveRuns24h(projectDir, options.appDir);
-      const succeeded = live.filter(
-        (run) => normalizedStatus(run.status) === "passed",
-      );
-      return {
-        value: succeeded.length,
-        measuredAt: Date.now(),
-        sampleSize: live.length,
-        note: {
-          source: "project executions and app pipeline artifacts",
-          samplePaths: succeeded.slice(0, 5).map((run) => run.path),
-        },
-      };
-    }
-  }
+  return sampleFocusMetricBatch(projectDir, [metricId], options)[metricId]!;
+}
+
+/** Measure one coherent focus snapshot without rescanning shared sources. */
+export function sampleFocusMetricBatch(
+  projectDir: string,
+  metricIds: readonly FocusMetricId[],
+  options: { appDir?: string } = {},
+): Partial<Record<FocusMetricId, MetricSample>> {
+  const measuredAt = Date.now();
+  let specs: ReturnType<typeof specMetrics> | undefined;
+  let live: ReturnType<typeof liveRuns24h> | undefined;
+  const specSnapshot = () => (specs ??= specMetrics(projectDir));
+  const liveSnapshot = () => (live ??= liveRuns24h(projectDir, options.appDir));
+
+  return Object.fromEntries(
+    [...new Set(metricIds)].map((metricId) => {
+      switch (metricId) {
+        case "aks-rp-e2e.model.unknown-path-count": {
+          const sample = modelUnknownPathCount(projectDir);
+          return [metricId, { ...sample, measuredAt }];
+        }
+        case "aks-rp-e2e.spec.unverified-count": {
+          const metrics = specSnapshot();
+          return [
+            metricId,
+            {
+              value: metrics.unverified,
+              measuredAt,
+              sampleSize: metrics.total,
+              note: { source: "feature-owned spec catalog" },
+            },
+          ];
+        }
+        case "aks-rp-e2e.spec.failed-count": {
+          const metrics = specSnapshot();
+          return [
+            metricId,
+            {
+              value: metrics.failed,
+              measuredAt,
+              sampleSize: metrics.total,
+              note: { source: "feature-owned spec catalog" },
+            },
+          ];
+        }
+        case "aks-rp-e2e.run.live-started-24h": {
+          const runs = liveSnapshot();
+          return [
+            metricId,
+            {
+              value: runs.length,
+              measuredAt,
+              sampleSize: runs.length,
+              note: {
+                source: "project executions and app pipeline artifacts",
+                samplePaths: runs.slice(0, 5).map((run) => run.path),
+              },
+            },
+          ];
+        }
+        case "aks-rp-e2e.run.live-succeeded-24h": {
+          const runs = liveSnapshot();
+          const succeeded = runs.filter(
+            (run) => normalizedStatus(run.status) === "passed",
+          );
+          return [
+            metricId,
+            {
+              value: succeeded.length,
+              measuredAt,
+              sampleSize: runs.length,
+              note: {
+                source: "project executions and app pipeline artifacts",
+                samplePaths: succeeded.slice(0, 5).map((run) => run.path),
+              },
+            },
+          ];
+        }
+      }
+    }),
+  );
 }
 
 export function sampleFocusMetrics(
   projectDir: string,
   options: { appDir?: string } = {},
 ): FocusMetricsSnapshot {
-  return {
-    liveRunsStarted24h: sampleFocusMetric(
-      projectDir,
+  const samples = sampleFocusMetricBatch(
+    projectDir,
+    [
       "aks-rp-e2e.run.live-started-24h",
-      options,
-    ).value,
-    liveRunsSucceeded24h: sampleFocusMetric(
-      projectDir,
       "aks-rp-e2e.run.live-succeeded-24h",
-      options,
-    ).value,
-    specUnverifiedCount: sampleFocusMetric(
-      projectDir,
       "aks-rp-e2e.spec.unverified-count",
-    ).value,
-    specFailedCount: sampleFocusMetric(
-      projectDir,
       "aks-rp-e2e.spec.failed-count",
-    ).value,
-    unknownPathMetric: sampleFocusMetric(
-      projectDir,
       "aks-rp-e2e.model.unknown-path-count",
-    ).value,
+    ],
+    options,
+  );
+  return {
+    liveRunsStarted24h: samples["aks-rp-e2e.run.live-started-24h"]!.value,
+    liveRunsSucceeded24h: samples["aks-rp-e2e.run.live-succeeded-24h"]!.value,
+    specUnverifiedCount: samples["aks-rp-e2e.spec.unverified-count"]!.value,
+    specFailedCount: samples["aks-rp-e2e.spec.failed-count"]!.value,
+    unknownPathMetric: samples["aks-rp-e2e.model.unknown-path-count"]!.value,
   };
 }

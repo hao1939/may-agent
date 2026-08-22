@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   sampleFocusMetric,
+  sampleFocusMetricBatch,
   type FocusMetricId,
 } from "../agents/app-ops/workflows/lib/focus-metrics.ts";
 
@@ -27,6 +28,23 @@ function usage(): never {
 }
 
 const args = process.argv.slice(2);
+const batchIndex = args.indexOf("--batch-json");
+if (batchIndex >= 0) {
+  const requested = args.slice(batchIndex + 1);
+  if (
+    requested.length === 0 ||
+    requested.some(
+      (metricId) => !supportedMetrics.includes(metricId as FocusMetricId),
+    )
+  ) {
+    usage();
+  }
+  const metricIds = requested as FocusMetricId[];
+  console.log(
+    JSON.stringify(sampleFocusMetricBatch(projectDir, metricIds, { appDir })),
+  );
+  process.exit(0);
+}
 const metricId = args.find((arg) => !arg.startsWith("--")) as
   FocusMetricId | undefined;
 const asJson = args.includes("--json");
