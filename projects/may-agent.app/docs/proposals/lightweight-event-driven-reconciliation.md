@@ -699,6 +699,22 @@ safety scan now defaults to one minute and exists only for recovery, schedules,
 and observer insurance. Immediate work remains event-driven. This removes 104
 lines of polling machinery without changing retained state.
 
+Production correlation `explicit-app-reload-20260822-e16ecc57` loaded the exact
+tested commit with matching requested/loaded artifact SHA
+`a7e3a3e2928b0ae2918e241657209a4dfb0beda0b53996d46dbabab8dadaaa89`,
+healthy status, a targeted owner-Task wake, and no duplicate deploy. Console
+App and Task lists plus exact Task detail worked on the loaded binary. All 159
+dependency waits remained without availability/review deadlines or leases. A
+35-second active-work sample averaged 8.9% of one CPU, about 310 MiB RSS, and
+zero major faults. A separate 25-second main-process syscall trace observed
+zero App-manifest opens and zero watcher-source opens; the only workflow source
+opened was the pair actually invoked by live Evaluation work. It did not show
+the former repeating whole-App source sweep. An explicit `/reload` advanced
+the published registry generation from 1 to 2, proving that deliberate
+activation still works. Its durable control event still lacks a terminal
+caller-facing result even though the generation changed; that pre-existing
+control-result observability gap remains separate follow-up work.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and
