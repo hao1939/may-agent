@@ -1706,11 +1706,19 @@ export class SubagentManager {
         return result;
       },
       (error) => {
+        this._sessions.delete(session.sessionId);
+        markSessionInactive(this._persistDir, session.sessionId);
         this.results.delete(session.sessionId);
         throw error;
       },
     );
     this.results.set(session.sessionId, promise);
+    // Managed executions usually gain a waiter immediately, but task owners
+    // are allowed to observe them later. Attach a rejection observer now so a
+    // required terminal persistence failure (for example SQLITE_FULL while
+    // writing session.end) remains available through waitFor() without also
+    // becoming a process-wide unhandled rejection.
+    promise.catch(() => undefined);
   }
 
   private async withObservationDeadline<T>(session: ActiveSession, work: () => Promise<T>): Promise<T> {

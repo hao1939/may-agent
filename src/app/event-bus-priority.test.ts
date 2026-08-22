@@ -201,6 +201,38 @@ describe("EventBus subscriber priority", () => {
     expect(order).toEqual(["persist"]);
   });
 
+  it("does not let passive failure reporting change an accepted event when storage is full", () => {
+    const bus = new EventBus();
+    const persisted: string[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      persisted.push(event.type);
+      if (event.type === "subscriber.failed") throw new Error("database or disk is full");
+    });
+    bus.subscribe((event) => {
+      if (event.type === "info") throw new Error("observer failed");
+    });
+
+    expect(() => bus.emit({ type: "info", message: "durable first" })).not.toThrow();
+    expect(persisted).toEqual(["info", "subscriber.failed"]);
+  });
+
+  it("contains a listener diagnostic that cannot be persisted", async () => {
+    const bus = new EventBus();
+    const persisted: string[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      persisted.push(event.type);
+      if (event.type === "subscriber.failed") throw new Error("database or disk is full");
+    });
+    bus.listen((event) => {
+      if (event.type === "info") throw new Error("listener failed");
+    });
+
+    bus.emit({ type: "info", message: "accepted before observation" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(persisted).toEqual(["info", "subscriber.failed"]);
+  });
+
   it("routes an extensible persisted envelope when producer input is frozen", () => {
     const bus = new EventBus();
     const observed: any[] = [];

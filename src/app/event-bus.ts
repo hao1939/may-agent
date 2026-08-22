@@ -1264,7 +1264,19 @@ export class EventBus {
     try {
       while (this.pendingFailureEvents.length > 0) {
         const failure = this.pendingFailureEvents.shift();
-        if (failure) this.emit(failure);
+        if (!failure) continue;
+        try {
+          this.emit(failure);
+        } catch (error) {
+          // subscriber.failed is passive observation, not part of the
+          // originating event's acceptance boundary. If storage is full, the
+          // original durable event must keep its truthful result and the
+          // optional diagnostic must not escape as an unhandled rejection.
+          log(
+            "error",
+            `[event-bus] failed to persist subscriber.failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       }
     } finally {
       this.reportingFailures = false;

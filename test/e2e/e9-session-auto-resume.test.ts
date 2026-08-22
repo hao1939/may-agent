@@ -2,7 +2,7 @@
  * E9 — Session resume after cold (interrupted) end
  *
  * Regression test for the unified resume path: when a session has been
- * persisted with status=interrupted (cold) and a `steer` command arrives
+ * persisted with status=interrupted (cold) and a typed session steer arrives
  * for it, the daemon must invoke `manager.resumeSession()` and emit a
  * fresh `session.start` event with the same sessionId.
  *
@@ -13,14 +13,14 @@
  *   broken behavior in as expected. The downstream signal
  *   (`escalation.created` after 3 exhausted attempts) still fired, so
  *   nothing alarmed. This test asserts the resume *primitive* works
- *   end-to-end by simulating an operator steer onto a cold session.
+ *   end-to-end by publishing a supported session control for a cold session.
  *
  * Flow:
  *   1. Boot sandbox with `may`.
  *   2. Pre-seed disk:
  *        <stateDir>/sessions/<sid>/meta.json (status=interrupted, agent=may)
  *        <stateDir>/sessions/<sid>/session.jsonl with a user turn
- *   3. Emit `steer` over the socket with sessionId=<sid> and a message.
+ *   3. Publish `session.steer.requested` with sessionId=<sid> and a message.
  *      command-router routes cold sessions to `manager.resumeSession()`.
  *   4. Within a few seconds, assert: a `session.start` event was emitted
  *      with the same sessionId. That means resumeSession was actually
@@ -35,8 +35,8 @@
  *     production backoff.
  *
  * Why this test would have caught the original v2 regression:
- *   The legacy `resumeInterrupted` no-op was unreachable from `steer`
- *   in v2 — the steer flow already used `resumeSession`. But in v1 and
+ *   The legacy `resumeInterrupted` no-op was unreachable from the typed
+ *   session-steer route in v2 — that route already used `resumeSession`. But in v1 and
  *   in early v2, only the auto-resume path resumed sessions. By moving
  *   the cold-session steer through `resumeSession`, we get a primitive
  *   test that does not require LLM credentials.
@@ -46,10 +46,11 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { openSandboxDb, pollUntil, queryEvents, socketEmit } from "./lib/live-daemon.js";
+import { publishEvent } from "../../packages/control/src/client.js";
+import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
-describe("E9: session resume from cold (interrupted) end via steer", () => {
+describe("E9: session resume from cold (interrupted) end via typed control", () => {
   let sb: Sandbox;
 
   beforeAll(async () => {
@@ -65,7 +66,7 @@ describe("E9: session resume from cold (interrupted) end via steer", () => {
   });
 
   test(
-    "steer onto a cold session invokes resumeSession and emits a fresh session.start",
+    "a typed steer onto a cold session invokes resumeSession and emits a fresh session.start",
     async () => {
       // Pre-seed an interrupted session on disk. `resumeSession` requires:
       //  - meta.json present (status=interrupted is fine; only "running"
@@ -99,14 +100,15 @@ describe("E9: session resume from cold (interrupted) end via steer", () => {
 
       const cutoff = Date.now();
 
-      // Steer onto the cold session. command-router routes this to
-      // manager.resumeSession() because the session is not in manager.status().
-      const resp = (await socketEmit(sb.socketPath, "steer", {
-        sessionId: sid,
-        message: "[e2e-test] please resume",
-        source: "e2e",
-      })) as { type?: string };
-      expect(resp.type).toBe("ok");
+      // Publish the typed control used by every current adapter. The command
+      // router cold-resumes because the target is not live in manager.status().
+      const receipt = await publishEvent(sb.socketPath, {
+        type: "session.steer.requested",
+        target: { sessionId: sid },
+        data: { message: "[e2e-test] please resume" },
+        idempotencyKey: `e9-resume-${sid}`,
+      });
+      expect(receipt).toMatchObject({ eventType: "session.steer.requested", delivery: "accepted" });
 
       const db = openSandboxDb(sb.dbPath);
       try {

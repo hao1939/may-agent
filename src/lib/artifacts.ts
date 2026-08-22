@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export interface ArtifactDescriptor {
@@ -18,8 +18,14 @@ function digest(content: string): Omit<ArtifactDescriptor, "ref"> {
 function writeAtomic(filePath: string, content: string): void {
   mkdirSync(dirname(filePath), { recursive: true });
   const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  writeFileSync(tmpPath, content, "utf8");
-  renameSync(tmpPath, filePath);
+  try {
+    writeFileSync(tmpPath, content, "utf8");
+    renameSync(tmpPath, filePath);
+  } finally {
+    // A failed write/rename is not historical evidence. Do not let an
+    // incomplete atomic-write staging file consume the last available space.
+    rmSync(tmpPath, { force: true });
+  }
 }
 
 export function describeText(ref: string, content: string): ArtifactDescriptor {
