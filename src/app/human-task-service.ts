@@ -502,9 +502,6 @@ export class HumanTaskService {
         )
         .run(nextVersion, now, JSON.stringify(resource), current.appId, current.taskId, current.resourceVersion);
       if (updated.changes !== 1) throw new Error("Task changed before cancellation; read it again and retry");
-      this.db
-        .prepare("DELETE FROM app_task_events WHERE app_id = ? AND task_id = ?")
-        .run(current.appId, current.taskId);
       if (attempt) {
         this.db
           .prepare(
