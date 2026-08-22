@@ -14,8 +14,7 @@
  *   6. Assert daemon log contains `[reload] 1 updated (may)`.
  *
  * What this doesn't cover (out of scope for E5):
- *   - Hot-reload of handler/workflow file CONTENT (handlers are re-imported
- *     on every fire, so this is exercised by E1 indirectly).
+ *   - Reload of handler/workflow file content at the explicit reload boundary.
  *   - Removing an agent (no delete code path in the registry loader).
  *   - cron.json reload (covered by Cron.reload() unit tests).
  *

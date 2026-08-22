@@ -2,6 +2,7 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, symlinkSyn
 import { dirname, join, resolve } from "node:path";
 
 let runtimeImportSeq = 0;
+const runtimeModuleCache = new Map<string, Promise<unknown>>();
 
 interface RuntimeBunPlugin {
   name: string;
@@ -38,6 +39,40 @@ export async function importRuntimeModule<T = unknown>(
   modulePath: string,
   opts: RuntimeImportOptions = {},
 ): Promise<T> {
+  const cacheKey = runtimeModuleCacheKey(modulePath, opts);
+  const cached = runtimeModuleCache.get(cacheKey);
+  if (cached) return cached as Promise<T>;
+
+  const pending = importRuntimeModuleOnce<T>(modulePath, opts);
+  runtimeModuleCache.set(cacheKey, pending);
+  try {
+    return await pending;
+  } catch (error) {
+    if (runtimeModuleCache.get(cacheKey) === pending) runtimeModuleCache.delete(cacheKey);
+    throw error;
+  }
+}
+
+/**
+ * Make changed runtime source visible at the explicit reload boundary.
+ *
+ * JavaScript modules cannot be unloaded. Keeping one import per source path
+ * between reloads prevents every handler/workflow execution from adding a new
+ * module graph to the long-lived Host while preserving deliberate hot reload.
+ */
+export function invalidateRuntimeModuleCache(): void {
+  runtimeModuleCache.clear();
+}
+
+function runtimeModuleCacheKey(modulePath: string, opts: RuntimeImportOptions): string {
+  return [
+    resolve(modulePath),
+    opts.forceBundle || isBundledRuntime() ? "bundle" : "native",
+    opts.cacheDir ? resolve(opts.cacheDir) : "default-cache",
+  ].join("\0");
+}
+
+async function importRuntimeModuleOnce<T>(modulePath: string, opts: RuntimeImportOptions): Promise<T> {
   if (!opts.forceBundle && !isBundledRuntime()) {
     return import(withFreshToken(modulePath)) as Promise<T>;
   }

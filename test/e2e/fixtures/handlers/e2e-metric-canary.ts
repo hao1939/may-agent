@@ -1,7 +1,7 @@
 /**
  * E2E fixture handler: defines a canary metric, then advances phases based on
- * the number of existing snapshots (since the handler module is hot-reloaded
- * per fire — module-level state is reset every call).
+ * the number of existing snapshots. Durable progress belongs in the DB rather
+ * than module-level state, regardless of runtime reloads.
  *
  * Phase decision (by snapshot count for e2e.canary at start of fire):
  *   0: define metric, record 1.0 (baseline)
