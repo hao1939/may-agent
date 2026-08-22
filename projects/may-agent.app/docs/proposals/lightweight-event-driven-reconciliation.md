@@ -689,6 +689,16 @@ The main process held about 246-263 MiB RSS in a 29-second active-work sample.
 That sample still contained periodic CPU work and one larger active-work spike,
 so it proves removal of inbox reclaim churn, not the final idle-CPU target.
 
+Tracing that remaining periodic work found a separate compatibility loop. Every
+five seconds it reopened and hashed every App manifest, watcher, agent
+configuration, workflow, and legacy lifecycle file to discover source changes.
+The loop has been removed rather than replaced with another watcher. App
+generations now change only through explicit `/reload` atomic publication or a
+deployment restart; workflow source remains invocation-loaded. The App inbox
+safety scan now defaults to one minute and exists only for recovery, schedules,
+and observer insurance. Immediate work remains event-driven. This removes 104
+lines of polling machinery without changing retained state.
+
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
 hold the resource-backed cohort through live idle-resource, event-storm, and

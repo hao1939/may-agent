@@ -128,6 +128,13 @@ open storage
 A failed reload leaves the previous generation active. Shutdown stops new
 dispatch and preserves unfinished work.
 
+App source changes are activated deliberately: `/reload` validates and
+publishes one new generation atomically, while a deployment restart performs
+the same startup publication. The Host does not poll and hash every App,
+watcher, agent configuration, or workflow. This keeps idle hosting cheap and
+makes the active generation explicit. Workflow source is loaded when that
+workflow is invoked.
+
 ## Code map
 
 | Responsibility                   | Code                                                                         |
