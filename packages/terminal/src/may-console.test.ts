@@ -158,25 +158,37 @@ describe("May Console", () => {
               })}\n`,
             );
           } else if (frame.type === "tasks.list") {
+            const task = frame.cursor
+              ? {
+                  appId: "evaluation",
+                  taskId: "review/follow-up",
+                  ref: "7e11ab22",
+                  status: "waiting",
+                  outcome: "Review the follow-up",
+                  summary: "Waiting for evidence",
+                  updatedAt: Date.UTC(2026, 7, 17, 9, 5, 0),
+                  terminal: false,
+                  cancellable: true,
+                }
+              : {
+                  appId: "evaluation",
+                  taskId: "review/docs",
+                  ref: "8f12ac90",
+                  status: taskTerminal ? "done" : "running",
+                  outcome: "Review the docs",
+                  summary: taskTerminal ? "Review complete" : "Reviewing current behavior",
+                  response: taskTerminal ? "The design and implementation now align." : undefined,
+                  updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
+                  terminal: taskTerminal,
+                  cancellable: !taskTerminal,
+                };
             socket.write(
               `${JSON.stringify({
                 type: "ok",
                 command: "tasks.list",
                 tasks: {
-                  items: [
-                    {
-                      appId: "evaluation",
-                      taskId: "review/docs",
-                      ref: "8f12ac90",
-                      status: taskTerminal ? "done" : "running",
-                      outcome: "Review the docs",
-                      summary: taskTerminal ? "Review complete" : "Reviewing current behavior",
-                      response: taskTerminal ? "The design and implementation now align." : undefined,
-                      updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
-                      terminal: taskTerminal,
-                      cancellable: !taskTerminal,
-                    },
-                  ],
+                  items: [task],
+                  ...(frame.cursor ? {} : { nextCursor: "tasks-page-2" }),
                 },
               })}\n`,
             );
@@ -381,6 +393,14 @@ describe("May Console", () => {
     await waitFor(
       () => output.includes("Active Tasks:") && output.includes("8f12ac90") && output.includes("Review the docs"),
     );
+    expect(output).toContain("run /tasks more for the next page");
+    child.stdin.write("/tasks more\n");
+    await waitFor(() => output.includes("7e11ab22") && output.includes("Review the follow-up"));
+    expect(
+      frames.some(
+        (frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.cursor === "tasks-page-2",
+      ),
+    ).toBe(true);
     child.stdin.write("/task 8f12ac90\n");
     await waitFor(
       () =>
