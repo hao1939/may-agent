@@ -660,7 +660,12 @@ describe("control socket protocol", () => {
       type: "status",
       command: "status",
       diagnostics: {
+        pid: process.pid,
         uptimeSeconds: expect.any(Number),
+        cpu: {
+          userMicros: expect.any(Number),
+          systemMicros: expect.any(Number),
+        },
         memory: {
           rssBytes: expect.any(Number),
           heapTotalBytes: expect.any(Number),

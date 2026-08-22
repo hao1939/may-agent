@@ -17,6 +17,7 @@
     "test:sdk": "bun test packages/sdk",
     "check:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
     "check:canonical-app-boundary": "bun scripts/check-canonical-app-boundary.ts",
+    "sample:runtime-quiet": "bun scripts/sample-runtime-quiet.ts",
     "ui:sync": "bun scripts/build-webui.ts",
     "bundle": "bun run ui:sync && mkdir -p bundle && bun build --compile src/app/binary-entry.ts --outfile bundle/may-agent",
     "deploy": "sh scripts/deploy.sh",
