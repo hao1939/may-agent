@@ -75,8 +75,11 @@ fact and creates no work.
 
 An event for a running task is durably linked to that task and marks it changed.
 It does not start a second attempt for the same task and does not silently
-invalidate the current attempt. When that attempt ends, one fresh pass sees all
-new input. Explicit cancellation is an event that revokes the attempt.
+invalidate the current attempt. When that attempt ends, the ready set starts
+one fresh pass. That pass consumes the next bounded event batch; if more input
+remains, the Task stays ready and drains it through bounded passes. An event
+storm therefore creates neither one queue entry per event nor an unbounded
+prompt. Explicit cancellation is an event that revokes the attempt.
 
 The producer waits only for the small durable boundary: validation,
 persistence, exact correlation, and exact task wake. It never waits for the
@@ -466,7 +469,8 @@ Structural tests matter more than one favorable benchmark:
 - an event emitted mid-attempt is visible before the attempt finishes;
 - retrying the same emission key creates no duplicate event or child request;
 - a child may finish before its parent returns without losing the parent wake;
-- an event arriving during an attempt produces one later pass;
+- an event arriving during an attempt starts one later pass, while an
+  oversized linked batch drains through bounded follow-ups;
 - restart recovers a lost ready-set entry from indexed state;
 - no foreground mutation reads or writes a whole-App blob; and
 - optional observers and adapter delivery cannot delay semantic completion.
@@ -1049,6 +1053,14 @@ successful recovery records acceptance on the original event row. Existing
 admission history is unchanged. This is an intermediate shrinkage boundary:
 the frozen rows may disappear only when the event plus exact links can provide
 the same cross-reload partial-admission proof atomically.
+
+Structural pressure and recovery proofs now cover these boundaries directly.
+Sixty-four exact events linked while one Task attempt is running collapse into
+two follow-up attempts of 32 events each, with no parallel attempt or per-event
+ready entry. The indexed recovery scheduler performs no query before the
+nearest due time, then enqueues that exact Task, and re-arms correctly after a
+later state change. These deterministic proofs do not replace the outstanding
+quiet-window and representative live-load measurements.
 
 ### Phase 0: freeze the contract and expose cost
 
