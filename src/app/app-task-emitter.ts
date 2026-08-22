@@ -21,6 +21,83 @@ export type AppTaskEmitter = {
   emit(localKey: string, event: AppTaskEmission): number;
 };
 
+export type AppTaskEvents = {
+  /** Publish one durable fact from the current fenced attempt. */
+  publish(localKey: string, event: AppTaskEmission): number;
+  /**
+   * Observe new durable events addressed to this Task while the attempt is
+   * live. The Task's persisted event batch remains the recovery authority.
+   */
+  onEvent(listener: (event: AgentEvent) => void): () => void;
+};
+
+type TaskEventListener = (event: AgentEvent) => void;
+type TaskEventMux = {
+  listeners: Map<string, Set<TaskEventListener>>;
+};
+
+const taskEventMuxByBus = new WeakMap<EventBus, TaskEventMux>();
+
+function normalizedAppId(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\.app$/, "") : "";
+}
+
+function taskTargetKey(event: AgentEvent): string | null {
+  const envelope = event as AgentEvent & { target?: Record<string, unknown> };
+  const target =
+    envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target) ? envelope.target : {};
+  const appId = normalizedAppId(
+    (target as Record<string, unknown>).appId ?? (target as Record<string, unknown>).project,
+  );
+  const taskId =
+    typeof (target as Record<string, unknown>).taskId === "string"
+      ? String((target as Record<string, unknown>).taskId).trim()
+      : "";
+  return appId && taskId ? `${appId}\0${taskId}` : null;
+}
+
+function taskEventMux(bus: EventBus): TaskEventMux {
+  const existing = taskEventMuxByBus.get(bus);
+  if (existing) return existing;
+  const listeners = new Map<string, Set<TaskEventListener>>();
+  bus.listen(
+    (event) => {
+      const key = taskTargetKey(event);
+      if (!key) return;
+      for (const listener of listeners.get(key) ?? []) listener(event);
+    },
+    { label: "task-attempt-events" },
+  );
+  const created = { listeners };
+  taskEventMuxByBus.set(bus, created);
+  return created;
+}
+
+/** One executor-neutral Task event interface for a claimed attempt. */
+export function createAppTaskEvents(input: {
+  bus: EventBus;
+  appId: string;
+  claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "owner">;
+  parentEvent?: AgentEvent;
+}): AppTaskEvents {
+  const emitter = createAppTaskEmitter(input);
+  const appId = normalizedAppId(input.appId);
+  const key = `${appId}\0${input.claim.taskId}`;
+  return {
+    publish: emitter.emit,
+    onEvent(listener) {
+      const mux = taskEventMux(input.bus);
+      const listeners = mux.listeners.get(key) ?? new Set<TaskEventListener>();
+      listeners.add(listener);
+      mux.listeners.set(key, listeners);
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) mux.listeners.delete(key);
+      };
+    },
+  };
+}
+
 /**
  * An execution-scoped event capability. DbWriter checks the hidden fence in
  * the same transaction that appends the event. The stable key is scoped to the

@@ -114,6 +114,7 @@ function receiptTaskDetail(receipt: NonNullable<TaskTree["receipts"]>[string]): 
     input: structuredClone(receipt.input ?? {}),
     owner: receipt.owner,
     ...(receipt.workflow ? { workflow: receipt.workflow } : {}),
+    ...(receipt.executor ? { executor: receipt.executor } : {}),
     ...(receipt.priority ? { priority: receipt.priority } : {}),
     conditions: [],
   };
@@ -131,6 +132,7 @@ function resourceTaskDetail(
     input: structuredClone(resource.spec.input ?? {}),
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
+    ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
     ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
     ...(resource.spec.category ? { category: resource.spec.category } : {}),
     ...(resource.spec.dependsOn?.length ? { dependsOn: [...resource.spec.dependsOn] } : {}),

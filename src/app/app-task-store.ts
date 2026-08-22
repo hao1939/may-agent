@@ -32,6 +32,7 @@ export type TaskNode = {
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   workflow?: string;
+  executor?: "agent" | "codex" | "claude";
   input?: Record<string, unknown>;
   conflict_scope?: string[] | string;
   goal?: string;
@@ -94,6 +95,7 @@ export type AppTaskProjectionItem = {
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   workflow?: string;
+  executor?: "agent" | "codex" | "claude";
   mode?: "achieve" | "maintain";
   generation?: number;
   resource_version?: number;
@@ -163,6 +165,7 @@ export type TaskCompletionReceipt = {
   acceptance: string[];
   owner: string;
   workflow?: string;
+  executor?: "agent" | "codex" | "claude";
   input?: Record<string, unknown>;
   priority?: "P0" | "P1" | "P2" | "P3";
   handler: string;
@@ -743,6 +746,7 @@ function buildTaskTreeProjection(
       priority: spec.priority ?? "P2",
       ...(inheritedOwner(resource) ? { owner: inheritedOwner(resource) } : {}),
       ...(spec.workflow ? { workflow: spec.workflow } : {}),
+      ...(spec.executor ? { executor: spec.executor } : {}),
       goal: spec.outcome,
       children: [],
       depends_on: [...(spec.dependsOn ?? [])],
@@ -1080,6 +1084,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       priority: spec.priority ?? "P2",
       ...(task?.owner ? { owner: task.owner } : {}),
       ...(spec.workflow ? { workflow: spec.workflow } : {}),
+      ...(spec.executor ? { executor: spec.executor } : {}),
       mode: spec.mode,
       generation: metadata.generation,
       resource_version: metadata.resourceVersion,

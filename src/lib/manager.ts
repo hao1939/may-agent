@@ -115,6 +115,8 @@ export interface RunOptions {
   /** Channel message this session must answer; never infer it from another turn. */
   channelMessageId?: number;
   projectId?: string;
+  /** Current fenced App Task attempt exposed only to scoped Task tools. */
+  taskBinding?: { appId: string; taskId: string; generation: number; attemptId: string };
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
   orderId?: string;
@@ -160,6 +162,7 @@ interface ActiveSession {
   conversationId?: string;
   channelMessageId?: number;
   projectId?: string;
+  taskBinding?: { appId: string; taskId: string; generation: number; attemptId: string };
   recoveryOwner?: string;
   resumeMessages?: AgentMessage[];
   trace?: EventTrace;
@@ -610,6 +613,7 @@ export class SubagentManager {
       conversationId: opts?.conversationId,
       channelMessageId: opts?.channelMessageId,
       projectId: opts?.projectId,
+      taskBinding: opts?.taskBinding,
       recoveryOwner: opts?.recoveryOwner,
       resumeMessages: opts?.resumeMessages,
       trace: opts?.trace,

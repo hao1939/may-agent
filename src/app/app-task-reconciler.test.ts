@@ -505,6 +505,35 @@ describe("App task reconciler state", () => {
     expect(readAppTaskIntent(config, "work/orphan")).toBeNull();
   });
 
+  it("selects a CLI adapter without creating a second Task lifecycle", () => {
+    const { config } = fixture();
+    const cliIntent: AppTaskIntent = {
+      ...intent(),
+      id: "work/codex",
+      workflow: undefined,
+      executor: "codex",
+    };
+    observeAppTaskIntent(config, { intent: cliIntent, appOwner: "app-owner" });
+
+    expect(
+      claimObservedAppTask(config, {
+        taskId: cliIntent.id,
+        appOwner: "app-owner",
+        handler: "auto",
+      }),
+    ).toMatchObject({ kind: "claimed", handler: "cli:codex" });
+  });
+
+  it("rejects ambiguous workflow and CLI executor intent", () => {
+    const { config } = fixture();
+    expect(() =>
+      observeAppTaskIntent(config, {
+        intent: { ...intent(), id: "work/ambiguous", executor: "claude" },
+        appOwner: "app-owner",
+      }),
+    ).toThrow("cannot configure both workflow and executor");
+  });
+
   it("lists pending and explicit owner handoff tasks but keeps unavailable workflows asleep", () => {
     const { config } = fixture();
     const attentionIntent = {
@@ -649,7 +678,33 @@ describe("App task reconciler state", () => {
       reason: "WorkspacePreparationFailed",
     });
 
+    const cliIntent = {
+      ...intent(),
+      id: "work/cli-workspace-failed",
+      outcome: "Resume a CLI task workspace",
+      workflow: undefined,
+      executor: "codex" as const,
+    };
+    observeAppTaskIntent(config, { intent: cliIntent, appOwner: "app-owner" });
+    const cliClaim = claimObservedAppTask(config, {
+      taskId: cliIntent.id,
+      appOwner: "app-owner",
+      handler: "cli:codex",
+      reason: "task-controller",
+    });
+    if (cliClaim.kind !== "claimed") throw new Error("expected CLI workspace claim");
+    markAppTaskAttention(config, cliClaim, {
+      summary: "CLI workspace preparation failed",
+      reason: "WorkspacePreparationFailed",
+    });
+
     expect(listWorkspacePreparationFailedAppTasks(config, "app-owner")).toEqual([
+      {
+        taskId: "work/cli-workspace-failed",
+        generation: 1,
+        owner: "branch-owner",
+        executor: "codex",
+      },
       {
         taskId: "work/workspace-failed",
         generation: 1,

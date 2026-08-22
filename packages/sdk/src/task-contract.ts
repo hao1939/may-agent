@@ -4,6 +4,7 @@ import type {
   Condition,
   TaskAction,
   TaskAppDependency,
+  TaskExecutorName,
   TaskMode,
   TaskReconcileResult,
   TaskVerificationResult,
@@ -15,6 +16,7 @@ const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
 const taskModeSchema = Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]);
 const taskPrioritySchema = Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]);
+const taskExecutorSchema = Type.Union([Type.Literal("agent"), Type.Literal("codex"), Type.Literal("claude")]);
 const nullableStringSchema = Type.Union([nonEmptyStringSchema, Type.Null()]);
 const TYPED_CONDITION_SUBJECT_PATTERN = "^\\s*[A-Za-z][A-Za-z0-9_.-]*:[\\s\\S]*\\S\\s*$";
 const typedConditionSubjectPattern = new RegExp(TYPED_CONDITION_SUBJECT_PATTERN);
@@ -41,6 +43,7 @@ export const taskActionSchema = Type.Union([
       priority: Type.Optional(taskPrioritySchema),
       owner: Type.Optional(nonEmptyStringSchema),
       workflow: Type.Optional(nonEmptyStringSchema),
+      executor: Type.Optional(taskExecutorSchema),
       input: Type.Optional(objectSchema),
       dependsOn: Type.Optional(stringArraySchema),
       category: Type.Optional(nonEmptyStringSchema),
@@ -60,6 +63,7 @@ export const taskActionSchema = Type.Union([
       priority: Type.Optional(taskPrioritySchema),
       owner: Type.Optional(nullableStringSchema),
       workflow: Type.Optional(nullableStringSchema),
+      executor: Type.Optional(Type.Union([taskExecutorSchema, Type.Null()])),
       input: Type.Optional(objectSchema),
       dependsOn: Type.Optional(stringArraySchema),
       category: Type.Optional(nullableStringSchema),
@@ -189,6 +193,10 @@ function validPriority(value: unknown): value is "P0" | "P1" | "P2" | "P3" {
   return value === "P0" || value === "P1" || value === "P2" || value === "P3";
 }
 
+function validExecutor(value: unknown): value is TaskExecutorName {
+  return value === "agent" || value === "codex" || value === "claude";
+}
+
 function optionalString(value: Record<string, unknown>, key: string): { ok: true; value?: string } | { ok: false } {
   if (!(key in value)) return { ok: true };
   const normalized = normalizedString(value[key]);
@@ -228,6 +236,13 @@ function normalizeCreateTaskAction(
   if (workflow.value === "project") {
     return `actions[${index}].workflow must name a real workflow; omit workflow for owner-handled project work`;
   }
+  const executor = value.executor === undefined ? undefined : value.executor;
+  if (executor !== undefined && !validExecutor(executor)) {
+    return `actions[${index}].executor must be agent, codex, or claude when present`;
+  }
+  if (workflow.value && executor !== undefined) {
+    return `actions[${index}] cannot configure both workflow and executor`;
+  }
   if (value.input !== undefined && !isRecord(value.input)) {
     return `actions[${index}].input must be an object when present`;
   }
@@ -248,6 +263,7 @@ function normalizeCreateTaskAction(
     priority,
     ...(owner.value ? { owner: owner.value } : {}),
     ...(workflow.value ? { workflow: workflow.value } : {}),
+    ...(executor ? { executor } : {}),
     ...(value.input ? { input: structuredClone(value.input) as Record<string, unknown> } : {}),
     ...(dependsOn ? { dependsOn } : {}),
     ...(category.value ? { category: category.value } : {}),
@@ -311,6 +327,15 @@ function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number
       return `actions[${index}].workflow must name a real workflow or null`;
     }
     action[key] = binding.value;
+  }
+  if ("executor" in value) {
+    if (value.executor !== null && !validExecutor(value.executor)) {
+      return `actions[${index}].executor must be agent, codex, claude, or null when present`;
+    }
+    action.executor = value.executor as TaskExecutorName | null;
+  }
+  if (action.workflow && action.executor) {
+    return `actions[${index}] cannot configure both workflow and executor`;
   }
   if ("input" in value) {
     if (!isRecord(value.input)) return `actions[${index}].input must be an object when present`;
