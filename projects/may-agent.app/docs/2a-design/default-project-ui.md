@@ -84,8 +84,10 @@ The collection read model must provide:
 The browser must not infer readiness, capacity, worker liveness, or health from
 missing fields. Unknown stays unknown.
 
-`.state/tasks/state.json` remains canonical. `.state/tasks/tree.json` is a
-compact disposable projection, not a second authority or a history archive.
+After an App's guarded cutover, its EventHub task-resource rows are canonical.
+`.state/tasks/state.json` is retained only as legacy evidence and must not be
+recreated; `.state/tasks/tree.json` is a compact disposable projection, not a
+second authority or a history archive.
 
 ## Tasks view
 
