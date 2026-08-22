@@ -14,7 +14,6 @@ import {
   listAppInboxAssociatedSessionClaims,
   listAppInboxHealth,
   listAppInboxDeliveries,
-  listAppWork,
   listAppInboxItems,
   listAppInboxSessionWaits,
   listAppInboxTaskDependencyKeys,
@@ -145,7 +144,6 @@ describe("App inbox store", () => {
         metadata: {
           channel: "may-console",
           command: "/tasks",
-          requestIds: ["human-1"],
           taskRefs: [{ appId: "evaluation", taskId: "review/docs" }],
         },
       }),
@@ -190,16 +188,13 @@ describe("App inbox store", () => {
           metadata: {
             channel: "may-console",
             command: "/tasks",
-            requestIds: ["human-1"],
             taskRefs: [{ appId: "evaluation", taskId: "review/docs" }],
           },
         },
       ],
-      work: [{ requestId: "human-1", state: "queued" }],
     });
-    expect(readAppConversationResource(db, "may", "may:primary", { includeWork: false })).toMatchObject({
+    expect(readAppConversationResource(db, "may", "may:primary")).toMatchObject({
       messages: [{ id: "console:1" }, { id: "event:11" }],
-      work: [],
     });
   });
 
@@ -234,7 +229,7 @@ describe("App inbox store", () => {
     insert.run(22, "telegram", command("telegram", "Telegram view", "/apps", "123"), 220);
     insert.run(23, "may-console", command("may-console", "current Console view", "/task abcdef12"), 230);
 
-    expect(readAppConversationResource(db, "may", "may:primary", { includeWork: false }).messages).toEqual([
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
       expect.objectContaining({ id: "console:context", author: { kind: "human", id: "console:context" } }),
       expect.objectContaining({ id: "event:22", text: "Telegram view" }),
       expect.objectContaining({ id: "event:23", text: "current Console view" }),
@@ -268,8 +263,8 @@ describe("App inbox store", () => {
             appId: "may",
             conversationId: "may:primary",
             author: { kind: "command", id: "telegram" },
-            text: "Active work: remember this — Queued",
-            metadata: { channel: "telegram", command: "/work" },
+            text: "Active Tasks: remember this — pending",
+            metadata: { channel: "telegram", command: "/tasks" },
           }),
           110,
         ],
@@ -285,157 +280,6 @@ describe("App inbox store", () => {
       persistentDb.close();
       rmSync(root, { recursive: true, force: true });
     }
-  });
-
-  it("derives a compact work list from unfinished human requests", () => {
-    createAppInboxItem(db, {
-      id: "queued",
-      appId: "may",
-      source: { kind: "human", id: "console:1" },
-      input: { kind: "message", data: { message: "Review   the May design" } },
-      conversationId: "may-console",
-      conversationSequence: 1,
-      now: 100,
-    });
-    createAppInboxItem(db, {
-      id: "analysis",
-      appId: "may",
-      source: { kind: "human", id: "telegram:2" },
-      input: { kind: "message", data: { message: "Check the implementation" } },
-      conversationId: "telegram:42",
-      conversationSequence: 2,
-      now: 110,
-    });
-    const analysis = claimAppInboxItem(db, "analysis", "worker", 100, 120)!;
-    expect(waitAppInboxClaim(db, analysis, { kind: "analysis", id: "analysis-1" }, { now: 121 })).toBe(true);
-    // Historical delivery rows remain readable after the mutation path is retired.
-    db.run(
-      `INSERT INTO app_inbox_deliveries (
-         operation_id, item_id, kind, text, session_id, request_id, channel, status, created_at, updated_at
-       ) VALUES (?, ?, 'progress', ?, ?, ?, ?, 'delivered', ?, ?)`,
-      [
-        "progress:analysis",
-        "analysis",
-        "Codex is checking the implementation.",
-        "session-1",
-        "request-1",
-        "telegram",
-        122,
-        122,
-      ],
-    );
-    createAppInboxItem(db, {
-      id: "delegated",
-      appId: "may",
-      source: { kind: "human", id: "console:3" },
-      input: { kind: "message", data: { message: "Refine the AKS app" } },
-      now: 130,
-    });
-    const delegated = claimAppInboxItem(db, "delegated", "worker", 100, 131)!;
-    expect(waitAppInboxClaim(db, delegated, { kind: "app", id: "child-1" }, { now: 132 })).toBe(true);
-    createAppInboxItem(db, {
-      id: "completed",
-      appId: "may",
-      source: { kind: "human", id: "console:4" },
-      input: { kind: "message", data: { message: "Already answered" } },
-      now: 140,
-    });
-    const completed = claimAppInboxItem(db, "completed", "worker", 100, 141)!;
-    expect(completeAppInboxClaim(db, completed, { summary: "done" }, 142)).toBe(true);
-    createAppInboxItem(db, {
-      id: "ready",
-      appId: "may",
-      source: { kind: "human", id: "console:5" },
-      input: { kind: "message", data: { message: "Prepare a recommendation" } },
-      channel: "may-console",
-      now: 145,
-    });
-    const ready = claimAppInboxItem(db, "ready", "worker", 100, 146)!;
-    expect(associateAppInboxClaimSession(db, ready, "session-ready", 147)).toBe(true);
-    expect(completeAppInboxClaim(db, ready, { summary: "Recommendation is ready." }, 148)).toBe(true);
-    createAppInboxItem(db, {
-      id: "system",
-      appId: "may",
-      source: { kind: "system", id: "tick" },
-      input: { kind: "message", data: { message: "Internal work" } },
-      now: 150,
-    });
-
-    expect(listAppWork(db, "may")).toEqual([
-      {
-        requestId: "delegated",
-        message: "Refine the AKS app",
-        state: "waiting",
-        dependency: { kind: "request", id: "child-1" },
-        createdAt: 130,
-        startedAt: 131,
-        changedAt: 132,
-      },
-      {
-        requestId: "analysis",
-        conversationId: "telegram:42",
-        message: "Check the implementation",
-        state: "analyzing",
-        progress: "Codex is checking the implementation.",
-        dependency: { kind: "analysis", id: "analysis-1" },
-        createdAt: 110,
-        startedAt: 120,
-        changedAt: 122,
-      },
-      {
-        requestId: "queued",
-        conversationId: "may-console",
-        message: "Review the May design",
-        state: "queued",
-        createdAt: 100,
-        changedAt: 100,
-      },
-    ]);
-    expect(listAppWork(db, "may", { excludeRequestId: "analysis" }).map((item) => item.requestId)).toEqual([
-      "delegated",
-      "queued",
-    ]);
-    expect(
-      listAppWork(db, "may", {
-        requestId: "ready",
-        includeResultForRequestId: "ready",
-        limit: 1,
-      }),
-    ).toEqual([
-      {
-        requestId: "ready",
-        message: "Prepare a recommendation",
-        state: "done",
-        result: { summary: "Recommendation is ready." },
-        executor: { kind: "session", id: "session-ready" },
-        createdAt: 145,
-        startedAt: 146,
-        changedAt: 148,
-      },
-    ]);
-    expect(listAppWork(db, "may", { all: true }).map(({ requestId, state }) => ({ requestId, state }))).toEqual([
-      { requestId: "ready", state: "done" },
-      { requestId: "completed", state: "done" },
-      { requestId: "delegated", state: "waiting" },
-      { requestId: "analysis", state: "analyzing" },
-      { requestId: "queued", state: "queued" },
-    ]);
-    expect(
-      listAppWork(db, "may", {
-        requestId: "completed",
-        includeResultForRequestId: "completed",
-      }),
-    ).toEqual([
-      {
-        requestId: "completed",
-        message: "Already answered",
-        state: "done",
-        result: { summary: "done" },
-        createdAt: 140,
-        startedAt: 141,
-        changedAt: 142,
-      },
-    ]);
   });
 
   it("does not treat a cross-App id collision as an idempotent create", () => {
@@ -460,22 +304,6 @@ describe("App inbox store", () => {
     expect(first?.generation).toBe(1);
     expect(claimAppInboxItem(db, "item-1", "worker-2", 50, 149)).toBeNull();
     expect(claimNextAppInboxItem(db, "may", "worker-2", 50, 149)).toBeNull();
-  });
-
-  it("keeps lease heartbeats out of human work progress time", () => {
-    createAppInboxItem(db, {
-      id: "human-work",
-      appId: "may",
-      source: { kind: "human", id: "console:work" },
-      input: { kind: "message", data: { message: "Review the design" } },
-      now: 100,
-    });
-    const claim = claimAppInboxItem(db, "human-work", "worker-1", 50, 110)!;
-
-    expect(renewAppInboxClaim(db, claim, 50, 140)).toBe(true);
-    expect(listAppWork(db, "may")).toMatchObject([
-      { requestId: "human-work", createdAt: 100, startedAt: 110, changedAt: 110 },
-    ]);
   });
 
   it("queries the authoritative inbox projection without decoding events", () => {

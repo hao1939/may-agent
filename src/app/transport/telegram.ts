@@ -17,7 +17,7 @@
  */
 
 import { setDefaultAutoSelectFamily } from "node:net";
-import type { AppConversationMessage, AppWorkView } from "@may-agent/sdk";
+import type { AppConversationMessage } from "@may-agent/sdk";
 import type { EventInput, EventReceipt } from "../event-interface.js";
 import { type EventBus } from "../event-bus.js";
 import { getDb } from "../../lib/requests.js";
@@ -52,54 +52,6 @@ export interface TelegramBot {
 /** One logical human conversation; provider chat/topic IDs are coordinates. */
 export function primaryConversationId(agent: string): string {
   return `${agent.trim() || "may"}:primary`;
-}
-
-function workStateLabel(state: unknown): string {
-  const labels: Record<string, string> = {
-    queued: "Queued",
-    working: "Working",
-    analyzing: "Analyzing",
-    waiting: "Waiting",
-    ready: "Ready",
-    done: "Done",
-  };
-  return typeof state === "string" ? (labels[state] ?? "Working") : "Working";
-}
-
-function renderTelegramWorkList(work: AppWorkView[], all: boolean): string {
-  const title = all ? "All work (newest first):" : "Active work:";
-  if (work.length === 0) return `${title} nothing.`;
-  return [
-    title,
-    ...work.flatMap((item, index) => {
-      const result = item.result?.response?.trim() || item.result?.summary?.trim();
-      const baseline = item.startedAt ?? item.createdAt;
-      const changed = item.changedAt > baseline ? ` · changed ${formatWorkAge(item.changedAt)}` : "";
-      return [
-        `${index + 1}. ${item.message} — ${workStateLabel(item.state)} · ${formatWorkAge(baseline)}${changed}`,
-        ...(item.progress ? [`   ${item.progress}`] : []),
-        ...(result ? [`   Result: ${result}`] : []),
-      ];
-    }),
-  ].join("\n");
-}
-
-function renderTelegramWorkDetail(item: AppWorkView, index: number): string {
-  const result = item.result?.response?.trim() || item.result?.summary?.trim();
-  const executor = formatWorkRef(item.executor);
-  const dependency = formatWorkRef(item.dependency);
-  return [
-    `Work ${index + 1}:`,
-    `Request: ${item.message}`,
-    `Status: ${workStateLabel(item.state)}`,
-    ...(item.progress ? [`Progress: ${item.progress}`] : []),
-    ...(result ? [`Result:\n${result}`] : []),
-    `Created: ${formatWorkTime(item.createdAt)}`,
-    ...(item.startedAt === undefined ? [] : [`Started: ${formatWorkTime(item.startedAt)}`]),
-    `Changed: ${formatWorkTime(item.changedAt)}`,
-    ...(executor ? [`Execution: ${executor}`] : []),
-    ...(dependency ? [`Waiting on: ${dependency}`] : []),
-  ].join("\n");
 }
 
 export function renderTelegramApps(apps: HumanAppView[]): string {
@@ -151,19 +103,6 @@ function formatWorkTime(value: number): string {
     .toISOString()
     .replace("T", " ")
     .replace(/\.\d{3}Z$/, " UTC");
-}
-
-function formatWorkAge(value: number, now = Date.now()): string {
-  const seconds = Math.max(0, Math.floor((now - value) / 1_000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  return hours < 48 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
-}
-
-function formatWorkRef(ref: AppWorkView["executor"]): string | undefined {
-  return ref ? `${ref.kind}:${ref.id}` : undefined;
 }
 
 function renderTelegramConversationMessage(message: AppConversationMessage): string {
@@ -246,7 +185,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     emitInfo: (message) => bus.emit({ type: "info", message }),
   });
   const { apiCall, sendMessage } = telegramClient;
-  const lastWorkBySurface = new Map<string, AppWorkView[]>();
   const watchedTasks = new Map<
     string,
     { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
@@ -275,7 +213,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   try {
     for (const message of readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
       limit: 200,
-      includeWork: false,
     }).messages) {
       rememberRenderedConversationMessage(message.id);
     }
@@ -289,7 +226,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   async function syncConversation(): Promise<void> {
     const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
       limit: 200,
-      includeWork: false,
     }).messages;
     for (const message of messages) {
       if (renderedConversationMessages.has(message.id)) continue;
@@ -433,7 +369,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     topicId?: number;
     chatId?: string;
     transient?: boolean;
-    requestIds?: string[];
     taskRefs?: Array<{ appId: string; taskId: string }>;
   }): void {
     opts.publishEvent({
@@ -449,7 +384,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
           channelMessageId: input.messageId,
           command: input.command,
-          ...(input.requestIds?.length ? { requestIds: input.requestIds } : {}),
           ...(input.taskRefs?.length ? { taskRefs: input.taskRefs } : {}),
         },
       },
@@ -722,60 +656,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         await deliverCommandView(renderTelegramTask(task), [{ appId: task.appId, taskId: task.taskId }]);
       } catch (error) {
         await deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
-      }
-      return true;
-    }
-
-    if (command === "/work") {
-      const argument = rest.join(" ").trim().toLowerCase();
-      let rendered: string;
-      let renderedRequestIds: string[] = [];
-      if (!argument || argument === "all") {
-        const all = argument === "all";
-        const work =
-          readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
-            limit: all ? 100 : 50,
-            allWork: all,
-          }).work ?? [];
-        lastWorkBySurface.set(surface, work);
-        renderedRequestIds = work.map((item) => item.requestId);
-        rendered = renderTelegramWorkList(work, all);
-      } else if (/^[1-9]\d*$/.test(argument)) {
-        const index = Number(argument) - 1;
-        const selected = lastWorkBySurface.get(surface)?.[index];
-        if (!selected) {
-          rendered = `No work item ${argument}. Use /work or /work all to refresh the list.`;
-        } else {
-          const refreshed = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
-            limit: 1,
-            allWork: true,
-            workRequestId: selected.requestId,
-          }).work?.[0];
-          rendered = refreshed
-            ? renderTelegramWorkDetail(refreshed, index)
-            : `Work ${argument} was not found. Use /work all to refresh the list.`;
-          if (refreshed) renderedRequestIds = [refreshed.requestId];
-        }
-      } else {
-        rendered = "Use: /work, /work all, or /work <number>";
-      }
-      const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
-        eventType: "telegram.reply",
-        agent: opts.interfaceAgent,
-        data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
-        replyToMessageId: msg.message_id,
-        messageThreadId: topicId,
-      });
-      if (deliveredMessageId) {
-        recordConversationMessage({
-          conversationId,
-          text: rendered,
-          command: text,
-          messageId: deliveredMessageId,
-          chatId: chatIdStr,
-          topicId,
-          requestIds: renderedRequestIds,
-        });
       }
       return true;
     }

@@ -448,14 +448,13 @@ describe("control socket protocol", () => {
           createdAt: 1,
         },
       ],
-      work: [],
     };
     const core = createCore({
       getAppConversation: (appId, conversationId, options) => {
         expect({ appId, conversationId, options }).toEqual({
           appId: "may",
           conversationId: "may:primary",
-          options: { limit: 30, workRequestId: undefined, allWork: false, includeWork: false },
+          options: { limit: 30 },
         });
         return conversation;
       },
@@ -467,51 +466,6 @@ describe("control socket protocol", () => {
         appId: "may",
         conversationId: "may:primary",
         limit: 30,
-        includeWork: false,
-      }),
-    ).resolves.toMatchObject({
-      type: "ok",
-      command: "app.conversation.get",
-      conversation,
-    });
-    expect(core.emitted).toEqual([]);
-  });
-
-  it("reads active or historical human work through the conversation resource", async () => {
-    const work = [
-      {
-        requestId: "app-1",
-        message: "Review the design",
-        state: "analyzing",
-        progress: "Codex is reviewing it.",
-      },
-    ];
-    const conversation = {
-      id: "may:primary",
-      owner: "may",
-      version: 0,
-      messages: [],
-      work,
-    };
-    const core = createCore({
-      getAppConversation: (appId, conversationId, options) => {
-        expect({ appId, conversationId, options }).toEqual({
-          appId: "may",
-          conversationId: "may:primary",
-          options: { limit: 20, workRequestId: "app-1", allWork: true },
-        });
-        return conversation;
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.conversation.get",
-        appId: "may",
-        conversationId: "may:primary",
-        limit: 20,
-        workRequestId: "app-1",
-        allWork: true,
       }),
     ).resolves.toMatchObject({
       type: "ok",

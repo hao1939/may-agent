@@ -121,7 +121,6 @@ const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["st
 
 export const APP_REQUEST_CONVERSATION_MAX_BYTES = 12 * 1_024;
 const APP_REQUEST_MESSAGE_BYTES = 7_500;
-const APP_REQUEST_WORK_BYTES = 3_500;
 const APP_REQUEST_MESSAGE_TEXT_BYTES = 2_000;
 
 function encodedBytes(value: unknown): number {
@@ -147,13 +146,6 @@ export function boundedAppRequestConversation(
   conversation: AppConversationResource,
   currentRequestId: string,
 ): AppConversationResource {
-  const work: NonNullable<AppConversationResource["work"]> = [];
-  for (const item of (conversation.work ?? []).filter((candidate) => candidate.requestId !== currentRequestId)) {
-    const candidate = [...work, item];
-    if (encodedBytes(candidate) > APP_REQUEST_WORK_BYTES) continue;
-    work.push(item);
-  }
-
   const messages: AppConversationResource["messages"] = [];
   for (const item of [...conversation.messages]
     .filter((candidate) => candidate.metadata?.requestId !== currentRequestId)
@@ -170,7 +162,6 @@ export function boundedAppRequestConversation(
   const result: AppConversationResource = {
     ...conversation,
     messages,
-    work,
   };
   if (encodedBytes(result) > APP_REQUEST_CONVERSATION_MAX_BYTES) {
     throw new Error("Bounded Conversation context exceeded its byte contract");
