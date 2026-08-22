@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -156,6 +156,27 @@ describe("importRuntimeModule", () => {
     expect(await mod.loadValue()).toBe("relative-ok");
     expect(readdirSync(root).some((name) => name.startsWith(".may-runtime-module-"))).toBe(false);
     expect(existsSync(join(root, ".state", "runtime-modules"))).toBe(true);
+  });
+
+  it("removes a partial bundled module after a storage write failure", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-import-full-"));
+    roots.push(root);
+    const cacheDir = join(root, ".cache");
+    const modulePath = join(root, "external-handler.ts");
+    writeFileSync(modulePath, "export const value = 'never-loaded';\n");
+    const originalWrite = Bun.write.bind(Bun);
+    const write = spyOn(Bun, "write").mockImplementation(async (path, _data) => {
+      await originalWrite(path, "partial bundled module");
+      throw new Error("ENOSPC: no space left on device, write");
+    });
+
+    try {
+      await expect(importRuntimeModule(modulePath, { forceBundle: true, cacheDir })).rejects.toThrow("ENOSPC");
+    } finally {
+      write.mockRestore();
+    }
+
+    expect(readdirSync(cacheDir).some((name) => name.startsWith(".may-runtime-module-"))).toBe(false);
   });
 
   it("prefers the declared file dependency over a stale installed SDK copy", async () => {

@@ -122,7 +122,19 @@ async function bundleRuntimeModule(
     throw new Error(`Failed to bundle runtime module ${modulePath}: no output generated`);
   }
 
-  await Bun.write(outFile, output);
+  try {
+    await Bun.write(outFile, output);
+  } catch (error) {
+    // Bun.write may leave a partial module behind on ENOSPC. The module was
+    // never importable or accepted, so remove only this attempt's staging file
+    // before surfacing the original failure.
+    try {
+      unlinkSync(outFile);
+    } catch {
+      /* preserve the original write failure */
+    }
+    throw error;
+  }
   return {
     path: outFile,
     cleanup: () => {

@@ -152,4 +152,29 @@ describe("job/call no-observation deadline", () => {
     expect(runtime.hasActiveSession(active.sessionId)).toBe(false);
     expect(runtime.getSessionSummary(active.sessionId).status).toBe("interrupted");
   });
+
+  it("keeps a terminal persistence rejection observable without leaking it globally", async () => {
+    const runtime = manager(20);
+    const fake = fakeAgent();
+    const active = session(fake.agent);
+    const failure = new Error("database or disk is full");
+    (runtime as any).executeSession = async () => {
+      throw failure;
+    };
+    runtime.activeSessions.set(active.sessionId, active);
+    const leaked: unknown[] = [];
+    const onUnhandled = (reason: unknown) => leaked.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+
+    try {
+      (runtime as any).startManagedExecution(active);
+      const stored = (runtime as any).results.get(active.sessionId) as Promise<unknown>;
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      expect(leaked).toEqual([]);
+      expect(runtime.hasActiveSession(active.sessionId)).toBe(false);
+      await expect(stored).rejects.toBe(failure);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
 });
