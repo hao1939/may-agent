@@ -875,7 +875,6 @@ async function runTaskCapability(input: {
           truncated: input.taskSnapshot.truncated,
         },
         events: reconciliationEvents,
-        ...(event ? { trigger: canonicalAppEvent(event as AgentEvent) } : {}),
       },
       executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
     });
