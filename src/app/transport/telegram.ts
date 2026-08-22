@@ -27,6 +27,8 @@ import { createTelegramClient } from "./telegram-client.js";
 import { TASK_UPDATE_EVENT_TYPES, taskUpdateIdentity } from "../../../packages/control/src/task-wake.js";
 import type { HumanAppView, HumanTaskService, HumanTaskView } from "../human-task-service.js";
 
+const TASK_PAGE_SIZE = 10;
+
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
 try {
@@ -619,7 +621,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
-        limit: 30,
+        limit: TASK_PAGE_SIZE,
         ...(prior?.cursor ? { cursor: prior.cursor } : {}),
       });
       if (page.nextCursor) {

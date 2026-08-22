@@ -70,6 +70,7 @@ const ordinaryCommands = [
   "/shell",
   "/exit",
 ];
+const taskPageSize = 10;
 
 function completeInput(line) {
   const input = String(line || "");
@@ -273,7 +274,7 @@ function requestTasks(options = {}) {
       ...(pending.appId ? { appId: pending.appId } : {}),
       ...(pending.includeDone ? { includeDone: true } : {}),
       ...(pending.cursor ? { cursor: pending.cursor } : {}),
-      limit: 30,
+      limit: taskPageSize,
     },
     { silent: true },
   );

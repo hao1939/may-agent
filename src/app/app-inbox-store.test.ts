@@ -209,6 +209,45 @@ describe("App inbox store", () => {
     });
   });
 
+  it("projects only the latest durable command view per adapter surface", () => {
+    createAppInboxItem(db, {
+      id: "human-command-context",
+      appId: "may",
+      source: { kind: "human", id: "console:context" },
+      input: { kind: "message", data: { message: "what did I just see?" } },
+      conversationId: "may:primary",
+      conversationSequence: 20,
+      originEventId: 20,
+      now: 200,
+    });
+    const insert = db.prepare(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (?, 'conversation.message.created', ?, 'app:may', ?, ?)`,
+    );
+    const command = (channel: string, text: string, commandText: string, target?: string) =>
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "command", id: channel },
+        text,
+        metadata: {
+          channel,
+          ...(target ? { channelTargetId: target } : {}),
+          command: commandText,
+        },
+      });
+    insert.run(21, "may-console", command("may-console", "stale Console view", "/tasks"), 210);
+    insert.run(22, "telegram", command("telegram", "Telegram view", "/apps", "123"), 220);
+    insert.run(23, "may-console", command("may-console", "current Console view", "/task abcdef12"), 230);
+
+    expect(readAppConversationResource(db, "may", "may:primary", { includeWork: false }).messages).toEqual([
+      expect.objectContaining({ id: "console:context", author: { kind: "human", id: "console:context" } }),
+      expect.objectContaining({ id: "event:22", text: "Telegram view" }),
+      expect.objectContaining({ id: "event:23", text: "current Console view" }),
+    ]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 3 });
+  });
+
   it("reconstructs the same Conversation resource after reopening durable state", () => {
     const root = mkdtempSync(join(tmpdir(), "may-conversation-restart-"));
     const path = join(root, "state.db");

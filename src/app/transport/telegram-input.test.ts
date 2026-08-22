@@ -169,8 +169,8 @@ describe("Telegram May input", () => {
     try {
       await waitFor(() => sent.length === 2);
       expect(listCalls).toEqual([
-        { appId: "evaluation", includeDone: false, limit: 30 },
-        { appId: "evaluation", includeDone: false, limit: 30, cursor: "cursor-2" },
+        { appId: "evaluation", includeDone: false, limit: 10 },
+        { appId: "evaluation", includeDone: false, limit: 10, cursor: "cursor-2" },
       ]);
       expect(sent[0]).toContain("11111111");
       expect(sent[0]).toContain("/tasks more");

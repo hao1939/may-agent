@@ -393,6 +393,11 @@ describe("May Console", () => {
     await waitFor(
       () => output.includes("Active Tasks:") && output.includes("8f12ac90") && output.includes("Review the docs"),
     );
+    expect(
+      frames.some(
+        (frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.limit === 10,
+      ),
+    ).toBe(true);
     expect(output).toContain("run /tasks more for the next page");
     child.stdin.write("/tasks more\n");
     await waitFor(() => output.includes("7e11ab22") && output.includes("Review the follow-up"));

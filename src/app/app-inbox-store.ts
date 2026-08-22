@@ -482,16 +482,44 @@ export function listAppConversationMessages(
     });
   }
 
+  // Command views remain in the event journal, but only the newest view for
+  // each adapter surface belongs in the current Conversation projection.
+  // Otherwise repeated `/tasks` renders evict the actual human/May dialogue
+  // from this bounded view.
   const eventRows = db
     .prepare(
       `SELECT id, data, timestamp FROM events
        WHERE event_type = 'conversation.message.created'
          AND json_extract(data, '$.appId') = ?
          AND json_extract(data, '$.conversationId') = ?
+         AND json_extract(data, '$.author.kind') IN ('agent', 'tool')
        ORDER BY id DESC
        LIMIT ?`,
     )
     .all(appId, conversationId, limit) as ConversationEventRow[];
+  const commandRows = db
+    .prepare(
+      `SELECT id, data, timestamp FROM (
+         SELECT id, data, timestamp,
+           ROW_NUMBER() OVER (
+             PARTITION BY
+               COALESCE(json_extract(data, '$.metadata.channel'), ''),
+               COALESCE(json_extract(data, '$.metadata.channelTargetId'), ''),
+               COALESCE(json_extract(data, '$.metadata.channelThreadId'), '')
+             ORDER BY id DESC
+           ) AS surface_rank
+         FROM events
+         WHERE event_type = 'conversation.message.created'
+           AND json_extract(data, '$.appId') = ?
+           AND json_extract(data, '$.conversationId') = ?
+           AND json_extract(data, '$.author.kind') = 'command'
+       )
+       WHERE surface_rank = 1
+       ORDER BY id DESC
+       LIMIT ?`,
+    )
+    .all(appId, conversationId, limit) as ConversationEventRow[];
+  eventRows.push(...commandRows);
   for (const row of eventRows) {
     const message = conversationEventMessage(row);
     if (message) messages.push(message);
