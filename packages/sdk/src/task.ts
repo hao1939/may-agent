@@ -3,6 +3,8 @@ import type { AppInput } from "./app.js";
 
 export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
+/** Built-in executor adapter selected by durable Task intent. */
+export type TaskExecutorName = "agent" | "codex" | "claude";
 
 /** Desired durable outcome handed to the task reconciler. */
 export type TaskIntent = {
@@ -13,6 +15,8 @@ export type TaskIntent = {
   mode: TaskMode;
   owner?: string;
   workflow?: string;
+  /** Bounded executor adapter. Defaults to the managed owner agent. */
+  executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   outputs?: string[];
   dependsOn?: string[];
@@ -53,6 +57,7 @@ export type TaskAction =
       priority: TaskPriority;
       owner?: string;
       workflow?: string;
+      executor?: TaskExecutorName;
       input?: Record<string, unknown>;
       dependsOn?: string[];
       category?: string;
@@ -69,6 +74,7 @@ export type TaskAction =
       priority?: TaskPriority;
       owner?: string | null;
       workflow?: string | null;
+      executor?: TaskExecutorName | null;
       input?: Record<string, unknown>;
       dependsOn?: string[];
       category?: string | null;

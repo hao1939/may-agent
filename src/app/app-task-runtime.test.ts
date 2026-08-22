@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { EventBus } from "./event-bus.js";
+import { EventBus, type AgentEvent } from "./event-bus.js";
 import { EVENT_ROW_ID } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { createAppInboxItem } from "./app-inbox-store.js";
@@ -704,9 +704,7 @@ describe("canonical App task runtime", () => {
       opts: { ...options(f, bus), persistDir },
       descriptor,
       claim,
-      dependencies: [
-        { id: "review", appId: "evaluation", input: { kind: "deep-scan", data: { reason: "original" } } },
-      ],
+      dependencies: [{ id: "review", appId: "evaluation", input: { kind: "deep-scan", data: { reason: "original" } } }],
     });
     const requestId = first[0]!.subject.slice("id:".length);
     createAppInboxItem(getDb(persistDir), {
@@ -1650,6 +1648,107 @@ describe("canonical App task runtime", () => {
         taskId: "work/event",
       }),
     ).toMatchObject({ id: "work/event", status: "pending" });
+  });
+
+  it("admits a Codex CLI result through the same fenced Task lifecycle", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let cliRequests = 0;
+    const prompts: string[] = [];
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "cli.task.requested") return;
+      cliRequests += 1;
+      const data = event.data;
+      prompts.push(readFileSync(data.promptPath, "utf8"));
+      writeFileSync(
+        data.resultPath,
+        JSON.stringify({ state: "converged", summary: "Codex completed the Task", evidence: ["test:codex"] }),
+      );
+      setImmediate(() => {
+        if (cliRequests === 1) {
+          const feedback = {
+            type: "sample.feedback",
+            source: "test",
+            owner: "agent:sample-owner",
+            target: { appId: "sample", taskId: "work/codex-executor" },
+            data: { instruction: "include the late review" },
+          } as AgentEvent;
+          admitLoadedCanonicalAppTaskEvent({
+            bus,
+            appId: "sample",
+            event: feedback,
+            intent: null,
+            targetedTaskId: "work/codex-executor",
+          });
+          bus.emit(feedback);
+        }
+        bus.emit({
+          type: "cli.task.completed",
+          source: "cli-task-runner",
+          owner: data.sourceOwner,
+          data: {
+            taskId: data.taskId,
+            tool: "codex",
+            resultPath: data.resultPath,
+            eventsPath: data.eventsPath,
+            exitCode: 0,
+            summary: "Codex completed the Task",
+          },
+        });
+      });
+      return { accepted: true, by: "test-cli-runner", route: "direct" };
+    });
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      appRegistrySnapshot: {
+        id: "boot:cli-executor",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/codex-executor",
+          parentId: "operations",
+          outcome: "Let Codex complete one bounded Task",
+          acceptance: ["Codex returns admitted evidence"],
+          mode: "achieve",
+          owner: "sample-owner",
+          executor: "codex",
+        },
+      },
+      idempotencyKey: "attach:codex-executor",
+      request: {
+        id: "request-codex-executor",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const deadline = Date.now() + 2_000;
+    while (!readTaskState(config).receipts?.["work/codex-executor"] && Date.now() < deadline) await Bun.sleep(5);
+    expect(cliRequests).toBe(2);
+    expect(prompts[0]).toContain('"executor": "codex"');
+    expect(prompts[1]).toContain("sample.feedback");
+    expect(readTaskState(config).receipts?.["work/codex-executor"]).toMatchObject({
+      handler: "cli:codex",
+      executor: "codex",
+      summary: "Codex completed the Task",
+      evidence: expect.arrayContaining(["test:codex"]),
+    });
   });
 
   it("keeps task admission durable while paused without starting reconciliation", async () => {

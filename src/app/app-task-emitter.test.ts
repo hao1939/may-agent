@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../lib/requests.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { createAppTaskEmitter } from "./app-task-emitter.js";
+import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js";
 import { renewAppTaskAttemptLease, type AppTaskClaim } from "./app-task-reconciler.js";
 import { EventBus } from "./event-bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
@@ -91,6 +91,45 @@ function harness(sessionId: string | null = "session-1") {
 }
 
 describe("AppTaskEmitter", () => {
+  it("exposes one scoped publish and live inbound-event interface", async () => {
+    const { bus } = harness();
+    const events = createAppTaskEvents({
+      bus,
+      appId: "sample",
+      claim: { taskId: "task-1", generation: 3, attemptId: "attempt-1", owner: "may" },
+    });
+    const observed: string[] = [];
+    let resolveObserved!: () => void;
+    const received = new Promise<void>((resolve) => {
+      resolveObserved = resolve;
+    });
+    const unsubscribe = events.onEvent((event) => {
+      observed.push(event.type);
+      resolveObserved();
+    });
+
+    const published = events.publish("finding", { type: "sample.finding", data: { result: "useful" } });
+    bus.emit({
+      type: "sample.feedback",
+      source: "human",
+      owner: "app:sample",
+      target: { appId: "sample", taskId: "child-1" },
+      data: { message: "not for this task" },
+    } as any);
+    bus.emit({
+      type: "sample.feedback",
+      source: "human",
+      owner: "app:sample",
+      target: { appId: "sample", taskId: "task-1" },
+      data: { message: "continue with the finding" },
+    } as any);
+
+    await received;
+    expect(published).toBeGreaterThan(0);
+    expect(observed).toEqual(["sample.feedback"]);
+    unsubscribe();
+  });
+
   it("persists before immediate visibility and deduplicates a stable local key", () => {
     const { db, bus, emitter } = harness();
     const visible: number[] = [];

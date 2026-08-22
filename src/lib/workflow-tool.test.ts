@@ -114,7 +114,7 @@ export async function execute(ctx) {
     const runner = createWorkflowRunner({
       manager: {} as any,
       workflowDir,
-      taskEmitter: { emit: () => 41 },
+      taskEmitter: { publish: () => 41, onEvent: () => () => {} },
     });
 
     expect(await runner.run("emit", "test")).toMatchObject({
@@ -144,10 +144,11 @@ export async function execute(ctx) {
       manager: {} as any,
       workflowDir,
       taskEmitter: {
-        emit(localKey, event) {
+        publish(localKey, event) {
           emissions.push({ localKey, type: event.type });
           return 41;
         },
+        onEvent: () => () => {},
       },
     });
 
@@ -224,6 +225,64 @@ export async function execute(ctx) {
       finishResult: { status: "success", summary: "done" },
     });
     expect(await execution).toMatchObject({ type: "done", summary: "parent complete" });
+  });
+
+  it("delivers live Task feedback to a workflow and removes the listener at completion", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-task-event-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "feedback.ts"),
+      `
+export const name = "feedback";
+export const description = "Live Task feedback test";
+export async function execute(ctx) {
+  let instruction = "none";
+  ctx.events.onEvent((event) => { instruction = event.data.instruction; });
+  await ctx.agents.call("worker", "wait for feedback");
+  return ctx.done(instruction);
+}
+`,
+    );
+    let taskListener: ((event: any) => void) | undefined;
+    let unsubscribed = 0;
+    let releaseAgent!: (value: unknown) => void;
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: () =>
+          new Promise((resolve) => {
+            releaseAgent = resolve;
+          }),
+      } as any,
+      workflowDir,
+      agentName: "owner",
+      taskEmitter: {
+        publish: () => 41,
+        onEvent(listener) {
+          taskListener = listener;
+          return () => {
+            unsubscribed += 1;
+          };
+        },
+      },
+    });
+
+    const execution = runner.run("feedback", "test");
+    while (!taskListener) await Bun.sleep(1);
+    taskListener({ type: "task.feedback", data: { instruction: "continue with review" } });
+    releaseAgent({
+      sessionId: "child-session",
+      status: "done",
+      lastAssistantText: "done",
+      messages: [],
+      duration: "0s",
+      outputDir: "",
+      finishResult: { status: "success", summary: "done" },
+    });
+
+    expect(await execution).toMatchObject({ type: "done", summary: "continue with review" });
+    expect(unsubscribed).toBe(1);
+    rmSync(root, { recursive: true, force: true });
   });
 
   it("adapts bounded Agent execution to the single execution result", async () => {

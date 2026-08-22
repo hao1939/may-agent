@@ -1,6 +1,6 @@
 import type { AppResult } from "./app.js";
 import type { AppEvent } from "./event.js";
-import type { Condition, TaskPriority } from "./task.js";
+import type { Condition, TaskExecutorName, TaskPriority, TaskReconcileResult } from "./task.js";
 import type { Static, TSchema } from "typebox";
 
 export type Logger = {
@@ -28,6 +28,7 @@ export type TaskDetail = TaskView & {
   input: Record<string, unknown>;
   owner?: string;
   workflow?: string;
+  executor?: TaskExecutorName;
   priority?: TaskPriority;
   category?: string;
   dependsOn?: string[];
@@ -150,6 +151,7 @@ export type TaskReconciliationChild = {
   evidence: string[];
   owner?: string;
   workflow?: string;
+  executor?: TaskExecutorName;
   input: Record<string, unknown>;
   priority?: TaskPriority;
   category?: string;
@@ -187,6 +189,7 @@ export type TaskReconciliationSnapshotTask = {
   generation: number;
   outcome: string;
   owner?: string;
+  executor?: TaskExecutorName;
   priority?: TaskPriority;
   category?: string;
   dependsOn?: string[];
@@ -213,6 +216,18 @@ export type TaskReconciliationEvents = {
   /** More linked events remain pending for the same task. */
   truncated: boolean;
 };
+
+export type TaskEventReceipt = { eventId: number };
+
+/** The complete bounded contract shared by every Task executor adapter. */
+export type TaskAttempt = {
+  task: TaskDetail;
+  events: TaskReconciliationEvents;
+  publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
+  onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
+};
+
+export type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 
 /** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
 export type TaskReconciliationContext<TInput = unknown> = {
@@ -258,6 +273,8 @@ export type WorkflowContext<TInput = unknown> = {
   };
   events: {
     emit(event: AppEvent): Promise<void>;
+    /** Live convenience for events addressed to the current Task; durable replay remains authoritative. */
+    onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
   };
   metrics: WorkflowMetricCapability;
   workspace?: {

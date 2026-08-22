@@ -33,6 +33,12 @@ export interface RuntimeImportOptions {
   forceBundle?: boolean;
   /** Optional cache root for bundled external modules. */
   cacheDir?: string;
+  /**
+   * Immutable revision of the entry source expected by the caller. Callers
+   * that persist source provenance must provide this so the imported exports
+   * and recorded revision cannot come from different runtime generations.
+   */
+  entryContentHash?: string;
 }
 
 export async function importRuntimeModule<T = unknown>(
@@ -69,6 +75,7 @@ function runtimeModuleCacheKey(modulePath: string, opts: RuntimeImportOptions): 
     resolve(modulePath),
     opts.forceBundle || isBundledRuntime() ? "bundle" : "native",
     opts.cacheDir ? resolve(opts.cacheDir) : "default-cache",
+    opts.entryContentHash ?? "runtime-generation",
   ].join("\0");
 }
 

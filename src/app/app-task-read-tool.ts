@@ -5,8 +5,20 @@ import type { EventBus } from "./event-bus.js";
 
 const parameters = Type.Object(
   {
-    action: Type.Union([Type.Literal("list"), Type.Literal("get")]),
+    action: Type.Union([Type.Literal("list"), Type.Literal("get"), Type.Literal("publish")]),
     taskId: Type.Optional(Type.String({ minLength: 1 })),
+    localKey: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
+    eventType: Type.Optional(Type.String({ minLength: 3 })),
+    data: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+    target: Type.Optional(
+      Type.Object(
+        {
+          appId: Type.Optional(Type.String({ minLength: 1 })),
+          taskId: Type.Optional(Type.String({ minLength: 1 })),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     status: Type.Optional(
       Type.Array(
         Type.Union([
@@ -25,8 +37,12 @@ const parameters = Type.Object(
 );
 
 type Params = {
-  action: "list" | "get";
+  action: "list" | "get" | "publish";
   taskId?: string;
+  localKey?: string;
+  eventType?: string;
+  data?: Record<string, unknown>;
+  target?: { appId?: string; taskId?: string };
   status?: TaskView["status"][];
   limit?: number;
   cursor?: string;
@@ -36,25 +52,64 @@ function result(value: unknown): AgentToolResult<undefined> {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], details: undefined };
 }
 
-/** Read-only Task collection scoped by the currently running App attempt. */
+/** Task collection and fenced event capability scoped to the running App attempt. */
 export function createAppTaskReadTool(options: {
   bus: EventBus;
-  appId: () => string | undefined;
+  appId?: () => string | undefined;
+  scope?: () => { appId: string; taskId?: string; generation?: number; attemptId?: string } | undefined;
   reader?: {
     list(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage | Promise<TaskPage>;
     get(input: { bus: EventBus; appId: string; taskId: string }): TaskView | null | Promise<TaskView | null>;
+  };
+  publisher?: {
+    publish(input: {
+      bus: EventBus;
+      binding: { appId: string; taskId: string; generation: number; attemptId: string };
+      localKey: string;
+      event: {
+        type: string;
+        data?: Record<string, unknown>;
+        target?: { appId?: string; taskId?: string };
+      };
+    }): number | Promise<number>;
   };
 }): AgentTool {
   return {
     name: "tasks",
     label: "Tasks",
-    description: "List or get Tasks owned by the current App. This tool is read-only and cannot select another App.",
+    description:
+      "List/get Tasks owned by the current App, or publish a fenced fact from the current Task attempt. Publishing never mutates Task state.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
-      const appId = options.appId()?.trim();
+      const scope = options.scope?.();
+      const appId = (scope?.appId ?? options.appId?.())?.trim();
       if (!appId) return result({ error: "No current App Task scope" });
       try {
+        if (params.action === "publish") {
+          const taskId = scope?.taskId?.trim();
+          const localKey = params.localKey?.trim();
+          const eventType = params.eventType?.trim();
+          if (!taskId || !scope?.generation || !scope.attemptId) {
+            return result({ error: "No current fenced Task attempt" });
+          }
+          if (!localKey) return result({ error: "localKey is required for publish" });
+          if (!eventType?.includes(".")) return result({ error: "eventType must be dot-separated" });
+          const publishInput = {
+            bus: options.bus,
+            binding: { appId, taskId, generation: scope.generation, attemptId: scope.attemptId },
+            localKey,
+            event: {
+              type: eventType,
+              ...(params.data ? { data: params.data } : {}),
+              ...(params.target ? { target: params.target } : {}),
+            },
+          };
+          const eventId = options.publisher
+            ? await options.publisher.publish(publishInput)
+            : (await import("./app-task-runtime.js")).publishLoadedAppTaskEvent(publishInput);
+          return result({ eventId, type: eventType });
+        }
         if (params.action === "get") {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for get" });
