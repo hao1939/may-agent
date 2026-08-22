@@ -711,9 +711,23 @@ zero App-manifest opens and zero watcher-source opens; the only workflow source
 opened was the pair actually invoked by live Evaluation work. It did not show
 the former repeating whole-App source sweep. An explicit `/reload` advanced
 the published registry generation from 1 to 2, proving that deliberate
-activation still works. Its durable control event still lacks a terminal
-caller-facing result even though the generation changed; that pre-existing
-control-result observability gap remains separate follow-up work.
+activation still works. That proof also exposed a real interface gap: the
+durable control request had no terminal caller-facing result even though the
+generation changed.
+
+Runtime commit `01ecee16` closes that gap without creating work. Required
+reload routing remains synchronous; the one reload emits one correlated
+`runtime.reload.finished` fact afterward. Console or Telegram renders only the
+result matching its local request identity and records it in Conversation only
+after presentation. The Event API exposes the terminal fact as an indexed
+operation link from the original request. The full gate passed 2,360 tests.
+Production correlation `terminal-reload-result-20260822-01ecee16` loaded
+matching requested/loaded artifact SHA
+`1772f933a770665c20eab6de41c554e60c3443b2a0921b323c47ea1e9c8f2392`
+with healthy status, a targeted owner-Task wake, and no duplicate deploy. Live
+Console `/reload` showed the six-App result; request event 5933869 linked to
+succeeded result event 5933870, and command-authored Conversation event 5933871
+stored exactly the rendered result. No May Task or model turn was created.
 
 All six Apps have completed the guarded production cutover. Historical JSON
 snapshots and retained evidence have not been deleted. Remaining work is to
