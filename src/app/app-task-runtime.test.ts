@@ -149,10 +149,32 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
   return {
     projectsRoot: f.projectsRoot,
     projectRoot: f.root,
+    persistDir: join(f.root, "state"),
     manager: { hasAgent: () => true } as never,
     bus,
     hostCapacity: new HostCapacity(2),
   };
+}
+
+function activateTaskResources(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  persistDir: string,
+  appId = "sample",
+): AppTaskResourceStore {
+  const tree = readTaskState(config);
+  tree.project ||= appId;
+  const finalLifecycle = tree.project_lifecycle === "paused" ? "paused" : "active";
+  tree.project_lifecycle = "paused";
+  const sourceRevision = `test:${appId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  const staging = AppTaskResourceStore.fromDb(getDb(persistDir), appId);
+  staging.importPausedSnapshot(tree, sourceRevision);
+  staging.activate(sourceRevision);
+  staging.setProjectLifecycle(finalLifecycle);
+  rmSync(config.statePath, { force: true });
+  const active = AppTaskResourceStore.activeFromDb(getDb(persistDir), appId);
+  if (!active) throw new Error(`expected active resource store for ${appId}`);
+  config.resourceStore = active;
+  return active;
 }
 
 afterEach(async () => {
@@ -388,9 +410,28 @@ describe("canonical App task runtime", () => {
       join(stateDir, "state.json"),
       `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
     );
+    activateTaskResources(
+      taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        owner: "sample-owner",
+        maxConcurrent: 1,
+      }),
+      persistDir,
+    );
 
     const registry = new AppRegistry(f.projectsRoot);
     await registry.reload();
+    activateTaskResources(
+      taskReconciliationConfig({
+        appDir: evaluationDir,
+        projectDir: evaluationDir,
+        owner: "evaluator",
+        maxConcurrent: 1,
+      }),
+      persistDir,
+      "evaluation",
+    );
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
@@ -442,11 +483,14 @@ describe("canonical App task runtime", () => {
     });
 
     try {
+      const sampleStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
+      if (!sampleStore) throw new Error("expected sample resource authority");
       const config = taskReconciliationConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
         owner: "sample-owner",
         maxConcurrent: 1,
+        resourceStore: sampleStore,
       });
       observeAppTaskIntent(config, {
         intent: {
@@ -473,6 +517,7 @@ describe("canonical App task runtime", () => {
         owner: "sample-owner",
         app: definition(),
         reconciliationPaused: true,
+        resourceStore: sampleStore,
       };
       const conditions = admitTaskAppDependencies({
         opts: { ...options(f, bus), persistDir },
@@ -917,21 +962,6 @@ describe("canonical App task runtime", () => {
       workspace: { kind: "local", localPath: "." },
       tasks: { subscriptions: [] },
     });
-    // This test deliberately exercises the retained legacy reader boundary.
-    // Establish both legacy authorities before Runtime discovery so the new-App
-    // resource bootstrap does not change the scenario under test.
-    taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      owner: "sample-owner",
-      maxConcurrent: 1,
-    });
-    taskReconciliationConfig({
-      appDir: foreignAppDir,
-      projectDir: foreignAppDir,
-      owner: "foreign-owner",
-      maxConcurrent: 1,
-    });
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
@@ -964,11 +994,11 @@ describe("canonical App task runtime", () => {
     });
 
     const foreignStatePath = join(foreignAppDir, ".state", "tasks", "state.json");
-    const foreignState = readFileSync(foreignStatePath, "utf8");
     const failures: string[] = [];
     bus.subscribe((event) => {
       if (event.type === "subscriber.failed") failures.push(String(event.data.error ?? ""));
     });
+    mkdirSync(join(foreignAppDir, ".state", "tasks"), { recursive: true });
     writeFileSync(foreignStatePath, "not valid JSON");
     try {
       bus.emit({
@@ -981,7 +1011,7 @@ describe("canonical App task runtime", () => {
       });
       await new Promise<void>((resolve) => setImmediate(resolve));
     } finally {
-      writeFileSync(foreignStatePath, foreignState);
+      rmSync(foreignStatePath, { force: true });
     }
 
     expect(failures).toEqual([]);
@@ -1091,7 +1121,7 @@ describe("canonical App task runtime", () => {
     expect(existsSync(statePath)).toBeFalse();
   });
 
-  it("does not treat an existing legacy App as a new resource bootstrap", async () => {
+  it("refuses an existing legacy App until its resource cutover is complete", async () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -1102,17 +1132,17 @@ describe("canonical App task runtime", () => {
       maxConcurrent: 1,
     });
 
-    const result = await installAppTaskRuntimes({
-      ...options(f, bus),
-      persistDir,
-      appRegistrySnapshot: {
-        id: "boot:retained-legacy-store",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    });
-
-    expect(result.installed[0]?.resourceStore).toBeUndefined();
+    await expect(
+      installAppTaskRuntimes({
+        ...options(f, bus),
+        persistDir,
+        appRegistrySnapshot: {
+          id: "boot:retained-legacy-store",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      }),
+    ).rejects.toThrow("complete the guarded resource cutover");
     expect(existsSync(legacy.statePath)).toBeTrue();
     expect(AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample")).toBeNull();
   });
@@ -1145,6 +1175,7 @@ describe("canonical App task runtime", () => {
       },
     };
     saveTaskState(config, seeded);
+    activateTaskResources(config, join(f.root, "state"));
 
     let readinessTurnObserved = false;
     let ownerObservedReadinessTurn: boolean | undefined;
@@ -1244,7 +1275,6 @@ describe("canonical App task runtime", () => {
       owner: "sample-owner",
       maxConcurrent: 1,
     });
-    await installAppTaskRuntimes(runtimeOptions);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/resumable",
@@ -1270,6 +1300,7 @@ describe("canonical App task runtime", () => {
     previousAttempt.runtimeId = "previous-runtime";
     previousAttempt.lease.runtimeId = "previous-runtime";
     saveTaskState(config, previousRuntimeTree);
+    activateTaskResources(config, persistDir);
     writeSessionMeta(persistDir, "session-resumable", {
       agent: "sample-owner",
       task: "resume",
@@ -1374,6 +1405,7 @@ describe("canonical App task runtime", () => {
     addSessionBashProcessGroup(persistDir, "owner-old", stalePgid);
     expect(readSessionBashProcessGroups(persistDir, "owner-old")).toEqual([stalePgid]);
     execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
+    activateTaskResources(config, persistDir);
 
     let replacementCalls = 0;
     let preReplacementState:
@@ -1510,6 +1542,7 @@ describe("canonical App task runtime", () => {
     });
     addSessionBashProcessGroup(persistDir, "owner-undrained", 424_242);
     execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
+    activateTaskResources(config, persistDir);
 
     let replacementCalls = 0;
     let sessionEndEvents = 0;
@@ -1629,6 +1662,15 @@ describe("canonical App task runtime", () => {
     writeFileSync(
       join(stateDir, "state.json"),
       `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
+    );
+    activateTaskResources(
+      taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        owner: "sample-owner",
+        maxConcurrent: 1,
+      }),
+      join(f.root, "state"),
     );
     await installAppTaskRuntimes({
       ...options(f, bus),

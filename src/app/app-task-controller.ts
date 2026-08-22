@@ -36,13 +36,6 @@ export type AppTaskControllerOptions = {
   retryDelayMs?: (attempt: number) => number;
   /** Do not claim work until the controller instance being replaced has drained. */
   startAfter?: PromiseLike<void>;
-  resync?: {
-    intervalMs: number;
-    /** Startup may seed the queue from an existing canonical-state pass. */
-    onStart?: boolean;
-    taskIds?(): Iterable<string>;
-    tasks?(): Iterable<{ taskId: string; options?: AppTaskQueueOptions }>;
-  };
 };
 
 /** Cheap causal timing passed to the App runtime; it is not durable authority. */
@@ -65,7 +58,6 @@ export class AppTaskController {
   private waitingCapacityLane?: AppTaskLane;
   private cancelCapacityWait?: () => void;
   private readonly drainWaiters = new Set<() => void>();
-  private readonly resyncTimer?: ReturnType<typeof setInterval>;
 
   constructor(private readonly options: AppTaskControllerOptions) {
     this.queue = new AppTaskQueue(options.maxConcurrent);
@@ -75,14 +67,6 @@ export class AppTaskController {
         () => this.releaseStartGate(),
         () => this.releaseStartGate(),
       );
-    }
-    if (options.resync) {
-      if (!Number.isFinite(options.resync.intervalMs) || options.resync.intervalMs <= 0) {
-        throw new Error("AppTaskController resync interval must be positive");
-      }
-      this.resyncTimer = setInterval(() => this.resyncConfiguredTasks(), options.resync.intervalMs);
-      this.resyncTimer.unref?.();
-      if (this.startReady && options.resync.onStart !== false) this.resyncConfiguredTasks();
     }
   }
 
@@ -100,12 +84,6 @@ export class AppTaskController {
     return added;
   }
 
-  resync(taskIds: Iterable<string>): number {
-    let added = 0;
-    for (const taskId of taskIds) if (this.enqueue(taskId)) added++;
-    return added;
-  }
-
   close(): void {
     this.closed = true;
     cancelHostPumps(this);
@@ -113,7 +91,6 @@ export class AppTaskController {
     this.cancelCapacityWait = undefined;
     this.waitingForCapacity = false;
     this.waitingCapacityLane = undefined;
-    if (this.resyncTimer) clearInterval(this.resyncTimer);
     this.readySince.clear();
     this.resolveDrainWaiters();
   }
@@ -220,15 +197,6 @@ export class AppTaskController {
       .finally(() => {
         this.queue.complete(taskId);
         capacityRelease?.();
-        if (
-          !this.closed &&
-          this.startReady &&
-          this.options.resync &&
-          this.queue.pendingCount === 0 &&
-          this.queue.runningCount < this.queue.maxConcurrent
-        ) {
-          this.refillReadyResyncWork(taskId);
-        }
         this.resolveDrainWaiters();
         this.schedulePump();
       });
@@ -236,37 +204,8 @@ export class AppTaskController {
 
   private releaseStartGate(): void {
     this.startReady = true;
-    if (this.options.resync?.onStart !== false) this.resyncConfiguredTasks();
     this.resolveDrainWaiters();
     this.schedulePump();
-  }
-
-  private resyncConfiguredTasks(): void {
-    const configured = this.options.resync;
-    if (!configured) return;
-    if (configured.tasks) {
-      for (const task of configured.tasks()) this.enqueue(task.taskId, task.options);
-      return;
-    }
-    if (configured.taskIds) this.resync(configured.taskIds());
-  }
-
-  private refillReadyResyncWork(completedTaskId: string): void {
-    const configured = this.options.resync;
-    if (!configured) return;
-    if (configured.tasks) {
-      for (const task of configured.tasks()) {
-        if (task.taskId === completedTaskId) continue;
-        this.enqueue(task.taskId, task.options);
-      }
-      return;
-    }
-    if (configured.taskIds) {
-      for (const taskId of configured.taskIds()) {
-        if (taskId === completedTaskId) continue;
-        this.enqueue(taskId);
-      }
-    }
   }
 
   private isDrained(): boolean {
