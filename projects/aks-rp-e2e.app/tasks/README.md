@@ -1,13 +1,15 @@
 # AKS task state
 
-The sole mutable task authority is `.state/tasks/state.json`. It contains task
-resources, structural groups, Conditions, attempts, triggers, and compact
-completion receipts.
+The Host keeps the sole mutable task authority internally at
+`.state/tasks/state.json`. App code, workflows, and agents do not read or write
+that file. They use the scoped task resource API or the generated read
+projection.
 
 `.state/tasks/tree.json` is a generated, disposable schema-v2 projection for
 people, agents, queries, and UI. It contains current groups and tasks, exact
 Conditions, readiness, compact dependency-satisfaction facts, and bounded
 current-attempt information. It does not contain full attempt or receipt maps.
+It is never restored into canonical task state.
 
 The graph tracks and explains work. It does not assign sessions, maintain an
 outbox, select a reviewer, or schedule workers. The app controller owns those

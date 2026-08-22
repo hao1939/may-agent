@@ -16,6 +16,9 @@ export const name = "legacy-branch-reconciliation-controller";
 export const description =
   "Observe unattached legacy AKS branches and declare one verification-first child at a time.";
 
+const verificationOwner = "aks-explorer";
+const verificationWorkflow = "legacy-branch-verification";
+
 const retryableAttentionSummaries = new Set([
   "Legacy branch family base changed; retry from current origin/dev",
   "Legacy branch family closeout failed safely",
@@ -27,10 +30,19 @@ const retryableAttentionSummaries = new Set([
   "Legacy branch verification failed",
   "Handler result was rejected: evidence exceeds the 32-entry limit",
   "Connection error.",
+  'Workflow "legacy-branch-verification" not found.',
+  "Owner convergence was rejected because workflow legacy-branch-verification handed off without a verifier",
 ]);
 
 export function retryableAttentionSummary(summary: string): boolean {
   if (retryableAttentionSummaries.has(summary)) return true;
+  if (summary.startsWith("Legacy branch convergence rejected:")) return true;
+  if (
+    summary.startsWith("Recorded source ") &&
+    summary.includes("requires owner judgment")
+  ) {
+    return true;
+  }
   if (!summary.startsWith("Task workspace preparation failed:")) return false;
   return /\b(429|503)\b|connection|temporar|timed?\s*out|could not resolve|tls/i.test(
     summary,
@@ -54,8 +66,8 @@ function createVerificationTask(
     outcome: `Apply ${row.branch} to current origin/dev, rerun its conventional verification, merge and remove it on pass, or retain it with exact conflict/failure evidence.`,
     mode: "achieve",
     outputs: row.files,
-    owner: "aks-explorer",
-    workflow: "legacy-branch-verification",
+    owner: verificationOwner,
+    workflow: verificationWorkflow,
     input: {
       loopId: legacyBranchReconciliationTaskId,
       workKey: row.branch,
@@ -110,6 +122,14 @@ export async function execute(
   const representedIds = new Set(
     [...live, ...completed].map((child) => child.taskId),
   );
+  const misrouted = live
+    .filter(
+      (child) =>
+        child.status !== "running" &&
+        (child.owner !== verificationOwner ||
+          child.workflow !== verificationWorkflow),
+    )
+    .sort((left, right) => left.taskId.localeCompare(right.taskId))[0];
   const retryable = live
     .filter(
       (child) =>
@@ -117,6 +137,28 @@ export async function execute(
         retryableAttentionSummary(child.summary ?? ""),
     )
     .sort((left, right) => left.taskId.localeCompare(right.taskId))[0];
+
+  if (misrouted) {
+    const action: TaskAction = {
+      kind: "update-task",
+      taskId: misrouted.taskId,
+      expectedGeneration: misrouted.generation,
+      owner: verificationOwner,
+      workflow: verificationWorkflow,
+    };
+    const summary = `Restoring ${misrouted.taskId} to the ${verificationOwner}-owned ${verificationWorkflow} route before reconciliation.`;
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      evidence: [
+        `repair-child-route:${misrouted.taskId}@${misrouted.generation}`,
+        `previous-owner:${misrouted.owner || "missing"}`,
+        `previous-workflow:${misrouted.workflow || "missing"}`,
+        `child-state:${misrouted.status}`,
+      ],
+      actions: [action],
+    });
+  }
 
   if (retryable) {
     const action: TaskAction = {

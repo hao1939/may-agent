@@ -137,31 +137,52 @@ export const standingLoopDefinitions: Record<
       selectorCount: 82,
       orderedSelectorSha256:
         "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
-      // sourceCommit remains the integrated authority coordinate consumed by
-      // existing loop readers; the generation coordinate is retained separately.
-      sourceCommit: "e4ff9bf37076baf8f3fd01810a04d02f05717c60",
-      generationSourceCommit: "54621f8dec0034373a79aba534876a356aef2c78",
-      integratedSourceCommit: "e4ff9bf37076baf8f3fd01810a04d02f05717c60",
+      // sourceCommit and integratedSourceCommit remain the final adjudicated
+      // source coordinate consumed by existing loop readers. The immutable
+      // generation-1 receipt coordinates are retained separately.
+      sourceCommit: "4decec583c8175a4d2cd493455f2d203a8e4f181",
+      generationSourceCommit: "e70485474183f3198144078fdd4bb661304a0d24",
+      authorityReceiptTaskId:
+        "domain/replan-master-validation-safe-pareto-origin-eec9d9f5-20260820",
+      authorityReceiptGeneration: 1,
+      authorityArtifactCommit: "8872188481b77a5cca50312e80d8adcf4a2c0e2f",
+      canonicalEquivalenceDriftExclusions: [
+        "/id",
+        "/createdAt",
+        "/materialization/generatedAt",
+      ],
+      canonicalEquivalenceRemainingDifference:
+        "/provenance/knowledgeModelFingerprint",
+      integratedSourceCommit: "4decec583c8175a4d2cd493455f2d203a8e4f181",
+      finalAdjudicatedSourceCommit: "4decec583c8175a4d2cd493455f2d203a8e4f181",
       planPath:
-        "evidence/pipelines/master-validation-current-origin-54621f8d-feature-journey-plan-20260818.json",
+        "evidence/pipelines/master-validation-current-origin-e7048547-feature-journey-plan-20260820.json",
       planSha256:
-        "c925ca85bf17e985489d3793f3f69a765241dd5256c6d12586a173866a931cec",
+        "7868989dca44a038902105617089702686cc5a45c3a83033044e3462c4dcdca5",
       proofMatrixPath:
-        "evidence/pipelines/master-validation-current-origin-54621f8d-feature-journey-proof-matrix-20260818.md",
+        "evidence/pipelines/master-validation-current-origin-e7048547-feature-journey-proof-matrix-20260820.md",
       proofMatrixSha256:
-        "1775b8744ed3cba06f22c98895edbbb1ee36fca83e976180054ecca26f9c55ce",
+        "012d21bba5bba6d366906f4d8507695bc24fe75e6d2c55ce0fff0088a6a694c2",
+      logicalBaselineClusterBirths: 82,
+      logicalCarrierCount: 41,
+      logicalClusterBirthsNeeded: 41,
+      logicalClusterBirthsSaved: 41,
+      logicalClusterBirthSavingsRate: 0.5,
       physicalBaselineClusterBirths: 93,
-      physicalClusterBirthsNeeded: 50,
-      physicalClusterBirthsSaved: 43,
-      physicalClusterBirthSavingsRate: 0.46236559139784944,
-      safeguardGetCount: 45,
+      physicalClusterBirthsNeeded: 51,
+      physicalClusterBirthsSaved: 42,
+      physicalClusterBirthSavingsRate: 0.45161290322580644,
+      safeguardGetCount: 44,
       runnableSpecCount: 72,
       terminalRouteCount: 10,
-      physicalBoundaryCount: 49,
+      physicalBoundaryCount: 50,
       materialization: "ready",
-      projectedMinutes: 59.9427,
-      semanticLowerBoundBirths: 22,
-      semanticEdgeCount: 1247,
+      projectedCriticalMinutes: 57.975133,
+      projectedPackedMinutes: 59.800883,
+      projectedMinutes: 59.800883,
+      semanticLowerBoundBirths: 26,
+      semanticRecordCount: 1609,
+      semanticEdgeCount: 1338,
       historicalDisprovedAspiration: {
         maximumPhysicalClusterBirths: 16,
         minimumPhysicalClusterBirthsSaved: 64,
@@ -170,12 +191,13 @@ export const standingLoopDefinitions: Record<
       maximumLiveCompactRuns: 3,
     },
     outcome:
-      "Maintain the exact current 82-selector staging master-validation safe-Pareto authority generated from clean origin/dev@54621f8dec0034373a79aba534876a356aef2c78 and identically integrated at origin/dev@e4ff9bf37076baf8f3fd01810a04d02f05717c60, with 93 baseline physical cluster births and 50 planned births, saving 43 (46.236559139784944%), while preserving every semantic boundary and replanning whenever authoritative inputs drift.",
+      "Maintain the exact current 82-selector staging master-validation safe-Pareto authority generated from clean origin/dev@e70485474183f3198144078fdd4bb661304a0d24 and declared by the immutable generation-1 receipt domain/replan-master-validation-safe-pareto-origin-eec9d9f5-20260820 with final source 4decec583c8175a4d2cd493455f2d203a8e4f181, with 82 logical baseline births reduced to 41 and 93 physical baseline cluster births reduced to 51, saving 42 physical births (45.161290322580644%), while preserving every semantic boundary and replanning whenever authoritative inputs drift.",
     acceptance: [
       "Treat ci/feature-sets/master-validation.txt as the exact campaign scope: current authority is 82 ordered unique selectors with ordered-selector SHA-256 fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649.",
-      "Accept generation source origin/dev@54621f8dec0034373a79aba534876a356aef2c78 identically integrated at origin/dev@e4ff9bf37076baf8f3fd01810a04d02f05717c60 only while plan evidence/pipelines/master-validation-current-origin-54621f8d-feature-journey-plan-20260818.json SHA-256 c925ca85bf17e985489d3793f3f69a765241dd5256c6d12586a173866a931cec and proof matrix evidence/pipelines/master-validation-current-origin-54621f8d-feature-journey-proof-matrix-20260818.md SHA-256 1775b8744ed3cba06f22c98895edbbb1ee36fca83e976180054ecca26f9c55ce remain current and prove 93 baseline physical births, 50 planned births, 43 saved (savings rate 0.46236559139784944), 45 safeguard GETs, 72 runnable specs, ten terminal routes, 49 physical boundaries, ready materialization, and exactly 59.9427 projected minutes.",
-      "Retain at most 16 physical births, at least 64 saved, and 80% savings only as the historically disproved aspiration: the independently regenerated current weighted semantic floor is 22 births over 1,247 unique semantic edges and 49 physical boundaries.",
-      "The integrated 50-birth safe-Pareto fallback satisfies this maintenance wave while the independently verifiable 22-birth weighted semantic floor remains valid and no semantics-preserving improvement is demonstrated.",
+      "Accept immutable generation-1 receipt domain/replan-master-validation-safe-pareto-origin-eec9d9f5-20260820: generation source origin/dev@e70485474183f3198144078fdd4bb661304a0d24, authority artifact commit 8872188481b77a5cca50312e80d8adcf4a2c0e2f, and final source 4decec583c8175a4d2cd493455f2d203a8e4f181 only while plan evidence/pipelines/master-validation-current-origin-e7048547-feature-journey-plan-20260820.json SHA-256 7868989dca44a038902105617089702686cc5a45c3a83033044e3462c4dcdca5 and proof matrix evidence/pipelines/master-validation-current-origin-e7048547-feature-journey-proof-matrix-20260820.md SHA-256 012d21bba5bba6d366906f4d8507695bc24fe75e6d2c55ce0fff0088a6a694c2 remain current and prove 82 logical baseline births, 41 logical carriers and births needed, 41 logical births saved (savings rate 0.5), 93 physical baseline births, 51 physical births needed, 42 physical births saved (savings rate 0.45161290322580644), 44 safeguard GETs, 72 runnable operations, ten terminal routes, 50 physical boundaries, ready materialization, exactly 57.975133 projected critical minutes, and exactly 59.800883 projected packed minutes.",
+      "Treat current final-source drift as canonically equivalent to the accepted authority only after excluding /id, /createdAt, and /materialization/generatedAt, with /provenance/knowledgeModelFingerprint as the sole remaining difference.",
+      "Retain at most 16 physical births, at least 64 saved, and 80% savings only as the historically disproved aspiration: the independently regenerated current weighted semantic floor is 26 births over 1,609 channel-qualified semantic records, 1,338 unique semantic edges, and 50 physical boundaries.",
+      "The integrated 51-birth safe-Pareto fallback satisfies this maintenance wave while the independently verifiable 26-birth weighted semantic floor remains valid and no semantics-preserving improvement is demonstrated.",
       "Replan from clean current origin/dev on selector identity or order drift, knowledge-model drift, semantic-edge drift, runtime-profile drift, authority-artifact drift, planner or runner drift, or integrated-source drift; do not reuse stale authority hashes after drift.",
       "Never remove, relabel, ignore, or weaken a source-authored semantic boundary, immutable-property split, lifecycle requirement, target constraint, terminal-route fact, or safeguard merely to improve birth or savings metrics.",
       "Plan the selector set as one natural cross-feature journey before physical bucketing; partition only for a named immutable-property conflict or unrecoverable logical-history conflict and report the exact boundary for every split.",

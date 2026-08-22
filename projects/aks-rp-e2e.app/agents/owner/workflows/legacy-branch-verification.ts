@@ -3,6 +3,8 @@ import {
   Type,
   type ExecutionResult,
   type TaskReconcileResult,
+  type TaskVerificationContext,
+  type TaskVerificationResult,
   type WorkflowContext,
 } from "@may-agent/sdk";
 import {
@@ -86,6 +88,62 @@ function sourceBranch(value: unknown): SourceBranch | null {
   };
 }
 
+function exactEvidenceValue(
+  result: TaskReconcileResult,
+  prefix: string,
+): string | null {
+  const values = result.evidence
+    .filter((item) => item.startsWith(prefix))
+    .map((item) => item.slice(prefix.length).trim())
+    .filter(Boolean);
+  return values.length === 1 ? values[0] : null;
+}
+
+function commitEvidenceValue(
+  result: TaskReconcileResult,
+  prefix: string,
+  patterns: RegExp[],
+  resolveCommit?: (value: string) => string | null,
+): string | null {
+  const values = new Set<string>();
+  const add = (value: string) => {
+    const normalized = value.toLowerCase();
+    if (!/^[0-9a-f]{7,40}$/.test(normalized)) return;
+    const resolved = resolveCommit
+      ? resolveCommit(normalized)
+      : normalized.length === 40
+        ? normalized
+        : null;
+    if (resolved) values.add(resolved.toLowerCase());
+  };
+  const exact = exactEvidenceValue(result, prefix);
+  if (exact) add(exact);
+  for (const item of result.evidence) {
+    for (const pattern of patterns) {
+      const match = item.match(pattern);
+      if (match?.[1]) add(match[1]);
+    }
+  }
+  return values.size === 1 ? [...values][0]! : null;
+}
+
+function verificationRejected(
+  result: TaskReconcileResult,
+  summary: string,
+  finding: string,
+  evidence: string[] = [],
+): TaskVerificationResult {
+  return {
+    accepted: false,
+    summary: `Legacy branch convergence rejected: ${summary}`,
+    evidence: [
+      ...result.evidence,
+      `verification-finding:${finding}`,
+      ...evidence,
+    ],
+  };
+}
+
 function git(
   cwd: string,
   args: string[],
@@ -156,9 +214,11 @@ function sourceStateNeedsOwner(
   source: SourceBranch,
   evidence: string[] = [],
 ): { summary: string; evidence: string[] } | null {
+  const closeoutProof =
+    "To converge, report origin/dev@<full SHA> after fetch and represented-ancestor:<full SHA> after git merge-base --is-ancestor verifies it.";
   const current = sourceState(repoDir, source);
   if (current.attached) {
-    const summary = `Recorded source ${source.branch}@${source.head} is worktree-attached. The same task requires owner judgment instead of retrying clean legacy-branch verification against an independently owned workspace.`;
+    const summary = `Recorded source ${source.branch}@${source.head} is worktree-attached. The same task requires owner judgment instead of retrying clean legacy-branch verification against an independently owned workspace. ${closeoutProof}`;
     return {
       summary,
       evidence: [
@@ -166,6 +226,7 @@ function sourceStateNeedsOwner(
         "source-attached:true",
         `source-local:${current.local ?? "missing"}`,
         `source-remote:${current.remote ?? "missing"}`,
+        `owner-closeout-proof:${closeoutProof}`,
         ...evidence,
       ],
     };
@@ -180,13 +241,14 @@ function sourceStateNeedsOwner(
   }
   if (!observations.length) return null;
 
-  const summary = `Recorded source ${source.branch}@${source.head} is stale: ${observations.join(" and ")}. The same task requires owner judgment instead of retrying unchanged legacy-branch verification.`;
+  const summary = `Recorded source ${source.branch}@${source.head} is stale: ${observations.join(" and ")}. The same task requires owner judgment instead of retrying unchanged legacy-branch verification. ${closeoutProof}`;
   return {
     summary,
     evidence: [
       `branch:${source.branch}@${source.head}:stale-source`,
       `source-local:${current.local ?? "missing"}`,
       `source-remote:${current.remote ?? "missing"}`,
+      `owner-closeout-proof:${closeoutProof}`,
       ...evidence,
     ],
   };
@@ -479,6 +541,153 @@ export type LegacyCandidateVerifier = (
 ) => LegacyBranchVerification;
 
 export type LegacyBaselineProvider = typeof captureLegacyVerificationBaseline;
+
+export async function verify(
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
+  if (result.state !== "converged") {
+    return {
+      accepted: true,
+      summary: `Legacy branch ${result.state} disposition does not claim closeout.`,
+      evidence: [...result.evidence],
+    };
+  }
+
+  const source = sourceBranch(context.intent.input);
+  if (!source) {
+    return verificationRejected(
+      result,
+      "the task no longer identifies exactly one source branch",
+      "missing-source-input",
+    );
+  }
+
+  const fetched = git(context.projectRoot, ["fetch", "origin", "dev"], true);
+  if (fetched.status !== 0) {
+    return verificationRejected(
+      result,
+      "current origin/dev could not be fetched",
+      "origin-dev-fetch-failed",
+      [fetched.stderr || fetched.stdout],
+    );
+  }
+  const currentBase = git(context.projectRoot, ["rev-parse", "origin/dev"]);
+  let currentSource: SourceState;
+  try {
+    currentSource = sourceState(context.projectRoot, source);
+  } catch (error) {
+    return verificationRejected(
+      result,
+      "the source refs could not be inspected",
+      "source-ref-inspection-failed",
+      [error instanceof Error ? error.message : String(error)],
+    );
+  }
+  if (currentSource.local || currentSource.remote) {
+    return verificationRejected(
+      result,
+      "the source branch still has a live ref",
+      "source-ref-still-live",
+      [
+        `verification-source-local:${currentSource.local ?? "missing"}`,
+        `verification-source-remote:${currentSource.remote ?? "missing"}`,
+      ],
+    );
+  }
+
+  const dispositionPrefix = `branch:${source.branch}@${source.head}:`;
+  const disposition = exactEvidenceValue(result, dispositionPrefix);
+  const directDispositions = new Set([
+    "integrated-postcondition",
+    "already-represented",
+    "rejected",
+    "verified-merged",
+  ]);
+  if (disposition && directDispositions.has(disposition)) {
+    if (
+      ["integrated-postcondition", "verified-merged"].includes(disposition) &&
+      git(
+        context.projectRoot,
+        ["merge-base", "--is-ancestor", source.head, currentBase.stdout],
+        true,
+      ).status !== 0
+    ) {
+      return verificationRejected(
+        result,
+        "the integrated source is not reachable from current origin/dev",
+        "source-not-integrated",
+        [`verification-origin-dev:${currentBase.stdout}`],
+      );
+    }
+    return {
+      accepted: true,
+      summary: `Accepted ${disposition} closeout with absent source refs on origin/dev@${currentBase.stdout}.`,
+      evidence: [
+        ...result.evidence,
+        `verification-origin-dev:${currentBase.stdout}`,
+        "verification-source-refs:absent",
+      ],
+    };
+  }
+
+  const representedAncestor = commitEvidenceValue(
+    result,
+    "represented-ancestor:",
+    [
+      /\bintegrated semantic replacement ([0-9a-f]{40}) \(ancestor of origin\/dev\)/i,
+      /\bintegrated replacement ([0-9a-f]{40})\b.*\bverified ancestor of origin\/dev\b/i,
+      /\bgit ancestor:\s*([0-9a-f]{40})\s+is contained in origin\/dev\b/i,
+      /\breplacement:([0-9a-f]{40}):ancestor-of-origin\/dev\b/i,
+      /\bgit merge-base --is-ancestor ([0-9a-f]{7,40}) origin\/dev -> yes\b/i,
+    ],
+    (value) => refHead(context.projectRoot, value),
+  );
+  const claimedBase = commitEvidenceValue(result, "origin/dev:", [
+    /\borigin\/dev@([0-9a-f]{40})\b/i,
+    /\bgit fetch origin dev -> origin\/dev=([0-9a-f]{40})\b/i,
+  ]);
+  if (!representedAncestor || claimedBase !== currentBase.stdout) {
+    return verificationRejected(
+      result,
+      "owner judgment lacks one current represented-ancestor proof",
+      "missing-current-representation-proof",
+      [
+        `verification-origin-dev:${currentBase.stdout}`,
+        `claimed-origin-dev:${claimedBase ?? "missing"}`,
+        `claimed-represented-ancestor:${representedAncestor ?? "missing"}`,
+      ],
+    );
+  }
+  if (
+    git(
+      context.projectRoot,
+      ["merge-base", "--is-ancestor", representedAncestor, currentBase.stdout],
+      true,
+    ).status !== 0
+  ) {
+    return verificationRejected(
+      result,
+      "the claimed represented commit is not reachable from current origin/dev",
+      "represented-commit-not-integrated",
+      [
+        `verification-origin-dev:${currentBase.stdout}`,
+        `verification-represented-ancestor:${representedAncestor}`,
+      ],
+    );
+  }
+
+  return {
+    accepted: true,
+    summary: `Accepted owner-adjudicated stale-source closeout represented by ${representedAncestor} on origin/dev@${currentBase.stdout}.`,
+    evidence: [
+      ...result.evidence,
+      `verification-origin-dev:${currentBase.stdout}`,
+      `verification-represented-ancestor:${representedAncestor}`,
+      "verification-source-refs:absent",
+    ],
+  };
+}
 
 export async function executeWithVerifier(
   ctx: WorkflowContext,

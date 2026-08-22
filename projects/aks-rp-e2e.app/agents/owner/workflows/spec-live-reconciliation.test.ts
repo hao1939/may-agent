@@ -117,6 +117,7 @@ import {
   semanticClaimEvidenceInstruction,
   transientRetryDiagnosisInstruction,
   scenarioQualityRepairInstruction,
+  specLiveAgentOperationAllowance,
   shouldFastForwardIntegratedSource,
   shouldReviewBeforeInitialLiveDispatch,
   scenarioNormalizationWaitProblem,
@@ -2110,7 +2111,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     } finally {
       rmSync(childRoot, { recursive: true, force: true });
     }
-  });
+  }, 15_000);
 
   test("reports exact merge-base and behind/ahead facts for the unsafe lineage shape", () => {
     const root = mkdtempSync(join(tmpdir(), "fresh-base-facts-"));
@@ -3317,6 +3318,73 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  test("gives preparation and correction calls a finite allowance above the old 25-operation guardrail while preserving deadline margin", async () => {
+    const calls: Array<{
+      timeoutMs: number;
+      operationAllowance?: number;
+    }> = [];
+    let call = 0;
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (
+        _agent: string,
+        _prompt: string,
+        options: { timeoutMs: number; operationAllowance?: number },
+      ) => {
+        calls.push(options);
+        call += 1;
+        return {
+          status: "done" as const,
+          structuredResult:
+            call === 1
+              ? {
+                  decision: "committed",
+                  summary: "first preparation judgment needs correction",
+                  evidence: ["source-commit:abc"],
+                }
+              : {
+                  decision: "committed",
+                  summary: "corrected preparation judgment",
+                  evidence: ["source-commit:def"],
+                  liveReady: true,
+                },
+        };
+      },
+    };
+
+    const decision = await askAgent(
+      isolatedAgentContext(ctx) as never,
+      "Repair and commit the retained LocalDNS carrier.",
+      {
+        deadlineMs: 1_800_000,
+        nowMs: (() => {
+          const times = [0, 1_000];
+          return () => times.shift() ?? 1_000;
+        })(),
+        continueDomainWorkOnValidation: true,
+        validateDecision: (candidate) =>
+          candidate.liveReady === undefined ? "liveReady is required" : null,
+      },
+    );
+
+    expect(decision.liveReady).toBe(true);
+    expect(specLiveAgentOperationAllowance).toBeGreaterThan(25);
+    expect(Number.isFinite(specLiveAgentOperationAllowance)).toBe(true);
+    expect(calls).toEqual([
+      {
+        timeoutMs: 900_000,
+        operationAllowance: specLiveAgentOperationAllowance,
+        schema: expect.any(Object),
+      },
+      {
+        timeoutMs: 600_000,
+        operationAllowance: specLiveAgentOperationAllowance,
+        schema: expect.any(Object),
+      },
+    ]);
+    expect(calls[1]!.timeoutMs + 300_000).toBeLessThan(1_800_000);
   });
 
   test("reserves workflow margin instead of launching a correction after a long first judgment", async () => {
@@ -6032,6 +6100,69 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     }
   });
 
+  test("serializes complete queue metadata as pipeline string pairs without changing spec selection", () => {
+    const metadata = queueRunMetadata({
+      taskId: "domain/spec-live-metadata-contract",
+      generation: 1,
+      specId: "spec.service-platform.queuewatcher",
+      sourceBranch: "task/domain-spec-live-metadata-contract",
+      sourceCommit: "ecf26332c5a29b38f212e19ca2ac09a4bffbae59",
+      target: "staging",
+      standaloneBuildId: "177400000",
+      planPath: "ci/plans/metadata-contract.plan.json",
+      retryOfRunId: "177474177",
+    });
+    const serialized = JSON.stringify(metadata);
+
+    expect(serialized).toContain('"generation":"1"');
+    expect(serialized).not.toContain('"generation":1');
+    expect(
+      Object.entries(JSON.parse(serialized)).every(
+        ([key, value]) =>
+          /^[A-Za-z0-9_.:-]{1,80}$/.test(key) && typeof value === "string",
+      ),
+    ).toBe(true);
+
+    const parameters = queueRunPipelineParameters({
+      specId: "spec.service-platform.queuewatcher",
+      target: "staging",
+      standaloneBuildId: "177400000",
+      planPath: "ci/plans/metadata-contract.plan.json",
+      metadata: serialized,
+    });
+    expect(parameters).toContain(`metadata=${serialized}`);
+    expect(parameters).toContain("specs=spec.service-platform.queuewatcher");
+    expect(
+      parameters.find((value) => value.startsWith("specs=")),
+    ).not.toContain("177474177");
+    expect(
+      parameters.find((value) => value.startsWith("specs=")),
+    ).not.toContain("177477484");
+
+    const run = {
+      id: "177500000",
+      sourceVersion: "ecf26332c5a29b38f212e19ca2ac09a4bffbae59",
+      templateParameters: {
+        specs: "spec.service-platform.queuewatcher",
+        target: "staging",
+        standalone_build_id: "177400000",
+        metadata: serialized,
+      },
+    };
+    const exactFilter = {
+      taskId: "domain/spec-live-metadata-contract",
+      generation: 1,
+      specId: "spec.service-platform.queuewatcher",
+      sourceCommit: "ecf26332c5a29b38f212e19ca2ac09a4bffbae59",
+      target: "staging",
+      standaloneBuildId: "177400000",
+    };
+    expect(matchingTaskGenerationRuns([run], exactFilter)).toEqual([run]);
+    expect(
+      matchingTaskGenerationRuns([run], { ...exactFilter, generation: 2 }),
+    ).toEqual([]);
+  });
+
   test("does not suppress a fresh Queuewatcher dispatch with stale reviewed-source lineage", () => {
     const retrySourceCommit = "ecf26332c5a29b38f212e19ca2ac09a4bffbae59";
     const staleReviewedSourceCommit =
@@ -6083,7 +6214,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     });
     expect(metadata).toMatchObject({
       taskId,
-      generation: 1,
+      generation: "1",
       specId: "spec.service-platform.queuewatcher",
       sourceCommit: retrySourceCommit,
       reviewed_source_commit: retrySourceCommit,

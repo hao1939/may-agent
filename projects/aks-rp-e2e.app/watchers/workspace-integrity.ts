@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { isLiveOriginDevSnapshot } from "../agents/app-ops/workflows/lib/origin-dev-snapshot.js";
 import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
 type Worktree = { path: string; branch?: string; prunable: boolean };
@@ -113,7 +114,10 @@ export async function observeWorkspaceIntegrity(
     if (status) {
       dirty += 1;
       const normalizedEntryPath = normalizePath(entry.path);
-      if (!taskPaths.has(normalizedEntryPath)) {
+      if (
+        !taskPaths.has(normalizedEntryPath) &&
+        !isLiveOriginDevSnapshot(entry.path)
+      ) {
         unownedDirty += 1;
         anomalies.push({ path: entry.path, kind: "unowned-dirty" });
       }

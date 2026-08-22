@@ -22,6 +22,7 @@ type PipelineWatcherState = {
   trackedRunIds?: string[];
   observedArtifacts?: Record<string, string>;
   terminalArtifactAttempts?: Record<string, number>;
+  terminalEmptyArtifactListings?: Record<string, number>;
   terminalArtifactUnavailable?: Record<string, string>;
   overdueQueueRunIds?: string[];
   liveProgressFingerprints?: Record<string, string>;
@@ -232,6 +233,8 @@ export const MASTER_VALIDATION_QUEUE_OVERDUE_MS = 90 * 60 * 1_000;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
+export const ADO_RUN_LIST_QUERY =
+  "[].{id:id,status:status,result:result,sourceBranch:sourceBranch,sourceVersion:sourceVersion,finishTime:finishTime,queueTime:queueTime,templateParameters:templateParameters}";
 const WATCHER_SCHEMA_VERSION = "10";
 const WATCHER_REGISTRATION_SCHEMA_VERSION = "1";
 export const LIVE_PROGRESS_STALE_MS = 3 * 60 * 1_000;
@@ -932,6 +935,8 @@ export async function scanAdoPipelineRuns(
       ...(status ? ["--status", status] : []),
       "--top",
       String(MAX_ADO_RUNS_PER_SCAN),
+      "--query",
+      ADO_RUN_LIST_QUERY,
       "-o",
       "json",
     ]);
@@ -2512,11 +2517,15 @@ export async function observeAksPipelines(
   const terminalArtifactAttempts = {
     ...(prior.terminalArtifactAttempts ?? {}),
   };
+  const terminalEmptyArtifactListings = {
+    ...(prior.terminalEmptyArtifactListings ?? {}),
+  };
   const terminalArtifactUnavailable = {
     ...(prior.terminalArtifactUnavailable ?? {}),
   };
   const pendingTerminalArtifactRunIds = new Set([
     ...Object.keys(terminalArtifactAttempts),
+    ...Object.keys(terminalEmptyArtifactListings),
     ...registrationRunIds,
   ]);
   const artifactRuns = artifactRunCandidates({
@@ -2686,21 +2695,6 @@ export async function observeAksPipelines(
         artifactName,
       }),
     );
-    const noVerdictFailure = masterValidationNoVerdictFailure({
-      pipelineRunId: observed.runId,
-      sourceBranch: observed.sourceBranch ?? "",
-      sourceCommit: observed.sourceVersion ?? "",
-      status: observed.status,
-      result: observed.result,
-      progressive: observed.progressive,
-      artifactsReady: names.length > 0 && readyRoots.length === names.length,
-      observedVerdictCount: artifactObservations.length,
-      observedFailureCount: admissionFailures.length + artifactFailures.length,
-    });
-    if (noVerdictFailure) {
-      ctx.record(pipelineFailureEvent(noVerdictFailure));
-      observedFailures += 1;
-    }
     const expectedResultArtifactNames = [
       ...new Set([
         ...observed.artifacts.filter((name) =>
@@ -2709,19 +2703,54 @@ export async function observeAksPipelines(
         ...names.filter((name) => /^slice-\d+-test-results$/.test(name)),
       ]),
     ];
+    const terminal = ["completed", "canceled"].includes(observed.status);
+    const emptyTerminalListing =
+      terminal && expectedResultArtifactNames.length === 0;
+    const emptyTerminalListingAttempt = emptyTerminalListing
+      ? (terminalEmptyArtifactListings[observed.runId] ?? 0) + 1
+      : 0;
+    const emptyTerminalListingConfirmed =
+      emptyTerminalListing &&
+      emptyTerminalListingAttempt >= MAX_TERMINAL_ARTIFACT_ATTEMPTS;
+    const noVerdictFailure = masterValidationNoVerdictFailure({
+      pipelineRunId: observed.runId,
+      sourceBranch: observed.sourceBranch ?? "",
+      sourceCommit: observed.sourceVersion ?? "",
+      status: observed.status,
+      result: observed.result,
+      progressive: observed.progressive,
+      artifactsReady:
+        expectedResultArtifactNames.length > 0
+          ? readyRoots.length === expectedResultArtifactNames.length
+          : emptyTerminalListingConfirmed,
+      observedVerdictCount: artifactObservations.length,
+      observedFailureCount: admissionFailures.length + artifactFailures.length,
+    });
+    if (noVerdictFailure) {
+      ctx.record(pipelineFailureEvent(noVerdictFailure));
+      observedFailures += 1;
+    }
     const terminalArtifactsMissing =
-      ["completed", "canceled"].includes(observed.status) &&
-      ((expectedResultArtifactNames.length === 0 &&
-        pendingTerminalArtifactRunIds.has(observed.runId)) ||
-        expectedResultArtifactNames.some((artifactName) => {
-          const root =
-            observedArtifacts[artifactKey(observed.runId, artifactName)];
-          return !root || !artifactDirectoryReady(root);
-        }));
-    if (terminalArtifactsMissing) {
-      const countFailedAttempt =
-        expectedResultArtifactNames.length === 0 ||
-        attemptedResultArtifactDownload;
+      terminal &&
+      expectedResultArtifactNames.length > 0 &&
+      expectedResultArtifactNames.some((artifactName) => {
+        const root =
+          observedArtifacts[artifactKey(observed.runId, artifactName)];
+        return !root || !artifactDirectoryReady(root);
+      });
+    if (emptyTerminalListing) {
+      delete terminalArtifactAttempts[observed.runId];
+      if (emptyTerminalListingConfirmed) {
+        delete terminalEmptyArtifactListings[observed.runId];
+        pendingTerminalArtifactRunIds.delete(observed.runId);
+      } else {
+        terminalEmptyArtifactListings[observed.runId] =
+          emptyTerminalListingAttempt;
+        pendingTerminalArtifactRunIds.add(observed.runId);
+      }
+    } else if (terminalArtifactsMissing) {
+      delete terminalEmptyArtifactListings[observed.runId];
+      const countFailedAttempt = attemptedResultArtifactDownload;
       if (materializedResultArtifact) {
         delete terminalArtifactAttempts[observed.runId];
         pendingTerminalArtifactRunIds.add(observed.runId);
@@ -2773,6 +2802,7 @@ export async function observeAksPipelines(
       }
     } else {
       delete terminalArtifactAttempts[observed.runId];
+      delete terminalEmptyArtifactListings[observed.runId];
       pendingTerminalArtifactRunIds.delete(observed.runId);
     }
   }
@@ -2798,6 +2828,7 @@ export async function observeAksPipelines(
     trackedRunIds,
     observedArtifacts,
     terminalArtifactAttempts,
+    terminalEmptyArtifactListings,
     terminalArtifactUnavailable,
     overdueQueueRunIds: [...overdueQueueRunIds].slice(-100),
     liveProgressFingerprints: retainedLiveProgressFingerprints,

@@ -27,7 +27,7 @@ function usage(): never {
 
 function loadTree(appDir: string): TaskTree {
   return JSON.parse(
-    readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
+    readFileSync(join(appDir, ".state", "tasks", "tree.json"), "utf8"),
   ) as TaskTree;
 }
 

@@ -3,11 +3,16 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type {
+  TaskReconcileResult,
+  TaskVerificationContext,
+  WorkflowContext,
+} from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   boundedWorkflowEvidence,
   executeWithVerifier,
+  verify,
   type LegacyCandidateVerifier,
   type LegacyRepairAgent,
 } from "./legacy-branch-verification.ts";
@@ -128,6 +133,191 @@ afterEach(() => {
 });
 
 describe("legacy branch verification workflow", () => {
+  function verificationContext(value: Fixture): TaskVerificationContext {
+    return {
+      appId: "aks-rp-e2e",
+      taskId: "ops/verify-source",
+      generation: 1,
+      appRoot: value.appDir,
+      projectRoot: value.repo,
+      workspaceDir: value.workspace,
+      intent: {
+        outcome: "Verify the exact legacy source branch.",
+        acceptance: [],
+        input: value.context.reconciliation!.input,
+      },
+    };
+  }
+
+  function convergedResult(evidence: string[]): TaskReconcileResult {
+    return {
+      state: "converged",
+      summary: "Legacy branch is reconciled.",
+      evidence,
+      actions: [],
+    };
+  }
+
+  test("verifies an owner-adjudicated stale branch represented on current origin/dev", async () => {
+    const value = fixture();
+    git(value.repo, "merge", "--ff-only", "task/source");
+    git(value.repo, "push", "origin", "dev");
+    git(value.repo, "push", "origin", "--delete", "task/source");
+    git(value.repo, "branch", "-D", "task/source");
+
+    const result = await verify(
+      verificationContext(value),
+      convergedResult([
+        `origin/dev@${value.sourceHead}`,
+        `integrated semantic replacement ${value.sourceHead} (ancestor of origin/dev)`,
+        "source-local-ref:absent",
+        "source-remote-ref:absent",
+      ]),
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      evidence: expect.arrayContaining([
+        `verification-origin-dev:${value.sourceHead}`,
+        `verification-represented-ancestor:${value.sourceHead}`,
+        "verification-source-refs:absent",
+      ]),
+    });
+  });
+
+  test("verifies natural Git ancestry evidence from owner judgment", async () => {
+    const value = fixture();
+    git(value.repo, "merge", "--ff-only", "task/source");
+    git(value.repo, "push", "origin", "dev");
+    git(value.repo, "push", "origin", "--delete", "task/source");
+    git(value.repo, "branch", "-D", "task/source");
+
+    const result = await verify(
+      verificationContext(value),
+      convergedResult([
+        `origin/dev@${value.sourceHead}`,
+        `git ancestor: ${value.sourceHead} is contained in origin/dev and preserves the intended contract`,
+        "source-local-ref:absent",
+        "source-remote-ref:absent",
+      ]),
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      evidence: expect.arrayContaining([
+        `verification-origin-dev:${value.sourceHead}`,
+        `verification-represented-ancestor:${value.sourceHead}`,
+        "verification-source-refs:absent",
+      ]),
+    });
+  });
+
+  test("verifies structured replacement ancestry evidence from owner judgment", async () => {
+    const value = fixture();
+    git(value.repo, "merge", "--ff-only", "task/source");
+    git(value.repo, "push", "origin", "dev");
+    git(value.repo, "push", "origin", "--delete", "task/source");
+    git(value.repo, "branch", "-D", "task/source");
+
+    const result = await verify(
+      verificationContext(value),
+      convergedResult([
+        `origin/dev@${value.sourceHead}`,
+        `replacement:${value.sourceHead}:ancestor-of-origin/dev`,
+        "source-local-ref:absent",
+        "source-remote-ref:absent",
+      ]),
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      evidence: expect.arrayContaining([
+        `verification-origin-dev:${value.sourceHead}`,
+        `verification-represented-ancestor:${value.sourceHead}`,
+        "verification-source-refs:absent",
+      ]),
+    });
+  });
+
+  test("resolves abbreviated Git merge-base evidence before verifying ancestry", async () => {
+    const value = fixture();
+    git(value.repo, "merge", "--ff-only", "task/source");
+    git(value.repo, "push", "origin", "dev");
+    git(value.repo, "push", "origin", "--delete", "task/source");
+    git(value.repo, "branch", "-D", "task/source");
+
+    const result = await verify(
+      verificationContext(value),
+      convergedResult([
+        `origin/dev@${value.sourceHead} after explicit fetch`,
+        `integrated replacement ${value.sourceHead} (test: normalize helper), verified ancestor of origin/dev`,
+        "source-local-ref:absent",
+        "source-remote-ref:absent",
+      ]),
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      evidence: expect.arrayContaining([
+        `verification-origin-dev:${value.sourceHead}`,
+        `verification-represented-ancestor:${value.sourceHead}`,
+        "verification-source-refs:absent",
+      ]),
+    });
+  });
+
+  test("rejects stale-branch convergence while a source ref is still live", async () => {
+    const value = fixture();
+    const result = await verify(
+      verificationContext(value),
+      convergedResult([
+        `origin/dev:${value.baseHead}`,
+        `represented-ancestor:${value.baseHead}`,
+      ]),
+    );
+
+    expect(result).toMatchObject({
+      accepted: false,
+      evidence: expect.arrayContaining([
+        "verification-finding:source-ref-still-live",
+      ]),
+    });
+  });
+
+  test("rejects owner closeout without a current represented ancestor", async () => {
+    const value = fixture();
+    git(value.repo, "push", "origin", "--delete", "task/source");
+    git(value.repo, "branch", "-D", "task/source");
+
+    const result = await verify(
+      verificationContext(value),
+      convergedResult([`origin/dev:${value.baseHead}`]),
+    );
+
+    expect(result).toMatchObject({
+      accepted: false,
+      evidence: expect.arrayContaining([
+        "verification-finding:missing-current-representation-proof",
+      ]),
+    });
+  });
+
+  test("accepts a non-converged handoff without claiming closeout", async () => {
+    const value = fixture();
+    const result = await verify(verificationContext(value), {
+      state: "needs-owner",
+      summary: "Owner judgment is required.",
+      evidence: ["stale-source"],
+      actions: [],
+    });
+
+    expect(result).toEqual({
+      accepted: true,
+      summary: "Legacy branch needs-owner disposition does not claim closeout.",
+      evidence: ["stale-source"],
+    });
+  });
+
   test("bounds workflow evidence while retaining both ends", () => {
     const evidence = boundedWorkflowEvidence(
       Array.from({ length: 40 }, (_, index) => `evidence:${index + 1}`),
@@ -450,11 +640,14 @@ describe("legacy branch verification workflow", () => {
       status: "done",
       output: {
         state: "needs-owner",
-        summary: expect.stringContaining("requires owner judgment"),
+        summary: expect.stringContaining(
+          "represented-ancestor:<full SHA> after git merge-base --is-ancestor verifies it",
+        ),
         evidence: expect.arrayContaining([
           `branch:task/source@${value.sourceHead}:stale-source`,
           "source-local:missing",
           `source-remote:${movedRemoteHead}`,
+          expect.stringContaining("owner-closeout-proof:"),
           `base-commit:${value.baseHead}`,
         ]),
       },
@@ -487,6 +680,7 @@ describe("legacy branch verification workflow", () => {
           "source-attached:true",
           `source-local:${value.sourceHead}`,
           `source-remote:${value.sourceHead}`,
+          expect.stringContaining("owner-closeout-proof:"),
           `base-commit:${value.baseHead}`,
         ]),
       },

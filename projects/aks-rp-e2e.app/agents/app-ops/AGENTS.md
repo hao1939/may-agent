@@ -137,6 +137,28 @@ decisions.
     correct the stale task instead of restoring the retired interface.
     Historical release source and completed receipts are evidence only; they
     are never desired current source.
+18. Before publishing any `aks-rp-e2e.app` branch, record the pre-task commit
+    and run `scripts/validate-app-publication-range.ts` with the candidate,
+    pre-task commit, and exact task verification evidence. The validator must
+    freshly fetch `origin/main` and approve every commit in
+    `origin/main..candidate`. A pre-existing commit is authorized only through
+    `--accepted-file` JSON entries containing its full `commit`, immutable
+    `taskReceipt`, and non-empty `verificationEvidence`; preserve those receipt
+    strings in the publication result. If validation fails, do not push any ref
+    and report the returned `unexpectedCommits`. Never use the shared local
+    `main` lead as publication authority.
+19. Task persistence is Host-private. For an inbox request that supplies a
+    `dependency`, treat that read-only observation (kind, id, status, summary,
+    evidence, and any result) as the complete authority for deciding that
+    dependency. Never read `.state/tasks/tree.json`, task-state files, Kanban
+    projections, or equivalent Runtime projections to refine the observation,
+    replace its exact task with a deeper or different task, or bypass the owner
+    boundary. Decide from the supplied observation or return the request through
+    the proper task/App owner boundary. This restriction is request-scoped: it
+    does not prohibit app-process diagnostics when no dependency observation was
+    supplied, but diagnostics still use supported control-plane queries and
+    metrics rather than direct Host-private persistence. See
+    `design/inbox-dependency-observation-authority.md`.
 
 ## Finish Criteria
 

@@ -89,6 +89,7 @@ export const specLiveWorkflowMarginMs = 300_000;
 export const specLiveInitialAgentCallMs = 900_000;
 export const specLiveFollowupAgentCallMs = 600_000;
 export const specLiveMinimumAgentCallMs = 120_000;
+export const specLiveAgentOperationAllowance = 64;
 
 const workflowDeadlines = new WeakMap<object, number>();
 
@@ -2457,6 +2458,14 @@ function git(
   return command("git", args, { cwd, allowFailure });
 }
 
+export function gitAsync(
+  cwd: string,
+  args: string[],
+  allowFailure = false,
+): Promise<{ status: number; stdout: string; stderr: string }> {
+  return commandAsync("git", args, { cwd, allowFailure });
+}
+
 export type RetainedWorkspaceMaterialization = {
   requested: boolean;
   accepted: boolean;
@@ -4745,12 +4754,10 @@ type QueueRunInput = {
   retryOfRunId?: string;
 };
 
-export function queueRunMetadata(
-  input: QueueRunInput,
-): Record<string, unknown> {
+export function queueRunMetadata(input: QueueRunInput): Record<string, string> {
   return {
     taskId: input.taskId,
-    generation: input.generation,
+    generation: String(input.generation),
     specId: input.specId,
     sourceBranch: input.sourceBranch,
     sourceCommit: input.sourceCommit,
@@ -5609,6 +5616,7 @@ export async function askAgent(
     });
     const result = await ctx.agents.call(taskOwner(ctx), nextPrompt, {
       timeoutMs,
+      operationAllowance: specLiveAgentOperationAllowance,
       schema: decisionSchema,
     });
     if (result.status !== "done" || !result.output) {
@@ -6237,7 +6245,7 @@ export async function reconcileSpecLive(
   mkdirSync(contextDir, { recursive: true });
 
   try {
-    git(repoDir, ["fetch", "origin", targetBranch]);
+    await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
     let semanticInvalidation: SemanticInvalidationContext | null = null;
     const invalidatedRunId = nonEmptyString(
       normalizationInput?.invalidatedRunId,
@@ -6304,7 +6312,11 @@ export async function reconcileSpecLive(
         ).status !== 0 &&
         invalidatedSourceBranch
       ) {
-        git(repoDir, ["fetch", "origin", invalidatedSourceBranch], true);
+        await gitAsync(
+          repoDir,
+          ["fetch", "origin", invalidatedSourceBranch],
+          true,
+        );
       }
       const explicitInvalidatedSourcePaths = repoRelativePaths(
         normalizationInput?.invalidatedSourcePaths,
@@ -7223,7 +7235,7 @@ export async function reconcileSpecLive(
 
       for (let targetAttempt = 1; targetAttempt <= 3; targetAttempt += 1) {
         if (!directScenarioNormalization) break;
-        git(repoDir, ["fetch", "origin", targetBranch]);
+        await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
         const latestTargetCommit = git(repoDir, [
           "rev-parse",
           targetRef,
@@ -7640,7 +7652,7 @@ export async function reconcileSpecLive(
         integration.state === "validation-failed"
       ) {
         if (integration.state === "requires-replay") {
-          git(repoDir, ["fetch", "origin", targetBranch]);
+          await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
         }
         const replayBaseline =
           integration.state === "conflict" ||
@@ -7763,7 +7775,7 @@ export async function reconcileSpecLive(
       }
 
       sourceCommit = integration.sourceCommit;
-      git(repoDir, ["fetch", "origin", targetBranch]);
+      await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
       const integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
       if (
         git(
@@ -8159,7 +8171,7 @@ export async function reconcileSpecLive(
         existingPr.lastMergeSourceCommit?.commitId,
       );
       if (remoteSourceCommit && remoteSourceCommit !== sourceCommit) {
-        git(repoDir, ["fetch", "origin", sourceBranch]);
+        await gitAsync(repoDir, ["fetch", "origin", sourceBranch]);
         const remoteRef = `origin/${sourceBranch}`;
         if (
           git(
@@ -8206,7 +8218,9 @@ export async function reconcileSpecLive(
     let latestRun = runs[0];
     let proofSourceBranch = sourceBranch;
     let providerGeneration = generation;
-    const adoptExistingRun = (run: PipelineRun): string | null => {
+    const adoptExistingRun = async (
+      run: PipelineRun,
+    ): Promise<string | null> => {
       const adoptedSourceCommit = nonEmptyString(run.sourceVersion);
       const adoptedSourceBranch = nonEmptyString(run.sourceBranch).replace(
         /^refs\/heads\//,
@@ -8222,7 +8236,7 @@ export async function reconcileSpecLive(
       ) {
         return "existing exact run lacks exact source or generation metadata";
       }
-      git(repoDir, ["fetch", "origin", adoptedSourceBranch]);
+      await gitAsync(repoDir, ["fetch", "origin", adoptedSourceBranch]);
       if (
         git(
           repoDir,
@@ -8267,7 +8281,7 @@ export async function reconcileSpecLive(
       authoritativeRetryRun &&
       !(priorVerificationInput.value?.kind === "accepted" && latestRun)
     ) {
-      const adoptionProblem = adoptExistingRun(authoritativeRetryRun);
+      const adoptionProblem = await adoptExistingRun(authoritativeRetryRun);
       if (adoptionProblem) {
         return ownerResult(
           ctx,
@@ -8311,7 +8325,7 @@ export async function reconcileSpecLive(
           ],
         );
       }
-      const adoptionProblem = adoptExistingRun(authoritativeRun);
+      const adoptionProblem = await adoptExistingRun(authoritativeRun);
       if (adoptionProblem) {
         return ownerResult(
           ctx,
@@ -8324,7 +8338,7 @@ export async function reconcileSpecLive(
         );
       }
     } else if (latestRun) {
-      const adoptionProblem = adoptExistingRun(latestRun);
+      const adoptionProblem = await adoptExistingRun(latestRun);
       if (adoptionProblem) {
         return ownerResult(
           ctx,
@@ -8641,7 +8655,7 @@ export async function reconcileSpecLive(
       ]);
       latestRun = runs[0];
       if (latestRun) {
-        const adoptionProblem = adoptExistingRun(latestRun);
+        const adoptionProblem = await adoptExistingRun(latestRun);
         if (adoptionProblem) {
           return ownerResult(
             ctx,
@@ -9199,7 +9213,7 @@ export async function reconcileSpecLive(
         : [];
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
-        git(repoDir, ["fetch", "origin", targetBranch]);
+        await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
         const sourceIsInTarget =
           git(
             repoDir,
@@ -9374,7 +9388,7 @@ export async function reconcileSpecLive(
                 "rev-parse",
                 "HEAD",
               ]).stdout;
-              git(repoDir, ["fetch", "origin", targetBranch]);
+              await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
               if (
                 git(
                   repoDir,
@@ -9572,7 +9586,7 @@ export async function reconcileSpecLive(
           lastPushError = push.stderr || push.stdout;
           continue;
         }
-        git(repoDir, ["fetch", "origin", targetBranch]);
+        await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
         if (
           git(
             repoDir,
@@ -9820,7 +9834,7 @@ export async function reconcileSpecLive(
           ],
         );
       }
-      git(repoDir, ["fetch", "origin", targetBranch]);
+      await gitAsync(repoDir, ["fetch", "origin", targetBranch]);
       if (
         git(
           repoDir,
@@ -10111,12 +10125,12 @@ function evidenceValue(evidence: readonly string[], prefix: string): string {
   return "";
 }
 
-function verifyTerminalDispositionResult(
+async function verifyTerminalDispositionResult(
   context: TaskVerificationContext,
   result: TaskReconcileResult,
   input: ScenarioNormalizationInput | undefined,
   allowTerminalDisposition: boolean,
-): TaskVerificationResult | null {
+): Promise<TaskVerificationResult | null> {
   const evidence = resultEvidenceItems(result);
   if (!evidence.includes("terminal-disposition:no-new-ado-pass-claimed")) {
     return null;
@@ -10215,7 +10229,7 @@ function verifyTerminalDispositionResult(
     };
   }
 
-  git(
+  await gitAsync(
     verificationProjectDir(context),
     ["fetch", "origin", defaultTargetBranch],
     true,
@@ -10300,7 +10314,7 @@ export async function verifySpecLiveResult(
     };
   }
 
-  const terminalDispositionVerification = verifyTerminalDispositionResult(
+  const terminalDispositionVerification = await verifyTerminalDispositionResult(
     context,
     result,
     input,
@@ -10359,7 +10373,11 @@ export async function verifySpecLiveResult(
     ? terminalRunContextDir(contextDir, proof.runId)
     : contextDir;
   const artifactPaths = proof ? collectedArtifactPaths(runContextDir) : [];
-  git(verificationProjectDir(context), ["fetch", "origin", targetBranch], true);
+  await gitAsync(
+    verificationProjectDir(context),
+    ["fetch", "origin", targetBranch],
+    true,
+  );
   const sourceAncestryReachable = Boolean(
     proof?.sourceCommit &&
     git(

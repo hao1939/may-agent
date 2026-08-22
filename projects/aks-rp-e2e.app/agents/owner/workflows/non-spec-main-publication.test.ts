@@ -6,10 +6,13 @@ import { join } from "node:path";
 import type { AppEvent, WorkflowContext } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
+  acceptedPublicationCommits,
   description,
   execute,
   name,
+  PUBLICATION_PROVENANCE_REGRESSION,
   resolveAzCli,
+  validatePublicationRange,
   workspace,
 } from "./non-spec-main-publication.js";
 
@@ -203,6 +206,190 @@ describe("non-spec main publication workflow", () => {
     expect(workspace).toEqual({ kind: "task", baseBranch: "main" });
   });
 
+  it("keeps only complete accepted-commit receipts", () => {
+    expect(
+      acceptedPublicationCommits([
+        {
+          commit: "a".repeat(40),
+          taskReceipt: "task:ops/prior#receipt",
+          verificationEvidence: ["test:prior-pass"],
+        },
+        {
+          commit: "b".repeat(40),
+          taskReceipt: "",
+          verificationEvidence: ["test:missing-receipt"],
+        },
+        {
+          commit: "c".repeat(40),
+          taskReceipt: "task:ops/missing-verification",
+          verificationEvidence: [],
+        },
+        {
+          commit: "short",
+          taskReceipt: "task:ops/noncanonical-commit",
+          verificationEvidence: ["test:prior-pass"],
+        },
+      ]),
+    ).toEqual([
+      {
+        commit: "a".repeat(40),
+        taskReceipt: "task:ops/prior#receipt",
+        verificationEvidence: ["test:prior-pass"],
+      },
+    ]);
+  });
+
+  it("accepts one verified commit produced by the current task from fetched origin/main", () => {
+    const fixture = repositoryFixture();
+    try {
+      const baseCommit = git(fixture.repoDir, "rev-parse", "origin/main");
+      const taskStartCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      writeFileSync(join(fixture.workspaceDir, "allowed.txt"), "task owned\n");
+      git(fixture.workspaceDir, "add", "allowed.txt");
+      git(fixture.workspaceDir, "commit", "-m", "task owned");
+      const candidateCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+
+      expect(
+        validatePublicationRange({
+          cwd: fixture.workspaceDir,
+          baseCommit,
+          candidateCommit,
+          taskStartCommit,
+          currentTaskEvidence: ["test:focused-pass"],
+        }),
+      ).toMatchObject({
+        ok: true,
+        commits: [candidateCommit],
+        evidence: expect.arrayContaining([
+          `publication-range:${baseCommit}..${candidateCommit}`,
+          `publication-commit-authority:${candidateCommit}:current-task`,
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts an explicit multi-commit range only with prior task receipt and verification evidence", () => {
+    const fixture = repositoryFixture();
+    try {
+      const baseCommit = git(fixture.repoDir, "rev-parse", "origin/main");
+      writeFileSync(
+        join(fixture.workspaceDir, "prior.txt"),
+        "accepted prior\n",
+      );
+      git(fixture.workspaceDir, "add", "prior.txt");
+      git(fixture.workspaceDir, "commit", "-m", "independently accepted");
+      const acceptedCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      const taskStartCommit = acceptedCommit;
+      writeFileSync(
+        join(fixture.workspaceDir, "allowed.txt"),
+        "current task\n",
+      );
+      git(fixture.workspaceDir, "add", "allowed.txt");
+      git(fixture.workspaceDir, "commit", "-m", "current task");
+      const candidateCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+
+      const result = validatePublicationRange({
+        cwd: fixture.workspaceDir,
+        baseCommit,
+        candidateCommit,
+        taskStartCommit,
+        currentTaskEvidence: ["test:current-task-pass"],
+        acceptedCommits: [
+          {
+            commit: acceptedCommit,
+            taskReceipt: "task:ops/prior-publication#receipt-1",
+            verificationEvidence: ["test:prior-task-pass"],
+          },
+        ],
+      });
+      expect(result).toMatchObject({
+        ok: true,
+        commits: [acceptedCommit, candidateCommit],
+        evidence: expect.arrayContaining([
+          expect.stringContaining(
+            `${acceptedCommit}:receipt=task:ops/prior-publication#receipt-1:verification=test:prior-task-pass`,
+          ),
+          `publication-commit-authority:${candidateCommit}:current-task`,
+        ]),
+      });
+      expect(PUBLICATION_PROVENANCE_REGRESSION).toEqual({
+        dedupeKey: "aks-app-unscoped-multi-commit-publish",
+        reviewedRange:
+          "9214d32a877cfe50014a51c629ceaa3bf4b34b6a..b821ecd965b83e3452fe8f30857a9b39cf92e619",
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects and names an unvalidated pre-existing commit in the proposed range", () => {
+    const fixture = repositoryFixture();
+    try {
+      const baseCommit = git(fixture.repoDir, "rev-parse", "origin/main");
+      writeFileSync(
+        join(fixture.workspaceDir, "prior.txt"),
+        "unexpected prior\n",
+      );
+      git(fixture.workspaceDir, "add", "prior.txt");
+      git(fixture.workspaceDir, "commit", "-m", "unexpected prior");
+      const unexpectedCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      const taskStartCommit = unexpectedCommit;
+      writeFileSync(
+        join(fixture.workspaceDir, "allowed.txt"),
+        "current task\n",
+      );
+      git(fixture.workspaceDir, "add", "allowed.txt");
+      git(fixture.workspaceDir, "commit", "-m", "current task");
+      const candidateCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+
+      expect(
+        validatePublicationRange({
+          cwd: fixture.workspaceDir,
+          baseCommit,
+          candidateCommit,
+          taskStartCommit,
+          currentTaskEvidence: ["test:current-task-pass"],
+        }),
+      ).toMatchObject({
+        ok: false,
+        commits: [unexpectedCommit, candidateCommit],
+        unexpectedCommits: [unexpectedCommit],
+        reason: expect.stringContaining(unexpectedCommit),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not treat blank current-task evidence as publication authority", () => {
+    const fixture = repositoryFixture();
+    try {
+      const baseCommit = git(fixture.repoDir, "rev-parse", "origin/main");
+      const taskStartCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      writeFileSync(join(fixture.workspaceDir, "unverified.txt"), "unsafe\n");
+      git(fixture.workspaceDir, "add", "unverified.txt");
+      git(fixture.workspaceDir, "commit", "-m", "unverified task output");
+      const candidateCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+
+      expect(
+        validatePublicationRange({
+          cwd: fixture.workspaceDir,
+          baseCommit,
+          candidateCommit,
+          taskStartCommit,
+          currentTaskEvidence: ["  "],
+        }),
+      ).toMatchObject({
+        ok: false,
+        unexpectedCommits: [candidateCommit],
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   it("resolves Azure CLI from env, then local fallback, then plain az", () => {
     const root = mkdtempSync(join(tmpdir(), "non-spec-main-publication-az-"));
     const localAz = join(root, "az");
@@ -280,6 +467,10 @@ describe("non-spec main publication workflow", () => {
           summary: expect.stringContaining("Published non-draft PR 1"),
           evidence: expect.arrayContaining([
             "verification:bounded-refresh",
+            expect.stringMatching(/^publication-range:/),
+            expect.stringMatching(
+              /^publication-commit-authority:.*:current-task$/,
+            ),
             "pull-request:1",
             "pull-request-status:active",
             "target-ref:origin/main",
@@ -465,6 +656,13 @@ describe("non-spec main publication workflow", () => {
           task: taskPrompt(
             {
               allowedChangedFiles: ["allowed.txt"],
+              acceptedPublicationCommits: [
+                {
+                  commit: initialCommit,
+                  taskReceipt: "task:domain/publication#initial-pr",
+                  verificationEvidence: ["verification:initial-publication"],
+                },
+              ],
               reviewFingerprint: "prior-review-fingerprint",
               unresolvedReviewThreadIds: ["255301000"],
             },
@@ -528,6 +726,9 @@ describe("non-spec main publication workflow", () => {
           summary: expect.stringContaining("Published non-draft PR 1"),
           evidence: expect.arrayContaining([
             "verification:review-fix",
+            expect.stringContaining(
+              `${initialCommit}:receipt=task:domain/publication#initial-pr:verification=verification:initial-publication`,
+            ),
             "pull-request:1",
             "pull-request-review-fingerprint:ee3dd77a3da02bc8",
             "pull-request-review-thread-ids:255301000",

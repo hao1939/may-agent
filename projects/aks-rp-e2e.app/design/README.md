@@ -4,16 +4,9 @@ Status: convention-first reconciliation is the current operating model.
 
 The canonical cross-app design is
 [`task-resource-engine.md`](../../may-agent.app/docs/2a-design/task-resource-engine.md).
-This directory contains AKS domain history and older migration notes; when a
-note conflicts with the canonical model or current `app.ts`, the canonical
-model wins.
-
-The implemented AKS-specific task-state cleanup is recorded in
-[`task-graph-integrity-and-simplification-proposal.md`](task-graph-integrity-and-simplification-proposal.md).
-
-The current audit and incremental plan for removing AKS-specific scheduling in
-favor of the unified controller is recorded in
-[`unified-task-reconciliation-review.md`](unified-task-reconciliation-review.md).
+This directory contains current AKS domain contracts. Completed migration
+narratives live under [`archive/`](archive/README.md); they are evidence, not
+current operating guidance.
 
 The implemented standing-loop contract and liveness refinement is recorded in
 [`loop-task-contract-and-liveness-proposal.md`](loop-task-contract-and-liveness-proposal.md).

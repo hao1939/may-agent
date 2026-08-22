@@ -990,6 +990,24 @@ describe("spec loop reconciliation workflow", () => {
     expect(result.output.summary).toContain(
       "1 exact-revision completion receipt",
     );
+
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({ tasks: {}, resources: {}, receipts: {} }),
+    );
+    const boundedResult = (await execute(
+      context(ws.appDir, ws.projectDir, 2),
+    )) as any;
+    expect(boundedResult.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(boundedResult.output.summary).toContain(
+      "1 exact-revision completion receipt",
+    );
+    expect(boundedResult.output.actions).not.toContainEqual(
+      expect.objectContaining({ id: completedHolderId }),
+    );
   });
 
   test("uses a fresh task identity when the deterministic repair identity already completed", async () => {

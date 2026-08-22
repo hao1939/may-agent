@@ -19,6 +19,35 @@ export const description =
   "Publish one bounded non-spec repository patch from a main-based task worktree through a non-draft PR and exact merge observation.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
+export const PUBLICATION_PROVENANCE_REGRESSION = {
+  dedupeKey: "aks-app-unscoped-multi-commit-publish",
+  reviewedRange:
+    "9214d32a877cfe50014a51c629ceaa3bf4b34b6a..b821ecd965b83e3452fe8f30857a9b39cf92e619",
+} as const;
+
+type AcceptedPublicationCommit = {
+  commit: string;
+  taskReceipt: string;
+  verificationEvidence: string[];
+};
+
+export type PublicationRangeValidation =
+  | {
+      ok: true;
+      baseCommit: string;
+      candidateCommit: string;
+      commits: string[];
+      evidence: string[];
+    }
+  | {
+      ok: false;
+      baseCommit: string;
+      candidateCommit: string;
+      commits: string[];
+      unexpectedCommits: string[];
+      reason: string;
+    };
+
 type PullRequest = {
   pullRequestId?: unknown;
   status?: unknown;
@@ -66,6 +95,127 @@ function optionalStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.map((entry) => optionalString(entry)).filter(Boolean)
     : [];
+}
+
+export function acceptedPublicationCommits(
+  value: unknown,
+): AcceptedPublicationCommit[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const row = entry as Record<string, unknown>;
+    const commit = optionalString(row.commit);
+    const taskReceipt = optionalString(row.taskReceipt);
+    const verificationEvidence = optionalStringArray(row.verificationEvidence);
+    return /^[0-9a-f]{40}$/i.test(commit) &&
+      taskReceipt &&
+      verificationEvidence.length
+      ? [{ commit, taskReceipt, verificationEvidence }]
+      : [];
+  });
+}
+
+/**
+ * Validate the complete freshly fetched target..candidate range before any
+ * publication. Commits made after taskStartCommit belong to this bounded task;
+ * older commits require an explicit task receipt and verification evidence.
+ */
+export function validatePublicationRange(input: {
+  cwd: string;
+  baseCommit: string;
+  candidateCommit: string;
+  taskStartCommit: string;
+  currentTaskEvidence: string[];
+  acceptedCommits?: AcceptedPublicationCommit[];
+}): PublicationRangeValidation {
+  const commits = gitValue(
+    input.cwd,
+    "rev-list",
+    "--reverse",
+    `${input.baseCommit}..${input.candidateCommit}`,
+  )
+    .split(/\r?\n/)
+    .map((commit) => commit.trim())
+    .filter(Boolean);
+  if (
+    gitExitCode(
+      input.cwd,
+      "merge-base",
+      "--is-ancestor",
+      input.baseCommit,
+      input.candidateCommit,
+    ) !== 0
+  ) {
+    return {
+      ok: false,
+      baseCommit: input.baseCommit,
+      candidateCommit: input.candidateCommit,
+      commits,
+      unexpectedCommits: commits.length ? commits : [input.candidateCommit],
+      reason: `candidate is not based on freshly fetched target ${input.baseCommit}`,
+    };
+  }
+
+  const taskOwned = new Set<string>();
+  const addRange = (endCommit: string) => {
+    if (
+      gitExitCode(
+        input.cwd,
+        "merge-base",
+        "--is-ancestor",
+        input.taskStartCommit,
+        endCommit,
+      ) !== 0
+    ) {
+      return;
+    }
+    for (const commit of gitValue(
+      input.cwd,
+      "rev-list",
+      `${input.taskStartCommit}..${endCommit}`,
+    )
+      .split(/\r?\n/)
+      .filter(Boolean)) {
+      taskOwned.add(commit);
+    }
+  };
+  if (input.currentTaskEvidence.some((entry) => entry.trim().length > 0)) {
+    addRange(input.candidateCommit);
+  }
+
+  const accepted = new Map(
+    (input.acceptedCommits ?? []).map((entry) => [entry.commit, entry]),
+  );
+  const unexpectedCommits = commits.filter(
+    (commit) => !taskOwned.has(commit) && !accepted.has(commit),
+  );
+  if (unexpectedCommits.length) {
+    return {
+      ok: false,
+      baseCommit: input.baseCommit,
+      candidateCommit: input.candidateCommit,
+      commits,
+      unexpectedCommits,
+      reason: `publication range contains commits without current-task authority or an explicit accepted task receipt: ${unexpectedCommits.join(",")}`,
+    };
+  }
+
+  return {
+    ok: true,
+    baseCommit: input.baseCommit,
+    candidateCommit: input.candidateCommit,
+    commits,
+    evidence: [
+      `publication-range:${input.baseCommit}..${input.candidateCommit}`,
+      `publication-range-commits:${commits.join(",")}`,
+      ...commits.map((commit) => {
+        const receipt = accepted.get(commit);
+        return receipt
+          ? `publication-commit-authority:${commit}:receipt=${receipt.taskReceipt}:verification=${receipt.verificationEvidence.join("|")}`
+          : `publication-commit-authority:${commit}:current-task`;
+      }),
+    ],
+  };
 }
 
 type PullRequestReviewThread = {
@@ -339,6 +489,25 @@ function changedFiles(workspaceDir: string, targetRef: string): string[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .sort();
+}
+
+function publicationRangeRefusal(
+  validation: Extract<PublicationRangeValidation, { ok: false }>,
+  ownerResult: TaskReconcileResult,
+): TaskReconcileResult {
+  return {
+    state: "needs-owner",
+    summary:
+      "Refused publication because the exact freshly fetched target range contains unauthorized commits",
+    evidence: [
+      ...(ownerResult.evidence ?? []),
+      `publication-range:${validation.baseCommit}..${validation.candidateCommit}`,
+      `publication-range-commits:${validation.commits.join(",")}`,
+      `unexpected-commits:${validation.unexpectedCommits.join(",")}`,
+      `publication-refusal:${validation.reason}`,
+    ],
+    actions: ownerResult.actions ?? [],
+  };
 }
 
 function waitConditions(input: {
@@ -815,6 +984,25 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         }
       }
 
+      const rangeValidation = validatePublicationRange({
+        cwd: workspaceDir,
+        baseCommit,
+        candidateCommit: committedSourceCommit,
+        taskStartCommit: sourceCommit,
+        currentTaskEvidence: ownerResult.evidence ?? [],
+        acceptedCommits: acceptedPublicationCommits(
+          input.acceptedPublicationCommits,
+        ),
+      });
+      if (rangeValidation.ok === false) {
+        const refusal = publicationRangeRefusal(rangeValidation, ownerResult);
+        return ctx.done(refusal.summary, refusal);
+      }
+      ownerResult.evidence = [
+        ...(ownerResult.evidence ?? []),
+        ...rangeValidation.evidence,
+      ];
+
       gitValue(workspaceDir, "push", "origin", `HEAD:${sourceBranch}`);
       const refreshedPr = await pullRequest(repoDir, existingPrId);
       const waiting = waitingForPullRequest({
@@ -934,6 +1122,25 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       );
     }
   }
+
+  const rangeValidation = validatePublicationRange({
+    cwd: workspaceDir,
+    baseCommit,
+    candidateCommit: committedSourceCommit,
+    taskStartCommit: sourceCommit,
+    currentTaskEvidence: ownerResult.evidence ?? [],
+    acceptedCommits: acceptedPublicationCommits(
+      input.acceptedPublicationCommits,
+    ),
+  });
+  if (rangeValidation.ok === false) {
+    const refusal = publicationRangeRefusal(rangeValidation, ownerResult);
+    return ctx.done(refusal.summary, refusal);
+  }
+  ownerResult.evidence = [
+    ...(ownerResult.evidence ?? []),
+    ...rangeValidation.evidence,
+  ];
 
   gitValue(workspaceDir, "push", "origin", `HEAD:${sourceBranch}`);
   let pr: PullRequest;

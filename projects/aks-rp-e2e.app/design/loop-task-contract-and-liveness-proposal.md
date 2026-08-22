@@ -1,6 +1,6 @@
 # AKS Standing Loop Task Contract and Liveness
 
-Status: accepted domain contract; unified-controller migration pending
+Status: implemented domain contract; unified-controller migration complete
 
 The original 2026-07-20 implementation used sibling leaves and an AKS event
 fan-in. The current cross-app contract supersedes that scheduling detail: a

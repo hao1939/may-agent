@@ -809,11 +809,20 @@ function taskIntentForAksInput(input: AppInput): TaskIntent | null {
         category: "ops",
       };
     }
-    case "task-control":
-      return resolveAksTask({
+    case "task-control": {
+      const intent = resolveAksTask({
         ...event("project.task.tick"),
         action: stringDetail(data, "action"),
       }) as TaskIntent | null;
+      const pulseId = stringDetail(
+        recordDetail(data, "params") ?? {},
+        "pulseId",
+      );
+      if (intent && pulseId) {
+        intent.input = { ...(intent.input ?? {}), pulseId };
+      }
+      return intent;
+    }
     default:
       return null;
   }
@@ -920,7 +929,10 @@ function taskControlInput(
     action,
     taskId,
     task_id: taskId,
-    params: actionParams(params),
+    params: {
+      ...actionParams(params),
+      pulseId: crypto.randomUUID(),
+    },
   });
 }
 

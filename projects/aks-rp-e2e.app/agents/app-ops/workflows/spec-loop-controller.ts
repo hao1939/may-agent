@@ -151,6 +151,20 @@ function representedTaskIdsForSpec(
     if (represented(graph, taskId)) representedTaskIds.add(taskId);
   }
   const revision = workRevision(spec);
+  for (const receipt of spec.representedCompletionReceipts ?? []) {
+    if (receipt.workRevision !== revision) continue;
+    graph.tasks ??= {};
+    graph.tasks[receipt.taskId] ??= {
+      phase: "done",
+      input: {
+        loopId: specLoopTaskId,
+        workKey: specId,
+        specId,
+        workRevision: revision,
+      },
+    };
+    representedTaskIds.add(receipt.taskId);
+  }
   for (const [taskId, task] of Object.entries(graph.tasks ?? {})) {
     const matchesSpec =
       (task.input?.loopId === specLoopTaskId &&
@@ -196,6 +210,36 @@ function workRevision(spec: SpecLoopSpecState): string {
     spec.lastRunId ??
     spec.updatedAt;
   return createHash("sha256").update(source).digest("hex").slice(0, 10);
+}
+
+function rememberExactCompletionReceipts(
+  graph: Graph,
+  specs: Record<string, SpecLoopSpecState>,
+): boolean {
+  let changed = false;
+  for (const [taskId, task] of Object.entries(graph.tasks ?? {})) {
+    if (representedTaskState(graph, taskId) !== "done") continue;
+    const specId = String(task.input?.specId ?? task.input?.workKey ?? "");
+    const spec = specs[specId];
+    if (!spec) continue;
+    const revision = workRevision(spec);
+    if (task.input?.workRevision !== revision) continue;
+    const receipts = spec.representedCompletionReceipts ?? [];
+    if (
+      receipts.some(
+        (receipt) =>
+          receipt.taskId === taskId && receipt.workRevision === revision,
+      )
+    ) {
+      continue;
+    }
+    spec.representedCompletionReceipts = [
+      ...receipts,
+      { taskId, workRevision: revision },
+    ];
+    changed = true;
+  }
+  return changed;
 }
 
 function digest(value: string): string {
@@ -294,6 +338,9 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   importNewerSpecLoopMirrorRows(state, projectStatePath);
   saveSpecLoopState(statePath, state, [projectStatePath]);
   const graph = graphFromContext(ctx);
+  if (rememberExactCompletionReceipts(graph, state.specs)) {
+    saveSpecLoopState(statePath, state, [projectStatePath]);
+  }
   const historicalIds = Object.keys(graph.tasks ?? {});
   const remaining = Object.entries(state.specs)
     .filter(([, spec]) => !isSpecLoopSpecSatisfied(spec))

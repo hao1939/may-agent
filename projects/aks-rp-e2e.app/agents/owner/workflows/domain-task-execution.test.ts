@@ -763,6 +763,95 @@ describe("domain task execution", () => {
     }
   });
 
+  it("fails closed on an unregistered recreated workspace before dispatch without mutating Git state", async () => {
+    const fixture = repositoryFixture();
+    const generatedWorkspace = join(fixture.root, "generated-unregistered");
+    const recreatedWorkspace = join(fixture.root, "approved-removed-recreated");
+    let agentCalls = 0;
+    try {
+      git(
+        fixture.repoDir,
+        "worktree",
+        "add",
+        "-b",
+        "task/generated-unregistered",
+        generatedWorkspace,
+        "dev",
+      );
+      git(
+        fixture.root,
+        "clone",
+        "--shared",
+        fixture.repoDir,
+        recreatedWorkspace,
+      );
+      git(recreatedWorkspace, "switch", "dev");
+      const expectedHead = git(recreatedWorkspace, "rev-parse", "HEAD");
+      const worktreesBefore = git(
+        fixture.repoDir,
+        "worktree",
+        "list",
+        "--porcelain",
+      );
+      const statusBefore = git(
+        recreatedWorkspace,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+      );
+      const refsBefore = git(fixture.repoDir, "show-ref");
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: generatedWorkspace,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/reject-unregistered-recreated-workspace",
+            input: {
+              preservedWorkspaceAdoption: {
+                workspaceDir: recreatedWorkspace,
+                expectedBranch: "dev",
+                expectedHead,
+                expectedDirty: false,
+                expectedOperation: "none",
+              },
+            },
+          })}\n\`\`\``,
+          runAgent: (async () => {
+            agentCalls += 1;
+            throw new Error("agent must not run for an unregistered workspace");
+          }) as LegacyAgentCall,
+        }),
+      );
+
+      expect(agentCalls).toBe(0);
+      expect(result).toMatchObject({
+        status: "blocked",
+        summary: expect.stringContaining("validation failed"),
+        evidence: {
+          taskId: "domain/reject-unregistered-recreated-workspace",
+          declaredWorkspaceDir: recreatedWorkspace,
+          registeredWorktree: false,
+        },
+      });
+      expect(git(fixture.repoDir, "worktree", "list", "--porcelain")).toBe(
+        worktreesBefore,
+      );
+      expect(
+        git(
+          recreatedWorkspace,
+          "status",
+          "--porcelain=v1",
+          "--untracked-files=all",
+        ),
+      ).toBe(statusBefore);
+      expect(git(recreatedWorkspace, "rev-parse", "HEAD")).toBe(expectedHead);
+      expect(git(fixture.repoDir, "show-ref")).toBe(refsBefore);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   it("rejects dirty, operation, and noncanonical workspace declaration mismatches before dispatch", async () => {
     const fixture = repositoryFixture();
     const generatedWorkspace = join(fixture.root, "generated-mismatch");

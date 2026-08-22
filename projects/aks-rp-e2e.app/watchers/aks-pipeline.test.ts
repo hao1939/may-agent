@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { AksObserverContext } from "./context.js";
 import {
+  ADO_RUN_LIST_QUERY,
   observeAksPipelines,
   appendTrackedPipelineRunId,
   artifactRunCandidates,
@@ -48,6 +49,12 @@ test("scheduled provider observers do not block the May event loop", () => {
     const source = readFileSync(join(import.meta.dir, file), "utf8");
     expect(source).not.toMatch(/\b(?:spawnSync|execFileSync|execSync)\b/);
   }
+});
+
+test("ADO run-list scans project only fields consumed by the observer", () => {
+  expect(ADO_RUN_LIST_QUERY).toBe(
+    "[].{id:id,status:status,result:result,sourceBranch:sourceBranch,sourceVersion:sourceVersion,finishTime:finishTime,queueTime:queueTime,templateParameters:templateParameters}",
+  );
 });
 
 describe("progressive artifact scan selection", () => {
@@ -870,7 +877,9 @@ describe("AKS pipeline watcher", () => {
     await observeAksPipelines(ctx, dependencies);
     let state = JSON.parse(readFileSync(statePath, "utf8"));
     expect(state.trackedRunIds).toContain(oldRun.runId);
-    expect(state.terminalArtifactAttempts).toEqual({ [oldRun.runId]: 1 });
+    expect(state.terminalEmptyArtifactListings).toEqual({
+      [oldRun.runId]: 1,
+    });
     expect(
       emitted.filter((event) => event.type === "pipeline.spec.observed"),
     ).toHaveLength(0);
@@ -879,6 +888,7 @@ describe("AKS pipeline watcher", () => {
     state = JSON.parse(readFileSync(statePath, "utf8"));
     expect(state.trackedRunIds).not.toContain(oldRun.runId);
     expect(state.terminalArtifactAttempts).toEqual({});
+    expect(state.terminalEmptyArtifactListings).toEqual({});
     expect(
       emitted.filter(
         (event) =>
@@ -902,6 +912,82 @@ describe("AKS pipeline watcher", () => {
         (event) =>
           event.type === "pipeline.spec.observed" &&
           event.pipelineRunId === oldRun.runId,
+      ),
+    ).toHaveLength(1);
+  });
+
+  test("records no-verdict bootstrap evidence after a bounded empty artifact-listing grace", async () => {
+    const { ctx, emitted } = fixture();
+    const statePath = ctx.appPath(".state/watchers/aks-pipeline.json");
+    const run = {
+      runId: "177432414",
+      fingerprint: "completed:failed:177432414",
+      status: "completed",
+      result: "failed",
+      sourceBranch:
+        "refs/heads/task/spec-verify-spec-virtualmachines-mixed-sku-deallocate-current-source-523-61c2b36036",
+      sourceVersion: "39738701d020a1a70e1e497cd75b06ae9b2071d5",
+      finishTime: "2026-08-20T07:38:52.355850Z",
+      queueTime: "2026-08-20T06:51:00.119202Z",
+      artifacts: [],
+      progressive: true,
+      artifactObservable: true,
+    };
+    mkdirSync(dirname(statePath), { recursive: true });
+    writeFileSync(
+      statePath,
+      JSON.stringify({
+        schemaVersion: "10",
+        adoFingerprints: { [run.runId]: "previous-live" },
+        trackedRunIds: [run.runId],
+      }),
+    );
+    let artifactListings = 0;
+
+    const dependencies = {
+      scanAdoRuns: async () => [run],
+      listArtifactNames: async () => {
+        artifactListings += 1;
+        return [];
+      },
+      downloadArtifact: async () => {
+        throw new Error("zero advertised artifacts must not be downloaded");
+      },
+    };
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await observeAksPipelines(ctx, dependencies);
+      expect(
+        emitted.filter(
+          (event) =>
+            event.type === "pipeline.failure.observed" &&
+            event.pipelineRunId === run.runId,
+        ),
+      ).toHaveLength(0);
+    }
+
+    await observeAksPipelines(ctx, dependencies);
+
+    const state = JSON.parse(readFileSync(statePath, "utf8"));
+    expect(artifactListings).toBe(3);
+    expect(state.terminalArtifactAttempts).toEqual({});
+    expect(state.terminalEmptyArtifactListings).toEqual({});
+    expect(state.terminalArtifactUnavailable).toEqual({});
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline-artifact.unavailable" ||
+          (event.type === "pipeline.failure.observed" &&
+            event.category === "terminal_artifact_unavailable"),
+      ),
+    ).toHaveLength(0);
+    expect(
+      emitted.filter(
+        (event) =>
+          event.type === "pipeline.failure.observed" &&
+          event.pipelineRunId === run.runId &&
+          event.specId === "pipeline.master-validation.bootstrap" &&
+          event.category === "pipeline_failure",
       ),
     ).toHaveLength(1);
   });
@@ -955,7 +1041,9 @@ describe("AKS pipeline watcher", () => {
       emitted.filter(
         (event) =>
           event.type === "pipeline-artifact.unavailable" &&
-          event.pipelineRunId === run.runId,
+          event.pipelineRunId === run.runId &&
+          Array.isArray(event.artifactNames) &&
+          event.artifactNames.join(",") === "slice-01-test-results",
       ),
     ).toHaveLength(1);
     expect(
@@ -963,7 +1051,8 @@ describe("AKS pipeline watcher", () => {
         (event) =>
           event.type === "pipeline.failure.observed" &&
           event.pipelineRunId === run.runId &&
-          event.category === "terminal_artifact_unavailable",
+          event.category === "terminal_artifact_unavailable" &&
+          event.artifactName === "slice-01-test-results",
       ),
     ).toHaveLength(1);
   });

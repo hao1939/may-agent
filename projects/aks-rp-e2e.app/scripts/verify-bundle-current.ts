@@ -13,14 +13,18 @@
  * artifact under review. This check makes the staleness loud instead of
  * invisible; `bun run bundle` is the fix it points at.
  */
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const appDir = resolve(import.meta.dir, "..");
 const bundleDir = join(appDir, ".state", "bundle");
 
 /** Source trees whose changes must be re-bundled before the runtime sees them. */
-const SOURCE_ROOTS = ["agents", "watchers"];
+const SOURCE_ROOTS = [
+  "agents/app-ops/workflows",
+  "agents/owner/workflows",
+  "watchers",
+];
 const SOURCE_FILES = ["app.ts", "task-loops.ts"];
 
 function newestSourceMtimeMs(): { path: string; mtimeMs: number } {
@@ -28,7 +32,11 @@ function newestSourceMtimeMs(): { path: string; mtimeMs: number } {
 
   const consider = (path: string): void => {
     if (!existsSync(path)) return;
-    const stats = statSync(path);
+    const stats = lstatSync(path);
+    // Agent workspace directories may contain dependency symlinks (including
+    // links back into another workspace). They are not bundle source and must
+    // never be followed while checking source freshness.
+    if (stats.isSymbolicLink()) return;
     if (stats.isDirectory()) {
       for (const entry of readdirSync(path)) consider(join(path, entry));
       return;

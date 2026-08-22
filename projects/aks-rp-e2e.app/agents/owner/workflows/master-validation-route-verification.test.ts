@@ -84,7 +84,7 @@ describe("master-validation route verification workflow", () => {
     });
     expect(freshMetadata).toMatchObject({
       taskId,
-      generation: 1,
+      generation: "1",
       specId: parentInput.specId,
       sourceCommit: parentInput.sourceCommit,
       reviewed_source_commit: parentInput.sourceCommit,

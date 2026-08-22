@@ -22,36 +22,12 @@ import {
   pipelineWaitCondition,
   reconcileSpecLive,
 } from "./spec-live-reconciliation.js";
+import { assertIsolatedWriteDispatch } from "./lib/write-dispatch-guard.js";
+export { assertIsolatedWriteDispatch } from "./lib/write-dispatch-guard.js";
 export const name = "domain-task-execution";
 export const description =
   "Execute one bounded AKS domain patch in its task worktree and integrate accepted changes directly into dev.";
 export const workspace = "task";
-
-export function assertIsolatedWriteDispatch(input: {
-  workspaceDir?: string | null;
-  projectDir: string;
-  cwd: string;
-}): void {
-  if (!input.workspaceDir || !existsSync(input.workspaceDir)) {
-    throw new Error(
-      `Write-producing agent dispatch requires an existing task workspace: ${input.workspaceDir ?? "missing"}`,
-    );
-  }
-
-  const workspace = realpathSync(input.workspaceDir);
-  const project = realpathSync(input.projectDir);
-  const cwd = realpathSync(input.cwd);
-  if (workspace === project) {
-    throw new Error(
-      `Write-producing agent dispatch refused canonical workspace ${workspace}`,
-    );
-  }
-  if (cwd === project) {
-    throw new Error(
-      `Write-producing agent dispatch refused canonical execution cwd ${cwd}`,
-    );
-  }
-}
 
 function guardWriteDispatch(ctx: WorkflowContext): void {
   const workspaceDir = ctx.workspace?.root;
@@ -100,6 +76,14 @@ function optionalGitValue(cwd: string, ...args: string[]): string | null {
 
 function workspaceChanges(cwd: string): string {
   return gitValue(cwd, "status", "--porcelain=v1", "--untracked-files=all");
+}
+
+function registeredWorktreePaths(repoDir: string): Set<string> {
+  const paths = gitValue(repoDir, "worktree", "list", "--porcelain")
+    .split("\n")
+    .filter((line) => line.startsWith("worktree "))
+    .map((line) => resolve(line.slice("worktree ".length)));
+  return new Set(paths);
 }
 
 export function reconciliationTaskId(value: unknown): string | null {
@@ -1470,6 +1454,9 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         "HEAD",
       );
       const head = gitValue(workspace, "rev-parse", "HEAD");
+      const registered = registeredWorktreePaths(
+        ctx.workspace!.projectRoot,
+      ).has(workspace);
       const dirty = Boolean(workspaceChanges(workspace));
       const operation = activeGitOperation(workspace);
       const declaredOperation =
@@ -1477,6 +1464,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       if (
         workspace !== workspaceDir ||
         repositoryRoot !== workspace ||
+        !registered ||
         branch !== expectedBranch ||
         head !== expectedHead ||
         (typeof expectedDirty === "boolean" && dirty !== expectedDirty) ||
@@ -1490,8 +1478,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             declaredWorkspaceDir: workspaceDir,
             realWorkspaceDir: workspace,
             repositoryRoot,
+            registeredWorktree: registered,
             expectedBranch,
             observedBranch: branch,
+            expectedHead,
+            observedHead: head,
             expectedDirty: expectedDirty ?? null,
             observedDirty: dirty,
             expectedOperation: expectedOperation ?? null,

@@ -354,5 +354,43 @@ describe("AKS canonical route ledger", () => {
       kind: "task-control",
       data: { action: "spec-loop", taskId: specLoopTaskId },
     });
+
+    const firstPulse = actions["pulse-legacy-branch-reconciliation"]?.toInput(
+      {},
+    );
+    const secondPulse = actions["pulse-legacy-branch-reconciliation"]?.toInput(
+      {},
+    );
+    const admittedPulse = (input: NonNullable<typeof firstPulse>) =>
+      ({
+        id: "request-legacy-pulse",
+        source: { kind: "human", id: "hao" },
+        input,
+      }) as AppTaskInput;
+    const firstIntent = firstPulse
+      ? taskForCanonicalAksInput(admittedPulse(firstPulse))
+      : null;
+    const secondIntent = secondPulse
+      ? taskForCanonicalAksInput(admittedPulse(secondPulse))
+      : null;
+    expect(firstIntent).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "legacy-branch-reconciliation",
+        input: { pulseId: expect.any(String) },
+      },
+    });
+    expect(secondIntent).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "legacy-branch-reconciliation",
+        input: { pulseId: expect.any(String) },
+      },
+    });
+    if (firstIntent?.kind === "desired" && secondIntent?.kind === "desired") {
+      expect(firstIntent.intent.input?.pulseId).not.toBe(
+        secondIntent.intent.input?.pulseId,
+      );
+    }
   });
 });

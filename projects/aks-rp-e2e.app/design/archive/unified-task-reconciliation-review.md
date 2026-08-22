@@ -4,7 +4,7 @@
 bounded migration through the same shared controller, not a second scheduler.
 
 The canonical model is the shared
-[Task Resource Engine](../../may-agent.app/docs/2a-design/task-resource-engine.md).
+[Task Resource Engine](../../../may-agent.app/docs/2a-design/task-resource-engine.md).
 AKS should use that model directly rather than maintain an app-specific
 scheduler around it.
 

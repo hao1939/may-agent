@@ -53,6 +53,10 @@ export type SpecLoopSpecState = {
   retryResetAt?: string;
   retryResetByTaskId?: string;
   retryResetReason?: string;
+  representedCompletionReceipts?: Array<{
+    taskId: string;
+    workRevision: string;
+  }>;
 };
 
 export type SpecLoopState = {

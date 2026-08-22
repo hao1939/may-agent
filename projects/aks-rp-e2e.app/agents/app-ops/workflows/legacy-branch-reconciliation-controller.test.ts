@@ -108,6 +108,26 @@ test("retries only known recoverable attention summaries", () => {
   ).toBe(true);
   expect(
     retryableAttentionSummary(
+      'Workflow "legacy-branch-verification" not found.',
+    ),
+  ).toBe(true);
+  expect(
+    retryableAttentionSummary(
+      "Owner convergence was rejected because workflow legacy-branch-verification handed off without a verifier",
+    ),
+  ).toBe(true);
+  expect(
+    retryableAttentionSummary(
+      "Legacy branch convergence rejected: owner judgment lacks one current represented-ancestor proof",
+    ),
+  ).toBe(true);
+  expect(
+    retryableAttentionSummary(
+      "Recorded source task/source@0123456789012345678901234567890123456789 is stale: local ref is missing. The same task requires owner judgment instead of retrying unchanged legacy-branch verification.",
+    ),
+  ).toBe(true);
+  expect(
+    retryableAttentionSummary(
       "Task workspace preparation failed: task branch name is invalid",
     ),
   ).toBe(false);
@@ -187,6 +207,81 @@ test("unblocks a retryable attention child using its fenced generation", async (
           reason:
             "Retry the same branch verification against current origin/dev",
         },
+      ],
+    },
+  });
+});
+
+test("repairs a retryable verification child owned by the wrong workflow registry", async () => {
+  const { repo } = repository();
+  const result = await execute(
+    context(repo, {
+      live: [
+        child({
+          status: "attention",
+          generation: 7,
+          owner: "app-ops",
+          summary: 'Workflow "legacy-branch-verification" not found.',
+        }),
+      ],
+    }),
+  );
+
+  expect(result).toMatchObject({
+    status: "done",
+    output: {
+      state: "waiting",
+      actions: [
+        {
+          kind: "update-task",
+          taskId: "ops/verify-source",
+          expectedGeneration: 7,
+          owner: "aks-explorer",
+          workflow: "legacy-branch-verification",
+        },
+      ],
+      evidence: [
+        "repair-child-route:ops/verify-source@7",
+        "previous-owner:app-ops",
+        "previous-workflow:legacy-branch-verification",
+        "child-state:attention",
+      ],
+    },
+  });
+});
+
+test("repairs a pending child route before workflow startup can fail", async () => {
+  const { repo } = repository();
+  const result = await execute(
+    context(repo, {
+      live: [
+        child({
+          status: "pending",
+          generation: 8,
+          owner: "app-ops",
+        }),
+      ],
+    }),
+  );
+
+  expect(result).toMatchObject({
+    status: "done",
+    output: {
+      state: "waiting",
+      actions: [
+        {
+          kind: "update-task",
+          taskId: "ops/verify-source",
+          expectedGeneration: 8,
+          owner: "aks-explorer",
+          workflow: "legacy-branch-verification",
+        },
+      ],
+      evidence: [
+        "repair-child-route:ops/verify-source@8",
+        "previous-owner:app-ops",
+        "previous-workflow:legacy-branch-verification",
+        "child-state:pending",
       ],
     },
   });

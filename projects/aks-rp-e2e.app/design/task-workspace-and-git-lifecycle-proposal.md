@@ -1,10 +1,12 @@
 # AKS Task Workspace and Git Lifecycle
 
-**Status:** Implemented AKS pilot; legacy dirty recovery remains visible
+**Status:** Implemented contract; finite legacy recovery remains active
 **Scope:** AKS-local pilot with one small generic workflow-execution hook
 **Evidence date:** 2026-07-21
-**Cleanup status:** 466 safe worktrees removed, 15 stale registrations pruned,
-96 dirty worktrees retained under one recovery namespace
+**Latest frontier audit:** 2026-08-20; 156 registered worktrees remain: 117
+clean retained-branch candidates, 12 merged attached worktrees, one reachable
+detached worktree, 22 dirty/manual-recovery worktrees, two active-attempt-linked
+worktrees, and the canonical checkout plus remaining registration residue.
 **Related:**
 [AKS App Design](README.md),
 [Task Workspace Convention](../../may-agent.app/docs/3-proposals/task-workspace-convention.md),
@@ -12,6 +14,12 @@
 [Workflows](../../may-agent.app/docs/2a-design/workflows.md)
 
 ## Decision summary
+
+The counts below record the original pilot evidence; they are not the current
+frontier. Current cleanup is owned by `legacy-branch-reconciliation` and ends
+only when every retained branch/worktree is integrated, explicitly rejected,
+or preserved for named owner recovery. Do not reuse the retired one-shot
+workspace migration scripts or infer active ownership from Host task files.
 
 Adopt this operating model for `aks-rp-e2e`:
 
