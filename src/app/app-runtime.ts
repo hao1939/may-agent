@@ -197,7 +197,7 @@ export async function runAppRuntime(opts: {
         type: "app.dependency.updated",
         source: "human-task-service",
         owner: "human:operator",
-        data: { kind: "task", id: taskId },
+        data: { kind: "task", id: taskId, appId },
       });
     },
   });

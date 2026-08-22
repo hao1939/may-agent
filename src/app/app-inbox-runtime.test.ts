@@ -221,8 +221,8 @@ describe("App inbox runtime", () => {
             data: { type: "object", additionalProperties: false, required: ["value"], properties: { value: { type: "string" } } }
           }
         },
-        task(input) { return { kind: "desired", intent: {
-          id: "other/" + input.id, parentId: "other", outcome: "Other work", acceptance: ["Done"], mode: "achieve"
+        task() { return { kind: "desired", intent: {
+          id: "probe/waiting-request", parentId: "other", outcome: "Other work", acceptance: ["Done"], mode: "achieve"
         } }; },
         tasks: {}
       };\n`,
@@ -255,6 +255,11 @@ describe("App inbox runtime", () => {
       source: { kind: "system", id: "test" },
       input: { kind: "probe", data: { value: "unrelated" } },
     });
+    await runtime.host.reconcileOnce("other");
+    expect(runtime.host.get("unrelated-request")?.waitingOn).toEqual({
+      kind: "task",
+      id: "probe/waiting-request",
+    });
     task.observations.set("probe/waiting-request", {
       kind: "task",
       id: "probe/waiting-request",
@@ -266,13 +271,12 @@ describe("App inbox runtime", () => {
       type: "app.dependency.updated",
       source: "test-task",
       owner: "app:evaluation",
-      data: { kind: "task", id: "probe/waiting-request" },
+      data: { kind: "task", id: "probe/waiting-request", appId: "evaluation" },
     });
     await waitUntil(() => runtime?.host.get("waiting-request")?.status === "done");
     await Bun.sleep(25);
 
-    expect(runtime.host.get("unrelated-request")?.status).toBe("pending");
-    expect(task.attached).not.toContain("other/unrelated-request");
+    expect(runtime.host.get("unrelated-request")?.status).toBe("handling");
   });
 
   it("translates a subscribed Event into the same Task path", async () => {

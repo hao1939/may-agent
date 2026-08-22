@@ -56,6 +56,7 @@ describe("canonical database schema", () => {
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_available")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_expired")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_task_wait_recovery")).toBe(true);
       const inboxSql = db
         .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'")
         .get() as { sql: string };

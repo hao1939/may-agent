@@ -2972,7 +2972,7 @@ function emitAppTaskDependencyCompleted(
     type: "app.dependency.completed",
     source: `app-task:${descriptor.id}:task-reconciler`,
     owner: `agent:${descriptor.owner}`,
-    data: { kind: "task", id: taskId },
+    data: { kind: "task", id: taskId, appId: descriptor.id },
   });
 }
 
@@ -2985,7 +2985,7 @@ function emitAppTaskDependencyUpdated(
     type: "app.dependency.updated",
     source: `app-task:${descriptor.id}:task-reconciler`,
     owner: `agent:${descriptor.owner}`,
-    data: { kind: "task", id: taskId },
+    data: { kind: "task", id: taskId, appId: descriptor.id },
   });
 }
 

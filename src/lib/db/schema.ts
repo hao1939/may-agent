@@ -340,6 +340,10 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_expired
   WHERE status != 'done' AND lease_expires_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_waiting
   ON app_inbox_items(waiting_on_kind, waiting_on_id, status);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_task_wait_recovery
+  ON app_inbox_items(app_id, waiting_on_id)
+  WHERE status = 'handling' AND lease_owner IS NULL
+    AND waiting_on_kind = 'task' AND waiting_on_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_parent
   ON app_inbox_items(parent_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_continues
