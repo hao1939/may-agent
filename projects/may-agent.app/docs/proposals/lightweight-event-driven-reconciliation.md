@@ -118,7 +118,10 @@ As with Node.js, asynchronous dispatch does not make CPU-heavy synchronous
 JavaScript harmless. A callback performs one small turn and yields. Long model
 and network I/O is awaited; long commands and CPU-heavy work run in bounded
 workers or child processes. Synchronous database work on `publish` is limited
-to the current event and its exact links.
+to the current event and its exact links. Calling an `async` function directly
+does not defer its synchronous prefix; real handling must be scheduled onto a
+later event-loop turn before it opens stores, discovers work, or prepares an
+execution.
 
 ### An App may emit events before it finishes
 

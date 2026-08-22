@@ -99,6 +99,12 @@ stale notifications may be dropped with a warning; the durable event and
 resource remain available for resynchronization. A listener failure is
 observable but cannot undo the accepted event.
 
+An `async` function is not by itself an asynchronous boundary: its synchronous
+prefix runs immediately until the first `await`. A handler that opens stores,
+discovers work, scans state, or constructs an execution must first schedule a
+later event-loop turn. Only validation, event persistence, exact correlation,
+and the exact durable wake may execute on the publication stack.
+
 A required consumer does not gain a special synchronous handler. It first
 persists the exact request, Task link, or operation that makes the work
 recoverable, then handles that resource asynchronously. Ordering is local to
