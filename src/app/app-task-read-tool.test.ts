@@ -55,4 +55,58 @@ describe("App Task read tool", () => {
 
     expect(text(await tool.execute("call", { action: "list" }))).toEqual({ error: "No current App Task scope" });
   });
+
+  it("publishes only from the current fenced Task attempt", async () => {
+    const calls: unknown[] = [];
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      scope: () => ({ appId: "evaluation", taskId: "review", generation: 2, attemptId: "attempt-7" }),
+      publisher: {
+        publish(input) {
+          calls.push(input);
+          return 91;
+        },
+      },
+    });
+
+    expect(
+      text(
+        await tool.execute("call-publish", {
+          action: "publish",
+          localKey: "finding-1",
+          eventType: "review.finding",
+          data: { summary: "One mismatch" },
+        }),
+      ),
+    ).toEqual({ eventId: 91, type: "review.finding" });
+    expect(calls).toEqual([
+      expect.objectContaining({
+        binding: { appId: "evaluation", taskId: "review", generation: 2, attemptId: "attempt-7" },
+        localKey: "finding-1",
+        event: { type: "review.finding", data: { summary: "One mismatch" } },
+      }),
+    ]);
+  });
+
+  it("does not publish from an App-scoped session without a current attempt", async () => {
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      scope: () => ({ appId: "evaluation" }),
+      publisher: {
+        publish() {
+          throw new Error("must not run");
+        },
+      },
+    });
+
+    expect(
+      text(
+        await tool.execute("call-publish", {
+          action: "publish",
+          localKey: "finding-1",
+          eventType: "review.finding",
+        }),
+      ),
+    ).toEqual({ error: "No current fenced Task attempt" });
+  });
 });

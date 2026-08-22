@@ -346,6 +346,7 @@ export function appTaskSpecHash(intent: AppTaskIntent, effectiveOwner?: string):
           mode: intent.mode,
           owner: effectiveOwner ?? intent.owner ?? null,
           workflow: intent.workflow ?? null,
+          executor: intent.executor ?? "agent",
           input: intent.input ?? {},
           outputs: intent.outputs ?? [],
           dependsOn: intent.dependsOn ?? [],
@@ -363,6 +364,7 @@ function resourceSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
     mode: intent.mode,
     ...(intent.owner?.trim() ? { owner: intent.owner.trim() } : {}),
     ...(intent.workflow?.trim() ? { workflow: intent.workflow.trim() } : {}),
+    ...(intent.executor ? { executor: intent.executor } : {}),
     ...(intent.input ? { input: stableValue(intent.input) as Record<string, unknown> } : {}),
     ...(intent.outputs ? { outputs: [...intent.outputs] } : {}),
     ...(intent.dependsOn ? { dependsOn: [...intent.dependsOn] } : {}),
@@ -380,6 +382,7 @@ function resourceIntent(resource: AppTaskResource): AppTaskIntent {
     mode: resource.spec.mode,
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
+    ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
     ...(resource.spec.input ? { input: { ...resource.spec.input } } : {}),
     ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
     ...(resource.spec.dependsOn ? { dependsOn: [...resource.spec.dependsOn] } : {}),
@@ -399,6 +402,7 @@ function createActionIntent(action: CreateTaskAction): AppTaskIntent {
     mode: action.mode,
     ...(action.owner ? { owner: action.owner } : {}),
     ...(action.workflow ? { workflow: action.workflow } : {}),
+    ...(action.executor ? { executor: action.executor } : {}),
     ...(action.input ? { input: structuredClone(action.input) } : {}),
     outputs: [...action.outputs],
     ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
@@ -912,6 +916,7 @@ function syncTaskProjection(task: TaskNode, resource: AppTaskResource, owner: st
   task.priority = intent.priority ?? task.priority ?? "P2";
   task.owner = owner;
   task.workflow = intent.workflow;
+  task.executor = intent.executor;
   task.reconcile_mode = intent.mode;
   task.kind = intent.category;
   task.summary = resource.status.summary;
@@ -1399,6 +1404,12 @@ function validateIntent(intent: AppTaskIntent): void {
       );
     }
   }
+  if (intent.executor !== undefined && !["agent", "codex", "claude"].includes(intent.executor)) {
+    throw new Error(`Task ${intent.id} executor must be agent, codex, or claude`);
+  }
+  if (intent.workflow && intent.executor) {
+    throw new Error(`Task ${intent.id} cannot configure both workflow and executor`);
+  }
 }
 
 function validateParentReference(tree: TaskTree, taskId: string, parentId: string): void {
@@ -1737,6 +1748,7 @@ export type AppTaskChildContext = {
     outcome: string;
     owner?: string;
     workflow?: string;
+    executor?: "agent" | "codex" | "claude";
     input: Record<string, unknown>;
     priority?: "P0" | "P1" | "P2" | "P3";
     category?: string;
@@ -1767,6 +1779,7 @@ export type AppTaskChildContext = {
     outcome: string;
     owner: string;
     workflow?: string;
+    executor?: "agent" | "codex" | "claude";
     input: Record<string, unknown>;
     priority?: "P0" | "P1" | "P2" | "P3";
     conditions: AppTaskConditionSpec[];
@@ -1784,6 +1797,7 @@ export type AppTaskSnapshotContext = {
   phase: AppTaskResource["status"]["phase"];
   outcome: string;
   owner?: string;
+  executor?: "agent" | "codex" | "claude";
   priority?: "P0" | "P1" | "P2" | "P3";
   category?: string;
   dependsOn?: string[];
@@ -1834,6 +1848,7 @@ function liveTaskContext(
     outcome: boundedChildContextText(resource.spec.outcome),
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
+    ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
     input: structuredClone(resource.spec.input ?? {}),
     ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
     ...(resource.spec.category ? { category: resource.spec.category } : {}),
@@ -1880,6 +1895,7 @@ function liveTaskSnapshotContext(
     phase: resource.status.phase,
     outcome: boundedChildContextText(resource.spec.outcome).slice(0, MAX_SNAPSHOT_CONTEXT_TEXT),
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
+    ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
     ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
     ...(resource.spec.category ? { category: resource.spec.category } : {}),
     ...(resource.spec.dependsOn?.length ? { dependsOn: resource.spec.dependsOn.slice(0, MAX_LIVE_CHILD_CONTEXT) } : {}),
@@ -1934,6 +1950,7 @@ export function readAppTaskChildContext(config: TaskStateConfig, taskId: string)
         outcome: boundedChildContextText(receipt.outcome),
         owner: receipt.owner,
         ...(receipt.workflow ? { workflow: receipt.workflow } : {}),
+        ...(receipt.executor ? { executor: receipt.executor } : {}),
         input: structuredClone(receipt.input ?? {}),
         ...(receipt.priority ? { priority: receipt.priority } : {}),
         conditions: [],
@@ -2240,7 +2257,8 @@ export type AppTaskWorkspaceRepairCandidate = {
   taskId: string;
   generation: number;
   owner: string;
-  workflow: string;
+  workflow?: string;
+  executor?: "codex" | "claude";
   previous?: AppTaskWorkspace;
 };
 
@@ -2255,7 +2273,12 @@ export function listWorkspacePreparationFailedAppTasks(
     const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
     return Object.values(tree.resources ?? {})
       .flatMap((resource): AppTaskWorkspaceRepairCandidate[] => {
-        if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return [];
+        const workflow = resource.spec.workflow?.trim();
+        const executor =
+          resource.spec.executor === "codex" || resource.spec.executor === "claude"
+            ? resource.spec.executor
+            : undefined;
+        if (resource.status.phase !== "attention" || (!workflow && !executor)) return [];
         const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
         if (attempt?.failureReason !== "WorkspacePreparationFailed") return [];
         const previous = Object.values(tree.attempts ?? {})
@@ -2272,7 +2295,8 @@ export function listWorkspacePreparationFailedAppTasks(
             taskId: resource.metadata.id,
             generation: resource.metadata.generation,
             owner: resolvedOwner(tree, intent, appOwner),
-            workflow: intent.workflow!.trim(),
+            ...(workflow ? { workflow } : {}),
+            ...(executor ? { executor } : {}),
             ...(previous ? { previous } : {}),
           },
         ];
@@ -2578,7 +2602,9 @@ export function claimObservedAppTask(
           ? `owner:${owner}`
           : intent.workflow?.trim()
             ? `workflow:${intent.workflow.trim()}`
-            : `owner:${owner}`
+            : intent.executor === "codex" || intent.executor === "claude"
+              ? `cli:${intent.executor}`
+              : `owner:${owner}`
         : input.handler === "owner"
           ? `owner:${owner}`
           : input.handler;
@@ -3163,6 +3189,7 @@ function validateTaskActions(
       if (action.workflow !== undefined) {
         requireValidTaskWorkflow(action.workflow, `Handler create action ${action.id} workflow`);
       }
+      validateIntent(createActionIntent(action));
       if (action.input !== undefined && !isRecord(action.input)) {
         throw new Error(`Handler create action ${action.id} input must be an object`);
       }
@@ -3202,6 +3229,7 @@ function validateTaskActions(
             priority: action.priority,
             ...(action.owner ? { owner: action.owner } : {}),
             ...(action.workflow ? { workflow: action.workflow } : {}),
+            ...(action.executor ? { executor: action.executor } : {}),
             ...(action.input ? { input: structuredClone(action.input) } : {}),
             ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
             ...(action.category ? { category: action.category } : {}),
@@ -3286,6 +3314,7 @@ function validateTaskActions(
       action.priority === undefined &&
       action.owner === undefined &&
       action.workflow === undefined &&
+      action.executor === undefined &&
       action.input === undefined &&
       action.dependsOn === undefined &&
       action.category === undefined
@@ -3438,6 +3467,11 @@ function applyTaskActions(
           if (action.workflow === null) delete nextIntent.workflow;
           else nextIntent.workflow = action.workflow;
         }
+        if (action.executor !== undefined) {
+          if (action.executor === null) delete nextIntent.executor;
+          else nextIntent.executor = action.executor;
+        }
+        validateIntent(nextIntent);
         if (action.category !== undefined) {
           if (action.category === null) delete nextIntent.category;
           else nextIntent.category = action.category;
@@ -3523,6 +3557,7 @@ function applyTaskActions(
             acceptance: [...intent.acceptance],
             owner: intent.owner ?? task.owner ?? claim.owner,
             ...(intent.workflow ? { workflow: intent.workflow } : {}),
+            ...(intent.executor ? { executor: intent.executor } : {}),
             input: structuredClone(intent.input ?? {}),
             ...(intent.priority ? { priority: intent.priority } : {}),
             handler: claim.handler,
@@ -3866,6 +3901,7 @@ export function completeAppTask(
           acceptance: [...intent.acceptance],
           owner: claim.owner,
           ...(intent.workflow ? { workflow: intent.workflow } : {}),
+          ...(intent.executor ? { executor: intent.executor } : {}),
           input: structuredClone(intent.input ?? {}),
           ...(intent.priority ? { priority: intent.priority } : {}),
           handler: claim.handler,

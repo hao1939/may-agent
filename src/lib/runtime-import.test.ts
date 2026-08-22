@@ -50,6 +50,27 @@ describe("importRuntimeModule", () => {
     expect(reloaded.imports).toBe(first.imports + 1);
   });
 
+  it("loads the entry revision whose hash is recorded without a global reload", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-import-revision-"));
+    roots.push(root);
+
+    const modulePath = join(root, "revision.ts");
+    writeFileSync(modulePath, "export const value = 'first';\n");
+    const first = await importRuntimeModule<{ value: string }>(modulePath, {
+      forceBundle: true,
+      entryContentHash: "first-hash",
+    });
+
+    writeFileSync(modulePath, "export const value = 'second';\n");
+    const second = await importRuntimeModule<{ value: string }>(modulePath, {
+      forceBundle: true,
+      entryContentHash: "second-hash",
+    });
+
+    expect(first.value).toBe("first");
+    expect(second.value).toBe("second");
+  });
+
   it("bundles external runtime modules through the canonical SDK boundary", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-"));
     roots.push(root);

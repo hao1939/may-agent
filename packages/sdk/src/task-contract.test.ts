@@ -1,10 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Check } from "typebox/value";
-import {
-  admitTaskReconcileResult,
-  admitTaskVerificationResult,
-  taskOwnerResultSchema,
-} from "./task-contract.js";
+import { admitTaskReconcileResult, admitTaskVerificationResult, taskOwnerResultSchema } from "./task-contract.js";
 
 const workflowOptions = { allowNeedsOwner: true, defaultParentId: "app-root" };
 
@@ -200,6 +196,48 @@ describe("project task handler contract", () => {
       workflow: null,
       owner: "scout",
     });
+  });
+
+  it("admits one executor selection and rejects ambiguous workflow binding", () => {
+    const selected = admitTaskReconcileResult(
+      {
+        state: "converged",
+        summary: "Delegated one bounded implementation",
+        evidence: [],
+        actions: [
+          {
+            kind: "create-task",
+            id: "work/codex",
+            outcome: "Implement the bounded change.",
+            acceptance: ["The change is verified."],
+            executor: "codex",
+          },
+        ],
+      },
+      workflowOptions,
+    );
+    expect(selected.ok && selected.result.actions?.[0]).toMatchObject({ executor: "codex" });
+
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "Ambiguous delegation",
+          evidence: [],
+          actions: [
+            {
+              kind: "create-task",
+              id: "work/ambiguous",
+              outcome: "Do work.",
+              acceptance: ["Done."],
+              workflow: "implementation",
+              executor: "claude",
+            },
+          ],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "actions[0] cannot configure both workflow and executor" });
   });
 
   it("rejects the removed expectedRevision action field", () => {

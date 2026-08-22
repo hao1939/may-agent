@@ -80,6 +80,7 @@ export type TestAppWorkflowContextOptions<TInput> = {
   callAgent?: WorkflowContext["agents"]["call"];
   runWorkflow?: WorkflowContext["workflows"]["run"];
   emit?: WorkflowContext["events"]["emit"];
+  onEvent?: WorkflowContext["events"]["onEvent"];
   recordMetric?: WorkflowContext["metrics"]["record"];
   workspace?: WorkflowContext["workspace"];
   executionId?: string;
@@ -107,7 +108,10 @@ export function createTestAppWorkflowContext<TInput>(
     workflows: {
       run: options.runWorkflow ?? fn(async (name: string) => terminal("workflow", `wf_test_${name}`)),
     },
-    events: { emit: options.emit ?? fn(async () => undefined) },
+    events: {
+      emit: options.emit ?? fn(async () => undefined),
+      onEvent: options.onEvent ?? fn(() => () => undefined),
+    },
     metrics: {
       define: fn(() => undefined),
       defineMany: fn(() => undefined),

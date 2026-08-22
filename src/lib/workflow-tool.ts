@@ -64,7 +64,7 @@ import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
-import type { AppTaskEmitter } from "../app/app-task-emitter.js";
+import type { AppTaskEvents } from "../app/app-task-emitter.js";
 import { createUnavailableQueryService } from "./query-service.js";
 import { createUnavailableCommandService } from "./command-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
@@ -278,6 +278,7 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
 }
 
 async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"): Promise<WorkflowModule> {
+  const entryContentHash = createHash("sha256").update(readFileSync(filePath)).digest("hex");
   const mod = await importRuntimeModule<{
     name?: unknown;
     description?: unknown;
@@ -285,7 +286,7 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
     workspace?: unknown;
     execute?: unknown;
     verify?: unknown;
-  }>(filePath);
+  }>(filePath, { entryContentHash });
   if (typeof mod.name !== "string" || !mod.name.trim()) {
     throw new Error(`Workflow file ${filePath} must export a non-empty 'name' string`);
   }
@@ -339,7 +340,7 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
     ...(typeof mod.verify === "function" ? { verify: mod.verify as WorkflowModule["verify"] } : {}),
     sourcePath: filePath,
     sourceScope,
-    entryContentHash: createHash("sha256").update(readFileSync(filePath)).digest("hex"),
+    entryContentHash,
   };
 }
 
@@ -719,7 +720,7 @@ export interface RunWorkflowDirectOpts {
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   /** Fenced event capability for a resource-backed Task attempt. */
-  taskEmitter?: AppTaskEmitter;
+  taskEmitter?: AppTaskEvents;
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
@@ -831,7 +832,7 @@ export interface WorkflowToolOptions {
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
   /** Fenced App-authored event capability for a resource-backed Task attempt. */
-  taskEmitter?: AppTaskEmitter;
+  taskEmitter?: AppTaskEvents;
   /** Resolved app/domain paths supplied by Agent App infrastructure. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input for a system-dispatched top-level workflow. */
@@ -1472,6 +1473,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         );
       },
     };
+    const taskEventUnsubscribers = new Set<() => void>();
 
     const ctx = {
       task,
@@ -1538,11 +1540,22 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               throw new Error("Task-owned workflow events require a stable localKey");
             }
             const { localKey, ...published } = event;
-            opts.taskEmitter.emit(localKey, published as { type: string; data: Record<string, unknown> });
+            opts.taskEmitter.publish(localKey, published as { type: string; data: Record<string, unknown> });
           } else {
             emitRuntimeEvent(event);
           }
           onEvent?.(event as WorkflowEvent);
+        },
+        onEvent: (listener: (event: unknown) => void) => {
+          assertExecutionActive();
+          if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can observe Task events");
+          const unsubscribe = opts.taskEmitter.onEvent((event) => listener(event));
+          const tracked = () => {
+            taskEventUnsubscribers.delete(tracked);
+            unsubscribe();
+          };
+          taskEventUnsubscribers.add(tracked);
+          return tracked;
         },
       },
 
@@ -1937,6 +1950,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         },
       });
       throw err;
+    } finally {
+      for (const unsubscribe of taskEventUnsubscribers) unsubscribe();
     }
   }
 
