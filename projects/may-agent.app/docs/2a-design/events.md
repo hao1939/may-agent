@@ -16,6 +16,8 @@ record because a later result is owed; a fact does not create another resource.
 
 ```text
 publish(event) -> validate -> persist -> resolve/wake task -> receipt
+                                                   |
+                                                   +-> async handling
 ```
 
 The event ID is the root causal identity. An event does not replace mutable work
@@ -83,15 +85,24 @@ session controls use `publish(EventInput)`; the retired flat `input`, `steer`,
 `cancel`, `cancel_all`, `fork`, `reload`, `restart`, and `shutdown` socket
 shortcuts are rejected.
 
-Persistence and required routing finish inside `publish`. Passive listeners
-run afterward for persisted, non-replayed events. Each listener has its own filtered, bounded FIFO, so socket
-streams, Console rendering, Conversation mirroring, and similar presentation
-cannot add latency to semantic acceptance or block one another. When a listener
-falls behind, stale notifications may be dropped with a warning; the durable
-event and resource remain available for resynchronization. A listener failure
-is observable but cannot undo the accepted event. A listener that actually owns
-routing or ordered adapter state is not passive and stays on the synchronous
-route until that responsibility is split out.
+Persistence and the exact durable link or wake finish inside `publish`. That
+small admission step is not event handling: it records which Task or operation
+owns the input and puts an identity in the ready set. Model calls, workflows,
+commands, network I/O, presentation, broad reads, and other actual handling
+always begin asynchronously after `publish` returns.
+
+Passive listeners run afterward for persisted, non-replayed events. Each
+listener has its own filtered, bounded FIFO, so socket streams, Console
+rendering, Conversation mirroring, and similar presentation cannot add latency
+to semantic acceptance or block one another. When a listener falls behind,
+stale notifications may be dropped with a warning; the durable event and
+resource remain available for resynchronization. A listener failure is
+observable but cannot undo the accepted event.
+
+A required consumer does not gain a special synchronous handler. It first
+persists the exact request, Task link, or operation that makes the work
+recoverable, then handles that resource asynchronously. Ordering is local to
+one Task or operation; unrelated consumers run independently.
 
 Expiry repair for pending delivery and lifecycle-pair records runs in the
 separate maintenance process. Event persistence never performs that periodic

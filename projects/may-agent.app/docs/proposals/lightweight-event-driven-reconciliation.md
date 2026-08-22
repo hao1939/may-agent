@@ -13,7 +13,8 @@ Build the system around one plain loop:
 event arrives
   -> persist the event
   -> link and wake each exact interested task
-  -> run one bounded App reconciliation
+  -> return the event receipt
+  -> asynchronously run one bounded App reconciliation
   -> persist what changed
   -> release execution resources
 ```
@@ -38,7 +39,7 @@ The minimum useful system has six parts:
 
 | Part       | Only job                                                                          |
 | ---------- | --------------------------------------------------------------------------------- |
-| EventHub   | Persist an event, give it an identity, and notify declared routes                 |
+| EventHub   | Persist an event, give it an identity, wake exact owners, and notify listeners    |
 | Task store | Keep the current desired and observed state of each task                          |
 | Dispatcher | Hold a deduplicated in-memory set of ready task IDs                               |
 | Executor   | Run one fenced, bounded attempt and then release it                               |
@@ -77,8 +78,47 @@ It does not start a second attempt for the same task and does not silently
 invalidate the current attempt. When that attempt ends, one fresh pass sees all
 new input. Explicit cancellation is an event that revokes the attempt.
 
-The producer never waits for downstream consumers. Once an event is durably
-accepted, its consumers proceed independently.
+The producer waits only for the small durable boundary: validation,
+persistence, exact correlation, and exact task wake. It never waits for the
+App, agent, workflow, adapter, metric, or other downstream consumer to do its
+work. Once an event is durably accepted, its consumers proceed independently.
+
+### Event publication is fast; handling is asynchronous
+
+The EventHub has one deliberate split:
+
+```text
+publish (inline)                    handle (later)
+validate envelope                  reconcile the Task
+append event                       call a model or provider
+record exact request/task links    run a workflow or command
+put a task ID in the ready set     render Console/Telegram
+return receipt                     project metrics, traces, and views
+```
+
+Inline routing is not an event handler. It may perform only bounded local
+state changes required to say truthfully, “the durable owner now has this
+event.” It must not call a model, wait for a network request, start a workflow,
+scan history, render an interface, or perform unrelated filesystem work.
+
+Required handling becomes asynchronous by first linking the event to its exact
+Task or operation. That durable link supplies restart recovery; an in-memory
+callback is only a wake-up hint. Optional observers use independent filtered,
+bounded FIFOs and may reread durable resources after a dropped hint. They never
+become a second reliable work queue.
+
+Each consumer proceeds independently. A slow Telegram send cannot block
+Console, a slow metric observer cannot block task admission, and a long App
+attempt cannot block another Task. Ordering exists only where it carries
+meaning: event links are ordered for one Task, and that Task has at most one
+active attempt. This is the same small event-loop model throughout the Host;
+no extension receives a special synchronous execution path.
+
+As with Node.js, asynchronous dispatch does not make CPU-heavy synchronous
+JavaScript harmless. A callback performs one small turn and yields. Long model
+and network I/O is awaited; long commands and CPU-heavy work run in bounded
+workers or child processes. Synchronous database work on `publish` is limited
+to the current event and its exact links.
 
 ### An App may emit events before it finishes
 
@@ -552,13 +592,15 @@ synchronous because execution begins immediately after that event; separating
 that tiny ordering responsibility avoids hiding a real race behind the word
 "observer."
 
-The remaining synchronous EventBus handlers are limited to work that changes
-the meaning or acceptance of the current event: persistence; durable App and
-command routing; CLI/cron admission; metric mutation/admission; bounded
-stuck/recovery and escalation state; session-start identity binding; and the
-small ordering-critical runtime indexes. Console/Telegram presentation,
-socket streams, projections, cleanup, digests, and network delivery are not on
-that boundary.
+The synchronous EventBus boundary is limited to work that changes the meaning
+or acceptance of the current event: persistence; durable App, command,
+CLI/cron, and metric admission; exact request/task links; session-start
+identity binding; and small ordering-critical indexes. It records ownership
+and wakes work; it does not execute the work. Stuck detection, auto-resume,
+escalation follow-up, Console/Telegram presentation, socket streams,
+project-comment projection, cleanup, digests, and network delivery use
+independent async listeners. Long-running meaning belongs to a Task, not an
+inline subscriber.
 
 Generic session recovery is deterministic again. The Host no longer invokes a
 digest/evaluator model to choose whether a stuck session should be cancelled or

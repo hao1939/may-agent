@@ -145,21 +145,27 @@ the envelope, then routes it to caller correlation, task resolution/wake,
 session control, or Host lifecycle control. It is not another broker, queue,
 service, or handler framework.
 
-`publish` persists and runs required semantic routes synchronously. Passive
-listeners receive persisted, non-replayed events afterward in their own
-filtered, bounded FIFOs. A slow Console, socket client, or Conversation
-mirror therefore cannot extend event acceptance, block another listener, or
-retain an unbounded backlog. These notifications are hints to reread durable
-resources, not a second guaranteed-delivery channel. App observers below are
-different: they are bounded external-state readers that produce facts.
+`publish` synchronously validates, persists, and records only the exact durable
+request, Task wake, or operation needed for acceptance. It then returns. The
+App, workflow, agent, command, network call, and presentation work run
+asynchronously; inline routing never performs the work it admits.
+
+Passive listeners receive persisted, non-replayed events afterward in their
+own filtered, bounded FIFOs. A slow Console, socket client, Conversation
+mirror, metric observer, or lifecycle observer therefore cannot extend event
+acceptance, block another listener, or retain an unbounded backlog. These
+notifications are hints to reread durable resources, not a second
+guaranteed-delivery channel. App observers below are different: they are
+bounded external-state readers that produce facts.
 
 Session digest files, `last-session` summaries, terminal agent cleanup, task
-session recovery, adapter rendering, and public event streams use this passive
-path. The small session-start binding remains synchronous because the execution
-that follows immediately must see its session identity. Telegram rendering and
-network delivery are passive Conversation observation; Telegram has no
-session-output, notification-review, or approval-ordering route on event
-acceptance.
+session recovery, stuck detection, auto-resume, escalation follow-up, project
+comment projection, adapter rendering, and public event streams use this
+passive path. The small session-start binding remains synchronous because the
+execution that follows immediately must see its session identity. Telegram
+rendering and network delivery are passive Conversation observation; Telegram
+has no session-output, notification-review, or approval-ordering route on
+event acceptance.
 
 The local `status` control read has an explicit diagnostics option that samples
 process heap, external memory, and RSS on demand. Normal health probes do not
