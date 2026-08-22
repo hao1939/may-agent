@@ -2,8 +2,12 @@ import {
   readFileSync,
   writeFileSync,
   appendFileSync,
+  closeSync,
+  fstatSync,
   mkdirSync,
+  openSync,
   existsSync,
+  readSync,
   renameSync,
   rmSync,
   readdirSync,
@@ -289,6 +293,68 @@ export function rewriteSessionMessages(persistDir: string, sessionId: string, me
  *  Corrupted lines are skipped with a warning. */
 export function readSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
   return readJsonlFile<AgentMessage>(sessionJsonlPath(persistDir, sessionId));
+}
+
+/**
+ * Read a bounded tail of a session transcript without loading the whole JSONL
+ * file. A partial first line is discarded; corrupted complete lines are
+ * skipped with the same warning behavior as readSessionMessages().
+ */
+export function readSessionMessagesTail(
+  persistDir: string,
+  sessionId: string,
+  limit: number,
+  maxBytes = 8 * 1024 * 1024,
+): AgentMessage[] {
+  const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0;
+  const normalizedMaxBytes = Number.isFinite(maxBytes) ? Math.max(0, Math.floor(maxBytes)) : 0;
+  if (normalizedLimit === 0 || normalizedMaxBytes === 0) return [];
+
+  const filePath = sessionJsonlPath(persistDir, sessionId);
+  if (!existsSync(filePath)) return [];
+
+  const descriptor = openSync(filePath, "r");
+  try {
+    const size = fstatSync(descriptor).size;
+    if (size === 0) return [];
+
+    const boundedStart = Math.max(0, size - normalizedMaxBytes);
+    const readStart = boundedStart > 0 ? boundedStart - 1 : 0;
+    const buffer = Buffer.allocUnsafe(size - readStart);
+    let bytesRead = 0;
+    while (bytesRead < buffer.length) {
+      const count = readSync(descriptor, buffer, bytesRead, buffer.length - bytesRead, readStart + bytesRead);
+      if (count === 0) break;
+      bytesRead += count;
+    }
+
+    let raw = buffer.subarray(0, bytesRead);
+    if (boundedStart > 0) {
+      const startedAtLineBoundary = raw[0] === 0x0a;
+      raw = raw.subarray(1);
+      if (!startedAtLineBoundary) {
+        const firstCompleteLine = raw.indexOf(0x0a) + 1;
+        if (firstCompleteLine === 0) return [];
+        raw = raw.subarray(firstCompleteLine);
+      }
+    }
+
+    const messages: AgentMessage[] = [];
+    const lines = raw.toString("utf8").split("\n");
+    for (let index = lines.length - 1; index >= 0 && messages.length < normalizedLimit; index--) {
+      const line = lines[index]?.trim();
+      if (!line) continue;
+      try {
+        messages.push(JSON.parse(line) as AgentMessage);
+      } catch {
+        log("warn", `[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
+      }
+    }
+    messages.reverse();
+    return messages;
+  } finally {
+    closeSync(descriptor);
+  }
 }
 
 /** Delete the session JSONL file if it exists. */
