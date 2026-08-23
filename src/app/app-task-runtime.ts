@@ -522,6 +522,25 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
   };
 }
 
+/** Canonical durable Task event envelope plus its event-journal identity. */
+function canonicalTaskEvent(event: AgentEvent): Record<string, unknown> {
+  const canonical = canonicalAppEvent(event) as Record<string, unknown>;
+  const envelope = event as unknown as Record<string, unknown>;
+  const persistedEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+  const timestamp = envelope.timestamp;
+  return {
+    ...canonical,
+    ...(typeof timestamp === "number" && Number.isFinite(timestamp)
+      ? { timestamp }
+      : typeof timestamp === "string" && timestamp.trim()
+        ? { timestamp: timestamp.trim() }
+        : {}),
+    ...(Number.isInteger(persistedEventId) && Number(persistedEventId) > 0
+      ? { eventId: Number(persistedEventId) }
+      : {}),
+  };
+}
+
 function requiredAppAgentNames(descriptor: AppTaskRuntimeDescriptor): string[] {
   return [descriptor.agent];
 }
@@ -3011,6 +3030,7 @@ function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTa
 
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
 const appTaskRecoverySchedulersByBus = new WeakMap<EventBus, Map<string, AppTaskRecoveryScheduler>>();
+const APP_TASK_RECOVERY_SAFETY_INTERVAL_MS = 60_000;
 
 function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, note: string): DeliveryResult {
   return {
@@ -3118,7 +3138,7 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     opts,
     descriptor,
     controller,
-    event: flattenEvent(input.event),
+    event: canonicalTaskEvent(input.event),
     intent: input.intent,
     targetedTaskId: input.targetedTaskId,
     conditionTaskIds: input.conditionTaskIds,
@@ -3135,7 +3155,7 @@ export function previewLoadedCanonicalAppTaskEvent(input: {
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === input.appId);
   if (!descriptor?.app.tasks) return [];
   const allowed = input.targetedTaskId ? [input.targetedTaskId] : undefined;
-  return matchingAppTaskConditionTaskIds(appTaskConfig(descriptor), flattenEvent(input.event), allowed);
+  return matchingAppTaskConditionTaskIds(appTaskConfig(descriptor), canonicalTaskEvent(input.event), allowed);
 }
 
 function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {
@@ -3294,7 +3314,7 @@ function installConventionTaskControllers(
     if (!config.resourceStore) throw new Error(`App ${descriptor.id} task resource authority is unavailable`);
     recoveryScheduler = new AppTaskRecoveryScheduler({
       source: config.resourceStore,
-      safetyIntervalMs: tasks.resyncIntervalMs ?? 60_000,
+      safetyIntervalMs: APP_TASK_RECOVERY_SAFETY_INTERVAL_MS,
       enqueue: (taskId, options) => {
         controller.enqueue(taskId, options);
       },
@@ -3942,12 +3962,6 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   const concurrency = app.tasks?.maxConcurrent ?? 1;
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
-  }
-  if (app.tasks) {
-    const resyncIntervalMs = app.tasks.resyncIntervalMs ?? 60_000;
-    if (!Number.isFinite(resyncIntervalMs) || resyncIntervalMs <= 0) {
-      throw new Error(`App ${id} task resyncIntervalMs must be positive`);
-    }
   }
 }
 

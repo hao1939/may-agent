@@ -435,10 +435,6 @@ export class AppInboxHost {
     return rows.flatMap((row) => (typeof row.app_id === "string" && loaded.has(row.app_id) ? [row.app_id] : []));
   }
 
-  maxConcurrent(appId: string): number {
-    return this.#requiredApp(appId).inbox?.maxConcurrent ?? 1;
-  }
-
   wake(waitingOn: { kind: AppInboxWaitKind; id: string }): number {
     return wakeAppInboxItemsWaitingOn(this.#db, waitingOn, this.#now());
   }

@@ -214,7 +214,7 @@ export function getAppEventAdmissionPlan(db: SqliteDb, eventId: number): AppEven
 }
 
 /**
- * Read a bounded slice of the durable admission queue.
+ * Read a bounded slice of the durable admission journal for recovery.
  *
  * `updatedBefore` is the retry fence: a failed plan is not visible again until
  * its cooldown has elapsed. New plans still enter through the event fast path

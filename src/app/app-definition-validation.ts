@@ -73,16 +73,7 @@ export function validateAppDefinition(definition: unknown): string[] {
   }
 
   if (app.inbox !== undefined) {
-    const inbox = record(app.inbox);
-    if (!inbox) errors.push(`App ${appId} inbox must be an object`);
-    else {
-      if (inbox.batch !== undefined) {
-        errors.push(`App ${appId} inbox batch is retired; each reconciliation handles one request`);
-      }
-      if (inbox.maxConcurrent !== undefined && !positiveInteger(inbox.maxConcurrent)) {
-        errors.push(`App ${appId} inbox maxConcurrent must be a positive safe integer`);
-      }
-    }
+    errors.push(`App ${appId} inbox is retired; the Host owns request scheduling`);
   }
 
   if (app.subscriptions !== undefined) {
@@ -202,9 +193,6 @@ export function validateAppDefinition(definition: unknown): string[] {
     else {
       if (tasks.maxConcurrent !== undefined && !positiveInteger(tasks.maxConcurrent)) {
         errors.push(`App ${appId} task maxConcurrent must be a positive safe integer`);
-      }
-      if (tasks.resyncIntervalMs !== undefined && !positiveFinite(tasks.resyncIntervalMs)) {
-        errors.push(`App ${appId} task resyncIntervalMs must be positive`);
       }
       if (tasks.subscriptions !== undefined) {
         if (!Array.isArray(tasks.subscriptions) || tasks.subscriptions.some((entry) => !validSelector(entry))) {

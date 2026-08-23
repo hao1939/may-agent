@@ -182,6 +182,79 @@ describe("App inbox runtime", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("returns from durable publication before request coordination starts", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "app.input.requested",
+      source: "test",
+      owner: "app:evaluation",
+      data: {
+        appId: "evaluation",
+        requestId: "deferred-request",
+        input: { kind: "probe", data: { value: "deferred" } },
+        source: { kind: "system", id: "test" },
+      },
+    });
+
+    expect(runtime.host.get("deferred-request")).toMatchObject({ status: "pending" });
+    expect(runtime.host.get("deferred-request")?.lease).toBeUndefined();
+    expect(task.attached).toEqual([]);
+    await waitUntil(() => task.attached.length === 1);
+    expect(runtime.host.get("deferred-request")?.waitingOn).toEqual({
+      kind: "task",
+      id: "probe/deferred-request",
+    });
+  });
+
+  it("uses Host capacity for concurrent requests from the same App", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const started: string[] = [];
+    const releases: Array<() => void> = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      maxConcurrentRequests: 2,
+      attachTask: async (input: any) => {
+        const taskId = input.attachment.intent.id as string;
+        started.push(taskId);
+        await new Promise<void>((resolve) => releases.push(resolve));
+        return { taskId };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    for (const requestId of ["parallel-1", "parallel-2"]) {
+      bus.emit({
+        type: "app.input.requested",
+        source: "test",
+        owner: "app:evaluation",
+        data: {
+          appId: "evaluation",
+          requestId,
+          input: { kind: "probe", data: { value: requestId } },
+          source: { kind: "system", id: "test" },
+        },
+      });
+    }
+
+    await waitUntil(() => started.length === 2);
+    expect(started).toEqual(["probe/parallel-1", "probe/parallel-2"]);
+    for (const release of releases) release();
+    await waitUntil(() => runtime?.host.get("parallel-2")?.waitingOn?.kind === "task");
+  });
+
   it("recovers an exact Task wait after restart", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);

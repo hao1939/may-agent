@@ -271,6 +271,15 @@ function preferredTriggerFromEvents(events: AppTaskTriggerEvent[], taskAgent: st
   return rest.reduce((preferred, entry) => preferredTaskTrigger(preferred, entry.event, taskAgent), first.event);
 }
 
+/**
+ * New attempts retain the ordered canonical event batch only. Derive the
+ * compatibility projection when a caller still needs one; fall back to the
+ * persisted field for legacy rows and synthetic attempts without an event.
+ */
+function attemptTrigger(attempt: AppTaskAttempt): Record<string, unknown> | undefined {
+  return attempt.events?.length ? preferredTriggerFromEvents(attempt.events, attempt.owner) : attempt.trigger;
+}
+
 function restoreAttemptEvents(
   tree: TaskTree,
   taskId: string,
@@ -794,19 +803,22 @@ function completedConditionReviewCount(tree: TaskTree, taskId: string, condition
         attempt.reason === "condition-review-checkpoint-missed",
     )
     .filter((attempt) => {
-      const data = isRecord(attempt.trigger?.data) ? attempt.trigger.data : {};
+      const trigger = attemptTrigger(attempt);
+      const data = isRecord(trigger?.data) ? trigger.data : {};
       const conditionIds = Array.isArray(data.conditionIds)
         ? data.conditionIds.filter((value): value is string => typeof value === "string")
         : [];
       return conditionIds.includes(conditionId);
     });
   const highestRecordedAttempt = matchingAttempts.reduce((highest, attempt) => {
-    const data = isRecord(attempt.trigger?.data) ? attempt.trigger.data : {};
+    const trigger = attemptTrigger(attempt);
+    const data = isRecord(trigger?.data) ? trigger.data : {};
     const reviewAttempt = Number(data.reviewAttempt);
     return Number.isInteger(reviewAttempt) ? Math.max(highest, reviewAttempt) : highest;
   }, 0);
   const legacyAttemptCount = matchingAttempts.filter((attempt) => {
-    const data = isRecord(attempt.trigger?.data) ? attempt.trigger.data : {};
+    const trigger = attemptTrigger(attempt);
+    const data = isRecord(trigger?.data) ? trigger.data : {};
     return !Number.isInteger(Number(data.reviewAttempt));
   }).length;
   return Math.max(highestRecordedAttempt, legacyAttemptCount);
@@ -981,13 +993,14 @@ export function recoverableAppTaskAttempts(
         (!includeFreshLeases && leaseIsFresh(attempt, nowMs))
       )
         return [];
+      const trigger = attemptTrigger(attempt);
       return [
         {
           taskId: resource.metadata.id,
           intent: resourceIntent(resource),
           ...(attempt.events?.length ? { events: structuredClone(attempt.events) } : {}),
           ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
-          ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
+          ...(trigger ? { trigger: structuredClone(trigger) } : {}),
           ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
           taskGeneration: resource.metadata.generation,
           taskResourceVersion: resource.metadata.resourceVersion,
@@ -1030,6 +1043,7 @@ export function terminalAgentSessionAppTaskClaim(
       return null;
     }
     const intent = resourceIntent(resource);
+    const trigger = attemptTrigger(attempt);
     return {
       kind: "claimed",
       taskId,
@@ -1049,7 +1063,7 @@ export function terminalAgentSessionAppTaskClaim(
             : [],
       ),
       eventsTruncated: Boolean(attempt.eventsTruncated),
-      ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
+      ...(trigger ? { trigger: structuredClone(trigger) } : {}),
       declaredOutputPaths: [],
     };
   });
@@ -1077,12 +1091,13 @@ export function expiredAgentSessionAppTaskAttempt(
     ) {
       return null;
     }
+    const trigger = attemptTrigger(attempt);
     return {
       taskId,
       intent: resourceIntent(resource),
       ...(attempt.events?.length ? { events: structuredClone(attempt.events) } : {}),
       ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
-      ...(attempt.trigger ? { trigger: structuredClone(attempt.trigger) } : {}),
+      ...(trigger ? { trigger: structuredClone(trigger) } : {}),
       sessionId: attempt.sessionId,
       taskGeneration: resource.metadata.generation,
       taskResourceVersion: resource.metadata.resourceVersion,
@@ -2015,7 +2030,8 @@ export function readAppTaskTrigger(config: TaskStateConfig, taskId: string): Rec
     if (pending) return structuredClone(pending.event);
     const resource = tree.resources?.[taskId];
     const attempt = resource ? currentResourceAttempt(tree, resource) : null;
-    return attempt?.trigger ? structuredClone(attempt.trigger) : undefined;
+    const trigger = attempt ? attemptTrigger(attempt) : undefined;
+    return trigger ? structuredClone(trigger) : undefined;
   });
 }
 
@@ -2661,7 +2677,7 @@ export function claimObservedAppTask(
     const canRecoverPreviousRuntime = Boolean(
       previousAttempt &&
       previousAttempt.runtimeId !== reconcilerRuntimeId &&
-      (input.reason === `attempt-recovery:${task.id}` || previousAttempt.trigger),
+      (input.reason === `attempt-recovery:${task.id}` || attemptTrigger(previousAttempt)),
     );
     const supersededSessionIds = new Set<string>();
     const pendingTrigger = tree.taskTriggers?.[task.id];
@@ -2679,7 +2695,7 @@ export function claimObservedAppTask(
     }
     const claimedEvents = pendingEvents.slice(0, MAX_TASK_EVENTS_PER_ATTEMPT);
     const remainingEvents = pendingEvents.slice(MAX_TASK_EVENTS_PER_ATTEMPT);
-    const hasTrigger = Boolean(pendingTrigger?.event ?? previousAttempt?.trigger);
+    const hasTrigger = Boolean(pendingTrigger?.event ?? (previousAttempt ? attemptTrigger(previousAttempt) : undefined));
     if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
       const now = new Date().toISOString();
       const summary = "Previous runtime attempt had no persisted trigger; retrying from current task evidence";
@@ -2793,7 +2809,7 @@ export function claimObservedAppTask(
     }
     const trigger =
       (claimedEvents.length > 0 ? preferredTriggerFromEvents(claimedEvents, agent) : undefined) ??
-      previousAttempt?.trigger ??
+      (previousAttempt ? attemptTrigger(previousAttempt) : undefined) ??
       (missedCheckpointConditionIds.length > 0
         ? {
             ...syntheticAttemptTrigger(config, task.id, "condition-review-checkpoint-missed"),
@@ -2824,7 +2840,10 @@ export function claimObservedAppTask(
         missedCheckpointConditionIds.length > 0 ? "condition-review-checkpoint-missed" : (input.reason ?? "event"),
       ...(claimedEvents.length > 0 ? { events: structuredClone(claimedEvents) } : {}),
       ...(remainingEvents.length > 0 ? { eventsTruncated: true } : {}),
-      ...(trigger ? { trigger } : {}),
+      // Event-backed attempts retain one canonical copy in `events`. Keep a
+      // persisted trigger only for synthetic and legacy-compatible attempts
+      // that have no durable event batch.
+      ...(claimedEvents.length === 0 && trigger ? { trigger } : {}),
       startedAt: now,
     };
     // The canonical attempt, not its optional first Agent session, owns the

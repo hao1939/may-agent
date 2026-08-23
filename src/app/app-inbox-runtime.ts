@@ -301,6 +301,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const dirty = new Set<string>();
   const pending: string[] = [];
   const queued = new Set<string>();
+  let pumpHandle: ReturnType<typeof setImmediate> | null = null;
   const maxConcurrentRequests = options.maxConcurrentRequests ?? 2;
   if (!Number.isSafeInteger(maxConcurrentRequests) || maxConcurrentRequests <= 0) {
     throw new Error("App request concurrency must be a positive safe integer");
@@ -355,46 +356,56 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     });
   };
 
+  const armPump = (): void => {
+    if (closed || pumpHandle) return;
+    pumpHandle = setImmediate(() => {
+      pumpHandle = null;
+      pump();
+    });
+  };
+
   const pump = (): void => {
     const activeCount = () => [...active.values()].reduce((total, count) => total + count, 0);
-    while (!closed) {
-      const foregroundIndex = pending.findIndex((appId) => appId === "may" && (active.get(appId) ?? 0) === 0);
-      const nextIndex = activeCount() < maxConcurrentRequests ? 0 : foregroundIndex;
-      if (nextIndex < 0) return;
-      const [appId] = pending.splice(nextIndex, 1);
-      if (!appId) return;
-      queued.delete(appId);
-      if (!dirty.has(appId)) continue;
-      const appActive = active.get(appId) ?? 0;
-      if (appActive >= host.maxConcurrent(appId)) continue;
-      active.set(appId, appActive + 1);
-      dirty.delete(appId);
-      const work = host.reconcileOnce(appId);
-      // reconcileOnce claims its item before its first asynchronous boundary.
-      // Requeue immediately when another independent item is ready and both
-      // the App and Host still have room.
-      if (host.readyCount(appId) > 0) schedule(appId);
-      void work
-        .then((outcome) => {
-          report(appId, outcome);
-          for (const conversationId of outcome.conversationIds ?? []) {
-            notifyConversationUpdated(appId, conversationId);
-          }
-        })
-        .catch((error) => {
-          options.bus.emit({
-            type: "info",
-            message: `[app-inbox:${appId}] ${error instanceof Error ? error.message : String(error)}`,
-          });
-        })
-        .finally(() => {
-          const remaining = (active.get(appId) ?? 1) - 1;
-          if (remaining > 0) active.set(appId, remaining);
-          else active.delete(appId);
-          if (dirty.has(appId)) schedule(appId);
-          pump();
-        });
+    if (closed) return;
+    const foregroundIndex = pending.findIndex((appId) => appId === "may" && (active.get(appId) ?? 0) === 0);
+    const nextIndex = activeCount() < maxConcurrentRequests ? 0 : foregroundIndex;
+    if (nextIndex < 0) return;
+    const [appId] = pending.splice(nextIndex, 1);
+    if (!appId) return;
+    queued.delete(appId);
+    if (!dirty.has(appId)) {
+      armPump();
+      return;
     }
+    const appActive = active.get(appId) ?? 0;
+    active.set(appId, appActive + 1);
+    dirty.delete(appId);
+    const work = host.reconcileOnce(appId);
+    // Start at most one request claim per event-loop turn. Event publication
+    // has already returned before this pump claims the request and resolves
+    // its Task, and unrelated I/O can run between independent claims.
+    if (host.readyCount(appId) > 0) schedule(appId);
+    void work
+      .then((outcome) => {
+        report(appId, outcome);
+        for (const conversationId of outcome.conversationIds ?? []) {
+          notifyConversationUpdated(appId, conversationId);
+        }
+      })
+      .catch((error) => {
+        options.bus.emit({
+          type: "info",
+          message: `[app-inbox:${appId}] ${error instanceof Error ? error.message : String(error)}`,
+        });
+      })
+      .finally(() => {
+        const remaining = (active.get(appId) ?? 1) - 1;
+        if (remaining > 0) active.set(appId, remaining);
+        else active.delete(appId);
+        if (dirty.has(appId)) schedule(appId);
+        armPump();
+      });
+    armPump();
   };
 
   const schedule = (appId: string): void => {
@@ -402,7 +413,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     dirty.add(appId);
     if (queued.has(appId)) return;
     const appActive = active.get(appId) ?? 0;
-    if (appActive >= host.maxConcurrent(appId)) return;
     const activeCount = [...active.values()].reduce((total, count) => total + count, 0);
     // When Host capacity is full, let another App queue ahead of additional
     // work for the App that is already running. This preserves round-robin
@@ -410,7 +420,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (appActive > 0 && activeCount >= maxConcurrentRequests) return;
     queued.add(appId);
     pending.push(appId);
-    pump();
+    armPump();
   };
 
   let taskRecovery: Promise<void> | null = null;
@@ -967,6 +977,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      if (pumpHandle) clearImmediate(pumpHandle);
+      pumpHandle = null;
       if (admissionRecoveryHandle) clearImmediate(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
       observerRuntime.close();

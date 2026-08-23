@@ -62,6 +62,10 @@ function eventField(event: Record<string, unknown>, ...names: string[]): unknown
   for (const name of names) {
     if (target[name] !== undefined) return target[name];
   }
+  const data = isRecord(event.data) ? event.data : {};
+  for (const name of names) {
+    if (data[name] !== undefined) return data[name];
+  }
   return undefined;
 }
 

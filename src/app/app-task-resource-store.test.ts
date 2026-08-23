@@ -104,13 +104,17 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
-  it("backfills normalized Condition routes when opening a legacy resource database", () => {
+  it("backfills normalized Condition and Task relationship routes when opening a legacy resource database", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-resource-legacy-"));
     roots.push(root);
     const db = openDatabase(join(root, "host.sqlite"));
     const legacy = resource("legacy");
     legacy.status.conditionIds = ["legacy-condition"];
     db.exec(`
+      CREATE TABLE app_task_store_meta (
+        app_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
+        PRIMARY KEY(app_id, key)
+      );
       CREATE TABLE app_tasks (
         app_id TEXT NOT NULL, task_id TEXT NOT NULL,
         generation INTEGER NOT NULL, resource_version INTEGER NOT NULL,
@@ -125,6 +129,7 @@ describe("AppTaskResourceStore", () => {
         PRIMARY KEY(app_id, condition_id)
       );
     `);
+    db.prepare("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', '1')").run("example");
     db.prepare(
       `INSERT INTO app_tasks(
          app_id, task_id, generation, resource_version, observed_generation, phase, lane,
@@ -144,7 +149,50 @@ describe("AppTaskResourceStore", () => {
     );
 
     const store = AppTaskResourceStore.fromDb(db, "example");
+    expect(
+      db.prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'schema_version'").get("example"),
+    ).toEqual({ value: "2" });
     expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
+    expect(
+      db.prepare(
+        `SELECT source_task_id, relation_kind, target_task_id
+         FROM app_task_relations WHERE app_id = 'example'`,
+      ).all(),
+    ).toEqual([{ source_task_id: "legacy", relation_kind: "parent", target_task_id: "project" }]);
+    db.close();
+  });
+
+  it("reads direct children and dependents through exact relationship indexes", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-resource-relations-"));
+    roots.push(root);
+    const db = openDatabase(join(root, "host.sqlite"));
+    const store = AppTaskResourceStore.fromDb(db, "example");
+    const tree = fixture();
+    const child = resource("child");
+    child.spec.parentId = "normal";
+    const dependent = resource("dependent");
+    dependent.spec.dependsOn = ["normal"];
+    const unrelated = resource("unrelated");
+    tree.resources = { normal: tree.resources!.normal!, child, dependent, unrelated };
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    store.importPausedSnapshot(tree, "revision-1");
+
+    const context = store.readTaskContext({ taskIds: ["normal"] });
+    expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child", "dependent", "normal"]);
+    expect(context.resources?.unrelated).toBeUndefined();
+    const plan = db
+      .prepare(
+        `EXPLAIN QUERY PLAN
+         SELECT task.task_id
+         FROM app_task_relations relation
+         JOIN app_tasks task
+           ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
+         WHERE relation.app_id = ? AND relation.target_task_id IN (?)`,
+      )
+      .all("example", "normal") as Array<{ detail?: string }>;
+    expect(plan.some(({ detail }) => detail?.includes("idx_app_task_relations_target"))).toBeTrue();
+    expect(plan.some(({ detail }) => detail?.includes("sqlite_autoindex_app_tasks_1"))).toBeTrue();
     db.close();
   });
 

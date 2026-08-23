@@ -802,8 +802,9 @@ describe("App task reconciler state", () => {
     });
     expect(claimedTree.attempts?.[claim.attemptId]).toMatchObject({
       reason: "queue",
-      trigger: { type: "pipeline.changed" },
+      events: [{ event: { type: "pipeline.changed" } }],
     });
+    expect(claimedTree.attempts?.[claim.attemptId]?.trigger).toBeUndefined();
     expect(claimedTree.tasks["pipeline-monitor"].trace?.reconciliation).toBeUndefined();
   });
 
@@ -1193,7 +1194,9 @@ describe("App task reconciler state", () => {
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
     expect(resumed.intent.category).toBe("domain");
     expect(resumed.trigger).toEqual(event);
-    expect(readTaskState(config).attempts?.[resumed.attemptId]?.trigger).toEqual(event);
+    const persistedAttempt = readTaskState(config).attempts?.[resumed.attemptId];
+    expect(persistedAttempt?.events?.[0]?.event).toEqual(event);
+    expect(persistedAttempt?.trigger).toBeUndefined();
   });
 
   it("preflights Condition routes without mutation and admits only selected exact tasks", () => {
@@ -1420,10 +1423,12 @@ describe("App task reconciler state", () => {
     expect(secondClaim).toMatchObject({ kind: "claimed", taskId: monitor.id });
     if (secondClaim.kind !== "claimed") throw new Error("expected second claim");
 
-    expect(readTaskState(config).attempts?.[secondClaim.attemptId]).toMatchObject({
+    const persistedAttempt = readTaskState(config).attempts?.[secondClaim.attemptId];
+    expect(persistedAttempt).toMatchObject({
       state: "running",
-      trigger: overrideTrigger,
+      events: [{ event: overrideTrigger }],
     });
+    expect(persistedAttempt?.trigger).toBeUndefined();
   });
 
   it("wakes a waiting task for explicit human task control", () => {
@@ -2673,8 +2678,9 @@ describe("App task reconciler state", () => {
     expect(recovered.attempts?.[reclaimed.attemptId]).toMatchObject({
       state: "running",
       reason: `attempt-recovery:${first.taskId}`,
-      trigger: { type: "session.end" },
+      events: [{ event: { type: "session.end" } }],
     });
+    expect(recovered.attempts?.[reclaimed.attemptId]?.trigger).toBeUndefined();
   });
 
   it("claims a previous-runtime attempt with a persisted trigger during ordinary resync", () => {
@@ -2721,11 +2727,16 @@ describe("App task reconciler state", () => {
       runtimeId: expect.any(String),
       state: "running",
       reason: "task-controller",
-      trigger: {
-        type: "session.end",
-        data: { project: "sample", sessionId: "session-1" },
-      },
+      events: [
+        {
+          event: {
+            type: "session.end",
+            data: { project: "sample", sessionId: "session-1" },
+          },
+        },
+      ],
     });
+    expect(tree.attempts?.[resync.attemptId]?.trigger).toBeUndefined();
     expect(tree.resources?.[first.taskId].status).toMatchObject({
       phase: "running",
       currentAttemptId: resync.attemptId,
@@ -2988,13 +2999,18 @@ describe("App task reconciler state", () => {
     expect(released.attempts?.[reclaimed.attemptId]).toMatchObject({
       state: "running",
       reason: `attempt-recovery:${claim.taskId}`,
-      trigger: {
-        type: "project.task.tick",
-        source: "app-task:sample:task-controller",
-        target: { project: "sample", taskId: "evaluate:session-1" },
-        reason: "task-controller",
-      },
+      events: [
+        {
+          event: {
+            type: "project.task.tick",
+            source: "app-task:sample:task-controller",
+            target: { project: "sample", taskId: "evaluate:session-1" },
+            reason: "task-controller",
+          },
+        },
+      ],
     });
+    expect(released.attempts?.[reclaimed.attemptId]?.trigger).toBeUndefined();
     expect(released.active_task_ids).toContain(claim.taskId);
   });
 
@@ -3698,9 +3714,9 @@ describe("App task reconciler state", () => {
     expect(next).toMatchObject({ kind: "claimed", taskId: claim.taskId, generation: claim.generation });
     if (next.kind !== "claimed") throw new Error("expected reclaim");
     expect(readTaskState(config).tasks[claim.taskId]).toMatchObject({ state: "active" });
-    expect(readTaskState(config).attempts?.[next.attemptId]).toMatchObject({
-      trigger: { type: "project.problem.resolved" },
-    });
+    const persistedAttempt = readTaskState(config).attempts?.[next.attemptId];
+    expect(persistedAttempt).toMatchObject({ events: [{ event: { type: "project.problem.resolved" } }] });
+    expect(persistedAttempt?.trigger).toBeUndefined();
   });
 
   it("releases execution failure only after newer success from the same agent", () => {
@@ -5553,8 +5569,7 @@ describe("App task reconciler state", () => {
     expect(
       trackAppTaskConditionEvent(config, {
         type: "project.approval.submitted",
-        approvalId: "approval-42",
-        decision: "approve",
+        data: { approvalId: "approval-42", decision: "approve" },
       }),
     ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "approval-returned" }]);
   });
