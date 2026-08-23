@@ -13,6 +13,7 @@ import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } 
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
 import type { HostCapacity } from "./host-capacity.js";
+import { createCodexGoalPocExecutor } from "./codex-goal-poc-executor.js";
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
@@ -156,6 +157,12 @@ export async function prepareDaemonAgents(opts: {
       manager: opts.manager,
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
+      executors: {
+        "codex-goal-poc": createCodexGoalPocExecutor({
+          stateFile: join(opts.persistDir, "codex-goal-poc-bindings.json"),
+          command: process.env.MAY_CODEX_GOAL_COMMAND,
+        }),
+      },
       registerLocalAgent,
       appRegistry: opts.appRegistry,
       startAfter,
