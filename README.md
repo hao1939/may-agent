@@ -1,6 +1,7 @@
-# may-agent runtime
+# May Host
 
-The hosted runtime for May agents and project apps. It runs agent sessions,
+This repository retains the technical name `may-agent`, but it implements the
+generic **May Host**, not May's reasoning worker. The Host runs agent sessions,
 workflows, task reconciliation, transports, persistence, and the local control
 surfaces used by the apps under `/app/projects`.
 

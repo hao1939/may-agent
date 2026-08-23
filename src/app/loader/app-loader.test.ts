@@ -62,6 +62,21 @@ describe("canonical App loader", () => {
     });
   });
 
+  it("loads code from a release while keeping the canonical App path", async () => {
+    const sourceRoot = fixture();
+    const canonicalRoot = join(sourceRoot, "canonical-projects");
+    writeFileSync(
+      join(sourceRoot, "evaluation.app", "app.js"),
+      `export default { id: "evaluation", version: 1, owner: "evaluator", inputSchema: { type: "object" } };\n`,
+    );
+
+    const loaded = await loadAppDefinitions(sourceRoot, {}, canonicalRoot);
+    expect(loaded[0]).toMatchObject({
+      appDir: join(canonicalRoot, "evaluation.app"),
+      definition: { id: "evaluation" },
+    });
+  });
+
   it("rejects a retired ProjectApp declaration instead of adapting it", async () => {
     const root = fixture();
     writeFileSync(

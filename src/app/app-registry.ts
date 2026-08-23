@@ -33,7 +33,10 @@ export class AppRegistry {
   private current: AppRegistrySnapshot;
   private reloadQueue: Promise<void> = Promise.resolve();
 
-  constructor(private readonly projectsRoot: string) {
+  constructor(
+    private projectsRoot: string,
+    private readonly canonicalProjectsRoot = projectsRoot,
+  ) {
     this.current = Object.freeze({ id: `${this.bootId}:0`, generation: 0, entries: Object.freeze([]) });
   }
 
@@ -65,8 +68,11 @@ export class AppRegistry {
     };
   }
 
-  reload(apply?: (next: AppRegistrySnapshot) => void | Promise<void>): Promise<LoadedAppDefinition[]> {
-    const operation = this.reloadQueue.then(() => this.performReload(apply));
+  reload(
+    apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
+    projectsRoot = this.projectsRoot,
+  ): Promise<LoadedAppDefinition[]> {
+    const operation = this.reloadQueue.then(() => this.performReload(apply, projectsRoot));
     this.reloadQueue = operation.then(
       () => undefined,
       () => undefined,
@@ -76,12 +82,13 @@ export class AppRegistry {
 
   private async performReload(
     apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
+    projectsRoot = this.projectsRoot,
   ): Promise<LoadedAppDefinition[]> {
     // Discovery is part of the serialized reload transaction. Invalidating
     // here makes a rejected generation retryable and prevents a queued reload
     // from reusing the module graph discovered by its predecessor.
     invalidateRuntimeModuleCache();
-    const next = await loadAppDefinitions(this.projectsRoot);
+    const next = await loadAppDefinitions(projectsRoot, {}, this.canonicalProjectsRoot);
     const generation = this.current.generation + 1;
     const prospective = Object.freeze({
       id: `${this.bootId}:${generation}`,
@@ -95,6 +102,7 @@ export class AppRegistry {
       );
     }
     this.current = prospective;
+    this.projectsRoot = projectsRoot;
     return this.entries();
   }
 }

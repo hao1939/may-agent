@@ -9,6 +9,7 @@ import { createMetricService } from "../lib/metrics.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
+import { AppSourceReleaseStore } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { readAppConversationResource } from "./app-inbox-store.js";
@@ -168,8 +169,14 @@ export async function runAppRuntime(opts: {
   });
 
   let appInboxRuntime: AppInboxRuntime | null = null;
-  const appRegistry = new AppRegistry(opts.projectsRoot);
+  const appSources = new AppSourceReleaseStore(opts.projectRoot, opts.persistDir);
+  const activeAppSource = appSources.ensureCurrent();
+  const appRegistry = new AppRegistry(activeAppSource.projectsRoot, opts.projectsRoot);
   await appRegistry.reload();
+  bus.emit({
+    type: "info",
+    message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
+  });
   const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry, {
     onCancelled: ({ appId, taskId, sessionId, reason }) => {
       if (sessionId && manager.hasActiveSession(sessionId)) manager.cancel(sessionId);
@@ -280,12 +287,32 @@ export async function runAppRuntime(opts: {
       appInboxRuntime?.close();
     },
     reloadApps: async () => {
+      const candidate = appSources.stage();
+      const previous = appSources.current();
       let taskApps = 0;
-      const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
-        const result = await appTasks.publishGeneration({ snapshot, publish: commit });
-        taskApps = result.apps;
-      });
-      return { appIds, taskApps };
+      try {
+        const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
+          const result = await appTasks.publishGeneration({
+            snapshot,
+            publish: () => {
+              appSources.activate(candidate);
+              try {
+                commit();
+              } catch (error) {
+                if (previous) appSources.activate(previous);
+                throw error;
+              }
+            },
+          });
+          taskApps = result.apps;
+        }, candidate.projectsRoot);
+        return { appIds, taskApps };
+      } catch (error) {
+        if (previous && appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
+          appSources.activate(previous);
+        }
+        throw error;
+      }
     },
   });
   installProcessHandlers();
