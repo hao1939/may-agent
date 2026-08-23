@@ -614,11 +614,18 @@ is registered as explicit executor name `codex-goal`; the former
   now supplies an attempt-local `accept` callback. Unit and Runtime integration
   fixtures prove that accepted live input is consumed only with the fenced
   result, while unaccepted or later input remains replayable.
+- The deployed fix then passed the same production test. Attempt
+  `r_49_af202562-eae0-42c6-80d6-d84dac1a58df` resumed thread
+  `01a03031-aab2-75d1-9823-71dfbe9505cb` and started turn
+  `e909ad49-6897-4d5a-bf96-fcc3f9785adb`. Event `5977512`
+  (`LIVE-STEER-ACK-FENCE`) arrived after that turn started; the one admitted
+  result at event `5977550` explicitly incorporated it after 114.2 seconds.
+  The maintain Task returned to waiting with no pending trigger, and the latest
+  attempt remained `r_49_af202562-eae0-42c6-80d6-d84dac1a58df`: no replay
+  attempt was scheduled. This closes the result-coupled live-steering gate.
 
 Still required before promoting this beyond the Evaluation canary:
 checked-in generated protocol types beyond the current drift fingerprints,
 concurrent and one-shot resource comparison, retained-artifact bounds, an
 external policy for orphan cleanup after uncatchable Host death, and production
-evidence for restart recovery and a post-fix production proof that incorporated
-live steering no longer causes a duplicate follow-up attempt. The current
-one-shot executors remain unchanged.
+evidence for restart recovery. The current one-shot executors remain unchanged.
