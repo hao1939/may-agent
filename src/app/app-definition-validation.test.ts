@@ -9,7 +9,7 @@ describe("canonical App definition validation", () => {
     const definition = defineApp({
       id: "evaluation",
       version: 1,
-      owner: "evaluator",
+      agent: "evaluator",
       inputSchema,
       task: ({ id, input }) => ({
         kind: "desired",
@@ -63,6 +63,16 @@ describe("canonical App definition validation", () => {
     });
 
     expect(validateAppDefinition(definition)).toEqual([]);
+  });
+
+  it("accepts legacy owner only at the migration boundary and rejects ambiguity", () => {
+    expect(validateAppDefinition({ id: "legacy", version: 1, owner: "worker", inputSchema })).toEqual([]);
+    expect(validateAppDefinition({ id: "ambiguous", version: 1, agent: "one", owner: "two", inputSchema })).toContain(
+      "App ambiguous declares conflicting agent and legacy owner values",
+    );
+    expect(validateAppDefinition({ id: "missing", version: 1, inputSchema })).toContain(
+      "App missing agent must be a non-empty string",
+    );
   });
 
   it("rejects malformed canonical declarations", () => {

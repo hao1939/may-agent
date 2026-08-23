@@ -27,7 +27,7 @@ describe("canonical App loader", () => {
       `export default {
         id: "evaluation-canary",
         version: 1,
-        owner: "evaluator",
+        agent: "evaluator",
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "probe" }, data: { type: "object" }
         } }
@@ -39,7 +39,7 @@ describe("canonical App loader", () => {
     expect(loaded).toHaveLength(1);
     expect(loaded[0]).toMatchObject({
       appDir: join(root, "evaluation.app"),
-      definition: { id: "evaluation-canary", owner: "evaluator" },
+      definition: { id: "evaluation-canary", agent: "evaluator", owner: "evaluator" },
     });
   });
 
@@ -49,7 +49,7 @@ describe("canonical App loader", () => {
     writeFileSync(
       appPath,
       `export default {
-        id: "evaluation-canary", version: 1, owner: "evaluator",
+        id: "evaluation-canary", version: 1, agent: "evaluator",
         inputSchema: { type: "object" }
       };\n`,
     );
@@ -58,7 +58,7 @@ describe("canonical App loader", () => {
     expect(loaded).toHaveLength(1);
     expect(loaded[0]).toMatchObject({
       appDir: join(root, "evaluation.app"),
-      definition: { id: "evaluation-canary" },
+      definition: { id: "evaluation-canary", agent: "evaluator", owner: "evaluator" },
     });
   });
 
@@ -67,13 +67,13 @@ describe("canonical App loader", () => {
     const canonicalRoot = join(sourceRoot, "canonical-projects");
     writeFileSync(
       join(sourceRoot, "evaluation.app", "app.js"),
-      `export default { id: "evaluation", version: 1, owner: "evaluator", inputSchema: { type: "object" } };\n`,
+      `export default { id: "evaluation", version: 1, agent: "evaluator", inputSchema: { type: "object" } };\n`,
     );
 
     const loaded = await loadAppDefinitions(sourceRoot, {}, canonicalRoot);
     expect(loaded[0]).toMatchObject({
       appDir: join(canonicalRoot, "evaluation.app"),
-      definition: { id: "evaluation" },
+      definition: { id: "evaluation", agent: "evaluator", owner: "evaluator" },
     });
   });
 

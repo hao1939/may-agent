@@ -56,7 +56,14 @@ export function validateAppDefinition(definition: unknown): string[] {
 
   if (!nonEmpty(app.id)) errors.push("App id must be a non-empty string");
   if (app.version !== 1) errors.push(`App ${appId} must declare version 1`);
-  if (!nonEmpty(app.owner)) errors.push(`App ${appId} owner must be a non-empty string`);
+  const agent = nonEmpty(app.agent) ? app.agent.trim() : undefined;
+  const legacyOwner = nonEmpty(app.owner) ? app.owner.trim() : undefined;
+  if (!agent && !legacyOwner) errors.push(`App ${appId} agent must be a non-empty string`);
+  if (app.agent !== undefined && !agent) errors.push(`App ${appId} agent must be a non-empty string`);
+  if (app.owner !== undefined && !legacyOwner) errors.push(`App ${appId} legacy owner must be a non-empty string`);
+  if (agent && legacyOwner && agent !== legacyOwner) {
+    errors.push(`App ${appId} declares conflicting agent and legacy owner values`);
+  }
   if (!record(app.inputSchema)) errors.push(`App ${appId} inputSchema must be an object schema`);
   if (app.task !== undefined && typeof app.task !== "function") {
     errors.push(`App ${appId} task must be a function`);
