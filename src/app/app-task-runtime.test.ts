@@ -1785,7 +1785,7 @@ describe("canonical App task runtime", () => {
     ).toMatchObject({ id: "work/event", status: "pending" });
   });
 
-  it("runs a registered executor through the fenced Task event interface", async () => {
+  it("atomically consumes live input incorporated by a registered executor", async () => {
     const f = fixture();
     const bus = eventBus();
     let nextEventId = 1;
@@ -1821,9 +1821,10 @@ describe("canonical App task runtime", () => {
           ).toMatchObject({ eventId: expect.any(Number) });
           if (calls === 1) {
             await new Promise<void>((resolve) => {
-              const unsubscribe = attempt.onEvent((event) => {
+              const unsubscribe = attempt.onEvent((event, accept) => {
                 if (event.type !== "sample.feedback") return;
                 sawLiveFeedback = true;
+                accept();
                 unsubscribe();
                 resolve();
               });
@@ -1878,13 +1879,6 @@ describe("canonical App task runtime", () => {
       target: { appId: "sample", taskId: "work/registered-executor" },
       data: { instruction: "include this review" },
     } as AgentEvent;
-    admitLoadedCanonicalAppTaskEvent({
-      bus,
-      appId: "sample",
-      event: feedback,
-      intent: null,
-      targetedTaskId: "work/registered-executor",
-    });
     bus.emit(feedback);
 
     const config = taskReconciliationConfig({
@@ -1898,14 +1892,14 @@ describe("canonical App task runtime", () => {
     while (!readTaskState(config).receipts?.["work/registered-executor"] && Date.now() < deadline) {
       await Bun.sleep(5);
     }
-    expect(calls).toBe(2);
+    expect(calls).toBe(1);
     expect(sawLiveFeedback).toBeTrue();
-    expect(published).toHaveLength(2);
+    expect(published).toHaveLength(1);
     expect(readTaskState(config).receipts?.["work/registered-executor"]).toMatchObject({
       handler: "executor:reviewer",
       executor: "reviewer",
       summary: "Registered executor completed the Task",
-      evidence: ["test:reviewer:2"],
+      evidence: ["test:reviewer:1"],
     });
   });
 

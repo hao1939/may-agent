@@ -262,7 +262,9 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
     let lastActivityAtMs = now();
     let nudgeCount = 0;
     let stopped = false;
-    const pendingEvents: AppEvent<Record<string, unknown>>[] = [];
+    let liveInputOpen = true;
+    const pendingEvents: Array<{ event: AppEvent<Record<string, unknown>>; accept: () => void }> = [];
+    const incorporatedLiveEvents = new Set<() => void>();
     const steering = new Set<Promise<unknown>>();
     const progress = new CodexGoalProgressPublisher({
       publish: attempt.publish,
@@ -278,18 +280,20 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
       steering.add(promise);
       void promise.finally(() => steering.delete(promise));
     };
-    const queueEvent = (event: AppEvent<Record<string, unknown>>) => {
+    const queueEvent = (event: AppEvent<Record<string, unknown>>, accept: () => void) => {
       if (pendingEvents.length >= MAX_PENDING_STEERING_EVENTS) pendingEvents.shift();
-      pendingEvents.push(event);
+      pendingEvents.push({ event, accept });
     };
     const deliverPendingEvents = async (activeTurnId: string) => {
       const queued = pendingEvents.splice(0);
       for (let index = 0; index < queued.length; index += 1) {
         try {
-          await client.steer({ threadId, turnId: activeTurnId, message: eventMessage(queued[index]!) });
+          const queuedEvent = queued[index]!;
+          await client.steer({ threadId, turnId: activeTurnId, message: eventMessage(queuedEvent.event) });
+          incorporatedLiveEvents.add(queuedEvent.accept);
         } catch {
           if (!stopped) {
-            for (const event of queued.slice(index)) queueEvent(event);
+            for (const queuedEvent of queued.slice(index)) queueEvent(queuedEvent.event, queuedEvent.accept);
           }
           return;
         }
@@ -306,7 +310,7 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
             : "";
         if (nextTurnId) {
           turnId = nextTurnId;
-          if (pendingEvents.length > 0) track(deliverPendingEvents(nextTurnId));
+          if (liveInputOpen && pendingEvents.length > 0) track(deliverPendingEvents(nextTurnId));
         }
       } else if (notification.method === "turn/completed") {
         const turn = notification.params?.turn;
@@ -323,13 +327,13 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
         }
       }
     });
-    const unsubscribeEvent = attempt.onEvent((event) => {
-      if (stopped) return;
+    const unsubscribeEvent = attempt.onEvent((event, accept = () => undefined) => {
+      if (stopped || !liveInputOpen) return;
       if (!threadId || !turnId) {
-        queueEvent(event);
+        queueEvent(event, accept);
         return;
       }
-      queueEvent(event);
+      queueEvent(event, accept);
       track(deliverPendingEvents(turnId));
     });
 
@@ -442,12 +446,17 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
       if (completion.turn.status !== "completed") {
         throw new Error(`Codex goal turn ended ${completion.turn.status}`);
       }
+      liveInputOpen = false;
+      unsubscribeEvent();
+      await Promise.allSettled([...steering]);
+      pendingEvents.length = 0;
       const answer = finalAnswer(await client.readThread(threadId, true), completedTurnId);
       const admitted = admitCodexGoalTaskResult(answer, {
         allowNeedsAgent: true,
         defaultParentId: attempt.task.parentId,
       });
       if (admitted.kind === "retry") throw new Error(admitted.reason);
+      for (const accept of incorporatedLiveEvents) accept();
       return finish(
         appendEvidence(
           {

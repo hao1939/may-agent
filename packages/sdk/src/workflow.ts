@@ -248,8 +248,12 @@ export type TaskAttempt = {
   events: TaskReconciliationEvents;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
-  /** Observe live feedback, approval, steering, or cancellation addressed to this Task; input remains durable. */
-  onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
+  /**
+   * Observe live feedback, approval, steering, or cancellation addressed to
+   * this Task. `accept` only marks the event for atomic consumption if this
+   * attempt later returns an admitted result; otherwise durable replay wins.
+   */
+  onEvent(listener: (event: AppEvent<Record<string, unknown>>, accept: () => void) => void): () => void;
 };
 
 export type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;

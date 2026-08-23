@@ -255,6 +255,45 @@ function taskEventIdentity(event: Record<string, unknown>): string {
     .digest("hex")}`;
 }
 
+/**
+ * Remove only durable live events explicitly incorporated by this fenced
+ * attempt. The caller persists this mutation atomically with the admitted
+ * result; an interrupted, failed, or stale attempt therefore cannot lose input.
+ */
+function consumeAcceptedLiveTaskEvents(
+  tree: TaskTree,
+  task: TaskNode,
+  resource: AppTaskResource,
+  eventIds: readonly number[] | undefined,
+): void {
+  const accepted = new Set(
+    (eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0),
+  );
+  if (accepted.size === 0) return;
+  const previous = tree.taskTriggers?.[task.id];
+  if (!previous) return;
+  const pending = taskTriggerEvents(previous);
+  const remaining = pending.filter((entry) => {
+    const eventId = Number(entry.event.eventId);
+    return !Number.isSafeInteger(eventId) || !accepted.has(eventId);
+  });
+  if (remaining.length === pending.length) return;
+  if (remaining.length === 0) {
+    delete tree.taskTriggers?.[task.id];
+    return;
+  }
+  tree.taskTriggers = {
+    ...(tree.taskTriggers ?? {}),
+    [task.id]: {
+      ...previous,
+      resourceVersion: previous.resourceVersion + 1,
+      events: structuredClone(remaining),
+      event: structuredClone(preferredTriggerFromEvents(remaining, task.owner ?? resource.spec.owner ?? "")),
+      observedAt: remaining[remaining.length - 1]!.observedAt,
+    },
+  };
+}
+
 function appendTaskTriggerEvent(
   events: AppTaskTriggerEvent[],
   event: Record<string, unknown>,
@@ -3798,6 +3837,7 @@ export function completeAppTask(
     evidence?: string[];
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
+    acceptedLiveEventIds?: number[];
   },
 ): {
   status: "applied" | "stale";
@@ -3873,6 +3913,7 @@ export function completeAppTask(
       );
     }
     const now = new Date().toISOString();
+    consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
     unlinkTaskConditions(tree, task);
     finishAttempt(tree, resource, "completed", input.summary, now);
     const reconcileActionTaskIds = actions.flatMap((action) =>
@@ -3987,6 +4028,7 @@ export function deferAppTask(
     evidence?: string[];
     actions?: AppTaskAction[];
     conditions?: AppTaskConditionSpec[];
+    acceptedLiveEventIds?: number[];
   },
 ): {
   status: "applied" | "stale";
@@ -4011,6 +4053,7 @@ export function deferAppTask(
     const match = matchingTask(tree, claim);
     if (!match) return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };
     const { task, resource } = match;
+    consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
     const conditions = boundedReviewConditions(claim, input.conditions);
     const waitsForChildren =
       liveChildTaskIds(tree, task).length > 0 ||
