@@ -117,6 +117,14 @@ export async function runAppRuntime(opts: {
   processStartTime: number;
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
 }): Promise<void> {
+  const startupStartedAt = performance.now();
+  let priorStartupPhaseAt = startupStartedAt;
+  const startupPhases: string[] = [];
+  const markStartupPhase = (name: string): void => {
+    const now = performance.now();
+    startupPhases.push(`${name}=${Math.round(now - priorStartupPhaseAt)}ms`);
+    priorStartupPhaseAt = now;
+  };
   const {
     cronEnabled: CRON_ENABLED,
     telegramEnabled: TELEGRAM_ENABLED,
@@ -138,6 +146,7 @@ export async function runAppRuntime(opts: {
     Number.isInteger(configuredHostConcurrency) && configuredHostConcurrency > 0 ? configuredHostConcurrency : 4,
   );
   attachEventPersistence({ bus, persistDir: opts.persistDir });
+  markStartupPhase("database");
 
   let taskSessionId: string | undefined;
   let activeRL: { close: () => void } | null = null;
@@ -174,6 +183,7 @@ export async function runAppRuntime(opts: {
   const activeAppSource = appSources.ensureCurrent();
   const appRegistry = new AppRegistry(activeAppSource.projectsRoot, opts.projectsRoot);
   await appRegistry.reload();
+  markStartupPhase("apps");
   bus.emit({
     type: "info",
     message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
@@ -204,6 +214,7 @@ export async function runAppRuntime(opts: {
     projectRoot: opts.projectRoot,
     interfaceAgent,
   });
+  markStartupPhase("recovery");
 
   const { loaderOpts, appTaskOptions, startAppTaskControllers } = await prepareDaemonAgents({
     agentsRoot: activeAppSource.agentsRoot,
@@ -219,6 +230,7 @@ export async function runAppRuntime(opts: {
     appRegistry,
     hostCapacity,
   });
+  markStartupPhase("agents-and-tasks");
 
   const appTasks = createAppTaskCapability({
     bus,
@@ -262,6 +274,7 @@ export async function runAppRuntime(opts: {
       };
     },
   });
+  markStartupPhase("inbox");
   if (appInboxRuntime.host.appIds().length > 0) {
     bus.emit({
       type: "info",
@@ -414,6 +427,11 @@ export async function runAppRuntime(opts: {
     cancelTask: (input) => humanTasks.cancelTask(input),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
+  });
+  markStartupPhase("interfaces");
+  bus.emit({
+    type: "info",
+    message: `[startup] Ready in ${Math.round(performance.now() - startupStartedAt)}ms (${startupPhases.join(", ")})`,
   });
   function emitPrompt(): void {
     bus.emit({ type: "prompt", message: interfaceAgent, channel: "chat" });
