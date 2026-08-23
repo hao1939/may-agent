@@ -86,6 +86,7 @@ const DEFAULT_HARD_STALE_MS = 10 * 60_000;
 const DEFAULT_CHECK_INTERVAL_MS = 5_000;
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
 const MAX_AGENT_INSTRUCTIONS_BYTES = 48 * 1024;
+const MAX_PENDING_STEERING_EVENTS = 64;
 
 function selectedAgentInstructions(attempt: TaskAttempt): string {
   const agent = attempt.task.agent?.trim() || "codex";
@@ -267,6 +268,7 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
       publish: attempt.publish,
       maxEvents: maxProgressEvents,
       executorName: options.executorName ?? "codex-goal",
+      keyScope: attempt.attemptId,
     });
     const finish = async (result: TaskReconcileResult): Promise<TaskReconcileResult> => {
       const stats = await progress.flush();
@@ -276,9 +278,44 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
       steering.add(promise);
       void promise.finally(() => steering.delete(promise));
     };
+    const queueEvent = (event: AppEvent<Record<string, unknown>>) => {
+      if (pendingEvents.length >= MAX_PENDING_STEERING_EVENTS) pendingEvents.shift();
+      pendingEvents.push(event);
+    };
+    const deliverPendingEvents = async (activeTurnId: string) => {
+      const queued = pendingEvents.splice(0);
+      for (let index = 0; index < queued.length; index += 1) {
+        try {
+          await client.steer({ threadId, turnId: activeTurnId, message: eventMessage(queued[index]!) });
+        } catch {
+          if (!stopped) {
+            for (const event of queued.slice(index)) queueEvent(event);
+          }
+          return;
+        }
+      }
+    };
     const unsubscribeNotification = client.onNotification((notification) => {
       lastActivityAtMs = now();
       progress.observe(notification);
+      if (notification.method === "turn/started") {
+        const turn = notification.params?.turn;
+        const nextTurnId =
+          turn && typeof turn === "object" && typeof (turn as { id?: unknown }).id === "string"
+            ? (turn as { id: string }).id
+            : "";
+        if (nextTurnId) {
+          turnId = nextTurnId;
+          if (pendingEvents.length > 0) track(deliverPendingEvents(nextTurnId));
+        }
+      } else if (notification.method === "turn/completed") {
+        const turn = notification.params?.turn;
+        const completedTurnId =
+          turn && typeof turn === "object" && typeof (turn as { id?: unknown }).id === "string"
+            ? (turn as { id: string }).id
+            : "";
+        if (completedTurnId && completedTurnId === turnId) turnId = null;
+      }
       if (notification.method === "thread/goal/updated") {
         const status = notification.params?.goal;
         if (status && typeof status === "object" && typeof (status as { status?: unknown }).status === "string") {
@@ -289,10 +326,11 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
     const unsubscribeEvent = attempt.onEvent((event) => {
       if (stopped) return;
       if (!threadId || !turnId) {
-        pendingEvents.push(event);
+        queueEvent(event);
         return;
       }
-      track(client.steer({ threadId, turnId, message: eventMessage(event) }).catch(() => undefined));
+      queueEvent(event);
+      track(deliverPendingEvents(turnId));
     });
 
     try {
@@ -325,13 +363,7 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
 
       await client.setGoal({ threadId, objective: rendered.goalObjective, status: "active" });
       turnId = await client.waitForActiveTurn(threadId, Math.min(turnTimeoutMs, 30_000));
-      for (const event of pendingEvents.splice(0)) {
-        try {
-          await client.steer({ threadId, turnId, message: eventMessage(event) });
-        } catch {
-          break;
-        }
-      }
+      await deliverPendingEvents(turnId);
 
       const terminalGoalPromise = client
         .waitForGoal(threadId, (observation) => observation.goal.status !== "active", turnTimeoutMs)
