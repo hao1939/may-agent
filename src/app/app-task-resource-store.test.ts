@@ -503,6 +503,32 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("routes only open Conditions owned by live waiting or running tasks", () => {
+    const store = open();
+    const tree = fixture();
+    const completed = resource("completed", "converged");
+    completed.status.conditionIds = ["completed-condition"];
+    const satisfied = resource("satisfied", "waiting");
+    satisfied.status.conditionIds = ["satisfied-condition"];
+    tree.resources = { ...tree.resources, completed, satisfied };
+    tree.conditions = {
+      "completed-condition": {
+        metadata: { id: "completed-condition", generation: 1, resourceVersion: 1 },
+        spec: { type: "pipeline-run.state", subject: "pipeline-run:1", expected: "completed" },
+        status: { observedGeneration: 0, state: "unknown" },
+      },
+      "satisfied-condition": {
+        metadata: { id: "satisfied-condition", generation: 1, resourceVersion: 1 },
+        spec: { type: "pipeline-run.state", subject: "pipeline-run:2", expected: "completed" },
+        status: { observedGeneration: 1, state: "true" },
+      },
+    };
+    store.importPausedSnapshot(tree, "revision-1");
+
+    expect(store.readConditionRoutes("pipeline-run.state")).toEqual([]);
+    store.close();
+  });
+
   it("does not treat an unchanged running attempt as a fresh wake", () => {
     const store = open();
     store.importPausedSnapshot(fixture(), "revision-1");

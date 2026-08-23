@@ -499,7 +499,11 @@ export class AppTaskResourceStore {
          FROM app_task_conditions c
          JOIN app_task_condition_routes linked
            ON linked.app_id = c.app_id AND linked.condition_id = c.condition_id
+         JOIN app_tasks task
+           ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
+           AND c.state <> 'true'
+           AND task.phase IN ('waiting', 'running')
          ORDER BY c.condition_id, linked.task_id`,
       )
       .all(this.appId, eventType) as Array<{

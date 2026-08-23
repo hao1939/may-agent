@@ -426,7 +426,7 @@ export function matchingAppTaskConditionTaskIds(
   }
   const matched = new Set<string>();
   for (const { condition, taskIds } of routes ?? []) {
-    if (!isCondition(condition) || !matches(condition, event)) continue;
+    if (!isCondition(condition) || condition.status.state === "true" || !matches(condition, event)) continue;
     for (const taskId of taskIds) {
       if (allowed && !allowed.has(taskId)) continue;
       matched.add(taskId);
