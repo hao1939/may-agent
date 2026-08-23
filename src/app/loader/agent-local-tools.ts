@@ -10,6 +10,11 @@ export type AgentLocalToolLoaderOptions = {
   onLoaded?: (toolName: string) => void;
 };
 
+function isRuntimeToolModule(file: string): boolean {
+  if (!file.endsWith(".ts") && !file.endsWith(".js")) return false;
+  return !file.endsWith(".d.ts") && !/\.(?:test|spec)\.(?:ts|js)$/.test(file);
+}
+
 /** Load agent-local tool factories without depending on EventBus or the daemon. */
 export async function loadAgentLocalTools(
   agentName: string,
@@ -20,9 +25,7 @@ export async function loadAgentLocalTools(
   if (!existsSync(toolsDir)) return [];
 
   const tools: AgentTool[] = [];
-  const entries = readdirSync(toolsDir)
-    .filter((file) => file.endsWith(".ts") || file.endsWith(".js"))
-    .sort();
+  const entries = readdirSync(toolsDir).filter(isRuntimeToolModule).sort();
 
   for (const file of entries) {
     const filePath = resolve(toolsDir, file);
