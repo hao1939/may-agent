@@ -4,7 +4,9 @@ import { resolve } from "node:path";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import { getAgentCrons, reloadAgents } from "./agent-loader.js";
+import { getAgentCrons, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import type { AgentGenerationPublication, PreparedAgentGeneration } from "./loader/agent-registry-loader.js";
+import { discardAgentGeneration } from "./loader/agent-registry-loader.js";
 import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
 
 export type AppGenerationReloadResult = {
@@ -82,7 +84,12 @@ export function createDaemonLifecycle(opts: {
   getActiveReadline: () => { close: () => void } | null;
   clearActiveReadline: () => void;
   beforeShutdown?: () => void;
-  reloadApps?: () => Promise<AppGenerationReloadResult>;
+  prepareAgents?: typeof prepareAgentGeneration;
+  publishAgents?: typeof publishPreparedAgentGeneration;
+  reloadApps?: (input: {
+    agents: PreparedAgentGeneration;
+    publishAgents: () => void;
+  }) => Promise<AppGenerationReloadResult>;
 }) {
   let shuttingDown = false;
 
@@ -134,20 +141,46 @@ export function createDaemonLifecycle(opts: {
 
   const handleReload = async (reloadOptions: { throwOnError?: boolean } = {}): Promise<RuntimeReloadResult> => {
     invalidateRuntimeModuleCache();
-    const result = await reloadAgents(opts.loaderOpts);
+    let added: string[] = [];
+    let updated: string[] = [];
+    const errors: string[] = [];
     let appGeneration: AppGenerationReloadResult | undefined;
+    let publication: AgentGenerationPublication | undefined;
+    let agents: PreparedAgentGeneration | undefined;
     try {
-      appGeneration = await opts.reloadApps?.();
+      const prepared = await (opts.prepareAgents ?? prepareAgentGeneration)(opts.loaderOpts);
+      agents = prepared;
+      added = prepared.added;
+      updated = prepared.updated;
+      const publishAgents = () => {
+        if (publication) throw new Error("Agent generation was published more than once");
+        publication = (opts.publishAgents ?? publishPreparedAgentGeneration)(opts.loaderOpts, prepared);
+      };
+      if (opts.reloadApps) {
+        appGeneration = await opts.reloadApps({ agents: prepared, publishAgents });
+        if (!publication) throw new Error("App generation committed without publishing its prepared agent generation");
+      } else {
+        publishAgents();
+      }
+      publication?.finalize();
     } catch (err) {
-      result.errors.push(`[app-generation] ${err instanceof Error ? err.message : String(err)}`);
+      try {
+        if (publication) publication.rollback();
+        else if (agents) discardAgentGeneration(agents);
+      } catch (rollbackError) {
+        errors.push(
+          `[agent-rollback] ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+        );
+      }
+      errors.push(`[runtime-generation] ${err instanceof Error ? err.message : String(err)}`);
     }
     let summary: string;
-    if (result.errors.length > 0) {
-      summary = `[reload] Validation errors:\n${result.errors.join("\n")}`;
-    } else if (result.added.length > 0 || result.updated.length > 0) {
+    if (errors.length > 0) {
+      summary = `[reload] Validation errors:\n${errors.join("\n")}`;
+    } else if (added.length > 0 || updated.length > 0) {
       const parts: string[] = [];
-      if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
-      if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
+      if (added.length > 0) parts.push(`${added.length} new (${added.join(", ")})`);
+      if (updated.length > 0) parts.push(`${updated.length} updated (${updated.join(", ")})`);
       if (appGeneration && appGeneration.taskApps > 0) {
         parts.push(`${appGeneration.taskApps} task-enabled App(s)`);
       }
@@ -162,7 +195,7 @@ export function createDaemonLifecycle(opts: {
     // mode) or attachDaemonInfoLog (default daemon mode). See
     // src/app/transport/daemon-info-log.ts.
     opts.bus.emit({ type: "info", message: summary });
-    const ok = result.errors.length === 0;
+    const ok = errors.length === 0;
     if (reloadOptions.throwOnError && !ok) {
       throw new Error(summary);
     }

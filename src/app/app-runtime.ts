@@ -9,7 +9,7 @@ import { createMetricService } from "../lib/metrics.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
-import { AppSourceReleaseStore } from "./app-source-release.js";
+import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { readAppConversationResource } from "./app-inbox-store.js";
@@ -36,6 +36,7 @@ import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
+import { prepareAgentGeneration } from "./agent-loader.js";
 
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
@@ -169,7 +170,7 @@ export async function runAppRuntime(opts: {
   });
 
   let appInboxRuntime: AppInboxRuntime | null = null;
-  const appSources = new AppSourceReleaseStore(opts.projectRoot, opts.persistDir);
+  const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir);
   const activeAppSource = appSources.ensureCurrent();
   const appRegistry = new AppRegistry(activeAppSource.projectsRoot, opts.projectsRoot);
   await appRegistry.reload();
@@ -205,9 +206,10 @@ export async function runAppRuntime(opts: {
   });
 
   const { loaderOpts, appTaskOptions, startAppTaskControllers } = await prepareDaemonAgents({
-    agentsRoot: opts.agentsRoot,
+    agentsRoot: activeAppSource.agentsRoot,
     sharedRoot: opts.sharedRoot,
-    projectsRoot: opts.projectsRoot,
+    definitionSharedRoot: activeAppSource.sharedRoot,
+    projectsRoot: activeAppSource.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,
@@ -269,6 +271,10 @@ export async function runAppRuntime(opts: {
 
   let telegramBot: { close: () => void } = { close: () => {} };
   let cancelledOnce = false;
+  let stagedReloadSource: {
+    candidate: DefinitionSourceRelease;
+    previous: DefinitionSourceRelease | null;
+  } | null = null;
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
     bus,
@@ -286,9 +292,20 @@ export async function runAppRuntime(opts: {
       void appTasks.close();
       appInboxRuntime?.close();
     },
-    reloadApps: async () => {
+    prepareAgents: async () => {
       const candidate = appSources.stage();
-      const previous = appSources.current();
+      stagedReloadSource = { candidate, previous: appSources.current() };
+      return prepareAgentGeneration({
+        ...loaderOpts,
+        agentsRoot: candidate.agentsRoot,
+        projectsRoot: candidate.projectsRoot,
+        definitionSharedRoot: candidate.sharedRoot,
+      });
+    },
+    reloadApps: async ({ publishAgents }) => {
+      const source = stagedReloadSource;
+      if (!source) throw new Error("Runtime generation has no staged definition source");
+      const { candidate, previous } = source;
       let taskApps = 0;
       try {
         const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
@@ -297,6 +314,7 @@ export async function runAppRuntime(opts: {
             publish: () => {
               appSources.activate(candidate);
               try {
+                publishAgents();
                 commit();
               } catch (error) {
                 if (previous) appSources.activate(previous);
@@ -312,6 +330,8 @@ export async function runAppRuntime(opts: {
           appSources.activate(previous);
         }
         throw error;
+      } finally {
+        stagedReloadSource = null;
       }
     },
   });

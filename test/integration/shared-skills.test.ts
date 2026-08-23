@@ -69,13 +69,11 @@ describe("shared system skills", () => {
     expect(content).toContain("Do not add socket candidate scanning");
   });
 
-  it("May's system skill encodes project intent, portable agents, and reconciler ownership", () => {
+  it("May's system skill encodes project intent, portable executors, and App ownership", () => {
     const content = readSkill("agents/may/skills/may-agent-system/SKILL.md");
-    expect(content).toContain(
-      "project.comment.created fact -> declared App subscription -> App inbox request -> optional task dependency -> App result",
-    );
+    expect(content).toContain("project.comment.created event -> declared App route -> App Task -> accepted result");
     expect(content).toContain("The agent core does not import EventBus, SQLite, metrics, tasks, scheduling, or");
-    expect(content).toContain("`app.dependency.completed` wakes the exact inbox request");
+    expect(content).toContain("`app.dependency.completed` wakes the exact parent Task");
     expect(content).toMatch(/every\s+addressed request keeps its own identity and result/);
     expect(content).toContain("return one semantic event receipt without wrapper");
     expect(content).toMatch(/Task persistence is host-private and\s+reconciler-owned/);
@@ -99,8 +97,8 @@ describe("shared system skills", () => {
     const mayAgents = readSkill("agents/may/AGENTS.md");
     const mayContext = readSkill("agents/may/context.md");
     expect(mayAgents).toContain("Apps own durable work");
-    expect(mayContext).toContain("may App inbox");
-    expect(mayContext).toContain("typed App delegation");
+    expect(mayContext).toContain("May Task");
+    expect(mayContext).toContain("typed App dependency");
     expect(mayContext).not.toContain("project.feedback.created");
     expect(mayAgents).not.toContain("persistent-task");
     expect(mayAgents).not.toContain("project.task.assigned");

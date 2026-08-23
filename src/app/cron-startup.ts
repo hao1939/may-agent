@@ -7,6 +7,7 @@ import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
 import { parseAppTaskSessionBinding, recoverInstalledAppTasks } from "./app-task-runtime.js";
 import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
+import { activateAgentCrons } from "./cron-activation.js";
 
 const LEGACY_APP_INBOX_RECOVERY_OWNER = "app-inbox";
 
@@ -122,50 +123,5 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
     }
   }
 
-  for (const [name, cron] of getAgentCrons()) {
-    // Subscribe + start in one place for all crons (agent-level and app-level).
-    // Crons are created by toolset-loader (agent "cron" tool) and
-    // ensureOwnerCron (App owners). Neither subscribes or starts —
-    // that responsibility lives here so each cron activates exactly once.
-    cron.subscribeToBus(bus);
-
-    // Defensive: rebuild event subscriptions after bus subscription to
-    // prevent stale-map dispatch gaps (evaluation-aftermath-session-dispatch-fix).
-    // Idempotent — if subscriptions are already correct, this is a no-op rebuild.
-    cron.rebuildEventSubscriptions();
-
-    // Verify all enabled entries with `on` events are properly subscribed.
-    // If any are missing, log a warning so the issue is visible in daemon logs.
-    const gaps = cron.verifyEventSubscriptions();
-    if (gaps.length > 0) {
-      for (const gap of gaps) {
-        bus.emit({
-          type: "info",
-          message: `[cron:${name}] ⚠️ Subscription gap: ${gap.entryName} missing events [${gap.missingEvents.join(", ")}]`,
-        });
-      }
-      // Re-rebuild as a last resort — should not be needed but provides
-      // defense-in-depth for the intermittent startup-ordering bug.
-      cron.rebuildEventSubscriptions();
-    }
-
-    cron.onFire((entry) => {
-      const handler =
-        typeof entry.handler === "string"
-          ? entry.handler
-          : entry.handler
-            ? `workflow:${entry.handler.agent ? `${entry.handler.agent}/` : ""}${entry.handler.workflow}`
-            : entry.name;
-      bus.emit({
-        type: "info",
-        message: `[cron] ${entry.name} fired (handler -> ${handler})`,
-      });
-    });
-
-    const entries = cron.getEntries();
-    if (entries.length > 0) {
-      bus.emit({ type: "info", message: `[cron:${name}] Starting ${entries.length} job(s)` });
-      cron.start();
-    }
-  }
+  activateAgentCrons(getAgentCrons(), bus);
 }

@@ -2,7 +2,13 @@ import { describe, expect, it, mock } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadAgents, type AgentLoaderOptions, type AgentRegistryRuntime } from "./agent-registry-loader.ts";
+import {
+  loadAgents,
+  prepareAgents,
+  publishAgentGeneration,
+  type AgentLoaderOptions,
+  type AgentRegistryRuntime,
+} from "./agent-registry-loader.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `agent-registry-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -27,7 +33,10 @@ function makeOpts(root: string, agentsRoot: string, projectsRoot: string): Agent
     },
     manager: {
       register: mock((def: any) => registered.set(def.name, def)),
+      unregister: mock((name: string) => registered.delete(name)),
       hasAgent: (name: string) => registered.has(name),
+      agentNames: () => [...registered.keys()],
+      getAgentDefinition: (name: string) => registered.get(name),
     } as any,
     bus: {
       emit: mock(() => {}),
@@ -40,9 +49,6 @@ function makeOpts(root: string, agentsRoot: string, projectsRoot: string): Agent
 function makeRuntime(): AgentRegistryRuntime {
   return {
     getAgentSessionId: () => undefined,
-    getAgentCrons: () => new Map(),
-    setAgentCron: () => {},
-    addCleanup: () => {},
   };
 }
 
@@ -105,7 +111,8 @@ describe("agent registry loader", () => {
 
       const opts = makeOpts(root, globalAgentsRoot, projectsRoot);
       const runtime = makeRuntime();
-      await loadAgents(opts, runtime);
+      await expect(loadAgents(opts, runtime)).rejects.toThrow("Duplicate agent name");
+      expect(opts.manager.agentNames()).toEqual([]);
 
       // Should emit agent.config_invalid since both are project-scoped (same scope)
       const emitCalls = (opts.bus.emit as any).mock.calls;
@@ -137,6 +144,32 @@ describe("agent registry loader", () => {
       const emitCalls = (opts.bus.emit as any).mock.calls;
       const configInvalidEvents = emitCalls.filter((c: any) => c[0]?.type === "agent.config_invalid");
       expect(configInvalidEvents).toHaveLength(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("restores the exact previous manager definitions when publication is rolled back", async () => {
+    const root = tempRoot();
+    try {
+      const agentsRoot = join(root, "agents");
+      const agentDir = join(agentsRoot, "solo");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(agentDir, "agent.json"), makeAgentJson("solo"));
+      const projectsRoot = join(root, "projects");
+      mkdirSync(projectsRoot, { recursive: true });
+      const opts = makeOpts(root, agentsRoot, projectsRoot);
+      const previous = { name: "old", description: "previous" } as any;
+      opts.manager.register(previous);
+
+      const runtime = makeRuntime();
+      const generation = await prepareAgents(opts, runtime);
+      const publication = publishAgentGeneration(opts, runtime, generation);
+      expect(opts.manager.agentNames()).toEqual(["solo"]);
+
+      publication.rollback();
+      expect(opts.manager.agentNames()).toEqual(["old"]);
+      expect(opts.manager.getAgentDefinition("old")).toBe(previous);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

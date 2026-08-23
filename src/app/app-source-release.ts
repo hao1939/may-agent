@@ -17,15 +17,17 @@ import {
 import { basename, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
-export type AppSourceRelease = Readonly<{
+export type DefinitionSourceRelease = Readonly<{
   id: string;
   root: string;
+  agentsRoot: string;
   projectsRoot: string;
+  sharedRoot: string;
   sourceCommit?: string;
 }>;
 
 type ReleaseManifest = {
-  version: 1;
+  version: 1 | 2 | 3;
   id: string;
   sourceCommit?: string;
 };
@@ -60,11 +62,11 @@ function appDirectoryNames(projectsRoot: string): string[] {
     .sort();
 }
 
-function validateRelease(root: string): AppSourceRelease {
+function validateRelease(root: string): DefinitionSourceRelease {
   const manifestPath = join(root, "release.json");
   if (!existsSync(manifestPath)) throw new Error(`App source release has no manifest: ${root}`);
   const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as ReleaseManifest;
-  if (parsed.version !== 1 || typeof parsed.id !== "string" || !parsed.id.trim()) {
+  if (![1, 2, 3].includes(parsed.version) || typeof parsed.id !== "string" || !parsed.id.trim()) {
     throw new Error(`Invalid App source release manifest: ${manifestPath}`);
   }
   if (basename(root) !== parsed.id) throw new Error(`App source release identity mismatch: ${root}`);
@@ -72,13 +74,26 @@ function validateRelease(root: string): AppSourceRelease {
     throw new Error(`Invalid App source commit in ${manifestPath}`);
   }
   const projectsRoot = join(root, "projects");
-  if (appDirectoryNames(projectsRoot).length === 0) {
-    throw new Error(`App source release contains no Apps: ${projectsRoot}`);
+  if (!existsSync(projectsRoot)) {
+    throw new Error(`Definition source release contains no projects root: ${projectsRoot}`);
+  }
+  const agentsRoot = join(root, "agents");
+  if (parsed.version >= 2 && !existsSync(agentsRoot)) {
+    throw new Error(`Definition source release contains no global agents: ${agentsRoot}`);
+  }
+  const sharedRoot = join(root, "shared");
+  if (
+    parsed.version >= 3 &&
+    (!existsSync(join(sharedRoot, "common-sense.md")) || !existsSync(join(sharedRoot, "skills")))
+  ) {
+    throw new Error(`Definition source release contains no shared prompt/skills source: ${sharedRoot}`);
   }
   return Object.freeze({
     id: parsed.id,
     root,
+    agentsRoot,
     projectsRoot,
+    sharedRoot,
     ...(parsed.sourceCommit ? { sourceCommit: parsed.sourceCommit } : {}),
   });
 }
@@ -95,7 +110,7 @@ function gitCommit(projectRoot: string): string | null {
   }
 }
 
-function assertCommittedAppSource(projectRoot: string, commit: string): void {
+function assertCommittedDefinitionSource(projectRoot: string, commit: string): void {
   const trackedNames = execFileSync("git", ["-C", projectRoot, "ls-tree", "-d", "--name-only", `${commit}:projects`], {
     encoding: "utf8",
   })
@@ -103,8 +118,21 @@ function assertCommittedAppSource(projectRoot: string, commit: string): void {
     .map((name) => name.trim())
     .filter((name) => name.endsWith(".app"))
     .sort();
-  const paths = trackedNames.map((name) => `projects/${name}`);
-  if (paths.length === 0) throw new Error(`Commit ${commit} contains no App directories`);
+  const paths = [
+    "agents",
+    "shared/common-sense.md",
+    "shared/skills",
+    ...trackedNames.map((name) => `projects/${name}`),
+  ];
+  try {
+    execFileSync("git", ["-C", projectRoot, "cat-file", "-e", `${commit}:agents`], { stdio: "ignore" });
+    execFileSync("git", ["-C", projectRoot, "cat-file", "-e", `${commit}:shared/common-sense.md`], {
+      stdio: "ignore",
+    });
+    execFileSync("git", ["-C", projectRoot, "cat-file", "-e", `${commit}:shared/skills`], { stdio: "ignore" });
+  } catch {
+    throw new Error(`Commit ${commit} is missing global agents or shared definition source`);
+  }
 
   const status = execFileSync(
     "git",
@@ -125,6 +153,9 @@ function assertCommittedAppSource(projectRoot: string, commit: string): void {
     .filter(Boolean)
     .filter((path) => {
       if (isNonSourcePath(path)) return false;
+      if (path.startsWith("agents/") || path.startsWith("shared/skills/") || path === "shared/common-sense.md") {
+        return true;
+      }
       return /\.(?:cjs|js|json|jsx|mjs|ts|tsx)$/.test(path);
     });
   if (untracked.length > 0) {
@@ -134,7 +165,7 @@ function assertCommittedAppSource(projectRoot: string, commit: string): void {
   }
 }
 
-function extractCommittedApps(projectRoot: string, commit: string, stageRoot: string): void {
+function extractCommittedDefinitions(projectRoot: string, commit: string, stageRoot: string): void {
   const trackedNames = execFileSync("git", ["-C", projectRoot, "ls-tree", "-d", "--name-only", `${commit}:projects`], {
     encoding: "utf8",
   })
@@ -142,15 +173,24 @@ function extractCommittedApps(projectRoot: string, commit: string, stageRoot: st
     .map((name) => name.trim())
     .filter((name) => name.endsWith(".app"))
     .sort();
-  if (trackedNames.length === 0) throw new Error(`Commit ${commit} contains no App directories`);
-
   const archivePath = join(stageRoot, ".apps.tar");
   const archiveFd = openSync(archivePath, "w");
   let archived;
   try {
     archived = spawnSync(
       "git",
-      ["-C", projectRoot, "archive", "--format=tar", commit, "--", ...trackedNames.map((name) => `projects/${name}`)],
+      [
+        "-C",
+        projectRoot,
+        "archive",
+        "--format=tar",
+        commit,
+        "--",
+        "agents",
+        "shared/common-sense.md",
+        "shared/skills",
+        ...trackedNames.map((name) => `projects/${name}`),
+      ],
       { stdio: ["ignore", archiveFd, "pipe"] },
     );
   } finally {
@@ -164,13 +204,13 @@ function extractCommittedApps(projectRoot: string, commit: string, stageRoot: st
     );
   }
   execFileSync("tar", ["-xf", archivePath, "-C", stageRoot], { stdio: ["ignore", "ignore", "pipe"] });
+  mkdirSync(join(stageRoot, "projects"), { recursive: true });
   rmSync(archivePath, { force: true });
 }
 
-function copyFilesystemApps(projectRoot: string, stageRoot: string): void {
+function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void {
   const sourceProjectsRoot = join(projectRoot, "projects");
   const names = appDirectoryNames(sourceProjectsRoot);
-  if (names.length === 0) throw new Error(`No App directories found under ${sourceProjectsRoot}`);
   const targetProjectsRoot = join(stageRoot, "projects");
   mkdirSync(targetProjectsRoot, { recursive: true });
   for (const name of names) {
@@ -183,15 +223,42 @@ function copyFilesystemApps(projectRoot: string, stageRoot: string): void {
       },
     });
   }
+  const sourceAgentsRoot = join(projectRoot, "agents");
+  if (!existsSync(sourceAgentsRoot)) throw new Error(`No global agents directory found under ${projectRoot}`);
+  cpSync(sourceAgentsRoot, join(stageRoot, "agents"), {
+    recursive: true,
+    filter: (path) => {
+      const rel = relative(sourceAgentsRoot, path);
+      return !isNonSourcePath(rel.replace(/\\/g, "/"));
+    },
+  });
+  const sourceSharedRoot = join(projectRoot, "shared");
+  const targetSharedRoot = join(stageRoot, "shared");
+  const commonSense = join(sourceSharedRoot, "common-sense.md");
+  const sharedSkills = join(sourceSharedRoot, "skills");
+  mkdirSync(targetSharedRoot, { recursive: true });
+  if (existsSync(commonSense)) cpSync(commonSense, join(targetSharedRoot, "common-sense.md"));
+  else writeFileSync(join(targetSharedRoot, "common-sense.md"), "", "utf8");
+  if (existsSync(sharedSkills)) {
+    cpSync(sharedSkills, join(targetSharedRoot, "skills"), {
+      recursive: true,
+      filter: (path) => {
+        const rel = relative(sharedSkills, path);
+        return !isNonSourcePath(rel.replace(/\\/g, "/"));
+      },
+    });
+  } else {
+    mkdirSync(join(targetSharedRoot, "skills"), { recursive: true });
+  }
 }
 
 /**
- * Durable source boundary for App definition code.
+ * Durable source boundary for App and agent definition code.
  *
- * Releases contain executable App source only. Mutable state and execution
- * workspaces continue to resolve through the canonical /projects tree.
+ * Releases contain executable definitions only. Mutable state and execution
+ * workspaces continue to resolve through the canonical tree.
  */
-export class AppSourceReleaseStore {
+export class DefinitionSourceReleaseStore {
   private readonly releasesRoot: string;
   private readonly currentLink: string;
 
@@ -203,7 +270,7 @@ export class AppSourceReleaseStore {
     this.currentLink = join(this.releasesRoot, "current");
   }
 
-  current(): AppSourceRelease | null {
+  current(): DefinitionSourceRelease | null {
     if (!existsSync(this.currentLink)) return null;
     if (!lstatSync(this.currentLink).isSymbolicLink()) {
       throw new Error(`App source current path is not a symlink: ${this.currentLink}`);
@@ -216,28 +283,29 @@ export class AppSourceReleaseStore {
     return validateRelease(root);
   }
 
-  ensureCurrent(): AppSourceRelease {
+  ensureCurrent(): DefinitionSourceRelease {
     const active = this.current();
-    if (active) return active;
+    if (active && existsSync(active.agentsRoot) && existsSync(join(active.sharedRoot, "common-sense.md")))
+      return active;
     const candidate = this.stage();
     this.activate(candidate);
     return candidate;
   }
 
-  stage(): AppSourceRelease {
+  stage(): DefinitionSourceRelease {
     mkdirSync(this.releasesRoot, { recursive: true });
     const commit = gitCommit(this.projectRoot);
-    if (commit) assertCommittedAppSource(this.projectRoot, commit);
-    const id = commit ?? `filesystem-${Date.now()}-${randomUUID()}`;
+    if (commit) assertCommittedDefinitionSource(this.projectRoot, commit);
+    const id = commit ? `${commit}-definitions-v3` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v3`;
     const releaseRoot = join(this.releasesRoot, id);
     if (existsSync(releaseRoot)) return validateRelease(releaseRoot);
 
     const stageRoot = join(this.releasesRoot, `.next-${id}-${process.pid}-${randomUUID()}`);
     mkdirSync(stageRoot, { recursive: true });
     try {
-      if (commit) extractCommittedApps(this.projectRoot, commit, stageRoot);
-      else copyFilesystemApps(this.projectRoot, stageRoot);
-      const manifest: ReleaseManifest = { version: 1, id, ...(commit ? { sourceCommit: commit } : {}) };
+      if (commit) extractCommittedDefinitions(this.projectRoot, commit, stageRoot);
+      else copyFilesystemDefinitions(this.projectRoot, stageRoot);
+      const manifest: ReleaseManifest = { version: 3, id, ...(commit ? { sourceCommit: commit } : {}) };
       writeFileSync(join(stageRoot, "release.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
       renameSync(stageRoot, releaseRoot);
     } catch (error) {
@@ -247,7 +315,7 @@ export class AppSourceReleaseStore {
     return validateRelease(releaseRoot);
   }
 
-  activate(release: AppSourceRelease): void {
+  activate(release: DefinitionSourceRelease): void {
     const validated = validateRelease(release.root);
     const relativeTarget = relative(this.releasesRoot, validated.root);
     if (!relativeTarget || relativeTarget.startsWith("..")) {
