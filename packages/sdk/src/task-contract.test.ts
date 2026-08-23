@@ -113,6 +113,48 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("accepts canonical agent selection and normalizes it for retained Host state", () => {
+    const admitted = admitTaskReconcileResult(
+      {
+        state: "converged",
+        summary: "Selected a specialist",
+        evidence: [],
+        actions: [
+          {
+            kind: "create-task",
+            id: "work/specialist",
+            outcome: "Run specialist work",
+            acceptance: ["Specialist work completes"],
+            agent: "specialist",
+          },
+        ],
+      },
+      workflowOptions,
+    );
+
+    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({ owner: "specialist" });
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "Ambiguous selection",
+          evidence: [],
+          actions: [
+            {
+              kind: "create-task",
+              id: "work/ambiguous",
+              outcome: "Do work",
+              acceptance: ["Work completes"],
+              agent: "one",
+              owner: "two",
+            },
+          ],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "actions[0].agent conflicts with legacy owner" });
+  });
+
   it("normalizes app/project root aliases on create actions", () => {
     const admitted = admitTaskReconcileResult(
       {

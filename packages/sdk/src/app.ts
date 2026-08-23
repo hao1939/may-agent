@@ -183,11 +183,9 @@ export type AppTaskPolicy = {
 };
 
 /** Minimal declaration used by the App host. Domain payloads remain App-owned. */
-export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
+type AppDefinitionBase<TInputSchema extends TSchema> = {
   id: string;
   version: 1;
-  /** Default managed worker for bounded attempts; this App owns its durable Tasks. */
-  owner: string;
   description?: string;
   inputSchema: TInputSchema;
   /** Pure mapping from admitted input to the one existing or desired Task that owns it. */
@@ -205,6 +203,21 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
   workspace?: AppWorkspace;
   tasks?: AppTaskPolicy;
 };
+
+/** The App owns work; `agent` only selects its default bounded executor. */
+export type AppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinitionBase<TInputSchema> &
+  (
+    | {
+        agent: string;
+        /** @deprecated Use `agent`. Accepted temporarily at the Host definition boundary. */
+        owner?: string;
+      }
+    | {
+        /** @deprecated New Apps must use `agent`. */
+        owner: string;
+        agent?: string;
+      }
+  );
 
 export function defineApp<TInputSchema extends TSchema>(app: AppDefinition<TInputSchema>): AppDefinition<TInputSchema> {
   return app;

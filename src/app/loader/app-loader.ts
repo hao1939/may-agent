@@ -3,10 +3,11 @@ import { basename, join, resolve } from "node:path";
 import type { AppDefinition } from "@may-agent/sdk";
 import { importRuntimeModule, type RuntimeImportOptions } from "../../lib/runtime-import.js";
 import { assertValidAppDefinition } from "../app-definition-validation.js";
+import { normalizeAppAgent, type HostAppDefinition } from "../app-agent-selection.js";
 
 export type LoadedAppDefinition = {
   appDir: string;
-  definition: AppDefinition;
+  definition: HostAppDefinition;
 };
 
 export function listAppDefinitionFiles(projectsRoot: string): string[] {
@@ -38,8 +39,8 @@ export async function loadAppDefinitions(
     const exported = mod.default ?? mod.app;
     if (!exported || typeof exported !== "object")
       throw new Error(`App module ${modulePath} must default-export an App definition`);
-    const definition = exported;
-    assertValidAppDefinition(definition);
+    assertValidAppDefinition(exported);
+    const definition = normalizeAppAgent(exported);
     if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
     ids.add(definition.id);
     const sourceAppDir = resolve(modulePath, "..");

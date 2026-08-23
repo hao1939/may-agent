@@ -13,10 +13,12 @@ export type TaskIntent = {
   outcome: string;
   acceptance: string[];
   mode: TaskMode;
-  /** Managed worker selected for bounded attempts. The App remains the durable Task owner. */
+  /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
+  agent?: string;
+  /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
   workflow?: string;
-  /** Bounded executor adapter. Omit or use `agent` for the managed owner; `codex` and `claude` are built in. */
+  /** Bounded executor adapter. Omit or use `agent` for the managed agent; `codex` and `claude` are built in. */
   executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   outputs?: string[];
@@ -56,7 +58,9 @@ export type TaskAction =
       outputs: string[];
       acceptance: string[];
       priority: TaskPriority;
-      /** Managed worker selected for bounded attempts. The App remains the durable Task owner. */
+      /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
+      agent?: string;
+      /** @deprecated Use `agent`. */
       owner?: string;
       workflow?: string;
       executor?: TaskExecutorName;
@@ -74,7 +78,9 @@ export type TaskAction =
       outputs?: string[];
       acceptance?: string[];
       priority?: TaskPriority;
-      /** Managed worker selected for bounded attempts. The App remains the durable Task owner. */
+      /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
+      agent?: string | null;
+      /** @deprecated Use `agent`. */
       owner?: string | null;
       workflow?: string | null;
       executor?: TaskExecutorName | null;

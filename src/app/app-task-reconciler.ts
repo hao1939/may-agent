@@ -34,6 +34,7 @@ import type {
 import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
 import { readLatestCheckpoint, type CheckpointEntry } from "../lib/tools/checkpoint.js";
 import { applyAppTaskConditionEvent } from "./app-task-condition-tracker.js";
+import { normalizeTaskAgent } from "./app-agent-selection.js";
 
 export const APP_TASK_RECOVERY_OWNER = "app-task-reconciler";
 const MAX_UNCHANGED_CONDITION_REVIEWS = 3;
@@ -1474,6 +1475,7 @@ export function observeAppTaskIntent(
     admissionKey?: string;
   },
 ): AppTaskObservationResult {
+  input = { ...input, intent: normalizeTaskAgent(input.intent) };
   validateIntent(input.intent);
   const admissionKey = input.admissionKey?.trim();
   if (input.admissionKey !== undefined && !admissionKey) {

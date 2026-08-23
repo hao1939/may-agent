@@ -349,7 +349,11 @@ export class AppInboxHost {
   matchingAppIds(owner: string, input: AppInput): string[] {
     const normalizedOwner = requiredText(owner, "App owner").replace(/^agent:/, "");
     return [...this.#apps.values()]
-      .filter((app) => app.owner.trim().replace(/^agent:/, "") === normalizedOwner && Check(app.inputSchema, input))
+      .filter(
+        (app) =>
+          (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "") === normalizedOwner &&
+          Check(app.inputSchema, input),
+      )
       .map((app) => app.id)
       .sort();
   }
@@ -378,7 +382,7 @@ export class AppInboxHost {
     return Boolean(
       app &&
       (app.id.trim().replace(/^app:/, "") === normalizedOwner ||
-        app.owner.trim().replace(/^agent:/, "") === normalizedOwner),
+        (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "") === normalizedOwner),
     );
   }
 
