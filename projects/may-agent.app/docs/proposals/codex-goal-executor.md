@@ -242,8 +242,8 @@ The opt-in adapter projects the app-server's small authoritative surface into
 
 - `turn/started`, `thread/goal/updated`, and `turn/completed` provide lifecycle;
 - completed commentary and plan items provide bounded intermediate text;
-- completed commands provide only status, exit code, and duration;
-- completed tool calls provide only tool/server, status, and duration; and
+- unsuccessful commands provide only status, exit code, and duration;
+- unsuccessful tool calls provide only tool/server, status, and duration; and
 - a file-change item produces a warning without paths or diffs because the
   current trial is read-only.
 
@@ -374,10 +374,10 @@ policy. Reuse its process and protocol discipline, not its one-shot lifecycle.
 
 The PoC is not wired to the production `codex` executor name.
 
-The isolated implementation is under
-`projects/may-agent/scripts/poc/codex-goal-*.ts`. It may import the real SDK
-admission function, but production Runtime does not import it. The focused
-fixture command is:
+The protocol and policy implementation is isolated under
+`projects/may-agent/scripts/poc/codex-goal-*.ts`. Only the explicitly named
+`codex-goal-poc` adapter imports it; the default executors and Apps do not.
+The focused fixture command is:
 
 ```bash
 bun test scripts/poc/codex-goal-*.test.ts
@@ -534,6 +534,12 @@ read-only `evaluation.app` action opts into it.
   status. Focused tests prove bounded event count, stable key uniqueness,
   passive no-target publication, payload exclusion, and
   degraded-observation behavior.
+- A later end-to-end Task trial converged with the Task still authoritative and
+  37 passive progress events, but 28 were ordinary successful command
+  completions that repeatedly hid the four useful commentary updates in exact
+  Task detail. The projector now drops successful command/tool noise and keeps
+  only semantic commentary/plans, lifecycle, failures, and read-only file-change
+  warnings.
 - The checked protocol fingerprint now includes
   `ItemCompletedNotification` in addition to goal and turn lifecycle schemas.
   This follows the official app-server contract that `item/completed` carries
@@ -545,6 +551,9 @@ read-only `evaluation.app` action opts into it.
 - A real Task-store fixture advances the Task specification to a new
   generation after admitting valid Codex JSON. Applying that old admitted
   result returns `stale`; Codex admission cannot bypass May's generation fence.
+- The adapter keeps one thread binding for `(appId, taskId)` across Task
+  generations, updates the mirrored goal for the new generation, and extracts
+  a candidate result only from the exact turn named by the terminal goal.
 - The client now proves graceful stdin shutdown, SIGTERM fallback, SIGKILL
   fallback, already-closed handling, and removal of timed-out requests. An
   uncatchable Host `SIGKILL` remains outside in-process cleanup guarantees and
