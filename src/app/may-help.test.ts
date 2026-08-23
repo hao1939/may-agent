@@ -5,6 +5,10 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const ENTRYPOINT = resolve(import.meta.dir, "may.ts");
+const PACKAGE_IDENTITY = JSON.parse(readFileSync(resolve(import.meta.dir, "../../package.json"), "utf8")) as {
+  name: string;
+  version: string;
+};
 
 describe("may CLI help", () => {
   it("exits successfully without starting recovery or mutating state", () => {
@@ -44,7 +48,9 @@ describe("may CLI help", () => {
 
       expect(result.error).toBeUndefined();
       expect(result.status).toBe(0);
-      expect(result.stdout).toMatch(/^may-agent v0\.1\.0 \([0-9a-f]+\)\n$/);
+      expect(result.stdout).toMatch(
+        new RegExp(`^${PACKAGE_IDENTITY.name} v${PACKAGE_IDENTITY.version.replaceAll(".", "\\.")} \\([0-9a-f]+\\)\\n$`),
+      );
       expect(readdirSync(stateDir)).toEqual([]);
     } finally {
       rmSync(stateDir, { recursive: true, force: true });
@@ -77,7 +83,17 @@ describe("may CLI help", () => {
       });
       expect(result.error).toBeUndefined();
       expect(result.status).toBe(0);
-      expect(result.stdout).toBe("may-agent v0.1.0 (aaaaaaaa)\n");
+      expect(result.stdout).toBe(`${PACKAGE_IDENTITY.name} v${PACKAGE_IDENTITY.version} (aaaaaaaa)\n`);
+
+      const help = spawnSync(binary, ["--help"], {
+        cwd: root,
+        env: { ...process.env, STATE_DIR: join(root, "state") },
+        encoding: "utf8",
+        timeout: 10_000,
+      });
+      expect(help.error).toBeUndefined();
+      expect(help.status).toBe(0);
+      expect(help.stdout).toContain("Usage: may-agent [options]");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

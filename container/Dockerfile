@@ -33,6 +33,7 @@ RUN bun install --frozen-lockfile
 # Copy source + config
 COPY src/ src/
 COPY packages/ packages/
+COPY scripts/build-runtime-binary.ts scripts/build-runtime-binary.ts
 # The explicitly named codex-goal-poc executor reuses the protocol modules
 # proven by the trial suite. Remove this copy when the experiment is promoted
 # into the stable executor package or rolled back.
@@ -44,8 +45,9 @@ RUN actual="$(find packages -mindepth 2 -maxdepth 2 -name package.json -printf '
     test "$actual" = "$WORKSPACE_PACKAGE_DIRS" || \
     (printf 'Workspace package list drifted.\nExpected: %s\nActual:   %s\nUpdate Dockerfile workspace manifest COPY lines and WORKSPACE_PACKAGE_DIRS.\n' "$WORKSPACE_PACKAGE_DIRS" "$actual" >&2; exit 1)
 
-# Compile standalone binary
-RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
+# Compile through the same entrypoint used by correlated runtime deploys. This
+# keeps image builds and live deploys on one artifact contract.
+RUN bun scripts/build-runtime-binary.ts --outfile /build/may-agent
 
 # ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
 FROM ${DEBIAN_IMAGE}
