@@ -370,6 +370,24 @@ describe("evaluation fact admission", () => {
         ),
       ),
     ).toBeNull();
+    expect(
+      taskInputForEvent(
+        event(
+          "metric.breach",
+          { metricId: "eval.llm-coverage-lag-h", repeat: true, reason: "open-alert-updated" },
+          { owner: "agent:evaluator" },
+        ),
+      ),
+    ).toBeNull();
+    expect(
+      taskInputForEvent(
+        event(
+          "metric.recovered",
+          { metricId: "eval.llm-coverage-lag-h", repeat: true },
+          { owner: "agent:evaluator" },
+        ),
+      ),
+    ).toMatchObject({ kind: "owner-review", data: { reason: "metric.recovered" } });
   });
 
   test("admits only Telegram replies addressed to evaluation", () => {

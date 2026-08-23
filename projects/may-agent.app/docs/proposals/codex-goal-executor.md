@@ -266,7 +266,7 @@ payloads, or diffs. The structural allow-list is the hard boundary; this
 instruction is defense in depth, not a claim that prose redaction is solved.
 
 Protocol notification handling does not await event storage. Publications are
-serialized on a separate promise chain, deduplicated by retry-stable
+serialized on a separate promise chain, deduplicated by attempt-scoped
 thread/turn/item keys, capped at 64 meaningful events per attempt, and flushed
 before the attempt returns. Repeated active-goal usage heartbeats collapse to
 one event per turn/status transition. Long opaque item IDs are represented by
@@ -575,6 +575,25 @@ is registered as explicit executor name `codex-goal`; the former
   within 4,000 characters. Runtime now loads the selected App-agent role and
   supplies bounded direct-child facts and declared outputs through the shared
   `TaskAttempt` contract.
+- The first production `runtime/owner-review` canary used executor
+  `codex-goal`, bound thread `01a03031-aab2-75d1-9823-71dfbe9505cb`, emitted
+  bounded progress, returned an admitted no-op in 131 seconds, resumed the same
+  thread for later Task events, and applied one generation-checked evaluator
+  child creation when a genuinely uncovered local metric breach arrived.
+- Task events `5976152`, `5976189`, and `5976216` proved durable replay across
+  resumed attempts. They also exposed that automatic Codex continuation had
+  moved beyond the adapter's initially observed turn ID, so best-effort live
+  steering could race and fall back to replay. The adapter now follows every
+  authoritative `turn/started`, clears completed turn IDs, retains at most 64
+  pending steering events, and steers them into the next exact active turn.
+- Production resume exposed progress-key collisions when the same Task
+  generation emitted a pre-turn goal status from more than one attempt.
+  Progress keys are now attempt-scoped while remaining bounded and readable.
+- A simple owner review consumed about 75k Codex tokens before first
+  convergence and repeated open-alert metric updates could immediately wake it
+  again. Evaluation now reserves Codex for a new breach, recovery, explicit
+  request, or daily owner heartbeat; repeat updates for an already-open alert
+  remain durable facts without starting another owner attempt.
 
 Still required before promoting this beyond the Evaluation canary:
 checked-in generated protocol types beyond the current drift fingerprints,

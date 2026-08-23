@@ -145,7 +145,9 @@ function safeTaskIdPart(value: unknown): string {
   return `${normalized.slice(0, 107) || "id"}-${digest}`;
 }
 
-export function validateEvaluationTaskAction(action: TaskAction): string | null {
+export function validateEvaluationTaskAction(
+  action: TaskAction,
+): string | null {
   const taskId = action.kind === "create-task" ? action.id : action.taskId;
   if (taskId.startsWith("runtime/")) {
     return `${action.kind} cannot mutate reconciler-owned task ${taskId}`;
@@ -520,6 +522,8 @@ export function taskInputForEvent(
       });
     case "metric.breach":
     case "metric.recovered":
+      if (event.type === "metric.breach" && eventData(event).repeat === true)
+        return null;
       return isEvaluationMetric(event)
         ? {
             kind: "owner-review",

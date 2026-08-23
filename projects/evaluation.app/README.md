@@ -99,7 +99,10 @@ and addressed free-form requests use the `codex-goal` executor with the same
 Task result and event contract; changing executors does not change Task identity.
 Session aftermath runs only for eligible `session.end` or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
-evaluator-owned metric facts wake the stable owner-review task directly.
+new evaluator-owned metric breaches and recoveries wake the stable owner-review
+task directly. Repeated updates for an already-open breach remain durable metric
+facts but do not spend another owner reconciliation; the daily owner heartbeat
+still reviews the standing frontier.
 
 ### Canonical session aftermath
 
