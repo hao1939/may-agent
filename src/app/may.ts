@@ -6,7 +6,6 @@
 // production binary.
 import "./sdk-resolver-plugin.js";
 
-import packageJson from "../../package.json" with { type: "json" };
 import { execSync } from "node:child_process";
 import { createIdentityWriter } from "./daemon.js";
 import { runEmitMode } from "./modes/emit.js";
@@ -19,6 +18,15 @@ import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
 
 declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
+declare const __MAY_AGENT_PACKAGE_NAME__: string | undefined;
+declare const __MAY_AGENT_PACKAGE_VERSION__: string | undefined;
+
+// Compiled artifacts receive these values from build-runtime-binary.ts. Keep
+// literal fallbacks so the source entrypoint and even an ad-hoc standalone
+// compile remain self-contained; may-help.test.ts checks them against the
+// package manifest.
+const PACKAGE_NAME = typeof __MAY_AGENT_PACKAGE_NAME__ === "string" ? __MAY_AGENT_PACKAGE_NAME__ : "may-agent";
+const PACKAGE_VERSION = typeof __MAY_AGENT_PACKAGE_VERSION__ === "string" ? __MAY_AGENT_PACKAGE_VERSION__ : "0.1.0";
 
 // Keep informational CLI modes and their syntax validation ahead of runtime-root
 // resolution, identity creation, and app startup. Runtime startup performs stale
@@ -72,7 +80,7 @@ if (process.argv.includes("--version") || process.argv.includes("-v")) {
       // Development outside a Git checkout has no source identity.
     }
   }
-  console.log(`${packageJson.name} v${packageJson.version} (${gitSha})`);
+  console.log(`${PACKAGE_NAME} v${PACKAGE_VERSION} (${gitSha})`);
   process.exit(0);
 }
 
