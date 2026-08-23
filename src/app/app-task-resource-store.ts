@@ -17,7 +17,7 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 
-const TASK_RESOURCE_SCHEMA_VERSION = 1;
+const TASK_RESOURCE_SCHEMA_VERSION = 2;
 const MAX_CONTEXT_ATTEMPTS_PER_TASK = 16;
 
 /**
@@ -141,10 +141,10 @@ export class AppTaskResourceStore {
     const normalized = appId.trim().replace(/\.app$/, "");
     if (!normalized) throw new Error("Task resource store requires an App id");
     ensureTaskResourceSchema(db);
-    db.prepare("INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', ?)").run(
-      normalized,
-      String(TASK_RESOURCE_SCHEMA_VERSION),
-    );
+    db.prepare(
+      `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', ?)
+       ON CONFLICT(app_id, key) DO UPDATE SET value = excluded.value`,
+    ).run(normalized, String(TASK_RESOURCE_SCHEMA_VERSION));
     db.prepare("INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '0')").run(
       normalized,
     );
@@ -233,6 +233,25 @@ export class AppTaskResourceStore {
         trigger ? json(trigger) : null,
       );
     indexTaskReference(this.db, this.appId, resource.metadata.id);
+    this.putTaskRelations(resource);
+  }
+
+  /** Refresh only the exact structural links declared by one Task. */
+  private putTaskRelations(resource: AppTaskResource): void {
+    const taskId = resource.metadata.id;
+    this.db
+      .prepare("DELETE FROM app_task_relations WHERE app_id = ? AND source_task_id = ?")
+      .run(this.appId, taskId);
+    const insert = this.db.prepare(
+      `INSERT OR IGNORE INTO app_task_relations(
+         app_id, source_task_id, relation_kind, target_task_id
+       ) VALUES (?, ?, ?, ?)`,
+    );
+    const parentId = resource.spec.parentId?.trim();
+    if (parentId) insert.run(this.appId, taskId, "parent", parentId);
+    for (const dependencyId of new Set((resource.spec.dependsOn ?? []).map((id) => id.trim()).filter(Boolean))) {
+      insert.run(this.appId, taskId, "dependency", dependencyId);
+    }
   }
 
   /** Refresh only one Task's normalized Condition links. */
@@ -275,6 +294,7 @@ export class AppTaskResourceStore {
       }
       for (const table of [
         "app_task_events",
+        "app_task_relations",
         "app_task_attempts",
         "app_task_condition_routes",
         "app_task_conditions",
@@ -671,31 +691,21 @@ export class AppTaskResourceStore {
     }
 
     if (requested.size > 0) {
-      const parentIds = [...requested];
-      const rows = [
-        ...(this.db
-          .prepare(
-            `SELECT task_id, resource_json, trigger_json FROM app_tasks
-           WHERE app_id = ? AND json_extract(resource_json, '$.spec.parentId')
-             IN (${parentIds.map(() => "?").join(", ")})`,
-          )
-          .all(this.appId, ...parentIds) as Array<{
-          task_id?: string;
-          resource_json?: string;
-          trigger_json?: string | null;
-        }>),
-        ...(this.db
-          .prepare(
-            `SELECT DISTINCT t.task_id, t.resource_json, t.trigger_json
-             FROM app_tasks t, json_each(t.resource_json, '$.spec.dependsOn') dependency
-             WHERE t.app_id = ? AND dependency.value IN (${parentIds.map(() => "?").join(", ")})`,
-          )
-          .all(this.appId, ...parentIds) as Array<{
-          task_id?: string;
-          resource_json?: string;
-          trigger_json?: string | null;
-        }>),
-      ];
+      const relatedTo = [...requested];
+      const rows = this.db
+        .prepare(
+          `SELECT DISTINCT task.task_id, task.resource_json, task.trigger_json
+           FROM app_task_relations relation
+           JOIN app_tasks task
+             ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
+           WHERE relation.app_id = ?
+             AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})`,
+        )
+        .all(this.appId, ...relatedTo) as Array<{
+        task_id?: string;
+        resource_json?: string;
+        trigger_json?: string | null;
+      }>;
       for (const row of rows) {
         if (!row.task_id || !row.resource_json) continue;
         resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
