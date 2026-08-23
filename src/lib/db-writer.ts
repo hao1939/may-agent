@@ -630,7 +630,9 @@ export class DbWriter {
     project?: () => void,
   ): number | null {
     const timestamp = Date.now();
-    this.db.exec("BEGIN IMMEDIATE");
+    withSqliteBusyRetry(`persist event '${event.type}'`, () => {
+      this.db.exec("BEGIN IMMEDIATE");
+    });
     try {
       const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
       if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
