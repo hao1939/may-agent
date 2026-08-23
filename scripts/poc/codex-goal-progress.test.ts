@@ -50,7 +50,7 @@ describe("Codex goal progress projection", () => {
     ).toBeNull();
   });
 
-  it("keeps command, file, and tool progress free of payloads", () => {
+  it("drops successful command/tool noise and keeps failures free of payloads", () => {
     const command = projectCodexGoalProgress(
       completed({
         id: "command-1",
@@ -59,8 +59,8 @@ describe("Codex goal progress projection", () => {
         cwd: "/secret",
         aggregatedOutput: "secret output",
         commandActions: [{ command: "secret" }],
-        status: "completed",
-        exitCode: 0,
+        status: "failed",
+        exitCode: 1,
         durationMs: 42,
       }),
     );
@@ -71,9 +71,10 @@ describe("Codex goal progress projection", () => {
       stage: "item-completed",
       itemId: "command-1",
       itemType: "commandExecution",
-      status: "completed",
-      exitCode: 0,
+      status: "failed",
+      exitCode: 1,
       durationMs: 42,
+      message: "Codex reported an unsuccessful command.",
     });
     expect(JSON.stringify(command)).not.toContain("secret");
 
@@ -89,7 +90,7 @@ describe("Codex goal progress projection", () => {
         type: "mcpToolCall",
         server: "docs",
         tool: "search",
-        status: "completed",
+        status: "failed",
         durationMs: 8,
         arguments: { query: "secret argument" },
         result: { content: "secret result" },
@@ -104,10 +105,17 @@ describe("Codex goal progress projection", () => {
       itemType: "mcpToolCall",
       server: "docs",
       tool: "search",
-      status: "completed",
+      status: "failed",
       durationMs: 8,
+      message: "Codex reported an unsuccessful tool call.",
     });
     expect(JSON.stringify(tool)).not.toContain("secret");
+    expect(
+      projectCodexGoalProgress(completed({ id: "ok-command", type: "commandExecution", status: "completed", exitCode: 0 })),
+    ).toBeNull();
+    expect(
+      projectCodexGoalProgress(completed({ id: "ok-tool", type: "dynamicToolCall", status: "completed" })),
+    ).toBeNull();
   });
 
   it("projects lifecycle and goal status while ignoring stream deltas and reasoning", () => {
@@ -158,7 +166,7 @@ describe("Codex goal progress projection", () => {
     publisher.observe(first);
     publisher.observe(first);
     publisher.observe(completed({ id: "plan-1", type: "plan", text: "Second" }));
-    publisher.observe(completed({ id: "command-1", type: "commandExecution", status: "completed" }));
+    publisher.observe(completed({ id: "command-1", type: "commandExecution", status: "failed", exitCode: 1 }));
 
     // Publication begins on the microtask queue, not in the protocol callback.
     expect(published).toEqual([]);

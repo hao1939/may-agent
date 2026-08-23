@@ -165,6 +165,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     const status = boundedString(item.status, 64);
     const exitCode = finiteNumber(item.exitCode);
     const durationMs = finiteNumber(item.durationMs);
+    if (status === "completed" && (exitCode === null || exitCode === 0)) return null;
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
       threadId,
@@ -175,6 +176,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
         ...(status ? { status } : {}),
         ...(exitCode !== null ? { exitCode } : {}),
         ...(durationMs !== null ? { durationMs } : {}),
+        message: "Codex reported an unsuccessful command.",
       },
     });
   }
@@ -199,6 +201,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     const durationMs = finiteNumber(item.durationMs);
     const server = itemType === "mcpToolCall" ? boundedString(item.server, 128) : null;
     const tool = boundedString(item.tool, 128);
+    if (status === "completed") return null;
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
       threadId,
@@ -210,6 +213,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
         ...(tool ? { tool } : {}),
         ...(status ? { status } : {}),
         ...(durationMs !== null ? { durationMs } : {}),
+        message: "Codex reported an unsuccessful tool call.",
       },
     });
   }
