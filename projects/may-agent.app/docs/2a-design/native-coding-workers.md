@@ -5,6 +5,11 @@
 and a compatibility execution tool, using the same persistent worker records,
 classified failures, expected-output validation, and native process runner.
 
+**Active review:** [Resumable Codex Goal Executor](../proposals/codex-goal-executor.md)
+is proving app-server goals, automatic continuation, live Task steering, and
+restart resume. The production `codex` adapter described here remains the
+one-shot implementation until that proposal's gates pass.
+
 Direct execution sessions can delegate bounded coding work to native coding
 agents such as Codex CLI and Claude Code. These tools are not terminal tabs,
 project owners, App requests, or tasks. They are worker runtimes behind the

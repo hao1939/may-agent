@@ -89,6 +89,19 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
+  Type.Object(
+    {
+      kind: Type.Literal("codex-goal-trial"),
+      data: Type.Object(
+        {
+          targetProject: Type.String({ minLength: 1 }),
+          focus: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
   ...["aftermath-coverage-snapshot", "deep-scan"].map((kind) =>
     Type.Object(
       { kind: Type.Literal(kind), data: detailsSchema },
@@ -316,6 +329,31 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         workflow: "project-health-evaluator",
         input: { ...target },
         priority: "P1",
+      };
+    }
+    case "codex-goal-trial": {
+      const target = projectTarget(data.targetProject);
+      const focus = stringValue(data.focus);
+      if (!focus) return null;
+      const trialKey = createHash("sha256")
+        .update(`${target.targetProject}\u0000${focus}`)
+        .digest("hex")
+        .slice(0, 12);
+      return {
+        id: `runtime/codex-goal-trial/${safeTaskIdPart(target.targetProject)}/${trialKey}`,
+        parentId: "project-app-audit",
+        outcome: `Produce one bounded read-only assessment of ${target.targetProject}: ${focus}`,
+        acceptance: [
+          "The assessment answers the requested focus directly.",
+          "Every material claim cites an exact current file, command result, or durable observation.",
+          "No file, Task, external system, or repository state is changed.",
+        ],
+        mode: "achieve",
+        agent: "evaluator",
+        executor: "codex-goal-poc",
+        input: { ...target, focus, trial: true, readOnly: true },
+        priority: "P2",
+        category: "executor-trial",
       };
     }
     case "feedback-record": {
@@ -624,6 +662,18 @@ const app = defineApp({
         { additionalProperties: true },
       ),
       toInput: (data) => projectReviewInput(data),
+    },
+    "trial-codex-goal-review": {
+      description:
+        "Run one manual, read-only evaluation task through the resumable Codex goal executor trial.",
+      inputSchema: Type.Object(
+        {
+          targetProject: Type.String({ minLength: 1 }),
+          focus: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => ({ kind: "codex-goal-trial", data }),
     },
   },
   tasks: {

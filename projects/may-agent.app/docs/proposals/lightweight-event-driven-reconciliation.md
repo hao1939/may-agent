@@ -1172,6 +1172,10 @@ does not require parsing an App task tree.
 - Forward live Task input only when an executor supports it; always retain the
   durable next-attempt path as authority. Headless Codex/Claude currently use
   that durable replay path rather than a second steering protocol.
+- The draft [Resumable Codex Goal Executor](codex-goal-executor.md) tests a
+  richer app-server adapter behind the same Task authority. It must pass its
+  steering, resume, liveness, result-fence, and resource gates before replacing
+  the current headless adapter.
 
 **Exit:** Apps can break down and coordinate work through immediately visible
 events without holding an executor or losing restart safety, and changing the

@@ -86,6 +86,28 @@ describe("canonical evaluation App", () => {
     expect(app.actions?.["review-project-app"]).toBeUndefined();
   });
 
+  test("keeps the Codex goal trial manual, read-only, and isolated from the built-in codex executor", () => {
+    const input = app.actions?.["trial-codex-goal-review"]?.toInput?.({
+      targetProject: "may-agent.app",
+      focus: "Check whether the Task mental model matches current code.",
+    });
+    expect(input).toEqual({
+      kind: "codex-goal-trial",
+      data: {
+        targetProject: "may-agent.app",
+        focus: "Check whether the Task mental model matches current code.",
+      },
+    });
+    expect(taskIntentForInput(input!)).toMatchObject({
+      id: expect.stringMatching(/^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/),
+      mode: "achieve",
+      agent: "evaluator",
+      executor: "codex-goal-poc",
+      input: { targetProject: "may-agent.app", trial: true, readOnly: true },
+    });
+    expect(app.schedules?.some((schedule) => schedule.id.includes("codex-goal"))).toBeFalse();
+  });
+
   test("resolves every admitted input to one task", () => {
     expect(
       taskForEvaluationInput(
