@@ -1,8 +1,10 @@
 # Host Runtime
 
 **Design status:** Accepted.
-**Implementation status:** Task execution is the only App policy path. The
-owner/disposition worker, analysis attachment, delegation publisher, and
+**Implementation status:** Task reconciliation is the only side-effecting App
+policy path. Small pure mappings (`subscription.toInput`, `task(input)`, and
+`tasks.resolve`) select durable work during admission; they cannot execute it.
+The owner/disposition worker, analysis attachment, delegation publisher, and
 request delivery gate have been removed. Scoped Task list/get reads share one
 Runtime implementation across SDK, agent tool, control socket, and HTTP.
 
@@ -82,28 +84,31 @@ previous set when readiness fails.
 
 ## Store first, then run
 
-The Host stores identity and intent before the Runtime queues work. The code calls this
-"admission":
+The Host stores identity and intent before the Runtime wakes work. The code
+calls this "admission":
 
-- an input event and any caller request are persisted before task resolution;
+- an input event, frozen route journal entry, and any caller request are
+  persisted before asynchronous request-to-Task coordination;
 - a subscribed fact becomes typed App input or an exact task wake;
 - a task trigger is recorded before a worker is woken; and
 - a child dependency is stored before the child starts.
 
 This is why restart recovery does not depend on an in-memory queue.
 
-The admission queue is crash insurance, not a standing work loop. A newly
-accepted event enters the in-memory fast path immediately. Startup and App
-reload each recover at most 16 retained plans; the safety pass runs at most once
-per minute, selects only plans whose one-minute retry cooldown elapsed, and
-uses the `(status, updated_at)` index. A route that remains invalid therefore
-stays visible without continuously consuming CPU or rewriting its error row.
+The admission journal is crash insurance, not a work queue. A newly accepted
+event arms the asynchronous in-memory coordinator after publication returns.
+Startup and App reload each recover at most 16 retained plans; the safety pass
+runs at most once per minute, selects only plans whose one-minute retry
+cooldown elapsed, and uses the `(status, updated_at)` index. A route that
+remains invalid therefore stays visible without continuously consuming CPU or
+rewriting its error row.
 
 ## Capacity
 
 The Host constructs one `HostCapacity` limit for task attempts. Per-App task
-limits apply in addition. Request correlation and delivery do not consume a
-separate App execution capacity because they do not execute App policy.
+limits apply in addition. The Host separately bounds cheap request
+coordination, but Apps do not configure that mechanical limit and it does not
+consume model/task attempt capacity. Delivery is passive.
 
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
@@ -170,10 +175,12 @@ the envelope, then routes it to caller correlation, task resolution/wake,
 session control, or Host lifecycle control. It is not another broker, queue,
 service, or handler framework.
 
-`publish` synchronously validates, persists, and records only the exact durable
-request, Task wake, or operation needed for acceptance. It then returns. The
-App, workflow, agent, command, network call, and presentation work run
-asynchronously; inline routing never performs the work it admits.
+`publish` synchronously validates and persists the event, evaluates only pure
+route mappings, and records the exact durable request, admission-journal row,
+Task wake, or operation needed for acceptance. It then returns. Request-to-Task
+coordination, reconciliation, workflows, agents, commands, network calls, and
+presentation run asynchronously; inline routing never performs the work it
+admits.
 
 Passive listeners receive persisted, non-replayed events afterward in their
 own filtered, bounded FIFOs. A slow Console, socket client, Conversation

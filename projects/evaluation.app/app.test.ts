@@ -45,9 +45,9 @@ describe("canonical evaluation App", () => {
       id: "evaluation",
       version: 1,
       agent: "evaluator",
-      inbox: { maxConcurrent: 5 },
       tasks: { maxConcurrent: 5 },
     });
+    expect(app).not.toHaveProperty("inbox");
     expect(app.task).toBe(taskForEvaluationInput);
     expect(app.route).toBeUndefined();
     expect(app.tasks?.resolve).toBe(taskIntentForEvent);
@@ -172,7 +172,7 @@ describe("evaluation fact admission", () => {
       [],
     );
     expect(observationTypes).toContain("evaluation.owner_reviewed");
-    expect(app.inbox).not.toHaveProperty("accepts");
+    expect(app).not.toHaveProperty("inbox");
 
     const ended = event("session.end", {
       sessionId: "s_route_audit",

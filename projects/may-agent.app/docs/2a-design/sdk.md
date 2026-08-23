@@ -70,11 +70,14 @@ defineApp({
   observers,
   actions,
   workspace,
+  tasks,
 });
 ```
 
 The declaration is data and pure policy. Importing it cannot start sessions,
 register global handlers, write storage, or inspect runtime state.
+Request concurrency and recovery cadence are Host mechanics; the App
+declaration has no `inbox` or `resyncIntervalMs` tuning surface.
 
 ### Task resolution
 

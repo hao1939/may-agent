@@ -2,10 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** Core reconciliation, generation fencing, Conditions,
-parent/child work, bounded concurrency, resource-backed Task list/get, fenced
-mid-attempt event emission, and indexed recovery are implemented. Apps retain
-their existing authority until an explicit guarded cutover; bounded
-task-context reads and per-App rollout remain in progress. The public SDK uses
+parent/child work, indexed parent/dependency relationships, bounded
+concurrency, resource-backed Task list/get, fenced mid-attempt event emission,
+and indexed recovery are implemented for current Apps. The public SDK uses
 `agent` for the managed agent selected for bounded attempts. Retained Task
 records may still spell that field `owner`; the Host normalizes it at the
 storage boundary and does not expose it as Task ownership.
@@ -379,10 +378,11 @@ the generation transition records the supersession; they are not replayed as
 if they targeted the new specification.
 
 The durable event store remains the event authority. Task state keeps the
-event identities, routing relationship, and a bounded snapshot needed for
-recovery; it does not copy an unbounded event log. A missing referenced event
-is an explicit integrity error, never an empty trigger. Synthetic recovery or
-controller reasons are attempt metadata rather than fabricated domain events.
+event identities, routing relationship, and a bounded canonical envelope
+needed for recovery; it does not copy an unbounded event log. One event-backed
+attempt persists the ordered batch only—the most relevant `trigger` is derived
+in memory. Retained pre-migration attempts and synthetic controller attempts
+without a durable event batch may still carry a compatibility trigger.
 
 `reviewAfterMs` is a bounded supervision checkpoint, never proof that the
 Condition became true. Repeated unchanged reviews are capped; after the final

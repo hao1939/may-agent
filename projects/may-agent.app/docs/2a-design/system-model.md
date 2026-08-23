@@ -2,9 +2,10 @@
 
 **Design status:** Accepted.
 **Implementation status:** The single App work path is implemented: every
-installed App resolves admitted input to a Task, and only Task reconciliation
-executes App policy. Scoped Task list/get reads are implemented in the SDK,
-agent tool, control socket, and HTTP adapter.
+installed App maps admitted input to a Task, and only Task reconciliation may
+perform side effects or call an executor. Pure selectors and input-to-Task
+mappings run during admission coordination. Scoped Task list/get reads are
+implemented in the SDK, agent tool, control socket, and HTTP adapter.
 
 The May system has one App work object, one durable source of change, and three
 responsibility areas:
@@ -30,14 +31,15 @@ The practical test is deliberately plain:
 | Runtime | Which tasks does the event wake, which attempt runs, and what did it observe? |
 | App     | Given this task and its unobserved events, what should happen next?           |
 
-The App/Runtime boundary is one conceptual function:
+The side-effecting App/Runtime boundary is one conceptual function:
 
 ```text
 reconcile(task context + bounded capabilities) -> task result
 ```
 
-Everything before that call is admission or preparation. Everything after it
-is validation, persistence, wake scheduling, recovery, or delivery.
+Everything before that call is validation, pure mapping, admission, or
+preparation. Everything after it is result validation, persistence, wake
+scheduling, recovery, or delivery.
 
 ## Public mental model
 
@@ -196,7 +198,7 @@ event
   -> Host stores it before routing
   -> event type selects an explicit route
   -> Host stores any caller request or control operation
-  -> App input resolves one task, or the event wakes an exact existing task
+  -> pure App policy maps input to one task, or the event wakes an exact existing task
   -> Runtime durably links the event to that task
   -> Host runs one bounded reconciliation attempt with the task's unobserved events
   -> App converges, waits, decomposes, or asks for another attempt
@@ -215,7 +217,8 @@ The Host owns mechanics:
 - validate and persist events before routing them;
 - store App requests, tasks, attempts, results, and delivery evidence;
 - schedule declared inputs, facts, and observations;
-- limit concurrent work across the process and within each App;
+- limit Task attempts across the process and within each App, and separately
+  bound cheap request coordination;
 - run agents and workflows as bounded attempts;
 - restart unfinished work from durable state;
 - deliver results to callers and human channels; and

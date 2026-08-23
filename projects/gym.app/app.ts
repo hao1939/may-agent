@@ -518,7 +518,6 @@ export default defineApp({
     localPath: "../gym",
   },
   inputSchema: gymInputSchema,
-  inbox: { maxConcurrent: 2 },
   task: taskForGymInput,
   subscriptions: [
     {

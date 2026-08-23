@@ -2,9 +2,11 @@
 
 **Design status:** Accepted.
 **Implementation status:** Every current App uses Task reconciliation as its
-only policy execution path. Request storage correlates Task results without a
-second owner or delivery loop. Scoped Task list/get reads are implemented
-across the SDK, agent tool, control socket, and HTTP.
+only side-effecting policy path. Pure translators and Task resolvers select
+durable work during admission; they cannot perform it. Request storage
+correlates Task results without a second owner or delivery loop. Scoped Task
+list/get reads are implemented across the SDK, agent tool, control socket, and
+HTTP.
 
 An App is one durable address with one accountable responsibility. Keep the
 mental model to one work object and three responsibilities:
@@ -41,10 +43,10 @@ something happened but creates no work -> fact
 ```
 
 Every input or fact first enters as an event. The Host records caller
-correlation when needed, and the App decides which task the admitted input
-creates, revises, attaches to, or wakes. In code, a request is stored in the App
-inbox and App policy resolves `TaskIntent`. The inbox never executes App policy
-or runs a second work loop.
+correlation when needed, and pure App policy decides which task the admitted
+input creates, revises, attaches to, or wakes. In code, a request is stored in
+the App inbox and the deferred request coordinator calls `task(input)`. The
+inbox never reconciles that Task or runs a second work loop.
 
 Human input, a cross-App dependency, an action, a schedule, or a subscribed
 fact may create a caller request and task. A metric, provider observation,
@@ -262,8 +264,12 @@ same task resolver as addressed input. The Host adds caller correlation only
 when the source expects a result. A fact carrying an explicit task target
 bypasses broad resolution and wakes only that task.
 
-There is no separate inbox subscription versus task subscription, generic
-`events` route, or imperative `onEvent` execution path.
+`subscriptions` translates a fact into correlated App input;
+`tasks.subscriptions` directly resolves a callerless fact to Task intent. The
+forms serve different admission semantics but converge on the same Task store
+and reconciler, and one App cannot claim both actionable forms for the same
+fact. There is no generic `events` route or imperative `onEvent` execution
+path.
 
 An App may declare exact `observations` selectors for reviewed facts that
 intentionally create no work. After actionable route evaluation selects no

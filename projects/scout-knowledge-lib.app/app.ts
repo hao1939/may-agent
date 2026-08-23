@@ -318,7 +318,6 @@ export default defineApp({
     localPath: "../scout-knowledge-lib",
   },
   inputSchema: scoutInputSchema,
-  inbox: { maxConcurrent: 1 },
   task: taskForScoutInput,
   subscriptions: [
     {

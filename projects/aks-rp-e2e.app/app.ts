@@ -975,7 +975,6 @@ const app = defineApp({
   description:
     "AKS RP E2E feature knowledge, spec verification, and project reconciliation.",
   inputSchema: aksInputSchema,
-  inbox: { maxConcurrent: appOpsSupportConcurrent },
   task: taskForCanonicalAksInput,
   workspace: {
     kind: "git",
@@ -1169,7 +1168,6 @@ const app = defineApp({
     resolve: resolveCanonicalAksTask,
     validateAction: validateAksTaskAction,
     maxConcurrent: appControllerMaxConcurrent,
-    resyncIntervalMs: 60_000,
   },
 });
 

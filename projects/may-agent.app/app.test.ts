@@ -34,9 +34,9 @@ describe("Host Operations App", () => {
       id: "may-agent",
       version: 1,
       agent: "may",
-      inbox: { maxConcurrent: 2 },
       tasks: { maxConcurrent: 2 },
     });
+    expect(app).not.toHaveProperty("inbox");
     expect(app.task).toBe(taskForMayAgentInput);
     expect(app.route).toBeUndefined();
     expect(app.tasks?.resolve).toBe(resolveMayAgentTask);

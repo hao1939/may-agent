@@ -1,9 +1,10 @@
 # Events, Delivery, And Task Admission
 
 **Design status:** Accepted.
-**Implementation status:** Event persistence, request-to-Task admission, exact
-wakes, Condition wakes, and ordered per-attempt Event batches are implemented.
-All current Apps use that single path; request dispositions have been removed.
+**Implementation status:** Event persistence, frozen admission journaling,
+deferred request-to-Task coordination, exact wakes, Condition wakes, and
+ordered per-attempt Event batches are implemented. All current Apps use that
+single path; request dispositions have been removed.
 
 ## Purpose
 
@@ -15,9 +16,9 @@ transport or storage APIs. A caller request additionally creates a correlation
 record because a later result is owed; a fact does not create another resource.
 
 ```text
-publish(event) -> validate -> persist -> resolve/wake task -> receipt
-                                                   |
-                                                   +-> async handling
+publish(event) -> validate -> persist event + exact admission -> receipt
+                                      |
+                                      +-> async request coordination / Task handling
 ```
 
 The event ID is the root causal identity. An event does not replace mutable work
@@ -85,11 +86,12 @@ session controls use `publish(EventInput)`; the retired flat `input`, `steer`,
 `cancel`, `cancel_all`, `fork`, `reload`, `restart`, and `shutdown` socket
 shortcuts are rejected.
 
-Persistence and the exact durable link or wake finish inside `publish`. That
-small admission step is not event handling: it records which Task or operation
-owns the input and puts an identity in the ready set. Model calls, workflows,
-commands, network I/O, presentation, broad reads, and other actual handling
-always begin asynchronously after `publish` returns.
+Persistence and the exact durable admission authority finish inside `publish`.
+That authority may be a caller request, frozen route-journal row, exact Task
+wake, or control operation. The step may run pure App translators/resolvers,
+but it cannot execute work. Request-to-Task coordination, model calls,
+workflows, commands, network I/O, presentation, broad reads, and other actual
+handling begin asynchronously after `publish` returns.
 
 Passive listeners run afterward for persisted, non-replayed events. Each
 listener has its own filtered, bounded FIFO, so socket streams, Console
@@ -138,13 +140,17 @@ events carry both fields, and inbox recovery reads and wakes that same scoped
 identity. A retained legacy event without `appId` may use the compatibility
 wake, but new producers must never address a Task by its App-local ID alone.
 
-An App subscription has a stable ID and produces input only when its translator
-returns a valid value. The Runtime passes that input through the App's one task
-resolver, persists the resulting task intent and an ordered task-event link,
-then coalesces the stable task ID in its queue. A targeted task or Condition
-wake stores the same kind of link without running broad resolution.
+An App subscription has a stable ID and produces input only when its pure
+translator returns a valid value. The deferred request coordinator passes
+addressed input through the App's pure `task(input)` mapping. A direct Task
+subscription may use pure `tasks.resolve(event)` during exact admission. The
+Runtime persists the resulting intent and one ordered canonical task-event
+link, then coalesces the stable task ID in its ready set. A targeted task or
+Condition wake stores the same kind of link without broad resolution.
 
-The task-event link is durable work input, not a scheduling hint. Every claim
+The task-event link is durable work input, not a scheduling hint. It stores one
+canonical event envelope plus the EventHub identity, never both a flattened
+payload and a duplicate attempt trigger. Every claim
 receives a bounded ordered batch of linked events after the task's accepted
 checkpoint. Result admission advances that checkpoint through the presented
 batch atomically with task state. Events arriving during an attempt remain
@@ -167,8 +173,8 @@ Addressed input uses one standard required event:
 app.input.requested target.appId=<app>
   -> validate App input
   -> create or find caller correlation when a caller expects a result
-  -> resolve and persist one App task link
-  -> return the request and task links
+  -> return the accepted request link
+  -> asynchronously map it to and persist one App task link
 ```
 
 - non-conversation callers may publish this event for the `may` App;

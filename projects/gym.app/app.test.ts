@@ -49,9 +49,9 @@ describe("canonical Gym App", () => {
       version: 1,
       agent: "gym",
       workspace: { kind: "local", localPath: "../gym" },
-      inbox: { maxConcurrent: 2 },
       tasks: { maxConcurrent: 2 },
     });
+    expect(gymApp).not.toHaveProperty("inbox");
     expect(gymApp.task).toBe(taskForGymInput);
     expect(gymApp.route).toBeUndefined();
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);

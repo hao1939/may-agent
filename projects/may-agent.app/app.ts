@@ -469,7 +469,6 @@ const app = defineApp({
   description:
     "Host Operations App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
-  inbox: { maxConcurrent: 2 },
   task: taskForHostOperationsInput,
   workspace: { kind: "local", localPath: "../may-agent" },
   subscriptions: [
@@ -547,7 +546,6 @@ const app = defineApp({
     ],
     resolve: resolveHostOperationsTask,
     maxConcurrent: 2,
-    resyncIntervalMs: 60_000,
   },
 });
 
