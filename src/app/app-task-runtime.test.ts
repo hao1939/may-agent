@@ -367,6 +367,54 @@ function projectDirForBypass(): string {
 }
 
 describe("canonical App task runtime", () => {
+  it("accepts a recovered frozen Condition route after its task has already left the wait", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    writeFileSync(
+      join(f.appDir, "app.js"),
+      `export default {
+        id: "sample", version: 1, agent: "sample-owner",
+        inputSchema: { type: "object", properties: {} },
+        tasks: {}
+      };\n`,
+    );
+    const stateDir = join(f.appDir, ".state", "tasks");
+    mkdirSync(stateDir, { recursive: true });
+    const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
+    writeFileSync(join(stateDir, "state.json"), `${JSON.stringify({ ...seed, project_lifecycle: "paused" })}\n`);
+    activateTaskResources(
+      taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        agent: "sample-owner",
+        maxConcurrent: 1,
+      }),
+      persistDir,
+    );
+    const registry = new AppRegistry(f.projectsRoot);
+    await registry.reload();
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: registry.snapshot(),
+    });
+
+    expect(
+      admitLoadedCanonicalAppTaskEvent({
+        bus,
+        appId: "sample",
+        event: { type: "pipeline-run.state", data: { pipelineRunId: "42", state: "completed" } },
+        intent: null,
+        conditionTaskIds: ["retired-task"],
+      }),
+    ).toMatchObject({
+      accepted: true,
+      route: "direct",
+      note: expect.stringContaining("already observed: retired-task"),
+    });
+  });
+
   it("carries a deterministic cross-App result back as the parent's next Event", async () => {
     const f = fixture();
     const bus = eventBus();
