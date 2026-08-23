@@ -203,7 +203,7 @@ function testReconciliation(
     generation:
       typeof envelope.generation === "number" ? envelope.generation : 1,
     resourceVersion: 1,
-    owner: input.agent ?? "aks-explorer",
+    agent: input.agent ?? "aks-explorer",
     mode: "achieve",
     outcome:
       typeof envelope.outcome === "string"
@@ -239,7 +239,7 @@ function isolatedAgentContext(input: TestContextInput): WorkflowContext {
     (async () => ({
       status: "done" as const,
       structuredResult: {
-        decision: "needs-owner",
+        decision: "needs-agent",
         summary: "Default reconciliation path entered.",
         evidence: ["default-path:entered"],
       },
@@ -1407,7 +1407,7 @@ describe("spec-live-reconciliation workflow", () => {
           runAgent: async () => ({
             status: "done" as const,
             structuredResult: {
-              decision: "needs-owner" as const,
+              decision: "needs-agent" as const,
               summary: "Default reconciliation path entered.",
               evidence: ["default-path:entered"],
             },
@@ -1439,7 +1439,7 @@ describe("spec-live-reconciliation workflow", () => {
       writeFileSync(
         childScript,
         ` import { execFileSync } from "node:child_process"; import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const mode=${JSON.stringify(mode)}; const root=mkdtempSync(join(tmpdir(),"no-integration-life-")); const remote=join(root,"remote.git"); const seed=join(root,"seed"); const repoDir=join(root,"repo"); const workspaceDir=join(root,"workspace"); const appDir=join(root,"app"); const binDir=join(root,"bin"); const azLog=join(root,"az.log"); const artifactPath=join(root,"diagnostic.md"); const run=(cwd,args)=>execFileSync("git",args,{cwd,encoding:"utf8"}).trim(); mkdirSync(seed,{recursive:true}); mkdirSync(appDir,{recursive:true}); mkdirSync(binDir,{recursive:true}); writeFileSync(azLog,""); run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/diagnostic"]); writeFileSync(join(seed,"diagnostic.txt"),"prepared\\\\n"); run(seed,["add","diagnostic.txt"]); run(seed,["commit","-m","prepared diagnostic"]); const sourceCommit=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/diagnostic"]); run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); run(root,["clone",remote,workspaceDir]); run(workspaceDir,["checkout","task/diagnostic"]); run(workspaceDir,["config","user.email","test@example.com"]); run(workspaceDir,["config","user.name","Test"]); writeFileSync(join(binDir,"az"),\`#!/usr/bin/env node
-const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const {createSpecLiveTestContext}=await import(${JSON.stringify(`file://${join(import.meta.dir, "lib/spec-live-test-context.ts")}`)}); let agentCalls=0; if(mode==="dirty") writeFileSync(join(workspaceDir,"README.md"),"dirty\\n"); const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const resultEnvelope=await reconcileSpecLive(createSpecLiveTestContext({taskId:"domain/no-integration-life",input,appRoot:appDir,projectRoot:repoDir,workspaceRoot:workspaceDir,callAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\. Structural cleanup paths: (.+)\./); const paths=match[1].split(", "); writeFileSync(artifactPath,["Tested commit: "+sourceCommit,"Pipeline run ID: 175125000",...paths.map(p=>"Result path: "+p),"Cleanup proof: "+match[2].split(", ")[0],"Assertion mapping: expected failure","Lineage mapping: exact prepared source","Request fingerprint: sha256:"+"d".repeat(64),"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join(String.fromCharCode(10))); const output={decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}; return {id:"s_diagnostic_test",kind:"agent",status:"done",summary:output.summary,output};} const output={decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}; return {id:"s_default_test",kind:"agent",status:"done",summary:output.summary,output};}})); const result=resultEnvelope.output; const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
+const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const {createSpecLiveTestContext}=await import(${JSON.stringify(`file://${join(import.meta.dir, "lib/spec-live-test-context.ts")}`)}); let agentCalls=0; if(mode==="dirty") writeFileSync(join(workspaceDir,"README.md"),"dirty\\n"); const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const resultEnvelope=await reconcileSpecLive(createSpecLiveTestContext({taskId:"domain/no-integration-life",input,appRoot:appDir,projectRoot:repoDir,workspaceRoot:workspaceDir,callAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\. Structural cleanup paths: (.+)\./); const paths=match[1].split(", "); writeFileSync(artifactPath,["Tested commit: "+sourceCommit,"Pipeline run ID: 175125000",...paths.map(p=>"Result path: "+p),"Cleanup proof: "+match[2].split(", ")[0],"Assertion mapping: expected failure","Lineage mapping: exact prepared source","Request fingerprint: sha256:"+"d".repeat(64),"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join(String.fromCharCode(10))); const output={decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}; return {id:"s_diagnostic_test",kind:"agent",status:"done",summary:output.summary,output};} const output={decision:"needs-agent",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}; return {id:"s_default_test",kind:"agent",status:"done",summary:output.summary,output};}})); const result=resultEnvelope.output; const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
       );
       const child = spawnSync("bun", [childScript], {
         cwd: import.meta.dir,
@@ -2282,7 +2282,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       "not that the feature is abandoned forever",
     );
     expect(terminalDispositionSourceRepairInstruction).toContain(
-      "Do not return needs-owner merely because",
+      "Do not return needs-agent merely because",
     );
     expect(terminalDispositionSourceRepairInstruction).toContain(
       "real external authority must decide it",
@@ -3433,7 +3433,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     ).toBeNull();
   });
 
-  test("forces worktree recovery through the null-admission callback without permitting a dirty owner handoff", async () => {
+  test("forces worktree recovery through the null-admission callback without permitting a dirty agent handoff", async () => {
     const checkpointPath = join(isolatedAgentWorkspace, "current-context.json");
     const sourceCommit = "d".repeat(40);
     let calls = 0;
@@ -3490,7 +3490,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       forcedRecovery(true, false),
     );
     expect(ambiguous).toMatchObject({
-      decision: "needs-owner",
+      decision: "needs-agent",
       evidence: [
         "completion-guard:forced",
         "workspace:dirty",
@@ -3537,7 +3537,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           return {
             status: "done",
             structuredResult: {
-              decision: "needs-owner",
+              decision: "needs-agent",
               summary:
                 "Completion guard interrupted the bounded LocalDNS carrier edit.",
               evidence: [
@@ -3583,7 +3583,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
             phase: "preparation",
           },
           validateDecision: (candidate) => {
-            if (candidate.decision === "needs-owner" && workspaceDirty) {
+            if (candidate.decision === "needs-agent" && workspaceDirty) {
               return "task-owned dirty technical repair must continue in the same workflow context";
             }
             if (candidate.decision !== "committed") {
@@ -3904,7 +3904,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       {
         status: "done",
         structuredResult: {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary: "No newer AzureLinux security image is published.",
           evidence: [
             "pipeline-run:175244417",
@@ -3965,7 +3965,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(prompts[2]).toContain(
       "No newer AzureLinux security image is published.",
     );
-    expect(prompts[2]).toContain("needs-owner cannot defer an exact-pass task");
+    expect(prompts[2]).toContain("needs-agent cannot defer an exact-pass task");
     expect(prompts[2]).toContain(
       "Preserve any hard-validation correction above",
     );
@@ -4001,7 +4001,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       {
         status: "done",
         structuredResult: {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary: "review the non-runnable disposition",
           evidence: ["source-commit:abc"],
         },
@@ -4025,18 +4025,18 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       },
     );
 
-    expect(result.decision).toBe("needs-owner");
+    expect(result.decision).toBe("needs-agent");
     expect(prompts).toHaveLength(3);
     expect(prompts[2]).toContain("workflow owns task-branch publication");
   });
 
-  test("keeps an Airlock-shaped exact-pass source gap inside workflow repair instead of needs-owner", async () => {
+  test("keeps an Airlock-shaped exact-pass source gap inside workflow repair instead of needs-agent", async () => {
     const prompts: string[] = [];
     const decisions = [
       {
         status: "done",
         structuredResult: {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary:
             "execute mode still does not implement the declared compliance/status claims",
           evidence: [
@@ -4363,7 +4363,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     ).toBeNull();
     expect(
       taskWorktreeRecoveryDecisionProblem({
-        decision: "needs-owner",
+        decision: "needs-agent",
         summary: "ownership is ambiguous",
         evidence: ["workspace:dirty"],
       }),
@@ -4394,11 +4394,11 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     );
   });
 
-  test("rejects dirty needs-owner recovery when task worktree ownership is established", () => {
+  test("rejects dirty needs-agent recovery when task worktree ownership is established", () => {
     expect(
       taskWorktreeRecoveryDecisionProblem(
         {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary: "the attempted repair still fails",
           evidence: [
             "workspace:dirty",
@@ -4423,7 +4423,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(
       taskWorktreeRecoveryDecisionProblem(
         {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary: "two retained sessions claim the same unstaged path",
           evidence: [
             "ownership-ambiguity:path features/example/spec.json has conflicting retained-session provenance",
@@ -4769,9 +4769,9 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     ).toContain("neither live readiness nor a wait");
   });
 
-  test("rejects imprecise needs-owner for exact-pass work", () => {
+  test("rejects imprecise needs-agent for exact-pass work", () => {
     const decision = {
-      decision: "needs-owner" as const,
+      decision: "needs-agent" as const,
       summary:
         "execute mode still does not implement the declared compliance/status claims",
       evidence: ["execute-mode-remains-nonlive-reviewed-exception"],
@@ -4784,7 +4784,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
 
   test("keeps the generation-5 LocalDNS internal source gap in bounded workflow repair despite external-boundary prefixes", () => {
     const decision = {
-      decision: "needs-owner" as const,
+      decision: "needs-agent" as const,
       summary:
         "Current source is not live-ready and requires the bounded same-task source repair; immediate completion was required before that repair could be made.",
       evidence: [
@@ -4814,7 +4814,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       sessionId: "s_1786372198869_67",
       finishParams: {
         result: {
-          decision: "needs-owner" as const,
+          decision: "needs-agent" as const,
           summary:
             "Bounded guardrail stopped preparation with the preserved axis patch applied but uncommitted; all six over-cap carriers remain unresolved.",
           evidence: ["focused checks passed"],
@@ -4842,7 +4842,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
     expect(payload?.input?.specIds).toHaveLength(9);
     expect(sessionResult.finishParams.result).toMatchObject({
-      decision: "needs-owner",
+      decision: "needs-agent",
       liveReady: false,
     });
     expect(
@@ -4902,7 +4902,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       sessionId: "s_1786643624590_80",
       finishParams: {
         result: {
-          decision: "needs-owner" as const,
+          decision: "needs-agent" as const,
           summary:
             "The bounded repair is locally verified but uncommitted because the completion guardrail required an immediate finish.",
           evidence: ["154 pass, 0 fail"],
@@ -4924,7 +4924,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(sessionResult.sessionId).toBe("s_1786643624590_80");
     expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
     expect(payload?.input?.specIds).toHaveLength(9);
-    expect(sessionResult.finishParams.result.decision).toBe("needs-owner");
+    expect(sessionResult.finishParams.result.decision).toBe("needs-agent");
     expect(
       exactPassNeedsOwnerProblem(sessionResult.finishParams.result, true),
     ).toContain("verified dirty repair");
@@ -4981,7 +4981,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       sessionId: "s_1786672976089_15",
       finishParams: {
         result: {
-          decision: "needs-owner" as const,
+          decision: "needs-agent" as const,
           summary:
             "Bounded guardrail interrupted a verified but uncommitted internal source repair.",
           evidence: ["focused post-edit checks passed"],
@@ -5009,7 +5009,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
     expect(payload?.input?.specIds).toHaveLength(9);
     expect(sessionResult.finishParams.result).toMatchObject({
-      decision: "needs-owner",
+      decision: "needs-agent",
       liveReady: false,
     });
     expect(
@@ -5069,7 +5069,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       sessionId: "s_1786675340203_33",
       finishParams: {
         result: {
-          decision: "needs-owner" as const,
+          decision: "needs-agent" as const,
           summary:
             "Completion guardrail interrupted after a verified one-file source repair but before commit.",
           evidence: ["all staging checks passed", "no commit was made"],
@@ -5097,7 +5097,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
     expect(payload?.input?.specIds).toHaveLength(9);
     expect(sessionResult.finishParams.result).toMatchObject({
-      decision: "needs-owner",
+      decision: "needs-agent",
       liveReady: false,
     });
     expect(
@@ -5148,7 +5148,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
 
   test("does not force a failed dirty repair past its check boundary", () => {
     const decision = {
-      decision: "needs-owner" as const,
+      decision: "needs-agent" as const,
       summary:
         "The completion guardrail stopped this dirty repair after its focused checks failed.",
       evidence: ["focused-checks:failed", "test-failure:planner.test.ts"],
@@ -5165,7 +5165,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       sessionId: "s_1786378366463_66",
       finishParams: {
         result: {
-          decision: "needs-owner" as const,
+          decision: "needs-agent" as const,
           summary:
             "Source is not ready for ADO and requires the identified same-task source repair; bounded completion guardrail stopped before implementation.",
           evidence: ["confirmed internal source gap"],
@@ -5250,7 +5250,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       {
         status: "done",
         structuredResult: {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary:
             "The isolated worktree still needs the already-diagnosed LocalDNS FIPS repair, but work remains.",
           evidence: [
@@ -5296,16 +5296,16 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       "at most four read-only investigation/tool operations before the first source mutation",
     );
     expect(prompts[1]).toContain(
-      "Work remaining is not by itself a needs-owner boundary",
+      "Work remaining is not by itself a needs-agent boundary",
     );
     expect(prompts[1]).toContain(
       "features/localdns/lib/localdns-os-arch-matrix.ts",
     );
   });
 
-  test("accepts needs-owner for a genuine exact-pass external ownership boundary", () => {
+  test("accepts needs-agent for a genuine exact-pass external ownership boundary", () => {
     const decision = {
-      decision: "needs-owner" as const,
+      decision: "needs-agent" as const,
       summary:
         "The subscription policy authority must approve the unavailable staging capability.",
       evidence: [

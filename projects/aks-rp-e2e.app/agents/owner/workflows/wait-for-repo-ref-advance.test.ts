@@ -35,7 +35,7 @@ function workflowContext(input: {
       taskId: input.taskId,
       generation: 1,
       resourceVersion: 1,
-      owner: "owner",
+      agent: "owner",
       mode: "achieve",
       outcome: "Wait for the exact repository ref",
       acceptance: [],
@@ -218,14 +218,14 @@ describe("wait-for-repo-ref-advance workflow", () => {
     });
 
     expect(result).toMatchObject({
-      state: "needs-owner",
+      state: "needs-agent",
     });
     expect(result).not.toHaveProperty("actions");
     expect(result).not.toHaveProperty("conditions");
     expect(result.summary).toContain("advanced from baseline abc to def");
   });
 
-  test("returns needs-owner for unsupported repo-ref waits before admitting a new Condition", async () => {
+  test("returns needs-agent for unsupported repo-ref waits before admitting a new Condition", async () => {
     const result = await execute(
       workflowContext({
         taskId:
@@ -244,7 +244,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
     expect(result).toMatchObject({
       type: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: expect.arrayContaining([
           "workflow:wait-for-repo-ref-advance",
           "task:wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727",
@@ -258,7 +258,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
     );
   });
 
-  test("returns needs-owner for unsupported normalization repo-ref waits before admitting a new Condition", async () => {
+  test("returns needs-agent for unsupported normalization repo-ref waits before admitting a new Condition", async () => {
     const result = await execute(
       workflowContext({
         taskId:
@@ -277,7 +277,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
     expect(result).toMatchObject({
       type: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: expect.arrayContaining([
           "workflow:wait-for-repo-ref-advance",
           "task:wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
@@ -292,7 +292,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
     );
   });
 
-  test("returns needs-owner when the trigger shows a stale satisfied repo-ref wake", async () => {
+  test("returns needs-agent when the trigger shows a stale satisfied repo-ref wake", async () => {
     const root = mkdtempSync(join(tmpdir(), "wait-for-repo-ref-stale-wake-"));
     const remote = join(root, "remote.git");
     const repo = join(root, "repo");
@@ -332,7 +332,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
       expect(result).toMatchObject({
         type: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           evidence: expect.arrayContaining([
             `repo-ref:origin/dev`,
             `trigger-commit:different-commit`,
@@ -394,7 +394,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
       expect(result).toMatchObject({
         type: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           evidence: expect.arrayContaining([`repo-ref:origin/dev`]),
         },
       });
@@ -447,7 +447,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
             outcome: "Recheck after origin/dev advances.",
             acceptance: [],
             mode: "achieve",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "wait-for-repo-ref-advance",
             input: {
               baseRef: "origin/dev",

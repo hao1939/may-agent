@@ -246,7 +246,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Any required review emits its structured outcome, while a review-process failure remains visible as evaluation.review_failed.",
         ],
         mode: "achieve",
-        owner: "evaluator",
+        agent: "evaluator",
         workflow: "evaluator-aftermath",
         input: {
           sessionId,
@@ -388,7 +388,7 @@ export function taskForEvaluationInput(
         "The evaluator returns an evidence-backed result and a caller response when one is owed.",
       ],
       mode: "achieve",
-      owner: "evaluator",
+      agent: "evaluator",
       input: {
         kind: admitted.input.kind,
         data: record(admitted.input.data),
@@ -491,7 +491,7 @@ export function taskIntentForEvent(
 const app = defineApp({
   id: projectId,
   version: 1,
-  owner: "evaluator",
+  agent: "evaluator",
   description:
     "Independent session and App auditing with evidence-backed owner and human reporting.",
   inputSchema: evaluationInputSchema,

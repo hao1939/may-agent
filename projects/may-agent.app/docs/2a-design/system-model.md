@@ -91,25 +91,60 @@ The names describe different responsibilities:
 | Name                                      | Meaning                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **May** (`app:may`)                       | The human-facing assistant and App that owns Conversation Tasks and routing.                     |
-| **Executor** (for example `agent:may`)    | A replaceable mechanism for one bounded attempt. It owns no durable work.                         |
+| **Agent** (for example `agent:may`)       | A named reasoning profile for one bounded attempt. It owns no durable work.                      |
 | **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
 | **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
 
-May owns the obligation across retries and restarts; an executor only attempts
-it. The executor can change, fail, or be replaced without changing the
+### App or agent?
+
+Use one test:
+
+```text
+must the responsibility survive this execution? -> App
+is this only how one bounded attempt is performed? -> agent
+```
+
+An **App** is the durable unit of responsibility. It has an address, accepts
+typed input, maps that input to Tasks, decides which events matter, and defines
+what completion means. Create or use an App when work needs durable identity,
+later wakes, retries, dependencies, or acceptance across attempts.
+
+An **agent** is a named reasoning profile used inside one attempt. It supplies
+instructions, tools, and model behavior. It receives bounded Task context and
+returns a proposed Task result. It has no inbox, Task namespace, scheduler,
+retry loop, or independent completion authority. Add an agent when an existing
+App needs different expertise or tool access; do not create an agent to own a
+new durable responsibility.
+
+A workflow is a bounded procedure and an executor adapter is another way to
+run one attempt. **Attempt handler** is the umbrella term for an agent,
+workflow, or executor adapter. None owns the Task.
+
+For example:
+
+- ordinary conversation belongs to `app:may`; `agent:may` may perform an
+  attempt for its Conversation Task;
+- AKS review belongs to `app:aks-rp-e2e`; an AKS reviewer agent or workflow may
+  perform the next attempt; and
+- changing the Host belongs to `app:may-agent`; May may route the request but
+  neither May nor the selected agent owns that Host Operations Task.
+
+May owns the obligation across retries and restarts; an attempt handler only
+attempts it. The handler can change, fail, or be replaced without changing the
 Conversation Task. Durable Task identity remains namespaced by its App.
 
-The current SDK still calls the default managed agent `owner` in
-`AppDefinition` and `TaskIntent`. That is an implementation naming gap, not a
-second ownership model. New design and UI language must call it an agent or
-executor; retained storage may keep historical `owner` fields behind the
-Runtime boundary until a safe migration no longer needs them.
+The public SDK calls the execution selection `agent`. The Host accepts the old
+`owner` spelling at one migration boundary and still stores it in retained Task
+state. That compatibility alias is not a second ownership model and must not
+leak into new App code, prompts, or UI. It can disappear after retained state
+has a safe migration.
 
 Use the shortest name that fits the audience:
 
 - say **May** in product behavior, conversation, and ordinary operations;
 - say **May App** only when contrasting the App boundary; and
-- say **executor** or the exact executor ID when inspecting one attempt.
+- say **agent**, **workflow**, or the exact executor adapter when inspecting
+  one attempt.
 
 Do not make a human or App author reason about all three at once. In
 particular, a Task is never transferred to an executor merely because the Host
@@ -197,7 +232,7 @@ An App owns meaning:
 - the address and input schema for its requests;
 - which facts matter and how they become typed inputs or exact wakes;
 - how an admitted input identifies desired task state;
-- which owner, agent, or workflow performs a bounded attempt;
+- which agent, workflow, or executor performs a bounded attempt;
 - the desired outcome and acceptance criteria for tasks;
 - what evidence is enough to converge, wait, decompose, or continue; and
 - domain-specific reads, actions, and observations.

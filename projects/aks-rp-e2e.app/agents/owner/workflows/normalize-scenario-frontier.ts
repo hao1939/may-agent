@@ -1170,7 +1170,7 @@ function hasPendingOwnerAdjudication(node: GraphNode): boolean {
     node.state === "attention" &&
     node.workflow === "spec-live-reconciliation" &&
     node.latestAttemptHandler === "workflow:spec-live-reconciliation" &&
-    node.latestFailureReason === "needs-owner"
+    node.latestFailureReason === "needs-agent"
   );
 }
 
@@ -1406,7 +1406,7 @@ function actionForRow(
     parentId: scenarioNormalizationTaskId,
     outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: integrated directly into dev, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: row.specId ? "spec-live-reconciliation" : "domain-task-execution",
     input: {
       workflow: name,
@@ -1467,7 +1467,7 @@ function actionForPlainCarrierRow(
     parentId: scenarioNormalizationTaskId,
     outcome: `Normalize current origin/dev plain scenario carrier ${row.scenarioTestPath} for ${owningSpecs} into exactly one next truthful state: direct .test.ts implementation integrated into dev, smallest same-scope repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: row.specIds.length
       ? "spec-live-reconciliation"
       : "domain-task-execution",
@@ -1535,7 +1535,7 @@ function workflowRepairForPlainCarrierRow(
     kind: "update-task",
     taskId: node.id,
     expectedGeneration: node.generation,
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: "spec-live-reconciliation",
   };
 }
@@ -2036,7 +2036,7 @@ function actionForQualityRow(
     parentId: scenarioNormalizationTaskId,
     outcome: qualityRowOutcome(row),
     mode: "achieve",
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: row.specIds.length
       ? "spec-live-reconciliation"
       : "domain-task-execution",
@@ -2068,7 +2068,7 @@ function workflowRepairForQualityRow(
     kind: "update-task",
     taskId: node.id,
     expectedGeneration: node.generation,
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: "spec-live-reconciliation",
   };
 }
@@ -2103,7 +2103,7 @@ function qualityRowContractRepairs(
       kind: "update-task" as const,
       taskId: node.id,
       expectedGeneration: node.generation,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       workflow: row.specIds.length
         ? "spec-live-reconciliation"
         : "domain-task-execution",
@@ -2212,7 +2212,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     if (error) {
       const summary = `Scenario frontier inventory could not be parsed from ${source}: ${error}`;
       return ctx.done(summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary,
         evidence,
       });
@@ -2240,7 +2240,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           (entry) => entry,
         );
         return ctx.done(summary, {
-          state: "needs-owner",
+          state: "needs-agent",
           summary,
           evidence: broaderEvidence,
         });
@@ -2256,7 +2256,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         if (repositoryCheck.status !== 0) {
           const summary = `Scenario frontier is structurally complete on ${source} ${originDevCommit}, but the required full repository check failed. Return the exact current check evidence to aks-explorer for an in-scope repair; do not converge from strict inventory alone.`;
           return ctx.done(summary, {
-            state: "needs-owner",
+            state: "needs-agent",
             summary,
             evidence: [...evidence, ...repositoryCheck.evidence],
           });
@@ -2431,7 +2431,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       ) {
         const summary = `Scenario frontier completed structural normalization on ${source} ${originDevCommit}, but current per-spec reviewed-quality/live-proof coverage is ${formatReviewedQualityLiveCoverage(reviewedQualityLiveCoverage, activeSpecCount)}. Keep the same stable task with aks-explorer owner judgment until every active spec is reviewed and represented by current live proof or an exact blocker/escalation.`;
         return ctx.done(summary, {
-          state: "needs-owner",
+          state: "needs-agent",
           summary,
           evidence: capEvidence(
             evidence,
@@ -2566,7 +2566,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         );
         if (rows.length === 0) {
           return ctx.done(summary, {
-            state: "needs-owner",
+            state: "needs-agent",
             summary,
             evidence: plainCarrierEvidence,
           });
@@ -2636,7 +2636,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       accounting.actionableTaskIds.length > 0 ||
       accounting.waitingTaskIds.length > 0
         ? "converged"
-        : "needs-owner";
+        : "needs-agent";
     const resultEvidence = capEvidence(
       [
         ...evidence,
@@ -2647,7 +2647,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       (row) =>
         `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
     );
-    if (resultState === "needs-owner") {
+    if (resultState === "needs-agent") {
       return ctx.done(summary, {
         state: resultState,
         summary,

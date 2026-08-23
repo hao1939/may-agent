@@ -11,10 +11,10 @@ A project is the durable context for a goal that spans multiple bounded
 executions. It answers:
 
 - what outcome is being maintained or changed;
-- who owns the judgment;
+- which App owns the outcome and which human is accountable;
 - what is true now;
 - what work and evidence exist;
-- what should wake the owner next.
+- what should wake the App next.
 
 Projects do not replace events, sessions, workflows, or tasks. The project
 holds durable intent and posture; tasks own all App work, while the other
@@ -85,21 +85,21 @@ history are keyed by this value.
 
 ## Project Status
 
-Project status answers one question: should the owner loop push now, wait for a
+Project status answers one question: should the App loop push now, wait for a
 known signal, request judgment, pause, or stop?
 
 | Status           | Meaning                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------- |
-| `active`         | Concrete autonomous owner work remains now                                         |
+| `active`         | Concrete autonomous App work remains now                                           |
 | `waiting`        | Current push reached a useful stop; a recorded signal resumes it                   |
-| `blocked`        | The whole owner loop has no safe autonomous path because of an external dependency |
+| `blocked`        | The whole App loop has no safe autonomous path because of an external dependency   |
 | `pending-review` | Owner or human judgment is required before more work                               |
 | `paused`         | Explicit intentional hold                                                          |
 | `done`           | Goal completed                                                                     |
 | `closed`         | Ownership loop intentionally ended                                                 |
 
 Do not keep a project `active` merely for monitoring. Use events, schedules,
-Conditions, bounded resync, or owner review to wake it when facts
+Conditions, bounded resync, or a review task to wake it when facts
 change.
 
 ## Project And Task State Are Separate
@@ -114,7 +114,7 @@ Project posture is not task execution state:
 | Worker/session claim | success, partial, blocked, failure plus evidence                                       |
 
 A blocked worker is evidence, not proof that the task or project must become
-blocked. The owner may retry, split, repair, replace, verify, wait, or escalate.
+blocked. The App may retry, split, repair, replace, verify, wait, or escalate.
 
 The task contract lives in [task-resource-engine.md](task-resource-engine.md); do
 not duplicate its node schema or transition rules in project documents.
@@ -129,7 +129,7 @@ input/fact/schedule
   -> deduplicating app queue receives the task key
   -> controller reads current task, dependencies, and Conditions
   -> selected agent runs directly or applies one of its workflows
-  -> structured result says converged, waiting, or needs owner
+  -> structured result says converged, waiting, or needs agent
   -> runtime atomically applies task changes and observed status
   -> completion receipt closes finite work and wakes dependents
 ```
@@ -145,7 +145,7 @@ completion.
 
 ## Policy
 
-Policy changes owner posture, not runtime mechanics:
+Policy changes project posture, not runtime mechanics:
 
 | Mode              | Posture                                                            |
 | ----------------- | ------------------------------------------------------------------ |
@@ -161,13 +161,14 @@ acceptance, retries without judgment, or task synthesis by infra.
 
 App-local identities live under `projects/<id>.app/agents/`. Their learned
 workflows live under `projects/<id>.app/agents/<agent>/workflows/`, next to the
-agent that owns the process. Their runtime artifacts remain with the app.
+agent whose bounded context the process uses. Their runtime artifacts remain
+with the app.
 
-Use an agent-owned workflow when a repeatable process has been learned for that project.
+Use an App-owned workflow when a repeatable process has been learned for that project.
 Use shared TypeScript helper modules for deterministic mechanics. An explicitly
 bound workflow is discovered under the resolved agent as
-`workflows/<name>.ts`; an unbound task invokes that owner directly. No workflow
-registry or owner-entry wrapper is required.
+`workflows/<name>.ts`; an unbound task invokes that agent directly. No workflow
+registry or agent-entry wrapper is required.
 
 ## Metrics And Monitoring
 
@@ -185,13 +186,13 @@ judgment.
 Human comments that require a distinct response enter through a declared App
 subscription and become correlated App inputs. Structured UI actions validate
 their schema and translate directly to App input. Both use the same
-input-to-task resolver; human input never bypasses the resolved owner to mutate
+input-to-task resolver; human input never bypasses the resolved App task to mutate
 task meaning.
 
 The caller supplies project intent, not an execution plan. It may name the
 desired outcome, current evidence, constraints, and proof, but it does not
-choose the app's task id, owner, workflow, session, or wake path. Free-form
-intent first reaches app-owner judgment. Only an explicit typed action whose
+choose the App's task id, agent, workflow, session, or wake path. Free-form
+intent first becomes App-owned Task work. Only an explicit typed action whose
 mapping is already declared by the app may wake domain work directly. This is
 an app/runtime contract; May does not need to know how the app implements the
 choice.
@@ -210,8 +211,8 @@ projections.
 
 ## Integrity Checklist
 
-- Project id, app id, domain id, owner, and workspace binding agree.
-- `active` projects have open work or an immediate owner judgment path.
+- Project id, App id, domain id, accountable owner, and workspace binding agree.
+- `active` projects have open work or an immediate App reconciliation path.
 - Non-active projects record an exact reason and resume/closure condition.
 - Task state changes come through one app reconciler and atomic result application.
 - Every actionable project fact has one explicit App subscription, task

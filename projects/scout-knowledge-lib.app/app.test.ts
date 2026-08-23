@@ -356,7 +356,7 @@ describe("Scout task reconciliation", () => {
       },
     ]);
     expect(app.tasks?.resolve).toBe(resolveScoutTask);
-    expect(app.owner).toBe("scout");
+    expect(app.agent).toBe("scout");
     expect(app.observers).toContainEqual(
       expect.objectContaining({ id: "xhs-credential", intervalMs: 300_000 }),
     );

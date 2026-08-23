@@ -1396,7 +1396,7 @@ export async function execute(
         if (invalid.length) {
           const summary = `Campaign ${composed.receipt.branch} passed, but ${invalid.length} included fix PR(s) cannot integrate into main.`;
           return ctx.done(summary, {
-            state: "needs-owner",
+            state: "needs-agent",
             summary,
             evidence: invalid.map(
               ({ fix, state, mergeStatus }) =>
@@ -1622,7 +1622,7 @@ export async function execute(
     }
     const summary = `Master validation cycle could not queue or observe its run: ${message}`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [
         `pipeline:${pipelineId}`,

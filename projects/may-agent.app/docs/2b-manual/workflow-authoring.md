@@ -94,7 +94,7 @@ App request or task. The calling App/task boundary validates and admits the
 output.
 
 `blocked` means this run cannot continue locally. It does not delegate,
-escalate, start an owner session, notify a human, or keep the workflow open.
+escalate, start an agent session, notify a human, or keep the workflow open.
 The owning App request or task decides the durable next state.
 
 ## Task-Bound Workflows
@@ -102,7 +102,7 @@ The owning App request or task decides the durable next state.
 When a task owns the run, `ctx.reconciliation` supplies:
 
 - App/task identity and fenced generation;
-- outcome, acceptance, mode, owner, and typed input;
+- outcome, acceptance, mode, selected agent, and typed input;
 - exact trigger fact where present; and
 - bounded live/completed direct children.
 
@@ -143,8 +143,8 @@ For a resource-backed task, publish facts only with
 Return cross-App result work as a typed dependency; do not emit
 `app.input.requested` directly.
 
-Use `needs-owner` only when the same App owner must provide exceptional
-judgment. Do not clear an explicit workflow merely to let an owner perform
+Use `needs-agent` only when the same App needs exceptional judgment from its
+selected agent. Do not clear an explicit workflow merely to let an agent perform
 workflow-owned effects.
 
 ## Durable Wait Boundary

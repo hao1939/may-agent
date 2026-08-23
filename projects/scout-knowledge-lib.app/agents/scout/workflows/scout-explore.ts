@@ -29,7 +29,7 @@ import {
   type XhsSearchResult,
 } from "../tools/xhs-source.js";
 
-type TaskHandlerResult = Exclude<TaskReconcileResult, { state: "needs-owner" }>;
+type TaskHandlerResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
 export const name = "scout-explore";
 export const description =

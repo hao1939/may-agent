@@ -48,8 +48,8 @@ function taskDescription(ctx: WorkflowContext): string {
   return JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2);
 }
 
-function taskOwner(ctx: WorkflowContext): string {
-  return ctx.reconciliation?.owner ?? "aks-explorer";
+function taskAgent(ctx: WorkflowContext): string {
+  return ctx.reconciliation?.agent ?? "aks-explorer";
 }
 
 function gitValue(cwd: string, ...args: string[]): string {
@@ -225,7 +225,7 @@ function activeGitOperation(cwd: string): string | null {
 
 function recoveryOnlyResult(
   workspaceDir: string,
-  ownerResult: TaskReconcileResult,
+  agentResult: TaskReconcileResult,
 ): TaskReconcileResult {
   const workspace = (() => {
     try {
@@ -259,8 +259,8 @@ function recoveryOnlyResult(
     }
   })();
   return {
-    ...ownerResult,
-    summary: `Recovery-only non-converged result: ${ownerResult.summary}`,
+    ...agentResult,
+    summary: `Recovery-only non-converged result: ${agentResult.summary}`,
     evidence: [
       `recovery-worktree:${workspace}`,
       `recovery-head:${head}`,
@@ -268,7 +268,7 @@ function recoveryOnlyResult(
       `recovery-status:${status ? "dirty" : "clean"}`,
       `recovery-status-porcelain:${status || "none"}`,
       `recovery-operation:${operation}`,
-      ...(ownerResult.evidence ?? []).map(
+      ...(agentResult.evidence ?? []).map(
         (item) => `recovery-owner-evidence:${item}`,
       ),
       "material-success-candidate:none",
@@ -612,19 +612,19 @@ async function correctSelfTargetingActions(input: {
     `Correct the structured result from the ${input.phase} phase; do not redo the domain work.`,
     `The result cannot be applied because actions ${indexes.join(", ")} target the currently running task ${input.currentTaskId}.`,
     "The workflow result itself converges or waits the current task. Remove every action targeting that task and preserve your domain judgment and evidence.",
-    "Actions may still target other tasks when independently necessary. If changing the current task definition is essential, return needs-owner with exact evidence instead of a self-targeting action.",
+    "Actions may still target other tasks when independently necessary. If changing the current task definition is essential, return needs-agent with exact evidence instead of a self-targeting action.",
     "Previous result:",
     JSON.stringify(input.result, null, 2),
   ].join("\n\n");
   guardWriteDispatch(input.ctx);
-  const correction = await input.ctx.agents.call(taskOwner(input.ctx), prompt, {
+  const correction = await input.ctx.agents.call(taskAgent(input.ctx), prompt, {
     sessionId: input.sessionId,
     timeoutMs: 600_000,
     schema: taskReconcileResultSchema,
   });
   if (correction.status !== "done") {
     return {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: `The ${input.phase} result targeted its own running task and the correction session failed`,
       evidence: [
         `task:${input.currentTaskId}`,
@@ -638,7 +638,7 @@ async function correctSelfTargetingActions(input: {
   const remaining = selfTargetingActionIndexes(corrected, input.currentTaskId);
   if (remaining.length) {
     return {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: `The ${input.phase} result still targets its own running task after correction`,
       evidence: [
         `task:${input.currentTaskId}`,
@@ -701,16 +701,16 @@ async function correctConvergedWithLiveChild(input: {
   sessionId: string;
   result: TaskReconcileResult;
 }): Promise<TaskReconcileResult> {
-  let ownerResult = input.result;
+  let agentResult = input.result;
   let sessionId = input.sessionId;
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const problem = convergedWithLiveChildProblem(
-      ownerResult,
+      agentResult,
       input.currentTaskId,
       input.hasExistingLiveChild,
     );
-    if (!problem) return ownerResult;
+    if (!problem) return agentResult;
 
     const prompt = [
       `Correct the structured result from the ${input.phase} phase; do not redo the domain work.`,
@@ -720,11 +720,11 @@ async function correctConvergedWithLiveChild(input: {
       'If it is not required, remove the child-creating action and return state "converged" with the existing completion evidence.',
       "Do not claim the parent converged while leaving live child work behind.",
       "Previous result:",
-      JSON.stringify(ownerResult, null, 2),
+      JSON.stringify(agentResult, null, 2),
     ].join("\n\n");
     guardWriteDispatch(input.ctx);
     const correction = await input.ctx.agents.call(
-      taskOwner(input.ctx),
+      taskAgent(input.ctx),
       prompt,
       {
         sessionId,
@@ -734,7 +734,7 @@ async function correctConvergedWithLiveChild(input: {
     );
     if (correction.status !== "done") {
       return {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: `The ${input.phase} result could not be corrected to a valid parent/child state`,
         evidence: [
           `task:${input.currentTaskId ?? "unknown"}`,
@@ -745,7 +745,7 @@ async function correctConvergedWithLiveChild(input: {
     }
 
     sessionId = correction.id;
-    ownerResult = await correctSelfTargetingActions({
+    agentResult = await correctSelfTargetingActions({
       ctx: input.ctx,
       currentTaskId: input.currentTaskId,
       phase: `${input.phase} parent-child correction`,
@@ -755,16 +755,16 @@ async function correctConvergedWithLiveChild(input: {
   }
 
   const problem = convergedWithLiveChildProblem(
-    ownerResult,
+    agentResult,
     input.currentTaskId,
     input.hasExistingLiveChild,
   );
-  if (!problem) return ownerResult;
+  if (!problem) return agentResult;
   return {
-    state: "needs-owner",
+    state: "needs-agent",
     summary: `The ${input.phase} result still contradicts its live child state after correction`,
     evidence: [
-      ...(ownerResult.evidence ?? []),
+      ...(agentResult.evidence ?? []),
       `task:${input.currentTaskId ?? "unknown"}`,
       "child-state-validation:failed",
       `child-state-problem:${problem}`,
@@ -792,20 +792,20 @@ async function correctWaitingCoverage(input: {
   sessionId: string;
   result: TaskReconcileResult;
 }): Promise<TaskReconcileResult> {
-  let ownerResult = input.result;
+  let agentResult = input.result;
   let sessionId = input.sessionId;
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const problem = waitingCoverageProblem(
-      ownerResult,
+      agentResult,
       input.currentTaskId,
       input.existingLiveChildren,
     );
-    if (!problem) return ownerResult;
+    if (!problem) return agentResult;
 
     const exactPipelineWait = exactPipelineWaitCoverage(
       input.ctx.reconciliation?.input ?? input.ctx.input,
-      ownerResult,
+      agentResult,
     );
     if (exactPipelineWait) return exactPipelineWait;
 
@@ -816,11 +816,11 @@ async function correctWaitingCoverage(input: {
       "If your earlier evidence only proves an already-completed holder or stale wait, do not leave the current task waiting without new coverage; either converge the current task or create the replacement direct child that now carries the wait.",
       "Preserve the prior domain judgment and evidence unless the current facts force a different next step.",
       "Previous result:",
-      JSON.stringify(ownerResult, null, 2),
+      JSON.stringify(agentResult, null, 2),
     ].join("\n\n");
     guardWriteDispatch(input.ctx);
     const correction = await input.ctx.agents.call(
-      taskOwner(input.ctx),
+      taskAgent(input.ctx),
       prompt,
       {
         sessionId,
@@ -830,7 +830,7 @@ async function correctWaitingCoverage(input: {
     );
     if (correction.status !== "done") {
       return {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: `The ${input.phase} result could not be corrected to an exact wait shape`,
         evidence: [
           `task:${input.currentTaskId ?? "unknown"}`,
@@ -841,7 +841,7 @@ async function correctWaitingCoverage(input: {
     }
 
     sessionId = correction.id;
-    ownerResult = await correctSelfTargetingActions({
+    agentResult = await correctSelfTargetingActions({
       ctx: input.ctx,
       currentTaskId: input.currentTaskId,
       phase: `${input.phase} wait-shape correction`,
@@ -851,16 +851,16 @@ async function correctWaitingCoverage(input: {
   }
 
   const problem = waitingCoverageProblem(
-    ownerResult,
+    agentResult,
     input.currentTaskId,
     input.existingLiveChildren,
   );
-  if (!problem) return ownerResult;
+  if (!problem) return agentResult;
   return {
-    state: "needs-owner",
+    state: "needs-agent",
     summary: `The ${input.phase} result still lacks exact waiting coverage after correction`,
     evidence: [
-      ...(ownerResult.evidence ?? []),
+      ...(agentResult.evidence ?? []),
       `task:${input.currentTaskId ?? "unknown"}`,
       `waiting-validation:failed`,
       `waiting-problem:${problem}`,
@@ -883,14 +883,14 @@ async function completeScenarioNormalization(input: {
     return input.result;
   }
 
-  let ownerResult = input.result;
+  let agentResult = input.result;
   let sessionId = input.sessionId;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const invariant = scenarioNormalizationInvariant(
       input.ctx.workspace!.root,
       input.normalizationInput,
     );
-    if (!invariant?.stillListed) return ownerResult;
+    if (!invariant?.stillListed) return agentResult;
 
     const prompt = [
       "Continue the same bounded scenario-normalization task; it is not complete yet.",
@@ -903,7 +903,7 @@ async function completeScenarioNormalization(input: {
     ].join("\n\n");
     guardWriteDispatch(input.ctx);
     const correction = await input.ctx.agents.call(
-      taskOwner(input.ctx),
+      taskAgent(input.ctx),
       prompt,
       {
         sessionId,
@@ -913,7 +913,7 @@ async function completeScenarioNormalization(input: {
     );
     if (correction.status !== "done") {
       return {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: "Scenario normalization correction session failed",
         evidence: [
           `task:${input.currentTaskId ?? "unknown"}`,
@@ -924,14 +924,14 @@ async function completeScenarioNormalization(input: {
       };
     }
     sessionId = correction.id;
-    ownerResult = await correctSelfTargetingActions({
+    agentResult = await correctSelfTargetingActions({
       ctx: input.ctx,
       currentTaskId: input.currentTaskId,
       phase: "scenario normalization correction",
       sessionId,
       result: correction.output as TaskReconcileResult,
     });
-    if (ownerResult.state !== "converged") return ownerResult;
+    if (agentResult.state !== "converged") return agentResult;
   }
 
   const invariant = scenarioNormalizationInvariant(
@@ -939,11 +939,11 @@ async function completeScenarioNormalization(input: {
     input.normalizationInput,
   );
   return {
-    state: "needs-owner",
+    state: "needs-agent",
     summary:
       "Scenario normalization remains incomplete after three correction turns",
     evidence: [
-      ...(ownerResult.evidence ?? []),
+      ...(agentResult.evidence ?? []),
       `task:${input.currentTaskId ?? "unknown"}`,
       `scenario-test-path:${scenarioTestPath}`,
       `strict-inventory-still-lists:${String(invariant?.stillListed ?? "unknown")}`,
@@ -1606,7 +1606,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           "- After all batches, review the exact allowed diff and semantic generated changes, then run compact-plan freshness, strict scenario inventory, and the full repository check as separately observable bounded calls. Commit only accepted deterministic outputs, leave the worktree clean, and let this workflow perform direct dev integration plus fresh-origin reachability verification.",
         ]
       : []),
-    "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
+    "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-agent with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
     `If the truthful next step is carried by another task, create or update that holder as a direct child of ${currentTaskId ?? "the current task"} and return waiting only after the child exists or the current task has its own exact Condition.`,
     'If you already have an exact queued Azure DevOps run id, preserve that wait on this same task with condition type "pipeline-run.state", subject "pipeline-run:<runId>", and expected { field: "state", anyOf: ["completed"] } instead of prose-only waiting.',
     `The currently running task is ${currentTaskId ?? "identified in the Reconciliation Task payload"}. The workflow result itself updates this task. Never return an update-task, close-task, or unblock-task action targeting it.`,
@@ -1618,7 +1618,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   ].join("\n");
 
   guardWriteDispatch(ctx);
-  const result = await ctx.agents.call(taskOwner(ctx), prompt, {
+  const result = await ctx.agents.call(taskAgent(ctx), prompt, {
     timeoutMs: 1_800_000,
     schema: taskReconcileResultSchema,
   });
@@ -1631,7 +1631,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
   }
 
-  let ownerResult = await correctSelfTargetingActions({
+  let agentResult = await correctSelfTargetingActions({
     ctx,
     currentTaskId,
     phase: "domain execution",
@@ -1644,56 +1644,56 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       ],
     },
   });
-  ownerResult = await correctConvergedWithLiveChild({
+  agentResult = await correctConvergedWithLiveChild({
     ctx,
     currentTaskId,
     hasExistingLiveChild,
     phase: "domain execution",
     sessionId: result.id,
-    result: ownerResult,
+    result: agentResult,
   });
-  ownerResult = await correctWaitingCoverage({
+  agentResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
     existingLiveChildren,
     phase: "domain execution",
     sessionId: result.id,
-    result: ownerResult,
+    result: agentResult,
   });
-  ownerResult = await completeScenarioNormalization({
+  agentResult = await completeScenarioNormalization({
     ctx,
     currentTaskId,
     sessionId: result.id,
     normalizationInput,
-    result: ownerResult,
+    result: agentResult,
   });
-  ownerResult = await correctConvergedWithLiveChild({
+  agentResult = await correctConvergedWithLiveChild({
     ctx,
     currentTaskId,
     hasExistingLiveChild,
     phase: "scenario normalization correction",
     sessionId: result.id,
-    result: ownerResult,
+    result: agentResult,
   });
-  ownerResult = await correctWaitingCoverage({
+  agentResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
     existingLiveChildren,
     phase: "domain execution",
     sessionId: result.id,
-    result: ownerResult,
+    result: agentResult,
   });
-  if (ownerResult.state !== "converged") {
-    const recovery = recoveryOnlyResult(workspaceDir, ownerResult);
+  if (agentResult.state !== "converged") {
+    const recovery = recoveryOnlyResult(workspaceDir, agentResult);
     return ctx.done(recovery.summary, recovery);
   }
 
   if (!attemptBaseCommit || !expectedBranch) {
     const recovery = recoveryOnlyResult(workspaceDir, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary:
         "Domain task workspace has no readable attempt baseline or task branch",
-      evidence: [...(ownerResult.evidence ?? []), `workspace:${workspaceDir}`],
+      evidence: [...(agentResult.evidence ?? []), `workspace:${workspaceDir}`],
     });
     return ctx.done(recovery.summary, recovery);
   }
@@ -1704,15 +1704,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   };
   if (workspaceChanges(workspaceDir)) {
     return recoveryDone({
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Domain task left uncommitted workspace changes",
       evidence: [`workspace:${workspaceDir}`],
     });
   }
 
-  if (requestsUnchangedDisposition(ownerResult)) {
+  if (requestsUnchangedDisposition(agentResult)) {
     const unchangedGate = unchangedDispositionGate({
-      result: ownerResult,
+      result: agentResult,
       workspaceDir,
       expectedWorkspace,
       expectedBranch,
@@ -1720,17 +1720,17 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
     if (unchangedGate.ok === false) {
       return ctx.done(unchangedGate.summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: unchangedGate.summary,
-        evidence: [...(ownerResult.evidence ?? []), ...unchangedGate.evidence],
+        evidence: [...(agentResult.evidence ?? []), ...unchangedGate.evidence],
       });
     }
-    const summary = `${ownerResult.summary} Validated as an unchanged disposition; no source integration was required.`;
+    const summary = `${agentResult.summary} Validated as an unchanged disposition; no source integration was required.`;
     return ctx.done(summary, {
-      ...ownerResult,
+      ...agentResult,
       state: "converged",
       summary,
-      evidence: [...(ownerResult.evidence ?? []), ...unchangedGate.evidence],
+      evidence: [...(agentResult.evidence ?? []), ...unchangedGate.evidence],
     });
   }
 
@@ -1744,14 +1744,14 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   });
   if (finalGate.ok === false) {
     return ctx.done(finalGate.summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: finalGate.summary,
-      evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+      evidence: [...(agentResult.evidence ?? []), ...finalGate.evidence],
     });
   }
-  ownerResult = {
-    ...ownerResult,
-    evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+  agentResult = {
+    ...agentResult,
+    evidence: [...(agentResult.evidence ?? []), ...finalGate.evidence],
   };
 
   const sourceBranch = expectedBranch;
@@ -1782,10 +1782,10 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     );
     if (acceptedExists.status !== 0) {
       return ctx.done("Named accepted source commit is unavailable", {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: "Named accepted source commit is unavailable for replay",
         evidence: [
-          ...(ownerResult.evidence ?? []),
+          ...(agentResult.evidence ?? []),
           `accepted-commit:${requiredAcceptedCommit}`,
           `workspace:${workspaceDir}`,
         ],
@@ -1794,11 +1794,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     if (acceptedInTarget.status !== 0) {
       if (sourceCommit !== requiredAcceptedCommit) {
         return ctx.done("Named accepted source is not the retained task head", {
-          state: "needs-owner",
+          state: "needs-agent",
           summary:
             "Named accepted source is absent from origin/dev but is not the retained task head",
           evidence: [
-            ...(ownerResult.evidence ?? []),
+            ...(agentResult.evidence ?? []),
             `accepted-commit:${requiredAcceptedCommit}`,
             `source-commit:${sourceCommit}`,
             `target-commit:${targetCommit}`,
@@ -1854,7 +1854,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             ];
     guardWriteDispatch(ctx);
     const conflictResult = await ctx.agents.call(
-      taskOwner(ctx),
+      taskAgent(ctx),
       [
         "Repair the same bounded AKS task before direct dev integration.",
         `Work only in ${workspaceDir}.`,
@@ -1897,7 +1897,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     }
     if (workspaceChanges(workspaceDir)) {
       return ctx.done("Domain integration repair left uncommitted changes", {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: "Domain integration repair left uncommitted changes",
         evidence: [
           ...(conflictOwnerResult.evidence ?? []),
@@ -1905,15 +1905,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         ],
       });
     }
-    ownerResult = {
-      ...ownerResult,
+    agentResult = {
+      ...agentResult,
       summary: conflictOwnerResult.summary,
       evidence: [
-        ...(ownerResult.evidence ?? []),
+        ...(agentResult.evidence ?? []),
         ...(conflictOwnerResult.evidence ?? []),
       ],
       actions: [
-        ...(ownerResult.actions ?? []),
+        ...(agentResult.actions ?? []),
         ...(conflictOwnerResult.actions ?? []),
       ],
     };
@@ -1931,10 +1931,10 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     );
     if (baselineInSource.status !== 0 || mergeCommits) {
       return ctx.done("Domain integration repair left an invalid lineage", {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: "Domain integration repair left an invalid lineage",
         evidence: [
-          ...(ownerResult.evidence ?? []),
+          ...(agentResult.evidence ?? []),
           `replay-base:${replayBaseCommit}`,
           `source-commit:${sourceCommit}`,
           ...(mergeCommits ? [`merge-commits:${mergeCommits}`] : []),
@@ -1951,14 +1951,14 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
     if (finalGate.ok === false) {
       return ctx.done(finalGate.summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: finalGate.summary,
-        evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+        evidence: [...(agentResult.evidence ?? []), ...finalGate.evidence],
       });
     }
-    ownerResult = {
-      ...ownerResult,
-      evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+    agentResult = {
+      ...agentResult,
+      evidence: [...(agentResult.evidence ?? []), ...finalGate.evidence],
     };
     integrationProvenanceSourceCommit = sourceCommit;
     integration = await integrateDirectlyIntoDev({
@@ -1972,13 +1972,13 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   }
 
   if (integration.state === "unchanged") {
-    const summary = `${ownerResult.summary} No task-owned commit was created in this bounded turn; dev remained at ${integration.targetCommit}.`;
+    const summary = `${agentResult.summary} No task-owned commit was created in this bounded turn; dev remained at ${integration.targetCommit}.`;
     return ctx.done(summary, {
-      ...ownerResult,
+      ...agentResult,
       state: "converged",
       summary,
       evidence: [
-        ...(ownerResult.evidence ?? []),
+        ...(agentResult.evidence ?? []),
         `source-branch:${sourceBranch}`,
         `source-commit:${sourceCommit}`,
         `target-ref:${integration.targetRef}`,
@@ -1992,10 +1992,10 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     return ctx.done(
       "Domain task could not integrate its verified branch into dev",
       {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: "Domain task could not integrate its verified branch into dev",
         evidence: [
-          ...(ownerResult.evidence ?? []),
+          ...(agentResult.evidence ?? []),
           `source-branch:${sourceBranch}`,
           `source-commit:${sourceCommit}`,
           `target-ref:${integration.targetRef}`,
@@ -2011,13 +2011,13 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
 
   sourceCommit = integration.sourceCommit;
 
-  const summary = `${ownerResult.summary} Integrated ${sourceCommit} directly into dev@${integration.targetCommit}.`;
+  const summary = `${agentResult.summary} Integrated ${sourceCommit} directly into dev@${integration.targetCommit}.`;
   return ctx.done(summary, {
-    ...ownerResult,
+    ...agentResult,
     state: "converged",
     summary,
     evidence: [
-      ...(ownerResult.evidence ?? []),
+      ...(agentResult.evidence ?? []),
       `source-branch:${sourceBranch}`,
       `source-commit:${sourceCommit}`,
       ...(sourceCommit !== integrationProvenanceSourceCommit

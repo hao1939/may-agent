@@ -76,7 +76,7 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     wait task with `workflow: "wait-for-repo-ref-advance"` and structured input
     containing `baseRef`, `resumeBaselineCommit`, `specId`, and any
     `sourceCommit`/`publicationBranch`. Explicitly keep `owner: "aks-explorer"`
-    because the workflow's `needs-owner` result returns to the task owner for
+    because the workflow's `needs-agent` result returns to the task owner for
     post-wake domain judgment. That lets the app sleep on the level-observed
     `aks.repo-ref.observed` condition instead of burning owner cycles.
     This applies only when a named external producer or publication can
@@ -94,7 +94,7 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     successor tasks. The workflow owns push, dispatch, direct-dev integration,
     main PR creation, and exact Conditions; the agent owns source judgment,
     edits, conflict repair, and artifact diagnosis.
-    If that workflow returns `needs-owner`, provide only the missing exceptional
+    If that workflow returns `needs-agent`, provide only the missing exceptional
     judgment or task-definition correction. Do not push, queue ADO, accept a
     run, or integrate the branch outside the workflow; resume the same task
     through `spec-live-reconciliation` for those operations.

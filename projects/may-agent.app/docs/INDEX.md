@@ -72,7 +72,7 @@ owning document and keep implementation details there.
 | [events.md](2a-design/events.md)                                 | Event admission, routing, and acceptance.             |
 | [event-graph.md](2a-design/event-graph.md)                       | Causality, closure, and delivery read model.         |
 | [cron.md](2a-design/cron.md)                                     | Time-based event production.                         |
-| [heartbeat.md](2a-design/heartbeat.md)                           | Owner heartbeat workflows and loaders.               |
+| [heartbeat.md](2a-design/heartbeat.md)                           | Agent heartbeat workflows and App schedules.         |
 | [metrics.md](2a-design/metrics.md)                               | Metrics, alerts, pairs, and blind spots.             |
 | [guards.md](2a-design/guards.md)                                 | Detection signals and observability.                 |
 | [escalation.md](2a-design/escalation.md)                         | Owner-boundary escalation and closure.               |

@@ -29,9 +29,9 @@ reload again. Never install only one side of an App/task generation.
 Check that:
 
 - `app.ts` is the only declaration;
-- the App id and owner are stable;
+- the App id and default agent are stable;
 - schemas and selectors pass definition validation;
-- referenced workflows exist under the resolved owner;
+- referenced workflows exist under the selected agent;
 - the configured workspace is available.
 
 ## Unfinished request
@@ -156,7 +156,7 @@ cutover. Deployment must not consult, recreate, or mutate it.
 
 An App result and its outward delivery are separate durable facts. Retry only a
 delivery that has no confirmed attempt or whose transport contract explicitly
-permits retry. Never rerun the App owner simply to resend an already-produced
+permits retry. Never rerun the selected agent simply to resend an already-produced
 result.
 
 ## Escalation boundary

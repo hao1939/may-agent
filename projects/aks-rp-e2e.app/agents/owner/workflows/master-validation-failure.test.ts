@@ -141,7 +141,7 @@ function workflowContext(options: TestContextOptions = {}): WorkflowContext {
         options.generation ??
         (typeof envelope.generation === "number" ? envelope.generation : 1),
       resourceVersion: 1,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       mode: "achieve",
       outcome: "Resolve the master-validation failure.",
       acceptance: [],
@@ -2518,7 +2518,7 @@ ${JSON.stringify({
     }
   });
 
-  test("builds bounded no-source-change and service-owner handoff evidence", () => {
+  test("builds bounded no-source-change and service-agent handoff evidence", () => {
     expect(
       productIssueDisposition({
         status: "sent",

@@ -39,8 +39,8 @@ but the tree is only a view of task relationships.
 | Metric                   | Measurement that may need judgment; never a decision by itself         |
 | Task resource            | Durable desired and observed App work state                            |
 | Condition                | Exact external fact required before a task can continue                |
-| Agent                    | Independently runnable capability and judgment                         |
-| Workflow                 | Agent-owned reusable ordered process                                   |
+| Agent                    | Named profile for one bounded reasoning/action attempt                  |
+| Workflow                 | App-owned reusable bounded procedure                                   |
 | Session/workflow attempt | Bounded execution that produces evidence                               |
 | Controller               | Mechanical reconciliation of current canonical state                   |
 
@@ -111,25 +111,25 @@ event or watcher, and a scheduled check when events alone are not reliable. The
 controller's frequent resync repairs missed task delivery; it does not replace
 domain observation or run every expensive workflow continuously.
 
-Apps choose outcomes, owners, workflows, and acceptance. The shared runtime
+Apps choose outcomes, default agents, workflows, and acceptance. The shared runtime
 persists task state, delivers wakes, prevents overlapping attempts, and rejects
 invalid results. It does not decide domain truth. Apps must not create a second
 scheduler by listening to reconciliation results and emitting private retry
 ticks.
 
-## Owner and workflow
+## App, agent, and workflow
 
-The owner is accountable for the outcome. A workflow is an optional execution
-method delegated by that owner.
+The App owns the durable outcome. An agent or workflow performs one bounded
+attempt toward it. Neither executor owns the Task or its retry loop.
 
 ```text
-no workflow binding     -> owner handles novel or one-off work
+no workflow binding     -> selected agent handles novel or one-off work
 workflow binding        -> workflow performs the learned process
-workflow needs-owner    -> owner judges the exception once
+workflow needs-agent    -> selected agent judges the exception once
 workflow unavailable    -> attention until the binding is repaired
 ```
 
-When that owner judgment changes the desired work, the owner may return one
+When that agent judgment changes the desired work, the attempt may return one
 `update-task` change for the task currently being reconciled. The update must
 change the task generation. That result completes only the current attempt:
 the task remains live and the controller immediately reconciles its new
@@ -153,12 +153,12 @@ A workflow run is a bounded iteration of this loop. It may perform several
 immediate repair-and-verify steps, but it does not remain alive across a
 pipeline, pull request, timer, human reply, or other durable wait.
 
-Expected domain difficulty is not `needs-owner`, `attention`, or escalation.
-The workflow should use its owning agent to handle merge conflicts, failed
-tests, rejected hypotheses, and similar in-scope work. `needs-owner` is the
+Expected domain difficulty is not `needs-agent`, `attention`, or escalation.
+The workflow should use its selected agent to handle merge conflicts, failed
+tests, rejected hypotheses, and similar in-scope work. `needs-agent` is the
 exception path when the reusable process has exhausted its safe in-scope moves
-and the accountable owner must re-evaluate the same task. Escalation is used
-only when the required action crosses to another owner or a human.
+and the App needs one bounded agent judgment on the same task. Escalation is
+used only when the required action crosses to another App or a human.
 
 Do not create a workflow merely because work uses an agent or repeats on a
 schedule. Extract one when a stable sequence, branching rule, retry, safety
@@ -170,9 +170,9 @@ Project posture is separate from task execution:
 
 | Status           | Meaning                                            |
 | ---------------- | -------------------------------------------------- |
-| `active`         | Concrete owner work is actionable now              |
+| `active`         | Concrete App work is actionable now                |
 | `waiting`        | A recorded signal is required before the next push |
-| `blocked`        | The whole owner loop lacks a safe autonomous path  |
+| `blocked`        | The whole App loop lacks a safe autonomous path    |
 | `pending-review` | Owner or human judgment is required                |
 | `paused`         | Explicit intentional hold                          |
 | `done`           | Goal completed                                     |
@@ -192,22 +192,22 @@ Use the smallest mechanism that matches the need:
 
 | Need                                  | Mechanism                               |
 | ------------------------------------- | --------------------------------------- |
-| Novel bounded judgment or action      | Direct owner/agent session              |
+| Novel bounded judgment or action      | Direct agent/agent session              |
 | Situational reusable guidance         | Skill                                   |
 | Repeatable ordered process            | Workflow                                |
 | Durable App outcome and decomposition | App task resource                       |
 | Exact external wait                   | Condition plus watcher/event            |
 | Time-based wake                       | Schedule/Cron event                     |
 | Mechanical observation or translation | Handler, watcher, metric, or projection |
-| Cross-owner required action           | Explicit escalation                     |
+| Cross-App or human required action     | Explicit escalation                     |
 
 More frequent work does not need a new controller. Loops, focus plans, and
 one-off tasks use the same app controller when durable task state is useful.
 
 ## Evidence and learning
 
-Every bounded run should leave enough evidence for the accountable owner to
-understand what happened and why the result was accepted. A session ID is a
+Every bounded run should leave enough evidence for the App or accountable
+human to understand what happened and why the result was accepted. A session ID is a
 trace link, not a complete acceptance explanation.
 
 Reusable experience belongs in workflows, skills, tests, design, and domain

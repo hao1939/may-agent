@@ -96,7 +96,7 @@ Each executable card shows:
 
 - outcome;
 - phase and reconciliation mode;
-- owner and workflow or direct-owner binding;
+- agent and workflow or direct-agent binding;
 - priority and parent context;
 - current summary or exact wait reason;
 - evidence and Condition counts;

@@ -350,7 +350,7 @@ test("approved review never falls back to an unrelated benchmark", async () => {
 
     expect(result).toMatchObject({
       status: "done",
-      output: { state: "needs-owner" },
+      output: { state: "needs-agent" },
     });
     expect(
       (result as { output?: Record<string, unknown> }).output,

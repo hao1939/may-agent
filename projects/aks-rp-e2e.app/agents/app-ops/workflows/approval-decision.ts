@@ -33,7 +33,7 @@ export async function execute(
   if (!projection) {
     return result(
       ctx,
-      "needs-owner",
+      "needs-agent",
       "Approval reply did not contain one complete bounded AKS approval decision.",
       ["approval-decision:incomplete-correlation"],
     );

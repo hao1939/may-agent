@@ -1,6 +1,6 @@
 # App quickstart
 
-Use an App when one accountable owner should make sure addressed work is
+Use an App when one responsibility must make sure addressed work is
 eventually handled. An App is a domain capability, not another daemon.
 
 The routing rule is deliberately small:
@@ -22,7 +22,7 @@ projects/example.app/
   app.ts
   project.json
   agents/
-    example-owner/
+    example-agent/
       agent.json
       AGENTS.md
       workflows/
@@ -31,8 +31,8 @@ projects/example.app/
   .state/                         # runtime-owned, never authored
 ```
 
-The configured owner must match an App-local or globally registered agent.
-Reusable workflows live below the agent that owns their judgment.
+The configured default agent must match an App-local or globally registered
+agent. Reusable workflows live below the agent whose bounded context they use.
 
 ## 2. Declare the smallest App
 
@@ -42,7 +42,7 @@ import { Type, defineApp } from "@may-agent/sdk";
 export default defineApp({
   id: "example",
   version: 1,
-  owner: "example-owner",
+  agent: "example-agent",
   description: "Maintain the example domain.",
   inputSchema: Type.Object({
     kind: Type.String(),
@@ -62,13 +62,13 @@ export default defineApp({
 });
 ```
 
-This owner-handled App is valid. Requests are caller correlation records; only
-the linked task invokes the owner.
+This agent-handled App is valid. Requests are caller correlation records; only
+the linked task invokes its selected agent.
 
 ## 3. Refine task identity and intent
 
-`task` is pure policy for validated App input. It selects the stable task that
-owns the work; owner judgment happens while reconciling that task.
+`task` is pure policy for validated App input. It selects the stable task the
+App owns; agent judgment happens only during a bounded reconciliation attempt.
 
 ```ts
 task(input) {
@@ -138,7 +138,7 @@ import type { WorkflowContext, ExecutionResult } from "@may-agent/sdk";
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const result = await ctx.agents.call(
-    "example-owner",
+    "example-agent",
     "Inspect the declared source revision and summarize the evidence.",
   );
   if (result.status !== "done") return ctx.blocked(result.summary);
@@ -166,6 +166,6 @@ bun run test
 bun run bundle:verify
 ```
 
-Before rollout, prove direct completion, owner handling, delegation, task
+Before rollout, prove direct completion, agent handling, delegation, task
 attachment, restart recovery, registry reload, and final delivery for the App's
 actual routes.

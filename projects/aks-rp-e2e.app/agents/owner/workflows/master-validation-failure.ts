@@ -858,7 +858,7 @@ export function standaloneRecoveryChildAction(input: {
     outcome: `Verify ${input.failure.specId} from current main on its required standalone RP-ingress target, then integrate any required repair into main.`,
     mode: "achieve",
     outputs: [],
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: "master-validation-route-verification",
     priority: "P0",
     category: "domain_leaf",
@@ -1426,7 +1426,7 @@ export function alreadyRepairedTestIssueEvidence(decision: Decision): string[] {
 
 function doneWithEvidence(
   ctx: WorkflowContext,
-  state: "converged" | "needs-owner",
+  state: "converged" | "needs-agent",
   summary: string,
   evidence: string[],
   extras: Record<string, unknown> = {},
@@ -1496,7 +1496,7 @@ export async function runFailureInvestigation(
   let feedback = "";
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const result = await ctx.agents.call(
-      ctx.reconciliation?.owner ?? "aks-explorer",
+      ctx.reconciliation?.agent ?? "aks-explorer",
       feedback ? `${values.prompt}\n\n${feedback}` : values.prompt,
       { timeoutMs: 1_800_000, schema: decisionSchema },
     );
@@ -2179,7 +2179,7 @@ async function prepareCampaignRepair(
   );
   if (published.state === "conflicted") {
     const summary = `Publishing the focused master-validation repair branch for ${input.specId} hit a same-task branch-history conflict that needs bounded owner resolution before retry.`;
-    return doneWithEvidence(ctx, "needs-owner", summary, [
+    return doneWithEvidence(ctx, "needs-agent", summary, [
       ...values.evidence,
       ...published.evidence,
       `source-branch:${values.sourceBranch}`,
@@ -2276,7 +2276,7 @@ export async function execute(
     workspaceDir === repoDir
   ) {
     const summary = `${name} requires a valid failure observation and a main-based task worktree.`;
-    return doneWithEvidence(ctx, "needs-owner", summary, [
+    return doneWithEvidence(ctx, "needs-agent", summary, [
       `workspace:${workspaceDir}`,
     ]);
   }
@@ -2425,7 +2425,7 @@ export async function execute(
           : [];
         if (standaloneRecoveryCompletionProblem(completedChild, baseCommit)) {
           const summary = `${input.specId} route verification completed without exact origin/main integration proof; the master-validation failure cannot close.`;
-          return doneWithEvidence(ctx, "needs-owner", summary, [
+          return doneWithEvidence(ctx, "needs-agent", summary, [
             `blocking-pipeline-run:${input.pipelineRunId}`,
             `verification-child:${text(completedChild.taskId ?? completedChild.id)}`,
             ...childEvidence,

@@ -487,7 +487,7 @@ This replaces manual polling while keeping scheduling out of the task tree.
   that its Condition has a typed subject and only supported exact-match
   operators. Invalid Condition structure is returned to the agent for one
   correction round on the same task; it is never silently inferred from prose.
-- Exhausted same-owner judgment: return bare `needs-owner` with exact evidence.
+- Exhausted same-owner judgment: return bare `needs-agent` with exact evidence.
   Escalate only after the agent identifies a required action outside
   `aks-explorer` ownership; generic infrastructure routes the escalation but
   does not decide that one is needed.

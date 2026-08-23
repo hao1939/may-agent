@@ -32,7 +32,7 @@ export type LegacyRepairRequest = {
 };
 
 export type LegacyRepairDecision = {
-  decision: "repaired" | "retry" | "reject" | "needs-owner";
+  decision: "repaired" | "retry" | "reject" | "needs-agent";
   summary: string;
   evidence: string[];
 };
@@ -46,7 +46,7 @@ const repairSchema = Type.Object({
     Type.Literal("repaired"),
     Type.Literal("retry"),
     Type.Literal("reject"),
-    Type.Literal("needs-owner"),
+    Type.Literal("needs-agent"),
   ]),
   summary: Type.String({ minLength: 1 }),
   evidence: Type.Array(Type.String({ minLength: 1 })),
@@ -447,7 +447,7 @@ async function runRepairAgent(
   request: LegacyRepairRequest,
 ): Promise<LegacyRepairDecision> {
   const result = await ctx.agents.call(
-    ctx.reconciliation?.owner ?? "aks-explorer",
+    ctx.reconciliation?.agent ?? "aks-explorer",
     [
       `Continue the same legacy-branch task after ${request.cause}.`,
       `Work only in ${request.workspaceDir}. Do not create another branch or worktree, push, delete refs, or edit task state.`,
@@ -457,7 +457,7 @@ async function runRepairAgent(
       request.cause === "merge-conflict"
         ? "The worktree contains the attempted merge and its conflicts. Inspect current origin/dev and the source intent. If useful changes remain, resolve them in a new clean commit. If the source is stale, duplicated, incorrect, or superseded, abort the merge and return reject with a clean worktree."
         : "The worktree contains a clean committed candidate that failed verification. Diagnose the exact evidence, make and commit the smallest useful correction, and leave the worktree clean.",
-      "Return repaired only after producing a new clean commit. Return retry only when fresh evidence justifies rerunning verification without a source change. Return reject only when current evidence proves the legacy source is stale, incorrect, duplicated, or superseded and should not land. Use needs-owner only for an exceptional ambiguity that this bounded domain process cannot safely resolve.",
+      "Return repaired only after producing a new clean commit. Return retry only when fresh evidence justifies rerunning verification without a source change. Return reject only when current evidence proves the legacy source is stale, incorrect, duplicated, or superseded and should not land. Use needs-agent only for an exceptional ambiguity that this bounded domain process cannot safely resolve.",
       request.conflicts.length
         ? `Conflict files:\n${request.conflicts.join("\n")}`
         : "Conflict files: none",
@@ -487,7 +487,7 @@ async function runRepairAgent(
 type RepairOutcome =
   | { state: "candidate"; head: string; evidence: string[] }
   | { state: "reject"; summary: string; evidence: string[] }
-  | { state: "needs-owner"; summary: string; evidence: string[] };
+  | { state: "needs-agent"; summary: string; evidence: string[] };
 
 async function repairCandidate(
   ctx: WorkflowContext,
@@ -506,8 +506,8 @@ async function repairCandidate(
     if (decision.decision === "reject") {
       return { state: "reject", summary: decision.summary, evidence };
     }
-    if (decision.decision === "needs-owner") {
-      return { state: "needs-owner", summary: decision.summary, evidence };
+    if (decision.decision === "needs-agent") {
+      return { state: "needs-agent", summary: decision.summary, evidence };
     }
     const problems = workspaceProblems(
       request.workspaceDir,
@@ -527,7 +527,7 @@ async function repairCandidate(
     evidence.push(`repair-validation-failed:${feedback}`);
   }
   return {
-    state: "needs-owner",
+    state: "needs-agent",
     summary: `Legacy branch repair exhausted ${maxRepairIterations} changed iterations without a valid candidate.`,
     evidence,
   };
@@ -745,7 +745,7 @@ export async function executeWithVerifier(
     ]);
     if (staleBeforeVerification) {
       return ctx.done(staleBeforeVerification.summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: staleBeforeVerification.summary,
         evidence: boundedWorkflowEvidence(staleBeforeVerification.evidence),
       });
@@ -811,11 +811,11 @@ export async function executeWithVerifier(
           actions: [],
         });
       }
-      if (repair.state === "needs-owner") {
+      if (repair.state === "needs-agent") {
         restoreBase(workspaceDir, baseCommit);
         const summary = `${repair.summary} The same task requires exceptional owner judgment; no source refs were changed.`;
         return ctx.done(summary, {
-          state: "needs-owner",
+          state: "needs-agent",
           summary,
           evidence: boundedWorkflowEvidence([
             `branch:${source.branch}@${source.head}:repair-exhausted`,
@@ -881,10 +881,10 @@ export async function executeWithVerifier(
           actions: [],
         });
       }
-      if (repair.state === "needs-owner") {
+      if (repair.state === "needs-agent") {
         const summary = `${repair.summary} The same task requires exceptional owner judgment; no source refs were changed.`;
         return ctx.done(summary, {
-          state: "needs-owner",
+          state: "needs-agent",
           summary,
           evidence: boundedWorkflowEvidence([
             ...ownerReviewEvidence(
@@ -903,7 +903,7 @@ export async function executeWithVerifier(
     if (!verification.passed) {
       const summary = `Legacy branch verification exhausted ${maxRepairIterations} repair rounds: ${verification.reason ?? "verification failed without an explicit reason"}.`;
       return ctx.done(summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary,
         evidence: boundedWorkflowEvidence([
           ...ownerReviewEvidence(
@@ -948,7 +948,7 @@ export async function executeWithVerifier(
     ]);
     if (staleAfterVerification) {
       return ctx.done(staleAfterVerification.summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: staleAfterVerification.summary,
         evidence: boundedWorkflowEvidence(staleAfterVerification.evidence),
       });
@@ -993,7 +993,7 @@ export async function executeWithVerifier(
     ]);
     if (staleDuringCloseout) {
       return ctx.done(staleDuringCloseout.summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: staleDuringCloseout.summary,
         evidence: boundedWorkflowEvidence(staleDuringCloseout.evidence),
       });

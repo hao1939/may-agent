@@ -39,7 +39,7 @@ describe("app-ops wait-for-repo-ref-advance workflow", () => {
     expect(verify).toBeFunction();
   });
 
-  test("verifies a converged owner handoff after the baseline repo ref has already advanced", async () => {
+  test("verifies a converged agent handoff after the baseline repo ref has already advanced", async () => {
     const fixture = makeRepoFixture();
     try {
       const verified = await verify(
@@ -57,7 +57,7 @@ describe("app-ops wait-for-repo-ref-advance workflow", () => {
             outcome: "Wait for origin/main to advance and then recheck the same spec.",
             acceptance: [],
             mode: "achieve",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "wait-for-repo-ref-advance",
             input: {
               baseRef: "origin/main",
@@ -85,7 +85,7 @@ describe("app-ops wait-for-repo-ref-advance workflow", () => {
                 "domain/master-validation-failure/spec.service-platform.queuewatcher",
               outcome: "Wait for the next origin/main advance.",
               acceptance: [],
-              owner: "aks-explorer",
+              agent: "aks-explorer",
               workflow: "wait-for-repo-ref-advance",
               input: {
                 baseRef: "origin/main",

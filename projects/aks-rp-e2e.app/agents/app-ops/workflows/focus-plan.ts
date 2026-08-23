@@ -800,7 +800,7 @@ async function dispatchHumanApproval(
 function finishFocusReview(
   ctx: WorkflowContext,
   input: {
-    state: "converged" | "needs-owner";
+    state: "converged" | "needs-agent";
     summary: string;
     evidence: string[];
   },

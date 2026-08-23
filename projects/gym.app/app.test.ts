@@ -47,7 +47,7 @@ describe("canonical Gym App", () => {
     expect(gymApp).toMatchObject({
       id: "gym",
       version: 1,
-      owner: "gym",
+      agent: "gym",
       workspace: { kind: "local", localPath: "../gym" },
       inbox: { maxConcurrent: 2 },
       tasks: { maxConcurrent: 2 },
@@ -201,7 +201,7 @@ describe("canonical Gym App", () => {
 });
 
 describe("Gym task reconciliation", () => {
-  test("reconciles design alignment through one stable owner task", () => {
+  test("reconciles design alignment through one stable agent task", () => {
     const first = resolveGymTask(
       event("gym.design-alignment.requested", {
         reason: "daily-design-alignment-review",
@@ -217,7 +217,7 @@ describe("Gym task reconciliation", () => {
     expect(first).toMatchObject({
       id: "runtime/design-alignment-review",
       mode: "maintain",
-      owner: "gym",
+      agent: "gym",
       priority: "P2",
       acceptance: expect.arrayContaining([
         expect.stringContaining("latest accepted May behavior"),
@@ -482,7 +482,7 @@ describe("Gym task reconciliation", () => {
       kind: "desired",
       intent: {
         mode: "achieve",
-        owner: "gym",
+        agent: "gym",
         input: {
           requestId: "owner request/17",
           admittedInput: input,

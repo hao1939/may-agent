@@ -35,7 +35,7 @@ function context(input: {
       taskId: "runtime/problem-solver/test",
       generation: 1,
       resourceVersion: 1,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       mode: "achieve",
       outcome: "Investigate the project problem",
       acceptance: ["The problem is resolved or explicitly escalated."],
@@ -95,7 +95,7 @@ function context(input: {
 }
 
 describe("problem solver", () => {
-  test("returns needs-owner without actions for unsupported triggers", async () => {
+  test("returns needs-agent without actions for unsupported triggers", async () => {
     const { appDir, projectDir } = await makeWorkspace();
 
     const result = await execute(
@@ -113,7 +113,7 @@ describe("problem solver", () => {
     expect(result.status).toBe("done");
     expect(result).toMatchObject({
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: expect.stringContaining(
           "Problem solver ignored trigger project.task.tick",
         ),
@@ -246,7 +246,7 @@ describe("problem solver", () => {
         agentResult: {
           status: "success",
           message:
-            "ROOT_CAUSE: producerless project.state condition\nACTION_TAKEN: verified owner handoff path\nVERIFICATION: LocalDNS holder is pending on current evidence\nPLANNER_NEXT: let the owner-held LocalDNS carrier run\nPROBLEM_RESULT: resolved",
+            "ROOT_CAUSE: producerless project.state condition\nACTION_TAKEN: verified agent handoff path\nVERIFICATION: LocalDNS holder is pending on current evidence\nPLANNER_NEXT: let the owner-held LocalDNS carrier run\nPROBLEM_RESULT: resolved",
         },
       }),
     );

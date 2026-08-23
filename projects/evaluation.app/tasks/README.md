@@ -43,7 +43,7 @@ of the app. They use `mode: "maintain"`:
 | `session-audit`            | Eligible terminal sessions have traceable evaluations or structured skips.                                                          |
 | `project-app-audit`        | Every watched app has a current independent health assessment.                                                                      |
 | `finding-delivery`         | Actionable findings reach owners and useful human decisions without duplicates.                                                     |
-| `evaluator-reliability`    | Structural parent for evaluation's bounded reliability responsibilities; it reflects child state without starting an owner session. |
+| `evaluator-reliability`    | Structural parent for evaluation's bounded reliability responsibilities; it reflects child state without starting an agent session. |
 | `pipeline-health`          | Structural parent for coverage observation; changed anomaly signals wake explicit review work instead.                              |
 | `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.                                                                  |
 | `drift-detection`          | Comparable cohorts expose meaningful quality drift without speculative work.                                                        |
@@ -96,7 +96,7 @@ Task execution follows one rule:
 ```text
 explicit task workflow -> reusable workflow
 no workflow -> evaluation.app owner entry
-workflow returns needs-owner -> one evaluation.app owner judgment
+workflow returns needs-agent -> one evaluation.app owner judgment
 named workflow unavailable -> attention until the binding is repaired
 ```
 

@@ -103,7 +103,7 @@ export function taskForMayInput(
         "The accepted result contains a direct caller-facing response or an exact evidenced wait.",
       ],
       mode: "achieve",
-      owner: "may",
+      agent: "may",
       input: {
         kind: admitted.input.kind,
         data,
@@ -118,7 +118,7 @@ export function taskForMayInput(
 export default defineApp({
   id: "may",
   version: 1,
-  owner: "may",
+  agent: "may",
   description:
     "Conversation App for durable human requests and explicit human-decision obligations.",
   inputSchema: mayInputSchema,

@@ -19,7 +19,7 @@ type StandingLoopDefinition = {
   id: StandingLoopId;
   action: string;
   parentId: string;
-  owner: string;
+  agent: string;
   workflow?: string;
   frontierLimit: number;
   input?: Record<string, unknown>;
@@ -92,7 +92,7 @@ export const standingLoopDefinitions: Record<
     id: specLoopTaskId,
     action: "spec-loop",
     parentId: "group/spec-verification",
-    owner: "app-ops",
+    agent: "app-ops",
     workflow: "spec-loop-controller",
     frontierLimit: 5,
     outcome:
@@ -109,7 +109,7 @@ export const standingLoopDefinitions: Record<
     id: featureCompactLoopTaskId,
     action: "feature-compact-loop",
     parentId: "group/feature-compact",
-    owner: "app-ops",
+    agent: "app-ops",
     workflow: "feature-compact-loop-controller",
     frontierLimit: 3,
     input: {
@@ -129,7 +129,7 @@ export const standingLoopDefinitions: Record<
     id: masterValidationCompactTaskId,
     action: "master-validation-compact",
     parentId: "group/feature-compact",
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     frontierLimit: 3,
     input: {
       selectorPath: "ci/feature-sets/master-validation.txt",
@@ -210,7 +210,7 @@ export const standingLoopDefinitions: Record<
     id: scenarioNormalizationTaskId,
     action: "scenario-normalization",
     parentId: "group/scenario-normalization",
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: "normalize-scenario-frontier",
     frontierLimit: 5,
     input: {
@@ -247,7 +247,7 @@ export const standingLoopDefinitions: Record<
     id: legacyBranchReconciliationTaskId,
     action: "legacy-branch-reconciliation",
     parentId: "group/app-operations",
-    owner: "app-ops",
+    agent: "app-ops",
     workflow: "legacy-branch-reconciliation-controller",
     frontierLimit: 1,
     outcome:
@@ -266,7 +266,7 @@ export const standingLoopDefinitions: Record<
     id: repositorySkillMaintenanceTaskId,
     action: "repository-skill-maintenance",
     parentId: "group/domain-work",
-    owner: "aks-explorer",
+    agent: "aks-explorer",
     workflow: "domain-task-execution",
     frontierLimit: 1,
     input: {
@@ -311,7 +311,7 @@ export function standingLoopIntent(loopId: StandingLoopId): TaskIntent {
     outcome: definition.outcome,
     acceptance: definition.acceptance,
     mode: "maintain",
-    owner: definition.owner,
+    agent: definition.agent,
     ...(definition.workflow ? { workflow: definition.workflow } : {}),
     input: {
       frontierLimit: definition.frontierLimit,

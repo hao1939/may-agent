@@ -164,7 +164,7 @@ function gymOwnerReviewIntent(input: AppInput, requestId: string): TaskIntent {
       "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
     ],
     mode: "achieve",
-    owner: "gym",
+    agent: "gym",
     input: {
       requestId,
       admittedInput: input,
@@ -218,7 +218,7 @@ export function resolveGymTask(
           "The review never changes benchmark truth or production May without exact artifact approval.",
         ],
         mode: "maintain",
-        owner: "gym",
+        agent: "gym",
         priority: "P2",
       };
     case "gym.improvement.requested":
@@ -454,7 +454,7 @@ function gymTaskIntentForInput(
           "The accepted result explains the finding and includes a caller-facing response.",
         ],
         mode: "achieve",
-        owner: "gym",
+        agent: "gym",
         input: {
           ...data,
           dependency: {
@@ -486,7 +486,7 @@ export function taskForGymInput(
     outcome: `Interpret and handle admitted Gym input ${admitted.input.kind}.`,
     acceptance: ["The Gym owner returns an evidence-backed accepted result."],
     mode: "achieve" as const,
-    owner: "gym",
+    agent: "gym",
     input: { kind: admitted.input.kind, data: params(admitted.input.data) },
     priority: "P1" as const,
   };
@@ -510,7 +510,7 @@ const gymTaskSubscriptions: EventSelector[] = [
 export default defineApp({
   id: projectId,
   version: 1,
-  owner: "gym",
+  agent: "gym",
   description:
     "Autonomous operator for incident-derived benchmark proposals and May regression runs.",
   workspace: {

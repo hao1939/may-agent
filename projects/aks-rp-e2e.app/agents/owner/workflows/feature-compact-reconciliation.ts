@@ -35,7 +35,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const summary =
     "Feature-compact reconciliation requires current domain judgment; hand off with deterministic ledger admission retained at the completion boundary.";
   return ctx.done(summary, {
-    state: "needs-owner",
+    state: "needs-agent",
     summary,
     evidence: [],
     actions: [],

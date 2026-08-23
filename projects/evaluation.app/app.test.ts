@@ -44,7 +44,7 @@ describe("canonical evaluation App", () => {
     expect(app).toMatchObject({
       id: "evaluation",
       version: 1,
-      owner: "evaluator",
+      agent: "evaluator",
       inbox: { maxConcurrent: 5 },
       tasks: { maxConcurrent: 5 },
     });
@@ -96,7 +96,7 @@ describe("canonical evaluation App", () => {
       ),
     ).toMatchObject({
       kind: "desired",
-      intent: { id: "input/request-1", mode: "achieve", owner: "evaluator" },
+      intent: { id: "input/request-1", mode: "achieve", agent: "evaluator" },
     });
   });
 

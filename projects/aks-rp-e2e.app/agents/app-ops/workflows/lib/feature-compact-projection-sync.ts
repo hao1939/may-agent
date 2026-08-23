@@ -390,7 +390,7 @@ export function syncFeatureCompactProjection(
     }),
     blockerOwner:
       mappedStatus === "blocked"
-        ? text(child.owner) || currentItem.blockerOwner || null
+        ? text(child.agent) || currentItem.blockerOwner || null
         : currentItem.blockerOwner || null,
     lastCheckedAt: statusUpdatedAt,
     updatedAt: statusUpdatedAt,

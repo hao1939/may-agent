@@ -171,7 +171,7 @@ function context(overrides: ContextOverrides = {}): WorkflowContext {
         "domain/publish-master-validation-origin-main-baseline-refresh-after-cpu-removal-20260804",
       generation: 1,
       resourceVersion: 1,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       mode: "achieve",
       outcome: "Publish the bounded master-validation refresh into main.",
       acceptance: [],

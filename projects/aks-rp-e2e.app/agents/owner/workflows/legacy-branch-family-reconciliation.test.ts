@@ -21,7 +21,7 @@ function context(input: {
       taskId: "ops/legacy-family",
       generation: 1,
       resourceVersion: 1,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       mode: "achieve",
       outcome: "Reconcile one legacy branch family",
       acceptance: ["The represented refs are closed safely."],
@@ -239,7 +239,7 @@ describe("legacy branch family reconciliation", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: expect.arrayContaining([
           `base-commit:${baseHead}`,
           `review-execution:review-session`,

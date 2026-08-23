@@ -137,7 +137,7 @@ function context(appDir: string, projectDir: string, resourceVersion = 1) {
       taskId: "aks-spec-verification-loop",
       generation: 1,
       resourceVersion,
-      owner: "app-ops",
+      agent: "app-ops",
       mode: "maintain",
       outcome: "Maintain spec verification",
       acceptance: [],
@@ -264,7 +264,7 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
     expect(result.output).toMatchObject({
-      state: "needs-owner",
+      state: "needs-agent",
       evidence: ["spec-loop-catalog-source:project-dir@untrusted"],
     });
     const persisted = JSON.parse(
@@ -315,7 +315,7 @@ describe("spec loop reconciliation workflow", () => {
           {
             kind: "create-task",
             parentId: "aks-spec-verification-loop",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "spec-live-reconciliation",
             input: { specId: "spec.example" },
           },
@@ -646,7 +646,7 @@ describe("spec loop reconciliation workflow", () => {
         {
           kind: "create-task",
           parentId: "aks-spec-verification-loop",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           input: { specId: "spec.example" },
         },
@@ -686,7 +686,7 @@ describe("spec loop reconciliation workflow", () => {
         {
           kind: "create-task",
           parentId: "aks-spec-verification-loop",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           input: {
             specId: "spec.kms.v2plus-pmk-migrate-cmk-private-kv-lifecycle",
@@ -888,7 +888,7 @@ describe("spec loop reconciliation workflow", () => {
           {
             kind: "create-task",
             parentId: "aks-spec-verification-loop",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "domain-task-execution",
             input: { specId: "spec.reviewed" },
           },
@@ -1246,7 +1246,7 @@ describe("spec loop reconciliation workflow", () => {
         {
           kind: "create-task",
           parentId: "aks-spec-verification-loop",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "domain-task-execution",
           input: {
             specId: "spec.network-acns.retina-enterprise-k8s-upgrade",

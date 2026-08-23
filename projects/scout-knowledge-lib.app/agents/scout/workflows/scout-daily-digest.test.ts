@@ -39,7 +39,7 @@ function fixture(today: string, archives: Record<string, string> = {}) {
         taskId: "daily-digest",
         generation: 1,
         resourceVersion: 9,
-        owner: "scout",
+        agent: "scout",
         mode: "maintain",
         outcome: "Deliver the daily digest",
         acceptance: ["Deliver each digest at most once"],

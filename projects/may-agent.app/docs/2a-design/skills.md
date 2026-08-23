@@ -319,7 +319,7 @@ stronger execution is justified:
 | Mechanical observation or intervention               | Guard                                                                      |
 | Capability an agent calls against an external system | Tool                                                                       |
 | Repeated typed automation entering an existing App   | Discoverable App action that validates and admits one correlated App input |
-| Ordinary project-directed request                    | Project comment/intent handled by the app owner                            |
+| Ordinary project-directed request                    | Project comment/intent handled by the App                                  |
 | Recurring/event-driven wake-up                       | Schedule or handler                                                        |
 | Cross-owner decision or action                       | Escalation                                                                 |
 

@@ -5,7 +5,7 @@ import {
   type TaskReconciliationContext,
   type WorkflowContext,
 } from "@may-agent/sdk";
-import { execute, normalizeOwnerResult } from "./evaluator-heartbeat.js";
+import { execute, normalizeAgentResult } from "./evaluator-heartbeat.js";
 
 type Input = { scope?: string };
 
@@ -22,7 +22,7 @@ function reconciliation(
     taskId: "runtime/owner-review",
     generation: 4,
     resourceVersion: 8,
-    owner: "evaluator",
+    agent: "evaluator",
     mode: "maintain",
     outcome: "Keep evaluation.app coherent.",
     acceptance: ["Typed revision-checked actions or a justified no-op."],
@@ -132,7 +132,7 @@ describe("evaluator heartbeat", () => {
   });
 
   test("rejects the prior untyped Condition and admits the corrected aggregate without runtime mutations", () => {
-    const prior = normalizeOwnerResult(
+    const prior = normalizeAgentResult(
       {
         state: "waiting",
         summary: "Wait for the aftermath session.",
@@ -154,7 +154,7 @@ describe("evaluator heartbeat", () => {
       "owner-result-rejected:conditions[0].subject must be a typed subject",
     );
 
-    const corrected = normalizeOwnerResult(
+    const corrected = normalizeAgentResult(
       {
         state: "waiting",
         summary: "Wait for the aftermath session.",
@@ -196,7 +196,7 @@ describe("evaluator heartbeat", () => {
     );
     expect(
       admitTaskReconcileResult(corrected, {
-        allowNeedsOwner: false,
+        allowNeedsAgent: false,
         defaultParentId: "runtime/owner-review",
       }),
     ).toMatchObject({ ok: true, result: { state: "waiting" } });
@@ -253,7 +253,7 @@ describe("evaluator heartbeat", () => {
   });
 
   test("keeps valid direct-child mutations and filters stale or runtime actions", () => {
-    const result = normalizeOwnerResult(
+    const result = normalizeAgentResult(
       {
         state: "converged",
         summary: "Reviewed child state.",

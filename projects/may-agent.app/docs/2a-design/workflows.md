@@ -153,7 +153,7 @@ are checked against the paired Runtime separately from workflow authoring.
 For task-owned execution, `ctx.reconciliation` supplies:
 
 - App/task identity and current generation/resource version;
-- resolved owner, mode, outcome, and acceptance;
+- selected agent, mode, outcome, and acceptance;
 - typed workflow input;
 - bounded live and completed child views; and
 - a capped snapshot of other live App tasks when App-wide frontier health must
@@ -169,18 +169,18 @@ boundary to validate and admit. It never edits task state itself.
 
 ## Invocation
 
-Workflow execution is explicit from one bounded owner:
+Workflow execution is explicit from one bounded Task attempt:
 
 ```text
-task reconciler -> resolved owner workflow
-App owner       -> bounded workflow capability
+task reconciler -> selected agent's workflow
+App task        -> bounded workflow capability
 workflow        -> ctx.workflows.run(name, input)
 model tool      -> explicit workflow invocation
 ```
 
 An App schedule, fact subscription, observer, or metric cannot directly launch
 a workflow. It first creates the appropriate App request or persisted task
-intent; that durable owner then decides whether a workflow is required.
+intent; the App task then decides whether a workflow is required.
 
 Descriptions aid discovery but never trigger code by fuzzy matching.
 
@@ -233,7 +233,7 @@ session, module memory, or source-session resume.
 `ctx.done` means this bounded workflow completed its own contract. It does not
 mean the enclosing App request, task, or project completed. `ctx.blocked` means
 this workflow cannot safely produce its contract; it does not create a durable
-wait, escalation, owner handoff, or new request automatically.
+wait, escalation, agent handoff, or new request automatically.
 
 ## Result admission
 
@@ -265,7 +265,7 @@ For task-owned work:
 - continue locally while bounded in-scope repair remains;
 - return exact Conditions only after establishing the corresponding external
   dependency;
-- use `needs-owner` only for exceptional same-App judgment the learned workflow
+- use `needs-agent` only for exceptional same-App judgment the learned workflow
   cannot safely resolve;
 - create cross-App/human escalation only through an explicit App/task
   dependency; and
@@ -383,5 +383,5 @@ reconciliation when it requires durable waits.
 - Runtime-ledger observation or repair that needs those capabilities is
   explicitly classified as a host-private maintenance handler, never disguised
   as a workflow.
-- Result `done` never implies enclosing task/project completion without owner
+- Result `done` never implies enclosing task/project completion without App
   admission and evidence.

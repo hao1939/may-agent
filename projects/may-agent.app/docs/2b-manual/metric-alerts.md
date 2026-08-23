@@ -143,7 +143,7 @@ Escalate to human when:
 
 - The fix requires destructive action, data deletion, DB rebuild, or secrets.
 - The metric contradicts system state and the owner cannot prove which is wrong.
-- The alert has repeated across multiple owner sessions without recovery.
+- The alert has repeated across multiple agent sessions without recovery.
 - The right action is a product or policy decision.
 
 Escalation must include: metric id, current value, threshold, evidence checked,

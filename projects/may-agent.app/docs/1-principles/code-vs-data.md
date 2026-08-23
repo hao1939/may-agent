@@ -40,7 +40,7 @@ steps use skills and tools while guards observe mechanical risk.
 | Need                                              | Mechanism                                  | Why                                             |
 | ------------------------------------------------- | ------------------------------------------ | ----------------------------------------------- |
 | Current repository path or credential location    | Owned context                              | Environment-specific fact                       |
-| Investigate one unfamiliar failure                | Direct owner session                       | Novel judgment                                  |
+| Investigate one unfamiliar failure                | Direct agent session                       | Novel judgment                                  |
 | Apply a known review method across varied changes | Skill                                      | Reusable guidance, context-sensitive use        |
 | Always implement, test, then independently review | Workflow                                   | Stable ordered process                          |
 | TypeScript must compile                           | Test/code                                  | Deterministic invariant                         |

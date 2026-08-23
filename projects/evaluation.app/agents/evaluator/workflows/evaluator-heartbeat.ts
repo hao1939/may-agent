@@ -1,6 +1,6 @@
 import {
   admitTaskReconcileResult,
-  taskOwnerResultSchema,
+  taskAgentResultSchema,
   type ExecutionResult,
   type TaskAction,
   type TaskReconcileResult,
@@ -17,14 +17,14 @@ type OwnerReviewInput = {
   scope?: string;
 };
 
-type OwnerResult = Exclude<TaskReconcileResult, { state: "needs-owner" }>;
+type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
 function truncate(value: unknown, max = 600): string {
   const text = String(value ?? "");
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
-function fallbackResult(summary: string, evidence: string[]): OwnerResult {
+function fallbackResult(summary: string, evidence: string[]): AgentResult {
   return {
     state: "converged",
     summary,
@@ -75,12 +75,12 @@ function actionRejection(
   return allowedExistingTarget(action, reconciliation);
 }
 
-export function normalizeOwnerResult(
+export function normalizeAgentResult(
   output: unknown,
   reconciliation: TaskReconciliationContext<OwnerReviewInput>,
-): OwnerResult {
+): AgentResult {
   const admission = admitTaskReconcileResult(output, {
-    allowNeedsOwner: false,
+    allowNeedsAgent: false,
     defaultParentId: reconciliation.taskId,
     rootParentAliases: ["evaluation", "evaluation.app"],
   });
@@ -91,7 +91,7 @@ export function normalizeOwnerResult(
     );
   }
 
-  const admitted = admission.result as OwnerResult;
+  const admitted = admission.result as AgentResult;
   if (
     admitted.state === "waiting" &&
     (!admitted.conditions || admitted.conditions.length === 0)
@@ -139,7 +139,7 @@ function ownerPacket(
     taskId: reconciliation.taskId,
     generation: reconciliation.generation,
     resourceVersion: reconciliation.resourceVersion,
-    owner: reconciliation.owner,
+    agent: reconciliation.agent,
     mode: reconciliation.mode,
     outcome: reconciliation.outcome,
     acceptance: reconciliation.acceptance,
@@ -161,7 +161,7 @@ function ownerPrompt(packet: Record<string, unknown>): string {
     "Use waiting only with exact Conditions. Every Condition subject must use the canonical typed-subject form <type>:<id> (for example task:child-id, session:s_123, event:5011463, or project:evaluation); an unprefixed subject is invalid.",
     "If desired state is already represented, return converged with no actions.",
     "Finish with result matching this JSON schema:",
-    JSON.stringify(taskOwnerResultSchema),
+    JSON.stringify(taskAgentResultSchema),
     "Reconciliation packet:",
     JSON.stringify(packet, null, 2),
   ].join("\n\n");
@@ -190,14 +190,14 @@ export async function execute(
   });
 
   const execution = await ctx.agents.call(
-    reconciliation.owner,
+    reconciliation.agent,
     ownerPrompt(ownerPacket(ctx.input, reconciliation)),
-    { schema: taskOwnerResultSchema },
+    { schema: taskAgentResultSchema },
   );
 
-  let ownerResult: OwnerResult;
+  let agentResult: AgentResult;
   if (execution.status !== "done") {
-    ownerResult = fallbackResult(
+    agentResult = fallbackResult(
       `Owner review execution ${execution.id} ended ${execution.status}; preserving current desired state for the next exact wake.`,
       [
         `execution:${execution.id}`,
@@ -217,7 +217,7 @@ export async function execute(
       target: { appId: "evaluation" },
     });
   } else {
-    ownerResult = normalizeOwnerResult(execution.output, reconciliation);
+    agentResult = normalizeAgentResult(execution.output, reconciliation);
   }
 
   await ctx.events.emit({
@@ -227,11 +227,11 @@ export async function execute(
       taskId: reconciliation.taskId,
       generation: reconciliation.generation,
       triggerType,
-      state: ownerResult.state,
-      proposedActions: ownerResult.actions ?? [],
+      state: agentResult.state,
+      proposedActions: agentResult.actions ?? [],
     },
     target: { appId: "evaluation" },
   });
 
-  return ctx.done(ownerResult.summary, ownerResult);
+  return ctx.done(agentResult.summary, agentResult);
 }

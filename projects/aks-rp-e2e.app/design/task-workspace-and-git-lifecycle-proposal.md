@@ -302,7 +302,7 @@ sources remain visible for agent judgment.
 If the recorded source head has moved, disappeared without proof of
 integration, or become attached to another worktree, clean legacy verification
 must not retry the unchanged task or infer the source owner's intent. The
-workflow returns `needs-owner` on the same task with the recorded head, current
+workflow returns `needs-agent` on the same task with the recorded head, current
 local and remote heads, attachment state, and any verification evidence. The
 owner then decides from current Git and domain evidence whether the source was
 superseded, should be repaired in its owning workspace, or represents a real

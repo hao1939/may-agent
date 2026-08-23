@@ -322,7 +322,7 @@ function ownerReviewTaskIntent(event: AppTaskEvent): TaskIntent {
       "When scenario inventory is red or normalization capacity appears free, wake the existing scenario-normalization task with current evidence and let its workflow select any new leaves.",
     ],
     mode: "maintain",
-    owner: "app-ops",
+    agent: "app-ops",
     priority: ownerReviewPriority(event),
   };
 }
@@ -378,7 +378,7 @@ export function resolveAksTask(
         "Converge after the last existing direct child leaves the live graph.",
       ],
       mode: "achieve",
-      owner: "app-ops",
+      agent: "app-ops",
       workflow: "retire-waiting-frontier",
       input: { migration: "waiting-frontier-retirement-v1" },
       priority: "P0",
@@ -409,7 +409,7 @@ export function resolveAksTask(
           "Leave one truthful disposition for the affected run and do not queue an unchanged retry from evidence-carrier absence alone.",
         ],
         mode: "achieve",
-        owner: "app-ops",
+        agent: "app-ops",
         input: {
           validationTaskId: masterValidationCycleTaskId,
           pipelineRunId,
@@ -454,7 +454,7 @@ export function resolveAksTask(
             "Classification, notification, PR creation, PR merge, and unrelated main advancement are progress evidence; none alone is final verification.",
           ],
       mode: "achieve",
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       workflow: "master-validation-failure",
       input: {
         validationTaskId: masterValidationCycleTaskId,
@@ -497,7 +497,7 @@ export function resolveAksTask(
           "Do not redo the stall diagnosis as the main work; use it as evidence and preserve agent judgment in the resulting task action or summary.",
         ],
         mode: "achieve",
-        owner: "app-ops",
+        agent: "app-ops",
         input: {
           reason,
           judgment,
@@ -555,7 +555,7 @@ export function resolveAksTask(
             "Publish a focused PR only after its affected spec passes from the exact branch and commit still at that PR head; a green combined campaign is integration evidence but cannot publish an individually unverified draft. Any later commit requires fresh exact-head proof. The standing task is green only when the later fresh exact-current-main aggregate passes every aggregate-runnable spec and exact-current-main standalone proof passes every standalone-only spec.",
           ],
           mode: "maintain",
-          owner: "app-ops",
+          agent: "app-ops",
           workflow: "master-validation-cycle",
           input: {
             featureSet: "master-validation",
@@ -606,7 +606,7 @@ export function resolveAksTask(
           "The investigation reports its root cause, action, verification, and the exact owner next step without taking task-tree scheduling authority.",
         ],
         mode: "achieve",
-        owner: "app-ops",
+        agent: "app-ops",
         workflow: "problem-solver",
         input: {
           problemKey,
@@ -633,7 +633,7 @@ export function resolveAksTask(
           "The review applies only safe mechanical repair and returns a structured judgment, evidence, and exact follow-up.",
         ],
         mode: "maintain",
-        owner: "app-ops",
+        agent: "app-ops",
         workflow: "project-stall-review",
         priority: "P0",
       };
@@ -699,7 +699,7 @@ export function resolveAksTask(
           "A valid packet is delivered once for its semantic correlation key, or missing/invalid input is reported with evidence.",
         ],
         mode: "achieve",
-        owner: "app-ops",
+        agent: "app-ops",
         workflow: "approval-dispatch",
         input: {
           approvalKey,
@@ -756,7 +756,7 @@ export function resolveCanonicalAksTask(
         "The exact overdue run and queue scope are reported once through durable human delivery, or the task records why notification is no longer applicable.",
       ],
       mode: "achieve",
-      owner: "app-ops",
+      agent: "app-ops",
       input: details,
       priority: "P2",
       category: "ops",
@@ -802,7 +802,7 @@ function taskIntentForAksInput(input: AppInput): TaskIntent | null {
           "The source message is resolved only after the decision fact is durably emitted.",
         ],
         mode: "achieve",
-        owner: "app-ops",
+        agent: "app-ops",
         workflow: "approval-decision",
         input: { ...data, ...decision },
         priority: "P0",
@@ -853,7 +853,7 @@ function requestedOwnerWorkIntent(
           "Return a terminal result with exact change and verification evidence.",
         ],
     mode: "achieve",
-    owner: "app-ops",
+    agent: "app-ops",
     input: {
       requestId: admitted.id,
       source: admitted.source,
@@ -894,7 +894,7 @@ export function taskForCanonicalAksInput(
         "The app-ops owner returns an evidence-backed result or an exact observable wait.",
       ],
       mode: "achieve",
-      owner: "app-ops",
+      agent: "app-ops",
       input: {
         requestId: admitted.id,
         source: admitted.source,
@@ -971,7 +971,7 @@ function scheduledOwnerReviewWake(
 const app = defineApp({
   id: projectId,
   version: 1,
-  owner: "app-ops",
+  agent: "app-ops",
   description:
     "AKS RP E2E feature knowledge, spec verification, and project reconciliation.",
   inputSchema: aksInputSchema,

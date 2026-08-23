@@ -172,7 +172,7 @@ function reconciliationChild(value: unknown): TaskReconciliationChild {
     evidence: child.evidence ?? [],
     status: child.status ?? "running",
     ...(child.summary ? { summary: child.summary } : {}),
-    ...(child.owner ? { owner: child.owner } : {}),
+    ...(child.agent ? { agent: child.agent } : {}),
     ...(child.workflow ? { workflow: child.workflow } : {}),
     ...(child.completedAt ? { completedAt: child.completedAt } : {}),
   };
@@ -180,7 +180,7 @@ function reconciliationChild(value: unknown): TaskReconciliationChild {
 
 function reconciliationFromTask(
   rawTask: string,
-  owner: string,
+  agent: string,
 ): TaskReconciliationContext {
   const match = rawTask.match(/```json\s*([\s\S]*?)\s*```/);
   const envelope = match
@@ -198,7 +198,7 @@ function reconciliationFromTask(
       typeof envelope.taskId === "string" ? envelope.taskId : "domain/example",
     generation: 1,
     resourceVersion: 1,
-    owner: typeof envelope.owner === "string" ? envelope.owner : owner,
+    agent: typeof envelope.agent === "string" ? envelope.agent : agent,
     mode: envelope.mode === "maintain" ? "maintain" : "achieve",
     outcome: typeof envelope.outcome === "string" ? envelope.outcome : rawTask,
     acceptance: Array.isArray(envelope.acceptance)
@@ -1030,7 +1030,7 @@ describe("domain task execution", () => {
       expect(result).toMatchObject({
         status: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: expect.stringContaining(
             "not reachable from final task HEAD",
           ),
@@ -1570,7 +1570,7 @@ exit 0
                     "Refresh the serverless repo-ref wait after origin/dev advances again.",
                   mode: "achieve",
                   priority: "P2",
-                  owner: "aks-explorer",
+                  agent: "aks-explorer",
                   workflow: "wait-for-repo-ref-advance",
                   acceptance: [
                     "Recheck the same frontier after the next origin/dev advance.",
@@ -1610,7 +1610,7 @@ exit 0
                     "Refresh the serverless repo-ref wait after origin/dev advances again.",
                   mode: "achieve",
                   priority: "P2",
-                  owner: "aks-explorer",
+                  agent: "aks-explorer",
                   workflow: "wait-for-repo-ref-advance",
                   acceptance: [
                     "Recheck the same frontier after the next origin/dev advance.",
@@ -1656,7 +1656,7 @@ exit 0
       outcome: "Repair the remaining daily-master suite count mismatch.",
       mode: "achieve" as const,
       priority: "P1" as const,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       workflow: "domain-task-execution",
       acceptance: ["The suite count matches the current source."],
       input: {},
@@ -1809,7 +1809,7 @@ exit 0
       expect(result).toMatchObject({
         status: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: expect.stringContaining("merge-only ancestry"),
           evidence: expect.arrayContaining([
             "task-changed-files:dev-only.txt",
@@ -1856,7 +1856,7 @@ exit 0
       expect(result).toMatchObject({
         status: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: expect.stringContaining(
             "Recovery-only non-converged result",
           ),
@@ -1900,7 +1900,7 @@ exit 0
       expect(result).toMatchObject({
         status: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: "Final task branch contains zero accepted source patches",
           evidence: expect.arrayContaining([
             "task-source-commits:none",
@@ -2187,7 +2187,7 @@ exit 0
     });
   });
 
-  it("accepts waiting and needs-owner handler results unchanged by verify()", async () => {
+  it("accepts waiting and needs-agent handler results unchanged by verify()", async () => {
     const dispositions = [
       {
         state: "waiting" as const,
@@ -2204,7 +2204,7 @@ exit 0
         ],
       },
       {
-        state: "needs-owner" as const,
+        state: "needs-agent" as const,
         summary: "bounded source judgment is required",
         evidence: ["material-success-candidate:none"],
         actions: [],
@@ -2301,7 +2301,7 @@ exit 0
       expect(result).toMatchObject({
         status: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: "Final task branch contains zero accepted source patches",
           evidence: expect.arrayContaining([
             "task-source-commits:none",
@@ -2530,7 +2530,7 @@ exit 0
       expect(result).toMatchObject({
         status: "done",
         output: {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: "Unchanged disposition contains a source-changing tree",
           evidence: expect.arrayContaining([
             "material-success-candidate:requires-source-gate",

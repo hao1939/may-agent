@@ -178,7 +178,7 @@ Public workflow decisions are:
 - `converged` — the current bounded reconciliation is satisfied;
 - `waiting` — an exact Condition identifies the external fact that can change
   the answer; or
-- `needs-owner` — the workflow explicitly hands novel judgment to Scout.
+- `needs-agent` — the workflow explicitly hands novel judgment to Scout.
 
 `failed` is an attempt/runtime outcome, not a public workflow decision. Common
 finite task-action fields use May conventions: root parent, `achieve`, `P2`,
@@ -188,7 +188,7 @@ Convergence records how acceptance was established:
 
 - deterministic verifier evidence when the workflow provides a verifier;
 - the admitted workflow contract for normal reusable Scout workflows; or
-- Scout owner judgment after direct handling or `needs-owner`.
+- Scout owner judgment after direct handling or `needs-agent`.
 
 The runtime validates mechanics. Scout owns semantic knowledge decisions. A
 generic reconciler never decides whether a research claim is good.

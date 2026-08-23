@@ -509,7 +509,7 @@ describe("master-validation cycle", () => {
     expect(first?.id).toBe(second?.id);
     expect(first).toMatchObject({
       parentId: "group/domain-work",
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       workflow: "master-validation-failure",
       input: {
         validationTaskId: "master-validation-staging-cycle",
@@ -539,7 +539,7 @@ describe("master-validation cycle", () => {
     ).toMatchObject({
       id: "ops/master-validation-evidence-carrier/177034721-artifact-materialization",
       parentId: "group/app-operations",
-      owner: "app-ops",
+      agent: "app-ops",
       category: "ops",
       input: {
         watcherIncidentId:

@@ -100,7 +100,7 @@ Each standing loop performs one ordered pass:
 4. Match representation only through structured identity.
 5. Declare bounded actions for eligible unrepresented units until the
    actionable frontier reaches its limit.
-6. Return `converged` when the pass is synced, `needs-owner` only when
+6. Return `converged` when the pass is synced, `needs-agent` only when
    source-wide integrity prevents a truthful declaration, or a workflow error
    when its source cannot be read safely.
 
@@ -126,7 +126,7 @@ controller with an explicit serial safety invariant, such as one integration
 writer for `origin/dev`, must recover or escalate that serial slot before
 opening the next writer; this is an eligibility rule, not generic runtime
 capacity accounting.
-`needs-owner` is reserved for a frontier with no truthful action/wait path, or
+`needs-agent` is reserved for a frontier with no truthful action/wait path, or
 for an unreadable or globally inconsistent authority.
 
 ### Structured identity
@@ -172,7 +172,7 @@ completion receipts. They do not require permanent task nodes in the live
 graph. Exact waits remain live because their Conditions must be observable.
 
 If eligible incomplete work exists below the frontier limit, the controller
-must declare the next bounded leaves or return `needs-owner` with the exact
+must declare the next bounded leaves or return `needs-agent` with the exact
 integrity reason. It must not return a broad no-op.
 
 This does not introduce parallel workflow execution. Each workflow remains one
@@ -327,7 +327,7 @@ remain owned by the spec loop.
   and retain only unresolved rows. Passing rows leave the priority list and
   re-enter automatically if current catalog truth makes them unresolved again.
 - A review/attention task triggers bounded representation repair or
-  `needs-owner`; it does not silently fill capacity.
+  `needs-agent`; it does not silently fill capacity.
 
 ### Completion proof
 
@@ -455,7 +455,7 @@ acceptance:
     repair children and tasks whose source row just disappeared from the latest
     inventory. A row landing in `dev` does not release its live slot while its
     exact verification run or same-task repair is still active.
-  - A task in the automatic `spec-live-reconciliation -> needs-owner -> owner`
+  - A task in the automatic `spec-live-reconciliation -> needs-agent -> owner`
     handoff also keeps its live slot. The brief `attention` phase between those
     attempts is an in-flight judgment boundary, not free normalization capacity.
   - When several eligible rows can fill free slots, prefer feature scopes not
@@ -491,7 +491,7 @@ acceptance:
     the source-layout row. The controller preserves that wait and may declare a
     separate bounded normalization leaf carrying the wait task IDs as context.
     A runnable source leaf, an exact ADO run wait for that source, or an active
-    owner handoff still owns the row and prevents duplicate source work. The
+    agent handoff still owns the row and prevents duplicate source work. The
     domain agent then judges whether layout can proceed unchanged or truly
     requires the external authority; code only performs this structured
     accounting and routing.

@@ -17,10 +17,12 @@ Runtime = task lifecycle, execution, scoped capabilities, and recovery
 App     = resolve inputs to tasks and reconcile those tasks
 ```
 
-Agents, workflows, and CLI adapters are replaceable executors an App may use
-for a bounded attempt. They never own the Task. Events and caller requests are
-supporting records managed by Infra or Runtime. “Fact” is only the meaning of
-an Event that reports an observation.
+Agents, workflows, and CLI adapters are replaceable ways an App may perform a
+bounded attempt. They never own the Task. An agent is only a named reasoning
+profile: instructions, tools, and model behavior for that attempt. It has no
+inbox, Task namespace, scheduler, retry loop, or completion authority. Events
+and caller requests are supporting records managed by Infra or Runtime.
+“Fact” is only the meaning of an Event that reports an observation.
 
 See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for task reconciliation, and
@@ -41,8 +43,8 @@ something happened but creates no work -> fact
 Every input or fact first enters as an event. The Host records caller
 correlation when needed, and the App decides which task the admitted input
 creates, revises, attaches to, or wakes. In code, a request is stored in the App
-inbox and App policy resolves `TaskIntent`. The inbox never runs a second owner
-loop.
+inbox and App policy resolves `TaskIntent`. The inbox never executes App policy
+or runs a second work loop.
 
 Human input, a cross-App dependency, an action, a schedule, or a subscribed
 fact may create a caller request and task. A metric, provider observation,
@@ -80,7 +82,7 @@ The only App work loop is:
 typed input -> TaskIntent -> task <--- durable event
                               |             ^
                               v             |
-                       selected executor    |
+                    selected attempt handler|
                               |             |
                               +-- result ---+
 ```
@@ -114,8 +116,8 @@ projects/<id>.app/
 ```
 
 There is no parallel `inbox.ts` manifest, Project App definition, workflow
-registry, or owner-entry wrapper. Workflows live under the agent that owns the
-experience.
+registry, or owner-entry wrapper. Workflows live under the agent whose bounded
+experience and tool surface they use.
 
 ## Canonical declaration
 
@@ -126,7 +128,7 @@ Every App exports one `defineApp(...)` declaration from the stable
 export default defineApp({
   id: "sample",
   version: 1,
-  owner: "sample-agent", // current SDK name for the default agent
+  agent: "sample-agent", // default agent for bounded attempts
   inputSchema,
 
   // Pure mapping from admitted domain input to existing or desired task state.
@@ -167,15 +169,17 @@ export default defineApp({
 });
 ```
 
-The current public field is named `owner`, but it selects the App's default
-managed agent; it does not own the App or Task. New prose calls this the
-default agent. A retained-state-safe SDK rename remains pending.
+The public field is named `agent`. It selects the App's default agent for a
+bounded attempt; it does not make the agent the App or the Task owner. The Host
+temporarily accepts the old `owner` spelling only at compatibility boundaries
+for retained state and older App definitions.
 
 Identity, default agent, version, input schema, and Task resolution form the
 App contract. Subscriptions, observation-only selectors, schedules, observers,
 commands, workspace policy, agents, and workflows are optional capabilities
-hosted by the runtime. They feed or help reconcile tasks; they do not add App
-work loops.
+hosted by the runtime. The default agent is only the fallback attempt handler;
+it is not the App identity. These capabilities feed or help reconcile tasks;
+they do not add App work loops.
 
 `app.ts` is also the sole App composition boundary. App-local modules may be
 imported normally, but no conventional `services/` directory, live service
@@ -194,7 +198,7 @@ channel metadata, and persistence handles never enter App code.
 Addressed ingress uses a required `app.input.requested` event. Acceptance means
 the Host created or found exactly one durable request and linked it to the
 event and its task. The request waits for that task's accepted result; it never
-invokes an owner independently. The result may include an optional caller-facing
+invokes the selected agent independently of the Task. The result may include an optional caller-facing
 `response`; its `summary` remains concise operational state for task views and
 recovery. Apps put no channel delivery state into either field.
 
@@ -315,7 +319,7 @@ task.workflow present -> agents/<agent>/workflows/<workflow>.ts
 task.workflow absent  -> one bounded run of the selected agent
 ```
 
-A workflow may return the compatibility state `needs-owner` for one bounded
+A workflow may return the compatibility state `needs-agent` for one bounded
 handoff to that agent; it does not transfer Task ownership.
 Unavailable named workflows produce an explicit unavailable/attention state;
 they are not silently treated as unbound agent work.
@@ -381,7 +385,7 @@ work:
    that atomically links each caller request to its task before any App attempt.
 2. **Done:** route actions, input schedules, subscriptions, and human messages through
    that method; keep exact task and Condition wakes direct.
-3. **Done for current Apps:** run owner/workflow judgment only from the task controller. Make request
+3. **Done for current Apps:** run agent/workflow judgment only from the task controller. Make request
    storage observe accepted task results for completion and delivery.
 4. **Done:** replace `complete`, `task`, `delegate`, `analyze`, and May
    `continue` dispositions with first-attempt convergence, typed task changes,

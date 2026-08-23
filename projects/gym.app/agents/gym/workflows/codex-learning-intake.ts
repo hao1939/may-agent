@@ -990,7 +990,7 @@ async function replayFrozenDesignReview(
     !existsSync(frozenPath)
   ) {
     return ctx.done("Frozen design-review replay preflight rejected.", {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Frozen design-review replay preflight rejected.",
       evidence: [],
     });
@@ -998,7 +998,7 @@ async function replayFrozenDesignReview(
   const frozenBytes = readFileSync(frozenPath, "utf8");
   if (sha256(frozenBytes) !== expectedSha256) {
     return ctx.done("Frozen design-review replay hash mismatch.", {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Frozen design-review replay hash mismatch.",
       evidence: [],
     });
@@ -1042,7 +1042,7 @@ async function replayFrozenDesignReview(
     return ctx.done(
       "Frozen design-review replay input is structurally invalid.",
       {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: "Frozen design-review replay input is structurally invalid.",
         evidence: [receiptPath],
         diagnostics: validation.diagnostics,
@@ -1068,7 +1068,7 @@ async function replayFrozenDesignReview(
     lock = openSync(lockPath, "wx");
   } catch {
     return ctx.done("Frozen design-review replay is already in progress.", {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Frozen design-review replay is already in progress.",
       evidence: [lockPath],
     });
@@ -1115,7 +1115,7 @@ async function replayFrozenDesignReview(
       };
       writeJson(receiptPath, receipt);
       return ctx.done(review.error ?? "Frozen design-review replay failed.", {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: review.error ?? "Frozen design-review replay failed.",
         evidence: [receiptPath, ...(review.evidence ?? [])],
       });
@@ -1181,7 +1181,7 @@ async function replayFrozenDesignReview(
     };
     writeJson(receiptPath, receipt);
     return ctx.done("Frozen design-review replay failed at runtime.", {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Frozen design-review replay failed at runtime.",
       evidence: [receiptPath],
     });
@@ -1281,7 +1281,7 @@ export async function runCodexLearningIntake(
       );
       if (designReview.error) {
         return ctx.done(designReview.error, {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: designReview.error,
           evidence: designReview.evidence ?? [],
         });
@@ -1351,7 +1351,7 @@ export async function runCodexLearningIntake(
         return ctx.done(
           "Codex learning extraction failed; no checkpoint advanced.",
           {
-            state: "needs-owner",
+            state: "needs-agent",
             summary:
               "Codex learning extraction failed; no checkpoint advanced.",
             evidence: [result.sessionId, batchPath],
@@ -1395,7 +1395,7 @@ export async function runCodexLearningIntake(
         return ctx.done(
           "Codex learning consolidation failed; no checkpoint advanced.",
           {
-            state: "needs-owner",
+            state: "needs-agent",
             summary:
               "Codex learning consolidation failed; no checkpoint advanced.",
             evidence: [result.sessionId, consolidationPath],
@@ -1424,7 +1424,7 @@ export async function runCodexLearningIntake(
     );
     if (designReview.error) {
       return ctx.done(designReview.error, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: designReview.error,
         evidence: designReview.evidence ?? [],
       });

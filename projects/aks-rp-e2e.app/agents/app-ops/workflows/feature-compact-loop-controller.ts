@@ -430,7 +430,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             ? `Repair the feature-compact representation for ${featureKey}: the ledger already records an exact wait/frontier shape, but no live holder task currently represents that nonterminal feature.`
             : `Reconcile feature compact package ${featureKey} to live-proven done, an exact wait, or a reviewed terminal disposition.`,
         mode: "achieve",
-        owner: "aks-explorer",
+        agent: "aks-explorer",
         workflow: "feature-compact-reconciliation",
         input: {
           featureKey,
@@ -499,7 +499,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
   }
   return ctx.done(summary, {
-    state: "needs-owner",
+    state: "needs-agent",
     summary,
     evidence: [`feature-compact-state:${statePath}`],
   });

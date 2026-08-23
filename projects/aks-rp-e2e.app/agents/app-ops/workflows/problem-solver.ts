@@ -201,13 +201,13 @@ async function emitProblemResult(
 function finishProblemSolver(
   ctx: WorkflowContext,
   input: {
-    state: "converged" | "needs-owner";
+    state: "converged" | "needs-agent";
     summary: string;
     evidence: string[];
   },
 ): ExecutionResult {
   const output: {
-    state: "converged" | "needs-owner";
+    state: "converged" | "needs-agent";
     summary: string;
     evidence: string[];
     actions?: [];
@@ -240,7 +240,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   ) {
     const summary = `Problem solver ignored trigger ${String(trigger?.type ?? "unknown")}; use project.problem.investigation.requested.`;
     return finishProblemSolver(ctx, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: ["problem-solver:invalid-trigger"],
     });
@@ -277,7 +277,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         taskId: task.taskId,
         status: task.status,
         outcome: task.outcome,
-        owner: task.owner,
+        agent: task.agent,
         readiness: task.readiness,
         conditions: task.conditions,
       })),

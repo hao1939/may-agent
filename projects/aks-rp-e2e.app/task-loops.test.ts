@@ -109,7 +109,7 @@ describe("AKS standing-loop convention", () => {
       id: masterValidationCompactTaskId,
       parentId: "group/feature-compact",
       mode: "maintain",
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       priority: "P0",
     });
     expect(definition.workflow).toBeUndefined();
@@ -175,7 +175,7 @@ describe("AKS standing-loop convention", () => {
       id: repositorySkillMaintenanceTaskId,
       parentId: "group/domain-work",
       mode: "maintain",
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       workflow: "domain-task-execution",
     });
     expect(acceptance).toContain("representative user journeys");

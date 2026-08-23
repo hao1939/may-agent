@@ -300,7 +300,7 @@ tasks.
 
 An attempt failure does not prove the desired outcome impossible or justify a
 generic blocked task. A workflow asks for one owner judgment only by returning
-`needs-owner`; an unavailable named workflow leaves the task in `attention`
+`needs-agent`; an unavailable named workflow leaves the task in `attention`
 until its binding is repaired. Supervision repairs only broken mechanical
 invariants such as lost delivery or a dead attempt; it does not repeat
 evaluation judgment.

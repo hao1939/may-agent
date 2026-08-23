@@ -75,7 +75,7 @@ describe("Scout owner reconciliation boundary", () => {
           taskId: "library-maintenance",
           generation: 1,
           resourceVersion: 1,
-          owner: "scout",
+          agent: "scout",
           mode: "maintain",
           outcome: "Maintain the library",
           acceptance: ["One bounded decision is recorded"],
@@ -142,7 +142,7 @@ describe("Scout owner reconciliation boundary", () => {
     });
     const admitted = admitTaskReconcileResult(
       result.status === "done" ? result.output : undefined,
-      { allowNeedsOwner: true, defaultParentId: "project" },
+      { allowNeedsAgent: true, defaultParentId: "project" },
     );
     expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
       kind: "create-task",
@@ -162,7 +162,7 @@ describe("Scout owner reconciliation boundary", () => {
           taskId: "library-maintenance",
           generation: 2,
           resourceVersion: 2,
-          owner: "scout",
+          agent: "scout",
           mode: "maintain",
           outcome: "Review library experience",
           acceptance: ["One bounded decision is recorded"],

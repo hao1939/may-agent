@@ -254,7 +254,7 @@ export async function execute(
   if (!parsed) {
     return finish(
       ctx,
-      "needs-owner",
+      "needs-agent",
       "Approval dispatch requires packetPath, pathId, and requestedAction.",
       ["approval-dispatch:missing-required-fields"],
     );
@@ -268,7 +268,7 @@ export async function execute(
   if (!absolutePacketPath) {
     return finish(
       ctx,
-      "needs-owner",
+      "needs-agent",
       `Approval dispatch packet ${packetPath} was not found inside the bounded App or project workspace.`,
       [`approval-dispatch:${parsed.pathId}:packet-not-found`],
     );
@@ -281,7 +281,7 @@ export async function execute(
   if (!repoPacketPath.startsWith("evidence/archive/")) {
     return finish(
       ctx,
-      "needs-owner",
+      "needs-agent",
       `Approval dispatch packet ${packetPath} must resolve inside evidence/archive/.`,
       [`approval-dispatch:${parsed.pathId}:packet-outside-evidence-archive`],
     );
@@ -305,7 +305,7 @@ export async function execute(
     const summary =
       `Approval ${approval.pathId} requires bounded project-owner judgment for ${approval.requestedAction}. ` +
       `Review ${approval.packetPath} and return approve, adjust, hold, decline, or reroute under approval ${approval.approvalId}.`;
-    return finish(ctx, "needs-owner", summary, [
+    return finish(ctx, "needs-agent", summary, [
       ...lineageEvidence(approval),
       "owner-handoff:approval-dispatch",
     ]);
@@ -331,7 +331,7 @@ export async function execute(
     source: "workflow:approval-dispatch",
     target: { appId: "aks-rp-e2e", project: "aks-rp-e2e", human: true },
     data: {
-      from: ctx.reconciliation?.owner ?? "app-ops",
+      from: ctx.reconciliation?.agent ?? "app-ops",
       to: approval.target === "owner" ? "human" : approval.target,
       content,
       priority: "P2",

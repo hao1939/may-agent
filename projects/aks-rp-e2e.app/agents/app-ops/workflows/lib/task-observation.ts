@@ -8,6 +8,7 @@ export type ObservedTask = {
   children?: string[];
   outcome?: string;
   acceptance?: string[];
+  agent?: string;
   owner?: string;
   priority?: string;
   category?: string;
@@ -51,7 +52,7 @@ export type TaskPlanningObservation = {
   tasks: Array<{
     id: string;
     phase: string;
-    owner?: string;
+    agent?: string;
     outcome?: string;
   }>;
 };
@@ -98,7 +99,7 @@ export function taskObservation(
           parent_id: child.parentId,
           children: child.hasLiveChildren ? ["bounded-live-child"] : [],
           outcome: child.outcome,
-          owner: child.owner,
+          agent: child.agent,
           priority: child.priority,
           category: child.category,
           depends_on: child.dependsOn,
@@ -165,7 +166,7 @@ export function planningObservation(
     tasks: leaves.slice(0, limit).map((task) => ({
       id: task.id,
       phase: taskState(tree, task),
-      ...(task.owner ? { owner: task.owner } : {}),
+      ...(task.agent ? { agent: task.agent } : {}),
       ...(task.outcome ? { outcome: task.outcome } : {}),
     })),
   };

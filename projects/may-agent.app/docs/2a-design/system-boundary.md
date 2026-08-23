@@ -120,7 +120,7 @@ happened; it does not become work state.
 
 ## Execution
 
-The Host has one bounded execution implementation for direct, Gym, App-owner,
+The Host has one bounded execution implementation for direct, Gym, App-agent,
 and workflow runs. It owns provider calls, tool permissions, timeouts,
 cancellation, transcripts, and the common execution result.
 
@@ -160,7 +160,7 @@ publish(event)
 The event type selects one of four existing Host meanings: App input, reported
 fact, exact task/session control, or Host lifecycle control. `get(eventId)`
 reads delivery and linked outcomes; `subscribe(filter)` observes events.
-Adapters do not call App owners or the model runner directly, and Apps do not
+Adapters do not call App agents or the model runner directly, and Apps do not
 receive this Host interface.
 
 ## Extension rule

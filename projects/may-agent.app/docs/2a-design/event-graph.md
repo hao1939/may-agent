@@ -81,7 +81,7 @@ handling:
 ```text
 conversation.message.created (target.appId=may, author.kind=human)
   -> linked May App request
-    -> bounded owner session
+    -> bounded agent session
       -> App result
         -> conversation.updated
           -> independent adapter read/render
@@ -583,13 +583,13 @@ Then apply stronger relations:
 | Same `sessionId`                                     | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace.                                        |
 | Same `workflowRunId`                                 | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace.                                                                                |
 | Same `taskId` plus `attemptId`                       | Link reconciliation start/result events, managed sessions or native-worker evidence, and any retained historical task-attempt records.                                                      |
-| Same `metricId` / `alertId`                          | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events.                                                                                          |
+| Same `metricId` / `alertId`                          | Link metric alert, `metric.breach`, responsible workflow/session, `metric.recovered`, and review events.                                                                                    |
 | Telegram message coordinates and reply context       | Link current `conversation.message.created` input/output to provider message IDs; retain historical `human.input.received` reply links only as compatibility evidence.                      |
 | Legacy `escalationId`                                | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity.                                                        |
 
 Backfill should not invent domain outcomes. If a historical escalation pair has
 no closer, the graph shows it as an open compatibility chain; it does not create
-new owner work. Current work truth comes from App requests/dependencies and
+new App work. Current work truth comes from App requests/dependencies and
 tasks.
 
 ## Write Path
@@ -662,7 +662,7 @@ project.owner.requested
 
 ## App Delegation And Human-Attention Example
 
-Cross-owner work is identified by App request/dependency records, not an
+Cross-App work is identified by App request/dependency records, not an
 opening event:
 
 ```text

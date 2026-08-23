@@ -66,7 +66,7 @@ const stagingLocation = "westus2";
 export const masterValidationCapacityPulseProjectId = "aks-rp-e2e";
 export const masterValidationCapacityPulseIntervalMs = 21_600_000;
 export const terminalDispositionSourceRepairInstruction =
-  "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Keep source-layout normalization separate from product-contract adjudication: when the existing behavior, assertions, and disputed expectation can be preserved unchanged while moving a plain carrier into direct .test.ts or feature lib source, normalize and integrate that source with the truthful current terminal posture, and keep the approval or escalation as independent follow-up. Wait for external authority only when it must decide how the source itself is implemented, not merely how observed product behavior is judged. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
+  "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Keep source-layout normalization separate from product-contract adjudication: when the existing behavior, assertions, and disputed expectation can be preserved unchanged while moving a plain carrier into direct .test.ts or feature lib source, normalize and integrate that source with the truthful current terminal posture, and keep the approval or escalation as independent follow-up. Wait for external authority only when it must decide how the source itself is implemented, not merely how observed product behavior is judged. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-agent merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-agent only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
 export const acceptedLiveProofSourceInstruction =
   "When this exact run proves the current source passes and hard live-proof validation found no structural gap, return accepted-pass without editing or committing tracked source. A checked-in ready posture, an older accepted run, or missing latestLiveResult fields is not a model defect at this point: the app projects the newly accepted proof after the task receipt is persisted. Do not rewrite the spec, model, generated views, test assertions, sourceVersion, observedAt, statusReason, nextAction, resumeCondition, evidence memo, or equivalent bookkeeping merely to record this successful run. Return committed only when the run exposes an actual behavior or contract defect that requires changed source and a fresh exact run, and cite that defect. When the run reports test_not_implemented or partial live coverage, changing only diagnostics, messages, metadata, or static checks is not a runnable repair: implement the missing live behavior before setting liveReady=true, or return the truthful terminal disposition, exact external wait, or ownership escalation.";
 export const semanticClaimEvidenceInstruction =
@@ -76,7 +76,7 @@ export const directVitestCompatibilityInstruction =
 export const exactStrictInventoryInstruction =
   "The repository-wide strict inventory is expected to exit nonzero while other rows remain. Capture and parse its JSON anyway; this leaf is clear only when its exact legacy path is absent from both guard.remainingSpecReferencedPlainScenarioUnits and guard.remainingRepoPlainScenarioFiles.";
 export const currentAdoSurfaceInstruction =
-  "Do not treat uncertainty about a secret or variable on the current ADO execution surface as proof of a blocker. Missing-input evidence from an older backend, different source commit, or different target is context only. When hard admission checks pass and no exact current-surface observation proves the input unavailable, set liveReady=true so this workflow can dispatch the bounded run and collect the current fact. Use a wait or needs-owner only after exact current evidence identifies the unavailable input, its producer, and the observable resume condition.";
+  "Do not treat uncertainty about a secret or variable on the current ADO execution surface as proof of a blocker. Missing-input evidence from an older backend, different source commit, or different target is context only. When hard admission checks pass and no exact current-surface observation proves the input unavailable, set liveReady=true so this workflow can dispatch the bounded run and collect the current fact. Use a wait or needs-agent only after exact current evidence identifies the unavailable input, its producer, and the observable resume condition.";
 export const transientRetryDiagnosisInstruction =
   "Do not trust a result's blocked/error category or environment/transient label as the diagnosis. A timeout, generic ARM failure, incomplete provisioning state, or successful cleanup alone does not prove that an unchanged retry is truthful. Before retry-transient, inspect the exact task source and failure-stage evidence for deterministic ordering, identity, authorization, configuration, and API-contract mistakes, and state affirmative evidence that excludes those causes. When the available evidence cannot distinguish a provider incident from a source defect, improve the carrier's failure diagnostics or return one exact observable wait; do not guess transient.";
 export const scenarioQualityRepairInstruction =
@@ -171,8 +171,8 @@ function taskDescription(ctx: WorkflowContext): string {
   return JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2);
 }
 
-function taskOwner(ctx: WorkflowContext): string {
-  return ctx.reconciliation?.owner ?? "aks-explorer";
+function taskAgent(ctx: WorkflowContext): string {
+  return ctx.reconciliation?.agent ?? "aks-explorer";
 }
 
 type PipelineRun = {
@@ -217,9 +217,7 @@ export function completedPullRequestIntegration(input: {
   | {
       status: "unproven";
       reason:
-        | "merge-not-succeeded"
-        | "source-mismatch"
-        | "merge-commit-missing";
+        "merge-not-succeeded" | "source-mismatch" | "merge-commit-missing";
     } {
   if (input.mergeStatus !== "succeeded") {
     return { status: "unproven", reason: "merge-not-succeeded" };
@@ -241,7 +239,7 @@ type AgentDecision = {
     | "retry-transient"
     | "terminal-disposition"
     | "waiting"
-    | "needs-owner";
+    | "needs-agent";
   summary: string;
   evidence: string[];
   liveReady?: boolean;
@@ -492,7 +490,7 @@ export function preparationDecisionProblem(
     }
     return null;
   }
-  if (["waiting", "needs-owner"].includes(decision.decision)) {
+  if (["waiting", "needs-agent"].includes(decision.decision)) {
     return null;
   }
   if (decision.decision === "terminal-disposition") {
@@ -505,7 +503,7 @@ export function preparationDecisionProblem(
     return null;
   }
   return allowExistingRecovery || allowAuthoritativePass
-    ? "preparation must return committed, test-current, accepted-pass from exact recovery/current-source proof, waiting, or needs-owner"
+    ? "preparation must return committed, test-current, accepted-pass from exact recovery/current-source proof, waiting, or needs-agent"
     : "preparation cannot accept a prior run as proof for the rewritten source; return test-current to dispatch it, commit a repair, wait on an exact fact, or identify a genuine ownership boundary";
 }
 
@@ -530,7 +528,7 @@ export function exactPassNeedsOwnerProblem(
   decision: AgentDecision,
   allowTerminalDisposition = true,
 ): string | null {
-  if (decision.decision !== "needs-owner") {
+  if (decision.decision !== "needs-agent") {
     return null;
   }
   const judgmentText = [decision.summary, ...decision.evidence]
@@ -568,7 +566,7 @@ export function exactPassNeedsOwnerProblem(
     );
   if (internalSourceGap || verifiedDirtyRepair) {
     const reason = internalSourceGap || "verified dirty repair";
-    return `needs-owner cannot defer a confirmed internal source gap (${reason}); keep the bounded repair in this workflow even when terminal disposition is available`;
+    return `needs-agent cannot defer a confirmed internal source gap (${reason}); keep the bounded repair in this workflow even when terminal disposition is available`;
   }
   if (allowTerminalDisposition) return null;
   const requiredEvidencePrefixes = [
@@ -581,7 +579,7 @@ export function exactPassNeedsOwnerProblem(
     (prefix) => !decision.evidence.some((entry) => entry.startsWith(prefix)),
   );
   return missingPrefixes.length > 0
-    ? `needs-owner cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`
+    ? `needs-agent cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`
     : null;
 }
 
@@ -1268,9 +1266,7 @@ export function resolveLivePlanDispatch(input: {
 }): {
   planPath?: string;
   source:
-    | "livePlanPath"
-    | "postPlanPathRepairVerification.requiredPlanPath"
-    | null;
+    "livePlanPath" | "postPlanPathRepairVerification.requiredPlanPath" | null;
   evidence: string[];
 } {
   const taskInput = jsonRecord(input.taskInput);
@@ -1360,9 +1356,7 @@ export function mergeAcceptedTargetAdvanceProof(input: {
   | {
       state: "reverify";
       reason:
-        | "merge-conflict"
-        | "protected-path-changed"
-        | "merge-commit-failed";
+        "merge-conflict" | "protected-path-changed" | "merge-commit-failed";
     } {
   const merge = git(
     input.workspaceDir,
@@ -1439,7 +1433,7 @@ const decisionSchema = Type.Object({
     Type.Literal("retry-transient"),
     Type.Literal("terminal-disposition"),
     Type.Literal("waiting"),
-    Type.Literal("needs-owner"),
+    Type.Literal("needs-agent"),
   ]),
   summary: Type.String({ minLength: 1 }),
   evidence: Type.Array(Type.String({ minLength: 1 })),
@@ -2090,7 +2084,7 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
   if (!condition) {
     return decision.decision === "waiting"
       ? "decision=waiting requires one exact Condition"
-      : `decision=${decision.decision} with liveReady=false requires one exact observable Condition; use needs-owner when the app cannot observe the external boundary`;
+      : `decision=${decision.decision} with liveReady=false requires one exact observable Condition; use needs-agent when the app cannot observe the external boundary`;
   }
   if (!isTypedConditionSubject(condition.subject)) {
     return `Condition subject must be typed, not prose: ${condition.subject}`;
@@ -2165,7 +2159,7 @@ export function scenarioNormalizationWaitProblem(
       "scenario normalization cannot wait for an arbitrary repository advance",
       "a repo-ref change does not by itself repair or verify this task-owned source",
       "this workflow owns task-branch publication, current-dev replay, live dispatch, and final direct integration, so an unpublished task commit is never a blocker",
-      "return liveReady=true when the exact source is runnable, name the exact external producer that can change a real blocker, or return needs-owner for a reviewed non-runnable terminal disposition",
+      "return liveReady=true when the exact source is runnable, name the exact external producer that can change a real blocker, or return needs-agent for a reviewed non-runnable terminal disposition",
     ].join("; ");
   }
   if (condition?.type !== "pipeline.spec.observed") return null;
@@ -3857,9 +3851,9 @@ function pullRequestReviewJudgmentProblem(
   decision: AgentDecision,
 ): string | null {
   if (
-    !["committed", "accepted-pass", "needs-owner"].includes(decision.decision)
+    !["committed", "accepted-pass", "needs-agent"].includes(decision.decision)
   ) {
-    return "pull-request review judgment must return committed for a bounded source fix, accepted-pass when the feedback warrants no source change, or needs-owner for a concrete authority gap";
+    return "pull-request review judgment must return committed for a bounded source fix, accepted-pass when the feedback warrants no source change, or needs-agent for a concrete authority gap";
   }
   if (decision.liveReady !== undefined || decision.condition !== undefined) {
     return "pull-request review judgment must omit liveReady and condition because the workflow owns exact re-verification and the PR wait";
@@ -3886,7 +3880,7 @@ function pullRequestReviewPrompt(input: {
     `The PR targets ${input.targetRef}; review fingerprint ${input.review.fingerprint} contains ${input.review.unresolvedCount} unresolved thread(s).`,
     "Inspect the cited source and task evidence. If the feedback identifies a truthful bounded defect, fix only that defect in this task worktree, run scoped local checks, commit one clean follow-up, and return decision=committed. The workflow will push the same branch and require fresh exact live verification.",
     "If the feedback is already satisfied, inaccurate, or purely informational, leave source unchanged and return decision=accepted-pass with concrete evidence explaining why. The workflow will preserve the unresolved thread for explicit reviewer or human resolution; do not mark a thread resolved without proof.",
-    "Return decision=needs-owner only for a concrete authority gap that source inspection cannot resolve. Do not create a branch, worktree, PR, task, or ADO run; do not push, merge, comment on, or resolve the PR.",
+    "Return decision=needs-agent only for a concrete authority gap that source inspection cannot resolve. Do not create a branch, worktree, PR, task, or ADO run; do not push, merge, comment on, or resolve the PR.",
     "Review threads:",
     threads ||
       "- structured review text unavailable; inspect the PR and cited source directly",
@@ -4300,9 +4294,7 @@ export function supersededQueuedTaskRuns(
 }
 
 export type PriorVerificationRunDisposition =
-  | "exact"
-  | "invalidated-lineage-context"
-  | "mismatch";
+  "exact" | "invalidated-lineage-context" | "mismatch";
 
 export function runMatchesPriorVerification(
   run: PipelineRun,
@@ -5409,7 +5401,7 @@ export function decisionCorrectionPrompt(input: {
       "Your immediately preceding structured result failed a hard invariant.",
       `Validation finding: ${input.problem}.`,
       "Continue this same bounded task from current hot evidence. Re-evaluate the prior judgment and perform any source diagnosis, repair, and local checks allowed by the original instructions when the finding proves they are necessary.",
-      "Source-first completion guard: when the invalid result or validation finding already diagnoses a bounded source repair and this is an isolated task worktree, perform that mutation and its narrow verification now, before any repeated broad investigation. Reuse the cited paths and hot evidence; spend at most four read-only investigation/tool operations before the first source mutation. Work remaining is not by itself a needs-owner boundary. If current evidence instead proves genuine ownership ambiguity or an external authority boundary, return that structured exceptional judgment without unsafe mutation.",
+      "Source-first completion guard: when the invalid result or validation finding already diagnoses a bounded source repair and this is an isolated task worktree, perform that mutation and its narrow verification now, before any repeated broad investigation. Reuse the cited paths and hot evidence; spend at most four read-only investigation/tool operations before the first source mutation. Work remaining is not by itself a needs-agent boundary. If current evidence instead proves genuine ownership ambiguity or an external authority boundary, return that structured exceptional judgment without unsafe mutation.",
       "Do not queue provider work or create another task; the workflow still owns dispatch after a valid result.",
       `Invalid prior structured result:\n${JSON.stringify(input.decision, null, 2)}`,
     ].join("\n\n");
@@ -5433,20 +5425,20 @@ export function taskWorktreeRecoveryDecisionProblem(
   } = {},
 ): string | null {
   if (
-    !["committed", "test-current", "needs-owner"].includes(decision.decision)
+    !["committed", "test-current", "needs-agent"].includes(decision.decision)
   ) {
-    return "task worktree recovery must return committed for preserved task work, test-current for removed task residue, or needs-owner for concrete ownership ambiguity; domain disposition is evaluated after recovery";
+    return "task worktree recovery must return committed for preserved task work, test-current for removed task residue, or needs-agent for concrete ownership ambiguity; domain disposition is evaluated after recovery";
   }
   if (decision.liveReady !== undefined || decision.condition !== undefined) {
     return "task worktree recovery only restores a clean source state; omit liveReady and condition because domain readiness and dispatch are evaluated after recovery";
   }
-  if (decision.decision !== "needs-owner") {
+  if (decision.decision !== "needs-agent") {
     return context.workspaceDirty
       ? "task worktree recovery cannot complete while the task worktree remains dirty; commit verified task work or remove only verified task-generated residue"
       : null;
   }
   if (context.ownershipEstablished) {
-    return "needs-owner is invalid because task/worktree ownership is established; dirty technical repair remains in this workflow until committed or proven task-generated residue is removed";
+    return "needs-agent is invalid because task/worktree ownership is established; dirty technical repair remains in this workflow until committed or proven task-generated residue is removed";
   }
   const checkpointPath = nonEmptyString(context.authoritativeCheckpointPath);
   const sourceCommit = nonEmptyString(context.sourceCommit);
@@ -5465,7 +5457,7 @@ export function taskWorktreeRecoveryDecisionProblem(
     !/^[0-9a-f]{40}$/i.test(sourceCommit) ||
     missing.length
   ) {
-    return `needs-owner requires concrete ownership ambiguity plus the authoritative current source/run handoff checkpoint; missing ${[
+    return `needs-agent requires concrete ownership ambiguity plus the authoritative current source/run handoff checkpoint; missing ${[
       ...(!checkpointPath ? ["authoritative checkpoint path"] : []),
       ...(!/^[0-9a-f]{40}$/i.test(sourceCommit)
         ? ["exact authoritative source commit"]
@@ -5500,7 +5492,7 @@ export function taskWorktreeRecoveryDeadlineDecision(input: {
     };
   }
   return {
-    decision: "needs-owner",
+    decision: "needs-agent",
     summary: input.ownershipEstablished
       ? `The ${input.phase} deadline boundary refused to hand off dirty task-owned recovery.`
       : `The ${input.phase} deadline boundary preserved a dirty worktree whose ownership is ambiguous.`,
@@ -5614,7 +5606,7 @@ export async function askAgent(
       projectDir: ctx.workspace!.projectRoot,
       cwd: ctx.workspace!.root,
     });
-    const result = await ctx.agents.call(taskOwner(ctx), nextPrompt, {
+    const result = await ctx.agents.call(taskAgent(ctx), nextPrompt, {
       timeoutMs,
       operationAllowance: specLiveAgentOperationAllowance,
       schema: decisionSchema,
@@ -5688,13 +5680,13 @@ function waitingResult(
   });
 }
 
-function ownerResult(
+function agentResult(
   ctx: WorkflowContext,
   summary: string,
   evidence: string[],
 ): SpecLiveWorkflowResult {
   return ctx.done(summary, {
-    state: "needs-owner",
+    state: "needs-agent",
     summary,
     evidence: boundedWorkflowEvidence(evidence),
   });
@@ -5742,7 +5734,7 @@ async function reconcileNoIntegrationDiagnostic(
   } = input;
   const aggregateSpecId = contract.specIds.join(",");
   if (target !== defaultLiveTarget || standaloneBuildId) {
-    return ownerResult(
+    return agentResult(
       ctx,
       "No-integration diagnostics are narrowly limited to the shared staging target.",
       [
@@ -5752,7 +5744,7 @@ async function reconcileNoIntegrationDiagnostic(
     );
   }
   if (cleanWorkspace(workspaceDir)) {
-    return ownerResult(
+    return agentResult(
       ctx,
       "No-integration diagnostic refused a dirty workflow-owned worktree.",
       [`workspace:${workspaceDir}`],
@@ -5760,14 +5752,14 @@ async function reconcileNoIntegrationDiagnostic(
   }
   const restored = restoreExactDiagnosticSource(workspaceDir, contract);
   if (!restored.accepted) {
-    return ownerResult(
+    return agentResult(
       ctx,
       `Could not restore the exact prepared diagnostic source: ${restored.problem}.`,
       restored.evidence,
     );
   }
   if (cleanWorkspace(workspaceDir)) {
-    return ownerResult(
+    return agentResult(
       ctx,
       "Exact diagnostic source restoration left the workflow-owned worktree dirty.",
       [...restored.evidence, `workspace:${workspaceDir}`],
@@ -5794,7 +5786,7 @@ async function reconcileNoIntegrationDiagnostic(
   let run = runs[0];
   if (!run) {
     if (contract.reproductionConsumed >= contract.maxReproductions) {
-      return ownerResult(
+      return agentResult(
         ctx,
         "The single diagnostic reproduction budget is already consumed; no retry or replacement run was created.",
         [
@@ -5807,7 +5799,7 @@ async function reconcileNoIntegrationDiagnostic(
     }
     const admission = checkLiveDispatchAdmission(workspaceDir, aggregateSpecId);
     if (!admission.accepted) {
-      return ownerResult(
+      return agentResult(
         ctx,
         "The exact prepared diagnostic source failed hard live-dispatch admission; it was not rewritten or queued.",
         [
@@ -5822,7 +5814,7 @@ async function reconcileNoIntegrationDiagnostic(
       contract,
     );
     if (!publication.accepted) {
-      return ownerResult(
+      return agentResult(
         ctx,
         `The exact prepared diagnostic task branch could not be published safely: ${publication.problem}.`,
         [
@@ -5911,7 +5903,7 @@ async function reconcileNoIntegrationDiagnostic(
     "target-ref-advance:not-attempted",
   ];
   if (resultPaths.length !== contract.specIds.length || !cleanupPaths.length) {
-    return ownerResult(
+    return agentResult(
       ctx,
       "The sole terminal diagnostic run lacks both declared per-spec results or structural cleanup evidence; no retry is permitted.",
       [
@@ -5964,7 +5956,7 @@ async function reconcileNoIntegrationDiagnostic(
     cleanupPaths,
   });
   if (decision.decision !== "accepted-pass" || artifactProblem) {
-    return ownerResult(ctx, artifactProblem || decision.summary, [
+    return agentResult(ctx, artifactProblem || decision.summary, [
       ...evidence,
       ...decision.evidence,
     ]);
@@ -6012,14 +6004,13 @@ export async function reconcileSpecLive(
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
   const normalizationInput = payload?.input as
-    | ScenarioNormalizationInput
-    | undefined;
+    ScenarioNormalizationInput | undefined;
   const allowTerminalDisposition =
     options.allowTerminalDisposition ??
     payload?.input?.allowTerminalDisposition !== false;
   const liveSpecIdSelection = resolveLiveSpecIdSelection(payload?.input);
   if (liveSpecIdSelection.accepted === false) {
-    return ownerResult(ctx, liveSpecIdSelection.problem, [
+    return agentResult(ctx, liveSpecIdSelection.problem, [
       `task:${taskId || "missing"}`,
       `audit-spec-ids:${liveSpecIdSelection.auditSpecIds.join(",") || "none"}`,
       "live-spec-id-selection:rejected",
@@ -6034,7 +6025,7 @@ export async function reconcileSpecLive(
     livePlanDispatch.planPath &&
     !mergeSafeScenarioAggregatePath(livePlanDispatch.planPath)
   ) {
-    return ownerResult(
+    return agentResult(
       ctx,
       `${livePlanDispatch.source || "livePlanPath"} must name a feature compact staging plan.`,
       [`task:${taskId || "missing"}`, ...livePlanDispatch.evidence],
@@ -6048,7 +6039,7 @@ export async function reconcileSpecLive(
     expectedVitestTestCountRaw !== undefined &&
     (!Number.isInteger(expectedVitestTestCount) || expectedVitestTestCount < 1)
   ) {
-    return ownerResult(
+    return agentResult(
       ctx,
       "expectedVitestTestCount must be a positive integer when declared.",
       [
@@ -6061,7 +6052,7 @@ export async function reconcileSpecLive(
   try {
     liveExecution = resolveLiveExecutionTarget(payload?.input);
   } catch (error) {
-    return ownerResult(
+    return agentResult(
       ctx,
       error instanceof Error ? error.message : String(error),
       [`task:${taskId || "missing"}`, `spec:${specId || "missing"}`],
@@ -6108,14 +6099,14 @@ export async function reconcileSpecLive(
     generation < 1 ||
     workspaceDir === repoDir
   ) {
-    return ownerResult(
+    return agentResult(
       ctx,
       `${name} requires a task id, generation, specId, and prepared task worktree.`,
       [`task:${taskId || "missing"}`, `spec:${specId || "missing"}`],
     );
   }
   if (priorVerificationInput.problem) {
-    return ownerResult(
+    return agentResult(
       ctx,
       `The task declares an invalid prior verification reference: ${priorVerificationInput.problem}.`,
       [`task:${taskId}`, `spec:${specId}`],
@@ -6126,7 +6117,7 @@ export async function reconcileSpecLive(
     otherwisePreparedSourceCommit &&
     acceptedSourceCommit !== otherwisePreparedSourceCommit
   ) {
-    return ownerResult(
+    return agentResult(
       ctx,
       "The task's acceptedSourceCommit conflicts with another prepared source commit.",
       [
@@ -6138,7 +6129,7 @@ export async function reconcileSpecLive(
 
   const diagnostic = noIntegrationDiagnosticContract(payload?.input);
   if (diagnostic.problem) {
-    return ownerResult(
+    return agentResult(
       ctx,
       `Invalid no-integration diagnostic contract: ${diagnostic.problem}.`,
       [`task:${taskId}`, `spec:${specId}`, "integration:not-attempted"],
@@ -6157,14 +6148,14 @@ export async function reconcileSpecLive(
 
   const historyOnly = historyOnlyAncestryInput(payload?.input);
   if (historyOnly.problem) {
-    return ownerResult(ctx, historyOnly.problem, [
+    return agentResult(ctx, historyOnly.problem, [
       `task:${taskId}`,
       "integration-strategy:rejected",
     ]);
   }
   if (historyOnly.contract) {
     if (integrationMode(targetBranch) !== "direct") {
-      return ownerResult(
+      return agentResult(
         ctx,
         "history-only-ancestry is restricted to direct dev integration.",
         [`task:${taskId}`, `target-ref:${targetRef}`],
@@ -6197,7 +6188,7 @@ export async function reconcileSpecLive(
         integration.state === "requires-replay"
           ? integration.state
           : integration.error;
-      return ownerResult(
+      return agentResult(
         ctx,
         "History-only ancestry integration did not publish a proven direct-dev result.",
         [
@@ -6263,7 +6254,7 @@ export async function reconcileSpecLive(
       : [];
     if (invalidatedRunId || invalidatedClaimIds.length > 0) {
       if (!invalidatedRunId || invalidatedClaimIds.length === 0) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Semantic proof invalidation requires both invalidatedRunId and invalidatedClaimIds.",
           [
@@ -6290,7 +6281,7 @@ export async function reconcileSpecLive(
         invalidatedSpecId !== specId ||
         invalidatedTarget !== liveTarget
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Invalidated run ${invalidatedRunId} does not identify the exact ${specId} ${liveTarget} source.`,
           [
@@ -6335,7 +6326,7 @@ export async function reconcileSpecLive(
             ),
           ]);
       if (!invalidatedSourcePaths.length) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Semantic proof invalidation could not resolve an exact spec or carrier source path.",
           [
@@ -6417,7 +6408,7 @@ export async function reconcileSpecLive(
           )
         : "mismatch";
       if (!priorRun || priorRunDisposition === "mismatch") {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Prior verification run ${priorVerificationRunId} does not match the task's exact spec, source, target, and standalone build context.`,
           [
@@ -6467,7 +6458,7 @@ export async function reconcileSpecLive(
       "HEAD",
     ]).stdout;
     if (!sourceBranch) {
-      return ownerResult(
+      return agentResult(
         ctx,
         "Task worktree is detached from its source branch.",
         [`workspace:${workspaceDir}`],
@@ -6493,7 +6484,7 @@ export async function reconcileSpecLive(
         );
         preparedSourceEvidence = prepared.evidence;
         if (prepared.state === "failed") {
-          return ownerResult(
+          return agentResult(
             ctx,
             `Could not load the task's required prepared source: ${prepared.error}.`,
             prepared.evidence,
@@ -6554,7 +6545,7 @@ export async function reconcileSpecLive(
             true,
           ).status !== 0
         ) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "Prepared source reconciliation did not leave one clean source containing the required commit.",
             [
@@ -6580,7 +6571,7 @@ export async function reconcileSpecLive(
       baselineCommit: payload?.input?.baselineCommit,
     });
     if (!retainedWorkspaceMaterialization.accepted) {
-      return ownerResult(
+      return agentResult(
         ctx,
         `Could not materialize the prior retained workspace: ${retainedWorkspaceMaterialization.problem || "unknown error"}.`,
         [
@@ -6602,8 +6593,8 @@ export async function reconcileSpecLive(
           "If the changes are a valid bounded continuation, finish scoped checks, commit them, leave the worktree clean, and return decision=committed.",
           "If they are invalid or obsolete task-generated residue, remove only that residue, leave the worktree clean at its prior commit, and return decision=test-current.",
           "This recovery phase only restores a clean source state. Omit liveReady and condition; after recovery, this workflow separately evaluates whether the exact source is runnable and owns any ADO dispatch.",
-          "Do not push, queue ADO, create a PR, edit app task state, or discard work whose ownership cannot be established. A technical failure is not ownership ambiguity: when this dedicated task branch establishes ownership, keep repairing until the source is clean instead of returning needs-owner.",
-          `Only if ownership is genuinely ambiguous may you return needs-owner. In that case cite ownership-ambiguity:<exact fact>, authoritative-checkpoint:${currentTaskContextPath(contextDir)}, and authoritative-source-commit:<current HEAD>; the checkpoint pointer must identify the current source/run handoff so a replacement owner can resume safely.`,
+          "Do not push, queue ADO, create a PR, edit app task state, or discard work whose ownership cannot be established. A technical failure is not ownership ambiguity: when this dedicated task branch establishes ownership, keep repairing until the source is clean instead of returning needs-agent.",
+          `Only if ownership is genuinely ambiguous may you return needs-agent. In that case cite ownership-ambiguity:<exact fact>, authoritative-checkpoint:${currentTaskContextPath(contextDir)}, and authoritative-source-commit:<current HEAD>; the checkpoint pointer must identify the current source/run handoff so a replacement owner can resume safely.`,
           "Task:",
           taskDescription(ctx),
         ].join("\n\n"),
@@ -6640,12 +6631,12 @@ export async function reconcileSpecLive(
             }),
         },
       );
-      if (recovery.decision === "needs-owner") {
-        return ownerResult(ctx, recovery.summary, recovery.evidence);
+      if (recovery.decision === "needs-agent") {
+        return agentResult(ctx, recovery.summary, recovery.evidence);
       }
       const afterRecovery = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (cleanWorkspace(workspaceDir)) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Task worktree recovery did not leave a clean, resumable source state.",
           [...recovery.evidence, `workspace:${workspaceDir}`],
@@ -6655,7 +6646,7 @@ export async function reconcileSpecLive(
         recovery.decision === "committed" &&
         afterRecovery === beforeRecovery
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Task worktree recovery reported a commit but HEAD did not move.",
           recovery.evidence,
@@ -6720,7 +6711,7 @@ export async function reconcileSpecLive(
         baseRef: dispatchBaseRef,
       });
       if (admission.accepted) return null;
-      return ownerResult(
+      return agentResult(
         ctx,
         `Fresh-base lineage refused ${operation} for ${specId}; replay only this task's bounded changes onto the freshly fetched authority and resume the same task through ${name}.`,
         [
@@ -6809,8 +6800,8 @@ export async function reconcileSpecLive(
             "Continue this same task. For a carrier/spec defect, make the smallest repair, run the same checks plus scoped tests, commit it, leave the worktree clean, and return decision=committed.",
             directVitestCompatibilityInstruction,
             "Unsupported product behavior is not automatically nonlive. If the public API exposes an observable rejection or no-op contract, implement a truthful live negative test for that behavior.",
-            "A source-only check is diagnostic evidence, not completion. If no truthful staging-observable contract exists, return one exact external wait or needs-owner with the concrete ownership boundary; do not mark the task complete.",
-            "Use waiting only for one exact externally observable condition and needs-owner only for a genuine ownership-boundary decision. Do not push, queue ADO, create another task, or edit app state.",
+            "A source-only check is diagnostic evidence, not completion. If no truthful staging-observable contract exists, return one exact external wait or needs-agent with the concrete ownership boundary; do not mark the task complete.",
+            "Use waiting only for one exact externally observable condition and needs-agent only for a genuine ownership-boundary decision. Do not push, queue ADO, create another task, or edit app state.",
             "Task:",
             taskDescription(ctx),
           ].join("\n\n"),
@@ -6841,10 +6832,10 @@ export async function reconcileSpecLive(
             ),
           };
         }
-        if (decision.decision === "needs-owner") {
+        if (decision.decision === "needs-agent") {
           return {
             state: "result",
-            result: ownerResult(ctx, decision.summary, [
+            result: agentResult(ctx, decision.summary, [
               ...accumulatedEvidence,
               ...decision.evidence,
             ]),
@@ -6853,7 +6844,7 @@ export async function reconcileSpecLive(
         if (decision.decision !== "committed") {
           return {
             state: "result",
-            result: ownerResult(
+            result: agentResult(
               ctx,
               `Live-dispatch admission repair returned unsupported decision ${decision.decision}.`,
               [...accumulatedEvidence, ...decision.evidence],
@@ -6865,7 +6856,7 @@ export async function reconcileSpecLive(
         if (currentCommit === beforeRepair || cleanWorkspace(workspaceDir)) {
           return {
             state: "result",
-            result: ownerResult(
+            result: agentResult(
               ctx,
               "Live-dispatch admission repair did not leave one new clean task commit.",
               [...accumulatedEvidence, ...decision.evidence],
@@ -6877,7 +6868,7 @@ export async function reconcileSpecLive(
 
       return {
         state: "result",
-        result: ownerResult(
+        result: agentResult(
           ctx,
           "Live-dispatch admission remained red after three bounded domain repair iterations.",
           accumulatedEvidence,
@@ -6938,7 +6929,7 @@ export async function reconcileSpecLive(
           if (replay.state === "error") {
             return {
               state: "result",
-              result: ownerResult(
+              result: agentResult(
                 ctx,
                 `Could not replay ${specId} onto its fresh dispatch base before publication: ${replay.error}.`,
                 evidence,
@@ -7016,7 +7007,7 @@ export async function reconcileSpecLive(
           if (!postReplayAdmission.accepted) {
             return {
               state: "result",
-              result: ownerResult(
+              result: agentResult(
                 ctx,
                 `Fresh-base lineage refused publication for ${specId} after replay; resume the same task through ${name}.`,
                 [
@@ -7045,7 +7036,7 @@ export async function reconcileSpecLive(
           if (push.status !== 0) {
             return {
               state: "result",
-              result: ownerResult(
+              result: agentResult(
                 ctx,
                 `Could not publish the fresh-base replay for ${specId} without replacing concurrent task-branch work.`,
                 [
@@ -7084,7 +7075,7 @@ export async function reconcileSpecLive(
         if (!isNonFastForwardPushFailure(push)) {
           return {
             state: "result",
-            result: ownerResult(
+            result: agentResult(
               ctx,
               `Could not publish the current task branch for ${specId}.`,
               [
@@ -7107,7 +7098,7 @@ export async function reconcileSpecLive(
         if (history.state === "failed") {
           return {
             state: "result",
-            result: ownerResult(
+            result: agentResult(
               ctx,
               `Could not reconcile divergent task-branch history for ${specId}.`,
               [...evidence, `branch-history-error:${history.error}`],
@@ -7161,7 +7152,7 @@ export async function reconcileSpecLive(
         if (cleanWorkspace(workspaceDir)) {
           return {
             state: "result",
-            result: ownerResult(
+            result: agentResult(
               ctx,
               "Task-branch history reconciliation left the worktree dirty.",
               [...evidence, `workspace:${workspaceDir}`],
@@ -7177,7 +7168,7 @@ export async function reconcileSpecLive(
         ) {
           return {
             state: "result",
-            result: ownerResult(
+            result: agentResult(
               ctx,
               "Task-branch history reconciliation did not preserve the remote task branch.",
               [
@@ -7200,7 +7191,7 @@ export async function reconcileSpecLive(
 
       return {
         state: "result",
-        result: ownerResult(
+        result: agentResult(
           ctx,
           `Could not publish ${specId} after three task-branch history reconciliations.`,
           [
@@ -7262,7 +7253,7 @@ export async function reconcileSpecLive(
           if (replay.state === "error") {
             return {
               state: "result",
-              result: ownerResult(
+              result: agentResult(
                 ctx,
                 `Could not replay ${specId} onto current ${targetRef} before live dispatch: ${replay.error}.`,
                 dispatchEvidence,
@@ -7355,7 +7346,7 @@ export async function reconcileSpecLive(
           if (push.status !== 0) {
             return {
               state: "result",
-              result: ownerResult(
+              result: agentResult(
                 ctx,
                 `Could not publish the replayed source for ${specId} without replacing concurrent task-branch work.`,
                 [
@@ -7465,7 +7456,7 @@ export async function reconcileSpecLive(
 
       return {
         state: "result",
-        result: ownerResult(
+        result: agentResult(
           ctx,
           `Current ${targetRef} kept advancing while ${specId} was replayed; no stale live run was queued.`,
           [
@@ -7483,7 +7474,7 @@ export async function reconcileSpecLive(
       reviewedRunId = "",
     ): Promise<SpecLiveWorkflowResult> => {
       if (!allowTerminalDisposition) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Terminal disposition was refused because this task requires exact passing live proof.",
           [
@@ -7609,7 +7600,7 @@ export async function reconcileSpecLive(
         );
         beforeIntegration = validateCurrentSource();
         if (beforeIntegration.problem) {
-          return ownerResult(
+          return agentResult(
             ctx,
             `Replayed terminal writeback failed current-source validation: ${beforeIntegration.problem}.`,
             [
@@ -7622,14 +7613,14 @@ export async function reconcileSpecLive(
         }
       }
       if (beforeIntegration.problem) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Terminal disposition was not applicable: ${beforeIntegration.problem}.`,
           [...decision.evidence, ...beforeIntegration.evidence],
         );
       }
       if (integrationMode(targetBranch) !== "direct") {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Terminal spec disposition requires direct dev integration.",
           [...decision.evidence, `target-ref:${targetRef}`],
@@ -7734,7 +7725,7 @@ export async function reconcileSpecLive(
         candidateCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
         const afterConflict = validateCurrentSource();
         if (afterConflict.problem) {
-          return ownerResult(
+          return agentResult(
             ctx,
             `Resolved terminal-disposition source failed revalidation: ${afterConflict.problem}.`,
             [
@@ -7761,7 +7752,7 @@ export async function reconcileSpecLive(
             : integration.state === "requires-replay"
               ? `replay remained unresolved (${integration.reason})`
               : integration.error;
-        return ownerResult(
+        return agentResult(
           ctx,
           "Could not directly integrate the reviewed terminal spec disposition into dev.",
           [
@@ -7784,7 +7775,7 @@ export async function reconcileSpecLive(
           true,
         ).status !== 0
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Reviewed terminal source is not reachable from current dev after integration.",
           [
@@ -7800,7 +7791,7 @@ export async function reconcileSpecLive(
         true,
       );
       if (refresh.status !== 0) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Could not refresh the terminal-disposition task worktree to current dev for final validation.",
           [
@@ -7813,7 +7804,7 @@ export async function reconcileSpecLive(
       }
       const finalValidation = validateCurrentSource();
       if (finalValidation.problem) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Current dev failed terminal-disposition validation after integration: ${finalValidation.problem}.`,
           [...decision.evidence, ...finalValidation.evidence],
@@ -7912,7 +7903,7 @@ export async function reconcileSpecLive(
         recordedFirstParentMergeCount: recordedFirstParentMerges.length,
       });
       if (!sourceIsInTarget && !/^[0-9a-f]{40}$/i.test(recordedTaskBase)) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Scenario normalization cannot replay a stale task branch without its exact recorded origin/dev base.",
           [
@@ -7933,7 +7924,7 @@ export async function reconcileSpecLive(
             true,
           ).status !== 0)
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "The recorded scenario-normalization base is not an ancestor of the task branch, so task-owned commits cannot be isolated safely.",
           [
@@ -7967,7 +7958,7 @@ export async function reconcileSpecLive(
         })
       ) {
         if (!sourceBranch.startsWith("task/")) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "Scenario normalization replay may update only its dedicated task branch.",
             [`source-branch:${sourceBranch}`, `task:${taskId}`],
@@ -7975,7 +7966,7 @@ export async function reconcileSpecLive(
         }
         const cherry = git(workspaceDir, ["cherry", targetRef, "HEAD"], true);
         if (cherry.status !== 0) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "Scenario normalization replay could not distinguish task patches from changes already integrated into the current target.",
             [
@@ -8027,7 +8018,7 @@ export async function reconcileSpecLive(
             { scenarioNormalization: true },
           );
           if (decision.decision !== "committed") {
-            return ownerResult(ctx, decision.summary, [
+            return agentResult(ctx, decision.summary, [
               ...replayEvidence,
               ...decision.evidence,
             ]);
@@ -8041,7 +8032,7 @@ export async function reconcileSpecLive(
           git(workspaceDir, ["rev-parse", "--verify", "CHERRY_PICK_HEAD"], true)
             .status === 0
         ) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "Scenario normalization replay did not leave one clean completed task lineage.",
             [...replayEvidence, `workspace:${workspaceDir}`],
@@ -8104,8 +8095,8 @@ export async function reconcileSpecLive(
           taskScopedAgentCondition(taskId, generation, decision.condition),
         );
       }
-      if (decision.decision === "needs-owner") {
-        return ownerResult(ctx, decision.summary, decision.evidence);
+      if (decision.decision === "needs-agent") {
+        return agentResult(ctx, decision.summary, decision.evidence);
       }
       sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (
@@ -8113,7 +8104,7 @@ export async function reconcileSpecLive(
         sourceCommit === beforeNormalization ||
         cleanWorkspace(workspaceDir)
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Scenario normalization did not leave one new clean task commit.",
           decision.evidence,
@@ -8124,7 +8115,7 @@ export async function reconcileSpecLive(
         normalizationInput,
       );
       if (afterNormalization?.stillListed) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Scenario normalization commit still fails the exact strict inventory invariant.",
           [
@@ -8180,7 +8171,7 @@ export async function reconcileSpecLive(
             true,
           ).status !== 0
         ) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "The PR source branch changed non-fast-forward outside this task; owner review is required before replacing task history.",
             [
@@ -8283,7 +8274,7 @@ export async function reconcileSpecLive(
     ) {
       const adoptionProblem = await adoptExistingRun(authoritativeRetryRun);
       if (adoptionProblem) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Task-designated retry ${priorVerificationRunId} ${adoptionProblem}.`,
           [`pipeline-run:${priorVerificationRunId}`],
@@ -8310,7 +8301,7 @@ export async function reconcileSpecLive(
           sourceCommit: authoritativeReference.sourceCommit,
         })
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Authoritative run ${authoritativeReference.runId} does not match the exact same-spec same-source proof contract for this task source.`,
           [
@@ -8327,7 +8318,7 @@ export async function reconcileSpecLive(
       }
       const adoptionProblem = await adoptExistingRun(authoritativeRun);
       if (adoptionProblem) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Authoritative run ${authoritativeReference.runId} ${adoptionProblem}.`,
           [
@@ -8340,7 +8331,7 @@ export async function reconcileSpecLive(
     } else if (latestRun) {
       const adoptionProblem = await adoptExistingRun(latestRun);
       if (adoptionProblem) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Existing exact task-generation run ${nonEmptyString(latestRun.id) || "unknown"} ${adoptionProblem}.`,
           [
@@ -8381,7 +8372,7 @@ export async function reconcileSpecLive(
         directVitestCompatibilityInstruction,
         currentAdoSurfaceInstruction,
         "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
-        "For committed or test-current, separately set liveReady=true only when this exact source may be sent to ADO now. If source is prepared but an external fact still prevents execution, set liveReady=false and include one exact observable Condition. If this app cannot observe the required fact, return needs-owner instead. Never treat a commit as permission to run.",
+        "For committed or test-current, separately set liveReady=true only when this exact source may be sent to ADO now. If source is prepared but an external fact still prevents execution, set liveReady=false and include one exact observable Condition. If this app cannot observe the required fact, return needs-agent instead. Never treat a commit as permission to run.",
         ...(normalizationInput && allowTerminalDisposition
           ? [terminalDispositionSourceRepairInstruction]
           : []),
@@ -8392,9 +8383,9 @@ export async function reconcileSpecLive(
           : []),
         allowTerminalDisposition
           ? "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, make the structured terminal-disposition judgment when the scenario-normalization exception above applies, or identify the genuine ownership boundary."
-          : "This task requires exact passing live proof. A product or environment failure remains an open recovery obligation: repair it or return one exact wait or genuine ownership boundary; do not use terminal-disposition as completion. When the app cannot observe a genuine external blocker, return needs-owner and name it with external-capability:<capability>, external-producer:<producer>, artifact:<evidence path>, and resume-condition:<observable fact> evidence.",
+          : "This task requires exact passing live proof. A product or environment failure remains an open recovery obligation: repair it or return one exact wait or genuine ownership boundary; do not use terminal-disposition as completion. When the app cannot observe a genuine external blocker, return needs-agent and name it with external-capability:<capability>, external-producer:<producer>, artifact:<evidence path>, and resume-condition:<observable fact> evidence.",
         "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
-        "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
+        "Use waiting only with one exact machine-observable Condition. Use needs-agent only for a concrete decision that source facts cannot resolve.",
         "Task:",
         taskDescription(ctx),
       ].join("\n\n");
@@ -8403,7 +8394,7 @@ export async function reconcileSpecLive(
         preparationResume &&
         preparationResume.sourceCommit !== sourceCommit
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Freshness-only preparation resume names ${preparationResume.sourceCommit}, but the exact task source is ${sourceCommit}.`,
           [
@@ -8453,12 +8444,12 @@ export async function reconcileSpecLive(
           taskScopedAgentCondition(taskId, generation, decision.condition),
         );
       }
-      if (decision.decision === "needs-owner") {
-        return ownerResult(ctx, decision.summary, decision.evidence);
+      if (decision.decision === "needs-agent") {
+        return agentResult(ctx, decision.summary, decision.evidence);
       }
       let after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (cleanWorkspace(workspaceDir)) {
-        return ownerResult(
+        return agentResult(
           ctx,
           "Agent preparation left the task worktree dirty; deterministic dispatch was refused.",
           [...decision.evidence, `workspace:${workspaceDir}`],
@@ -8477,7 +8468,7 @@ export async function reconcileSpecLive(
             preparationPrompt,
             "The preceding domain judgment returned decision=committed, but repository inspection proves task HEAD did not move during that judgment.",
             `Current clean task HEAD is ${correctionBaseline}. Inspect that exact source before deciding again.`,
-            "Return test-current when this existing commit is the intended source. Return committed only after leaving a genuinely newer clean commit. For either source decision, set liveReady explicitly; false requires one exact observable Condition. Return needs-owner when no app-observable condition can represent the boundary.",
+            "Return test-current when this existing commit is the intended source. Return committed only after leaving a genuinely newer clean commit. For either source decision, set liveReady explicitly; false requires one exact observable Condition. Return needs-agent when no app-observable condition can represent the boundary.",
           ].join("\n\n"),
           {
             scenarioNormalization: Boolean(normalizationInput),
@@ -8524,12 +8515,12 @@ export async function reconcileSpecLive(
             taskScopedAgentCondition(taskId, generation, decision.condition),
           );
         }
-        if (decision.decision === "needs-owner") {
-          return ownerResult(ctx, decision.summary, decision.evidence);
+        if (decision.decision === "needs-agent") {
+          return agentResult(ctx, decision.summary, decision.evidence);
         }
         after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
         if (cleanWorkspace(workspaceDir)) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "Agent preparation correction left the task worktree dirty; deterministic dispatch was refused.",
             [...decision.evidence, `workspace:${workspaceDir}`],
@@ -8599,7 +8590,7 @@ export async function reconcileSpecLive(
           ),
         });
         if (problem) {
-          return ownerResult(
+          return agentResult(
             ctx,
             `Existing recovery proof was rejected: ${problem}.`,
             decision.evidence,
@@ -8628,7 +8619,7 @@ export async function reconcileSpecLive(
       if (decision.decision === "terminal-disposition") {
         terminalDispositionDecision = decision;
       } else if (!["committed", "test-current"].includes(decision.decision)) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Unsupported preparation decision ${decision.decision}.`,
           decision.evidence,
@@ -8657,7 +8648,7 @@ export async function reconcileSpecLive(
       if (latestRun) {
         const adoptionProblem = await adoptExistingRun(latestRun);
         if (adoptionProblem) {
-          return ownerResult(
+          return agentResult(
             ctx,
             `Existing exact task-generation run ${nonEmptyString(latestRun.id) || "unknown"} ${adoptionProblem}.`,
             [
@@ -8914,7 +8905,7 @@ export async function reconcileSpecLive(
             : []),
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
           directVitestCompatibilityInstruction,
-          "When returning committed, separately set liveReady=true only if the repaired exact source may be sent to ADO now. If an external fact still prevents execution, set liveReady=false with one exact observable Condition; use needs-owner when the app cannot observe that boundary. A commit alone is not permission to rerun.",
+          "When returning committed, separately set liveReady=true only if the repaired exact source may be sent to ADO now. If an external fact still prevents execution, set liveReady=false with one exact observable Condition; use needs-agent when the app cannot observe that boundary. A commit alone is not permission to rerun.",
           transientRetryDiagnosisInstruction,
           failedRunsForCommit >= 2
             ? "The same source commit already has at least two terminal nonpassing runs. Do not request another unchanged retry; commit a fix, return an exact wait, or request owner judgment."
@@ -8967,8 +8958,8 @@ export async function reconcileSpecLive(
           taskScopedAgentCondition(taskId, generation, decision.condition),
         );
       }
-      if (decision.decision === "needs-owner") {
-        return ownerResult(ctx, decision.summary, decision.evidence);
+      if (decision.decision === "needs-agent") {
+        return agentResult(ctx, decision.summary, decision.evidence);
       }
       if (decision.decision === "terminal-disposition") {
         return applyTerminalDisposition(decision, runId);
@@ -8981,7 +8972,7 @@ export async function reconcileSpecLive(
           ),
         });
         if (standaloneTargetProblem) {
-          return ownerResult(ctx, standaloneTargetProblem, [
+          return agentResult(ctx, standaloneTargetProblem, [
             ...decision.evidence,
             `pipeline-run:${runId}`,
             `standalone-build-id:${standaloneBuildId}`,
@@ -8989,7 +8980,7 @@ export async function reconcileSpecLive(
           ]);
         }
         if (failedRunsForCommit >= 2) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "An unchanged live retry was refused after repeated nonpassing runs on the same source commit.",
             [...decision.evidence, `source-commit:${sourceCommit}`],
@@ -9043,7 +9034,7 @@ export async function reconcileSpecLive(
       if (decision.decision === "committed") {
         let nextCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
         if (nextCommit === sourceCommit || cleanWorkspace(workspaceDir)) {
-          return ownerResult(
+          return agentResult(
             ctx,
             "Agent reported a fix but did not leave one new clean task commit.",
             decision.evidence,
@@ -9091,7 +9082,7 @@ export async function reconcileSpecLive(
         );
       }
       if (decision.decision !== "accepted-pass") {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Terminal run review returned unsupported decision ${decision.decision}.`,
           decision.evidence,
@@ -9153,7 +9144,7 @@ export async function reconcileSpecLive(
       providerTaskIds,
     });
     if (!preIntegrationVerification.accepted) {
-      return ownerResult(
+      return agentResult(
         ctx,
         `Refused integration before hard live-proof validation: ${preIntegrationVerification.summary}`,
         preIntegrationVerification.evidence,
@@ -9333,7 +9324,7 @@ export async function reconcileSpecLive(
             git(workspaceDir, ["rev-parse", "HEAD"]).stdout !== judgmentHead ||
             cleanWorkspace(workspaceDir)
           ) {
-            return ownerResult(
+            return agentResult(
               ctx,
               "Target-advance proof review changed the task worktree; integration was refused.",
               [...targetAdvanceJudgment.evidence, `workspace:${workspaceDir}`],
@@ -9413,7 +9404,7 @@ export async function reconcileSpecLive(
               directScenarioNormalization &&
               mergedProof.state === "invalid"
             ) {
-              return ownerResult(
+              return agentResult(
                 ctx,
                 `Refused broad scenario replay: ${mergedProof.reason}.`,
                 mergedProof.evidence,
@@ -9432,7 +9423,7 @@ export async function reconcileSpecLive(
             });
             let refreshEvidence: string[] = [...targetAdvanceEvidence];
             if (refresh.state === "invalid") {
-              return ownerResult(
+              return agentResult(
                 ctx,
                 `Refused broad scenario refresh: ${refresh.reason}.`,
                 [...refreshEvidence, ...refresh.evidence],
@@ -9451,7 +9442,7 @@ export async function reconcileSpecLive(
                 { scenarioNormalization: true },
               );
               if (decision.decision !== "committed") {
-                return ownerResult(ctx, decision.summary, decision.evidence);
+                return agentResult(ctx, decision.summary, decision.evidence);
               }
               refreshEvidence = decision.evidence;
             } else {
@@ -9469,7 +9460,7 @@ export async function reconcileSpecLive(
               "HEAD",
             ]).stdout;
             if (cleanWorkspace(workspaceDir)) {
-              return ownerResult(
+              return agentResult(
                 ctx,
                 `Refreshing the scenario-normalization candidate from current ${targetBranch} did not leave one clean bounded commit.`,
                 refreshEvidence,
@@ -9529,14 +9520,14 @@ export async function reconcileSpecLive(
               { scenarioNormalization: false },
             );
             if (decision.decision !== "committed") {
-              return ownerResult(ctx, decision.summary, decision.evidence);
+              return agentResult(ctx, decision.summary, decision.evidence);
             }
             mergeEvidence = decision.evidence;
           }
 
           let updatedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
           if (updatedCommit === beforeMerge || cleanWorkspace(workspaceDir)) {
-            return ownerResult(
+            return agentResult(
               ctx,
               `Direct ${targetBranch} update did not leave one new clean commit.`,
               mergeEvidence,
@@ -9600,7 +9591,7 @@ export async function reconcileSpecLive(
       }
 
       if (!integratedCommit) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `Could not integrate ${specId} into current ${targetBranch} after three refreshed fast-forward attempts.`,
           [
@@ -9757,7 +9748,7 @@ export async function reconcileSpecLive(
     let reviewReadyEvidence: string[] = [];
 
     if (prStatus === "abandoned") {
-      return ownerResult(
+      return agentResult(
         ctx,
         `PR ${prId} for ${specId} was abandoned; do not silently recreate a rejected review.`,
         [
@@ -9773,7 +9764,7 @@ export async function reconcileSpecLive(
       prSourceCommit &&
       prSourceCommit !== sourceCommit
     ) {
-      return ownerResult(
+      return agentResult(
         ctx,
         `PR ${prId} currently points at ${prSourceCommit}, but the accepted live proof is for ${sourceCommit}; exact replacement proof is required before this PR can gate publication.`,
         [
@@ -9803,7 +9794,7 @@ export async function reconcileSpecLive(
         integration.status === "unproven" &&
         integration.reason === "merge-not-succeeded"
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `PR ${prId} is completed but mergeStatus=${mergeStatus}; integration cannot be proven.`,
           [`pull-request:${prId}`, `merge-status:${mergeStatus}`],
@@ -9813,7 +9804,7 @@ export async function reconcileSpecLive(
         integration.status === "unproven" &&
         integration.reason === "source-mismatch"
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `PR ${prId} merged source ${prSourceCommit}, but the accepted live proof is for ${sourceCommit}.`,
           [
@@ -9824,7 +9815,7 @@ export async function reconcileSpecLive(
         );
       }
       if (integration.status === "unproven") {
-        return ownerResult(
+        return agentResult(
           ctx,
           `PR ${prId} completed without an identifiable merged revision; integration cannot be proven.`,
           [
@@ -9842,7 +9833,7 @@ export async function reconcileSpecLive(
           true,
         ).status !== 0
       ) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `PR ${prId} reports merged revision ${integration.targetCommit}, but that revision is not present in ${targetRef}.`,
           [
@@ -9891,11 +9882,11 @@ export async function reconcileSpecLive(
         { scenarioNormalization: Boolean(normalizationInput) },
       );
       if (decision.decision !== "committed") {
-        return ownerResult(ctx, decision.summary, decision.evidence);
+        return agentResult(ctx, decision.summary, decision.evidence);
       }
       let resolvedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (resolvedCommit === sourceCommit || cleanWorkspace(workspaceDir)) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `PR ${prId} conflict repair did not leave one new clean commit.`,
           decision.evidence,
@@ -9969,8 +9960,8 @@ export async function reconcileSpecLive(
         },
       );
       reviewJudgmentEvidence = reviewDecision.evidence;
-      if (reviewDecision.decision === "needs-owner") {
-        return ownerResult(ctx, reviewDecision.summary, [
+      if (reviewDecision.decision === "needs-agent") {
+        return agentResult(ctx, reviewDecision.summary, [
           ...reviewDecision.evidence,
           `pull-request:${prId}`,
           `pull-request-review-fingerprint:${review.fingerprint}`,
@@ -9979,7 +9970,7 @@ export async function reconcileSpecLive(
       const reviewedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (reviewDecision.decision === "committed") {
         if (reviewedCommit === sourceCommit || cleanWorkspace(workspaceDir)) {
-          return ownerResult(
+          return agentResult(
             ctx,
             `Review repair for PR ${prId} did not leave one new clean commit.`,
             reviewDecision.evidence,
@@ -10021,7 +10012,7 @@ export async function reconcileSpecLive(
         );
       }
       if (reviewedCommit !== sourceCommit || cleanWorkspace(workspaceDir)) {
-        return ownerResult(
+        return agentResult(
           ctx,
           `No-change review judgment for PR ${prId} changed the task worktree; the stale wait was refused.`,
           reviewDecision.evidence,

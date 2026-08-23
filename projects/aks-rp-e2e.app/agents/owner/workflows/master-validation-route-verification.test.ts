@@ -179,7 +179,7 @@ describe("master-validation route verification workflow", () => {
     expect(
       exactPassNeedsOwnerProblem(
         {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary: "RP-proxy kubeconfig is unavailable to live execution.",
           evidence: [
             "external-capability:rp-proxy-kubeconfig",
@@ -195,7 +195,7 @@ describe("master-validation route verification workflow", () => {
     expect(
       exactPassNeedsOwnerProblem(
         {
-          decision: "needs-owner",
+          decision: "needs-agent",
           summary: "The carrier still needs implementation.",
           evidence: ["source-gap:execute-mode-not-implemented"],
         },

@@ -40,7 +40,7 @@ const inputSchema = Type.Object({
 export default defineApp({
   id: "sample",
   version: 1,
-  owner: "sample-owner",
+  agent: "sample-agent",
   inputSchema,
   task(input) {
     return {
@@ -124,7 +124,7 @@ Available capabilities are intentionally narrow:
 ## Task-Bound Workflows
 
 When `ctx.reconciliation` exists, it contains the exact task generation,
-desired input, trigger, owner, and bounded live/completed child views. It does
+desired input, trigger, selected agent, and bounded live/completed child views. It does
 not expose the global task tree or mutation handles.
 
 A task workflow returns an `ExecutionResult` whose output is admitted as a
@@ -142,7 +142,7 @@ return ctx.done("Waiting for rollout approval", {
 });
 ```
 
-Use `needs-owner` only for exceptional judgment by the same App owner. When
+Use `needs-agent` only for exceptional judgment by the same App's selected agent. When
 another App owns the next decision, use the Runtime's typed cross-App dependency
 capability. Human attention is a linked `may` task dependency or an exact human
 Condition owned by the source task.
@@ -171,7 +171,7 @@ await ctx.read.metric(metricId);
 
 A task-bound workflow already receives its task and bounded direct-child views
 in `ctx.reconciliation`; it should not list tasks merely to rediscover that
-context. Agents, tools, observers, and owner workflows that genuinely need a
+context. Agents, tools, observers, and workflows that genuinely need a
 project overview use the shared bounded task list, scoped to the current App.
 
 There is no raw SQL, `sdk.query`, `sdk.commands`, `getDb()`, global list/query,

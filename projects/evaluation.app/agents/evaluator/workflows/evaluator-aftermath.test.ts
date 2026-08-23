@@ -55,7 +55,7 @@ function reconciliation(input: AftermathInput) {
     taskId: `runtime/session-aftermath/${input.sessionId || "missing"}`,
     generation: 4,
     resourceVersion: 8,
-    owner: "evaluator",
+    agent: "evaluator",
     mode: "achieve" as const,
     outcome: "Evaluate terminal sessions.",
     acceptance: ["One durable evaluation or structured skip exists."],

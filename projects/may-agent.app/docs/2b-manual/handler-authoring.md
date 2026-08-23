@@ -11,7 +11,7 @@ import { Type, defineApp } from "@may-agent/sdk";
 export default defineApp({
   id: "example",
   version: 1,
-  owner: "example-owner",
+  agent: "example-agent",
   inputSchema: Type.Object({
     kind: Type.String(),
     data: Type.Unknown(),
@@ -39,18 +39,18 @@ the same controller. Do not add a second route or scheduler for them.
 ## Workflow convention
 
 `workflow: "handle-request"` resolves
-`agents/<resolved-owner>/workflows/handle-request.ts`. No workflow registry is
-needed. A task without a workflow runs its explicit or inherited owner. If a
-workflow returns `needs-owner`, the same task is handed to that owner once. An
+`agents/<selected-agent>/workflows/handle-request.ts`. No workflow registry is
+needed. A task without a workflow runs its explicit or inherited agent. If a
+workflow returns `needs-agent`, the same task is handed to that agent once. An
 unavailable or failed explicitly bound workflow moves the task to `attention`;
-the runtime does not substitute direct owner handling. After the binding is
+the runtime does not substitute direct agent handling. After the binding is
 repaired, a successful app reload re-enqueues it.
 
 Every handler returns one envelope:
 
 ```ts
 {
-  state: "converged" | "waiting" | "needs-owner";
+  state: "converged" | "waiting" | "needs-agent";
   summary: string;
   evidence: string[];
   actions?: TaskAction[]; // compatibility name for task changes
@@ -62,7 +62,7 @@ Every handler returns one envelope:
 - `converged` means the current generation satisfies its acceptance criteria.
 - `waiting` must carry exact typed Conditions or leave at least one live direct
   child or cross-App dependency after its changes are admitted.
-- `needs-owner` is the compatibility result that asks for one bounded attempt
+- `needs-agent` is the compatibility result that asks for one bounded attempt
   by the selected agent; it does not transfer ownership.
 
 For an unresolved human request, give its external Condition a bounded review
@@ -121,8 +121,8 @@ A running handler must not close or unblock its own task. It may return one
 desired execution intent itself must change; that change must be the sole
 change, advance the generation, finish the current attempt, and queue the same
 task again. A no-op or mixed self-update is rejected. Broad reprioritization,
-duplicate cleanup, and unrelated-branch changes belong to a bounded
-owner-review pass.
+duplicate cleanup, and unrelated-branch changes belong to a bounded App task
+with an explicit outcome.
 
 Resolver observations and admitted task changes use the same fenced mutation
 path. Task ID prefixes carry no authority semantics; add a pure App

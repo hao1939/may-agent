@@ -13,7 +13,7 @@ export type DomainWriteRoutingDecision = {
   writeRequired: boolean;
   workflow: string | null;
   decision:
-    | "read-only-owner"
+    | "read-only-agent"
     | "route-task-workspace"
     | "reject-unbound-writer";
   reason: string | null;
@@ -40,7 +40,7 @@ function domainAction(action: TaskAction): boolean {
     return false;
   return (
     actionTaskId(action).startsWith("domain/") ||
-    action.owner === "aks-explorer" ||
+    (action.agent ?? action.owner) === "aks-explorer" ||
     action.category === "domain"
   );
 }
@@ -85,7 +85,7 @@ export function decideDomainWriteRouting(
       taskId,
       writeRequired: false,
       workflow,
-      decision: "read-only-owner",
+      decision: "read-only-agent",
       reason: null,
     };
   }
@@ -104,6 +104,6 @@ export function decideDomainWriteRouting(
     workflow,
     decision: "reject-unbound-writer",
     reason:
-      "domain source-changing work requires an existing owner workflow that declares an isolated task workspace; ordinary unbound owner execution is read-only",
+      "domain source-changing work requires an existing workflow that declares an isolated task workspace; ordinary unbound agent execution is read-only",
   };
 }

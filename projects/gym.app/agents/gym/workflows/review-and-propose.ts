@@ -542,7 +542,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       ? `Accepted Gym review proposal ${requestKey} and started its ${learningTarget.scenarios.length}-scenario May learning target.`
       : `Accepted Gym review proposal ${requestKey}; create and approve its benchmark cases before training May.`;
     return ctx.done(summary, {
-      state: learningTarget ? "converged" : "needs-owner",
+      state: learningTarget ? "converged" : "needs-agent",
       summary,
       evidence: [reviewPath, `approval:${approval.approvalId}`],
       ...(learningTarget ? { actions: [] } : {}),

@@ -111,15 +111,15 @@ describe("AKS domain write routing preflight", () => {
       mode: "achieve",
       outputs: [],
       priority: "P1",
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       ...(workflow ? { workflow } : {}),
       input: {},
     };
   }
 
-  it("rejects an ordinary unbound owner task that requires source writes", () => {
+  it("rejects an ordinary unbound agent task that requires source writes", () => {
     expect(validateAksTaskAction(domainAction())).toContain(
-      "ordinary unbound owner execution is read-only",
+      "ordinary unbound agent execution is read-only",
     );
   });
 
@@ -129,13 +129,13 @@ describe("AKS domain write routing preflight", () => {
     ).toBeNull();
   });
 
-  it("keeps ordinary read-only owner judgment supported", () => {
+  it("keeps ordinary read-only agent judgment supported", () => {
     const action = domainAction(
       undefined,
       "Inspect current repository evidence without editing, committing, or publishing source.",
     );
     action.acceptance = ["Return a read-only disposition with exact evidence."];
-    expect(decideDomainWriteRouting(action).decision).toBe("read-only-owner");
+    expect(decideDomainWriteRouting(action).decision).toBe("read-only-agent");
     expect(validateAksTaskAction(action)).toBeNull();
   });
 });

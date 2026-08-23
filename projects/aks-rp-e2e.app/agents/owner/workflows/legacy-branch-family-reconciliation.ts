@@ -19,7 +19,7 @@ type BranchDecision = {
   reason: string;
 };
 type FamilyReview = {
-  decision: "integrate" | "reject" | "needs-owner";
+  decision: "integrate" | "reject" | "needs-agent";
   summary: string;
   evidence: string[];
   verification: string[];
@@ -30,7 +30,7 @@ const reviewSchema = Type.Object({
   decision: Type.Union([
     Type.Literal("integrate"),
     Type.Literal("reject"),
-    Type.Literal("needs-owner"),
+    Type.Literal("needs-agent"),
   ]),
   summary: Type.String({ minLength: 1 }),
   evidence: Type.Array(Type.String({ minLength: 1 })),
@@ -222,14 +222,14 @@ export async function execute(
     "If valuable work remains, apply the smallest coherent final result in this task worktree, run scoped verification, commit it, and leave the worktree clean. Mark source branches whose exact patches are carried as represented; mark stale, duplicate, incorrect, or superseded attempts rejected with a concrete reason.",
     "A clean task-branch commit may remain from a previous origin/dev race. Rebase, cherry-pick, or adapt that result onto the current origin/dev before returning; do not discard useful reviewed work merely because the base advanced.",
     "If no work should land, leave the task worktree unchanged and reject every source branch with evidence.",
-    "Use needs-owner only when repository evidence cannot support a safe integrate-or-reject decision.",
+    "Use needs-agent only when repository evidence cannot support a safe integrate-or-reject decision.",
     "Source branches:",
     JSON.stringify(branches, null, 2),
     "Task:",
     JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2),
   ].join("\n\n");
   const result = await ctx.agents.call(
-    ctx.reconciliation?.owner ?? "aks-explorer",
+    ctx.reconciliation?.agent ?? "aks-explorer",
     prompt,
     {
       timeoutMs: 1_800_000,
@@ -259,7 +259,7 @@ export async function execute(
     if (currentBase !== baseCommit) {
       const summary = `origin/dev moved from ${baseCommit} to ${currentBase} during legacy branch review; the branch family must be re-evaluated against the new integration base before refs are changed.`;
       return ctx.done(summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary,
         evidence: [
           ...review.evidence,
@@ -272,10 +272,10 @@ export async function execute(
     assertSourceRefs(repoDir, branches);
     const headCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
 
-    if (review.decision === "needs-owner") {
+    if (review.decision === "needs-agent") {
       const summary = `${review.summary} No Git refs were changed.`;
       return ctx.done(summary, {
-        state: "needs-owner",
+        state: "needs-agent",
         summary,
         evidence: review.evidence,
       });
@@ -308,7 +308,7 @@ export async function execute(
         const summary =
           "Reject review left a net source change in the task worktree; the owner must re-evaluate whether to integrate the produced change or restore the task branch before source refs are changed.";
         return ctx.done(summary, {
-          state: "needs-owner",
+          state: "needs-agent",
           summary,
           evidence: [
             ...review.evidence,

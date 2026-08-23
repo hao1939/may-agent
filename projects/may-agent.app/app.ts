@@ -9,7 +9,7 @@ import {
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
-const projectOwnerAgent = "may";
+const hostOperationsAgent = "may";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const nonEmptyString = Type.String({ minLength: 1 });
 const stringList = Type.Array(nonEmptyString, { minItems: 1 });
@@ -247,7 +247,7 @@ export const platformInputSchema = Type.Union([
 const deferredMetrics = new Set([
   "project.health.finding-count",
   "project.owner-incomplete-count",
-  "project.owner-judgment-needed-count",
+  "project.agent-judgment-needed-count",
   "capability.zombie-session-count",
   "runtime.stale-running-session-count",
 ]);
@@ -284,7 +284,7 @@ function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
   const owner = stringValue(
     event.owner ?? data.owner ?? event.target?.owner,
   ).replace(/^agent:/, "");
-  return !owner || owner === projectOwnerAgent || owner === "may";
+  return !owner || owner === hostOperationsAgent || owner === "may";
 }
 
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
@@ -299,7 +299,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "The owner performs one useful platform step or records an evidence-backed no-op, with task-resource changes proposed as typed actions.",
         ],
         mode: "maintain",
-        owner: projectOwnerAgent,
+        agent: hostOperationsAgent,
         input: { scope: "may-agent-platform" },
         priority: "P1",
       };
@@ -313,7 +313,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Return exact process/session/workflow lineage, supported containment operations, fail-closed replay repair proof, and at least 180 seconds of quiescence without changing the incident path or Git metadata.",
         ],
         mode: "achieve",
-        owner: projectOwnerAgent,
+        agent: hostOperationsAgent,
         input: { kind: input.kind, data },
         priority: "P0",
       };
@@ -340,7 +340,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
               "Return a terminal, evidence-backed platform disposition through the supported control plane.",
             ],
         mode: "achieve",
-        owner: projectOwnerAgent,
+        agent: hostOperationsAgent,
         input: { kind: input.kind, data },
         priority: "P1",
       };
@@ -380,14 +380,14 @@ export function taskInputForEvent(
   }
 }
 
-export function resolveMayAgentTask(
+export function resolveHostOperationsTask(
   event: AppEvent<Record<string, unknown>>,
 ): TaskIntent | null {
   const input = taskInputForEvent(event);
   return input ? taskIntentForInput(input) : null;
 }
 
-export function taskForMayAgentInput(
+export function taskForHostOperationsInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
   if (
@@ -432,7 +432,9 @@ export function taskForMayAgentInput(
   }
   const resolved = taskIntentForInput(admitted.input);
   if (!resolved) {
-    throw new Error(`Unsupported may-agent input kind: ${admitted.input.kind}`);
+    throw new Error(
+      `Unsupported Host Operations input kind: ${admitted.input.kind}`,
+    );
   }
   const intent = resolved.id
     ? resolved
@@ -442,6 +444,12 @@ export function taskForMayAgentInput(
       };
   return { kind: "desired", intent };
 }
+
+/** @deprecated Use `resolveHostOperationsTask`. */
+export const resolveMayAgentTask = resolveHostOperationsTask;
+
+/** @deprecated Use `taskForHostOperationsInput`. */
+export const taskForMayAgentInput = taskForHostOperationsInput;
 
 function scheduledEvent(
   type: string,
@@ -457,12 +465,12 @@ function scheduledEvent(
 const app = defineApp({
   id: projectId,
   version: 1,
-  owner: projectOwnerAgent,
+  agent: hostOperationsAgent,
   description:
     "Host Operations App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
   inbox: { maxConcurrent: 2 },
-  task: taskForMayAgentInput,
+  task: taskForHostOperationsInput,
   workspace: { kind: "local", localPath: "../may-agent" },
   subscriptions: [
     {
@@ -537,7 +545,7 @@ const app = defineApp({
       "metric.breach",
       "metric.stalled",
     ],
-    resolve: resolveMayAgentTask,
+    resolve: resolveHostOperationsTask,
     maxConcurrent: 2,
     resyncIntervalMs: 60_000,
   },

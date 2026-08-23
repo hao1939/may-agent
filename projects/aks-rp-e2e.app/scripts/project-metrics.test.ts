@@ -363,7 +363,7 @@ describe("terminalOwnerAttemptHasExpiredLease", () => {
     },
   };
 
-  it("exposes a terminal owner session whose exact lease expired", () => {
+  it("exposes a terminal agent session whose exact lease expired", () => {
     expect(
       terminalOwnerAttemptHasExpiredLease(
         attempt,
@@ -373,7 +373,7 @@ describe("terminalOwnerAttemptHasExpiredLease", () => {
     ).toBe(true);
   });
 
-  it("never marks a healthy live owner session or fresh lease stale", () => {
+  it("never marks a healthy live agent session or fresh lease stale", () => {
     expect(
       terminalOwnerAttemptHasExpiredLease(
         attempt,
@@ -571,7 +571,7 @@ describe("ownerTaskSessionMatchesTaskId", () => {
     ).toBeTrue();
   });
 
-  it("does not let a nearby different owner session match the wrong task", () => {
+  it("does not let a nearby different agent session match the wrong task", () => {
     expect(
       ownerTaskSessionMatchesTaskId({
         taskId:
@@ -586,7 +586,7 @@ describe("ownerTaskSessionMatchesTaskId", () => {
 });
 
 describe("ownerSessionRecentCompletionGapLooksHealthy", () => {
-  it("covers the reproduced direct-owner completion gap before project.task.reconciled clears the attempt", () => {
+  it("covers the reproduced direct-agent completion gap before project.task.reconciled clears the attempt", () => {
     expect(
       ownerSessionRecentCompletionGapLooksHealthy({
         sessionStatus: "done",
@@ -598,7 +598,7 @@ describe("ownerSessionRecentCompletionGapLooksHealthy", () => {
     ).toBeTrue();
   });
 
-  it("does not hide stale or failed owner sessions", () => {
+  it("does not hide stale or failed agent sessions", () => {
     expect(
       ownerSessionRecentCompletionGapLooksHealthy({
         sessionStatus: "error",
@@ -829,7 +829,7 @@ describe("projected task phase assignment consumption", () => {
 });
 
 describe("assignmentStillLooksUnconsumed", () => {
-  it("treats a healthy owner session as consumed even before worker_started_attempt_id is written", () => {
+  it("treats a healthy agent session as consumed even before worker_started_attempt_id is written", () => {
     expect(
       assignmentStillLooksUnconsumed({
         taskState: "active",
@@ -843,7 +843,7 @@ describe("assignmentStillLooksUnconsumed", () => {
     ).toBeFalse();
   });
 
-  it("treats a recent direct-owner completion gap as consumed", () => {
+  it("treats a recent direct-agent completion gap as consumed", () => {
     expect(
       assignmentStillLooksUnconsumed({
         taskState: "active",

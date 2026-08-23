@@ -967,7 +967,7 @@ describe("single agent-improvement loop", () => {
       recoveryCtx,
       loop,
     )) as unknown as Record<string, unknown>;
-    expect(outputOf(drifted).state).toBe("needs-owner");
+    expect(outputOf(drifted).state).toBe("needs-agent");
     expect(drifted.summary).toBe(
       "Durable evaluation-only request no longer matches its protected inputs",
     );
@@ -3199,7 +3199,7 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(outputOf(result).state).toBe("needs-owner");
+    expect(outputOf(result).state).toBe("needs-agent");
     expect(result.summary).toBe(
       "Gym found a needs-human issue: The evidence is preference-sensitive.",
     );
@@ -3332,7 +3332,7 @@ describe("single agent-improvement loop", () => {
         verification_run_dir: "old-verification",
         summary: "Old verification needs review.",
         evidence: [],
-        workflow_state: "needs-owner",
+        workflow_state: "needs-agent",
         conditions: [],
         approval: null,
       }),
@@ -3429,7 +3429,7 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(outputOf(result).state).toBe("needs-owner");
+    expect(outputOf(result).state).toBe("needs-agent");
     expect(verifyCount).toBe(1);
     expect(calledAgents).toEqual(["gym"]);
     expect(fingerprintTree(candidateDir)).toBe(candidateFingerprint);
@@ -3457,7 +3457,7 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(outputOf(recovered).state).toBe("needs-owner");
+    expect(outputOf(recovered).state).toBe("needs-agent");
     expect(verifyCount).toBe(2);
     expect(calledAgents).toEqual(["gym", "gym"]);
     expect(fingerprintTree(candidateDir)).toBe(candidateFingerprint);

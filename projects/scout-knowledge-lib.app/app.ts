@@ -297,7 +297,7 @@ export function taskForScoutInput(
       "Scout returns an evidence-backed result or revises this same task to the exact library outcome.",
     ],
     mode: "achieve" as const,
-    owner: "scout",
+    agent: "scout",
     input: {
       kind: admitted.input.kind,
       data: eventParams(admitted.input.data),
@@ -310,7 +310,7 @@ export function taskForScoutInput(
 export default defineApp({
   id: projectId,
   version: 1,
-  owner: "scout",
+  agent: "scout",
   description:
     "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
   workspace: {
@@ -390,7 +390,7 @@ export default defineApp({
         reviewChecklist: [
           "When useful, read recent findings, connect sources, identify one non-obvious implication, update canonical knowledge, and verify the output. Synthesis is optional; do not manufacture it.",
           "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
-          "Look for exact repeated failures, owner handoffs, or evidence-backed no-ops that may justify one reusable improvement.",
+          "Look for exact repeated failures, agent handoffs, or evidence-backed no-ops that may justify one reusable improvement.",
           "Check the current tree before proposing work and do not duplicate a live task.",
           "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
         ],

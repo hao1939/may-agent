@@ -14,7 +14,7 @@ function reconciliation() {
     taskId: "runtime/aftermath-coverage-snapshot",
     generation: 2,
     resourceVersion: 3,
-    owner: "evaluator",
+    agent: "evaluator",
     mode: "achieve" as const,
     outcome: "Publish coverage.",
     acceptance: ["Persist one sample."],

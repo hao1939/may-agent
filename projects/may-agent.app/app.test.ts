@@ -33,7 +33,7 @@ describe("Host Operations App", () => {
     expect(app).toMatchObject({
       id: "may-agent",
       version: 1,
-      owner: "may",
+      agent: "may",
       inbox: { maxConcurrent: 2 },
       tasks: { maxConcurrent: 2 },
     });
@@ -168,7 +168,7 @@ describe("may-agent task routing", () => {
     expect(intent).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
-      owner: "may",
+      agent: "may",
       input: { scope: "may-agent-platform" },
     });
     expect(intent).not.toHaveProperty("workflow");
@@ -244,7 +244,7 @@ describe("may-agent task routing", () => {
     expect(resolveMayAgentTask(sourceFailure)).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
-      owner: "may",
+      agent: "may",
       input: { scope: "may-agent-platform" },
     });
   });
@@ -310,7 +310,7 @@ describe("may-agent task routing", () => {
         kind: "desired",
         intent: {
           id: `app-request/aks-request-${index + 1}`,
-          owner: "may",
+          agent: "may",
           mode: "achieve",
           outcome: input.data.outcome,
           input: { kind: input.kind },
@@ -354,7 +354,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/dependency-authority-replacement-1",
-        owner: "may",
+        agent: "may",
         mode: "achieve",
         input: {
           kind: "dependency-authority-runtime-review",
@@ -429,7 +429,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/installed-observation-replacement-1",
-        owner: "may",
+        agent: "may",
         mode: "achieve",
         input: {
           kind: "installed-app-resolver-observation",
@@ -498,7 +498,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/status-activation-replacement-1",
-        owner: "may",
+        agent: "may",
         mode: "achieve",
         input: {
           kind: "status-readonly-supervisor-activation",
@@ -571,7 +571,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/appdep_7d94713590078a6994af0d6d",
-        owner: "may",
+        agent: "may",
         mode: "achieve",
         priority: "P0",
         outcome: input.data.requiredOutcome,
@@ -637,7 +637,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/evaluation-protected-config-proof-1",
-        owner: "may",
+        agent: "may",
         mode: "achieve",
         input: {
           kind: "protected-agent-config-repair",
@@ -717,6 +717,6 @@ describe("may-agent task routing", () => {
       taskForMayAgentInput(
         admittedInput({ kind: "request", data: { outcome: "generic" } }),
       ),
-    ).toThrow("Unsupported may-agent input kind: request");
+    ).toThrow("Unsupported Host Operations input kind: request");
   });
 });

@@ -121,7 +121,7 @@ Conversation and canonical May request identity.
 
 ## May Execution And Session Loss
 
-May performs one bounded owner pass from the exact request, source identity,
+The agent selected by the May App performs one bounded attempt from the exact request, source identity,
 dependency observation, reply anchor, bounded conversation projection, and
 relevant preferences.
 
@@ -209,7 +209,7 @@ standalone message in the same chat/topic and retain the May request link.
 The durable return address is the request's opaque `channelTargetId`
 (Telegram chat), optional `channelThreadId` (topic), and `channelMessageId`
 (reply anchor). These fields remain Host/transport mechanics and are not shown
-to the App owner. With several allowed chats, a response always uses the exact
+to the App. With several allowed chats, a response always uses the exact
 originating target rather than the first configured chat.
 
 Never fall forward to a newer human message merely because it is on the same

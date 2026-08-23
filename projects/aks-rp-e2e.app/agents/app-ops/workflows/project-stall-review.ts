@@ -731,7 +731,7 @@ async function dispatchReviewed(
 function finishStallReview(
   ctx: WorkflowContext,
   input: {
-    state: "converged" | "needs-owner";
+    state: "converged" | "needs-agent";
     summary: string;
     evidence: string[];
   },
@@ -749,7 +749,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const trigger = parseTriggerEvent(ctx);
   if (trigger && trigger.type !== "project.stall.review.requested") {
     return finishStallReview(ctx, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: `Stall review ignored trigger ${String(trigger.type ?? "unknown")}; use project.stall.review.requested.`,
       evidence: ["stall-review:invalid-trigger"],
     });

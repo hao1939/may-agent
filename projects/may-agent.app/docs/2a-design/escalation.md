@@ -28,7 +28,7 @@ original outcome. Runtime request records correlate the dependency and result.
 | Situation                                                   | Correct representation                                        |
 | ----------------------------------------------------------- | ------------------------------------------------------------- |
 | Another useful repair remains inside the same owner's scope | Continue the bounded workflow or reconcile the same task      |
-| Reusable workflow needs App-owner judgment                  | Return `needs-owner` for the same task                        |
+| Reusable workflow needs App-agent judgment                  | Return `needs-agent` for the same task                        |
 | Bounded execution cannot continue safely                    | Return `blocked` evidence; owning boundary decides next state |
 | Known external fact will change later                       | Persist an exact task Condition                               |
 | Another App must decide or act                              | Create a typed cross-App task dependency                      |
@@ -79,7 +79,7 @@ A task-bound workflow cannot publish an event and assume somebody will act. It
 returns evidence and either:
 
 - an exact Condition for a known external fact or approval;
-- `needs-owner` when the same App owner must choose the next action; or
+- `needs-agent` when the same App needs one bounded agent judgment; or
 - a typed dependency in the reconciliation result that establishes a child App
   request.
 

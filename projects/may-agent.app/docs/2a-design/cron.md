@@ -110,7 +110,7 @@ desired task work:
 
 The shared event runtime persists the fact. A declared input translator may
 resolve it to `TaskIntent`, or an exact target may wake its task; otherwise it
-remains observation only. No caller request or owner session is manufactured.
+remains observation only. No caller request or agent session is manufactured.
 Event schedules do not replay missed facts.
 
 ## Observers
@@ -175,7 +175,7 @@ poll or hash every Cron configuration in the background.
 
 The May operations health packet and daily operations digest are current
 examples: both read host-owned operational ledgers; the digest may use the host
-delivery adapter; both emit facts when App-owner judgment is needed. Their
+delivery adapter; both emit facts when App-agent judgment is needed. Their
 former App schedules/task routes were removed so there is only one timer and
 one execution authority for each duty.
 
@@ -210,7 +210,7 @@ Dropping a timer callback before persistence is not valid deduplication.
 
 ## Failure and restart
 
-Scheduler failure is operational evidence. It does not create an App owner
+Scheduler failure is operational evidence. It does not create an App Task or
 request by default. Runtime health surfaces missed/late fires, registration
 failure, observer error, and publication/admission failure.
 

@@ -1,24 +1,24 @@
 import {
   admitTaskReconcileResult,
-  taskOwnerResultSchema,
+  taskAgentResultSchema,
   type ExecutionResult,
   type TaskReconcileResult,
   type WorkflowContext,
 } from "@may-agent/sdk";
 import { taskEmissionKey } from "./lib/task-emission.js";
 
-type OwnerResult = Exclude<TaskReconcileResult, { state: "needs-owner" }>;
+type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
 export function admitExperienceReviewResult(
   value: unknown,
-): { ok: true; result: OwnerResult } | { ok: false; error: string } {
+): { ok: true; result: AgentResult } | { ok: false; error: string } {
   const admitted = admitTaskReconcileResult(value, {
-    allowNeedsOwner: false,
+    allowNeedsAgent: false,
     defaultParentId: "project",
   });
   if (!admitted.ok) return admitted;
-  if (admitted.result.state === "needs-owner") {
-    return { ok: false, error: "experience review cannot return needs-owner" };
+  if (admitted.result.state === "needs-agent") {
+    return { ok: false, error: "experience review cannot return needs-agent" };
   }
   const created = (admitted.result.actions ?? []).filter(
     (action) => action.kind === "create-task",
@@ -146,7 +146,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
   const result = await ctx.agents.call("scout", prompt, {
     timeoutMs: 1_800_000,
-    schema: taskOwnerResultSchema,
+    schema: taskAgentResultSchema,
   });
   if (result.status === "error" || result.status === "interrupted") {
     return ctx.blocked("Scout owner maintenance session failed", {
@@ -156,9 +156,9 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     });
   }
 
-  let ownerResult = result.output as unknown as OwnerResult;
+  let agentResult = result.output as unknown as AgentResult;
   if (experienceReview) {
-    const admitted = admitExperienceReviewResult(ownerResult);
+    const admitted = admitExperienceReviewResult(agentResult);
     if ("error" in admitted) {
       return ctx.blocked(
         `Scout experience review result was rejected: ${admitted.error}`,
@@ -167,7 +167,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
         },
       );
     }
-    ownerResult = admitted.result;
+    agentResult = admitted.result;
   }
   await ctx.events.emit({
     type: "project.knowledge.maintained",
@@ -175,11 +175,11 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     target: { appId: "scout-knowledge-lib", project: "scout-knowledge-lib" },
     data: {
       project: "scout-knowledge-lib",
-      summary: ownerResult.summary,
-      state: ownerResult.state,
-      proposedActions: ownerResult.actions ?? [],
-      evidence: ownerResult.evidence,
+      summary: agentResult.summary,
+      state: agentResult.state,
+      proposedActions: agentResult.actions ?? [],
+      evidence: agentResult.evidence,
     },
   });
-  return ctx.done(ownerResult.summary, ownerResult);
+  return ctx.done(agentResult.summary, agentResult);
 }

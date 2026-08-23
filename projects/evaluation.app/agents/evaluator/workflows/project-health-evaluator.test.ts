@@ -57,7 +57,7 @@ function reconciliation(reason = "scheduled") {
     taskId: "runtime/project-audit/gym.app",
     generation: 2,
     resourceVersion: 4,
-    owner: "evaluator",
+    agent: "evaluator",
     mode: "maintain" as const,
     outcome: "Maintain an independent health assessment for gym.app.",
     acceptance: ["A current report is recorded."],

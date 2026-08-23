@@ -182,7 +182,7 @@ function context(appDir: string, projectDir: string) {
       taskId: "aks-feature-compact-loop",
       generation: 1,
       resourceVersion: 1,
-      owner: "app-ops",
+      agent: "app-ops",
       mode: "maintain",
       outcome: "Maintain feature compaction",
       acceptance: [],
@@ -272,7 +272,7 @@ describe("feature compact reconciliation workflow", () => {
           outcome: "Reconcile networking compact proof.",
           acceptance: ["The compact loop state is updated before convergence."],
           mode: "achieve",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "feature-compact-reconciliation",
           input: {
             featureKey: "networking",
@@ -313,7 +313,7 @@ describe("feature compact reconciliation workflow", () => {
           outcome: "Reconcile networking compact proof.",
           acceptance: ["The compact loop state is updated before convergence."],
           mode: "achieve",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "feature-compact-reconciliation",
           input: {
             featureKey: "networking",
@@ -363,7 +363,7 @@ describe("feature compact reconciliation workflow", () => {
           outcome: "Reconcile networking compact proof.",
           acceptance: ["The compact loop state is updated before convergence."],
           mode: "achieve",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "feature-compact-reconciliation",
           input: {
             featureKey: "networking",
@@ -1177,7 +1177,7 @@ describe("feature compact reconciliation workflow", () => {
           {
             kind: "create-task",
             parentId: "aks-feature-compact-loop",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "feature-compact-reconciliation",
             input: { featureKey: "networking" },
           },
@@ -1242,7 +1242,7 @@ describe("feature compact reconciliation workflow", () => {
 
     expect(result).toMatchObject({
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
       },
     });
     expect(result.output.actions ?? []).toHaveLength(0);
@@ -1436,7 +1436,7 @@ describe("feature compact reconciliation workflow", () => {
             id: expect.stringMatching(
               /^compact\/repair-compact-feature-networking-representation-[a-f0-9]{10}$/,
             ),
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             input: {
               featureKey: "networking",
               repair: "representation",
@@ -1499,7 +1499,7 @@ describe("feature compact reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             input: {
               featureKey: "networking",
               repair: "representation",
@@ -1988,7 +1988,7 @@ describe("feature compact reconciliation workflow", () => {
 
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
     expect(result).toMatchObject({
-      output: { state: "needs-owner" },
+      output: { state: "needs-agent" },
     });
     expect(result.output).not.toHaveProperty("actions");
   });

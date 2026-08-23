@@ -324,7 +324,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     const summary =
       "Spec loop cannot reconcile catalog identities because a clean origin/dev snapshot is unavailable.";
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [`spec-loop-catalog-source:${catalogSource}`],
     });
@@ -416,7 +416,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           parentId: specLoopTaskId,
           outcome: `Repair the spec-loop representation for ${specId}: the ledger already has a structured reviewed disposition, but no live task holder and no terminalDisposition=true flag, so the controller cannot tell whether to wait, finish, or rerun.`,
           mode: "achieve",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "domain-task-execution",
           input: {
             specId,
@@ -447,7 +447,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         parentId: specLoopTaskId,
         outcome: `Reconcile ${specId} to a passing live result, an exact wait, or a reviewed terminal disposition.`,
         mode: "achieve",
-        owner: "aks-explorer",
+        agent: "aks-explorer",
         workflow: "spec-live-reconciliation",
         input: {
           specId,
@@ -480,8 +480,8 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     accounting.waitingTaskIds.length > 0 ||
     accounting.terminalTaskIds.length > 0
       ? "converged"
-      : "needs-owner";
-  if (resultState === "needs-owner") {
+      : "needs-agent";
+  if (resultState === "needs-agent") {
     return ctx.done(summary, {
       state: resultState,
       summary,

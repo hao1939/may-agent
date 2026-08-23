@@ -54,7 +54,7 @@ function context(input: {
       taskId: "runtime/project-stall-review",
       generation: 1,
       resourceVersion: 1,
-      owner: "app-ops",
+      agent: "app-ops",
       mode: "maintain",
       outcome: "Review project liveness",
       acceptance: ["One structured liveness judgment is emitted."],
@@ -122,7 +122,7 @@ describe("project stall review", () => {
         trigger: { type: "wrong.event" },
       }),
     );
-    expect(result).toMatchObject({ output: { state: "needs-owner" } });
+    expect(result).toMatchObject({ output: { state: "needs-agent" } });
   });
 
   test("collects and judges without repairing, assigning, or pulsing the graph", async () => {

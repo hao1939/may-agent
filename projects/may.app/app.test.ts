@@ -32,7 +32,7 @@ describe("canonical May conversation App", () => {
     expect(app).toMatchObject({
       id: "may",
       version: 1,
-      owner: "may",
+      agent: "may",
       tasks: { maxConcurrent: 8 },
     });
     expect(app.task).toBe(taskForMayInput);
@@ -65,7 +65,7 @@ describe("canonical May conversation App", () => {
       intent: {
         id: "conversation/conversation-request-1",
         parentId: "may",
-        owner: "may",
+        agent: "may",
         category: "conversation",
       },
     });

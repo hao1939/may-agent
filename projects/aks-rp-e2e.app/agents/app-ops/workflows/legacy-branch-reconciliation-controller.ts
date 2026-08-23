@@ -66,7 +66,7 @@ function createVerificationTask(
     outcome: `Apply ${row.branch} to current origin/dev, rerun its conventional verification, merge and remove it on pass, or retain it with exact conflict/failure evidence.`,
     mode: "achieve",
     outputs: row.files,
-    owner: verificationOwner,
+    agent: verificationOwner,
     workflow: verificationWorkflow,
     input: {
       loopId: legacyBranchReconciliationTaskId,
@@ -126,7 +126,7 @@ export async function execute(
     .filter(
       (child) =>
         child.status !== "running" &&
-        (child.owner !== verificationOwner ||
+        (child.agent !== verificationOwner ||
           child.workflow !== verificationWorkflow),
     )
     .sort((left, right) => left.taskId.localeCompare(right.taskId))[0];
@@ -143,7 +143,7 @@ export async function execute(
       kind: "update-task",
       taskId: misrouted.taskId,
       expectedGeneration: misrouted.generation,
-      owner: verificationOwner,
+      agent: verificationOwner,
       workflow: verificationWorkflow,
     };
     const summary = `Restoring ${misrouted.taskId} to the ${verificationOwner}-owned ${verificationWorkflow} route before reconciliation.`;
@@ -152,7 +152,7 @@ export async function execute(
       summary,
       evidence: [
         `repair-child-route:${misrouted.taskId}@${misrouted.generation}`,
-        `previous-owner:${misrouted.owner || "missing"}`,
+        `previous-agent:${misrouted.agent || "missing"}`,
         `previous-workflow:${misrouted.workflow || "missing"}`,
         `child-state:${misrouted.status}`,
       ],
@@ -198,7 +198,7 @@ export async function execute(
     const taskId = verificationTaskId(staleCompleted);
     const summary = `Completed verification child ${taskId} still has source branch ${staleCompleted.branch}; completion and Git inventory disagree.`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [
         `completed-child:${taskId}`,

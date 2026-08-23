@@ -34,7 +34,7 @@ export function field(
     const value = input[name];
     if (typeof value === "string" && value.trim()) return value.trim();
     if (name === "owner" || name === "agent") {
-      return source.reconciliation?.owner;
+      return source.reconciliation?.agent;
     }
     if (name === "app") return source.workspace?.appRoot;
     if (name === "project") return source.workspace?.projectRoot;
@@ -148,7 +148,7 @@ export function parseReconciliationTaskPayload(
       taskId: reconciliation.taskId,
       generation: reconciliation.generation,
       resourceVersion: reconciliation.resourceVersion,
-      owner: reconciliation.owner,
+      agent: reconciliation.agent,
       mode: reconciliation.mode,
       outcome: reconciliation.outcome,
       acceptance: reconciliation.acceptance,

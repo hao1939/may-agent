@@ -324,7 +324,7 @@ unrelated merge.
   workflow waits through one short provider cooldown and retries that invocation
   once with the same task worktree and hot evidence. An empty or interrupted
   invocation is a runtime failure, not an agent decision and not an
-  ownership-boundary handoff. Only a returned `needs-owner` judgment may enter
+  ownership-boundary handoff. Only a returned `needs-agent` judgment may enter
   the accountable-owner path. Two runtime failures still end the workflow. For
   an otherwise active fix-forward judgment, the workflow permits up to three
   structured judgments so the agent can correct both a missing readiness field
@@ -342,13 +342,13 @@ unrelated merge.
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
 - Exhausting those bounded structured-result corrections is also a workflow
-  execution failure, not an implicit `needs-owner` judgment. The workflow lets
+  execution failure, not an implicit `needs-agent` judgment. The workflow lets
   the runtime retain the task worktree and mark the iteration for attention.
   When live-execution capacity is available, `normalize-scenario-frontier`
   unblocks that same task generation and the same learned workflow starts a new
   iteration from the retained source and current provider evidence. It does not
   create a successor task or invoke the owner fallback. Only an agent that
-  explicitly returns `needs-owner` may cross that ownership boundary.
+  explicitly returns `needs-agent` may cross that ownership boundary.
 - If that accountable-owner result is rejected by the declared workflow's
   mechanical verifier, the original task remains unfinished. The normalization
   controller returns the same task generation and retained worktree to
@@ -361,7 +361,7 @@ unrelated merge.
   a commit by itself is never permission to run. When it is false, the agent
   must name one exact observable Condition and the workflow keeps the same task
   waiting on that fact. If no such fact is observable by the app, the agent
-  returns `needs-owner` instead of hiding the boundary in prose.
+  returns `needs-agent` instead of hiding the boundary in prose.
 - Instructions that forbid the agent from pushing or queueing provider work do
   not imply `liveReady: false`. They preserve the workflow boundary: the agent
   prepares and judges the source, while workflow code publishes and dispatches
@@ -371,7 +371,7 @@ unrelated merge.
   blocker. The workflow owns task-branch publication, current-`dev` replay, live
   dispatch, and final direct integration. Agents must not use a generic repo-ref
   wait for those mechanics: they return `liveReady: true` when the exact source
-  is runnable, or `needs-owner` when a reviewed non-runnable disposition needs
+  is runnable, or `needs-agent` when a reviewed non-runnable disposition needs
   exceptional judgment.
 - Scenario normalization also supports one explicit
   `terminal-disposition` judgment for a source that is intentionally not
@@ -381,7 +381,7 @@ unrelated merge.
   `statusReason`, and latest-live-result fields, commit that bounded source
   change, and return the structured `terminal-disposition` judgment. It does
   not hand this work to the generic owner merely because the spec still said
-  ready or pass before the terminal run. `needs-owner` remains available only
+  ready or pass before the terminal run. `needs-agent` remains available only
   when the evidence cannot support the domain judgment or a real external
   authority must decide it.
 - For a plain-carrier normalization, first separate source layout from product
@@ -411,11 +411,11 @@ unrelated merge.
   state back to the same agent, which replays the task-owned terminal source
   onto current `origin/dev` and resolves any semantic conflict. Code then
   rechecks the clean linear lineage, terminal fields, and strict row before
-  integration. A repairable lineage mismatch must not become `needs-owner`, a
-  publication child, or another owner handoff for the same reviewed
+  integration. A repairable lineage mismatch must not become `needs-agent`, a
+  publication child, or another agent handoff for the same reviewed
   disposition.
 - Initial source preparation accepts `committed`, `test-current`, one exact
-  wait, `needs-owner`, or, when task policy allows it, the structured
+  wait, `needs-agent`, or, when task policy allows it, the structured
   `terminal-disposition` judgment above. It accepts `accepted-pass` only when
   the caller explicitly asks the workflow to validate an existing later
   current-main recovery observation. Any other preparation verdict stays
@@ -438,7 +438,7 @@ unrelated merge.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
   validate, and commit or to remove only proven task-generated residue. A
   dedicated task branch establishes ownership, so a technical failure on that
-  branch cannot be relabeled `needs-owner`; recovery keeps correcting the same
+  branch cannot be relabeled `needs-agent`; recovery keeps correcting the same
   judgment until the worktree is clean. Genuine ownership ambiguity requires
   exact ambiguity evidence plus the task-root `current-context.json` pointer and
   its exact source commit, so the retained source/run handoff is authoritative
@@ -446,7 +446,7 @@ unrelated merge.
   same validator: it accepts a clean verified commit, clean removal of proven
   task residue, or that concrete ambiguity checkpoint, never dirty technical
   failure. This recovery step reports only `committed`, `test-current`, or
-  `needs-owner`. A premature domain verdict such as `terminal-disposition` is
+  `needs-agent`. A premature domain verdict such as `terminal-disposition` is
   corrected in the same agent invocation loop, then evaluated by the normal
   domain path so integration and terminal-disposition evidence cannot be
   bypassed.

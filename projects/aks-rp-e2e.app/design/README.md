@@ -74,7 +74,7 @@ failures, stale implementations, and rejected hypotheses are feedback for the
 agent inside the same task; they are not `blocked`, `attention`, or a reason to
 create a repair task. A workflow run remains bounded and yields while ADO, a
 pull request, or another external fact is pending. Escalation is reserved for
-a required action outside `aks-explorer` ownership. `needs-owner` is only the
+a required action outside `aks-explorer` ownership. `needs-agent` is only the
 exceptional same-owner fallback after the learned workflow has exhausted its
 safe in-scope moves.
 
@@ -83,7 +83,7 @@ safe in-scope moves.
 - `app-ops` owns app organization and unfamiliar semantic events.
 - `aks-explorer` owns AKS domain judgment.
 - A wait remains owned by the agent that must act after the Condition wakes.
-  `needs-owner` returns to the task owner, so a domain repo-ref wait explicitly
+  `needs-agent` returns to the task owner, so a domain repo-ref wait explicitly
   keeps `owner: "aks-explorer"`; attaching a wait workflow must not transfer it
   to `app-ops`.
 - Repeated domain processes become workflows; one-off work can go directly to

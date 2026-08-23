@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { taskOwnerResultSchema } from "@may-agent/sdk";
+import { taskAgentResultSchema } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { Check } from "typebox/value";
 import { execute as executeHeartbeat } from "./evaluator-heartbeat.js";
@@ -8,7 +8,7 @@ import {
   projectHealthJudgmentSchema,
 } from "./project-health-evaluator.js";
 
-const ownerResult = {
+const agentResult = {
   state: "converged" as const,
   summary: "The supplied owner state is already coherent.",
   evidence: ["bounded reconciliation packet"],
@@ -39,7 +39,7 @@ function reconciliation(taskId: string, input: Record<string, unknown>) {
     taskId,
     generation: 1,
     resourceVersion: 1,
-    owner: "evaluator",
+    agent: "evaluator",
     mode: "maintain" as const,
     outcome: "Maintain a current evaluation result.",
     acceptance: ["A schema-backed result is reconciled."],
@@ -65,22 +65,22 @@ describe("schema-backed agent finish result envelope", () => {
           kind: "agent",
           status: "done",
           summary: "Human-readable session summary is not the result envelope.",
-          output: ownerResult,
+          output: agentResult,
         };
       },
     });
 
     await expect(executeHeartbeat(ctx)).resolves.toMatchObject({
       status: "done",
-      output: ownerResult,
+      output: agentResult,
     });
-    expect(suppliedSchema).toBe(taskOwnerResultSchema);
-    expect(Check(taskOwnerResultSchema, ownerResult)).toBe(true);
-    expect(Check(taskOwnerResultSchema, JSON.stringify(ownerResult))).toBe(
+    expect(suppliedSchema).toBe(taskAgentResultSchema);
+    expect(Check(taskAgentResultSchema, agentResult)).toBe(true);
+    expect(Check(taskAgentResultSchema, JSON.stringify(agentResult))).toBe(
       false,
     );
     expect(
-      Check(taskOwnerResultSchema, { ...ownerResult, unexpected: true }),
+      Check(taskAgentResultSchema, { ...agentResult, unexpected: true }),
     ).toBe(false);
   });
 

@@ -91,7 +91,7 @@ function fixture(options: { devChange?: string } = {}): Fixture {
       taskId: "ops/verify-source",
       generation: 1,
       resourceVersion: 1,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       mode: "achieve",
       outcome: "Verify the exact legacy source branch.",
       acceptance: [],
@@ -305,7 +305,7 @@ describe("legacy branch verification workflow", () => {
   test("accepts a non-converged handoff without claiming closeout", async () => {
     const value = fixture();
     const result = await verify(verificationContext(value), {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Owner judgment is required.",
       evidence: ["stale-source"],
       actions: [],
@@ -313,7 +313,7 @@ describe("legacy branch verification workflow", () => {
 
     expect(result).toEqual({
       accepted: true,
-      summary: "Legacy branch needs-owner disposition does not claim closeout.",
+      summary: "Legacy branch needs-agent disposition does not claim closeout.",
       evidence: ["stale-source"],
     });
   });
@@ -639,7 +639,7 @@ describe("legacy branch verification workflow", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: expect.stringContaining(
           "represented-ancestor:<full SHA> after git merge-base --is-ancestor verifies it",
         ),
@@ -673,7 +673,7 @@ describe("legacy branch verification workflow", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: expect.stringContaining("worktree-attached"),
         evidence: expect.arrayContaining([
           `branch:task/source@${value.sourceHead}:attached-source`,
@@ -716,7 +716,7 @@ describe("legacy branch verification workflow", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         summary: expect.stringContaining("requires owner judgment"),
         evidence: expect.arrayContaining([
           `branch:task/source@${value.sourceHead}:stale-source`,
@@ -771,14 +771,14 @@ describe("legacy branch verification workflow", () => {
     expect(git(value.repo, "branch", "--list", "task/source")).toBe("");
   });
 
-  test("uses bare needs-owner only after the repair agent cannot decide safely", async () => {
+  test("uses bare needs-agent only after the repair agent cannot decide safely", async () => {
     const value = fixture({ devChange: "dev\n" });
     const result = await executeWithVerifier(
       value.context,
       passingVerifier,
       baseline,
       async () => ({
-        decision: "needs-owner",
+        decision: "needs-agent",
         summary: "The source intent is ambiguous.",
         evidence: ["ambiguity:shared-contract"],
       }),
@@ -787,7 +787,7 @@ describe("legacy branch verification workflow", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: expect.arrayContaining(["ambiguity:shared-contract"]),
       },
     });

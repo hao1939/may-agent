@@ -33,6 +33,7 @@ export function createSpecLiveTestContext(
       generation,
       resourceVersion: 1,
       owner,
+      agent: owner,
       mode: "achieve",
       outcome: `Reconcile ${options.taskId}.`,
       acceptance: [],

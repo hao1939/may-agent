@@ -493,20 +493,20 @@ function changedFiles(workspaceDir: string, targetRef: string): string[] {
 
 function publicationRangeRefusal(
   validation: Extract<PublicationRangeValidation, { ok: false }>,
-  ownerResult: TaskReconcileResult,
+  agentResult: TaskReconcileResult,
 ): TaskReconcileResult {
   return {
-    state: "needs-owner",
+    state: "needs-agent",
     summary:
       "Refused publication because the exact freshly fetched target range contains unauthorized commits",
     evidence: [
-      ...(ownerResult.evidence ?? []),
+      ...(agentResult.evidence ?? []),
       `publication-range:${validation.baseCommit}..${validation.candidateCommit}`,
       `publication-range-commits:${validation.commits.join(",")}`,
       `unexpected-commits:${validation.unexpectedCommits.join(",")}`,
       `publication-refusal:${validation.reason}`,
     ],
-    actions: ownerResult.actions ?? [],
+    actions: agentResult.actions ?? [],
   };
 }
 
@@ -567,7 +567,7 @@ function promptForPublication(input: {
     allowed,
     "Do not create another branch or worktree. Do not push, open a PR, merge, edit app state, or create/retarget tasks; this workflow will handle publication and merge observation.",
     "If a truthful bounded source patch is required, make it in this worktree, run the scoped verification named by the task acceptance, commit the bounded change, and return state=converged with exact evidence for the prepared commit. Converged here means the bounded local preparation is complete; this workflow still owns push, PR creation, merge waiting, and final task convergence. Do not return waiting merely because those workflow-owned publication steps remain.",
-    "If the task must wait on an exact external fact before a bounded patch can truthfully proceed, return waiting with one exact typed Condition. If the blocker is a genuine external ownership gap, return needs-owner with precise evidence.",
+    "If the task must wait on an exact external fact before a bounded patch can truthfully proceed, return waiting with one exact typed Condition. If the blocker is a genuine external ownership gap, return needs-agent with precise evidence.",
     "Task:",
     JSON.stringify(input.ctx.reconciliation ?? input.ctx.input, null, 2),
   ].join("\n\n");
@@ -598,7 +598,7 @@ function promptForExistingPullRequestReview(input: {
     allowed,
     `The current active review fingerprint is ${input.review.fingerprint || "missing"} with ${input.review.unresolvedCount} unresolved thread(s).`,
     "Do not create another branch, worktree, or PR. Stay on this same task worktree and source branch; this workflow will reuse the existing PR after your bounded judgment.",
-    "If the review reveals a truthful bounded source fix, implement it here, run the scoped verification named by the task acceptance, commit the fix, and return state=converged with exact evidence for the prepared follow-up commit. If no safe bounded source change is warranted, return needs-owner with exact evidence rather than silently restoring the stale wait.",
+    "If the review reveals a truthful bounded source fix, implement it here, run the scoped verification named by the task acceptance, commit the fix, and return state=converged with exact evidence for the prepared follow-up commit. If no safe bounded source change is warranted, return needs-agent with exact evidence rather than silently restoring the stale wait.",
     "Review threads:",
     reviewThreads,
     "Task:",
@@ -821,7 +821,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         return ctx.done(
           `PR ${existingPrId} completed without proving integration of ${sourceCommit}`,
           {
-            state: "needs-owner",
+            state: "needs-agent",
             summary: `PR ${existingPrId} completed without proving integration of ${sourceCommit}`,
             evidence: [
               `pull-request:${existingPrId}`,
@@ -849,7 +849,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         return ctx.done(
           `PR ${existingPrId} reports merge commit ${integration.targetCommit}, but ${targetRef} does not yet contain it`,
           {
-            state: "needs-owner",
+            state: "needs-agent",
             summary: `PR ${existingPrId} reports merge commit ${integration.targetCommit}, but ${targetRef} does not yet contain it`,
             evidence: [
               `pull-request:${existingPrId}`,
@@ -881,7 +881,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       return ctx.done(
         `PR ${existingPrId} requires bounded source-owner repair`,
         {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: `PR ${existingPrId} requires bounded source-owner repair`,
           evidence: [
             `pull-request:${existingPrId}`,
@@ -896,7 +896,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     }
     if (reviewNeedsJudgment(review, input)) {
       const session = await ctx.agents.call(
-        reconciliation.owner,
+        reconciliation.agent,
         promptForExistingPullRequestReview({
           ctx,
           pullRequestId: existingPrId,
@@ -913,7 +913,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       );
       if (session.status !== "done") {
         return ctx.blocked(
-          "Non-spec main publication review-repair owner session failed",
+          "Non-spec main publication review-repair agent session failed",
           {
             executionId: session.id,
             status: session.status,
@@ -925,19 +925,19 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         );
       }
 
-      const ownerResult = session.output as TaskReconcileResult;
+      const agentResult = session.output as TaskReconcileResult;
       const committedSourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
       const recoverWorkflowOwnedWait = isWorkflowOwnedPublicationWait({
-        result: ownerResult,
+        result: agentResult,
         sourceCommit: committedSourceCommit,
         targetRef,
       });
-      if (ownerResult.state !== "converged" && !recoverWorkflowOwnedWait) {
-        return ctx.done(ownerResult.summary, ownerResult);
+      if (agentResult.state !== "converged" && !recoverWorkflowOwnedWait) {
+        return ctx.done(agentResult.summary, agentResult);
       }
       if (workspaceChanges(workspaceDir)) {
         return ctx.done("Publication task left uncommitted workspace changes", {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: "Publication task left uncommitted workspace changes",
           evidence: [`workspace:${workspaceDir}`],
           actions: [],
@@ -949,16 +949,16 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         return ctx.done(
           "Publication task created no bounded repository diff from current main",
           {
-            state: "needs-owner",
+            state: "needs-agent",
             summary:
               "Publication task created no bounded repository diff from current main",
             evidence: [
-              ...(ownerResult.evidence ?? []),
+              ...(agentResult.evidence ?? []),
               `source-branch:${sourceBranch}`,
               `source-commit:${committedSourceCommit}`,
               `target-ref:${targetRef}`,
             ],
-            actions: ownerResult.actions ?? [],
+            actions: agentResult.actions ?? [],
           },
         );
       }
@@ -970,15 +970,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           return ctx.done(
             "Publication task changed files outside its bounded scope",
             {
-              state: "needs-owner",
+              state: "needs-agent",
               summary:
                 "Publication task changed files outside its bounded scope",
               evidence: [
-                ...(ownerResult.evidence ?? []),
+                ...(agentResult.evidence ?? []),
                 `unexpected-files:${unexpected.join(",")}`,
                 `allowed-files:${allowedChangedFiles.join(",")}`,
               ],
-              actions: ownerResult.actions ?? [],
+              actions: agentResult.actions ?? [],
             },
           );
         }
@@ -989,24 +989,24 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         baseCommit,
         candidateCommit: committedSourceCommit,
         taskStartCommit: sourceCommit,
-        currentTaskEvidence: ownerResult.evidence ?? [],
+        currentTaskEvidence: agentResult.evidence ?? [],
         acceptedCommits: acceptedPublicationCommits(
           input.acceptedPublicationCommits,
         ),
       });
       if (rangeValidation.ok === false) {
-        const refusal = publicationRangeRefusal(rangeValidation, ownerResult);
+        const refusal = publicationRangeRefusal(rangeValidation, agentResult);
         return ctx.done(refusal.summary, refusal);
       }
-      ownerResult.evidence = [
-        ...(ownerResult.evidence ?? []),
+      agentResult.evidence = [
+        ...(agentResult.evidence ?? []),
         ...rangeValidation.evidence,
       ];
 
       gitValue(workspaceDir, "push", "origin", `HEAD:${sourceBranch}`);
       const refreshedPr = await pullRequest(repoDir, existingPrId);
       const waiting = waitingForPullRequest({
-        result: ownerResult,
+        result: agentResult,
         taskId,
         generation,
         pullRequestId: existingPrId,
@@ -1043,7 +1043,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   }
 
   const session = await ctx.agents.call(
-    reconciliation.owner,
+    reconciliation.agent,
     promptForPublication({
       ctx,
       targetBranch,
@@ -1057,7 +1057,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     },
   );
   if (session.status !== "done") {
-    return ctx.blocked("Non-spec main publication owner session failed", {
+    return ctx.blocked("Non-spec main publication agent session failed", {
       executionId: session.id,
       status: session.status,
       summary: session.summary,
@@ -1065,19 +1065,19 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
   }
 
-  const ownerResult = session.output as TaskReconcileResult;
+  const agentResult = session.output as TaskReconcileResult;
   const committedSourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
   const recoverWorkflowOwnedWait = isWorkflowOwnedPublicationWait({
-    result: ownerResult,
+    result: agentResult,
     sourceCommit: committedSourceCommit,
     targetRef,
   });
-  if (ownerResult.state !== "converged" && !recoverWorkflowOwnedWait) {
-    return ctx.done(ownerResult.summary, ownerResult);
+  if (agentResult.state !== "converged" && !recoverWorkflowOwnedWait) {
+    return ctx.done(agentResult.summary, agentResult);
   }
   if (workspaceChanges(workspaceDir)) {
     return ctx.done("Publication task left uncommitted workspace changes", {
-      state: "needs-owner",
+      state: "needs-agent",
       summary: "Publication task left uncommitted workspace changes",
       evidence: [`workspace:${workspaceDir}`],
       actions: [],
@@ -1089,16 +1089,16 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     return ctx.done(
       "Publication task created no bounded repository diff from current main",
       {
-        state: "needs-owner",
+        state: "needs-agent",
         summary:
           "Publication task created no bounded repository diff from current main",
         evidence: [
-          ...(ownerResult.evidence ?? []),
+          ...(agentResult.evidence ?? []),
           `source-branch:${sourceBranch}`,
           `source-commit:${committedSourceCommit}`,
           `target-ref:${targetRef}`,
         ],
-        actions: ownerResult.actions ?? [],
+        actions: agentResult.actions ?? [],
       },
     );
   }
@@ -1110,14 +1110,14 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       return ctx.done(
         "Publication task changed files outside its bounded scope",
         {
-          state: "needs-owner",
+          state: "needs-agent",
           summary: "Publication task changed files outside its bounded scope",
           evidence: [
-            ...(ownerResult.evidence ?? []),
+            ...(agentResult.evidence ?? []),
             `unexpected-files:${unexpected.join(",")}`,
             `allowed-files:${allowedChangedFiles.join(",")}`,
           ],
-          actions: ownerResult.actions ?? [],
+          actions: agentResult.actions ?? [],
         },
       );
     }
@@ -1128,17 +1128,17 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     baseCommit,
     candidateCommit: committedSourceCommit,
     taskStartCommit: sourceCommit,
-    currentTaskEvidence: ownerResult.evidence ?? [],
+    currentTaskEvidence: agentResult.evidence ?? [],
     acceptedCommits: acceptedPublicationCommits(
       input.acceptedPublicationCommits,
     ),
   });
   if (rangeValidation.ok === false) {
-    const refusal = publicationRangeRefusal(rangeValidation, ownerResult);
+    const refusal = publicationRangeRefusal(rangeValidation, agentResult);
     return ctx.done(refusal.summary, refusal);
   }
-  ownerResult.evidence = [
-    ...(ownerResult.evidence ?? []),
+  agentResult.evidence = [
+    ...(agentResult.evidence ?? []),
     ...rangeValidation.evidence,
   ];
 
@@ -1168,7 +1168,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   }
   const pullRequestId = optionalString(pr.pullRequestId);
   const waiting = waitingForPullRequest({
-    result: ownerResult,
+    result: agentResult,
     taskId,
     generation,
     pullRequestId,

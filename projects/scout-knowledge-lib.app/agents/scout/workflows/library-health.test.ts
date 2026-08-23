@@ -239,7 +239,7 @@ describe("Scout library-health observer", () => {
           taskId: "runtime/library-health-observer",
           generation: 1,
           resourceVersion: 27,
-          owner: "scout",
+          agent: "scout",
           mode: "maintain",
           outcome: "Observe library health",
           acceptance: ["Publish one bounded observation"],

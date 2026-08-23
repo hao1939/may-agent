@@ -918,7 +918,7 @@ remains entirely in asynchronous App observation: event acceptance and
 semantic routing are unchanged, and no retained event, Task, session, metric,
 artifact, or historical journal row was deleted or rewritten.
 
-Session-end repair had one remaining broad read: a successful owner session
+Session-end repair had one remaining broad read: a successful agent session
 loaded up to 512 attention Tasks and decoded their attempts to find failed
 executions it could release. Commit `f950638a` replaces that scan with an
 owner/failure index and reads Task context only for the exact returned IDs. A
@@ -984,7 +984,7 @@ events still used 4.066% of one CPU and moved the main process from 264,892 to
 13% while AKS and Evaluation owner sessions were executing. Zero new events is
 therefore not a valid idle predicate: provider/workflow execution can remain
 active without committing an event. The exit proof must require both no active
-owner execution and no scheduled observer boundary before attributing the
+agent execution and no scheduled observer boundary before attributing the
 remaining native RSS or CPU to the core.
 
 The next Host profile found a long-lived memory multiplier at the App execution

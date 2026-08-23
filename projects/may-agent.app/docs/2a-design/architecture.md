@@ -78,12 +78,12 @@ cannot replace either record.
 desired task (`TaskIntent` in code)
   -> Host stores desired state and trigger
   -> Host queues one attempt within App and Host limits
-  -> selected executor checks current state
-  -> App says done, waiting, needs-owner, or requests a typed change
+  -> selected attempt handler checks current state
+  -> App says done, waiting, needs-agent, or requests a typed change
   -> Host validates, stores, and applies the result
 ```
 
-Task handler selection is direct:
+Attempt-handler selection is direct:
 
 ```text
 agent = task agent, else nearest parent agent, else App default agent
@@ -92,9 +92,9 @@ executor present = run that named Host adapter
 neither present = run that agent once
 ```
 
-The implementation and retained Task rows still call this agent field `owner`.
-That is compatibility vocabulary for execution selection, not durable
-ownership; the App always owns the Task.
+The public SDK calls this field `agent`. Retained Task rows and private Host
+state still call it `owner`; that is migration vocabulary for execution
+selection, not durable ownership. The App always owns the Task.
 
 Missing workflows or unavailable executors become visible attention. The Host
 does not silently choose another executor or agent. Codex and Claude are the

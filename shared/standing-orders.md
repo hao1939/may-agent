@@ -14,7 +14,7 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 
 ### [ORDER-003] Use workflows for structured work (2026-04-13, updated 2026-05-20)
 Workflows are for **structured bounded work** — heartbeats, reusable procedures, and task-level recipes. These are handled automatically:
-- **Projects** → project handler dispatches tasks or owner agent sessions
+- **Projects** → the project App reconciles durable Tasks through bounded agent or workflow attempts
 - **Heartbeats** → per-agent heartbeat workflow (launched by cron)
 - **Code changes** → `workflow.run("verified-coder", ...)` (tech-lead) or inline via `agents.fork()` to dev
 

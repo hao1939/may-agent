@@ -117,7 +117,7 @@ interface FailedReview {
 
 interface StoredResult {
   summary: string;
-  state: "converged" | "waiting" | "needs-owner";
+  state: "converged" | "waiting" | "needs-agent";
   evidence: string[];
   actions: TaskAction[];
   conditions: Condition[];
@@ -1599,7 +1599,7 @@ function existingResult(path: string): StoredResult | null {
     next === "ask-owner" ||
     legacyState === "converged" ||
     legacyState === "waiting" ||
-    legacyState === "needs-owner" ||
+    legacyState === "needs-agent" ||
     Boolean(approval);
   if (!recognized) {
     value.next = "ask-owner";
@@ -1610,13 +1610,13 @@ function existingResult(path: string): StoredResult | null {
   return {
     summary,
     state:
-      safetyStop || next === "ask-owner" || legacyState === "needs-owner"
-        ? "needs-owner"
+      safetyStop || next === "ask-owner" || legacyState === "needs-agent"
+        ? "needs-agent"
         : next === "wait-for-approval" || legacyState === "waiting" || approval
           ? "waiting"
           : next === "done" || legacyState === "converged"
             ? "converged"
-            : "needs-owner",
+            : "needs-agent",
     evidence: boundedEvidence(
       Array.isArray(value.evidence)
         ? [path, ...value.evidence.map(String)]
@@ -2776,7 +2776,7 @@ function saveAttentionResult(
     approval: null,
   });
   return ctx.done(summary, {
-    state: "needs-owner",
+    state: "needs-agent",
     summary,
     evidence: boundedEvidence([revisionPath, ...evidence]),
   });
@@ -3350,7 +3350,7 @@ async function runCandidateIteration(
   const workflowState = approval
     ? "waiting"
     : review?.disposition === "needs-human"
-      ? "needs-owner"
+      ? "needs-agent"
       : "converged";
   const summary = verificationPassed
     ? `May candidate passed targeted and release verification and is waiting for approval of the exact artifact. ${candidateCheckpoint.implementationSummary}`
@@ -3412,7 +3412,7 @@ async function runCandidateIteration(
     next:
       workflowState === "waiting"
         ? "wait-for-approval"
-        : workflowState === "needs-owner"
+        : workflowState === "needs-agent"
           ? "ask-owner"
           : "done",
     conditions: approval ? [approval.condition] : [],
@@ -4035,10 +4035,10 @@ async function runCandidate(
       );
     }
   }
-  if (previous?.state === "needs-owner" || previous?.state === "converged") {
+  if (previous?.state === "needs-agent" || previous?.state === "converged") {
     const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
     const retryableRuntimeReview =
-      previous.state === "needs-owner" ||
+      previous.state === "needs-agent" ||
       String(stored.recommendation ?? "") === "review-runtime";
     if (retryableRuntimeReview && requestedCandidateRetry(input, stored)) {
       const iteration = Number(stored.iteration);
@@ -5152,7 +5152,7 @@ export async function runImprovement(
         selected.scope,
       );
       const outcome = workflowOutcome(result);
-      if (outcome.state === "waiting" || outcome.state === "needs-owner") {
+      if (outcome.state === "waiting" || outcome.state === "needs-agent") {
         writeJson(checkpointPath, checkpoint);
         return result;
       }
@@ -5339,7 +5339,7 @@ export async function verify(
       next === "wait-for-approval" ||
       next === "ask-owner" ||
       legacyState === "waiting" ||
-      legacyState === "needs-owner" ||
+      legacyState === "needs-agent" ||
       checkpoint.approval != null
     ) {
       return {

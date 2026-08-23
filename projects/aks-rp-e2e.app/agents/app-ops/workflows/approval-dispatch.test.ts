@@ -30,7 +30,7 @@ function context(input: {
       taskId: "runtime/approval-dispatch/test",
       generation: 1,
       resourceVersion: 1,
-      owner: "app-ops",
+      agent: "app-ops",
       mode: "achieve",
       outcome: "Dispatch one approval",
       acceptance: ["The exact decision route is admitted."],
@@ -108,7 +108,7 @@ describe("approval-dispatch workflow", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: ["approval-dispatch:missing-required-fields"],
       },
     });
@@ -130,7 +130,7 @@ describe("approval-dispatch workflow", () => {
 
     expect(result).toMatchObject({
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: expect.arrayContaining([
           "owner-handoff:approval-dispatch",
           "path-id:path.network-cni",
@@ -227,7 +227,7 @@ describe("approval-dispatch workflow", () => {
 
     expect(result).toMatchObject({
       output: {
-        state: "needs-owner",
+        state: "needs-agent",
         evidence: [
           "approval-dispatch:path.network-cni:packet-outside-evidence-archive",
         ],

@@ -5,9 +5,10 @@
 parent/child work, bounded concurrency, resource-backed Task list/get, fenced
 mid-attempt event emission, and indexed recovery are implemented. Apps retain
 their existing authority until an explicit guarded cutover; bounded
-task-context reads and per-App rollout remain in progress. The public SDK still
-uses `owner` for the default managed agent even though the App owns the Task;
-removing that naming collision while preserving retained state is pending.
+task-context reads and per-App rollout remain in progress. The public SDK uses
+`agent` for the managed agent selected for bounded attempts. Retained Task
+records may still spell that field `owner`; the Host normalizes it at the
+storage boundary and does not expose it as Task ownership.
 
 The task engine is the single Host execution path for App-owned work. Read
 [agent-app.md](agent-app.md) first.
@@ -36,7 +37,7 @@ App input declares, revises, attaches to, or wakes TaskIntent
   -> Host persists canonical task state
   -> queue receives (appId, taskId)
   -> worker rereads and claims the current generation
-  -> one selected executor performs one bounded attempt
+  -> one selected attempt handler performs one bounded attempt
   -> Host validates and atomically applies one result
   -> task converges, waits on exact evidence, or becomes visible attention
 ```
@@ -230,7 +231,7 @@ attempt history.
 The stable execution key is `(appId, taskId)`. A task contains:
 
 - `metadata.id`, `generation`, and `resourceVersion`;
-- `spec` describing the outcome, mode, owner, selected workflow or executor,
+- `spec` describing the outcome, mode, selected agent, workflow or executor,
   inputs, outputs, dependencies, parent, priority, and acceptance; and
 - `status` describing observed generation, phase, summary, evidence, current
   attempt, and linked Conditions.
@@ -252,7 +253,7 @@ controller may:
 - deduplicate and prioritize task keys;
 - derive readiness from dependencies and exact Conditions;
 - claim at most one current attempt per key;
-- resolve the declared owner and optional workflow;
+- resolve the declared agent and optional workflow;
 - validate and apply one result/task-change batch atomically;
 - reject stale results; and
 - repair bounded delivery and execution state after restart.
@@ -266,23 +267,23 @@ and normal lanes form the scheduling boundary, and human work has reserved Host
 capacity. App priority may order peers inside a lane but cannot override
 trusted human origin.
 
-## Selecting the attempt handler
+## Selecting the attempt mechanism
 
-Owner resolution is:
+Agent selection is:
 
 ```text
-task.owner ?? nearest explicit ancestor owner ?? app.owner
+task.agent ?? nearest explicit ancestor agent ?? app.agent
 ```
 
-An unresolved or unrunnable owner moves the task to `attention`. If the task
+An unresolved or unrunnable agent moves the task to `attention`. If the task
 names a workflow, that exact workflow is the selected handler. An unavailable,
 failed, timed-out, or invalid workflow does not silently fall back to the
-owner.
+agent.
 
-A workflow may explicitly return `needs-owner` after exhausting its bounded,
-safe moves. That creates at most one sequential owner attempt for the same
-task. Cross-owner work is a typed Runtime-managed task dependency, not
-`needs-owner`.
+A workflow may explicitly return `needs-agent` after exhausting its bounded,
+safe moves. That creates at most one sequential agent attempt for the same
+task. Work for another App is a typed Runtime-managed task dependency, not
+`needs-agent`.
 
 ## Result contract
 
@@ -300,13 +301,13 @@ type HandlerResult =
       conditions?: ConditionSpec[];
     }
   | {
-      state: "needs-owner";
+      state: "needs-agent";
       summary: string;
       evidence: string[];
     };
 ```
 
-Unknown fields are rejected. `needs-owner` is workflow-only. `waiting` requires
+Unknown fields are rejected. `needs-agent` is workflow-only. `waiting` requires
 at least one open exact Condition or live direct child after actions are
 applied. A thrown exception, timeout, unavailable runtime, invalid result,
 rejected action batch, or failed verifier is a failed attempt—not a domain
@@ -333,7 +334,7 @@ domain claim is true. Every completed receipt records:
 
 ```ts
 type AcceptanceBasis = {
-  method: "deterministic" | "workflow-contract" | "owner-judgment";
+  method: "deterministic" | "workflow-contract" | "agent-judgment";
   verifier?: string;
   evidence: string[];
 };
@@ -341,8 +342,8 @@ type AcceptanceBasis = {
 
 A workflow verifier runs after result validation and before commit. It proves a
 positive postcondition. Missing or unknown evidence is not success. When a
-workflow can hand off with `needs-owner`, its hard verifier still applies to a
-later owner claim of convergence.
+workflow can hand off with `needs-agent`, its hard verifier still applies to a
+later agent claim of convergence.
 
 ## Conditions
 
@@ -401,7 +402,7 @@ Phases are:
 - `running`: one current attempt owns the generation;
 - `waiting`: exact Conditions or live direct children remain;
 - `attention`: mechanics or result admission could not produce an applicable
-  result and owner review is required; and
+  result and App review is required; and
 - `converged`: a live `maintain` task currently satisfies desired state.
 
 An `achieve` task is finite. Acceptance writes a compact receipt, removes it
@@ -502,7 +503,7 @@ Tests and audits must prove:
    durably wake the same parent.
 8. Pause/restart/pressure retain work without inventing another attempt; an
    indexed safety query can rebuild a lost ready-set entry.
-9. Direct owner and workflow-nested sessions remain correlated to the current
+9. Direct agent and workflow-nested sessions remain correlated to the current
    task generation and obsolete sessions cannot complete it.
 10. A task-owned emitted event is visible only after durable acceptance, and a
     retry with the same local key cannot duplicate it.

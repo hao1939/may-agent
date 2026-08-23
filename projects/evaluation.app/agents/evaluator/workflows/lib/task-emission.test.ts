@@ -19,7 +19,7 @@ function reconciliation(
     taskId: "runtime/owner-review",
     generation: 3,
     resourceVersion: 9,
-    owner: "evaluator",
+    agent: "evaluator",
     mode: "maintain",
     outcome: "Keep evaluation coherent.",
     acceptance: ["The exact wake is reconciled."],

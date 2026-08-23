@@ -43,7 +43,7 @@ function workflowContext(
       taskId: `explore-${source}`,
       generation: 1,
       resourceVersion: 1,
-      owner: "scout",
+      agent: "scout",
       mode: "maintain",
       outcome: `Explore ${source}`,
       acceptance: ["Current source checked"],

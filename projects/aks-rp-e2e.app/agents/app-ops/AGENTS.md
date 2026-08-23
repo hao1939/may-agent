@@ -102,7 +102,7 @@ decisions.
     waits or escalates on that task; it is not new work.
 15. When correcting an existing domain task that already has a learned workflow,
     preserve that workflow unless current evidence proves the workflow itself is
-    invalid for the desired outcome. A workflow `needs-owner` return asks for
+    invalid for the desired outcome. A workflow `needs-agent` return asks for
     exceptional judgment, not permission to clear `spec.workflow` and perform
     workflow-owned source edits, provider dispatch, proof acceptance, or
     integration directly. Put the corrected judgment/input back on the same

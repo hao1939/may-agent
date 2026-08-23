@@ -249,7 +249,7 @@ function fetchRepoRef(
 }
 
 export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
-  state: "waiting" | "needs-owner";
+  state: "waiting" | "needs-agent";
   summary: string;
   evidence: string[];
   conditions?: Condition[];
@@ -287,7 +287,7 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
   }
 
   return {
-    state: "needs-owner",
+    state: "needs-agent",
     summary: `${input.repoRef} advanced from baseline ${input.baselineCommit} to ${input.currentCommit}${scope}${publication}. Hand the task back to the owner to perform the bounded same-spec recheck instead of preserving a synthetic wait.`,
     evidence,
   };
@@ -310,7 +310,7 @@ export async function verify(
     return {
       accepted: false,
       summary:
-        "Repo-ref wait owner handoff may converge only from a converged handler result.",
+        "Repo-ref wait agent handoff may converge only from a converged handler result.",
       evidence: [`handler-state:${result.state}`],
     };
   }
@@ -384,7 +384,7 @@ export async function verify(
   if (!currentCommit || currentCommit === baselineCommit) {
     return {
       accepted: false,
-      summary: `Repo-ref wait verifier still sees ${repoRef} at baseline ${baselineCommit}; the owner handoff cannot converge yet.`,
+      summary: `Repo-ref wait verifier still sees ${repoRef} at baseline ${baselineCommit}; the agent handoff cannot converge yet.`,
       evidence: [
         `repo-ref:${repoRef}`,
         `resume-baseline:${baselineCommit}`,
@@ -448,7 +448,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (!baselineCommit) {
     const summary = `${taskId} cannot use ${name}: input.resumeBaselineCommit is missing.`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [`workflow:${name}`, `task:${taskId}`],
     });
@@ -474,7 +474,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (!producer.supported) {
     const summary = `${taskId} cannot use ${name}: ${producer.reason}. Preserve the truthful same-task compact frontier or an exact non-repo wait instead of binding a generic origin/dev advance.`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [`workflow:${name}`, ...producer.evidence],
     });
@@ -484,7 +484,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (fetched.status !== 0) {
     const summary = `${taskId} cannot refresh ${repoRef} for ${name}: ${fetched.stderr.trim() || `git fetch exited ${fetched.status}`}`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [
         `workflow:${name}`,
@@ -499,7 +499,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (current.status !== 0) {
     const summary = `${taskId} cannot verify ${repoRef} for ${name}: ${current.stderr.trim() || `git rev-parse exited ${current.status}`}`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [
         `workflow:${name}`,
@@ -525,7 +525,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   ) {
     const summary = `${taskId} received a stale satisfied repo-ref wake for ${repoRef}: the trigger observed ${triggerCommit}, but current repo state in ${projectDir} is still baseline ${baselineCommit}. Hand the task back to the owner to rebind or retry from current repo truth instead of preserving a stale true wait.`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "needs-agent",
       summary,
       evidence: [
         `workflow:${name}`,

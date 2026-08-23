@@ -37,8 +37,8 @@ only the canonical App input-to-task path may invoke it autonomously.
 
 A host-private operations-health handler is not an App-local agent heartbeat.
 It performs bounded deterministic inspection of Runtime-owned ledgers and
-publishes evidence/facts. If owner judgment is required, the fact enters the
-canonical App input-to-task path; the handler does not start or resume the owner
+publishes evidence/facts. If domain judgment is required, the fact enters the
+canonical App input-to-task path; the handler does not start or resume an agent
 directly.
 
 ## Work Context
@@ -79,10 +79,11 @@ Rules:
 - Urgent P0 signals may start immediate bounded work; lower-priority signals
   normally wait for the next review cadence or owning project event.
 
-## Project Owner Review
+## App Review
 
-Apps may use a low-frequency creative/health review. This is an App input
-schedule, not a standalone agent heartbeat or event-owned lifecycle:
+Apps may use a low-frequency creative/health review. Existing Apps may retain
+`owner-review` as a domain input kind, but it is an App input schedule—not a
+standalone agent heartbeat or a second ownership lifecycle:
 
 ```text
 app schedule
@@ -92,15 +93,15 @@ app schedule
 
 If time only refreshes deterministic desired work, the schedule instead emits
 one fact addressed to an exact task or matching Condition. The
-schedule never dispatches an owner session directly or creates another work
+schedule never dispatches an agent session directly or creates another work
 authority.
 
-An observer records every bounded packet but wakes the owner only when the
+An observer records every bounded packet but wakes the Task only when the
 canonical signal-family fingerprint changes, a previously reported signal
 recovers, or an explicit recheck is due. The persisted fingerprint contains
 stable signal identity and decision-relevant values, not timestamps or packet
 paths. Repeated unchanged red observations remain visible in health history and
-do not spend another owner session.
+do not spend another agent session.
 
 ## Human Steering
 
@@ -121,14 +122,14 @@ A standalone heartbeat is healthy when it:
 - avoids duplicate dispatch and repeated blind retries;
 - surfaces provider/runtime failures visibly.
 
-An App is healthy based on App requests, owner workflow runs, task
+An App is healthy based on App requests, task workflow runs, task
 motion, delivery, and evidence—not on standalone heartbeat coverage.
 
 ## Implementation
 
 - Auto-generation: `projects/may-agent/src/app/loader/heartbeat-loader.ts`.
 - Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
-- App owner schedules: `projects/<id>.app/app.ts`.
+- App schedules: `projects/<id>.app/app.ts`.
 - Explicit host-maintenance schedules: owning agent `cron.json` plus a typed
   host-private handler.
 - Governing App contract: [agent-app.md](agent-app.md).

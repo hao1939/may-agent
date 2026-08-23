@@ -211,8 +211,8 @@ function context(
           ),
           status: phase,
           outcome: String(spec.outcome ?? task.outcome ?? "fixture task"),
-          ...(typeof spec.owner === "string" || typeof task.owner === "string"
-            ? { owner: String(spec.owner ?? task.owner) }
+          ...(typeof spec.agent === "string" || typeof task.agent === "string"
+            ? { agent: String(spec.agent ?? task.agent) }
             : {}),
           ...(typeof spec.workflow === "string" ||
           typeof task.workflow === "string"
@@ -245,8 +245,8 @@ function context(
                   type: String(spec.type ?? "fixture.condition"),
                   subject: String(spec.subject ?? `task:${taskId}`),
                   expected: spec.expected ?? { state: "completed" },
-                  ...(typeof spec.owner === "string"
-                    ? { owner: spec.owner }
+                  ...(typeof spec.agent === "string"
+                    ? { agent: spec.agent }
                     : {}),
                 },
               ];
@@ -287,7 +287,7 @@ function context(
       taskId: "scenario-normalization",
       generation: 1,
       resourceVersion: 1,
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       mode: "maintain",
       outcome: "Normalize the scenario frontier",
       acceptance: ["The current scenario frontier is accounted for."],
@@ -374,7 +374,7 @@ describe("normalize scenario frontier workflow", () => {
         input: {},
         conditionIds: [],
         latestAttemptHandler: "workflow:spec-live-reconciliation",
-        latestFailureReason: "needs-owner",
+        latestFailureReason: "needs-agent",
       }),
     ).toBeNull();
   });
@@ -393,7 +393,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           priority: "P1",
           outputs: [
@@ -408,7 +408,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           priority: "P1",
           outputs: [
@@ -904,7 +904,7 @@ describe("normalize scenario frontier workflow", () => {
     );
   });
 
-  test("keeps a needs-owner handoff in capacity after its row leaves inventory", async () => {
+  test("keeps a needs-agent handoff in capacity after its row leaves inventory", async () => {
     const currentPaths = ["b", "c", "d", "e", "f", "g"].map(
       (name) => `features/feature-a/tests/case-${name}.ts`,
     );
@@ -940,7 +940,7 @@ describe("normalize scenario frontier workflow", () => {
           taskId: ownerHandoffTaskId,
           startedAt: "2026-07-28T00:00:00Z",
           handler: "workflow:spec-live-reconciliation",
-          failureReason: "needs-owner",
+          failureReason: "needs-agent",
         },
       },
       tasks: Object.fromEntries(
@@ -1216,7 +1216,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           priority: "P1",
           outputs: [
@@ -1254,7 +1254,7 @@ describe("normalize scenario frontier workflow", () => {
     );
   });
 
-  test("returns needs-owner when file-layout is complete but unpaired/unreferenced direct-carrier gaps remain", async () => {
+  test("returns needs-agent when file-layout is complete but unpaired/unreferenced direct-carrier gaps remain", async () => {
     const ws = await workspace({
       missingAdapterFiles: [],
       strictPassed: true,
@@ -1274,7 +1274,7 @@ describe("normalize scenario frontier workflow", () => {
       },
     });
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
-    expect(result.output.state).toBe("needs-owner");
+    expect(result.output.state).toBe("needs-agent");
     expect(result.output.summary).toContain(
       "completed file-layout normalization",
     );
@@ -1301,7 +1301,7 @@ describe("normalize scenario frontier workflow", () => {
       unpairedAdapterFiles: [],
     });
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
-    expect(result.output.state).toBe("needs-owner");
+    expect(result.output.state).toBe("needs-agent");
     expect(result.output.summary).toContain(
       "per-spec reviewed-quality/live-proof coverage is active:2,reviewed:0,represented:0,incomplete:2",
     );
@@ -1333,7 +1333,7 @@ describe("normalize scenario frontier workflow", () => {
       },
     });
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
-    expect(result.output.state).toBe("needs-owner");
+    expect(result.output.state).toBe("needs-agent");
     expect(result.output.summary).toContain(
       "per-spec reviewed-quality/live-proof coverage is active:2,reviewed:0,represented:0,incomplete:2",
     );
@@ -1691,7 +1691,7 @@ describe("normalize scenario frontier workflow", () => {
         requiredRepositoryCheckCommand: "bun run check",
       }),
     )) as any;
-    expect(result.output.state).toBe("needs-owner");
+    expect(result.output.state).toBe("needs-agent");
     expect(result.output.summary).toContain(
       "required full repository check failed",
     );
@@ -1853,7 +1853,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           input: {
             normalizationScope: "quality",
@@ -1865,7 +1865,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "spec-live-reconciliation",
           input: {
             normalizationScope: "quality",
@@ -1981,7 +1981,7 @@ describe("normalize scenario frontier workflow", () => {
       {
         kind: "create-task",
         parentId: "scenario-normalization",
-        owner: "aks-explorer",
+        agent: "aks-explorer",
         workflow: "spec-live-reconciliation",
         input: {
           normalizationScope: "quality",
@@ -2048,7 +2048,7 @@ describe("normalize scenario frontier workflow", () => {
           metadata: { id: taskId, generation: 1, resourceVersion: 8 },
           spec: {
             parentId: "group/scenario-normalization",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "spec-live-reconciliation",
             input: {
               loopId: "scenario-normalization",
@@ -2840,7 +2840,7 @@ describe("normalize scenario frontier workflow", () => {
     expect(result.output.actions[0]).toMatchObject({
       kind: "create-task",
       parentId: "scenario-normalization",
-      owner: "aks-explorer",
+      agent: "aks-explorer",
       workflow: "spec-live-reconciliation",
       input: {
         normalizationScope: "quality",
@@ -3320,7 +3320,7 @@ describe("normalize scenario frontier workflow", () => {
           metadata: { id: taskId, generation: 2, resourceVersion: 4 },
           spec: {
             parentId: "group/scenario-normalization",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             input: {
               loopId: "scenario-normalization",
               workKey: scenarioTestPath,
@@ -3341,7 +3341,7 @@ describe("normalize scenario frontier workflow", () => {
         kind: "update-task",
         taskId,
         expectedGeneration: 2,
-        owner: "aks-explorer",
+        agent: "aks-explorer",
         workflow: "spec-live-reconciliation",
       },
     ]);
@@ -3369,7 +3369,7 @@ describe("normalize scenario frontier workflow", () => {
           metadata: { id: taskId, generation: 3, resourceVersion: 7 },
           spec: {
             parentId: "group/scenario-normalization",
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             workflow: "spec-live-reconciliation",
             priority: "P0",
             input: {
@@ -3447,7 +3447,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           workflow: "domain-task-execution",
           input: {
             target: "staging",
@@ -3498,7 +3498,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           input: {
             adapterPath,
             specId: "spec.feature-a.case-a",
@@ -3571,7 +3571,7 @@ describe("normalize scenario frontier workflow", () => {
       resources: {
         "scenario-normalization": {
           spec: {
-            owner: "aks-explorer",
+            agent: "aks-explorer",
             outcome: "Normalize scenario adapter gaps",
           },
           status: {
@@ -3582,7 +3582,7 @@ describe("normalize scenario frontier workflow", () => {
         },
         "runtime/focus-review/plan": {
           spec: {
-            owner: "app-ops",
+            agent: "app-ops",
             outcome: `Review focus around ${adapterPath}`,
           },
           status: { phase: "running" },
@@ -3596,7 +3596,7 @@ describe("normalize scenario frontier workflow", () => {
         {
           kind: "create-task",
           parentId: "scenario-normalization",
-          owner: "aks-explorer",
+          agent: "aks-explorer",
           input: {
             adapterPath,
             specId: "spec.feature-a.case-a",

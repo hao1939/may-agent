@@ -100,7 +100,7 @@ The front page should answer, in order:
 
 Liveness uses existing facts:
 
-- recent project owner/workflow/session activity;
+- recent project agent/workflow/session activity;
 - active and recently changed projects;
 - open metric alerts;
 - event delivery, request, task, and human-delivery health;
