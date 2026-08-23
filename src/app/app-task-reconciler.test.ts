@@ -381,6 +381,31 @@ describe("App task reconciler state", () => {
     });
   });
 
+  it("consumes only live events incorporated into the accepted result", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appAgent: "app-owner",
+      handler: "executor:reviewer",
+      trigger: { type: "sample.requested", eventId: 100 },
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    recordAppTaskTrigger(config, claim.taskId, { type: "sample.corrected", eventId: 101 });
+    recordAppTaskTrigger(config, claim.taskId, { type: "sample.follow-up", eventId: 102 });
+
+    expect(
+      completeAppTask(config, claim, {
+        summary: "Incorporated the correction but not the later follow-up",
+        evidence: ["event:101"],
+        acceptedLiveEventIds: [101],
+      }),
+    ).toMatchObject({ status: "applied", taskContinues: true });
+    expect(readTaskState(config).taskTriggers?.[claim.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
+      102,
+    ]);
+  });
+
   it("claims an ordered bounded event prefix without losing the remaining wakes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
