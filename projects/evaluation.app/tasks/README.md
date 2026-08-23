@@ -65,7 +65,7 @@ after their result is absorbed.
 | `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                            |
 | `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection`        | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                            |
 | `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`              | The target fingerprint is current and any due report/feedback is persisted.                                                                       |
-| `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`                   | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op. |
+| `runtime/owner-review`                | `maintain` | `codex-goal`                            | Codex resumes the evaluator role against bounded Task events and child facts; typed child actions are applied or it records a justified no-op.    |
 
 Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.
@@ -94,8 +94,8 @@ import task persistence helpers.
 Task execution follows one rule:
 
 ```text
-explicit task workflow -> reusable workflow
-no workflow -> evaluation.app owner entry
+explicit task workflow -> reusable deterministic workflow
+open-ended Evaluation judgment -> resumable codex-goal executor
 workflow returns needs-agent -> one evaluation.app owner judgment
 named workflow unavailable -> attention until the binding is repaired
 ```

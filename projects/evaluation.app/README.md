@@ -35,8 +35,8 @@ Each path uses the same task resource model:
 
 ```text
 event -> short-lived achieve task or standing maintain task
-      -> bound workflow, otherwise evaluator owner entry
-      -> structured workflow result
+      -> deterministic workflow or resumable evaluator executor
+      -> structured Task result
       -> Host updates or absorbs the task
 ```
 
@@ -93,7 +93,10 @@ bun run bundle      # build the app manifest and local workflows
 ```
 
 The app manifest in `app.ts` owns schedules, event-to-task correlation,
-workflow bindings, and bounded owner judgment.
+workflow bindings, and bounded owner judgment. Deterministic collection,
+publication, and projection stay in workflows. Open-ended owner reconciliation
+and addressed free-form requests use the `codex-goal` executor with the same
+Task result and event contract; changing executors does not change Task identity.
 Session aftermath runs only for eligible `session.end` or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
 evaluator-owned metric facts wake the stable owner-review task directly.

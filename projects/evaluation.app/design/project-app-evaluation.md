@@ -291,6 +291,24 @@ An `achieve` task leaves the live graph after outcome absorption and keeps a
 bounded completion reference for deduplication. A converged `maintain` task
 remains standing and can be woken again.
 
+### Execution Policy
+
+Task outcome and acceptance remain independent of the executor:
+
+- deterministic evidence collection, persistence, metrics, and delivery use
+  the named Evaluation workflows;
+- `runtime/owner-review` and addressed free-form Evaluation requests use the
+  resumable `codex-goal` executor with the selected `evaluator` role; and
+- the compatibility action for a bounded read-only Codex review uses that same
+  production executor rather than a separate work model.
+
+Codex receives the current Task, bounded direct-child facts, durable events,
+declared outputs, and the selected evaluator instructions. Its thread is
+working memory for one Task, not another owner or status authority. Runtime
+admits its structured result through the same generation fence and App action
+validation used by every executor. Reverting this canary changes only the
+Task's executor selection; it does not migrate Task identity or state.
+
 ### Conditions And Failures
 
 A handler that must wait on an external fact records an exact Condition and

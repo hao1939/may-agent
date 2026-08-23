@@ -11,6 +11,7 @@ import app, {
   taskInputForEvent,
   taskIntentForEvent,
   taskIntentForInput,
+  validateEvaluationTaskAction,
 } from "./app.ts";
 import {
   PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
@@ -86,7 +87,7 @@ describe("canonical evaluation App", () => {
     expect(app.actions?.["review-project-app"]).toBeUndefined();
   });
 
-  test("keeps the Codex goal trial manual, read-only, and isolated from the built-in codex executor", () => {
+  test("uses Evaluation's resumable Codex executor for a manual read-only review", () => {
     const input = app.actions?.["trial-codex-goal-review"]?.toInput?.({
       targetProject: "may-agent.app",
       focus: "Check whether the Task mental model matches current code.",
@@ -102,7 +103,7 @@ describe("canonical evaluation App", () => {
       id: expect.stringMatching(/^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/),
       mode: "achieve",
       agent: "evaluator",
-      executor: "codex-goal-poc",
+      executor: "codex-goal",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
     });
     expect(app.schedules?.some((schedule) => schedule.id.includes("codex-goal"))).toBeFalse();
@@ -118,7 +119,12 @@ describe("canonical evaluation App", () => {
       ),
     ).toMatchObject({
       kind: "desired",
-      intent: { id: "input/request-1", mode: "achieve", agent: "evaluator" },
+      intent: {
+        id: "input/request-1",
+        mode: "achieve",
+        agent: "evaluator",
+        executor: "codex-goal",
+      },
     });
   });
 
@@ -429,7 +435,8 @@ describe("evaluation task policy", () => {
       id: "runtime/owner-review",
       parentId: "evaluator-reliability",
       mode: "maintain",
-      workflow: "evaluator-heartbeat",
+      agent: "evaluator",
+      executor: "codex-goal",
     });
     const evaluation = {
       sessionId: "s_feedback",
@@ -459,7 +466,7 @@ describe("evaluation task policy", () => {
     ).toMatchObject({
       id: "runtime/owner-review",
       mode: "maintain",
-      workflow: "evaluator-heartbeat",
+      executor: "codex-goal",
     });
   });
 
@@ -573,5 +580,40 @@ describe("evaluation task policy", () => {
     expect(instructions).toContain("event:project.task.child-transitioned");
     expect(instructions).toContain("Put target filters");
     expect(instructions).toContain("never use prose");
+  });
+
+  test("keeps Codex task-tree actions inside open-ended Evaluation work", () => {
+    expect(
+      validateEvaluationTaskAction({
+        kind: "create-task",
+        id: "review-evaluator-routing",
+        parentId: "runtime/owner-review",
+        outcome: "Review evaluator routing",
+        mode: "achieve",
+        outputs: [],
+        acceptance: ["Routing evidence is current"],
+        priority: "P1",
+      }),
+    ).toBeNull();
+    expect(
+      validateEvaluationTaskAction({
+        kind: "update-task",
+        taskId: "runtime/project-audit/may-agent.app",
+        expectedGeneration: 1,
+        outcome: "Take over target remediation",
+      }),
+    ).toContain("cannot mutate reconciler-owned task");
+    expect(
+      validateEvaluationTaskAction({
+        kind: "create-task",
+        id: "target-remediation",
+        parentId: "project-app-audit",
+        outcome: "Repair another App",
+        mode: "achieve",
+        outputs: [],
+        acceptance: ["Target changed"],
+        priority: "P1",
+      }),
+    ).toContain("must remain under");
   });
 });

@@ -7,10 +7,12 @@ import {
   type AppInput,
   type AppTaskAttachment,
   type AppTaskInput,
+  type TaskAction,
   type TaskIntent,
 } from "@may-agent/sdk";
 
 const projectId = "evaluation";
+const evaluationExecutor = "codex-goal";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const sessionSchema = Type.Object(
   {
@@ -141,6 +143,21 @@ function safeTaskIdPart(value: unknown): string {
   }
   const digest = createHash("sha256").update(raw).digest("hex").slice(0, 12);
   return `${normalized.slice(0, 107) || "id"}-${digest}`;
+}
+
+export function validateEvaluationTaskAction(action: TaskAction): string | null {
+  const taskId = action.kind === "create-task" ? action.id : action.taskId;
+  if (taskId.startsWith("runtime/")) {
+    return `${action.kind} cannot mutate reconciler-owned task ${taskId}`;
+  }
+  if (
+    action.kind === "create-task" &&
+    action.parentId !== "runtime/owner-review" &&
+    !action.parentId.startsWith("input/")
+  ) {
+    return `create-task ${taskId} must remain under its open-ended Evaluation task`;
+  }
+  return null;
 }
 
 function eventSessionId(event: AppEvent<Record<string, unknown>>): string {
@@ -350,7 +367,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         ],
         mode: "achieve",
         agent: "evaluator",
-        executor: "codex-goal-poc",
+        executor: evaluationExecutor,
         input: { ...target, focus, trial: true, readOnly: true },
         priority: "P2",
         category: "executor-trial",
@@ -390,7 +407,8 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "The owner does not take remediation ownership for findings about target projects.",
         ],
         mode: "maintain",
-        workflow: "evaluator-heartbeat",
+        agent: "evaluator",
+        executor: evaluationExecutor,
         input: { scope: "evaluation.app" },
         priority: "P1",
       };
@@ -427,6 +445,7 @@ export function taskForEvaluationInput(
       ],
       mode: "achieve",
       agent: "evaluator",
+      executor: evaluationExecutor,
       input: {
         kind: admitted.input.kind,
         data: record(admitted.input.data),
@@ -664,7 +683,7 @@ const app = defineApp({
     },
     "trial-codex-goal-review": {
       description:
-        "Run one manual, read-only evaluation task through the resumable Codex goal executor trial.",
+        "Run one manual, read-only evaluation task through Evaluation's resumable Codex executor.",
       inputSchema: Type.Object(
         {
           targetProject: Type.String({ minLength: 1 }),
@@ -694,6 +713,7 @@ const app = defineApp({
       { type: "evaluation.deep_recorded", project: projectId },
     ],
     resolve: taskIntentForEvent,
+    validateAction: validateEvaluationTaskAction,
     maxConcurrent: 5,
   },
 });

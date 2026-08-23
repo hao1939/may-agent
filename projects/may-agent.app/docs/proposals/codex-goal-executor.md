@@ -1,6 +1,7 @@
 # Resumable Codex Goal Executor
 
-**Status:** Draft; explicit opt-in proof of concept running in one example App
+**Status:** Evaluation canary; production executor name enabled for open-ended
+Evaluation reconciliation, with the former PoC name retained as an alias
 
 **Scope:** use Codex as a strong, resumable Task executor now while preserving
 May's Task authority and creating comparable evidence for improving the native
@@ -23,7 +24,11 @@ completion authority. A Codex thread supplies working-memory continuity for the
 same May Task. Its goal mirrors the Task outcome so Codex can work effectively,
 but only the App verifier may say that the May Task is fulfilled.
 
-Use Codex app-server over local stdio for the proof of concept. Its supported
+Use Codex app-server over local stdio for this integration. Official OpenAI
+documentation recommends the Codex SDK for ordinary CI automation and
+app-server for deep product integrations. May needs persistent threads, live
+steering, goals, and streamed lifecycle observations, so app-server is the
+intentional fit here rather than an incidental process wrapper. Its supported
 surface includes persistent threads, thread goals, thread resume/read/status,
 streamed turn events, live `turn/steer`, and `turn/interrupt`. Do not infer
 these semantics from terminal output. Generate protocol types from the pinned
@@ -160,6 +165,8 @@ type TaskAttempt = {
   appId: string;
   task: TaskDetail;
   cwd: string;
+  declaredOutputPaths: string[];
+  children: { live: TaskReconciliationChild[]; completed: TaskReconciliationChild[] };
   events: TaskReconciliationEvents;
   signal: AbortSignal;
   publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
@@ -370,13 +377,15 @@ Its current Codex provider starts one fresh app-server thread/turn per run and
 does not implement May's desired resume, Task event bridge, or daemon liveness
 policy. Reuse its process and protocol discipline, not its one-shot lifecycle.
 
-## Proof of concept
+## Resumable adapter
 
-The PoC is not wired to the production `codex` executor name.
+The resumable adapter is not wired to the one-shot `codex` executor name.
 
 The protocol and policy implementation is isolated under
 `projects/may-agent/scripts/poc/codex-goal-*.ts`. Only the explicitly named
-`codex-goal-poc` adapter imports it; the default executors and Apps do not.
+`codex-goal` adapter imports it. `codex-goal-poc` remains a compatibility alias
+for already-durable trial Tasks; the default managed agent and one-shot
+`codex`/`claude` executors remain unchanged.
 The focused fixture command is:
 
 ```bash
@@ -451,14 +460,14 @@ failure coupling.
 
 1. **Draft and PoC — complete:** the document, protocol fixtures, and real
    read-only smoke are present.
-2. **Opt-in — current:** `codex-goal-poc` is registered only for the manual,
-   read-only `evaluation.app` trial action; no schedule selects it.
-3. **Resource proof:** measure resume, steering, recovery, memory, latency, and
+2. **Opt-in — complete:** the manual, read-only `evaluation.app` trial passed.
+3. **Evaluation canary — current:** open-ended owner review and addressed
+   Evaluation requests select `codex-goal`; deterministic evidence,
+   persistence, metric, and delivery workflows remain workflows.
+4. **Resource proof:** measure resume, steering, recovery, memory, latency, and
    event volume under controlled failure.
-4. **Contract decision:** accept or reject `progress`, `AbortSignal`, and the
+5. **Contract decision:** accept or reject `progress`, `AbortSignal`, and the
    minimal thread-binding storage based on evidence.
-5. **Canary:** move one low-risk production category from one-shot `codex` to
-   the resumable adapter with immediate rollback.
 6. **Learning:** sample accepted attempts into Evaluation/Gym and run native May shadows.
 7. **Promotion:** switch proven categories to native May without changing Apps
    or Task semantics.
@@ -468,16 +477,16 @@ failure coupling.
 - Codex does not become an App or Task owner.
 - The Codex thread goal is not synchronized as a second Task state machine.
 - The Host does not publish every Codex protocol delta as a May event.
-- The PoC does not change the default executor or enable a scheduled production
-  workload.
+- The canary does not replace deterministic Evaluation workflows or change the
+  default executor for other Apps.
 - The design does not promise exactly-once execution.
 - Native-agent promotion is not based on imitation or output-text similarity alone.
 
 ## PoC observations so far
 
 The existing `codex` and `claude` executors remain unchanged. The new behavior
-is registered only as explicit executor name `codex-goal-poc`, and one manual,
-read-only `evaluation.app` action opts into it.
+is registered as explicit executor name `codex-goal`; the former
+`codex-goal-poc` name remains only as a compatibility alias.
 
 - Pinned local protocol under test: Codex CLI `0.147.0`. The PoC's small
   handwritten protocol subset was checked against the schema emitted by that
@@ -563,12 +572,13 @@ read-only `evaluation.app` action opts into it.
   and limits. Native and Codex renderers receive equal semantic fields. New
   events and attempts change Codex attempt context without rewriting the
   generation-stable goal; a new Task generation changes it, and the goal stays
-  within 4,000 characters. Real selected-agent role loading is still required
-  before a production canary.
+  within 4,000 characters. Runtime now loads the selected App-agent role and
+  supplies bounded direct-child facts and declared outputs through the shared
+  `TaskAttempt` contract.
 
-Still required before promoting this beyond the explicit read-only trial:
+Still required before promoting this beyond the Evaluation canary:
 checked-in generated protocol types beyond the current drift fingerprints,
 concurrent and one-shot resource comparison, retained-artifact bounds, an
 external policy for orphan cleanup after uncatchable Host death, and production
-Runtime construction of the proven canonical packet using the real selected
-May agent role. The current one-shot executors remain unchanged.
+evidence for restart recovery and live steering. The current one-shot
+executors remain unchanged.
