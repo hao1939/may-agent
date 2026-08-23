@@ -324,7 +324,7 @@ stronger execution is justified:
 | Cross-owner decision or action                       | Escalation                                                                 |
 
 Do not encode project state, task ownership, retries, approvals, or completion
-inside a skill. Those remain in Agent Apps, workflows, events, and sessions.
+inside a skill. Those remain in Apps, workflows, events, and sessions.
 
 Promote a skill into a workflow only when repeated evidence shows that
 sequencing should be consistent, terminal conditions can be explicit, and

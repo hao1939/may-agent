@@ -509,7 +509,7 @@ the current authority and exact source revision, `pause` stops new claims, and
 offline `activate` requires drained attempts, the final reviewed SHA-256, and
 an explicit assertion that the daemon is stopped. It refuses to overwrite an
 already-active resource authority. The operator procedure is documented in
-[Agent App operations and recovery](../2b-manual/app-operations-recovery.md).
+[App operations and recovery](../2b-manual/app-operations-recovery.md).
 
 The first production canary is now active for `scout-knowledge-lib`. Its seven
 Tasks were imported from paused source revision
@@ -833,11 +833,11 @@ so it proves removal of inbox reclaim churn, not the final idle-CPU target.
 Tracing that remaining periodic work found a separate compatibility loop. Every
 five seconds it reopened and hashed every App manifest, watcher, agent
 configuration, workflow, and legacy lifecycle file to discover source changes.
-The loop has been removed rather than replaced with another watcher. App
-generations now change only through explicit `/reload` atomic publication. A
-Host deployment or restart restores the previously activated committed App
-source release; it does not discover new App behavior from the mutable
-checkout. Handler, workflow, guard, and App modules resolve lazily
+The loop has been removed rather than replaced with another watcher. Runtime
+definition generations now change only through explicit `/reload` atomic
+publication. A Host deployment or restart restores the previously activated
+committed agent-and-App definition release; it does not discover new agent or
+App behavior from the mutable checkout. Handler, workflow, guard, and App modules resolve lazily
 once per published runtime generation and remain loaded until the next explicit
 `/reload` or restart. The App inbox
 safety scan now defaults to one minute and exists only for recovery, schedules,
@@ -996,6 +996,17 @@ design also repaid the bundle cost on every execution. Runtime commit
 runtime generation. A failed load is retryable, and the existing explicit
 `/reload` clears the generation cache before republishing agent and App
 definitions. No source watcher or new lifecycle was added.
+
+The later definition-generation hardening closes the partial-publication gap:
+global and App-local agents, shared prompt/skill sources, and Apps now prepare
+from one committed release. Configuration, duplicate-name, definition-build,
+skill, and handler diagnostics reject the complete candidate before manager
+mutation. The final App registry transaction publishes the prepared manager
+definitions and scheduler resources; an App rejection rolls them back exactly,
+and rejected resources are closed. Focused rejection, rollback, source-restore,
+Cron activation, shared-prompt selection, and publication tests pass.
+Production activation and a retained-state quiet window remain required before
+this migration item is considered deployed.
 
 A real AKS `domain-task-execution` workflow took about 122 ms for the first
 bundled import; twenty later resolutions in the same generation took 0.508 ms
@@ -1195,6 +1206,11 @@ second execution lifecycle.
 
 - Update accepted design and manuals to this contract.
 - Migrate every App and adapter to the same event/task interfaces.
+- Rename public App/Task agent selection from `owner` to `agent`: accept both
+  only at the definition boundary for one migration window, reject conflicting
+  values, write canonical `agent` in new definitions, and keep retained
+  `owner` columns as private storage compatibility until old rows are upgraded.
+  Event `owner` remains provenance and is not part of this rename.
 - Define protected references, then archive or compact old detail in bounded
   pages.
 - Delete whole-App mutable authority, broad resync, direct EventBus exposure,

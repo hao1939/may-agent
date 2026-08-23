@@ -1,4 +1,4 @@
-# Agent App Contract
+# App Contract
 
 **Design status:** Accepted.
 **Implementation status:** Every current App uses Task reconciliation as its
@@ -6,8 +6,8 @@ only policy execution path. Request storage correlates Task results without a
 second owner or delivery loop. Scoped Task list/get reads are implemented
 across the SDK, agent tool, control socket, and HTTP.
 
-An Agent App is one durable address with one accountable owner. Keep the mental
-model to one work object and three responsibilities:
+An App is one durable address with one accountable responsibility. Keep the
+mental model to one work object and three responsibilities:
 
 ```text
 Task    = the durable desired and observed App work
@@ -17,15 +17,16 @@ Runtime = task lifecycle, execution, scoped capabilities, and recovery
 App     = resolve inputs to tasks and reconcile those tasks
 ```
 
-Agents and workflows are bounded capabilities an App may use while reconciling
-a task. Events and caller requests are supporting records managed by Infra or
-Runtime. “Fact” is only the meaning of an Event that reports an observation.
+Agents, workflows, and CLI adapters are replaceable executors an App may use
+for a bounded attempt. They never own the Task. Events and caller requests are
+supporting records managed by Infra or Runtime. “Fact” is only the meaning of
+an Event that reports an observation.
 
 See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for task reconciliation, and
 [Workflows](workflows.md) for reusable process ownership. The migration and
 deletion sequence is recorded in
-[Canonical Agent App Migration](../archive/implementation/canonical-agent-app-migration.md).
+[Canonical App Migration](../archive/implementation/canonical-agent-app-migration.md).
 
 ## Choosing the stored record
 
@@ -87,8 +88,8 @@ typed input -> TaskIntent -> task <--- durable event
 - `TaskIntent` records the latest desired outcome; Runtime separately records
   the ordered events that declared or woke it.
 - A task preserves desired and observed state across bounded attempts.
-- A workflow applies reusable experience; otherwise the accountable owner or a
-  selected Codex/Claude adapter performs one bounded attempt.
+- A workflow applies reusable experience; otherwise the selected agent or a
+  named Host executor performs one bounded attempt.
 - A result advances observed state; a Condition names the exact fact required
   before work can continue.
 - Queue coalescing happens only after the latest desired intent and trigger are
@@ -125,7 +126,7 @@ Every App exports one `defineApp(...)` declaration from the stable
 export default defineApp({
   id: "sample",
   version: 1,
-  owner: "sample-owner",
+  owner: "sample-agent", // current SDK name for the default agent
   inputSchema,
 
   // Pure mapping from admitted domain input to existing or desired task state.
@@ -166,8 +167,12 @@ export default defineApp({
 });
 ```
 
-Identity, owner, version, input schema, and task resolution form the App
-contract. Subscriptions, observation-only selectors, schedules, observers,
+The current public field is named `owner`, but it selects the App's default
+managed agent; it does not own the App or Task. New prose calls this the
+default agent. A retained-state-safe SDK rename remains pending.
+
+Identity, default agent, version, input schema, and Task resolution form the
+App contract. Subscriptions, observation-only selectors, schedules, observers,
 commands, workspace policy, agents, and workflows are optional capabilities
 hosted by the runtime. They feed or help reconcile tasks; they do not add App
 work loops.
@@ -302,17 +307,18 @@ domain judgment, workflow inputs, acceptance, and results; the Host owns
 storage, generations, attempts, leases, queues, workspace allocation, result
 admission, recovery, and projections.
 
-Task ownership resolves from the task, nearest explicit ancestor, then App
-owner. The resolved owner must be runnable:
+Agent selection resolves from the Task, nearest explicit ancestor, then the
+App's default agent. The selected agent must be runnable:
 
 ```text
-task.workflow present -> agents/<owner>/workflows/<workflow>.ts
-task.workflow absent  -> one bounded run of the resolved owner
+task.workflow present -> agents/<agent>/workflows/<workflow>.ts
+task.workflow absent  -> one bounded run of the selected agent
 ```
 
-A workflow may return `needs-owner` for one handoff of the same attempt.
+A workflow may return the compatibility state `needs-owner` for one bounded
+handoff to that agent; it does not transfer Task ownership.
 Unavailable named workflows produce an explicit unavailable/attention state;
-they are not silently treated as unbound owner work.
+they are not silently treated as unbound agent work.
 
 Targeted task wakes, Condition observations, recovery, and delivery resync
 enqueue stable task identities through the same controller. The queue never
@@ -395,7 +401,7 @@ declarations at load time, but it must not run both paths for the same input.
 ## Integrity invariants
 
 1. One App has one `defineApp` declaration, one registry identity, and one
-   accountable owner.
+   default agent selection.
 2. Every addressed request has one authoritative Host record, one linked task,
    and one correlated terminal result.
 3. Every App-owned outcome has one authoritative task identity.

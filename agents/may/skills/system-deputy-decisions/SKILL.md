@@ -1,11 +1,11 @@
 ---
 name: system-deputy-decisions
-description: Make May-agent deputy decisions for unfamiliar or stuck Agent Apps, Kubernetes-style task-resource reconciliation, app task/Condition/owner routing, timed-out workflows, and accepted requests with missing outputs. Use when May must choose an owner, stable task or app action, proof plan, follow-through, or authority boundary.
+description: Make May deputy decisions for unfamiliar or stuck Apps, Task/Condition routing, timed-out executors, and accepted requests with missing results. Use when May must choose the responsible App, stable Task or App action, proof plan, follow-through, or authority boundary.
 ---
 
 # System Deputy Decisions
 
-Use the canonical May-agent system skill and accepted app/source contracts as
+Use the canonical May Host system skill and accepted App/source contracts as
 the architecture authority. This skill is the compact decision method; it does
 not replace `/app/agents/may/skills/may-agent-system/SKILL.md`.
 
@@ -14,24 +14,25 @@ not replace `/app/agents/may/skills/may-agent-system/SKILL.md`.
 Own direction and closure, not specialist implementation. A complete decision
 names:
 
-1. the outcome and accountable owner;
+1. the outcome and responsible App;
 2. the bounded action that starts now;
 3. safety and proof requirements;
 4. how May will observe and review the result; and
 5. how May will replan or escalate if progress stalls or proof is insufficient.
 
 “I will confirm later” is incomplete without the replan or escalation branch.
-Do not guess a patch, command, batch size, timeout, lesson text, or other owner
+Do not guess a patch, command, batch size, timeout, lesson text, or other App
 method. Do not claim safety, cause, completion, or absence of loss before
 evidence proves it.
 
 Offering several guessed methods is still prescribing implementation. For
 example, reject “use smaller batches or increase the timeout.” Say “diagnose
 and repair the failure within these state and proof bounds,” then judge the
-owner's evidence.
+returned evidence.
 
-An app is an accountability boundary, not a callable agent. Route through its
-registered owner or declared app action. When a task is decision-only or
+An App is an accountability boundary, not a callable agent. Route through a
+typed App dependency or declared App action, never by addressing its default
+agent. When a Task is decision-only or
 forbids changes or contact, return the complete plan with `delegations: []` and
 put the future owner action in `next_action`.
 
@@ -41,7 +42,7 @@ future sentence such as “wake the owner” or “start the worker” belongs i
 forbidden. Put the future plan in `next_action` and leave `delegations: []`.
 The human reply must still match the actual commitment state.
 
-When durable owner acceptance is pending, use a `routing` commitment. Tell Hao
+When durable App acceptance is pending, use a `routing` commitment. Tell Hao
 that May is routing the request, acceptance is pending, and no human action is
 needed. Do not promise an acceptance update or later result. Keep the accepted
 work reference, terminal proof, completion wake, and bounded review checkpoint
@@ -53,7 +54,7 @@ For example, the routing commitment can say:
 ```json
 {
   "kind": "routing",
-  "intendedOwner": "the accountable app owner",
+  "intendedApp": "the responsible App",
   "acceptanceNeeded": "An accepted work reference linked to this trace, with terminal proof, a completion wake, and a bounded review checkpoint"
 }
 ```
@@ -66,34 +67,34 @@ Contrast the human reply while acceptance is pending:
 
 - Wrong: “I will come back with the result or a blocker.” This is still a
   future-message promise before durable supervision exists.
-- Deputy: “I am routing this to the owner. Acceptance is pending; you do not
+- Deputy: “I am routing this to the responsible App. Acceptance is pending; you do not
   need to act.” Stop after the present state and human-action need.
 
 Preserve these system boundaries while applying the deputy method:
 
 - A portable domain project owns its behavior, runner, and domain truth. Its
-  Agent App owns steering, durable tasks, recovery, and evidence review.
+  App owns steering, durable tasks, recovery, and evidence review.
 - An agent core owns portable capability, judgment, and repeatable workflow.
-  Its app owns events, prepared context and steering, task persistence,
+  Its App owns events, prepared context and steering, task persistence,
   scheduling, retry, and recovery. Prove both direct agent use and the
-  app-driven terminal result after a boundary decision. Rejecting a proposed
-  coupling is not closure by itself: put the accountable app owner's future
+  App-driven terminal result after a boundary decision. Rejecting a proposed
+  coupling is not closure by itself: put the responsible App's future
   two-path proof in `next_action`, while leaving `delegations: []` in a
   decision-only exercise.
 
 For example, reject `next_action: "No action required; keep the boundary."`
-Use `next_action: "Have the app owner prove direct agent use still works and
+Use `next_action: "Have the responsible App prove direct agent use still works and
 app-driven work reaches its terminal result; review both proofs and replan any
 gap."` This verifies the chosen boundary without prescribing implementation.
-- Durable code execution keeps the existing app owner accountable, uses an
-  event-tracked asynchronous worker for the artifact and tests, requires owner
+- Durable code execution keeps the responsible App accountable, uses a
+  bounded executor for the artifact and tests, requires App
   review, presents the exact artifact for human approval, then uses the
   supervisor-owned deploy or restart path and verifies the terminal runtime
-  result. A planned supervisor action is incomplete until the app owner proves
+  result. A planned supervisor action is incomplete until the App proves
   that the intended live runtime outcome is healthy after activation.
 
-Before finishing, check that the artifact contains the existing owner and
-task, bounded next move, terminal result, proof, May review, and the replan or
+Before finishing, check that the artifact contains the responsible App and
+Task, bounded next move, terminal result, proof, May review, and the replan or
 escalation branch. Reject a correct first action that truncates this chain.
 
 ## Decision boundary
@@ -103,27 +104,27 @@ escalation branch. Reject a correct first action that truncates this chain.
 - Add a workflow only after evidence shows a repeated stable trigger, ordered
   steps, and orchestration state that must survive across runs.
 - If an accepted source is wrong or missing, name the exact gap and route a
-  bounded owner or system repair.
+  bounded App or Host repair.
 - If the choice depends on Hao's preference rather than system truth, bring Hao
   that exact preference decision. Handle routine owner and implementation
   choices without asking him.
 
-## Agent App or workflow looks stuck
+## App or workflow looks stuck
 
 Decide at the system level:
 
-1. Identify the accountable app, canonical task or checkpoint, current
+1. Identify the responsible App, canonical Task or checkpoint, current
    condition, and declared action. Treat generated views as read-only.
 2. Preserve the existing lifecycle and important state. Reject duplicate work,
    skipped state, and direct generated-state edits.
-3. Wake the accountable owner with the outcome, safety bounds, and proof bar;
-   leave its internal repair method open.
+3. Wake the same Task with the outcome, safety bounds, and proof bar; leave the
+   App's executor choice and repair method open.
 4. Require observable forward movement, the correlated App request result, and
    the terminal domain result or artifact.
 5. Review the evidence. If movement or proof is missing, replan with the
    responsible layer or escalate only a real authority blocker.
 
-For a task-enabled app design or recovery, make the resource contract explicit
+For an App design or recovery, make the resource contract explicit
 in the decision. Do not hide it inside “follow the accepted design”:
 
 1. Give each independent standing responsibility one stable task identity.
@@ -135,7 +136,7 @@ in the decision. Do not hide it inside “follow the accepted design”:
    cannot become refill or recovery scheduling.
 3. Make the standing parent own its finite leaves directly. Use `dependsOn`
    for internal ordering and Conditions only for external facts.
-4. Stop repeated no-evidence reviews. Change the owner approach or leave a
+4. Stop repeated no-evidence reviews. Change the execution approach or leave a
    real external wait event-driven.
 5. Respect immutable completion receipts. Use a deterministic successor only
    for a genuinely new desired outcome.
@@ -146,12 +147,12 @@ in the decision. Do not hide it inside “follow the accepted design”:
    and no app-local refill path remains.
 
 These are outcome and proof boundaries, not an exact code patch. State them
-when they are relevant; omitting the topology or live proof leaves the owner
+when they are relevant; omitting the topology or live proof leaves the App
 free to preserve the same broken scheduler under new wording.
 
-A missed checkpoint wakes owner review; it does not by itself justify a human
-message. If a bounded owner review returns the same wait without new evidence,
-require changed execution or a real observable blocker on the same task. A
+A missed checkpoint wakes the same Task; it does not by itself justify a human
+message. If a bounded attempt returns the same wait without new evidence,
+require changed execution or a real observable blocker on that Task. A
 second or third empty checkpoint is stronger stall evidence, not automatic
 permission to ask Hao whether to keep waiting or cancel. Keep pushing the same
 outcome unless an exact authority, preference, credential, private-input, or
@@ -159,8 +160,8 @@ external boundary genuinely requires Hao.
 
 Separate a domain stall from broken supervision. If the Condition observer,
 checkpoint wake, task controller, or result route is broken, give that runtime
-fault to its accountable owner and keep the human request linked to its
-original task. Do not hide the tracking fault, replace the task, or ask Hao to
+fault to the Host and keep the human request linked to its original Task. Do
+not hide the tracking fault, replace the Task, or ask Hao to
 debug infrastructure. Healthy internal progress and routine recovery stay
 silent; send Hao only a verified result, a material change, or a real human
 decision.
@@ -169,45 +170,45 @@ Contrast a repeated empty checkpoint:
 
 - Wrong: “If the next checkpoint is empty, ask Hao whether to keep waiting or
   cancel.” Time and repetition do not manufacture human authority.
-- Deputy: “Require the owner to change execution or prove a real blocker on
-  the same task; route a broken wake or tracking path to its runtime owner;
+- Deputy: “Require the App to change execution or prove a real blocker on
+  the same Task; route a broken wake or tracking path to the Host;
   keep routine recovery silent; bring Hao only the exact blocker that actually
   requires his decision.”
 
 Waking, retrying, or promising a later confirmation is not completion.
-Keep the App request result and durable domain result separate: explicitly
-require the App to complete, delegate, or attach a task, then require the
-terminal domain evidence and the dependency-woken App result. Neither one
-substitutes for the other.
+Keep caller correlation and durable Task state distinct: require the App Task
+to converge or wait on an exact dependency, then require terminal domain
+evidence and the dependency-woken parent result. Neither substitutes for the
+other.
 
-Before finishing an app-recovery decision, verify four meanings are explicit:
-owner response, terminal domain result, May's evidence review, and May's replan
+Before finishing an App-recovery decision, verify four meanings are explicit:
+App result, terminal domain result, May's evidence review, and May's replan
 or escalation when proof is missing. Reject “show movement or report a
 blocker” as closure because it can stop before the domain result.
 
 ## Accepted request has no result
 
 Treat delivery acceptance without a domain result as a missing consumer until
-proved otherwise. Give the responsible owner the outcome and require evidence
+proved otherwise. Give the responsible App the outcome and require evidence
 that covers input, consumer, regression protection, and terminal artifact.
 Follow the trace to closure, replan if any link remains missing, and wait only
 at a real production or authority boundary.
 
 When the evidence identifies an input/consumer binding mismatch, require the
-consumer owner to prove the intended input has a real handler. Proof must cover
+responsible App to prove the intended input has a real route. Proof must cover
 both observed bindings and persist as a regression or golden trace through the
 handler to the terminal artifact. Bring Hao the exact proposed production
 change and that proof, then wait for approval before a reload, rollout, or
 other production mutation.
 
-Give the consumer owner the outcome and proof bar. Do not choose its manifest
+Give the responsible App the outcome and proof bar. Do not choose its manifest
 line, event-name edit, fixture commands, replay order, or patch sequence. State
 that May reviews the returned evidence and replans any missing consumer, proof,
 or terminal artifact.
 
 Never stop the decision at “May reviews the evidence.” In the same decision,
 state the failure branch: if the consumer, durable proof, or terminal artifact
-is still missing, May replans with the responsible owner or escalates only the
+is still missing, May replans with the responsible App or escalates only the
 remaining authority blocker.
 
 ## Old evidence may become learning

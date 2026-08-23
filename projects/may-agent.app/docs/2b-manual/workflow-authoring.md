@@ -1,8 +1,8 @@
 # How To Write An App Workflow
 
-This manual describes the canonical Agent App workflow surface. See
+This manual describes the canonical App workflow surface. See
 [Workflows](../2a-design/workflows.md), [SDK](../2a-design/sdk.md), and
-[Agent App](../2a-design/agent-app.md) for the governing contracts.
+[App](../2a-design/agent-app.md) for the governing contracts.
 
 ## Choose A Skill, Module, Or Workflow
 

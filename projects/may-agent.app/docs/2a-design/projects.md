@@ -1,7 +1,7 @@
 # Projects
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through sibling canonical Agent Apps.
+**Implementation status:** Implemented through sibling canonical Apps.
 Historical Markdown project files are evidence only and are not a runtime
 compatibility path.
 
@@ -119,7 +119,7 @@ blocked. The owner may retry, split, repair, replace, verify, wait, or escalate.
 The task contract lives in [task-resource-engine.md](task-resource-engine.md); do
 not duplicate its node schema or transition rules in project documents.
 
-## Owner Loop
+## Task loop
 
 The normal project loop is:
 
@@ -128,13 +128,13 @@ input/fact/schedule
   -> App policy resolves or wakes exactly one desired task
   -> deduplicating app queue receives the task key
   -> controller reads current task, dependencies, and Conditions
-  -> resolved owner runs directly or applies an owner-owned workflow
+  -> selected agent runs directly or applies one of its workflows
   -> structured result says converged, waiting, or needs owner
   -> runtime atomically applies task changes and observed status
   -> completion receipt closes finite work and wakes dependents
 ```
 
-An owner pass must leave a machine-readable result:
+Each bounded attempt must leave a machine-readable result:
 
 - open task work exists;
 - project posture records an exact wait/review/pause/terminal reason;

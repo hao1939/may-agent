@@ -28,7 +28,7 @@ agents/<name>/
   last-session.md         # Generated runtime memory, not system prompt.
 
 projects/<id>.app/agents/<name>/
-  agent.json              # Same shape; agent is scoped to the Agent App.
+  agent.json              # Same shape; agent is scoped to the App.
   AGENTS.md
   skills/<name>/SKILL.md
   workspace/

@@ -36,25 +36,32 @@ recovery.
 
 ```text
 open stores
-  -> restore the explicitly activated App source release
-  -> load agents and Apps
-  -> validate one complete App generation
+  -> restore the explicitly activated definition source release
+  -> prepare agents and Apps from that same committed source
+  -> validate one complete Runtime generation
   -> attach event routes, schedules, observers, and task workers
   -> recover unfinished work
   -> attach external ingress and Conversation adapters
 ```
 
-Reload stages committed App source, prepares a full replacement, and atomically
-publishes both the in-memory registry and its durable `current` release link.
-Generation-owned timers, subscriptions, and workers are closed when replaced.
-A restart restores that link; it never discovers newer App behavior from the
-mutable checkout. App state and execution workspaces remain at their canonical
-writable paths and are not copied into source releases.
+Reload stages committed global and App-local agent definitions, shared
+`common-sense.md` and skill sources, and App definitions together. It builds
+every agent, tool surface, skill catalog, handler, and App registry before
+publication. Validation, skill, or handler errors reject the whole candidate.
+The final synchronous publication switches manager definitions, App registry
+consumers, scheduler resources, and the durable `current` release link as one
+generation; a later failure restores the previous set. Active attempts retain
+the definitions they started with. Generation-owned timers, subscriptions, and
+tool resources are closed when replaced or rejected. A restart restores the
+same link; it never discovers newer prompt, skill, agent, or App behavior from
+the mutable checkout. App state, operational shared files, and execution
+workspaces remain at their canonical writable paths and are not copied into
+definition releases.
 
 ## Deployment
 
-Reload applies current agent definitions and one committed App source release;
-it rejects uncommitted executable App changes and does not replace Host code.
+Reload applies one committed agent-and-App definition release; it rejects
+uncommitted executable definition changes and does not replace Host code.
 A Host deployment does not imply App activation. It belongs to a live **Host
 Operations App** Task whose
 stable App ID is `may-agent`; it never belongs to the May Conversation App

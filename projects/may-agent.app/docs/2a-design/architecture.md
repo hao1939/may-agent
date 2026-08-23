@@ -86,14 +86,18 @@ desired task (`TaskIntent` in code)
 Task handler selection is direct:
 
 ```text
-owner = task owner, else nearest parent owner, else App owner
-workflow present = run that owner's named workflow
+agent = task agent, else nearest parent agent, else App default agent
+workflow present = run that agent's named workflow
 executor present = run that named Host adapter
-neither present = run that owner once
+neither present = run that agent once
 ```
 
+The implementation and retained Task rows still call this agent field `owner`.
+That is compatibility vocabulary for execution selection, not durable
+ownership; the App always owns the Task.
+
 Missing workflows or unavailable executors become visible attention. The Host
-does not silently choose another executor or owner. Codex and Claude are the
+does not silently choose another executor or agent. Codex and Claude are the
 built-in native CLI adapters; a Host extension registers another name against
 the same `TaskExecutor` function contract.
 

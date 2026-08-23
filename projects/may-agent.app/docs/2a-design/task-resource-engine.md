@@ -5,7 +5,9 @@
 parent/child work, bounded concurrency, resource-backed Task list/get, fenced
 mid-attempt event emission, and indexed recovery are implemented. Apps retain
 their existing authority until an explicit guarded cutover; bounded
-task-context reads and per-App rollout remain in progress.
+task-context reads and per-App rollout remain in progress. The public SDK still
+uses `owner` for the default managed agent even though the App owns the Task;
+removing that naming collision while preserving retained state is pending.
 
 The task engine is the single Host execution path for App-owned work. Read
 [agent-app.md](agent-app.md) first.
@@ -49,11 +51,10 @@ attempt state are sufficient to recover it.
 
 ## One attempt interface
 
-Executor choice does not change Task semantics. A Task may use its managed
-owner agent by default, name a workflow, or select a registered executor;
+Executor choice does not change Task semantics. A Task may use its App's
+default agent executor, name a workflow, or select a registered executor;
 `codex` and `claude` are the built-in native adapters. `workflow` and
-`executor` are mutually exclusive; omitting both means the managed owner
-agent.
+`executor` are mutually exclusive; omitting both means the default agent.
 
 The complete executor extension boundary is deliberately small:
 
@@ -467,12 +468,13 @@ as interrupted where possible. Restart repairs stale claims and requeues the
 same task identities; it never resumes an in-memory workflow stack or fabricates
 completion.
 
-Hot reload publishes one validated App generation. Prior active attempts retain
-their capacity claims until they end, while the replacement controller may use
-remaining capacity. Generation and attempt fences prevent duplicate execution
-or stale completion. The durable App source link changes at the same publication
-boundary, so a later restart restores the accepted generation rather than the
-checkout that happens to be present.
+Hot reload publishes one validated agent-and-App generation. Prior active
+attempts retain their definitions and capacity claims until they end, while the
+replacement controller may use remaining capacity. Generation and attempt
+fences prevent duplicate execution or stale completion. The durable definition
+source link changes at the same publication boundary, so a later restart
+restores the accepted generation rather than the checkout that happens to be
+present.
 
 Recovery follows one ladder:
 

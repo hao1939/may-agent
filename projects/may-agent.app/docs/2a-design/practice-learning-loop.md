@@ -97,7 +97,7 @@ The owner selects the smallest durable mechanism matching the cause:
 | Missing deterministic capability | Tool or SDK                                 |
 | Precise mechanical risk          | Calibrated guard                            |
 | Trigger or observation gap       | Subscription, schedule, observer, or metric |
-| Durable multi-attempt outcome    | Agent App task resource                     |
+| Durable multi-attempt outcome    | App task resource                     |
 | Cross-owner required action      | Linked child App request or exact Condition |
 
 Frequency alone does not justify automation. Diagnose misleading input,

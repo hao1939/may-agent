@@ -3,7 +3,9 @@
 **Design status:** Accepted.
 **Implementation status:** Every current App uses `task(input)` and Task
 reconciliation, and the request-disposition surface has been removed. The
-shared bounded Task collection is exposed as `read.tasks.list/get`.
+shared bounded Task collection is exposed as `read.tasks.list/get`. The
+remaining `owner` field for selecting a managed agent is a known naming gap:
+Apps own Tasks, while agents and other executors only run bounded attempts.
 
 `@may-agent/sdk` is the narrow boundary between an App and the Host. It
 describes meaning, inputs, results, facts, and desired work; it does not expose
@@ -16,7 +18,7 @@ Runtime        -> task lifecycle, execution, reads, retries, and recovery
 Host           -> ingress, persistence, scheduling, capacity, and delivery
 ```
 
-See [Agent App Contract](agent-app.md) and
+See [App Contract](agent-app.md) and
 [Task Resource Engine](task-resource-engine.md).
 
 ## Stable root surface
@@ -238,7 +240,7 @@ type TaskIntent = {
   outcome: string;
   acceptance: string[];
   mode: "achieve" | "maintain";
-  owner?: string;
+  owner?: string; // current compatibility name for the selected agent
   workflow?: string;
   executor?: string;
   input?: Record<string, unknown>;
@@ -249,8 +251,14 @@ type TaskIntent = {
 };
 ```
 
+The App owns this Task. `owner` currently selects a managed agent for the
+attempt, inheriting from the parent Task and then the App default; it is not a
+second work owner. The intended public name is `agent`. Runtime may retain
+`owner` in stored rows and projections during migration, but that storage name
+must not leak back into the mental model.
+
 `executor` selects a lowercase registered adapter name. Omitted or `agent`
-uses the managed owner agent; `codex` and `claude` are built-in native CLI
+uses the App's default agent; `codex` and `claude` are built-in native CLI
 adapters. A Task cannot set both `workflow` and `executor`. An unknown name
 becomes visible attention instead of silently falling back.
 

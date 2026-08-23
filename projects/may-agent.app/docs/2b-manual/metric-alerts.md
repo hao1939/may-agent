@@ -23,7 +23,7 @@ Do not manually reroute an alert by editing `metrics.owner` during triage. If
 ownership is wrong, fix the source metadata that the resolver uses:
 
 - For project-scoped metrics, set `metrics.project` to the project id/path/name
-  and make sure the Agent App registry has the correct owner, unless the
+  and make sure the App registry has the correct owner, unless the
   metric intentionally has its own explicit `metrics.owner`.
 - For a system metric with no project, fix the metric definition or owner
   resolver code.

@@ -15,12 +15,12 @@ An App owns each durable outcome. The Host stores events and Tasks, runs
 bounded attempts, and recovers unfinished work. An attempt may use an agent or
 workflow, but neither becomes another work owner.
 
-For May, the ordinary model is simply: a human talks to **May**, and the **May
-App** (`app:may`) keeps that Conversation Task alive until May answers or routes
-typed work to the responsible App. Only execution diagnostics need the term
-**May worker** (`agent:may`) for one replaceable reasoning attempt. The **Host
-Operations App** (`app:may-agent`) owns Tasks that change the Host. There is no
-separate architectural component called “May agent.”
+For May, the ordinary model is simply: a human talks to **May** (`app:may`),
+which keeps that Conversation Task alive until it answers or routes typed work
+to the responsible App. Execution diagnostics may name the bounded executor,
+for example `agent:may`; that executor owns no Task. The **Host Operations
+App** (`app:may-agent`) owns Tasks that change the Host. There is no separate
+architectural component called “May agent.”
 
 ## Documentation tiers
 
@@ -46,7 +46,7 @@ record names the selected alternative.
 Read [system-model.md](2a-design/system-model.md) first for the compact whole
 system model. Use [INDEX.md](INDEX.md) for complete topical navigation.
 
-### I want to build an autonomous Agent App
+### I want to build an autonomous App
 
 1. [agent-app.md](2a-design/agent-app.md) — package, ownership, optional host attachments
 2. [projects.md](2a-design/projects.md) — durable goal and project posture

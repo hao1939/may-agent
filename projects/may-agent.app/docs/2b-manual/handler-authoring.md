@@ -1,7 +1,7 @@
-# Authoring Agent App task handlers
+# Authoring App task handlers
 
-An Agent App has one `app.ts` declaration, one accountable owner, and one task
-reconciler. Every actionable input resolves to or wakes a task.
+An App has one `app.ts` declaration, one default agent, and one Task resolver.
+Every actionable input resolves to or wakes a Task.
 
 ## App manifest
 
@@ -62,7 +62,8 @@ Every handler returns one envelope:
 - `converged` means the current generation satisfies its acceptance criteria.
 - `waiting` must carry exact typed Conditions or leave at least one live direct
   child or cross-App dependency after its changes are admitted.
-- `needs-owner` deliberately hands the task to its accountable owner.
+- `needs-owner` is the compatibility result that asks for one bounded attempt
+  by the selected agent; it does not transfer ownership.
 
 For an unresolved human request, give its external Condition a bounded review
 checkpoint:
@@ -84,7 +85,7 @@ duplicate task, or routine Telegram update.
 Change execution or prove a real blocker after an evidence-free recheck; May
 handles any human-facing follow-through separately.
 
-The selected handler may be a direct owner agent or an owner-owned workflow.
+The selected executor may be an agent or one of that agent's workflows.
 It may use supplied tools and skills; a workflow may also run bounded agent
 steps. Those capabilities may access a database behind an explicit tool or SDK
 boundary. The handler must not edit task storage, acknowledge caller delivery,

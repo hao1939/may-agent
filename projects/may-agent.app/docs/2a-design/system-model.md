@@ -76,48 +76,52 @@ detail.
 ### May in one flow
 
 ```text
-human talks to May
-  -> May App (`app:may`) owns the Conversation Task
+human talks to May (`app:may`)
+  -> May owns the Conversation Task
   -> May answers or routes typed work to the responsible App
 ```
 
-That is the complete ordinary mental model. The Host may run a bounded worker
-such as `agent:may` while reconciling the Conversation Task, but the worker is
-an execution detail, not another service or owner.
+May is the App; “May App” is only the precise name used when contrasting May
+with another App or with the Host. That is the complete ordinary mental model.
+The Host may run a bounded executor such as `agent:may` while reconciling the
+Conversation Task, but the executor is not another service or owner.
 
 The names describe different responsibilities:
 
 | Name                                      | Meaning                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **May**                                   | The human-facing assistant: the name people talk to.                                             |
-| **May App** (`app:may`)                   | The durable owner of May's Conversation Tasks and routing contract.                              |
-| **May worker** (`agent:may`)              | The current replaceable reasoning executor for one bounded attempt. It owns no durable work.     |
+| **May** (`app:may`)                       | The human-facing assistant and App that owns Conversation Tasks and routing.                     |
+| **Executor** (for example `agent:may`)    | A replaceable mechanism for one bounded attempt. It owns no durable work.                         |
 | **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
 | **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
 
-The May App and May worker together implement May's behavior, but they are not
-peers. The App owns the obligation across retries and restarts; the worker only
-attempts it. The worker can change, fail, or be replaced without changing the
-Conversation Task. In code, unqualified `owner: "may"` selects this worker;
-durable Task identity remains namespaced by its App.
+May owns the obligation across retries and restarts; an executor only attempts
+it. The executor can change, fail, or be replaced without changing the
+Conversation Task. Durable Task identity remains namespaced by its App.
+
+The current SDK still calls the default managed agent `owner` in
+`AppDefinition` and `TaskIntent`. That is an implementation naming gap, not a
+second ownership model. New design and UI language must call it an agent or
+executor; retained storage may keep historical `owner` fields behind the
+Runtime boundary until a safe migration no longer needs them.
 
 Use the shortest name that fits the audience:
 
 - say **May** in product behavior, conversation, and ordinary operations;
-- say **May App** when discussing durable ownership or routing; and
-- say **May worker** only when inspecting one model/agent execution.
+- say **May App** only when contrasting the App boundary; and
+- say **executor** or the exact executor ID when inspecting one attempt.
 
 Do not make a human or App author reason about all three at once. In
-particular, a Task is never transferred to the worker merely because the Host
-is currently running that worker.
+particular, a Task is never transferred to an executor merely because the Host
+is currently running it.
 
 Current design prose uses **App** as the architectural term. Retained names such
-as `agent-app`, the `Agent App` document title, and project type values are
-compatibility vocabulary; they mean an App that can use agents, not a second
-kind of App and not an agent that owns durable work.
+as `agent-app` filenames and project type values are compatibility vocabulary;
+they mean an App that can use agents, not a second kind of App and not an agent
+that owns durable work.
 
 There is no architectural component called **May agent**. New explanatory
-prose should say May, May App, May worker, Host, or Host Operations App. The
+prose should say May, executor, Host, or Host Operations App. The
 technical identifier `may-agent` remains on compatibility surfaces: the Host
 repository, binary, container, package scope, and Host Operations App ID. It
 does not mean that the Host is May's worker.

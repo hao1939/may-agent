@@ -223,8 +223,8 @@ On restart:
 - existing App inbox/task state recovers independently of the scheduler.
 
 An observer or event-schedule failure may be retried mechanically within a
-bounded host policy. Persistent ambiguity becomes runtime attention; it cannot
-silently start an owner agent.
+bounded host policy. Persistent ambiguity becomes Runtime attention; it cannot
+silently start an agent.
 
 ## Cron compatibility boundary
 

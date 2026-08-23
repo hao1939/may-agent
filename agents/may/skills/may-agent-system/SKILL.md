@@ -1,38 +1,40 @@
 ---
 name: may-agent-system
-description: Maintain and evolve the May-agent system and Agent Apps. Use for Kubernetes-style task-resource reconciliation, stable tasks, task trees, Conditions, event/timer wakes, Agent Apps, event handlers, metrics, runtime health, blocker handling, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May-agent runtime code.
+description: Maintain and evolve the May Host and its Apps. Use for task reconciliation, Conditions, event/timer wakes, App boundaries, executors, event handlers, metrics, runtime health, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May Host runtime code.
 ---
 
-# May-Agent System
+# May Host System
 
-Use this skill when maintaining May-agent runtime behavior, Agent Apps, agent
-directories, task trees, event flows, metrics, alerts, or escalation loops.
+Use this skill when maintaining May Host behavior, Apps, executor definitions,
+task views, event flows, metrics, alerts, or escalation loops. `may-agent` is a
+retained repository, package, and App identifier; it is not an architectural
+component or a second name for May.
 
 ## Architecture Overview
 
-May-agent is an Agent App host. Preserve this mental model:
+The May Host runs Apps. Preserve this mental model:
 
-`addressed request -> App inbox -> complete, delegate, or attach task -> result`
+`event or addressed request -> App Task -> bounded attempt -> accepted result`
 
 For human interaction, preserve the more specific shape:
 
-`conversation input -> May App inbox -> answer or delegation -> channel delivery`
+`human -> May (app:may) -> Conversation Task -> response or typed App dependency`
 
 For project-directed interaction, preserve:
 
-`project.comment.created fact -> declared App subscription -> App inbox request -> optional task dependency -> App result`
+`project.comment.created event -> declared App route -> App Task -> accepted result`
 
-The App inbox item is the authority for an addressed result. The task is the
-authority for a durable desired outcome. Events and traces are facts and causal
-evidence, not alternate request lifecycles.
+An addressed request only remembers which caller is owed a result. The Task is
+the App's sole work authority. An executor performs one bounded attempt and
+owns no Task. Events are durable new information; traces are causal evidence.
 
 Core primitives:
 
-- Event: persisted fact and wake for declared consumers.
-- App inbox item: one addressed request and correlated result.
-- Owner: accountability backstop, not necessarily first responder.
-- Agent App: control plane that drives a portable domain project.
-- Task resources: desired and observed project work, not a scheduler queue.
+- Event: persisted new information and wake for declared consumers.
+- Request: caller correlation for one eventual result, not a work loop.
+- App: accountable owner that resolves input and reconciles Tasks.
+- Task: durable desired and observed App work, not a scheduler queue.
+- Executor: one replaceable agent, workflow, CLI, or adapter attempt.
 - Metric: signal for investigation, not a target.
 - Escalation: structured handoff across an ownership boundary.
 
@@ -76,7 +78,7 @@ relevant to the change:
 - Workflow discovery and execution: `/app/projects/may-agent.app/docs/2a-design/workflows.md`
 - Metrics: `/app/projects/may-agent.app/docs/2a-design/metrics.md`
 - Escalation: `/app/projects/may-agent.app/docs/2a-design/escalation.md`
-- Agent Apps: `/app/projects/may-agent.app/docs/2a-design/agent-app.md`
+- Apps: `/app/projects/may-agent.app/docs/2a-design/agent-app.md`
 - Project posture: `/app/projects/may-agent.app/docs/2a-design/projects.md`
 - Task resources: `/app/projects/may-agent.app/docs/2a-design/task-resource-engine.md`
 - Agent directories: `/app/projects/may-agent.app/docs/2b-manual/agent-convention.md`
@@ -91,14 +93,14 @@ doc with evidence, or call out the mismatch.
 
 ## Operating Loop
 
-1. Locate the owner boundary: runtime, app, project owner, worker, problem
-   solver, May, or human.
+1. Locate the responsibility boundary: Host mechanics or App meaning. The App
+   owns the Task; an agent, workflow, or CLI is only its bounded executor.
 2. Read the active project/app files that own the work: `app.ts`,
    `project.json`, bounded canonical task views, agent `AGENTS.md`, workflows,
    metrics, and recent traces as needed. Do not make raw task persistence an
    App or agent contract.
 3. Preserve the loop:
-   `project + metrics + trigger -> bounded work -> agent judgment -> evidence -> project update`.
+   `event -> Task -> bounded attempt -> accepted result or exact wait`.
 4. Make the smallest change that keeps the loop closed. Prefer existing
    conventions, app-local workflows, SDK helpers, bounded task projections,
    and canonical App/task actions over new configuration or broad framework
@@ -161,7 +163,7 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 ### Human-rooted traces
 
 - Treat a human `conversation.message.created` on `Conversation may:primary` as
-  both shared durable context and the fenced boundary for one May App request.
+  both shared durable context and the input for one May Conversation Task.
   Do not add `human.input.received`, a second `app.input.requested`, or a mutable
   current-session lifecycle for the same turn.
 - Understand human intention inside that May request. A question, request for
@@ -178,8 +180,8 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   context nor work.
 - Treat every human message as its own request. Reply anchors and channel IDs
   add context; they never reopen an older request or select a session.
-- A session is one replaceable attempt. Carry the exact May request through
-  tools, calls/forks, workflows, CLI analysis, and outbound delivery. Closure
+- A session is one replaceable attempt. Carry the exact May Task and correlated
+  request through tools, calls/forks, workflows, CLI analysis, and outbound delivery. Closure
   belongs to the App result and confirmed delivery, not `session.idle` or
   `session.end`.
 
@@ -191,18 +193,17 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.
-- A declared App subscription translates project intent into a correlated App
-  inbox request. The owner or pure route returns `complete`, `delegate`, or an
-  explicit task attachment; it does not edit task storage or emit an owner
-  result event.
-- The task reconciler validates and applies task actions. When an attached task
-  completes, `app.dependency.completed` wakes the exact inbox request so its
-  owner can review the bounded dependency observation and return the App result.
+- A declared App subscription translates project intent into typed Task input.
+  App policy resolves the stable Task identity; it does not edit Host storage
+  or create another request lifecycle.
+- Runtime validates and applies Task changes. When a typed child App dependency
+  completes, `app.dependency.completed` wakes the exact parent Task so its App
+  can review the observation and return its own result.
 - Compatible inbox work may batch and task wakes may coalesce, but every
   addressed request keeps its own identity and result. A shared task does not
   absorb the request lifecycle.
-- Work or waiting that must survive the turn belongs in a durable task. Express
-  exact waits as task Conditions, not ephemeral response state.
+- Work or waiting that must survive an attempt belongs in the same durable
+  Task. Express exact waits as Conditions, not ephemeral response state.
 
 ### Delivery and closure integrity
 
@@ -239,44 +240,42 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   collection, and graph/timeline event-id projections in `scope`. Do not return
   duplicate raw event arrays for each UI view.
 
-## Agent Apps And Task Trees
+## Apps And Tasks
 
-Keep domain projects portable and May-agent control planes separate.
+Keep domain projects portable and App policy separate from Host mechanics.
 
-- Put May-agent app logic in `projects/<id>.app/`; domain tools and artifacts
+- Put App policy in `projects/<id>.app/`; domain tools and artifacts
   stay in the domain workspace.
-- Keep `app.ts` small: one owner, `tasks.subscriptions`, one `tasks.resolve`,
-  fact-publishing schedules, optional schema-backed actions, and explicit inbox
-  subscriptions that translate facts into canonical App inputs.
+- Keep `app.ts` small: one default agent, one `task(input)` resolver,
+  fact-publishing schedules, optional schema-backed actions, and explicit
+  subscriptions that translate events into typed App inputs.
 - A targeted event, resolved app event, Condition change, and periodic resync
   all enqueue the same per-app controller. Do not recreate task Cron handlers.
-- Resolve a declared task workflow from the accountable agent's local
-  `agents/<owner>/workflows/` directory. With no workflow, invoke the resolved
-  owner. Do not add workflow maps or owner-entry wrappers.
-- Treat the project owner as the semantic backstop. Workflows preserve a proven
-  process; the app runtime owns claims, retries, validation, and atomic task
-  mutation.
+- Resolve a declared task workflow from the selected agent's local
+  `agents/<agent>/workflows/` directory. With no workflow or named executor,
+  invoke that agent once. Do not add workflow maps or agent-entry wrappers.
+- Treat the App as the semantic owner. Executors apply a bounded attempt;
+  Runtime owns claims, retries, validation, and atomic Task mutation.
 - Give each independent standing responsibility one stable task identity.
   Timers, semantic events, child transitions, and external observations wake
   that resource; they do not create timestamped work records or scan the task
   tree for something to schedule.
-- Keep responsibilities explicit: the app declares the goal boundary,
-  topology, ownership, and domain policy; the owner prioritizes the highest
-  value unresolved frontier and judges progress; workflows preserve learned
-  ordered experience; infrastructure owns queues, claims, concurrency,
-  retries, recovery, and Condition correlation.
+- Keep responsibilities explicit: the App declares the goal boundary,
+  topology, and domain policy; the selected executor judges one bounded
+  attempt; workflows preserve learned ordered experience; the Host owns queues,
+  claims, concurrency, retries, recovery, and Condition correlation.
 - Task persistence is host-private and reconciler-owned. `tasks/seed.json` is
   bootstrap intent; Apps and agents consume only bounded task views.
 - Workflows use their reconciliation context and exact `ctx.read.task` views;
   agents use bounded task readouts. They return `converged`, `waiting` with
   exact Conditions, or `needs-owner`, plus typed actions for the host to
   validate and apply.
-- When an app looks stuck, inspect the app and canonical task state first.
-  Reuse its existing task and Condition, wake the owner through a declared app
+- When an App looks stuck, inspect the App and canonical Task state first.
+  Reuse its existing Task and Condition, wake it through a declared App
   action, and follow the same trace through a typed response to a terminal
   domain result. Treat the generated tree as read-only. Reject duplicate tasks
   and direct state/tree edits; merely waking work is not terminal success. A
-  complete plan must explicitly name both the typed owner response and terminal
+  complete plan must explicitly name both the typed App response and terminal
   domain result; do not infer or compress either step.
 - Project comments enter through a declared App subscription. Several requests
   may attach one stable task, but each keeps its own inbox identity and response
@@ -297,7 +296,7 @@ Keep domain projects portable and May-agent control planes separate.
   create a deterministic successor only when a genuinely new desired outcome
   exists.
 - Bound passive review of an unchanged external Condition. If repeated reviews
-  produce no new evidence, change the owner approach or settle into the
+  produce no new evidence, change the execution approach or settle into the
   event-driven wait; reject endless empty checkpoint loops.
 - Derive priority from the unresolved current goal and frontier. Passed,
   superseded, or completed work cannot remain the active priority merely
@@ -411,7 +410,7 @@ Before finishing:
 
 - Confirm the relevant design doc still supports the behavior.
 - Confirm every new event has a responsible consumer or explicit owner path.
-- Confirm Agent App changes preserve App/domain boundaries.
+- Confirm App changes preserve App/domain boundaries.
 - Confirm task-resource changes preserve `spec`/`status`, valid phases,
   resolved ownership, and reconciler-only mutation.
 - Confirm the host reconciler remains the sole mutable task authority and Apps

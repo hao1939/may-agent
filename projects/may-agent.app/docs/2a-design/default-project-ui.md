@@ -3,7 +3,7 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented.
 
-The default project UI is the shared control surface for every Agent App.
+The default project UI is the shared control surface for every App.
 Domain UIs may go deeper, but a person should be able to open any project and
 answer:
 
@@ -168,7 +168,7 @@ purpose, generation, phase, summary, Conditions, selected evidence, and the
 expected owner response. Confirmation says `accepted` or `queued`, never
 `completed`.
 
-Retry, rerun, pause, resume, and domain actions appear only when the Agent App
+Retry, rerun, pause, resume, and domain actions appear only when the App
 declares a typed action.
 
 ## Domain extensions

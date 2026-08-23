@@ -2,7 +2,7 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for standalone global-agent duties.
-Agent Apps use canonical schedules, observers, task inputs, and exact wakes.
+Apps use canonical schedules, observers, task inputs, and exact wakes.
 
 ## Purpose
 
@@ -16,21 +16,21 @@ timer.tick -> standalone heartbeat workflow -> agent judgment -> evidence/events
 
 A heartbeat is a trigger, not a work identity, queue, or project lifecycle.
 The workflow/session it starts is one bounded execution. It may publish evidence
-or facts, but it cannot become durable project work outside an Agent App request
+or facts, but it cannot become durable project work outside an App request
 or task.
 
 ## Scope
 
 Use a standalone heartbeat only when an agent has a standing responsibility
-that no Agent App owns.
+that no App owns.
 
-| Owner type                 | Recurring review mechanism                                          |
-| -------------------------- | ------------------------------------------------------------------- |
-| Standalone global agent    | `agents/<name>/workflows/<name>-heartbeat.ts`                       |
-| Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts` |
-| Host mechanics             | Host-private schedule/handler; facts route any domain judgment      |
+| Owner type              | Recurring review mechanism                                        |
+| ----------------------- | ----------------------------------------------------------------- |
+| Standalone global agent | `agents/<name>/workflows/<name>-heartbeat.ts`                     |
+| App                     | App input schedule or exact Task-wake schedule declared in `app.ts` |
+| Host mechanics          | Host-private schedule/handler; facts route any domain judgment    |
 
-Do not run both a standalone heartbeat and an Agent App cadence for the same
+Do not run both a standalone heartbeat and an App cadence for the same
 responsibility. App-local agents set `"heartbeat": false`. A workflow whose
 name contains `heartbeat` may remain as ordinary App-owned workflow code, but
 only the canonical App input-to-task path may invoke it autonomously.
@@ -75,13 +75,13 @@ Rules:
 - Keep the cadence bounded and inexpensive.
 - Emit observable skipped/failed/completed lifecycle evidence.
 - Do not encode long-term plans in the timer prompt; durable goals belong in a
-  Agent App or agent-owned knowledge/context.
+  App or agent-owned knowledge/context.
 - Urgent P0 signals may start immediate bounded work; lower-priority signals
   normally wait for the next review cadence or owning project event.
 
 ## Project Owner Review
 
-Agent Apps may use a low-frequency creative/health review. This is an App input
+Apps may use a low-frequency creative/health review. This is an App input
 schedule, not a standalone agent heartbeat or event-owned lifecycle:
 
 ```text
@@ -121,7 +121,7 @@ A standalone heartbeat is healthy when it:
 - avoids duplicate dispatch and repeated blind retries;
 - surfaces provider/runtime failures visibly.
 
-An Agent App is healthy based on App requests, owner workflow runs, task
+An App is healthy based on App requests, owner workflow runs, task
 motion, delivery, and evidence—not on standalone heartbeat coverage.
 
 ## Implementation
@@ -131,4 +131,4 @@ motion, delivery, and evidence—not on standalone heartbeat coverage.
 - App owner schedules: `projects/<id>.app/app.ts`.
 - Explicit host-maintenance schedules: owning agent `cron.json` plus a typed
   host-private handler.
-- Governing Agent App contract: [agent-app.md](agent-app.md).
+- Governing App contract: [agent-app.md](agent-app.md).

@@ -1,4 +1,4 @@
-# Agent App operations and recovery
+# App operations and recovery
 
 Durable request correlation and task state are authoritative. Tasks own App
 work; events trigger review and are not work queues to replay manually.

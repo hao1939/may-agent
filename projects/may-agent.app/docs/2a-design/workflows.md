@@ -42,11 +42,11 @@ projects/<id>.app/agents/<agent>/workflows/<name>.ts
 agents/<agent>/workflows/<name>.ts
 ```
 
-For an App task, ownership resolves from the task, nearest explicit ancestor,
-then App owner. If that agent is App-local, its App-local workflow directory is
-the complete scope; otherwise the standalone agent directory applies. The
-runtime never merges catalogs from several owners or discovers an App-root
-workflow registry.
+For an App Task, agent selection resolves from the Task, nearest explicit
+ancestor, then the App default. If that agent is App-local, its App-local
+workflow directory is the complete scope; otherwise the standalone agent
+directory applies. Runtime never merges catalogs from several agents or
+discovers an App-root workflow registry.
 
 Workflow names need only be unique within the resolved agent scope. Duplicate
 effective names are invalid and visible in catalog diagnostics rather than

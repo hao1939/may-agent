@@ -56,11 +56,11 @@ owning document and keep implementation details there.
 | [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.                 |
 | [native-coding-workers.md](2a-design/native-coding-workers.md) | Codex/Claude adapter and continuity model.                    |
 
-### Agent Apps and projects
+### Apps and projects
 
 | Document                                                     | Purpose                                                                |
 | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| [agent-app.md](2a-design/agent-app.md)                       | Agent App package, ownership, and optional autonomy.                   |
+| [agent-app.md](2a-design/agent-app.md)                       | App package, ownership, and optional autonomy.                          |
 | [projects.md](2a-design/projects.md)                         | Durable goal context, project posture, and workspace layout.           |
 | [task-resource-engine.md](2a-design/task-resource-engine.md) | Canonical tasks, key queue, Conditions, claims, results, and recovery. |
 | [default-project-ui.md](2a-design/default-project-ui.md)     | Shared project readout and steering contract.                          |
@@ -103,7 +103,7 @@ current-design list.
 | [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | SDK usage examples.                                         |
 | [handler-authoring.md](2b-manual/handler-authoring.md)                     | Event handler authoring.                                    |
 | [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring and invocation.                          |
-| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adopt the Agent App and optional task-resource conventions. |
+| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adopt the App and optional task-resource conventions.       |
 | [agent-convention.md](2b-manual/agent-convention.md)                       | Agent directory and definition conventions.                 |
 | [metric-alerts.md](2b-manual/metric-alerts.md)                             | Alert triage, repair, calibration, and escalation.          |
 | [event-runtime-audit.md](2b-manual/event-runtime-audit.md)                 | Compare event runtime behavior with design.                 |

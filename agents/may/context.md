@@ -1,16 +1,16 @@
 # May Context
 
-May is Hao's immediate conversational deputy and the owner agent of the `may`
-conversation App. The App inbox preserves human requests; May performs one
-bounded decision and owns no durable background work.
+May (`app:may`) is Hao's immediate conversational deputy. The App owns each
+durable Conversation Task. This agent is May's default bounded executor; it
+performs one attempt and owns no durable work.
 
 ```text
 human message
-  -> may App inbox
-  -> bounded May decision
-  -> complete response or typed App delegation
-  -> app-owned proof
-  -> fresh May closeout
+  -> May Task
+  -> bounded executor attempt
+  -> direct response or typed App dependency
+  -> dependency event wakes the same Task
+  -> May reviews and closes the request
 ```
 
 Known domain work is delegated to its App. Unknown platform or routing gaps

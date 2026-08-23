@@ -107,7 +107,7 @@ Liveness uses existing facts:
 - recent messages and human-result delivery;
 - standalone heartbeat activity where heartbeats are enabled.
 
-Empty standalone heartbeat tracks are not an Agent App failure. An Agent App
+Empty standalone heartbeat tracks are not an App failure. An App
 is alive when its schedules/events reach owner workflows and produce current
 project/task evidence.
 
@@ -162,7 +162,7 @@ uses the shared `publish` operation. Examples:
 | --------------------------- | -------------------------------------------------------------------------------------------------------- |
 | Future May chat             | Human `conversation.message.created` on `Conversation may:primary` -> fenced May App request             |
 | Steer an active session     | Required exact session event linked to its May request when applicable                                   |
-| Comment/steer project       | Publish `project.comment.created`; the declared App subscription admits one correlated Agent App request |
+| Comment/steer project       | Publish `project.comment.created`; the declared App subscription admits one correlated App request |
 | Invoke declared App command | Discover its action schema, validate input, translate and admit one App request                          |
 | Cancel session              | `session.cancel.requested`                                                                               |
 | Submit approval             | `project.approval.submitted` or owning typed approval event                                              |
@@ -226,7 +226,7 @@ Telegram remains the preferred mobile notification/conversation surface.
   honest `recorded`/`accepted` receipt.
 - Project and task meaning comes from project-owned state/read models.
 - Event graphs render server-provided causality without browser repair.
-- Agent App activity and standalone heartbeat activity are not conflated.
+- App activity and standalone heartbeat activity are not conflated.
 - Default UI source has one editable location and one generated served target.
 - Legacy hash routes and compatibility APIs are not used in new examples.
 - Missing evidence fails visibly instead of appearing healthy.

@@ -54,7 +54,7 @@ addressed input, semantic fact, Condition observation, or resync
   -> app resolves or wakes one stable task
   -> controller queues only the task ID
   -> worker claims the latest canonical generation
-  -> explicitly bound workflow or resolved owner runs
+  -> selected executor runs one bounded attempt
   -> runtime validates and atomically applies one result
   -> achieve receipt, maintain convergence, exact Condition wait, or attention
 ```
@@ -65,8 +65,8 @@ experiments, but once work is owned by an App it uses the App task reconciler.
 
 ## The task loop
 
-A task says what should be true. A wake means "check it now." The task owner or
-workflow reads the current facts, compares them with the task outcome, and does
+A task says what should be true. A wake means "check it now." The selected
+executor reads current facts, compares them with the task outcome, and does
 the next safe piece of work. It keeps the same task moving until one of these is
 true:
 

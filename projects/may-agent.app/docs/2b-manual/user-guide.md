@@ -277,7 +277,7 @@ under `event.data`.
 
 ## Timer And Event Handlers
 
-The long-running host enables scheduling with `--cron`. Agent Apps declare
+The long-running host enables scheduling with `--cron`. Apps declare
 input/event schedules and observers in `app.ts`; these routes are owned by the
 same atomic App registry generation.
 
@@ -288,7 +288,7 @@ global-agent or host-internal system duties:
 - **JS handlers**: Run deterministic in-process functions (`handler: "evaluate-sessions"`)
 
 Internal handlers may live under the runtime/standalone agent conventions, but
-they cannot dispatch Agent App judgment, own domain work, or duplicate an App
+they cannot dispatch App judgment, own domain work, or duplicate an App
 subscription/schedule/task route.
 
 See [cron.md](../2a-design/cron.md) for details.

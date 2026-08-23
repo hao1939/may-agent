@@ -1,12 +1,12 @@
 # SDK Quick Reference
 
-`@may-agent/sdk` is the stable authoring boundary for Agent Apps, bounded task
+`@may-agent/sdk` is the stable authoring boundary for Apps, bounded task
 workflows, task policy, guards, and tests. It is not a runtime service object.
 There is no `ctx.sdk`, database handle, queue, scheduler, service locator, or
 legacy entry point.
 
 See [SDK](../2a-design/sdk.md) and
-[Agent App Contract](../2a-design/agent-app.md) for the governing contracts.
+[App Contract](../2a-design/agent-app.md) for the governing contracts.
 
 ## Choose The Right Primitive
 

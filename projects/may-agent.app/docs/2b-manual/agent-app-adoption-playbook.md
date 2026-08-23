@@ -1,6 +1,6 @@
-# Agent App quickstart
+# App quickstart
 
-Use an Agent App when one accountable owner should make sure addressed work is
+Use an App when one accountable owner should make sure addressed work is
 eventually handled. An App is a domain capability, not another daemon.
 
 The routing rule is deliberately small:
