@@ -167,7 +167,7 @@ export async function prepareDaemonAgents(opts: {
     if (appResult.installed.length > 0) {
       opts.bus.emit({
         type: "info",
-        message: `[app-task] Installed ${appResult.installed.length} task-enabled App(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
+        message: `[app-task] Installed ${appResult.installed.length} task-enabled App(s): ${appResult.installed.map((app) => `${app.id}->${app.agent}`).join(", ")}`,
       });
     }
   }

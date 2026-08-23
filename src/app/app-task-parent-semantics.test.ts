@@ -77,8 +77,8 @@ function fixture() {
 function claimChild(config: ReturnType<typeof taskReconciliationConfig>) {
   const claim = claimObservedAppTask(config, {
     taskId: "child",
-    appOwner: "app-owner",
-    handler: "owner",
+    appAgent: "app-owner",
+    handler: "agent",
     reason: "test",
   });
   if (claim.kind !== "claimed") throw new Error(`expected child claim, got ${claim.kind}`);
@@ -117,8 +117,8 @@ describe("App task parent semantics", () => {
     });
     const parentClaim = claimObservedAppTask(config, {
       taskId: "parent",
-      appOwner: "app-owner",
-      handler: "owner",
+      appAgent: "app-owner",
+      handler: "agent",
       reason: "test",
     });
     if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);
@@ -155,8 +155,8 @@ describe("App task parent semantics", () => {
     });
     const parentClaim = claimObservedAppTask(config, {
       taskId: "parent",
-      appOwner: "app-owner",
-      handler: "owner",
+      appAgent: "app-owner",
+      handler: "agent",
       reason: "test",
     });
     if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);

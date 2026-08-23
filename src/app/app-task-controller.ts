@@ -46,7 +46,7 @@ export type AppTaskDispatch = {
   lane: AppTaskLane;
 };
 
-/** One level-based reconciliation worker pool for one Agent App. */
+/** One level-based reconciliation worker pool for one App. */
 export class AppTaskController {
   private readonly queue: AppTaskQueue;
   private readonly failures = new Map<string, number>();

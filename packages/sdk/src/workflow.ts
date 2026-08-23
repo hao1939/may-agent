@@ -26,6 +26,9 @@ export type TaskDetail = TaskView & {
   mode?: "achieve" | "maintain";
   acceptance: string[];
   input: Record<string, unknown>;
+  /** Agent selected for the next bounded attempt. */
+  agent?: string;
+  /** @deprecated Use `agent`. */
   owner?: string;
   workflow?: string;
   executor?: TaskExecutorName;
@@ -149,6 +152,8 @@ export type TaskReconciliationChild = {
   outcome: string;
   summary?: string;
   evidence: string[];
+  agent?: string;
+  /** @deprecated Use `agent`. */
   owner?: string;
   workflow?: string;
   executor?: TaskExecutorName;
@@ -188,6 +193,8 @@ export type TaskReconciliationSnapshotTask = {
   parentId: string;
   generation: number;
   outcome: string;
+  agent?: string;
+  /** @deprecated Use `agent`. */
   owner?: string;
   executor?: TaskExecutorName;
   priority?: TaskPriority;
@@ -242,6 +249,9 @@ export type TaskReconciliationContext<TInput = unknown> = {
   taskId: string;
   generation: number;
   resourceVersion: number;
+  /** Agent selected for this bounded attempt. The App owns the Task. */
+  agent: string;
+  /** @deprecated Use `agent`. */
   owner: string;
   mode: "achieve" | "maintain";
   outcome: string;

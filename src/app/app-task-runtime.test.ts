@@ -15,21 +15,21 @@ import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
   appControllerStartGate,
-  appTaskOwnerProtocol,
-  applyCanonicalOwnerResidueCleanup,
+  appTaskAgentProtocol,
+  applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
-  beginCanonicalOwnerResidueGuard,
+  beginCanonicalAgentResidueGuard,
   closeInstalledAppTaskRuntimes,
-  consumePersistedTerminalOwnerResult,
+  consumePersistedTerminalAgentResult,
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
-  finishCanonicalOwnerResidueGuard,
+  finishCanonicalAgentResidueGuard,
   installAppTaskRuntimes,
-  planCanonicalOwnerResidueCleanup,
+  planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   projectAppTaskChildPromptContext,
   projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
-  rejectConvergedDirectOwnerResidue,
+  rejectConvergedDirectAgentResidue,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
@@ -103,7 +103,7 @@ function fixture() {
           id: "root",
           parent_id: null,
           state: "backlog",
-          owner: "sample-owner",
+          agent: "sample-owner",
           children: ["operations"],
         },
         operations: {
@@ -122,7 +122,7 @@ function definition(): AppDefinition {
   return defineApp({
     id: "sample",
     version: 1,
-    owner: "sample-owner",
+    agent: "sample-owner",
     inputSchema: Type.Object({}, { additionalProperties: true }),
     workspace: { kind: "local", localPath: "." },
     tasks: {
@@ -136,7 +136,7 @@ function definition(): AppDefinition {
               outcome: `Process ${itemId}`,
               acceptance: ["Work converges"],
               mode: "achieve",
-              owner: "sample-owner",
+              agent: "sample-owner",
             }
           : null;
       },
@@ -197,19 +197,19 @@ function gitResidueFixture() {
   return root;
 }
 
-describe("canonical direct-owner residue cleanup", () => {
-  it("restores owner file and index edits that remain unchanged since planning", () => {
+describe("canonical direct-agent residue cleanup", () => {
+  it("restores agent file and index edits that remain unchanged since planning", () => {
     const projectDir = gitResidueFixture();
     writeFileSync(join(projectDir, "preexisting.txt"), "preexisting baseline\n");
-    const guard = beginCanonicalOwnerResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
+    const guard = beginCanonicalAgentResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
 
-    writeFileSync(join(projectDir, "tracked.txt"), "owner edit\n");
-    writeFileSync(join(projectDir, "preexisting.txt"), "owner changed preexisting\n");
-    writeFileSync(join(projectDir, "created.txt"), "owner created\n");
+    writeFileSync(join(projectDir, "tracked.txt"), "agent edit\n");
+    writeFileSync(join(projectDir, "preexisting.txt"), "agent changed preexisting\n");
+    writeFileSync(join(projectDir, "created.txt"), "agent created\n");
     execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
 
-    const plan = planCanonicalOwnerResidueCleanup(guard);
-    const restored = applyCanonicalOwnerResidueCleanup(plan);
+    const plan = planCanonicalAgentResidueCleanup(guard);
+    const restored = applyCanonicalAgentResidueCleanup(plan);
 
     expect(restored).toContain("file:tracked.txt");
     expect(restored).toContain("file:preexisting.txt");
@@ -225,17 +225,17 @@ describe("canonical direct-owner residue cleanup", () => {
 
   it("preserves concurrent file and index edits while applying other planned cleanup", () => {
     const projectDir = gitResidueFixture();
-    const guard = beginCanonicalOwnerResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
+    const guard = beginCanonicalAgentResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
 
-    writeFileSync(join(projectDir, "tracked.txt"), "owner edit\n");
-    writeFileSync(join(projectDir, "created.txt"), "owner created\n");
+    writeFileSync(join(projectDir, "tracked.txt"), "agent edit\n");
+    writeFileSync(join(projectDir, "created.txt"), "agent created\n");
     execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
-    const plan = planCanonicalOwnerResidueCleanup(guard);
+    const plan = planCanonicalAgentResidueCleanup(guard);
 
     writeFileSync(join(projectDir, "tracked.txt"), "concurrent file edit\n");
     writeFileSync(join(projectDir, "concurrent-index.txt"), "concurrent index edit\n");
     execFileSync("git", ["-C", projectDir, "add", "concurrent-index.txt"]);
-    const restored = applyCanonicalOwnerResidueCleanup(plan);
+    const restored = applyCanonicalAgentResidueCleanup(plan);
 
     expect(restored).toEqual(["file:created.txt"]);
     expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("concurrent file edit\n");
@@ -244,31 +244,33 @@ describe("canonical direct-owner residue cleanup", () => {
     );
   });
 
-  it("rejects only converged direct-owner results whose edits were restored", () => {
+  it("rejects only converged direct-agent results whose edits were restored", () => {
     const converged = {
       state: "converged" as const,
       summary: "claimed convergence",
-      evidence: ["owner-result"],
+      evidence: ["agent-result"],
       actions: [],
     };
-    expect(rejectConvergedDirectOwnerResidue(converged, ["file:tracked.txt"])).toMatchObject({
+    expect(rejectConvergedDirectAgentResidue(converged, ["file:tracked.txt"])).toMatchObject({
       state: "error",
-      evidence: ["owner-result", "owner-residue-restored:file:tracked.txt"],
+      evidence: ["agent-result", "agent-residue-restored:file:tracked.txt"],
     });
-    expect(rejectConvergedDirectOwnerResidue(converged, [])).toBe(converged);
+    expect(rejectConvergedDirectAgentResidue(converged, [])).toBe(converged);
 
     const worktree = join(projectDirForBypass(), "workflow-output.txt");
     writeFileSync(worktree, "mutation-capable output\n");
-    expect(finishCanonicalOwnerResidueGuard(null)).toEqual([]);
+    expect(finishCanonicalAgentResidueGuard(null)).toEqual([]);
     expect(readFileSync(worktree, "utf8")).toBe("mutation-capable output\n");
   });
 });
 
-describe("App Task owner prompt context", () => {
-  it("keeps the schema-enforced owner protocol below four kilobytes", () => {
-    const protocol = appTaskOwnerProtocol("may");
+describe("App Task agent prompt context", () => {
+  it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
+    const protocol = appTaskAgentProtocol("may");
 
     expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(4 * 1_024);
+    expect(protocol).toContain("bounded agent for one Task attempt owned by App may");
+    expect(protocol).not.toContain("accountable owner");
     expect(protocol).toContain("Finish exactly once with finish().result");
     expect(protocol).toContain("Return state waiting only for an exact observable Condition");
     expect(protocol).toContain("Runtime publishes and correlates it");
@@ -278,7 +280,7 @@ describe("App Task owner prompt context", () => {
   it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {
     expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("treat that exact read-only observation");
     expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "as complete authority for the dependency in this owner attempt",
+      "as complete authority for the dependency in this attempt",
     );
     expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
       "do not inspect Host-private task state, generated task-tree or Kanban projections",
@@ -301,7 +303,7 @@ describe("App Task owner prompt context", () => {
         generation: 1,
         phase: "waiting",
         outcome: `Resolve child ${index} ${"o".repeat(800)}`,
-        owner: "sample-owner",
+        agent: "sample-owner",
         input: { hiddenDetail },
         conditions: [
           {
@@ -325,7 +327,7 @@ describe("App Task owner prompt context", () => {
         parentId: "parent",
         generation: 1,
         outcome: `Complete child ${index} ${"o".repeat(800)}`,
-        owner: "sample-owner",
+        agent: "sample-owner",
         input: { hiddenDetail },
         conditions: [],
         hasLiveChildren: false,
@@ -345,11 +347,15 @@ describe("App Task owner prompt context", () => {
       taskId: "live-0",
       generation: 1,
       phase: "waiting",
+      agent: "sample-owner",
     });
+    expect(projected.live[0]).not.toHaveProperty("owner");
     expect(projected.completed[0]).toMatchObject({
       taskId: "done-0",
       generation: 1,
+      agent: "sample-owner",
     });
+    expect(projected.completed[0]).not.toHaveProperty("owner");
   });
 });
 
@@ -370,7 +376,7 @@ describe("canonical App task runtime", () => {
     writeFileSync(
       join(f.appDir, "app.js"),
       `export default {
-        id: "sample", version: 1, owner: "sample-owner",
+        id: "sample", version: 1, agent: "sample-owner",
         inputSchema: { type: "object", properties: {} },
         tasks: {}
       };\n`,
@@ -413,7 +419,7 @@ describe("canonical App task runtime", () => {
       taskReconciliationConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
-        owner: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
       }),
       persistDir,
@@ -487,7 +493,7 @@ describe("canonical App task runtime", () => {
       const config = taskReconciliationConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
-        owner: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
         resourceStore: sampleStore,
       });
@@ -498,14 +504,14 @@ describe("canonical App task runtime", () => {
           outcome: "Use one independent review",
           acceptance: ["The review result is considered"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
         },
-        appOwner: "sample-owner",
+        appAgent: "sample-owner",
       });
       const initial = claimObservedAppTask(config, {
         taskId: "work/cross-app-roundtrip",
-        appOwner: "sample-owner",
-        handler: "owner:sample-owner",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
         reason: "test",
       });
       if (initial.kind !== "claimed") throw new Error("expected initial claim");
@@ -513,7 +519,7 @@ describe("canonical App task runtime", () => {
         id: "sample",
         appDir: f.appDir,
         projectDir: f.appDir,
-        owner: "sample-owner",
+        agent: "sample-owner",
         app: definition(),
         reconciliationPaused: true,
         resourceStore: sampleStore,
@@ -557,8 +563,8 @@ describe("canonical App task runtime", () => {
       ).toEqual({ kind: "recorded" });
       const checkpointReview = claimObservedAppTask(config, {
         taskId: initial.taskId,
-        appOwner: "sample-owner",
-        handler: "owner:sample-owner",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
         reason: "checkpoint-review",
       });
       if (checkpointReview.kind !== "claimed") throw new Error("expected checkpoint review claim");
@@ -613,6 +619,13 @@ describe("canonical App task runtime", () => {
       expect(dependencyRequests).toHaveLength(2);
       expect(attachedDependencyTaskCount).toBe(2);
 
+      const firstDependencyReadyDeadline = Date.now() + 5_000;
+      while (!inbox.host.get(requestId)?.waitingOn && Date.now() < firstDependencyReadyDeadline) await Bun.sleep(5);
+      expect(inbox.host.get(requestId)).toMatchObject({
+        status: "handling",
+        waitingOn: { kind: "task", id: attachedDependencyTaskId },
+      });
+
       dependencyResults.set(attachedDependencyTaskId, {
         summary: "Independent review completed",
         response: "The dependency result is ready for the parent.",
@@ -641,8 +654,8 @@ describe("canonical App task runtime", () => {
 
       const resumed = claimObservedAppTask(config, {
         taskId: initial.taskId,
-        appOwner: "sample-owner",
-        handler: "owner:sample-owner",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
         reason: "dependency-completed",
       });
       if (resumed.kind !== "claimed") throw new Error(`expected resumed claim, got ${resumed.kind}`);
@@ -671,7 +684,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     observeAppTaskIntent(config, {
@@ -682,12 +695,12 @@ describe("canonical App task runtime", () => {
         acceptance: ["The review result is considered"],
         mode: "achieve",
       },
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
     });
     const claim = claimObservedAppTask(config, {
       taskId: "work/cross-app-conflict",
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -695,7 +708,7 @@ describe("canonical App task runtime", () => {
       id: "sample",
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
     };
@@ -742,7 +755,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     observeAppTaskIntent(config, {
@@ -753,12 +766,12 @@ describe("canonical App task runtime", () => {
         acceptance: ["The review result is considered"],
         mode: "achieve",
       },
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
     });
     const claim = claimObservedAppTask(config, {
       taskId: "work/cross-app",
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -766,7 +779,7 @@ describe("canonical App task runtime", () => {
       id: "sample",
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
     };
@@ -810,7 +823,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const observedAt = ["2026-08-19T00:00:01.000Z", "2026-08-19T00:00:02.000Z"];
@@ -820,12 +833,12 @@ describe("canonical App task runtime", () => {
       outcome: "Receive the exact event context",
       acceptance: ["The workflow sees the ordered events"],
       mode: "maintain" as const,
-      owner: "sample-owner",
+      agent: "sample-owner",
     };
-    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
     const initial = claimObservedAppTask(config, {
       taskId: intent.id,
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
       handler: "workflow:sample",
       reason: "test",
     });
@@ -861,7 +874,7 @@ describe("canonical App task runtime", () => {
 
     const claim = claimObservedAppTask(config, {
       taskId: intent.id,
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
       handler: "workflow:sample",
       reason: "event",
     });
@@ -899,7 +912,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     observeAppTaskIntent(config, {
@@ -909,14 +922,14 @@ describe("canonical App task runtime", () => {
         outcome: "Process progress",
         acceptance: ["Work converges"],
         mode: "achieve",
-        owner: "sample-owner",
+        agent: "sample-owner",
       },
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
     });
     const claim = claimObservedAppTask(config, {
       taskId: "work/progress",
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -1033,7 +1046,7 @@ describe("canonical App task runtime", () => {
     expect(result.installed[0]).toMatchObject({
       id: "sample",
       appDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
     });
   });
 
@@ -1044,7 +1057,7 @@ describe("canonical App task runtime", () => {
     const legacyConfig = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     observeAppTaskIntent(legacyConfig, {
@@ -1054,9 +1067,9 @@ describe("canonical App task runtime", () => {
         outcome: "Read one resource-backed dependency",
         acceptance: ["Dependency reads do not parse legacy state"],
         mode: "achieve",
-        owner: "sample-owner",
+        agent: "sample-owner",
       },
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
       admissionKey: "attach:resource-dependency",
     });
     const tree = readTaskState(legacyConfig);
@@ -1125,7 +1138,7 @@ describe("canonical App task runtime", () => {
     const legacy = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
 
@@ -1150,7 +1163,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const retainedEvidence = "x".repeat(4 * 1024 * 1024);
@@ -1162,11 +1175,11 @@ describe("canonical App task runtime", () => {
         parentId: "operations",
         outcome: "Preserve retained evidence",
         acceptance: ["Evidence remains immutable"],
-        owner: "sample-owner",
-        handler: "owner:sample-owner",
+        agent: "sample-owner",
+        handler: "agent:sample-owner",
         summary: "Historical receipt",
         evidence: [retainedEvidence],
-        acceptanceBasis: { method: "owner-judgment", evidence: ["historical"] },
+        acceptanceBasis: { method: "agent-judgment", evidence: ["historical"] },
         failureFingerprints: [],
         completedAt: "2026-08-19T00:00:00.000Z",
       },
@@ -1234,7 +1247,7 @@ describe("canonical App task runtime", () => {
           outcome: "Reconcile one task without starving readiness",
           acceptance: ["Readiness gets a turn after durable claim persistence"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
         },
       },
       idempotencyKey: "attach:large-state",
@@ -1269,7 +1282,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     observeAppTaskIntent(config, {
@@ -1279,14 +1292,14 @@ describe("canonical App task runtime", () => {
         outcome: "Resume exact task session",
         acceptance: ["Session is fenced once"],
         mode: "achieve",
-        owner: "sample-owner",
+        agent: "sample-owner",
       },
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
     });
     const claim = claimObservedAppTask(config, {
       taskId: "work/resumable",
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -1326,36 +1339,36 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const intent = {
       id: "work/orphan-owner",
       parentId: "operations",
-      outcome: "Recover orphan owner session",
+      outcome: "Recover orphan agent session",
       acceptance: ["Replacement ownership cannot overlap stale process mutation"],
       mode: "achieve" as const,
-      owner: "sample-owner",
+      agent: "sample-owner",
     };
-    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
     const claim = claimObservedAppTask(config, {
       taskId: intent.id,
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
       reason: "test",
     });
-    if (claim.kind !== "claimed") throw new Error("expected orphan owner claim");
+    if (claim.kind !== "claimed") throw new Error("expected orphan agent claim");
     expect(recordAppTaskAttemptSession(config, claim, "owner-old")).toBe(true);
     const previousRuntimeTree = readTaskState(config);
     const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
-    if (!previousAttempt?.lease) throw new Error("expected leased orphan owner attempt");
+    if (!previousAttempt?.lease) throw new Error("expected leased orphan agent attempt");
     previousAttempt.runtimeId = "previous-runtime";
     previousAttempt.lease.runtimeId = "previous-runtime";
     previousAttempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
     saveTaskState(config, previousRuntimeTree);
     writeSessionMeta(persistDir, "owner-old", {
       agent: "sample-owner",
-      task: "Recover orphan owner session",
+      task: "Recover orphan agent session",
       status: "running",
       startedAt: Date.now() - 60_000,
       source: "app-task-owner",
@@ -1416,7 +1429,7 @@ describe("canonical App task runtime", () => {
           hasAgent: () => true,
           hasActiveSession: () => false,
           cancel: () => {
-            throw new Error("startup recovery should drain the persisted owner session directly");
+            throw new Error("startup recovery should drain the persisted agent session directly");
           },
           async callAgent() {
             let groupDead = true;
@@ -1500,7 +1513,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const intent = {
@@ -1509,16 +1522,16 @@ describe("canonical App task runtime", () => {
       outcome: "Do not overlap an undrained owner",
       acceptance: ["Recovery remains fenced until exact process-group exit is confirmed"],
       mode: "achieve" as const,
-      owner: "sample-owner",
+      agent: "sample-owner",
     };
-    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
     const claim = claimObservedAppTask(config, {
       taskId: intent.id,
-      appOwner: "sample-owner",
-      handler: "owner:sample-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
       reason: "test",
     });
-    if (claim.kind !== "claimed") throw new Error("expected undrained owner claim");
+    if (claim.kind !== "claimed") throw new Error("expected undrained agent claim");
     expect(recordAppTaskAttemptSession(config, claim, "owner-undrained")).toBe(true);
     const previousRuntimeTree = readTaskState(config);
     const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
@@ -1608,7 +1621,7 @@ describe("canonical App task runtime", () => {
           outcome: "Process attached work",
           acceptance: ["Work converges"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
         },
       },
       idempotencyKey: "attach:request-1",
@@ -1720,7 +1733,7 @@ describe("canonical App task runtime", () => {
           outcome: "Run one replaceable executor",
           acceptance: ["The registered executor returns evidence"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
           executor: "reviewer",
         },
       },
@@ -1752,7 +1765,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
@@ -1814,7 +1827,7 @@ describe("canonical App task runtime", () => {
           outcome: "Use the Host-provided Codex adapter",
           acceptance: ["The replacement adapter returns evidence"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
           executor: "codex",
         },
       },
@@ -1829,7 +1842,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
@@ -1904,7 +1917,7 @@ describe("canonical App task runtime", () => {
           outcome: "Reconcile every exact feedback event",
           acceptance: ["Every linked event is observed"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
           executor: "storm",
         },
       },
@@ -1946,7 +1959,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
@@ -2031,7 +2044,7 @@ describe("canonical App task runtime", () => {
           outcome: "Let Codex complete one bounded Task",
           acceptance: ["Codex returns admitted evidence"],
           mode: "achieve",
-          owner: "sample-owner",
+          agent: "sample-owner",
           executor: "codex",
         },
       },
@@ -2046,7 +2059,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
@@ -2078,7 +2091,7 @@ describe("canonical App task runtime", () => {
       taskReconciliationConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
-        owner: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
       }),
       join(f.root, "state"),
@@ -2145,13 +2158,13 @@ describe("canonical App task runtime", () => {
     });
   });
 
-  it("recovers one persisted terminal direct-owner result despite a fresh renewed lease", () => {
+  it("recovers one persisted terminal direct-agent result despite a fresh renewed lease", () => {
     const f = fixture();
     const persistDir = join(f.root, ".state");
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const intent = {
@@ -2160,20 +2173,20 @@ describe("canonical App task runtime", () => {
       outcome: "Recover terminal owner result",
       acceptance: ["Result is applied once"],
       mode: "achieve" as const,
-      owner: "sample-owner",
+      agent: "sample-owner",
     };
-    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
     const claim = claimObservedAppTask(config, {
       taskId: intent.id,
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
       handler: "auto",
       reason: "test",
-      isOwnerRunnable: () => true,
+      isAgentRunnable: () => true,
     });
-    if (claim.kind !== "claimed") throw new Error("expected direct-owner claim");
+    if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
     recordAppTaskAttemptSession(config, claim, "session-terminal");
     const attempt = readTaskState(config).attempts![claim.attemptId];
-    expect(attempt.handler).toBe("owner:sample-owner");
+    expect(attempt.handler).toBe("agent:sample-owner");
     expect(Date.parse(attempt.lease!.expiresAt)).toBeGreaterThan(Date.now());
 
     mkdirSync(join(persistDir, "sessions", "session-terminal"), { recursive: true });
@@ -2204,12 +2217,12 @@ describe("canonical App task runtime", () => {
       id: "sample",
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
     };
     expect(
-      consumePersistedTerminalOwnerResult({
+      consumePersistedTerminalAgentResult({
         persistDir,
         config,
         descriptor,
@@ -2218,7 +2231,7 @@ describe("canonical App task runtime", () => {
       }),
     ).toMatchObject({ state: "waiting", actionsApplied: ["created work/terminal-child"] });
     expect(
-      consumePersistedTerminalOwnerResult({
+      consumePersistedTerminalAgentResult({
         persistDir,
         config,
         descriptor,
@@ -2239,7 +2252,7 @@ describe("canonical App task runtime", () => {
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      owner: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const intent = {
@@ -2248,17 +2261,17 @@ describe("canonical App task runtime", () => {
       outcome: "Recover safely",
       acceptance: ["Invalid terminal output is retried"],
       mode: "achieve" as const,
-      owner: "sample-owner",
+      agent: "sample-owner",
     };
-    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
     const claim = claimObservedAppTask(config, {
       taskId: intent.id,
-      appOwner: "sample-owner",
+      appAgent: "sample-owner",
       handler: "auto",
       reason: "test",
-      isOwnerRunnable: () => true,
+      isAgentRunnable: () => true,
     });
-    if (claim.kind !== "claimed") throw new Error("expected direct-owner claim");
+    if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
     recordAppTaskAttemptSession(config, claim, "session-invalid-terminal");
 
     mkdirSync(join(persistDir, "sessions", "session-invalid-terminal"), { recursive: true });
@@ -2287,14 +2300,14 @@ describe("canonical App task runtime", () => {
 
     let rejection = "";
     expect(
-      consumePersistedTerminalOwnerResult({
+      consumePersistedTerminalAgentResult({
         persistDir,
         config,
         descriptor: {
           id: "sample",
           appDir: f.appDir,
           projectDir: f.appDir,
-          owner: "sample-owner",
+          agent: "sample-owner",
           app: definition(),
           reconciliationPaused: false,
         },

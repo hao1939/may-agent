@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 describe("App task output paths", () => {
-  it("defaults unbound owner execution to the app while retaining explicit domain inspection", () => {
+  it("defaults unbound agent execution to the app while retaining explicit domain inspection", () => {
     const { appDir, projectDir, paths } = fixture();
     writeFileSync(join(projectDir, "domain-proof.txt"), "read-only domain evidence\n");
 
@@ -29,7 +29,7 @@ describe("App task output paths", () => {
     expect(readFileSync(join(paths.projectDir, "domain-proof.txt"), "utf8")).toBe("read-only domain evidence\n");
   });
 
-  it("replaces the owner cwd with a workflow-declared task worktree", () => {
+  it("replaces the agent cwd with a workflow-declared task worktree", () => {
     const { root, appDir, projectDir, paths } = fixture();
     const taskWorkspace = join(root, "worktrees", "task-example");
     mkdirSync(taskWorkspace, { recursive: true });

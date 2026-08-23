@@ -55,8 +55,8 @@ function fixture() {
 function claim(config: ReturnType<typeof fixture>) {
   const result = claimObservedAppTask(config, {
     taskId: "human-request",
-    appOwner: "app-owner",
-    handler: "owner",
+    appAgent: "app-owner",
+    handler: "agent",
     reason: "test",
   });
   if (result.kind !== "claimed") throw new Error(`expected claimed, got ${result.kind}`);
@@ -89,8 +89,8 @@ describe("App task Condition review checkpoint", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: "human-request",
-        appOwner: "app-owner",
-        handler: "owner",
+        appAgent: "app-owner",
+        handler: "agent",
       }).kind,
     ).toBe("waiting");
 

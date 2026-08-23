@@ -68,7 +68,7 @@ function fixture(): TaskTree {
         taskGeneration: 1,
         specHash: "hash",
         owner: "may",
-        handler: "owner",
+        handler: "agent",
         runtimeId: "old-runtime",
         state: "running",
         reason: "test",
@@ -261,7 +261,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("finds only exact owner execution-recovery candidates in a large attention cohort", () => {
+  it("finds only exact agent execution-recovery candidates in a large attention cohort", () => {
     const store = open();
     const tree = fixture();
     tree.resources = {};
@@ -293,7 +293,7 @@ describe("AppTaskResourceStore", () => {
         ? { finishedAt: startedAt }
         : {
             finishedAt: startedAt,
-            failureReason: options.failureReason ?? "needs-owner",
+            failureReason: options.failureReason ?? "needs-agent",
             ...(options.sessionId === undefined ? {} : { sessionId: options.sessionId }),
           }),
     });
@@ -306,7 +306,7 @@ describe("AppTaskResourceStore", () => {
       add(
         id,
         attempt(id, `attempt-${id}`, new Date(Date.parse("2026-08-21T00:00:00.000Z") + index).toISOString(), {
-          failureReason: "needs-owner",
+          failureReason: "needs-agent",
           sessionId: `session-${id}`,
         }),
       );
@@ -330,7 +330,7 @@ describe("AppTaskResourceStore", () => {
       attempt("other-owner", "attempt-other-owner", "2026-08-21T01:00:02.000Z", {
         owner: "other-owner",
         failureReason: "HandlerExecutionFailed",
-        sessionId: "failed-other-owner-session",
+        sessionId: "failed-other-agent-session",
       }),
     );
     add(
@@ -392,7 +392,7 @@ describe("AppTaskResourceStore", () => {
     expect(readScopes).toEqual([taskIds]);
     expect(
       releaseHandlerExecutionFailedAppTask(config, "execution-failed", {
-        owner: "target-owner",
+        agent: "target-owner",
         sessionId: "later-successful-session",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
@@ -446,9 +446,9 @@ describe("AppTaskResourceStore", () => {
     recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 92 });
     const claim = claimObservedAppTask(config, {
       taskId: "normal",
-      appOwner: "may",
-      handler: "owner",
-      isOwnerRunnable: () => true,
+      appAgent: "may",
+      handler: "agent",
+      isAgentRunnable: () => true,
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     const before = Date.now();
@@ -614,9 +614,9 @@ describe("AppTaskResourceStore", () => {
     });
     const claim = claimObservedAppTask(config, {
       taskId: "normal",
-      appOwner: "may",
-      handler: "owner",
-      isOwnerRunnable: () => true,
+      appAgent: "may",
+      handler: "agent",
+      isAgentRunnable: () => true,
     });
 
     expect(claim.kind).toBe("claimed");
@@ -632,7 +632,7 @@ describe("AppTaskResourceStore", () => {
     expect(store.readSnapshot().receipts?.normal?.summary).toBe("resource task complete");
     expect(
       observeAppTaskIntent(config, {
-        appOwner: "may",
+        appAgent: "may",
         admissionKey: "new-task-admission",
         intent: {
           id: "new-task",
@@ -675,7 +675,7 @@ describe("AppTaskResourceStore", () => {
 
     expect(
       observeAppTaskIntent(config, {
-        appOwner: "may",
+        appAgent: "may",
         admissionKey: "first-request-admission",
         intent: {
           id: "first-request",
@@ -721,9 +721,9 @@ describe("AppTaskResourceStore", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: dependent.metadata.id,
-        appOwner: "may",
-        handler: "owner",
-        isOwnerRunnable: () => true,
+        appAgent: "may",
+        handler: "agent",
+        isAgentRunnable: () => true,
       }),
     ).toMatchObject({
       kind: "waiting",
@@ -733,9 +733,9 @@ describe("AppTaskResourceStore", () => {
 
     const claim = claimObservedAppTask(config, {
       taskId: dependency.metadata.id,
-      appOwner: "may",
-      handler: "owner",
-      isOwnerRunnable: () => true,
+      appAgent: "may",
+      handler: "agent",
+      isAgentRunnable: () => true,
     });
     expect(claim.kind).toBe("claimed");
     if (claim.kind !== "claimed") throw new Error("expected dependency claim");

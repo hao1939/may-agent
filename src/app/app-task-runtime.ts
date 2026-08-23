@@ -37,7 +37,7 @@ import { writeSessionResult } from "../lib/artifacts.js";
 import {
   admitTaskReconcileResult as admitAppTaskHandlerResult,
   admitTaskVerificationResult as admitAppTaskVerificationResult,
-  taskOwnerResultSchema as appTaskOwnerResultSchema,
+  taskAgentResultSchema as appTaskAgentResultSchema,
   type AppDefinition,
   type AppRequest,
   type AppTaskAttachment,
@@ -102,8 +102,8 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
-  expiredOwnerSessionAppTaskAttempt,
-  terminalOwnerSessionAppTaskClaim,
+  expiredAgentSessionAppTaskAttempt,
+  terminalAgentSessionAppTaskClaim,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
@@ -159,7 +159,7 @@ function publishAppTaskTiming(
     opts.bus.emit({
       type: "project.task.reconcile.profiled",
       source: `app-task:${descriptor.id}:observer`,
-      owner: `agent:${descriptor.owner}`,
+      owner: `agent:${descriptor.agent}`,
       target: { appId: descriptor.id },
       data: {
         project: descriptor.id,
@@ -185,7 +185,7 @@ function publishAppTaskTiming(
   timer.unref?.();
 }
 
-const APP_TASK_OWNER_TIMEOUT_MS = 15 * 60_000;
+const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const APP_TASK_CLI_TIMEOUT_MS = 30 * 60_000;
 
@@ -193,7 +193,7 @@ export interface AppTaskRuntimeDescriptor {
   id: string;
   appDir: string;
   projectDir: string;
-  owner: string;
+  agent: string;
   app: AppDefinition;
   reconciliationPaused: boolean;
   /** Present only when this App has completed the guarded resource-store cutover. */
@@ -371,20 +371,21 @@ function localAgentDir(appDir: string, agentName: string): string | undefined {
   return match ? join(appDir, "agents", match.dirName) : undefined;
 }
 
-export function inferAppOwner(appDir: string): string {
+export function inferAppAgent(appDir: string): string {
   const agents = localAgents(appDir);
   if (agents.length === 0) {
-    throw new Error(`App ${appDir} has no local agents; cannot infer its owner`);
+    throw new Error(`App ${appDir} has no local agents; cannot infer its default agent`);
   }
   if (agents.length === 1) return agents[0]!.name;
 
+  // Compatibility for Apps created before `agent` became explicit.
   for (const conventional of ["owner", "project-owner"]) {
     const match = agents.find((agent) => agent.dirName === conventional);
     if (match) return match.name;
   }
 
   throw new Error(
-    `App ${appDir} has multiple local agents (${agents.map((agent) => agent.dirName).join(", ")}) and no agents/owner or agents/project-owner directory`,
+    `App ${appDir} has multiple local agents (${agents.map((agent) => agent.dirName).join(", ")}) and no configured default agent`,
   );
 }
 
@@ -401,10 +402,12 @@ export function listAppDirs(projectsRoot: string): string[] {
   return dirs.sort();
 }
 
-function configuredAppOwner(app: AppDefinition, appDir: string): string {
-  const owner = typeof app.owner === "string" ? app.owner.trim() : "";
-  if (owner) return owner.replace(/^agent:/, "");
-  return inferAppOwner(appDir);
+function configuredAppAgent(app: AppDefinition, appDir: string): string {
+  const agent = typeof app.agent === "string" ? app.agent.trim() : "";
+  if (agent) return agent.replace(/^agent:/, "");
+  const legacyOwner = typeof app.owner === "string" ? app.owner.trim() : "";
+  if (legacyOwner) return legacyOwner.replace(/^agent:/, "");
+  return inferAppAgent(appDir);
 }
 
 function domainProjectDir(projectsRoot: string, appDir: string, appId: string, app: AppDefinition): string {
@@ -430,7 +433,7 @@ function projectReadModel(projectRoot: string, descriptor: AppTaskRuntimeDescrip
   const owner =
     typeof projectJson.owner === "string" && projectJson.owner.trim()
       ? projectJson.owner.trim().replace(/^agent:/, "")
-      : descriptor.owner;
+      : descriptor.agent;
   const status =
     typeof projectJson.status === "string" && projectJson.status.trim() ? projectJson.status.trim() : "active";
   const type = typeof projectJson.type === "string" && projectJson.type.trim() ? projectJson.type.trim() : "agent-app";
@@ -520,7 +523,7 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
 }
 
 function requiredAppAgentNames(descriptor: AppTaskRuntimeDescriptor): string[] {
-  return [descriptor.owner];
+  return [descriptor.agent];
 }
 
 async function ensureAppAgentRegistered(
@@ -555,7 +558,7 @@ type WorkflowCapability = {
 
 type NormalizedTaskHandlerResult = {
   /** `error` is an attempt/runtime outcome, never a valid handler decision. */
-  state: "converged" | "waiting" | "needs-owner" | "error";
+  state: "converged" | "waiting" | "needs-agent" | "error";
   summary: string;
   response?: string;
   evidence: string[];
@@ -568,7 +571,7 @@ export function normalizeTaskHandlerResult(
   output: unknown,
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
   options: {
-    allowNeedsOwner?: boolean;
+    allowNeedsAgent?: boolean;
     defaultParentId?: string;
     rootParentAliases?: string[];
     validateAction?: (action: AppTaskAction) => string | null;
@@ -583,7 +586,7 @@ export function normalizeTaskHandlerResult(
     };
   }
   const admission = admitAppTaskHandlerResult(output, {
-    allowNeedsOwner: options.allowNeedsOwner ?? true,
+    allowNeedsAgent: options.allowNeedsAgent ?? true,
     defaultParentId: options.defaultParentId ?? "project",
     rootParentAliases: options.rootParentAliases,
   });
@@ -615,7 +618,7 @@ export function normalizeTaskHandlerResult(
   };
 }
 
-type PersistedTerminalOwnerResultConsumption = {
+type PersistedTerminalAgentResultConsumption = {
   claim: AppTaskClaim;
   state: "converged" | "waiting";
   summary: string;
@@ -625,7 +628,7 @@ type PersistedTerminalOwnerResultConsumption = {
   reconcileTaskIds: string[];
 };
 
-function readPersistedTerminalOwnerResult(persistDir: string | undefined, sessionId: string): unknown {
+function readPersistedTerminalAgentResult(persistDir: string | undefined, sessionId: string): unknown {
   if (!persistDir) return undefined;
   try {
     const artifact = JSON.parse(readFileSync(join(persistDir, "sessions", sessionId, "result.json"), "utf8")) as {
@@ -639,17 +642,17 @@ function readPersistedTerminalOwnerResult(persistDir: string | undefined, sessio
   }
 }
 
-export function consumePersistedTerminalOwnerResult(input: {
+export function consumePersistedTerminalAgentResult(input: {
   persistDir?: string;
   config: ReturnType<typeof taskReconciliationConfig>;
   descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
   sessionId: string;
   onRejected?: (error: unknown) => void;
-}): PersistedTerminalOwnerResultConsumption | null {
-  const raw = readPersistedTerminalOwnerResult(input.persistDir, input.sessionId);
+}): PersistedTerminalAgentResultConsumption | null {
+  const raw = readPersistedTerminalAgentResult(input.persistDir, input.sessionId);
   if (raw === undefined) return null;
-  const claim = terminalOwnerSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
+  const claim = terminalAgentSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
   if (!claim) return null;
   const defaultParentId = readTaskState(input.config).root_task_id;
   if (!defaultParentId) return null;
@@ -658,11 +661,11 @@ export function consumePersistedTerminalOwnerResult(input: {
       raw,
       {
         type: "done",
-        summary: `Recovered terminal owner result from session ${input.sessionId}`,
+        summary: `Recovered terminal agent result from session ${input.sessionId}`,
         runId: input.sessionId,
       },
       {
-        allowNeedsOwner: false,
+        allowNeedsAgent: false,
         defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
@@ -674,7 +677,7 @@ export function consumePersistedTerminalOwnerResult(input: {
         response: result.response,
         evidence: result.evidence,
         actions: result.actions,
-        acceptanceBasis: { method: "owner-judgment", evidence: result.evidence },
+        acceptanceBasis: { method: "agent-judgment", evidence: result.evidence },
       });
       if (applied.status !== "applied") return null;
       return {
@@ -731,7 +734,7 @@ async function executeTaskCapability(input: {
   const { opts, descriptor, capability, intent, claim, event } = input;
   const reconciliationEvents = input.attempt.events;
   const runtime = requireWorkflowRuntimeOptions(opts);
-  const agentName = capability.agent ?? claim.owner;
+  const agentName = capability.agent ?? claim.agent;
   const trace = childEventTrace(event);
   const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
   const task = [
@@ -747,7 +750,7 @@ async function executeTaskCapability(input: {
         taskId: claim.taskId,
         generation: claim.generation,
         resourceVersion: claim.resourceVersion,
-        owner: claim.owner,
+        agent: claim.agent,
         handler: claim.handler,
         mode: claim.mode,
         outcome: intent.outcome,
@@ -770,7 +773,7 @@ async function executeTaskCapability(input: {
   opts.bus.emit({
     type: "handler.workflow_dispatched",
     source: `agent:${agentName}`,
-    owner: `agent:${claim.owner}`,
+    owner: `agent:${claim.agent}`,
     target: { appId: descriptor.id },
     data: {
       handler: claim.handler,
@@ -824,7 +827,8 @@ async function executeTaskCapability(input: {
         taskId: claim.taskId,
         generation: claim.generation,
         resourceVersion: claim.resourceVersion,
-        owner: claim.owner,
+        agent: claim.agent,
+        owner: claim.agent,
         mode: claim.mode,
         outcome: intent.outcome,
         acceptance: intent.acceptance,
@@ -860,7 +864,7 @@ async function executeTaskCapability(input: {
         runId,
       },
       {
-        allowNeedsOwner: true,
+        allowNeedsAgent: true,
         defaultParentId: input.defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
@@ -869,7 +873,7 @@ async function executeTaskCapability(input: {
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
-      owner: `agent:${claim.owner}`,
+      owner: `agent:${claim.agent}`,
       target: { appId: descriptor.id },
       data: {
         handler: claim.handler,
@@ -904,7 +908,7 @@ async function executeTaskCapability(input: {
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
-      owner: `agent:${claim.owner}`,
+      owner: `agent:${claim.agent}`,
       target: { appId: descriptor.id },
       data: {
         handler: claim.handler,
@@ -1228,7 +1232,7 @@ function extractReconciliationTaskId(taskPrompt: string | undefined): string | n
   return match?.[1]?.trim() || null;
 }
 
-function summarizeInterruptedOwnerRecovery(input: {
+function summarizeInterruptedAgentRecovery(input: {
   meta: { task?: string; source?: string };
   persistDir: string;
   sessionId: string;
@@ -1238,12 +1242,14 @@ function summarizeInterruptedOwnerRecovery(input: {
 }): { summary: string; taskId: string | null; evidence: string[] } {
   const taskId = input.taskId?.trim()
     ? input.taskId.trim()
-    : input.meta.source === "app-task-owner" || input.meta.source === "project-app-task-owner"
+    : input.meta.source === "app-task-agent" ||
+        input.meta.source === "app-task-owner" ||
+        input.meta.source === "project-app-task-owner"
       ? extractReconciliationTaskId(input.meta.task)
       : null;
   const summary = taskId
-    ? `Owner session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
-    : "Owner session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
+    ? `Agent session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
+    : "Agent session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
   const checkpoint = readLatestCheckpoint(input.persistDir, input.sessionId);
   const evidence = [
     ...(taskId ? [`task:${taskId}`] : []),
@@ -1261,7 +1267,7 @@ function summarizeInterruptedOwnerRecovery(input: {
   return { summary, taskId, evidence };
 }
 
-function interruptSupersededOwnerSession(
+function interruptSupersededAgentSession(
   opts: AppTaskRuntimeOptions,
   sessionId: string,
   reason: string,
@@ -1302,7 +1308,7 @@ function interruptSupersededOwnerSession(
   const repairedPendingTools = opts.persistDir
     ? recoverPendingToolResultsFromTranscript(opts.persistDir, cleanSessionId)
     : [];
-  const interruptedRecovery = summarizeInterruptedOwnerRecovery({
+  const interruptedRecovery = summarizeInterruptedAgentRecovery({
     meta,
     persistDir: opts.persistDir!,
     sessionId: cleanSessionId,
@@ -1382,7 +1388,7 @@ function interruptSupersededObservationSessions(
   observation: { taskId: string; generation: number; supersededSessionIds?: string[] },
 ): void {
   for (const sessionId of observation.supersededSessionIds ?? []) {
-    interruptSupersededOwnerSession(
+    interruptSupersededAgentSession(
       opts,
       sessionId,
       `Task ${observation.taskId} advanced to generation ${observation.generation}; the previous reconciliation session is obsolete`,
@@ -1393,7 +1399,7 @@ function interruptSupersededObservationSessions(
 
 function interruptSupersededActionSessions(opts: AppTaskRuntimeOptions, taskId: string, sessionIds: string[]): void {
   for (const sessionId of sessionIds) {
-    interruptSupersededOwnerSession(
+    interruptSupersededAgentSession(
       opts,
       sessionId,
       `Task ${taskId} applied a reconciliation action that superseded the session's task generation`,
@@ -1421,7 +1427,7 @@ type PlannedResidueFileRestore = {
   restore: ResidueFileSnapshot | "index";
 };
 
-export type CanonicalOwnerResidueCleanupPlan = {
+export type CanonicalAgentResidueCleanupPlan = {
   guard: CanonicalUntrackedResidueGuard;
   expectedIndexData: Buffer;
   restoreIndex: boolean;
@@ -1448,7 +1454,7 @@ function safeResiduePath(projectDir: string, relativePath: string): string {
   const absolutePath = resolve(projectDir, relativePath);
   const fromRoot = relative(projectDir, absolutePath);
   if (!fromRoot || fromRoot.startsWith("..") || isAbsolute(fromRoot)) {
-    throw new Error(`Refusing to access unsafe owner residue path: ${relativePath}`);
+    throw new Error(`Refusing to access unsafe agent residue path: ${relativePath}`);
   }
   return absolutePath;
 }
@@ -1483,13 +1489,13 @@ function residueSnapshotsEqual(left: ResidueFileSnapshot, right: ResidueFileSnap
 }
 
 /**
- * Direct owner attempts are conventionally read-only. When their default
+ * Direct agent attempts are conventionally read-only. When their default
  * workspace is the canonical Git checkout, snapshot its index and residue so
- * owner-created tracked or untracked writes can be rolled back without
+ * agent-created tracked or untracked writes can be rolled back without
  * disturbing dirt that predated the attempt. Workflow task worktrees have a
  * distinct workspaceDir and bypass this guard.
  */
-export function beginCanonicalOwnerResidueGuard(paths: AppTaskExecutionPaths): CanonicalUntrackedResidueGuard | null {
+export function beginCanonicalAgentResidueGuard(paths: AppTaskExecutionPaths): CanonicalUntrackedResidueGuard | null {
   if (paths.workspaceDir !== paths.projectDir) return null;
   try {
     const topLevel = resolve(
@@ -1587,7 +1593,7 @@ export function deployReceiptPrompt(projectDir: string, taskId: string): string[
   if (receipt.phase === "succeeded") {
     return [
       "## Restart-aware deploy receipt",
-      "The correlated deploy succeeded. Do not deploy again. Verify that loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, and duplicateDeploy is false; then complete owner reconciliation.",
+      "The correlated deploy succeeded. Do not deploy again. Verify that loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, and duplicateDeploy is false; then complete agent reconciliation.",
       "```json",
       encoded,
       "```",
@@ -1602,9 +1608,9 @@ export function deployReceiptPrompt(projectDir: string, taskId: string): string[
   ];
 }
 
-export function planCanonicalOwnerResidueCleanup(
+export function planCanonicalAgentResidueCleanup(
   guard: CanonicalUntrackedResidueGuard | null,
-): CanonicalOwnerResidueCleanupPlan | null {
+): CanonicalAgentResidueCleanupPlan | null {
   if (!guard || !existsSync(guard.indexPath)) return null;
 
   const expectedIndexData = readFileSync(guard.indexPath);
@@ -1635,7 +1641,7 @@ export function planCanonicalOwnerResidueCleanup(
 }
 
 function restoreResidueFileFromBaselineIndex(guard: CanonicalUntrackedResidueGuard, relativePath: string): void {
-  const temporaryIndex = `${guard.indexPath}.owner-residue-${process.pid}-${Date.now()}`;
+  const temporaryIndex = `${guard.indexPath}.agent-residue-${process.pid}-${Date.now()}`;
   try {
     writeFileSync(temporaryIndex, guard.indexData);
     chmodSync(temporaryIndex, guard.indexMode);
@@ -1647,7 +1653,7 @@ function restoreResidueFileFromBaselineIndex(guard: CanonicalUntrackedResidueGua
   }
 }
 
-export function applyCanonicalOwnerResidueCleanup(plan: CanonicalOwnerResidueCleanupPlan | null): string[] {
+export function applyCanonicalAgentResidueCleanup(plan: CanonicalAgentResidueCleanupPlan | null): string[] {
   if (!plan) return [];
   const { guard } = plan;
   const restored: string[] = [];
@@ -1685,30 +1691,30 @@ export function applyCanonicalOwnerResidueCleanup(plan: CanonicalOwnerResidueCle
   return restored;
 }
 
-export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
-  return applyCanonicalOwnerResidueCleanup(planCanonicalOwnerResidueCleanup(guard));
+export function finishCanonicalAgentResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
+  return applyCanonicalAgentResidueCleanup(planCanonicalAgentResidueCleanup(guard));
 }
 
-export function rejectConvergedDirectOwnerResidue(
+export function rejectConvergedDirectAgentResidue(
   result: NormalizedTaskHandlerResult,
   restored: string[],
 ): NormalizedTaskHandlerResult {
   if (result.state !== "converged" || restored.length === 0) return result;
   return {
     state: "error",
-    summary: "Direct-owner convergence was rejected because canonical workspace edits required cleanup",
-    evidence: [...result.evidence, ...restored.map((entry) => `owner-residue-restored:${entry}`)],
+    summary: "Direct-agent convergence was rejected because canonical workspace edits required cleanup",
+    evidence: [...result.evidence, ...restored.map((entry) => `agent-residue-restored:${entry}`)],
     actions: [],
   };
 }
 
 export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
-  "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this owner attempt. Decide from it or preserve the exact App/task owner boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
+  "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
 
-/** Compact owner rules; the finish tool schema enforces field-level detail. */
-export function appTaskOwnerProtocol(appId: string): string {
+/** Compact bounded-agent rules; the finish tool schema enforces field-level detail. */
+export function appTaskAgentProtocol(appId: string): string {
   return [
-    `You are the accountable owner for Agent App ${appId}.`,
+    `You are the bounded agent for one Task attempt owned by App ${appId}.`,
     "Perform the next bounded work needed by the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
     "Finish exactly once with finish().result. The tool schema is authoritative. A successful session without result does not resolve the task.",
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
@@ -1740,7 +1746,7 @@ export function liveTaskEventMessage(event: AgentEvent): string {
   ].join("\n");
 }
 
-async function executeTaskOwner(input: {
+async function executeTaskAgent(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   attempt: TaskAttempt;
@@ -1758,7 +1764,7 @@ async function executeTaskOwner(input: {
   const reconciliationEvents = input.attempt.events;
   const trace = childEventTrace(event);
   const prompt = [
-    appTaskOwnerProtocol(descriptor.id),
+    appTaskAgentProtocol(descriptor.id),
     "",
     "## Reconciliation Task",
     "```json",
@@ -1768,7 +1774,7 @@ async function executeTaskOwner(input: {
         taskId: claim.taskId,
         generation: claim.generation,
         resourceVersion: claim.resourceVersion,
-        owner: claim.owner,
+        agent: claim.agent,
         mode: claim.mode,
         outcome: intent.outcome,
         acceptance: intent.acceptance,
@@ -1791,39 +1797,39 @@ async function executeTaskOwner(input: {
       : []),
   ].join("\n");
 
-  const ownerOptions = {
-    source: "app-task-owner",
+  const agentOptions = {
+    source: "app-task-agent",
     projectId: descriptor.id,
     recoveryOwner: APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
-    outputSchema: appTaskOwnerResultSchema,
+    outputSchema: appTaskAgentResultSchema,
     toolPolicy: "full" as const,
-    timeout: APP_TASK_OWNER_TIMEOUT_MS,
+    timeout: APP_TASK_AGENT_TIMEOUT_MS,
     executionRoot: input.executionPaths.workspaceDir,
   };
-  const dispatchOwner = async () =>
+  const dispatchAgent = async () =>
     typeof opts.manager.run === "function" &&
     typeof opts.manager.waitFor === "function" &&
     typeof opts.manager.progress === "function"
       ? await (async () => {
-          const sessionId = opts.manager.run(claim.owner, prompt, {
-            source: ownerOptions.source,
+          const sessionId = opts.manager.run(claim.agent, prompt, {
+            source: agentOptions.source,
             kind: "call",
-            projectId: ownerOptions.projectId,
+            projectId: agentOptions.projectId,
             taskBinding: {
               appId: descriptor.id,
               taskId: claim.taskId,
               generation: claim.generation,
               attemptId: claim.attemptId,
             },
-            recoveryOwner: ownerOptions.recoveryOwner,
-            trace: ownerOptions.trace,
-            requireFinish: ownerOptions.requireFinish,
-            outputSchema: ownerOptions.outputSchema,
-            toolPolicy: ownerOptions.toolPolicy,
-            timeoutMs: ownerOptions.timeout,
-            executionRoot: ownerOptions.executionRoot,
+            recoveryOwner: agentOptions.recoveryOwner,
+            trace: agentOptions.trace,
+            requireFinish: agentOptions.requireFinish,
+            outputSchema: agentOptions.outputSchema,
+            toolPolicy: agentOptions.toolPolicy,
+            timeoutMs: agentOptions.timeout,
+            executionRoot: agentOptions.executionRoot,
           });
           recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, sessionId);
           const unsubscribe = input.attempt.onEvent((incoming) => {
@@ -1845,37 +1851,37 @@ async function executeTaskOwner(input: {
             unsubscribe();
           }
         })()
-      : await opts.manager.callAgent(claim.owner, prompt, ownerOptions);
-  const residueGuard = beginCanonicalOwnerResidueGuard(input.executionPaths);
-  let restoredOwnerResidue: string[] = [];
-  let result: Awaited<ReturnType<typeof dispatchOwner>>;
+      : await opts.manager.callAgent(claim.agent, prompt, agentOptions);
+  const residueGuard = beginCanonicalAgentResidueGuard(input.executionPaths);
+  let restoredAgentResidue: string[] = [];
+  let result: Awaited<ReturnType<typeof dispatchAgent>>;
   try {
     input.observer?.providerStarted(Buffer.byteLength(prompt));
-    result = await dispatchOwner();
+    result = await dispatchAgent();
   } finally {
     input.observer?.providerFinished();
-    const cleanupPlan = planCanonicalOwnerResidueCleanup(residueGuard);
-    restoredOwnerResidue = applyCanonicalOwnerResidueCleanup(cleanupPlan);
+    const cleanupPlan = planCanonicalAgentResidueCleanup(residueGuard);
+    restoredAgentResidue = applyCanonicalAgentResidueCleanup(cleanupPlan);
   }
   const done = result.status === "done";
-  const handlerResult = rejectConvergedDirectOwnerResidue(
+  const handlerResult = rejectConvergedDirectAgentResidue(
     normalizeTaskHandlerResult(
       done ? result.structuredResult : undefined,
       {
         type: done ? "done" : "blocked",
         summary:
           firstNonEmptyString(result.finishResult?.summary, result.lastAssistantText, result.error) ??
-          `Owner session ${result.sessionId || "unknown"} returned no result`,
+          `Agent session ${result.sessionId || "unknown"} returned no result`,
         runId: result.sessionId || null,
       },
       {
-        allowNeedsOwner: false,
+        allowNeedsAgent: false,
         defaultParentId: input.defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
       },
     ),
-    restoredOwnerResidue,
+    restoredAgentResidue,
   );
   return {
     handlerResult,
@@ -1886,7 +1892,7 @@ async function executeTaskOwner(input: {
 
 function appTaskCliProtocol(appId: string): string {
   return [
-    `You are the bounded CLI executor for Agent App ${appId}.`,
+    `You are the bounded CLI executor for one Task attempt owned by App ${appId}.`,
     "Perform the next concrete work needed by the Task. The Task resource, not this CLI process or native session, owns status and retries.",
     "Do not edit Host task storage. Use the supplied workspace and paths only.",
     "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
@@ -1938,7 +1944,7 @@ async function executeTaskCli(input: {
         taskId: claim.taskId,
         generation: claim.generation,
         resourceVersion: claim.resourceVersion,
-        owner: claim.owner,
+        agent: claim.agent,
         executor: input.tool,
         mode: claim.mode,
         outcome: intent.outcome,
@@ -1957,7 +1963,7 @@ async function executeTaskCli(input: {
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
   ].join("\n");
-  const residueGuard = beginCanonicalOwnerResidueGuard(input.executionPaths);
+  const residueGuard = beginCanonicalAgentResidueGuard(input.executionPaths);
   let restoredResidue: string[] = [];
   let execution: Awaited<ReturnType<typeof executeTaskWithCli>>;
   try {
@@ -1969,7 +1975,7 @@ async function executeTaskCli(input: {
       taskId: claim.taskId,
       generation: claim.generation,
       attemptId: claim.attemptId,
-      owner: claim.owner,
+      owner: claim.agent,
       tool: input.tool,
       cwd: input.executionPaths.workspaceDir,
       prompt,
@@ -1978,7 +1984,7 @@ async function executeTaskCli(input: {
     });
   } finally {
     input.observer?.providerFinished();
-    restoredResidue = finishCanonicalOwnerResidueGuard(residueGuard);
+    restoredResidue = finishCanonicalAgentResidueGuard(residueGuard);
   }
   if (execution.status === "failed") {
     return {
@@ -1996,14 +2002,14 @@ async function executeTaskCli(input: {
     execution.result,
     { type: "done", summary: `${input.tool} CLI completed`, runId: execution.cliTaskId },
     {
-      allowNeedsOwner: false,
+      allowNeedsAgent: false,
       defaultParentId: input.defaultParentId,
       rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
       validateAction: input.descriptor.app.tasks?.validateAction,
     },
   );
   normalized.evidence = [...new Set([...normalized.evidence, ...execution.evidence])];
-  const handlerResult = rejectConvergedDirectOwnerResidue(normalized, restoredResidue);
+  const handlerResult = rejectConvergedDirectAgentResidue(normalized, restoredResidue);
   return {
     handlerResult,
     runId: execution.cliTaskId,
@@ -2050,8 +2056,8 @@ async function runTaskExecutorAttempt(input: {
   }
 }
 
-async function runTaskOwner(
-  input: Omit<Parameters<typeof executeTaskOwner>[0], "attempt">,
+async function runTaskAgent(
+  input: Omit<Parameters<typeof executeTaskAgent>[0], "attempt">,
 ): Promise<TaskCapabilityRun> {
   return runTaskExecutorAttempt({
     opts: input.opts,
@@ -2059,7 +2065,7 @@ async function runTaskOwner(
     claim: input.claim,
     executionPaths: input.executionPaths,
     ...(input.event ? { event: input.event } : {}),
-    execute: (attempt) => executeTaskOwner({ ...input, attempt }),
+    execute: (attempt) => executeTaskAgent({ ...input, attempt }),
   });
 }
 
@@ -2101,7 +2107,7 @@ async function runRegisteredTaskExecutor(input: {
             result,
             { type: "done", summary: `${input.name} executor completed`, runId },
             {
-              allowNeedsOwner: true,
+              allowNeedsAgent: true,
               defaultParentId: input.defaultParentId,
               rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
               validateAction: input.descriptor.app.tasks?.validateAction,
@@ -2135,7 +2141,7 @@ function boundedPromptChildText(value: string): string {
 }
 
 /**
- * Keep owner/workflow prompts decision-ready without copying each child Task's
+ * Keep agent/workflow prompts decision-ready without copying each child Task's
  * full input and Condition definitions into every parent attempt. Exact child
  * resources remain available through the scoped Task read API.
  */
@@ -2148,7 +2154,7 @@ export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
       generation: child.generation,
       phase: child.phase,
       outcome: boundedPromptChildText(child.outcome),
-      ...(child.owner ? { owner: child.owner } : {}),
+      ...(child.agent ? { agent: child.agent } : {}),
       ...(child.workflow ? { workflow: child.workflow } : {}),
       ...(child.executor ? { executor: child.executor } : {}),
       ...(child.priority ? { priority: child.priority } : {}),
@@ -2181,7 +2187,7 @@ export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
       taskId: child.taskId,
       generation: child.generation,
       outcome: boundedPromptChildText(child.outcome),
-      owner: child.owner,
+      agent: child.agent,
       ...(child.workflow ? { workflow: child.workflow } : {}),
       ...(child.executor ? { executor: child.executor } : {}),
       ...(child.priority ? { priority: child.priority } : {}),
@@ -2215,7 +2221,7 @@ function emitTaskReconciliationEvent(
   opts.bus.emit({
     type,
     source: `app-task:${descriptor.id}:task-reconciler`,
-    owner: `agent:${descriptor.owner}`,
+    owner: `agent:${descriptor.agent}`,
     target: { appId: descriptor.id },
     data: { project: descriptor.id, taskId, ...data },
     ...(trace ? { trace } : {}),
@@ -2270,7 +2276,7 @@ async function establishTaskAcceptance(input: {
       return {
         ok: true,
         acceptanceBasis: {
-          method: "owner-judgment",
+          method: "agent-judgment",
           evidence: [...capability.handlerResult.evidence],
         },
       };
@@ -2383,10 +2389,10 @@ async function reconcileTask(input: {
     }
     const primary = claimObservedAppTask(config, {
       taskId: input.taskId,
-      appOwner: descriptor.owner,
+      appAgent: descriptor.agent,
       handler: "auto",
       reason: input.reason ?? "task-controller",
-      isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
+      isAgentRunnable: (agent) => opts.manager.hasAgent(agent),
     });
     timing.claimMs = Math.max(0, performance.now() - claimStartedAt);
     if (primary.kind !== "claimed") {
@@ -2395,7 +2401,7 @@ async function reconcileTask(input: {
         const terminalSession =
           active?.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, active.sessionId) : null;
         if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
-          const consumed = consumePersistedTerminalOwnerResult({
+          const consumed = consumePersistedTerminalAgentResult({
             persistDir: opts.persistDir,
             config,
             descriptor,
@@ -2412,7 +2418,7 @@ async function reconcileTask(input: {
           });
           if (consumed) {
             emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", input.taskId, {
-              route: "terminal-owner-result-recovery",
+              route: "terminal-agent-result-recovery",
               generation: consumed.claim.generation,
               attemptId: consumed.claim.attemptId,
               handler: consumed.claim.handler,
@@ -2434,7 +2440,7 @@ async function reconcileTask(input: {
                 lastActivityAt: readSessionLastActivityAt(opts.persistDir, active.sessionId),
               }
             : undefined;
-        const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId, leaseCheckAt, sessionActivity);
+        const expired = expiredAgentSessionAppTaskAttempt(config, input.taskId, leaseCheckAt, sessionActivity);
         const sessionId = expired?.sessionId;
         const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
         const terminalStatus =
@@ -2445,14 +2451,14 @@ async function reconcileTask(input: {
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
             config,
             { ...expired, sessionId, terminalStatus },
-            `Expired reconciliation ${input.taskId} lost its synchronous caller after owner session completion`,
+            `Expired reconciliation ${input.taskId} lost its synchronous caller after agent session completion`,
             leaseCheckAt,
             sessionActivity,
           );
           if (released.released) {
             emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.recovery.requeued", input.taskId, {
               route: "task-controller",
-              reason: "terminal-owner-session-expired-lease",
+              reason: "terminal-agent-session-expired-lease",
               attemptId: expired.attemptId,
               evidenceSessionId: sessionId,
               terminalStatus,
@@ -2483,10 +2489,10 @@ async function reconcileTask(input: {
     timing.attemptId = primary.attemptId;
     timing.generation = primary.generation;
     for (const sessionId of primary.supersededSessionIds ?? []) {
-      interruptSupersededOwnerSession(
+      interruptSupersededAgentSession(
         opts,
         sessionId,
-        `Task ${primary.taskId} superseded an orphaned owner session while recovering the current generation`,
+        `Task ${primary.taskId} superseded an orphaned agent session while recovering the current generation`,
         primary.taskId,
       );
     }
@@ -2503,12 +2509,12 @@ async function reconcileTask(input: {
       generation: primary.generation,
       attemptId: primary.attemptId,
       handler: primary.handler,
-      owner: primary.owner,
+      owner: primary.agent,
     });
 
     // Claiming a task rewrites the canonical state plus its disposable route and
     // read projections. On large retained trees that synchronous durability
-    // boundary is substantial. Yield before owner/workflow association can
+    // boundary is substantial. Yield before agent/workflow association can
     // perform another state rewrite, so HTTP readiness and accepted event
     // ingress get an observable turn inside one reconciliation (not merely
     // between separate claims).
@@ -2544,7 +2550,7 @@ async function reconcileTask(input: {
     };
     let primaryResult: TaskCapabilityRun | undefined;
     if (workflowKey) {
-      const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
+      const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.agent);
       const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, workflowKey);
       if (
         definition.workspace === "task" ||
@@ -2595,7 +2601,7 @@ async function reconcileTask(input: {
         descriptor,
         capability: {
           workflow: workflowKey,
-          agent: primary.owner,
+          agent: primary.agent,
           task: `Reconcile task through workflow ${workflowKey}`,
         },
         intent,
@@ -2702,7 +2708,7 @@ async function reconcileTask(input: {
         };
       }
     } else {
-      primaryResult = await runTaskOwner({
+      primaryResult = await runTaskAgent({
         opts,
         descriptor,
         intent,
@@ -2724,7 +2730,7 @@ async function reconcileTask(input: {
         observer,
       });
       if (primary.handoff && intent.workflow) {
-        const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
+        const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.agent);
         const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, intent.workflow);
         if (definition.verifier) {
           primaryResult.verifier = {
@@ -2740,12 +2746,12 @@ async function reconcileTask(input: {
     const primaryHandlerResult = primaryResult.handlerResult;
     if (
       primaryHandlerResult.state === "converged" &&
-      primary.handoff?.reason === "needs-owner" &&
+      primary.handoff?.reason === "needs-agent" &&
       intent.workflow &&
       !primaryResult.verifier
     ) {
       primaryHandlerResult.state = "error";
-      primaryHandlerResult.summary = `Owner convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
+      primaryHandlerResult.summary = `Agent convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
     }
     if (primaryResult.unavailable) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
@@ -2811,7 +2817,7 @@ async function reconcileTask(input: {
             disposition: apply.status === "applied" ? appliedDisposition : "stale",
             outcome: intent.outcome,
             mode: intent.mode,
-            owner: intent.owner ?? descriptor.owner,
+            owner: intent.owner ?? descriptor.agent,
             ...(intent.workflow ? { workflow: intent.workflow } : {}),
             ...(intent.executor ? { executor: intent.executor } : {}),
             acceptance: intent.acceptance,
@@ -2838,7 +2844,7 @@ async function reconcileTask(input: {
               disposition: "stale",
               outcome: intent.outcome,
               mode: intent.mode,
-              owner: intent.owner ?? descriptor.owner,
+              owner: intent.owner ?? descriptor.agent,
               ...(intent.workflow ? { workflow: intent.workflow } : {}),
               ...(intent.executor ? { executor: intent.executor } : {}),
               input: intent.input ?? {},
@@ -2947,7 +2953,7 @@ async function reconcileTask(input: {
 
     await finalizeWorkspace("failed");
 
-    const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
+    const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
     const attention = persistResult(() =>
       markAppTaskAttention(config, primary, {
         summary: primaryHandlerResult.summary,
@@ -2958,14 +2964,14 @@ async function reconcileTask(input: {
             ? "HandlerExecutionFailed"
             : primaryResult.workspacePreparationFailed
               ? "WorkspacePreparationFailed"
-              : primaryHandlerResult.state === "needs-owner"
-                ? "needs-owner"
+              : primaryHandlerResult.state === "needs-agent"
+                ? "needs-agent"
                 : "handler-blocked",
-        wakeParent: !ownerHandoff,
+        wakeParent: !agentHandoff,
       }),
     );
     if (attention.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
-    if (!ownerHandoff) {
+    if (!agentHandoff) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
@@ -2980,7 +2986,7 @@ async function reconcileTask(input: {
       generation: primary.generation,
       attemptId: primary.attemptId,
       handler: primary.handler,
-      disposition: "owner-handoff",
+      disposition: "agent-handoff",
       input: intent.input ?? {},
       summary: primaryHandlerResult.summary,
     });
@@ -3039,7 +3045,7 @@ function admitResolvedAppTaskEvent(input: {
     if (existingIntent && intent?.id === targetedTaskId) {
       const observation = observeAppTaskIntent(config, {
         intent,
-        appOwner: descriptor.owner,
+        appAgent: descriptor.agent,
         trigger: event,
       });
       interruptSupersededObservationSessions(opts, observation);
@@ -3062,7 +3068,7 @@ function admitResolvedAppTaskEvent(input: {
   if (!intent) return conditionDelivery;
   const observation = observeAppTaskIntent(config, {
     intent,
-    appOwner: descriptor.owner,
+    appAgent: descriptor.agent,
     trigger: event,
   });
   interruptSupersededObservationSessions(opts, observation);
@@ -3248,7 +3254,7 @@ function installConventionTaskControllers(
         for (const dependentTaskId of dependentTaskIds) {
           const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
           // A same-task result is an immediate continuation, such as a
-          // workflow-to-owner handoff. Other children/dependents enter the
+          // workflow-to-agent handoff. Other children/dependents enter the
           // priority-ordered ordinary lane so continuation bursts stay bounded.
           activeController.enqueue(dependentTaskId, {
             front: dependentTaskId === taskId,
@@ -3261,10 +3267,10 @@ function installConventionTaskControllers(
         opts.bus.emit({
           type: "handler.failed",
           source: "cron",
-          owner: `agent:${descriptor.owner}`,
+          owner: `agent:${descriptor.agent}`,
           data: {
             handler: `app-task-controller:${taskId}`,
-            agent: descriptor.owner,
+            agent: descriptor.agent,
             error: `${error instanceof Error ? error.message : String(error)}; willRetry=${willRetry}`,
             durationMs: 0,
           },
@@ -3334,7 +3340,7 @@ function appTaskConfig(descriptor: AppTaskRuntimeDescriptor) {
   const config = taskReconciliationConfig({
     appDir: descriptor.appDir,
     projectDir: descriptor.projectDir,
-    owner: descriptor.owner,
+    agent: descriptor.agent,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     resourceStore: descriptor.resourceStore,
   });
@@ -3395,12 +3401,12 @@ export function attachLoadedAppTask(input: {
 
   const observation = observeAppTaskIntent(config, {
     intent,
-    appOwner: descriptor.owner,
+    appAgent: descriptor.agent,
     admissionKey: idempotencyKey,
     trigger: {
       type: "app.task.requested",
       source: input.request.source.kind === "human" ? "human" : `app-inbox:${input.appId}`,
-      owner: `agent:${descriptor.owner}`,
+      owner: `agent:${descriptor.agent}`,
       target: { project: descriptor.id, taskId: intent.id },
       idempotencyKey,
       data: {
@@ -3502,7 +3508,7 @@ export function publishLoadedAppTaskEvent(input: {
       taskId: input.binding.taskId,
       generation: input.binding.generation,
       attemptId: input.binding.attemptId,
-      owner: attempt.owner,
+      agent: attempt.owner,
     },
   }).publish(input.localKey, input.event);
 }
@@ -3515,7 +3521,7 @@ function emitAppTaskDependencyCompleted(
   opts.bus.emit({
     type: "app.dependency.completed",
     source: `app-task:${descriptor.id}:task-reconciler`,
-    owner: `agent:${descriptor.owner}`,
+    owner: `agent:${descriptor.agent}`,
     data: { kind: "task", id: taskId, appId: descriptor.id },
   });
 }
@@ -3528,7 +3534,7 @@ function emitAppTaskDependencyUpdated(
   opts.bus.emit({
     type: "app.dependency.updated",
     source: `app-task:${descriptor.id}:task-reconciler`,
-    owner: `agent:${descriptor.owner}`,
+    owner: `agent:${descriptor.agent}`,
     data: { kind: "task", id: taskId, appId: descriptor.id },
   });
 }
@@ -3547,10 +3553,10 @@ function recoverInterruptedAppTasks(
     const attentionRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       if (recovery.sessionId) {
-        interruptSupersededOwnerSession(
+        interruptSupersededAgentSession(
           opts,
           recovery.sessionId,
-          `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
+          `Recovered task ${recovery.taskId} interrupted an orphaned agent session from a previous runtime`,
           recovery.taskId,
         );
       }
@@ -3571,7 +3577,7 @@ function recoverInterruptedAppTasks(
         recovery.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, recovery.sessionId) : null;
       if (recovery.sessionId && persistedSession?.status === "done") {
         let rejection: string | undefined;
-        const consumed = consumePersistedTerminalOwnerResult({
+        const consumed = consumePersistedTerminalAgentResult({
           persistDir: opts.persistDir,
           config,
           descriptor,
@@ -3583,7 +3589,7 @@ function recoverInterruptedAppTasks(
         });
         if (consumed) {
           emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", recovery.taskId, {
-            route: "terminal-owner-result-recovery",
+            route: "terminal-agent-result-recovery",
             generation: consumed.claim.generation,
             attemptId: consumed.claim.attemptId,
             handler: consumed.claim.handler,
@@ -3617,7 +3623,7 @@ function recoverInterruptedAppTasks(
       opts.bus.emit({
         type: "project.task.recovery.repaired",
         source: `app-task:${descriptor.id}:task-recovery`,
-        owner: `agent:${descriptor.owner}`,
+        owner: `agent:${descriptor.agent}`,
         target: { project: descriptor.id },
         data: {
           project: descriptor.id,
@@ -3691,11 +3697,11 @@ async function requeueRepairedAppTaskHandlers(
     if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
     const config = appTaskConfig(descriptor);
     const attentionTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
-    for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.owner, attentionTaskIds)) {
+    for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.agent, attentionTaskIds)) {
       if (descriptor.app.workspace?.kind !== "git") continue;
       let baseBranch = descriptor.app.workspace.branch ?? "dev";
       if (candidate.workflow) {
-        const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
+        const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
         const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
         if (
           !definition.available ||
@@ -3705,7 +3711,9 @@ async function requeueRepairedAppTaskHandlers(
           continue;
         }
         baseBranch =
-          typeof definition.workspace === "object" ? definition.workspace.baseBranch : descriptor.app.workspace.branch ?? "dev";
+          typeof definition.workspace === "object"
+            ? definition.workspace.baseBranch
+            : (descriptor.app.workspace.branch ?? "dev");
       }
       try {
         await prepareAppTaskWorkspace({
@@ -3724,7 +3732,7 @@ async function requeueRepairedAppTaskHandlers(
       opts.bus.emit({
         type: "project.task.handler.recovered",
         source: `app-task:${descriptor.id}:task-recovery`,
-        owner: `agent:${candidate.owner}`,
+        owner: `agent:${candidate.agent}`,
         target: { appId: descriptor.id },
         data: {
           project: descriptor.id,
@@ -3734,8 +3742,8 @@ async function requeueRepairedAppTaskHandlers(
         },
       } as unknown as AgentEvent);
     }
-    for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.owner, attentionTaskIds)) {
-      const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
+    for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.agent, attentionTaskIds)) {
+      const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
       const key = `${paths.workflowDir}\0${candidate.workflow}`;
       let available = availability.get(key);
       if (available === undefined) {
@@ -3748,7 +3756,7 @@ async function requeueRepairedAppTaskHandlers(
       opts.bus.emit({
         type: "project.task.handler.recovered",
         source: `app-task:${descriptor.id}:task-recovery`,
-        owner: `agent:${candidate.owner}`,
+        owner: `agent:${candidate.agent}`,
         target: { appId: descriptor.id },
         data: {
           project: descriptor.id,
@@ -3784,7 +3792,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
         if (descriptor?.app.tasks) {
           const association = associateAppTaskSession(appTaskConfig(descriptor), sessionBinding, startedSessionId);
           if (association.status !== "recorded") {
-            interruptSupersededOwnerSession(
+            interruptSupersededAgentSession(
               opts,
               startedSessionId,
               association.status === "missing"
@@ -3795,7 +3803,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           }
         }
       }
-      const successfulOwner =
+      const successfulAgent =
         event.type === "session.end" &&
         event.status === "done" &&
         typeof event.agent === "string" &&
@@ -3810,7 +3818,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
                 isRecord(event.data) ? event.data.projectId : undefined,
               )?.replace(/\.app$/, "");
               return {
-                owner: event.agent.trim(),
+                agent: event.agent.trim(),
                 sessionId,
                 appId: scope.binding?.appId ?? eventAppId ?? null,
                 observedAt: new Date(typeof event.timestamp === "number" ? event.timestamp : Date.now()).toISOString(),
@@ -3823,54 +3831,54 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
               };
             })()
           : null;
-      const hasTaskRecoveryScope = Boolean(successfulOwner?.binding || successfulOwner?.workflowRunId);
+      const hasTaskRecoveryScope = Boolean(successfulAgent?.binding || successfulAgent?.workflowRunId);
       for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
         if (descriptor.reconciliationPaused) continue;
         const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
-        if (successfulOwner && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
+        if (successfulAgent && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
           // A terminal task session can repair only attempts in its own App.
           // Avoid synchronously loading every unrelated App's task tree on each
           // session.end; large canonical trees otherwise block control traffic.
           // Legacy sessions with no binding or project identity keep the
           // conservative all-App scan used before project scoping existed.
-          if (successfulOwner.appId && successfulOwner.appId !== descriptor.id) continue;
+          if (successfulAgent.appId && successfulAgent.appId !== descriptor.id) continue;
           const config = appTaskConfig(descriptor);
           if (
-            successfulOwner.binding?.appId === descriptor.id &&
-            workflowWasInterruptedByRestart(opts.persistDir, successfulOwner.workflowRunId)
+            successfulAgent.binding?.appId === descriptor.id &&
+            workflowWasInterruptedByRestart(opts.persistDir, successfulAgent.workflowRunId)
           ) {
             const released = releaseLateTerminalWorkflowAppTaskAttempt(
               config,
-              successfulOwner.binding,
-              successfulOwner.sessionId,
-              `Late terminal session ${successfulOwner.sessionId} cannot reattach to restart-interrupted workflow ${successfulOwner.workflowRunId}`,
+              successfulAgent.binding,
+              successfulAgent.sessionId,
+              `Late terminal session ${successfulAgent.sessionId} cannot reattach to restart-interrupted workflow ${successfulAgent.workflowRunId}`,
             );
             if (released.released) {
               enqueueAppTask(taskController, config, released.taskId, { front: true });
               opts.bus.emit({
                 type: "project.task.recovery.requeued",
                 source: `app-task:${descriptor.id}:task-recovery`,
-                owner: `agent:${successfulOwner.owner}`,
+                owner: `agent:${successfulAgent.agent}`,
                 target: { appId: descriptor.id },
                 data: {
                   project: descriptor.id,
                   taskId: released.taskId,
                   reason: "late-terminal-session-after-workflow-restart",
-                  evidenceSessionId: successfulOwner.sessionId,
-                  evidenceWorkflowRunId: successfulOwner.workflowRunId,
+                  evidenceSessionId: successfulAgent.sessionId,
+                  evidenceWorkflowRunId: successfulAgent.workflowRunId,
                 },
               } as unknown as AgentEvent);
             }
           }
           for (const candidate of listHandlerExecutionFailedAppTasks(
             config,
-            config.resourceStore?.listHandlerExecutionRecoveryTaskIds(successfulOwner.owner, 512),
+            config.resourceStore?.listHandlerExecutionRecoveryTaskIds(successfulAgent.agent, 512),
           )) {
-            if (candidate.owner !== successfulOwner.owner) continue;
+            if (candidate.agent !== successfulAgent.agent) continue;
             if (
               !taskRecoverySessionScopesMatch(descriptor.id, opts.persistDir, candidate.sessionId, {
-                binding: successfulOwner.binding,
-                workflowRunId: successfulOwner.workflowRunId,
+                binding: successfulAgent.binding,
+                workflowRunId: successfulAgent.workflowRunId,
               })
             ) {
               continue;
@@ -3881,9 +3889,9 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
             );
             if (
               !releaseHandlerExecutionFailedAppTask(config, candidate.taskId, {
-                owner: successfulOwner.owner,
-                sessionId: successfulOwner.sessionId,
-                observedAt: successfulOwner.observedAt,
+                agent: successfulAgent.agent,
+                sessionId: successfulAgent.sessionId,
+                observedAt: successfulAgent.observedAt,
                 allowLegacyHandlerBlocked,
               })
             ) {
@@ -3893,20 +3901,20 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
             opts.bus.emit({
               type: "project.task.handler.recovered",
               source: `app-task:${descriptor.id}:task-recovery`,
-              owner: `agent:${candidate.owner}`,
+              owner: `agent:${candidate.agent}`,
               target: { appId: descriptor.id },
               data: {
                 project: descriptor.id,
                 taskId: candidate.taskId,
-                handler: "owner-execution",
-                reason: "owner-session-succeeded-after-handler-execution-failure",
-                evidenceSessionId: successfulOwner.sessionId,
-                ...(successfulOwner.workflowRunId ? { evidenceWorkflowRunId: successfulOwner.workflowRunId } : {}),
+                handler: "agent-execution",
+                reason: "agent-session-succeeded-after-handler-execution-failure",
+                evidenceSessionId: successfulAgent.sessionId,
+                ...(successfulAgent.workflowRunId ? { evidenceWorkflowRunId: successfulAgent.workflowRunId } : {}),
               },
             } as unknown as AgentEvent);
           }
-          if (successfulOwner.binding?.appId === descriptor.id) {
-            enqueueAppTask(taskController, config, successfulOwner.binding.taskId, { front: true });
+          if (successfulAgent.binding?.appId === descriptor.id) {
+            enqueueAppTask(taskController, config, successfulAgent.binding.taskId, { front: true });
           }
         }
       }
@@ -3983,7 +3991,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
       id,
       appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
-      owner: configuredAppOwner(app, appDir),
+      agent: configuredAppAgent(app, appDir),
       app,
       reconciliationPaused: false,
       resourceStore,

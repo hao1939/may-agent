@@ -663,7 +663,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (command === "/start" || command === "/help") {
       await sendMessage(
         chatIdStr,
-        "🤖 *May Agent Bot*\n\n" +
+        "🤖 *May*\n\n" +
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
           "/apps \[app\] — Show Apps and active Task counts\n" +
