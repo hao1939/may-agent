@@ -25,7 +25,7 @@ describe("Codex goal progress projection", () => {
       event: {
         type: CODEX_GOAL_PROGRESS_EVENT,
         data: {
-          executor: "codex-goal-poc",
+          executor: "codex-goal",
           threadId: "thread-1",
           turnId: "turn-1",
           stage: "intermediate",
@@ -65,7 +65,7 @@ describe("Codex goal progress projection", () => {
       }),
     );
     expect(command?.event.data).toEqual({
-      executor: "codex-goal-poc",
+      executor: "codex-goal",
       threadId: "thread-1",
       turnId: "turn-1",
       stage: "item-completed",
@@ -97,7 +97,7 @@ describe("Codex goal progress projection", () => {
       }),
     );
     expect(tool?.event.data).toEqual({
-      executor: "codex-goal-poc",
+      executor: "codex-goal",
       threadId: "thread-1",
       turnId: "turn-1",
       stage: "item-completed",
@@ -111,7 +111,9 @@ describe("Codex goal progress projection", () => {
     });
     expect(JSON.stringify(tool)).not.toContain("secret");
     expect(
-      projectCodexGoalProgress(completed({ id: "ok-command", type: "commandExecution", status: "completed", exitCode: 0 })),
+      projectCodexGoalProgress(
+        completed({ id: "ok-command", type: "commandExecution", status: "completed", exitCode: 0 }),
+      ),
     ).toBeNull();
     expect(
       projectCodexGoalProgress(completed({ id: "ok-tool", type: "dynamicToolCall", status: "completed" })),
