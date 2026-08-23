@@ -1116,7 +1116,8 @@ resource activity. Artifact validation also found and fixed a compiled-only
 CLI bug: `--version` tried to open `/package.json` from Bun's virtual filesystem.
 Package metadata is now embedded, and the archive build injects the immutable
 source commit instead of inferring identity from the runtime working tree.
-Production activation and a retained-state quiet window remain outstanding.
+Production activation now has an exact-artifact receipt. A valid retained-state
+quiet window remains outstanding.
 
 ### Startup and maintenance checkpoint (2026-08-23)
 
@@ -1137,6 +1138,39 @@ maintenance deleted only records selected by the existing policy, checkpointed
 successfully in 6.642 seconds, and completed without restarting the daemon.
 These repairs keep publication durable and recovery bounded; they do not add a
 queue, another worker lifecycle, or broad cleanup.
+
+### Stale Condition admission recovery checkpoint (2026-08-24)
+
+The retained admission journal exposed one more bounded-recovery defect. A
+Condition route was frozen while its Task was waiting, but recovery continued
+to retry that old command after the Condition was already true or the Task had
+left `waiting`/`running`. The normal event route was no longer actionable, yet
+the recovery row could repeatedly report that the App had not durably admitted
+it.
+
+Condition preflight now selects only false or unknown Conditions belonging to
+Tasks that are still waiting or running. When replaying an already-frozen
+Condition command, finding that its exact Task consumed the fact or left the
+wait is an idempotent success. Exact-Task commands retain their strict missing-
+target failure; the change does not weaken targeted admission.
+
+The deployed source commit `dd394602` matched its loaded artifact and passed
+health, exact owner wake, and duplicate-deploy checks. Without editing or
+deleting retained rows, the pending journal drained in its configured pages of
+16: `77 -> 61 -> 45 -> 29 -> 0`. All 16,539 retained commands are now admitted,
+and the post-deployment container log contains no new `did not durably admit
+frozen` error. The final idle-cost proof remains open because the last
+observation contained three running Task attempts and one running workflow; an
+active window is not evidence of idle overhead.
+
+A subsequent 30-second retained-state sample deliberately measured that active
+case. With two agent executions, four running Task attempts, three workflows,
+and up to six direct child commands, the main process used 5.43% of one CPU.
+Heap stayed between 48.5 and 50.0 MB and external memory between 24.4 and 26.1
+MB. RSS ranged from 249 to 350 MB while command work was active and ended only
+7.6 MB above its first sample. This is representative-load evidence, not the
+quiet-window exit proof, but it does not reproduce the prior saturated Host or
+unbounded retained-heap failures.
 
 ### Phase 0: freeze the contract and expose cost
 
