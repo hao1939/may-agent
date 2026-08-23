@@ -54,6 +54,14 @@ function stableLocalKey(kind: string, ...identity: unknown[]): string {
   return `codex-progress:${kind}:${createHash("sha256").update(raw).digest("hex").slice(0, 32)}`;
 }
 
+function scopedLocalKey(localKey: string, scope: string | undefined): string {
+  const normalized = scope?.trim();
+  if (!normalized) return localKey;
+  const raw = `${localKey}:attempt:${normalized}`;
+  if (raw.length <= 240) return raw;
+  return `codex-progress:attempt:${createHash("sha256").update(raw).digest("hex").slice(0, 32)}`;
+}
+
 function compactOpaqueId(value: string): string {
   if (value.length <= 128) return value;
   return `sha256:${createHash("sha256").update(value).digest("hex").slice(0, 32)}`;
@@ -241,6 +249,7 @@ export class CodexGoalProgressPublisher {
   private readonly publish: (localKey: string, event: AppEvent<Record<string, unknown>>) => Promise<TaskEventReceipt>;
   private readonly maxEvents: number;
   private readonly executorName: string;
+  private readonly keyScope?: string;
   private readonly seen = new Set<string>();
   private tail: Promise<void> = Promise.resolve();
   private stats: CodexGoalProgressStats = { queued: 0, published: 0, failed: 0, dropped: 0 };
@@ -249,10 +258,12 @@ export class CodexGoalProgressPublisher {
     publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
     maxEvents?: number;
     executorName?: string;
+    keyScope?: string;
   }) {
     this.publish = input.publish;
     this.maxEvents = input.maxEvents ?? DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS;
     this.executorName = input.executorName ?? "codex-goal";
+    this.keyScope = input.keyScope;
     if (!Number.isSafeInteger(this.maxEvents) || this.maxEvents <= 0) {
       throw new Error("Codex goal progress maxEvents must be a positive integer");
     }
@@ -260,8 +271,10 @@ export class CodexGoalProgressPublisher {
 
   observe(notification: AppServerNotification): void {
     const projected = projectCodexGoalProgress(notification, this.executorName);
-    if (!projected || this.seen.has(projected.localKey)) return;
-    this.seen.add(projected.localKey);
+    if (!projected) return;
+    const localKey = scopedLocalKey(projected.localKey, this.keyScope);
+    if (this.seen.has(localKey)) return;
+    this.seen.add(localKey);
     if (this.stats.queued >= this.maxEvents) {
       this.stats.dropped += 1;
       return;
@@ -269,7 +282,7 @@ export class CodexGoalProgressPublisher {
     this.stats.queued += 1;
     this.tail = this.tail
       .then(async () => {
-        await this.publish(projected.localKey, projected.event);
+        await this.publish(localKey, projected.event);
         this.stats.published += 1;
       })
       .catch((error: unknown) => {

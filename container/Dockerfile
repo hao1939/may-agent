@@ -47,7 +47,8 @@ RUN actual="$(find packages -mindepth 2 -maxdepth 2 -name package.json -printf '
 
 # Compile through the same entrypoint used by correlated runtime deploys. This
 # keeps image builds and live deploys on one artifact contract.
-RUN bun scripts/build-runtime-binary.ts --outfile /build/may-agent
+ARG MAY_AGENT_BUILD_COMMIT=unknown
+RUN MAY_AGENT_BUILD_COMMIT="${MAY_AGENT_BUILD_COMMIT}" bun scripts/build-runtime-binary.ts --outfile /build/may-agent
 
 # ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
 FROM ${DEBIAN_IMAGE}

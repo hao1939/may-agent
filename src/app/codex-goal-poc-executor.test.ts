@@ -126,7 +126,7 @@ class FakeClient implements CodexGoalClient {
       },
     };
   }
-  async steer() {
+  async steer(_input: { threadId: string; turnId: string; message: string }) {
     this.calls.push("steer");
     return "turn-1";
   }
@@ -336,6 +336,7 @@ describe("codex-goal-poc Task executor", () => {
     );
 
     expect(published.map(({ event }) => event.data.stage)).toEqual(["turn-started", "intermediate", "turn-completed"]);
+    expect(published.every(({ localKey }) => localKey.endsWith(":attempt:r_1_test"))).toBe(true);
     expect(JSON.stringify(published)).not.toContain("must not be duplicated");
     expect(published.every(({ event }) => event.target === undefined)).toBe(true);
   });
@@ -372,5 +373,78 @@ describe("codex-goal-poc Task executor", () => {
 
     expect(result.state).toBe("converged");
     expect(result.evidence).toContain("codex-progress-events:degraded failed=1 last=event store unavailable");
+  });
+
+  it("steers queued events into the authoritative next automatic turn", async () => {
+    const root = fixtureRoot();
+    const client = new FakeClient("thread-turn-transition");
+    let taskEvent: ((event: AppEvent<Record<string, unknown>>) => void) | undefined;
+    const steered: Array<{ turnId: string; message: string }> = [];
+    client.steer = async (input) => {
+      steered.push({ turnId: input.turnId, message: input.message });
+      return input.turnId;
+    };
+    client.waitForGoal = async () => {
+      client.emit({
+        method: "turn/completed",
+        params: { threadId: client.threadId, turn: { id: "turn-1", status: "completed" } },
+      });
+      taskEvent?.({ type: "project.comment.created", data: { comment: "LIVE-STEER-TEST" } });
+      client.emit({
+        method: "turn/started",
+        params: { threadId: client.threadId, turn: { id: "turn-2", status: "inProgress" } },
+      });
+      return {
+        threadId: client.threadId,
+        turnId: "turn-2",
+        goal: { threadId: client.threadId, objective: "review", status: "complete" },
+      };
+    };
+    client.waitForTurn = async () => ({
+      threadId: client.threadId,
+      turn: { id: "turn-2", status: "completed" },
+    });
+    client.readThread = async () => ({
+      thread: {
+        turns: [
+          {
+            id: "turn-2",
+            items: [
+              {
+                type: "agentMessage",
+                phase: "final_answer",
+                text: JSON.stringify({
+                  state: "converged",
+                  summary: "The live event was considered.",
+                  evidence: ["event:LIVE-STEER-TEST"],
+                }),
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const executor = createCodexGoalPocExecutor({
+      stateFile: join(root, "bindings.json"),
+      createClient: () => client,
+      checkIntervalMs: 1,
+      softStaleAfterMs: 1_000,
+      hardStaleAfterMs: 2_000,
+    });
+
+    await executor(
+      attempt({
+        onEvent(next) {
+          taskEvent = next;
+          return () => {
+            if (taskEvent === next) taskEvent = undefined;
+          };
+        },
+      }),
+    );
+
+    expect(steered).toHaveLength(1);
+    expect(steered[0]).toMatchObject({ turnId: "turn-2" });
+    expect(steered[0]?.message).toContain("LIVE-STEER-TEST");
   });
 });
