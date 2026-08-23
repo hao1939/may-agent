@@ -42,6 +42,7 @@ export const taskActionSchema = Type.Union([
       mode: Type.Optional(taskModeSchema),
       outputs: Type.Optional(stringArraySchema),
       priority: Type.Optional(taskPrioritySchema),
+      agent: Type.Optional(nonEmptyStringSchema),
       owner: Type.Optional(nonEmptyStringSchema),
       workflow: Type.Optional(nonEmptyStringSchema),
       executor: Type.Optional(taskExecutorSchema),
@@ -62,6 +63,7 @@ export const taskActionSchema = Type.Union([
       outputs: Type.Optional(stringArraySchema),
       acceptance: Type.Optional(Type.Array(nonEmptyStringSchema, { minItems: 1 })),
       priority: Type.Optional(taskPrioritySchema),
+      agent: Type.Optional(nullableStringSchema),
       owner: Type.Optional(nullableStringSchema),
       workflow: Type.Optional(nullableStringSchema),
       executor: Type.Optional(Type.Union([taskExecutorSchema, Type.Null()])),
@@ -204,6 +206,17 @@ function optionalString(value: Record<string, unknown>, key: string): { ok: true
   return normalized ? { ok: true, value: normalized } : { ok: false };
 }
 
+function optionalAgent(value: Record<string, unknown>): { ok: true; value?: string } | { ok: false; error: string } {
+  const agent = optionalString(value, "agent");
+  if (!agent.ok) return { ok: false, error: "agent must be a non-empty string when present" };
+  const owner = optionalString(value, "owner");
+  if (!owner.ok) return { ok: false, error: "legacy owner must be a non-empty string when present" };
+  if (agent.value && owner.value && agent.value !== owner.value) {
+    return { ok: false, error: "agent conflicts with legacy owner" };
+  }
+  return { ok: true, value: agent.value ?? owner.value };
+}
+
 function normalizeCreateTaskAction(
   value: Record<string, unknown>,
   options: TaskReconcileAdmissionOptions,
@@ -230,8 +243,8 @@ function normalizeCreateTaskAction(
   if (!outputs) return `actions[${index}].outputs must be a string array`;
   const priority = value.priority === undefined ? "P2" : value.priority;
   if (!validPriority(priority)) return `actions[${index}].priority must be P0, P1, P2, or P3`;
-  const owner = optionalString(value, "owner");
-  if (!owner.ok) return `actions[${index}].owner must be a non-empty string when present`;
+  const agent = optionalAgent(value);
+  if (!agent.ok) return `actions[${index}].${agent.error}`;
   const workflow = optionalString(value, "workflow");
   if (!workflow.ok) return `actions[${index}].workflow must be a non-empty string when present`;
   if (workflow.value === "project") {
@@ -262,7 +275,7 @@ function normalizeCreateTaskAction(
     mode,
     outputs,
     priority,
-    ...(owner.value ? { owner: owner.value } : {}),
+    ...(agent.value ? { owner: agent.value } : {}),
     ...(workflow.value ? { workflow: workflow.value } : {}),
     ...(executor ? { executor } : {}),
     ...(value.input ? { input: structuredClone(value.input) as Record<string, unknown> } : {}),
@@ -273,12 +286,26 @@ function normalizeCreateTaskAction(
 
 function nullableBinding(
   value: Record<string, unknown>,
-  key: "owner" | "workflow" | "category",
+  key: "agent" | "owner" | "workflow" | "category",
 ): { ok: true; present: false } | { ok: true; present: true; value: string | null } | { ok: false } {
   if (!(key in value)) return { ok: true, present: false };
   if (value[key] === null) return { ok: true, present: true, value: null };
   const normalized = normalizedString(value[key]);
   return normalized ? { ok: true, present: true, value: normalized } : { ok: false };
+}
+
+function nullableAgentBinding(
+  value: Record<string, unknown>,
+): { ok: true; present: false } | { ok: true; present: true; value: string | null } | { ok: false; error: string } {
+  const agent = nullableBinding(value, "agent");
+  if (!agent.ok) return { ok: false, error: "agent must be a non-empty string or null when present" };
+  const owner = nullableBinding(value, "owner");
+  if (!owner.ok) return { ok: false, error: "legacy owner must be a non-empty string or null when present" };
+  if (agent.present && owner.present && agent.value !== owner.value) {
+    return { ok: false, error: "agent conflicts with legacy owner" };
+  }
+  if (agent.present) return agent;
+  return owner;
 }
 
 function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number): TaskAction | string {
@@ -320,7 +347,10 @@ function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number
     if (!validPriority(value.priority)) return `actions[${index}].priority must be P0, P1, P2, or P3`;
     action.priority = value.priority;
   }
-  for (const key of ["owner", "workflow", "category"] as const) {
+  const agent = nullableAgentBinding(value);
+  if (!agent.ok) return `actions[${index}].${agent.error}`;
+  if (agent.present) action.owner = agent.value;
+  for (const key of ["workflow", "category"] as const) {
     const binding = nullableBinding(value, key);
     if (!binding.ok) return `actions[${index}].${key} must be a non-empty string or null when present`;
     if (!binding.present) continue;
