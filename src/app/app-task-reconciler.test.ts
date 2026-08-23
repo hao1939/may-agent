@@ -36,8 +36,8 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
-  expiredOwnerSessionAppTaskAttempt,
-  terminalOwnerSessionAppTaskClaim,
+  expiredAgentSessionAppTaskAttempt,
+  terminalAgentSessionAppTaskClaim,
   releaseHandlerExecutionFailedAppTask,
   releaseHandlerUnavailableAppTask,
   releaseWorkspacePreparationFailedAppTask,
@@ -129,25 +129,25 @@ function declareAndClaimTask(
   config: TaskStateConfig,
   input: {
     intent: AppTaskIntent;
-    appOwner: string;
+    appAgent: string;
     handler: string;
     reason?: string;
     trigger?: Record<string, unknown>;
-    isOwnerRunnable?: (owner: string) => boolean;
+    isAgentRunnable?: (agent: string) => boolean;
   },
 ) {
   const observed = observeAppTaskIntent(config, {
     intent: input.intent,
-    appOwner: input.appOwner,
+    appAgent: input.appAgent,
     trigger: input.trigger,
   });
   if (observed.kind === "completed") return observed;
   return claimObservedAppTask(config, {
     taskId: observed.taskId,
-    appOwner: input.appOwner,
+    appAgent: input.appAgent,
     handler: input.handler,
     reason: input.reason,
-    isOwnerRunnable: input.isOwnerRunnable,
+    isAgentRunnable: input.isAgentRunnable,
   });
 }
 
@@ -160,7 +160,7 @@ function reclaimInterruptedSession(
 ) {
   const claim = declareAndClaimTask(config, {
     intent: intent(),
-    appOwner: "app-owner",
+    appAgent: "app-owner",
     handler: "workflow:known-workflow",
   });
   if (claim.kind !== "claimed") throw new Error("expected initial claim");
@@ -184,7 +184,7 @@ function reclaimInterruptedSession(
 
   const reclaimed = declareAndClaimTask(config, {
     intent: intent(),
-    appOwner: "app-owner",
+    appAgent: "app-owner",
     handler: "workflow:known-workflow",
     reason: `attempt-recovery:${claim.taskId}`,
   });
@@ -201,7 +201,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -225,7 +225,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -251,8 +251,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -299,7 +299,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:worker",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -333,7 +333,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:worker",
       trigger: { type: "sample.requested", eventId: 100 },
     });
@@ -363,7 +363,7 @@ describe("App task reconciler state", () => {
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("pending");
     const next = claimObservedAppTask(config, {
       taskId: claim.taskId,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:worker",
       reason: "event",
     });
@@ -385,7 +385,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:worker",
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
@@ -403,7 +403,7 @@ describe("App task reconciler state", () => {
 
     const second = claimObservedAppTask(config, {
       taskId: first.taskId,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:worker",
       reason: "event",
     });
@@ -421,8 +421,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -470,7 +470,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -498,7 +498,7 @@ describe("App task reconciler state", () => {
           id: "work/orphan",
           parentId: "already-absorbed-parent",
         },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
     ).toThrow("parent does not exist in the live graph");
 
@@ -513,34 +513,55 @@ describe("App task reconciler state", () => {
       workflow: undefined,
       executor: "codex",
     };
-    observeAppTaskIntent(config, { intent: cliIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: cliIntent, appAgent: "app-owner" });
 
     expect(
       claimObservedAppTask(config, {
         taskId: cliIntent.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "auto",
       }),
     ).toMatchObject({ kind: "claimed", handler: "executor:codex" });
   });
 
-  it("treats the explicit agent executor as the managed owner adapter", () => {
+  it("accepts canonical Task agent selection and retains it in Host state", () => {
     const { config } = fixture();
     const agentIntent: AppTaskIntent = {
       ...intent(),
       id: "work/managed-agent",
+      agent: "specialist",
       workflow: undefined,
       executor: "agent",
     };
-    observeAppTaskIntent(config, { intent: agentIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: agentIntent, appAgent: "app-owner" });
+
+    expect(readAppTaskIntent(config, agentIntent.id)).toMatchObject({ owner: "specialist" });
 
     expect(
       claimObservedAppTask(config, {
         taskId: agentIntent.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "auto",
       }),
-    ).toMatchObject({ kind: "claimed", handler: "owner:branch-owner" });
+    ).toMatchObject({ kind: "claimed", agent: "specialist", handler: "agent:specialist" });
+  });
+
+  it("rejects conflicting or empty Task agent selection before persistence", () => {
+    const { config } = fixture();
+    expect(() =>
+      observeAppTaskIntent(config, {
+        intent: { ...intent(), id: "work/conflict", agent: "one", owner: "two" },
+        appAgent: "app-owner",
+      }),
+    ).toThrow("conflicting agent and legacy owner");
+    expect(() =>
+      observeAppTaskIntent(config, {
+        intent: { ...intent(), id: "work/empty-agent", agent: " " },
+        appAgent: "app-owner",
+      }),
+    ).toThrow("agent must be a non-empty string");
+    expect(readAppTaskIntent(config, "work/conflict")).toBeNull();
+    expect(readAppTaskIntent(config, "work/empty-agent")).toBeNull();
   });
 
   it("rejects ambiguous workflow and CLI executor intent", () => {
@@ -548,12 +569,12 @@ describe("App task reconciler state", () => {
     expect(() =>
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: "work/ambiguous", executor: "claude" },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
     ).toThrow("cannot configure both workflow and executor");
   });
 
-  it("lists pending and explicit owner handoff tasks but keeps unavailable workflows asleep", () => {
+  it("lists pending and explicit agent handoff tasks but keeps unavailable workflows asleep", () => {
     const { config } = fixture();
     const attentionIntent = {
       ...intent(),
@@ -577,23 +598,23 @@ describe("App task reconciler state", () => {
       workflow: "missing-workflow",
     };
 
-    observeAppTaskIntent(config, { intent: attentionIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: attentionIntent, appAgent: "app-owner" });
     const attentionClaim = claimObservedAppTask(config, {
       taskId: attentionIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
     if (attentionClaim.kind !== "claimed") throw new Error("expected attention claim");
     markAppTaskAttention(config, attentionClaim, {
       summary: "owner must decide",
-      reason: "needs-owner",
+      reason: "needs-agent",
     });
 
-    observeAppTaskIntent(config, { intent: unavailableIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: unavailableIntent, appAgent: "app-owner" });
     const unavailableClaim = claimObservedAppTask(config, {
       taskId: unavailableIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:missing-workflow",
       reason: "task-controller",
     });
@@ -603,10 +624,10 @@ describe("App task reconciler state", () => {
       reason: "HandlerUnavailable",
     });
 
-    observeAppTaskIntent(config, { intent: waitingIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: waitingIntent, appAgent: "app-owner" });
     const waitingClaim = claimObservedAppTask(config, {
       taskId: waitingIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
@@ -624,10 +645,10 @@ describe("App task reconciler state", () => {
       ],
     });
 
-    observeAppTaskIntent(config, { intent: pendingIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: pendingIntent, appAgent: "app-owner" });
     const maintainClaim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (maintainClaim.kind !== "claimed") throw new Error("expected maintain claim");
@@ -635,12 +656,12 @@ describe("App task reconciler state", () => {
 
     expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
     expect(listHandlerUnavailableAppTasks(config, "app-owner")).toEqual([
-      { taskId: "work/unavailable", owner: "branch-owner", workflow: "missing-workflow" },
+      { taskId: "work/unavailable", agent: "branch-owner", workflow: "missing-workflow" },
     ]);
 
     observeAppTaskIntent(config, {
       intent: attentionIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: { type: "manual.wake", data: { reason: "fresh owner evidence" } },
     });
     expect(listRunnableAppTaskIds(config)).toEqual(["work/attention", "categorized-task", "work/pending"]);
@@ -675,10 +696,10 @@ describe("App task reconciler state", () => {
       outcome: "Resume a task workspace",
       workflow: "workspace-worker",
     };
-    observeAppTaskIntent(config, { intent: workspaceIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: workspaceIntent, appAgent: "app-owner" });
     const claim = claimObservedAppTask(config, {
       taskId: workspaceIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:workspace-worker",
       reason: "task-controller",
     });
@@ -704,10 +725,10 @@ describe("App task reconciler state", () => {
       workflow: undefined,
       executor: "codex" as const,
     };
-    observeAppTaskIntent(config, { intent: cliIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: cliIntent, appAgent: "app-owner" });
     const cliClaim = claimObservedAppTask(config, {
       taskId: cliIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "cli:codex",
       reason: "task-controller",
     });
@@ -721,13 +742,13 @@ describe("App task reconciler state", () => {
       {
         taskId: "work/cli-workspace-failed",
         generation: 1,
-        owner: "branch-owner",
+        agent: "branch-owner",
         executor: "codex",
       },
       {
         taskId: "work/workspace-failed",
         generation: 1,
-        owner: "branch-owner",
+        agent: "branch-owner",
         workflow: "workspace-worker",
         previous: expect.objectContaining({ path: "/tmp/workspace-failed" }),
       },
@@ -742,7 +763,7 @@ describe("App task reconciler state", () => {
     expect(
       observeAppTaskIntent(config, {
         intent: intent("maintain"),
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         trigger: { type: "pipeline.changed", data: { project: "sample" } },
       }),
     ).toMatchObject({ kind: "observed", taskId: "pipeline-monitor", generation: 1, changed: true });
@@ -761,7 +782,7 @@ describe("App task reconciler state", () => {
 
     const claim = claimObservedAppTask(config, {
       taskId: "pipeline-monitor",
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "queue",
     });
@@ -796,7 +817,7 @@ describe("App task reconciler state", () => {
     ] as const) {
       observeAppTaskIntent(config, {
         intent: { ...intent("achieve"), id, priority },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       });
     }
 
@@ -813,11 +834,11 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/a-newer", priority: "P2" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/z-older", priority: "P2" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
 
     const tree = readTaskState(config);
@@ -843,7 +864,7 @@ describe("App task reconciler state", () => {
     ] as const) {
       observeAppTaskIntent(config, {
         intent: { ...intent("achieve"), id, priority },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       });
     }
 
@@ -873,7 +894,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/aged-p2", priority: "P2" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     const tree = readTaskState(config);
     const resource = tree.resources?.["work/aged-p2"];
@@ -890,12 +911,12 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/fresh-trigger-p2", priority: "P2" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: { type: "repo.ref.changed", data: { ref: "origin/dev" } },
     });
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/aged-trigger-p2", priority: "P2" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: { type: "repo.ref.changed", data: { ref: "origin/dev" } },
     });
 
@@ -927,7 +948,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/autonomous-p0", priority: "P0" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "pipeline-run.state",
         data: { runId: "99", status: "completed", result: "succeeded" },
@@ -935,7 +956,7 @@ describe("App task reconciler state", () => {
     });
     observeAppTaskIntent(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "project.comment.created",
         eventId: 42,
@@ -967,7 +988,7 @@ describe("App task reconciler state", () => {
 
     observeAppTaskIntent(config, {
       intent: ownerReview,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: humanComment,
     });
     recordAppTaskTrigger(config, ownerReview.id, {
@@ -990,7 +1011,7 @@ describe("App task reconciler state", () => {
     const humanTask = { ...intent("achieve"), id: "conversation/request-42", priority: "P0" as const };
     observeAppTaskIntent(config, {
       intent: humanTask,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "app.task.requested",
         source: "human",
@@ -1013,11 +1034,11 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/new-p0", priority: "P0" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/live-result-p2", priority: "P2" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "pipeline-run.state",
         data: { runId: "42", status: "completed", result: "succeeded" },
@@ -1041,11 +1062,11 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/untriggered-p1", priority: "P1" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/triggered-p1", priority: "P1" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "repo.ref.changed",
         data: { ref: "origin/dev" },
@@ -1062,12 +1083,12 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "ops/critical-p0", priority: "P0" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     for (let i = 0; i < 5; i++) {
       observeAppTaskIntent(config, {
         intent: { ...intent("achieve"), id: `work/triggered-p1-${i}`, priority: "P1" },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         trigger: {
           type: "repo.ref.changed",
           data: { ref: `origin/cleanup-${i}` },
@@ -1077,7 +1098,7 @@ describe("App task reconciler state", () => {
     // Also add a direct comment task to confirm it still wins over everything
     observeAppTaskIntent(config, {
       intent: { ...intent("maintain"), id: "runtime/comment-task", priority: "P1" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "project.comment.created",
         data: { comment: "Please review" },
@@ -1099,7 +1120,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/dependency" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     observeAppTaskIntent(config, {
       intent: {
@@ -1107,7 +1128,7 @@ describe("App task reconciler state", () => {
         id: "work/dependent",
         dependsOn: ["work/dependency"],
       },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: { type: "pipeline.completed", data: { runId: "42" } },
     });
 
@@ -1127,10 +1148,10 @@ describe("App task reconciler state", () => {
       outcome: "Continue after the exact session observation",
       category: "domain",
     };
-    observeAppTaskIntent(config, { intent: waitingIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: waitingIntent, appAgent: "app-owner" });
     const first = claimObservedAppTask(config, {
       taskId: waitingIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected initial claim");
@@ -1166,7 +1187,7 @@ describe("App task reconciler state", () => {
     expect(readAppTaskIntent(config, waitingIntent.id)?.category).toBe("domain");
     const resumed = claimObservedAppTask(config, {
       taskId: waitingIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
@@ -1180,11 +1201,11 @@ describe("App task reconciler state", () => {
     for (const taskId of ["work/first", "work/second"]) {
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: taskId },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       });
       const claim = claimObservedAppTask(config, {
         taskId,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       });
       if (claim.kind !== "claimed") throw new Error(`expected claim for ${taskId}`);
@@ -1233,7 +1254,7 @@ describe("App task reconciler state", () => {
   it("claims the current canonical spec after a stale reader observed an older version", () => {
     const { config } = fixture();
     const original = intent("maintain");
-    observeAppTaskIntent(config, { intent: original, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: original, appAgent: "app-owner" });
     const staleCopy = readAppTaskIntent(config, original.id);
     if (!staleCopy) throw new Error("expected original intent");
 
@@ -1242,14 +1263,14 @@ describe("App task reconciler state", () => {
       outcome: "Keep the current pipeline and its newer contract observable",
       acceptance: ["The newer contract is observed"],
     };
-    observeAppTaskIntent(config, { intent: current, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: current, appAgent: "app-owner" });
     expect(recordAppTaskTrigger(config, original.id, { type: "pipeline.changed", revision: 2 })).toEqual({
       kind: "recorded",
     });
 
     const claim = claimObservedAppTask(config, {
       taskId: original.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected current claim");
@@ -1264,7 +1285,7 @@ describe("App task reconciler state", () => {
     const monitor = intent("maintain");
     observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     const retry = {
       type: "gym.improvement.requested",
@@ -1294,7 +1315,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     cacheTaskStateReads(config);
     const monitor = intent("maintain");
-    observeAppTaskIntent(config, { intent: monitor, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
     recordAppTaskTrigger(config, monitor.id, {
       type: "metric.breach",
       data: { metricId: "may.failure-rate" },
@@ -1320,10 +1341,10 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const monitor = intent("maintain");
 
-    observeAppTaskIntent(config, { intent: monitor, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
     const firstClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
@@ -1345,7 +1366,7 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: monitor.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "passive-resync",
       }),
@@ -1364,13 +1385,13 @@ describe("App task reconciler state", () => {
     };
     observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger,
     });
 
     const duplicateClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
@@ -1386,13 +1407,13 @@ describe("App task reconciler state", () => {
     };
     observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: overrideTrigger,
     });
 
     const secondClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
@@ -1409,10 +1430,10 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const monitor = intent("maintain");
 
-    observeAppTaskIntent(config, { intent: monitor, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
     const firstClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (firstClaim.kind !== "claimed") throw new Error("expected first claim");
@@ -1437,13 +1458,13 @@ describe("App task reconciler state", () => {
     };
     observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: comment,
     });
 
     const ownerClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(ownerClaim).toMatchObject({ kind: "claimed", taskId: monitor.id, trigger: comment });
@@ -1454,14 +1475,14 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
 
     const changed = observeAppTaskIntent(config, {
       intent: { ...intent("maintain"), input: { sessionId: "session-2" } },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     expect(changed).toMatchObject({ kind: "observed", generation: 2, changed: true });
     const changedTree = readTaskState(config);
@@ -1482,7 +1503,7 @@ describe("App task reconciler state", () => {
     const monitor = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
@@ -1515,7 +1536,7 @@ describe("App task reconciler state", () => {
     expect(
       observeAppTaskIntent(config, {
         intent: { ...monitor, input: { sessionId: "session-2" } },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
     ).toMatchObject({ kind: "observed", generation: 2, changed: true });
 
@@ -1535,7 +1556,7 @@ describe("App task reconciler state", () => {
     const monitor = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
@@ -1562,7 +1583,7 @@ describe("App task reconciler state", () => {
     expect(listRunnableAppTaskIds(config)).toContain(monitor.id);
     const claim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "passive-resync",
     });
@@ -1577,14 +1598,14 @@ describe("App task reconciler state", () => {
     const original = { ...intent("maintain"), category: "monitor", priority: "P2" as const };
     const claim = declareAndClaimTask(config, {
       intent: original,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     const observed = observeAppTaskIntent(config, {
       intent: { ...original, parentId: "root", category: "operations", priority: "P0" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     expect(observed).toEqual({ kind: "observed", taskId: claim.taskId, generation: 1, changed: true });
 
@@ -1599,7 +1620,7 @@ describe("App task reconciler state", () => {
     expect(completeAppTask(config, claim, { summary: "same execution completed" }).status).toBe("applied");
   });
 
-  it("advances generation when a parent move changes effective ownership", () => {
+  it("advances generation when a parent move changes the effective agent", () => {
     const { config } = fixture();
     const tree = readTaskState(config);
     tree.groups!.operations.owner = "operations-owner";
@@ -1607,32 +1628,32 @@ describe("App task reconciler state", () => {
     const original = { ...intent("maintain"), parentId: "operations" };
     const claim = declareAndClaimTask(config, {
       intent: original,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    expect(claim.owner).toBe("operations-owner");
+    expect(claim.agent).toBe("operations-owner");
 
     const observed = observeAppTaskIntent(config, {
       intent: { ...original, parentId: "root" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     expect(observed).toMatchObject({ kind: "observed", generation: 2, changed: true });
     expect(readTaskState(config).attempts?.[claim.attemptId]).toMatchObject({ state: "interrupted" });
   });
 
-  it("inherits ownership, claims one attempt, and deduplicates concurrent wakes", () => {
+  it("inherits agent selection, claims one attempt, and deduplicates concurrent wakes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
-    expect(first).toMatchObject({ kind: "claimed", owner: "branch-owner", generation: 1 });
+    expect(first).toMatchObject({ kind: "claimed", agent: "branch-owner", generation: 1 });
 
     const duplicate = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(duplicate).toMatchObject({ kind: "busy", taskId: "evaluate:session-1" });
@@ -1647,25 +1668,25 @@ describe("App task reconciler state", () => {
     expect(tree.active_task_ids).toContain("evaluate:session-1");
   });
 
-  it("moves an unresolved owner to attention before claiming an attempt", () => {
+  it("moves an unresolved agent to attention before claiming an attempt", () => {
     const { config } = fixture();
     const result = declareAndClaimTask(config, {
       intent: { ...intent(), owner: "human" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "auto",
       trigger: { type: "project.comment.created", data: { comment: "Please retry" } },
-      isOwnerRunnable: (owner) => owner !== "human",
+      isAgentRunnable: (agent) => agent !== "human",
     });
 
     expect(result).toMatchObject({
       kind: "attention",
-      summary: "Resolved owner human is not a runnable agent",
+      summary: "Resolved agent human is not a runnable agent",
     });
     const tree = readTaskState(config);
     expect(tree.resources?.["evaluate:session-1"]).toMatchObject({
       status: {
         phase: "attention",
-        summary: "Resolved owner human is not a runnable agent",
+        summary: "Resolved agent human is not a runnable agent",
       },
     });
     expect(tree.resources?.["evaluate:session-1"].status.currentAttemptId).toBeUndefined();
@@ -1697,7 +1718,7 @@ describe("App task reconciler state", () => {
 
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(claim.kind).toBe("claimed");
@@ -1715,7 +1736,7 @@ describe("App task reconciler state", () => {
     const { config, appDir } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -1749,7 +1770,7 @@ describe("App task reconciler state", () => {
     expect(
       declareAndClaimTask(config, {
         intent: intent(),
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "completed", taskId: claim.taskId, generation: 1 });
@@ -1761,7 +1782,7 @@ describe("App task reconciler state", () => {
     const taskIntent = intent();
     const claim = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -1802,7 +1823,7 @@ describe("App task reconciler state", () => {
     expect(
       observeAppTaskIntent(config, {
         intent: taskIntent,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
     ).toMatchObject({ kind: "completed", taskId: taskIntent.id, generation: claim.generation });
 
@@ -1818,7 +1839,7 @@ describe("App task reconciler state", () => {
     const taskIntent = intent();
     const claim = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -1883,7 +1904,7 @@ describe("App task reconciler state", () => {
     expect(() =>
       observeAppTaskIntent(config, {
         intent: taskIntent,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
     ).toThrow("cannot be pruned while it has live children: work/live-child");
 
@@ -1896,7 +1917,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
@@ -1908,7 +1929,7 @@ describe("App task reconciler state", () => {
           ...intent(),
           outcome: "Evaluate session 1 with the revised policy",
         },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "claimed", generation: 2 });
@@ -1929,10 +1950,10 @@ describe("App task reconciler state", () => {
             outcome: `Completed outcome ${index}`,
             acceptance: ["Completed"],
             owner: "app-owner",
-            handler: "owner:app-owner",
+            handler: "agent:app-owner",
             summary: "Completed",
             evidence: [],
-            acceptanceBasis: { method: "owner-judgment", evidence: [] },
+            acceptanceBasis: { method: "agent-judgment", evidence: [] },
             failureFingerprints: [],
             completedAt: new Date(index).toISOString(),
           },
@@ -1943,7 +1964,7 @@ describe("App task reconciler state", () => {
 
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -1971,10 +1992,10 @@ describe("App task reconciler state", () => {
             outcome: longText,
             acceptance: ["Completed"],
             owner: "app-owner",
-            handler: "owner:app-owner",
+            handler: "agent:app-owner",
             summary: longText,
             evidence: Array.from({ length: 6 }, () => longText),
-            acceptanceBasis: { method: "owner-judgment", evidence: [] },
+            acceptanceBasis: { method: "agent-judgment", evidence: [] },
             failureFingerprints: [],
             completedAt: new Date(index).toISOString(),
           },
@@ -2017,7 +2038,7 @@ describe("App task reconciler state", () => {
           category: index === 0 ? "focus_plan" : "domain",
           input: { index, exactPrivateDetail: `private-${index}-${"x".repeat(4_000)}` },
         },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       });
     }
 
@@ -2046,12 +2067,12 @@ describe("App task reconciler state", () => {
     };
     observeAppTaskIntent(config, {
       intent: dependent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     expect(
       claimObservedAppTask(config, {
         taskId: dependent.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({
@@ -2061,7 +2082,7 @@ describe("App task reconciler state", () => {
 
     const dependencyClaim = declareAndClaimTask(config, {
       intent: dependency,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (dependencyClaim.kind !== "claimed") throw new Error("expected dependency claim");
@@ -2081,7 +2102,7 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: dependent.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "claimed", taskId: dependent.id });
@@ -2091,7 +2112,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -2113,7 +2134,7 @@ describe("App task reconciler state", () => {
     const taskIntent = intent();
     const completedClaim = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (completedClaim.kind !== "claimed") throw new Error("expected claim");
@@ -2202,7 +2223,7 @@ describe("App task reconciler state", () => {
     const taskIntent = intent();
     const completedClaim = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (completedClaim.kind !== "claimed") throw new Error("expected claim");
@@ -2399,32 +2420,32 @@ describe("App task reconciler state", () => {
     }
   });
 
-  it("consumes a terminal direct-owner result exactly once even while its lease is fresh", () => {
+  it("consumes a terminal direct-agent result exactly once even while its lease is fresh", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "terminal-owner-session");
+    recordAppTaskAttemptSession(config, claim, "terminal-agent-session");
 
     const before = readTaskState(config);
     expect(Date.parse(before.attempts![claim.attemptId].lease!.expiresAt)).toBeGreaterThan(Date.now());
-    const recovered = terminalOwnerSessionAppTaskClaim(config, claim.taskId, "terminal-owner-session");
+    const recovered = terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session");
     expect(recovered).toMatchObject({
       kind: "claimed",
       taskId: claim.taskId,
       attemptId: claim.attemptId,
-      handler: "owner:branch-owner",
+      handler: "agent:branch-owner",
     });
-    if (!recovered) throw new Error("expected terminal owner claim");
+    if (!recovered) throw new Error("expected terminal agent claim");
 
     expect(
       deferAppTask(config, recovered, {
         disposition: "waiting",
         summary: "terminal result requires one bounded child",
-        evidence: ["session:terminal-owner-session"],
+        evidence: ["session:terminal-agent-session"],
         actions: [
           {
             kind: "create-task",
@@ -2438,24 +2459,24 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toMatchObject({ status: "applied", actionsApplied: ["created terminal-result-child"] });
-    expect(terminalOwnerSessionAppTaskClaim(config, claim.taskId, "terminal-owner-session")).toBeNull();
+    expect(terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session")).toBeNull();
     expect(readTaskState(config)).toMatchObject({
       resources: { [claim.taskId]: { status: { phase: "waiting" } } },
-      attempts: { [claim.attemptId]: { state: "completed", sessionId: "terminal-owner-session" } },
+      attempts: { [claim.attemptId]: { state: "completed", sessionId: "terminal-agent-session" } },
       tasks: { "terminal-result-child": { parent_id: claim.taskId } },
     });
     expect(Object.keys(readTaskState(config).tasks).filter((id) => id === "terminal-result-child")).toHaveLength(1);
   });
 
-  it("releases only the exact expired owner attempt after its session is terminal", () => {
+  it("releases only the exact expired agent attempt after its session is terminal", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "terminal-owner-session");
+    recordAppTaskAttemptSession(config, claim, "terminal-agent-session");
 
     const stale = readTaskState(config);
     const resource = stale.resources?.[claim.taskId];
@@ -2473,7 +2494,7 @@ describe("App task reconciler state", () => {
       leaseId: attempt.lease.id,
       leaseVersion: attempt.lease.version,
       legacyLeaseLess: false as const,
-      sessionId: "terminal-owner-session",
+      sessionId: "terminal-agent-session",
       terminalStatus: "done" as const,
     };
 
@@ -2484,28 +2505,28 @@ describe("App task reconciler state", () => {
         "Synchronous caller disappeared during rollback",
         Date.parse("2026-08-16T01:00:00.000Z"),
       ),
-    ).toEqual({ released: true, sessionIds: ["terminal-owner-session"] });
+    ).toEqual({ released: true, sessionIds: ["terminal-agent-session"] });
     expect(readTaskState(config)).toMatchObject({
       resources: { [claim.taskId]: { status: { phase: "pending", observedGeneration: 0 } } },
       attempts: {
         [claim.attemptId]: {
           state: "interrupted",
-          sessionId: "terminal-owner-session",
-          failureReason: "terminal-owner-session-expired-lease-requeued",
+          sessionId: "terminal-agent-session",
+          failureReason: "terminal-agent-session-expired-lease-requeued",
         },
       },
     });
   });
 
-  it("never releases a healthy live owner session or a stale fenced observation", () => {
+  it("never releases a healthy live agent session or a stale fenced observation", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "live-owner-session");
+    recordAppTaskAttemptSession(config, claim, "live-agent-session");
     const tree = readTaskState(config);
     const resource = tree.resources?.[claim.taskId];
     const attempt = tree.attempts?.[claim.attemptId];
@@ -2520,7 +2541,7 @@ describe("App task reconciler state", () => {
       leaseId: attempt.lease.id,
       leaseVersion: attempt.lease.version,
       legacyLeaseLess: false as const,
-      sessionId: "live-owner-session",
+      sessionId: "live-agent-session",
       terminalStatus: "done" as const,
     };
 
@@ -2531,14 +2552,14 @@ describe("App task reconciler state", () => {
     attempt.lease.expiresAt = "2020-01-01T00:00:00.000Z";
     saveTaskState(config, tree);
     const activeAt = Date.now();
-    const activity = { sessionId: "live-owner-session", lastActivityAt: activeAt - 1_000 };
-    expect(expiredOwnerSessionAppTaskAttempt(config, claim.taskId, activeAt, activity)).toBeNull();
+    const activity = { sessionId: "live-agent-session", lastActivityAt: activeAt - 1_000 };
+    expect(expiredAgentSessionAppTaskAttempt(config, claim.taskId, activeAt, activity)).toBeNull();
     expect(
-      expiredOwnerSessionAppTaskAttempt(config, claim.taskId, activeAt, {
+      expiredAgentSessionAppTaskAttempt(config, claim.taskId, activeAt, {
         sessionId: "unrelated-session",
         lastActivityAt: activeAt,
       }),
-    ).toMatchObject({ taskId: claim.taskId, sessionId: "live-owner-session" });
+    ).toMatchObject({ taskId: claim.taskId, sessionId: "live-agent-session" });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
         config,
@@ -2567,7 +2588,7 @@ describe("App task reconciler state", () => {
     };
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       trigger,
     });
@@ -2609,7 +2630,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       trigger: {
         type: "session.end",
@@ -2635,7 +2656,7 @@ describe("App task reconciler state", () => {
 
     const reclaimed = declareAndClaimTask(config, {
       intent: recovery.intent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       trigger: recovery.trigger,
       reason: `attempt-recovery:${first.taskId}`,
@@ -2660,7 +2681,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       trigger: {
         type: "session.end",
@@ -2675,7 +2696,7 @@ describe("App task reconciler state", () => {
 
     const resync = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
@@ -2711,11 +2732,11 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("returns superseded owner-session ids when reclaiming a previous-runtime attempt", () => {
+  it("returns superseded agent-session ids when reclaiming a previous-runtime attempt", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
@@ -2727,7 +2748,7 @@ describe("App task reconciler state", () => {
 
     const reclaimed = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: `attempt-recovery:${first.taskId}`,
     });
@@ -2742,7 +2763,7 @@ describe("App task reconciler state", () => {
     const original = intent();
     const claim = declareAndClaimTask(config, {
       intent: original,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -2767,7 +2788,7 @@ describe("App task reconciler state", () => {
     expect(
       observeAppTaskIntent(config, {
         intent: revised,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
     ).toMatchObject({
       kind: "observed",
@@ -2783,11 +2804,11 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("returns orphaned owner-session ids when requeueing a previous-runtime attempt without a trigger", () => {
+  it("returns orphaned agent-session ids when requeueing a previous-runtime attempt without a trigger", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -2824,7 +2845,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -2856,7 +2877,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -2867,7 +2888,7 @@ describe("App task reconciler state", () => {
 
     const reclaimed = claimObservedAppTask(config, {
       taskId: claim.taskId,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "test-reclaim",
     });
@@ -2888,7 +2909,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(claim).toMatchObject({
@@ -2940,7 +2961,7 @@ describe("App task reconciler state", () => {
 
     const reclaimed = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: `attempt-recovery:${claim.taskId}`,
     });
@@ -2982,7 +3003,7 @@ describe("App task reconciler state", () => {
     const taskIntent = { ...intent("maintain"), id: "ops/orphan-claim-fence" };
     const oldClaim = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (oldClaim.kind !== "claimed") throw new Error("expected old claim");
@@ -3011,7 +3032,7 @@ describe("App task reconciler state", () => {
     });
     const replacement = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "restart-event:5446564",
     });
@@ -3028,7 +3049,7 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: replacement.taskId,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "duplicate-reclaim",
       }),
@@ -3047,13 +3068,13 @@ describe("App task reconciler state", () => {
     expect(
       observeAppTaskIntent(config, {
         intent: taskIntent,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         trigger: laterWake,
       }),
     ).toMatchObject({ kind: "observed", generation: replacement.generation, changed: false });
     const fresh = claimObservedAppTask(config, {
       taskId: taskIntent.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "event:5446878",
     });
@@ -3063,7 +3084,7 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: taskIntent.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "duplicate-event:5446878",
       }),
@@ -3086,7 +3107,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -3124,7 +3145,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -3147,14 +3168,14 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: claim.taskId,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "completed", generation: claim.generation });
 
     const next = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       trigger: { type: "pipeline.changed", revision: 2 },
     });
@@ -3173,14 +3194,14 @@ describe("App task reconciler state", () => {
 
     const first = observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       admissionKey: "app-request-1",
       trigger: trigger("app-request-1"),
     });
     expect(first).toMatchObject({ kind: "observed", taskId: monitor.id });
     const firstClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (firstClaim.kind !== "claimed") throw new Error("expected first claim");
@@ -3189,7 +3210,7 @@ describe("App task reconciler state", () => {
 
     const duplicate = observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       admissionKey: "app-request-1",
       trigger: trigger("app-request-1"),
     });
@@ -3203,14 +3224,14 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: monitor.id,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "completed", generation: firstClaim.generation });
 
     const second = observeAppTaskIntent(config, {
       intent: monitor,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       admissionKey: "app-request-2",
       trigger: trigger("app-request-2"),
     });
@@ -3222,7 +3243,7 @@ describe("App task reconciler state", () => {
     });
     const secondClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(secondClaim).toMatchObject({
@@ -3234,7 +3255,7 @@ describe("App task reconciler state", () => {
     expect(() =>
       observeAppTaskIntent(config, {
         intent: { ...monitor, outcome: "Different desired work" },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         admissionKey: "app-request-2",
         trigger: trigger("app-request-2"),
       }),
@@ -3245,14 +3266,14 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review" },
-      appOwner: "app-owner",
-      handler: "owner:app-owner",
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     observeAppTaskIntent(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: {
         type: "project.comment.created",
         data: { comment: "Please review the new approval packet" },
@@ -3275,8 +3296,8 @@ describe("App task reconciler state", () => {
 
     const replay = claimObservedAppTask(config, {
       taskId: "runtime/owner-review",
-      appOwner: "app-owner",
-      handler: "owner:app-owner",
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
     });
     expect(replay).toMatchObject({
       kind: "claimed",
@@ -3305,8 +3326,8 @@ describe("App task reconciler state", () => {
     } as const;
     const parentClaim = declareAndClaimTask(config, {
       intent: parentIntent,
-      appOwner: "app-owner",
-      handler: "owner:app-owner",
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
     });
     if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
 
@@ -3317,13 +3338,13 @@ describe("App task reconciler state", () => {
     };
     observeAppTaskIntent(config, {
       intent: parentIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: commentTrigger,
     });
 
     const childClaim = declareAndClaimTask(config, {
       intent: childIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (childClaim.kind !== "claimed") throw new Error("expected child claim");
@@ -3348,8 +3369,8 @@ describe("App task reconciler state", () => {
 
     const recoveredClaim = claimObservedAppTask(config, {
       taskId: parentIntent.id,
-      appOwner: "app-owner",
-      handler: "owner:app-owner",
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
       reason: `attempt-recovery:${parentIntent.id}`,
     });
     expect(recoveredClaim).toMatchObject({
@@ -3380,15 +3401,15 @@ describe("App task reconciler state", () => {
 
     observeAppTaskIntent(config, {
       intent: parentIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     observeAppTaskIntent(config, {
       intent: childIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     const claim = declareAndClaimTask(config, {
       intent: parentIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -3421,13 +3442,13 @@ describe("App task reconciler state", () => {
       acceptance: ["The child is complete"],
       mode: "achieve",
     } as const;
-    observeAppTaskIntent(config, { intent: parentIntent, appOwner: "app-owner" });
-    observeAppTaskIntent(config, { intent: childIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: parentIntent, appAgent: "app-owner" });
+    observeAppTaskIntent(config, { intent: childIntent, appAgent: "app-owner" });
 
     const carrier = claimObservedAppTask(config, {
       taskId: "categorized-task",
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
 
@@ -3485,8 +3506,8 @@ describe("App task reconciler state", () => {
     } as const;
     const upwardCarrier = declareAndClaimTask(config, {
       intent: upwardCarrierIntent,
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (upwardCarrier.kind !== "claimed") {
       throw new Error("expected upward carrier claim");
@@ -3530,13 +3551,13 @@ describe("App task reconciler state", () => {
       acceptance: ["The wait has a typed condition"],
       mode: "achieve",
     } as const;
-    observeAppTaskIntent(config, { intent: parentIntent, appOwner: "app-owner" });
-    observeAppTaskIntent(config, { intent: childIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: parentIntent, appAgent: "app-owner" });
+    observeAppTaskIntent(config, { intent: childIntent, appAgent: "app-owner" });
 
     const carrier = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
 
@@ -3572,21 +3593,21 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const primary = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (primary.kind !== "claimed") throw new Error("expected primary claim");
     expect(
       markAppTaskAttention(config, primary, {
         summary: "workflow could not classify the task",
-        reason: "needs-owner",
+        reason: "needs-agent",
       }),
     ).toMatchObject({ status: "applied" });
 
     const fallback = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       reason: "workflow-fallback",
     });
     if (fallback.kind !== "claimed") throw new Error("expected fallback claim");
@@ -3614,7 +3635,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -3629,7 +3650,7 @@ describe("App task reconciler state", () => {
     expect(
       declareAndClaimTask(config, {
         intent: intent(),
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "task-controller",
       }),
@@ -3658,7 +3679,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -3669,7 +3690,7 @@ describe("App task reconciler state", () => {
 
     const next = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "event",
       trigger: { type: "project.problem.resolved", data: { project: "sample" } },
@@ -3682,55 +3703,55 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("releases execution failure only after newer success from the same owner", () => {
+  it("releases execution failure only after newer success from the same agent", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       trigger: {
         type: "project.task.child-transitioned",
         childTaskId: "work/recovered-evidence",
       },
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "failed-owner-session");
+    recordAppTaskAttemptSession(config, claim, "failed-agent-session");
     markAppTaskAttention(config, claim, {
-      summary: "owner execution ended without a decision",
+      summary: "agent execution ended without a decision",
       reason: "HandlerExecutionFailed",
     });
 
     const [candidate] = listHandlerExecutionFailedAppTasks(config);
     expect(candidate).toMatchObject({
       taskId: claim.taskId,
-      owner: "branch-owner",
+      agent: "branch-owner",
       failureReason: "HandlerExecutionFailed",
-      sessionId: "failed-owner-session",
+      sessionId: "failed-agent-session",
     });
     expect(
       releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        owner: "other-owner",
+        agent: "other-owner",
         sessionId: "unrelated-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(false);
     expect(
       releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "invalid",
       }),
     ).toBe(false);
     expect(
       releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2000-01-01T00:00:00.000Z",
       }),
     ).toBe(false);
     expect(
       releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
@@ -3742,18 +3763,18 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("preserves newer owner steering while releasing one execution failure", () => {
+  it("preserves newer human steering while releasing one execution failure", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       trigger: { type: "project.task.tick", data: { reason: "initial" } },
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "failed-owner-session");
+    recordAppTaskAttemptSession(config, claim, "failed-agent-session");
     markAppTaskAttention(config, claim, {
-      summary: "owner execution ended without a decision",
+      summary: "agent execution ended without a decision",
       reason: "HandlerExecutionFailed",
     });
     expect(
@@ -3765,7 +3786,7 @@ describe("App task reconciler state", () => {
 
     expect(
       releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
@@ -3777,8 +3798,8 @@ describe("App task reconciler state", () => {
 
     const recovered = claimObservedAppTask(config, {
       taskId: claim.taskId,
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       reason: "execution-recovered",
     });
     if (recovered.kind !== "claimed") throw new Error("expected recovered claim");
@@ -3795,7 +3816,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       trigger: { type: "sample.first", eventId: 701 },
     });
     expect(
@@ -3806,15 +3827,15 @@ describe("App task reconciler state", () => {
     ).toEqual({ kind: "recorded" });
     const claim = claimObservedAppTask(config, {
       taskId: "pipeline-monitor",
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       reason: "event",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     expect(claim.events.map(({ event }) => event.eventId)).toEqual([701, 702]);
     recordAppTaskAttemptSession(config, claim, "failed-batch-session");
     markAppTaskAttention(config, claim, {
-      summary: "owner execution ended without a decision",
+      summary: "agent execution ended without a decision",
       reason: "HandlerExecutionFailed",
     });
     expect(
@@ -3826,38 +3847,38 @@ describe("App task reconciler state", () => {
 
     expect(
       releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(true);
     const replay = claimObservedAppTask(config, {
       taskId: claim.taskId,
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       reason: "execution-recovered",
     });
     if (replay.kind !== "claimed") throw new Error("expected replay claim");
     expect(replay.events.map(({ event }) => event.eventId)).toEqual([701, 702, 703]);
   });
 
-  it("does not revive repeated execution failures from unrelated owner success", () => {
+  it("does not revive repeated execution failures from unrelated agent success", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       trigger: { type: "project.task.tick", data: { reason: "initial" } },
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
     recordAppTaskAttemptSession(config, first, "first-failed-session");
     markAppTaskAttention(config, first, {
-      summary: "first owner execution failure",
+      summary: "first agent execution failure",
       reason: "HandlerExecutionFailed",
     });
     expect(
       releaseHandlerExecutionFailedAppTask(config, first.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "first-health-proof",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
@@ -3865,20 +3886,20 @@ describe("App task reconciler state", () => {
 
     const second = declareAndClaimTask(config, {
       intent: intent(),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
       trigger: { type: "project.task.tick", data: { reason: "automatic-retry" } },
     });
     if (second.kind !== "claimed") throw new Error("expected second claim");
     recordAppTaskAttemptSession(config, second, "second-failed-session");
     markAppTaskAttention(config, second, {
-      summary: "second owner execution failure",
+      summary: "second agent execution failure",
       reason: "HandlerExecutionFailed",
     });
 
     expect(
       releaseHandlerExecutionFailedAppTask(config, second.taskId, {
-        owner: "branch-owner",
+        agent: "branch-owner",
         sessionId: "unrelated-success",
         observedAt: "2100-01-01T00:00:00.000Z",
       }),
@@ -3890,7 +3911,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -3914,8 +3935,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -3965,8 +3986,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4018,8 +4039,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const parentClaim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review" },
-      appOwner: "app-owner",
-      handler: "owner:app-owner",
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
     });
     if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
 
@@ -4048,8 +4069,8 @@ describe("App task reconciler state", () => {
 
     const nextClaim = claimObservedAppTask(config, {
       taskId: "runtime/owner-review",
-      appOwner: "app-owner",
-      handler: "owner:app-owner",
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
     });
     if (nextClaim.kind !== "claimed") throw new Error("expected revised claim");
     expect(
@@ -4087,7 +4108,7 @@ describe("App task reconciler state", () => {
     } as const;
     const failed = declareAndClaimTask(config, {
       intent: retryIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (failed.kind !== "claimed") throw new Error("expected failed claim");
@@ -4100,7 +4121,7 @@ describe("App task reconciler state", () => {
 
     const controller = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:controller",
     });
     if (controller.kind !== "claimed") throw new Error("expected controller claim");
@@ -4137,11 +4158,11 @@ describe("App task reconciler state", () => {
         acceptance: ["The task is reconciled once"],
         mode: "achieve",
       },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     const controller = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:controller",
     });
     if (controller.kind !== "claimed") throw new Error("expected controller claim");
@@ -4174,17 +4195,17 @@ describe("App task reconciler state", () => {
           ...intent("achieve"),
           workflow: "project",
         },
-        appOwner: "app-owner",
+        appAgent: "app-owner",
       }),
-    ).toThrow("workflow must name a real workflow; omit workflow for owner-handled project work");
+    ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
   });
 
   it("rejects project as a fake workflow in create actions", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4206,7 +4227,7 @@ describe("App task reconciler state", () => {
           },
         ],
       }),
-    ).toThrow("workflow must name a real workflow; omit workflow for owner-handled project work");
+    ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
     expect(readTaskState(config).tasks["owner-created-task"]).toBeUndefined();
   });
 
@@ -4214,8 +4235,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4239,7 +4260,7 @@ describe("App task reconciler state", () => {
     expect(task.kind).toBe("domain");
   });
 
-  it("repairs explicit owner and workflow bindings through an update action", () => {
+  it("repairs explicit agent and workflow bindings through an update action", () => {
     const { config } = fixture();
     const observed = observeAppTaskIntent(config, {
       intent: {
@@ -4252,14 +4273,14 @@ describe("App task reconciler state", () => {
         workflow: "removed-workflow",
         category: "domain",
       },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
     });
     if (observed.kind !== "observed") throw new Error("expected observation");
 
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4299,7 +4320,7 @@ describe("App task reconciler state", () => {
     };
     const target = declareAndClaimTask(config, {
       intent: targetIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (target.kind !== "claimed") throw new Error("expected target claim");
@@ -4310,8 +4331,8 @@ describe("App task reconciler state", () => {
 
     const carrier = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
 
@@ -4345,8 +4366,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4382,8 +4403,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4412,8 +4433,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
 
@@ -4441,8 +4462,8 @@ describe("App task reconciler state", () => {
         mode: "achieve",
         workflow: "known-workflow",
       },
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (second.kind !== "claimed") throw new Error("expected second claim");
 
@@ -4474,8 +4495,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
     completeAppTask(config, first, {
@@ -4499,8 +4520,8 @@ describe("App task reconciler state", () => {
         acceptance: ["Completed work is handled truthfully"],
         mode: "maintain",
       },
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (review.kind !== "claimed") throw new Error("expected review claim");
 
@@ -4528,8 +4549,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (first.kind !== "claimed") throw new Error("expected first claim");
     completeAppTask(config, first, {
@@ -4553,8 +4574,8 @@ describe("App task reconciler state", () => {
         acceptance: ["Completed identities are not reused"],
         mode: "maintain",
       },
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (review.kind !== "claimed") throw new Error("expected review claim");
 
@@ -4596,7 +4617,7 @@ describe("App task reconciler state", () => {
       outputs: ["proof.md"],
       priority: "P1",
     };
-    observeAppTaskIntent(config, { intent: childIntent, appOwner: "app-owner" });
+    observeAppTaskIntent(config, { intent: childIntent, appAgent: "app-owner" });
     const review = declareAndClaimTask(config, {
       intent: {
         id: "live-create-review",
@@ -4605,8 +4626,8 @@ describe("App task reconciler state", () => {
         acceptance: ["Concurrent creation is harmless"],
         mode: "maintain",
       },
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (review.kind !== "claimed") throw new Error("expected review claim");
 
@@ -4632,8 +4653,8 @@ describe("App task reconciler state", () => {
         acceptance: ["Intent is not overwritten"],
         mode: "maintain",
       },
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (review.kind !== "claimed") throw new Error("expected review claim");
 
@@ -4661,8 +4682,8 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
+      appAgent: "app-owner",
+      handler: "agent:branch-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
@@ -4700,7 +4721,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -4768,7 +4789,7 @@ describe("App task reconciler state", () => {
 
     const timerWake = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(timerWake).toMatchObject({
@@ -4808,7 +4829,7 @@ describe("App task reconciler state", () => {
 
     const resumed = claimObservedAppTask(config, {
       taskId: wakes[0].taskId,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "condition:session-terminal:s_1",
     });
@@ -4823,7 +4844,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/queued-pulse" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -4852,7 +4873,7 @@ describe("App task reconciler state", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: claim.taskId,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "waiting", conditionIds: ["pipeline-run:42:completed"] });
@@ -4862,7 +4883,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/queued-completion" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -4892,7 +4913,7 @@ describe("App task reconciler state", () => {
     expect(readAppTaskTrigger(config, claim.taskId)).toEqual(completion);
     const resumed = claimObservedAppTask(config, {
       taskId: claim.taskId,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     expect(resumed).toMatchObject({ kind: "claimed", trigger: completion });
@@ -4902,7 +4923,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const initial = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/two-conditions" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (initial.kind !== "claimed") throw new Error("expected initial claim");
@@ -4936,7 +4957,7 @@ describe("App task reconciler state", () => {
     ]);
     const first = claimObservedAppTask(config, {
       taskId: "work/two-conditions",
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "condition:dependency:a",
     });
@@ -4962,7 +4983,7 @@ describe("App task reconciler state", () => {
 
     const second = claimObservedAppTask(config, {
       taskId: "work/two-conditions",
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "condition:dependency:b",
     });
@@ -4974,7 +4995,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5029,7 +5050,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const parent = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/parent-batch" },
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (parent.kind !== "claimed") throw new Error("expected parent claim");
@@ -5055,7 +5076,7 @@ describe("App task reconciler state", () => {
     for (const childTaskId of ["work/child-one", "work/child-two"]) {
       const childClaim = claimObservedAppTask(config, {
         taskId: childTaskId,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "child",
       });
@@ -5070,7 +5091,7 @@ describe("App task reconciler state", () => {
 
     const resumed = claimObservedAppTask(config, {
       taskId: parent.taskId,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "children-transitioned",
     });
@@ -5082,7 +5103,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5126,7 +5147,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5171,7 +5192,7 @@ describe("App task reconciler state", () => {
     for (const taskIntent of intents) {
       const claim = declareAndClaimTask(config, {
         intent: taskIntent,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       });
       if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5204,7 +5225,7 @@ describe("App task reconciler state", () => {
     for (const taskIntent of intents) {
       const resumed = declareAndClaimTask(config, {
         intent: taskIntent,
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       });
       if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
@@ -5219,12 +5240,12 @@ describe("App task reconciler state", () => {
     const secondIntent = { ...intent("maintain"), id: "pipeline-b" };
     const first = declareAndClaimTask(config, {
       intent: firstIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     const second = declareAndClaimTask(config, {
       intent: secondIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed" || second.kind !== "claimed") throw new Error("expected claims");
@@ -5262,7 +5283,7 @@ describe("App task reconciler state", () => {
     const taskIntent = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
@@ -5284,7 +5305,7 @@ describe("App task reconciler state", () => {
     });
     const resumed = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
@@ -5318,7 +5339,7 @@ describe("App task reconciler state", () => {
     } as const;
     const first = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
@@ -5339,7 +5360,7 @@ describe("App task reconciler state", () => {
     ]);
     const resumed = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
@@ -5372,7 +5393,7 @@ describe("App task reconciler state", () => {
     };
     const first = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
@@ -5406,7 +5427,7 @@ describe("App task reconciler state", () => {
     } as const;
     const claim = declareAndClaimTask(config, {
       intent: taskIntent,
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5447,7 +5468,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (first.kind !== "claimed") throw new Error("expected claim");
@@ -5470,7 +5491,7 @@ describe("App task reconciler state", () => {
     });
     const resumed = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
@@ -5505,7 +5526,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5542,7 +5563,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5597,7 +5618,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5655,7 +5676,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5700,7 +5721,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5736,7 +5757,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5759,7 +5780,7 @@ describe("App task reconciler state", () => {
     expect(
       declareAndClaimTask(config, {
         intent: intent("maintain"),
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "periodic-resync",
       }),
@@ -5770,7 +5791,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5808,7 +5829,7 @@ describe("App task reconciler state", () => {
     expect(
       declareAndClaimTask(config, {
         intent: intent("maintain"),
-        appOwner: "app-owner",
+        appAgent: "app-owner",
         handler: "workflow:known-workflow",
       }),
     ).toMatchObject({ kind: "waiting", conditionIds: ["pipeline-run:42"] });
@@ -5826,7 +5847,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5859,7 +5880,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5903,7 +5924,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
@@ -5952,7 +5973,7 @@ describe("App task reconciler state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
-      appOwner: "app-owner",
+      appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");

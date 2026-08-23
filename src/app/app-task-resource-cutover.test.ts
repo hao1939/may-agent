@@ -59,7 +59,7 @@ function harness(input: { running?: boolean } = {}): {
             taskGeneration: 1,
             specHash: "hash",
             owner: "may",
-            handler: "owner",
+            handler: "agent",
             runtimeId: "runtime",
             state: "running",
             reason: "test",
@@ -130,9 +130,7 @@ describe("Task resource cutover", () => {
       taskCount: 1,
       resourceAuthority: "resources",
     });
-    expect(() => pauseTaskResourceCutover(config, persistDir, "must not touch legacy state")).toThrow(
-      "already active",
-    );
+    expect(() => pauseTaskResourceCutover(config, persistDir, "must not touch legacy state")).toThrow("already active");
   });
 
   it("refuses activation while a paused source still owns a running attempt", () => {

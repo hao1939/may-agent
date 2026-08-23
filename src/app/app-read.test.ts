@@ -69,13 +69,14 @@ describe("App read projections", () => {
     });
     for (const id of ["review/a", "review/b"]) {
       observeAppTaskIntent(config, {
-        appOwner: "evaluation",
+        appAgent: "evaluation",
         intent: {
           id,
           parentId: "review",
           outcome: `Complete ${id}`,
           acceptance: ["Completed"],
           mode: "achieve",
+          agent: "evaluation",
           input: { exact: `input-for-${id}` },
         },
       });
@@ -100,6 +101,8 @@ describe("App read projections", () => {
       parentId: "review",
       acceptance: ["Completed"],
       input: { exact: "input-for-review/a" },
+      agent: "evaluation",
+      owner: "evaluation",
       conditions: [],
     });
     await expect(read.tasks.get("missing")).resolves.toBeNull();
@@ -121,7 +124,7 @@ describe("App read projections", () => {
       maxConcurrent: 1,
     });
     observeAppTaskIntent(config, {
-      appOwner: "evaluation",
+      appAgent: "evaluation",
       intent: { id: "first", parentId: "root", outcome: "First", acceptance: ["Done"], mode: "achieve" },
     });
     const readTask = createRuntimeTaskReader({ appDir: root, projectDir: root });
@@ -130,7 +133,7 @@ describe("App read projections", () => {
     expect(readTask("missing")).toBeNull();
 
     observeAppTaskIntent(config, {
-      appOwner: "evaluation",
+      appAgent: "evaluation",
       intent: { id: "second", parentId: "root", outcome: "Second", acceptance: ["Done"], mode: "achieve" },
     });
     expect(readTask("second")?.status).toBe("pending");

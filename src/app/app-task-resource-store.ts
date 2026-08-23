@@ -942,10 +942,10 @@ export class AppTaskResourceStore {
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
-  /** Exact failed attempts that one later successful owner session may repair. */
-  listHandlerExecutionRecoveryTaskIds(owner: string, limit = 256): string[] {
-    const normalizedOwner = owner.trim();
-    if (!normalizedOwner) return [];
+  /** Exact failed attempts that one later successful agent session may repair. */
+  listHandlerExecutionRecoveryTaskIds(agent: string, limit = 256): string[] {
+    const normalizedAgent = agent.trim();
+    if (!normalizedAgent) return [];
     const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
     return (
       this.db
@@ -985,7 +985,7 @@ export class AppTaskResourceStore {
            ORDER BY failed.started_at, failed.task_id
            LIMIT ?`,
         )
-        .all(this.appId, normalizedOwner, boundedLimit) as Array<{ task_id?: string }>
+        .all(this.appId, normalizedAgent, boundedLimit) as Array<{ task_id?: string }>
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 

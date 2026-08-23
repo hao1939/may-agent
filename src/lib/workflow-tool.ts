@@ -833,7 +833,7 @@ export interface WorkflowToolOptions {
   runtimeCtx?: RuntimeCtx;
   /** Fenced App-authored event capability for a resource-backed Task attempt. */
   taskEmitter?: AppTaskEvents;
-  /** Resolved app/domain paths supplied by Agent App infrastructure. */
+  /** Resolved app/domain paths supplied by the Host. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input for a system-dispatched top-level workflow. */
   workflowInput?: unknown;
