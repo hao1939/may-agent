@@ -802,6 +802,44 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("turns passive executor progress into an identity-only wake without forwarding its payload", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    stream.write(
+      JSON.stringify({
+        type: "subscribe",
+        sessions: [],
+        task: { appId: "evaluation", taskId: "review/docs" },
+      }) + "\n",
+    );
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+
+    core.getBroadcast()?.({
+      type: "project.task.executor.progress",
+      data: {
+        stage: "intermediate",
+        message: "Inspecting evidence",
+        emission: { appId: "other", taskId: "review/docs" },
+      },
+    });
+    core.getBroadcast()?.({
+      type: "project.task.executor.progress",
+      data: {
+        stage: "intermediate",
+        message: "This payload must not be copied to the wake",
+        emission: { appId: "evaluation", taskId: "review/docs" },
+      },
+    });
+
+    await expect(nextFrame(stream)).resolves.toEqual({
+      type: "app.task.updated",
+      data: { appId: "evaluation", taskId: "review/docs" },
+    });
+    stream.destroy();
+  });
+
   it("rejects subscription filters containing non-string session ids", async () => {
     const core = createCore();
 

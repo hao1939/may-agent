@@ -31,6 +31,7 @@ describe("May Console", () => {
     const frames: Array<Record<string, any>> = [];
     const remoteConversationMessages: Array<Record<string, any>> = [];
     let taskTerminal = false;
+    let taskProgress: { stage: string; message: string; updatedAt: number } | undefined;
     let client: Socket | null = null;
     let inputBuffer = "";
     const server: Server = createServer((socket) => {
@@ -163,6 +164,7 @@ describe("May Console", () => {
                   updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
                   terminal: taskTerminal,
                   cancellable: !taskTerminal,
+                  ...(!taskTerminal && taskProgress ? { progress: taskProgress } : {}),
                 },
               })}\n`,
             );
@@ -265,9 +267,7 @@ describe("May Console", () => {
       () => output.includes("Active Tasks:") && output.includes("8f12ac90") && output.includes("Review the docs"),
     );
     expect(
-      frames.some(
-        (frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.limit === 10,
-      ),
+      frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.limit === 10),
     ).toBe(true);
     expect(output).toContain("run /tasks more for the next page");
     child.stdin.write("/tasks more\n");
@@ -315,6 +315,21 @@ describe("May Console", () => {
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);
+
+    taskProgress = {
+      stage: "intermediate",
+      message: "Inspecting exact evidence",
+      updatedAt: Date.UTC(2026, 7, 17, 9, 3, 4),
+    };
+    client?.write(
+      `${JSON.stringify({
+        type: "app.task.updated",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      })}\n`,
+    );
+    await waitFor(
+      () => output.includes("Progress (2026-08-17 09:03:04 UTC):") && output.includes("Inspecting exact evidence"),
+    );
 
     taskTerminal = true;
     client?.write(
@@ -470,14 +485,13 @@ describe("May Console", () => {
         conversation,
       })}\n`,
     );
-    await waitFor(
-      () =>
-        frames.some(
-          (frame) =>
-            frame.type === "publish" &&
-            frame.event?.type === "conversation.message.created" &&
-            frame.event?.data?.text === "hello",
-        ),
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello",
+      ),
     );
 
     child.stdin.write("/exit\n");

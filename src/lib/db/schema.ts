@@ -240,6 +240,9 @@ CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delive
 CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_task_executor_progress
+  ON events(project_id, task_id, id DESC)
+  WHERE event_type = 'project.task.executor.progress';
 CREATE INDEX IF NOT EXISTS idx_events_handler ON events(handler, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_metric ON events(metric_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_app_conversation_message
