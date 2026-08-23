@@ -43,7 +43,7 @@ export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
-  reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
+  reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
 };
 
 // Admission normally completes on the event's synchronous durable-route pass.
@@ -928,7 +928,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
-    async reload(prepare) {
+    async reload(prepare, projectsRoot) {
       const previousDefinitions = loaded.map((entry) => entry.definition);
       const next = await options.registry.reload(async (snapshot) => {
         if (
@@ -951,7 +951,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           if (committed) host.replaceApps(previousDefinitions);
           throw error;
         }
-      });
+      }, projectsRoot);
       loaded = next;
       registrySnapshot = options.registry.snapshot();
       observerRuntime.replace(next);

@@ -73,6 +73,21 @@ describe("App registry", () => {
     expect(first.snapshot().id).not.toBe(second.snapshot().id);
   });
 
+  it("can publish a new source root without changing the canonical App path", async () => {
+    const first = fixture("before");
+    const second = fixture("after");
+    const canonicalRoot = join(tmpdir(), `app-registry-canonical-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    roots.push(canonicalRoot);
+    const registry = new AppRegistry(first.root, canonicalRoot);
+    await registry.reload();
+    await registry.reload(undefined, second.root);
+
+    expect(registry.entries()[0]).toMatchObject({
+      appDir: join(canonicalRoot, "fixture.app"),
+      definition: { id: "after" },
+    });
+  });
+
   it("observes installed tasks.resolve with immutable snapshot identity", async () => {
     const { root, appPath } = fixture("resolver");
     writeFileSync(
