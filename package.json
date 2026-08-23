@@ -24,7 +24,7 @@
     "deploy": "sh scripts/deploy.sh",
     "reload": "echo 'Package script reload does not deploy May code. Use bun run deploy to apply code changes, or /reload for agent/app definition reload.' >&2; exit 1",
     "smoke:steering": "bun run scripts/smoke-steering.ts",
-    "build": "docker build --network=host -t localhost/may-agent:latest -f container/Dockerfile .",
+    "build": "sh scripts/build-image.sh",
     "up": "docker compose -f ./container/compose.yml up -d",
     "recreate": "bun run build && bun run up",
     "down": "docker compose -f ./container/compose.yml down",

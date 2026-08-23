@@ -243,4 +243,21 @@ describe("Codex goal progress projection", () => {
       lastError: "event store unavailable",
     });
   });
+
+  it("scopes durable keys to one reconcile attempt", async () => {
+    const published: string[] = [];
+    const publisher = new CodexGoalProgressPublisher({
+      keyScope: "r_7_retry",
+      async publish(localKey) {
+        published.push(localKey);
+        return { eventId: 1 };
+      },
+    });
+    publisher.observe({
+      method: "thread/goal/updated",
+      params: { threadId: "thread-1", goal: { status: "active", tokensUsed: 10 } },
+    });
+    await publisher.flush();
+    expect(published).toEqual(["codex-progress:goal-status:thread-1:none:active:attempt:r_7_retry"]);
+  });
 });
