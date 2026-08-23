@@ -104,6 +104,16 @@ describe("Telegram May input", () => {
     expect(renderTelegramTasks([task], false)).toContain("8f12ac90 · evaluation · running");
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
     expect(renderTelegramTask(task)).toContain("Progress:\nReviewing current behavior");
+    expect(
+      renderTelegramTask({
+        ...task,
+        progress: {
+          stage: "intermediate",
+          message: "Inspecting exact evidence",
+          updatedAt: Date.UTC(2026, 7, 22, 1, 3, 4),
+        },
+      }),
+    ).toContain("Progress (2026-08-22 01:03:04 UTC):\nInspecting exact evidence");
   });
 
   it("continues the prior Task query when Telegram requests the next page", async () => {
@@ -280,6 +290,7 @@ describe("Telegram May input", () => {
     const observed: any[] = [];
     const cancelCalls: Array<Record<string, unknown>> = [];
     let taskTerminal = false;
+    let taskProgress: { stage: string; message: string; updatedAt: number } | undefined;
     let updatePolls = 0;
     let releaseFollowup = () => {};
     const followupReady = new Promise<void>((resolve) => {
@@ -338,6 +349,7 @@ describe("Telegram May input", () => {
       updatedAt: Date.UTC(2026, 7, 22, 1, taskTerminal ? 5 : 2, 3),
       terminal: taskTerminal,
       cancellable: !taskTerminal,
+      ...(!taskTerminal && taskProgress ? { progress: taskProgress } : {}),
     });
     const bus = new EventBus();
     const unsubscribe = bus.subscribe((event) => observed.push(event));
@@ -377,6 +389,23 @@ describe("Telegram May input", () => {
       expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 active"));
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
       expect(sent).toContainEqual(expect.stringContaining("Watching 8f12ac90"));
+
+      taskProgress = {
+        stage: "intermediate",
+        message: "Inspecting exact evidence",
+        updatedAt: Date.UTC(2026, 7, 22, 1, 3, 4),
+      };
+      bus.emit({
+        type: "project.task.executor.progress",
+        source: "app-task:evaluation",
+        owner: "agent:evaluator",
+        data: {
+          stage: taskProgress.stage,
+          message: taskProgress.message,
+          emission: { appId: "evaluation", taskId: "review/docs" },
+        },
+      } as any);
+      await waitFor(() => sent.some((text) => text.includes("Inspecting exact evidence")));
 
       taskTerminal = true;
       bus.emit({

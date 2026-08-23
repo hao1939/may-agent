@@ -23,6 +23,7 @@ describe("canonical database schema", () => {
       expect(columns.some(({ name }) => name === "ingress_source")).toBe(true);
       expect(columns.some(({ name }) => name === "handled_by")).toBe(false);
       expect(indexes.some(({ name }) => name === "idx_events_session")).toBe(true);
+      expect(indexes.some(({ name }) => name === "idx_events_task_executor_progress")).toBe(true);
       expect(indexes.some(({ name }) => name === "idx_events_idempotency")).toBe(true);
       const sessionIndexes = db.prepare("PRAGMA index_list(sessions)").all() as Array<{ name: string }>;
       const workflowIndexes = db.prepare("PRAGMA index_list(workflow_runs)").all() as Array<{ name: string }>;

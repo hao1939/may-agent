@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
-import { ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
+import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 import {
   ensureTaskReferenceIndex,
@@ -18,7 +18,7 @@ afterEach(() => {
 function database(): SqliteDb {
   const db = openDatabase(":memory:");
   databases.push(db);
-  ensureTaskResourceSchema(db);
+  applyDbSchema(db);
   return db;
 }
 
@@ -92,6 +92,25 @@ function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt:
       failureFingerprints: [],
       completedAt: new Date(completedAt).toISOString(),
     }),
+  );
+}
+
+function insertProgress(
+  db: SqliteDb,
+  input: { appId: string; taskId: string; timestamp: number; stage: string; message?: string; status?: string },
+): void {
+  db.prepare(
+    `INSERT INTO events(event_type, data, project_id, task_id, timestamp)
+     VALUES ('project.task.executor.progress', ?, ?, ?, ?)`,
+  ).run(
+    JSON.stringify({
+      stage: input.stage,
+      ...(input.message ? { message: input.message } : {}),
+      ...(input.status ? { status: input.status } : {}),
+    }),
+    input.appId,
+    input.taskId,
+    input.timestamp,
   );
 }
 
@@ -205,6 +224,61 @@ describe("Human Task service", () => {
       terminal: true,
       response: "finished result",
     });
+  });
+
+  test("projects only the latest passive executor progress into live Task detail", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "review", phase: "running", updatedAt: 10 });
+    insertTask(db, { appId: "alpha", taskId: "other", phase: "running", updatedAt: 11 });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "review",
+      timestamp: 20,
+      stage: "turn-started",
+      status: "inProgress",
+    });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "other",
+      timestamp: 30,
+      stage: "intermediate",
+      message: "Must not leak",
+    });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "review",
+      timestamp: 40,
+      stage: "intermediate",
+      message: "Inspecting the current behavior",
+    });
+    const service = new HumanTaskService(db, registry("alpha"));
+
+    expect(service.getTask({ appId: "alpha", taskId: "review" })?.progress).toEqual({
+      stage: "intermediate",
+      message: "Inspecting the current behavior",
+      updatedAt: 40,
+    });
+    expect(service.listTasks().items.find((task) => task.taskId === "review")?.progress).toBeUndefined();
+  });
+
+  test("lets a terminal Task result replace passive executor progress", () => {
+    const db = database();
+    insertReceipt(db, "alpha", "finished", 20);
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "finished",
+      timestamp: 30,
+      stage: "intermediate",
+      message: "Stale in-flight observation",
+    });
+    const service = new HumanTaskService(db, registry("alpha"));
+
+    const finished = service.getTask({ appId: "alpha", taskId: "finished" });
+    expect(finished).toMatchObject({
+      terminal: true,
+      response: "finished result",
+    });
+    expect(finished?.progress).toBeUndefined();
   });
 
   test("keeps list cards bounded and reserves full results for exact detail", () => {

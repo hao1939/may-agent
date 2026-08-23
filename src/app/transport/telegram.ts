@@ -86,7 +86,11 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
 }
 
 export function renderTelegramTask(task: HumanTaskView): string {
-  const result = task.response?.trim() || task.summary?.trim();
+  const observedProgress = task.terminal
+    ? ""
+    : task.progress?.message?.trim() ||
+      [task.progress?.stage.replaceAll("-", " "), task.progress?.status].filter(Boolean).join(" · ");
+  const result = observedProgress || task.response?.trim() || task.summary?.trim();
   return [
     `Task ${task.ref}`,
     `App: ${task.appId}`,
@@ -94,7 +98,15 @@ export function renderTelegramTask(task: HumanTaskView): string {
     `Status: ${task.status}`,
     `Outcome: ${task.outcome}`,
     `Updated: ${formatWorkTime(task.updatedAt)}`,
-    ...(result ? [task.terminal ? `Result:\n${result}` : `Progress:\n${result}`] : []),
+    ...(result
+      ? [
+          task.terminal
+            ? `Result:\n${result}`
+            : observedProgress && task.progress
+              ? `Progress (${formatWorkTime(task.progress.updatedAt)}):\n${result}`
+              : `Progress:\n${result}`,
+        ]
+      : []),
   ].join("\n");
 }
 
@@ -196,6 +208,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   >();
   const watchReads = new Set<string>();
   const dirtyWatches = new Set<string>();
+  const scheduledWatches = new Set<string>();
   const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
   const sharedConversationId = primaryConversationId(opts.interfaceAgent);
   const renderedConversationMessages = new Set<string>();
@@ -320,6 +333,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   }
 
+  function queueWatchRefresh(surface: string): void {
+    if (!running || scheduledWatches.has(surface)) return;
+    scheduledWatches.add(surface);
+    setImmediate(() => {
+      scheduledWatches.delete(surface);
+      if (running && watchedTasks.has(surface)) void refreshWatch(surface);
+    });
+  }
+
   const unsubscribeConversation = bus.listen(
     (event: any) => {
       const data = event && typeof event.data === "object" && event.data ? event.data : {};
@@ -352,7 +374,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const wake = taskUpdateIdentity(event);
       if (!wake) return;
       for (const [surface, watched] of watchedTasks) {
-        if (watched.appId === wake.appId && watched.taskId === wake.taskId) void refreshWatch(surface);
+        if (watched.appId === wake.appId && watched.taskId === wake.taskId) queueWatchRefresh(surface);
       }
     },
     {

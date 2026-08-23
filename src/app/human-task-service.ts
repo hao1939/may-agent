@@ -12,6 +12,13 @@ import {
 
 export type HumanTaskStatus = "pending" | "running" | "waiting" | "attention" | "done" | "cancelled";
 
+export type HumanTaskProgress = {
+  stage: string;
+  message?: string;
+  status?: string;
+  updatedAt: number;
+};
+
 export type HumanTaskView = {
   appId: string;
   taskId: string;
@@ -27,6 +34,7 @@ export type HumanTaskView = {
   terminal: boolean;
   cancellable: boolean;
   execution?: { attemptId: string; sessionId?: string };
+  progress?: HumanTaskProgress;
 };
 
 export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string };
@@ -54,6 +62,8 @@ type TaskRow = {
   attempt_json?: string | null;
 };
 
+type TaskProgressRow = { data?: string | null; timestamp?: number };
+
 type TaskCursor = { updatedAt: number; appId: string; taskId: string; terminal: number };
 
 type TaskCancellation = {
@@ -74,6 +84,38 @@ function parseJson<T>(value: string | null | undefined): T | null {
   } catch {
     return null;
   }
+}
+
+function latestTaskProgress(db: SqliteDb, appId: string, taskId: string): HumanTaskProgress | null {
+  let row: TaskProgressRow | null;
+  try {
+    row = db
+      .prepare(
+        `SELECT data, timestamp
+         FROM events
+         WHERE event_type = 'project.task.executor.progress'
+           AND project_id = ? AND task_id = ?
+         ORDER BY id DESC
+         LIMIT 1`,
+      )
+      .get(appId, taskId) as TaskProgressRow | null;
+  } catch {
+    // Progress is optional observation. A missing or unavailable Event store
+    // must not break the authoritative Task read or cancellation path.
+    return null;
+  }
+  const data = parseJson<Record<string, unknown>>(row?.data);
+  const rawStage = typeof data?.stage === "string" ? data.stage.trim() : "";
+  const updatedAt = Number(row?.timestamp);
+  if (!rawStage || !Number.isSafeInteger(updatedAt)) return null;
+  const message = typeof data?.message === "string" ? data.message.trim() : "";
+  const status = typeof data?.status === "string" ? data.status.trim() : "";
+  return {
+    stage: boundedUtf8Text(rawStage, 64),
+    ...(message ? { message: boundedUtf8Text(message, 2_000) } : {}),
+    ...(status ? { status: boundedUtf8Text(status, 64) } : {}),
+    updatedAt,
+  };
 }
 
 function encodeCursor(cursor: TaskCursor): string {
@@ -130,9 +172,7 @@ function listCard(view: HumanTaskView): HumanTaskView {
   return {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
-    ...(view.summary
-      ? { summary: boundedUtf8Text(view.summary, HUMAN_TASK_LIST_TEXT_MAX_BYTES) }
-      : {}),
+    ...(view.summary ? { summary: boundedUtf8Text(view.summary, HUMAN_TASK_LIST_TEXT_MAX_BYTES) } : {}),
   };
 }
 
@@ -425,7 +465,10 @@ export class HumanTaskService {
       ) as TaskRow | null;
     if (!row) return null;
     const refs = displayTaskReferences(this.db, [{ appId: identity.appId, taskId: identity.taskId }]);
-    return projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
+    const view = projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
+    if (!view || view.terminal) return view;
+    const progress = latestTaskProgress(this.db, identity.appId, identity.taskId);
+    return progress ? { ...view, progress } : view;
   }
 
   cancelTask(input: { ref?: string; appId?: string; taskId?: string; reason?: string }): HumanTaskView {
