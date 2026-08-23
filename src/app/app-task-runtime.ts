@@ -1562,6 +1562,7 @@ export type DeployReceipt = {
   completedAt?: string;
   loadedArtifactSha?: string;
   health?: "healthy" | "unhealthy";
+  /** Retained only when reading older receipts. New receipts do not model event delivery. */
   targetedWake?: boolean;
   duplicateDeploy?: boolean;
   failure?: string;
@@ -1614,7 +1615,7 @@ export function deployReceiptPrompt(projectDir: string, taskId: string): string[
   if (receipt.phase === "succeeded") {
     return [
       "## Restart-aware deploy receipt",
-      "The correlated deploy succeeded. Do not deploy again. Verify that loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, and duplicateDeploy is false; then complete agent reconciliation.",
+      "The correlated deploy succeeded. Do not deploy again. Verify that loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false; then complete agent reconciliation.",
       "```json",
       encoded,
       "```",

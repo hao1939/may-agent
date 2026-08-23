@@ -61,8 +61,8 @@ emit_wake() {
 }
 
 settle() {
-  phase="$1"; sha="$2"; health="$3"; wake="$4"; failure="${5:-}"
-  bun "$receipt_tool" settle "$receipt" "$phase" "$sha" "$health" "$wake" "$failure"
+  phase="$1"; sha="$2"; health="$3"; failure="${4:-}"
+  bun "$receipt_tool" settle "$receipt" "$phase" "$sha" "$health" "$failure"
 }
 
 switch_sdk() {
@@ -109,7 +109,7 @@ cleanup() {
   if [ "$receipt_accepted" = "1" ] && [ "$finalized" = "0" ]; then
     rm -f "$deploy_marker" "$sdk_marker" "$ui_marker"
     loaded="$(sha256sum "$target" 2>/dev/null | awk '{print $1}' || echo unknown)"
-    settle failed "$loaded" unhealthy false "restarter-exit-$rc" || true
+    settle failed "$loaded" unhealthy "restarter-exit-$rc" || true
     emit_wake failed || true
   fi
   if [ "$activation_started" = "0" ] || [ "$finalized" = "1" ]; then
@@ -189,18 +189,17 @@ services_stopped=0
 if [ "$deployed" = "1" ]; then
   if wait_for_health; then
     loaded="$(sha256sum "$target" | awk '{print $1}')"
-    emit_wake succeeded
-    settle succeeded "$loaded" healthy true
+    settle succeeded "$loaded" healthy
     finalized=1
+    emit_wake succeeded || echo "[may-agent-restarter] terminal task wake failed; periodic recovery will observe the settled receipt" >&2
   else
     echo "[may-agent-restarter] health failed; rolling back" >&2
     restore_previous_release
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     rollback_health=unhealthy
     if wait_for_health; then rollback_health=healthy; fi
-    rollback_wake=false
-    if emit_wake rolled_back; then rollback_wake=true; fi
-    settle rolled_back "$loaded" "$rollback_health" "$rollback_wake" health-check-failed
+    settle rolled_back "$loaded" "$rollback_health" health-check-failed
+    emit_wake rolled_back || true
     finalized=1
     exit 1
   fi
