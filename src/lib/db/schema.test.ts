@@ -116,6 +116,43 @@ describe("canonical database schema", () => {
     }
   });
 
+  it("backfills event traces once when upgrading a pre-trace database", () => {
+    const db = openDatabase(":memory:");
+    try {
+      db.exec(`
+        CREATE TABLE events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_type TEXT NOT NULL,
+          data TEXT,
+          timestamp INTEGER NOT NULL
+        );
+        INSERT INTO events (event_type, data, timestamp) VALUES ('legacy.event', '{}', 1);
+      `);
+
+      applyDbSchema(db);
+      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = 1").get()).toMatchObject({
+        event_id: 1,
+        trace_id: "event:1",
+        parent_event_id: null,
+        visibility: "default",
+      });
+
+      // Existing trace schema means compatibility migration already ran.
+      // Integrity checks, not every process startup, report later corruption.
+      db.run("DELETE FROM event_traces WHERE event_id = 1");
+      applyDbSchema(db);
+      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = 1").get()).toBeNull();
+
+      db.run("INSERT INTO events (event_type, data, timestamp) VALUES ('current.event', '{}', 2)");
+      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = 2").get()).toMatchObject({
+        event_id: 2,
+        trace_id: "event:2",
+      });
+    } finally {
+      db.close();
+    }
+  });
+
   it("adds channel metadata to an existing App inbox table", () => {
     const db = openDatabase(":memory:");
     try {
