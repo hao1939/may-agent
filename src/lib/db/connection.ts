@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../db.js";
+import { withSqliteBusyRetry } from "./busy-retry.js";
 import { applyDbSchema } from "./schema.js";
 
 const dbCache = new Map<string, SqliteDb>();
@@ -59,7 +60,11 @@ export function getDb(persistDir: string): SqliteDb {
   // default per-connection auto-checkpoint can otherwise run a multi-page
   // checkpoint on the daemon's synchronous event-persistence commit path.
   db.exec("PRAGMA wal_autocheckpoint = 0");
-  applyDbSchema(db);
+  // The daemon, web, and maintenance processes start together. One may be
+  // applying a legitimate schema upgrade while another reaches this point;
+  // wait for that bounded writer instead of making Supervisor restart a
+  // healthy process generation.
+  withSqliteBusyRetry("apply database schema", () => applyDbSchema(db));
 
   dbCache.set(persistDir, db);
   return db;
