@@ -230,6 +230,10 @@ export type TaskEventReceipt = { eventId: number };
 export type TaskAttempt = {
   /** App scope makes Task ids unambiguous to a reusable executor. */
   appId: string;
+  /** Runtime-owned identity for this fenced execution attempt. */
+  attemptId: string;
+  /** Task resource version observed when this attempt was claimed. */
+  resourceVersion: number;
   task: TaskDetail;
   /** Attempt-scoped working directory selected by Runtime. */
   cwd: string;

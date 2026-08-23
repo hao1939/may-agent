@@ -33,6 +33,10 @@ RUN bun install --frozen-lockfile
 # Copy source + config
 COPY src/ src/
 COPY packages/ packages/
+# The explicitly named codex-goal-poc executor reuses the protocol modules
+# proven by the trial suite. Remove this copy when the experiment is promoted
+# into the stable executor package or rolled back.
+COPY scripts/poc/ scripts/poc/
 COPY tsconfig.json ./
 
 ARG WORKSPACE_PACKAGE_DIRS="packages/control packages/sdk packages/terminal packages/webui"

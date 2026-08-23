@@ -1015,6 +1015,8 @@ function runtimeTaskAttempt(input: {
     events,
     attempt: {
       appId: descriptor.id,
+      attemptId: claim.attemptId,
+      resourceVersion: claim.resourceVersion,
       task: structuredClone(task),
       cwd: input.cwd,
       events: projectAppTaskReconciliationEvents(claim),
