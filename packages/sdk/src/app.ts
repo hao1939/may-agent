@@ -179,7 +179,6 @@ export type AppTaskPolicy = {
   resolve?: (event: AppEvent<Record<string, unknown>>) => TaskIntent | null;
   validateAction?: (action: TaskAction) => string | null;
   maxConcurrent?: number;
-  resyncIntervalMs?: number;
 };
 
 /** Minimal declaration used by the App host. Domain payloads remain App-owned. */
@@ -196,7 +195,6 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
    * records a terminal no-op only after all actionable routes are evaluated.
    */
   observations?: EventSelector[];
-  inbox?: { maxConcurrent?: number };
   schedules?: AppSchedule[];
   observers?: AppObserver[];
   actions?: Record<string, AppAction>;

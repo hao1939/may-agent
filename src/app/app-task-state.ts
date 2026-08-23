@@ -81,7 +81,7 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
-  /** Compatibility projection of the most relevant event in events. */
+  /** Legacy/synthetic trigger retained only when no durable event batch exists. */
   trigger?: Record<string, unknown>;
   startedAt: string;
   finishedAt?: string;

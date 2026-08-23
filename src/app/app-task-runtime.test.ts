@@ -415,6 +415,79 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it("preserves event time through Runtime preview so stale level observations stay blocked", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const intent = {
+      id: "work/credential",
+      parentId: "operations",
+      outcome: "Wait for a fresh credential observation",
+      acceptance: ["A fresh ready observation is received"],
+      mode: "maintain" as const,
+    };
+    const observed = observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
+    if (observed.kind === "completed") throw new Error("expected observed task");
+    const claim = claimObservedAppTask(config, {
+      taskId: observed.taskId,
+      appAgent: "sample-owner",
+      handler: "owner:sample-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claimed task");
+    deferAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "Waiting for credential readiness",
+      conditions: [
+        {
+          id: "credential-ready:xhs",
+          type: "credential.state",
+          subject: "credential:xhs",
+          expected: { field: "state", equals: "ready" },
+        },
+      ],
+    });
+    const establishedAt = Date.parse(
+      readTaskState(config).conditions?.["credential-ready:xhs"]?.status.observedAt ?? "",
+    );
+    expect(Number.isFinite(establishedAt)).toBeTrue();
+    activateTaskResources(config, persistDir);
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: {
+        id: "boot:condition-time",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    const observation = (timestamp: number): AgentEvent => ({
+      type: "credential.state",
+      timestamp,
+      data: { credential: "xhs", state: "ready" },
+    });
+    expect(
+      previewLoadedCanonicalAppTaskEvent({
+        bus,
+        appId: "sample",
+        event: observation(establishedAt - 1),
+      }),
+    ).toEqual([]);
+    expect(
+      previewLoadedCanonicalAppTaskEvent({
+        bus,
+        appId: "sample",
+        event: observation(establishedAt + 1),
+      }),
+    ).toEqual([intent.id]);
+  });
+
   it("carries a deterministic cross-App result back as the parent's next Event", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -710,12 +783,14 @@ describe("canonical App task runtime", () => {
       expect(resumed.events).toHaveLength(1);
       expect(resumed.events[0]?.event).toMatchObject({
         type: "app.dependency.completed",
-        kind: "app",
-        id: requestId,
-        status: "done",
-        summary: "Independent review completed",
-        response: "The dependency result is ready for the parent.",
-        evidence: ["review:accepted"],
+        data: {
+          kind: "app",
+          id: requestId,
+          status: "done",
+          summary: "Independent review completed",
+          response: "The dependency result is ready for the parent.",
+          evidence: ["review:accepted"],
+        },
       });
     } finally {
       inbox.close();
@@ -2177,16 +2252,20 @@ describe("canonical App task runtime", () => {
     });
     expect(attached.taskId).toBe("work/paused-attachment");
 
+    const largePayload = "x".repeat(128 * 1024);
+    const event = {
+      type: "sample.work",
+      source: "test",
+      owner: "agent:sample-owner",
+      timestamp: 1_787_500_000_000,
+      data: { itemId: "paused-event", payload: largePayload },
+    } as AgentEvent;
+    Object.defineProperty(event, EVENT_ROW_ID, { value: 42, configurable: true });
     expect(
       admitLoadedCanonicalAppTaskEvent({
         bus,
         appId: "sample",
-        event: {
-          type: "sample.work",
-          source: "test",
-          owner: "agent:sample-owner",
-          data: { itemId: "paused-event" },
-        },
+        event,
         intent: {
           id: "work/paused-event",
           parentId: "operations",
@@ -2204,6 +2283,24 @@ describe("canonical App task runtime", () => {
       id: "work/paused-event",
       status: "pending",
     });
+    const persisted = readTaskState(
+      taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        agent: "sample-owner",
+        maxConcurrent: 1,
+        resourceStore: AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!,
+      }),
+      { taskIds: ["work/paused-event"] },
+    ).taskTriggers?.["work/paused-event"]?.event;
+    expect(persisted).toMatchObject({
+      type: "sample.work",
+      eventId: 42,
+      timestamp: 1_787_500_000_000,
+      data: { itemId: "paused-event", payload: largePayload },
+    });
+    expect(persisted).not.toHaveProperty("payload");
+    expect(JSON.stringify(persisted).split(largePayload).length - 1).toBe(1);
   });
 
   it("recovers one persisted terminal direct-agent result despite a fresh renewed lease", () => {

@@ -34,6 +34,15 @@ CREATE TABLE IF NOT EXISTS app_task_events (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_events_task_time
   ON app_task_events(app_id, task_id, observed_at, event_key);
+CREATE TABLE IF NOT EXISTS app_task_relations (
+  app_id TEXT NOT NULL, source_task_id TEXT NOT NULL,
+  relation_kind TEXT NOT NULL CHECK (relation_kind IN ('parent', 'dependency')),
+  target_task_id TEXT NOT NULL,
+  PRIMARY KEY(app_id, source_task_id, relation_kind, target_task_id),
+  FOREIGN KEY(app_id, source_task_id) REFERENCES app_tasks(app_id, task_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_app_task_relations_target
+  ON app_task_relations(app_id, target_task_id, relation_kind, source_task_id);
 CREATE TABLE IF NOT EXISTS app_task_attempts (
   app_id TEXT NOT NULL, attempt_id TEXT NOT NULL, task_id TEXT NOT NULL,
   task_generation INTEGER NOT NULL, state TEXT NOT NULL, lease_until INTEGER,
@@ -101,20 +110,61 @@ CREATE TABLE IF NOT EXISTS app_task_admissions (
 );
 `;
 
-/** Create the resource tables and migrate legacy JSON Condition links once. */
+/** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
   const needsConditionRouteBackfill = !db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_condition_routes'")
     .get();
-  db.exec(TASK_RESOURCE_SCHEMA);
-  if (!needsConditionRouteBackfill) return;
-  db.exec(`
-    INSERT OR IGNORE INTO app_task_condition_routes(app_id, task_id, condition_id)
-    SELECT t.app_id, t.task_id, linked.value
-    FROM app_tasks t
-    JOIN json_each(t.resource_json, '$.status.conditionIds') linked
-    JOIN app_task_conditions c
-      ON c.app_id = t.app_id AND c.condition_id = linked.value
-    WHERE json_valid(t.resource_json) = 1
-  `);
+  const needsRelationBackfill = !db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_relations'")
+    .get();
+  if (!needsConditionRouteBackfill && !needsRelationBackfill) {
+    db.exec(TASK_RESOURCE_SCHEMA);
+    return;
+  }
+  // This helper is used both by the top-level schema transaction and by
+  // resource-store initialization. A savepoint is atomic in either context;
+  // a nested BEGIN is not valid in SQLite.
+  db.exec("SAVEPOINT task_resource_schema");
+  try {
+    db.exec(TASK_RESOURCE_SCHEMA);
+    if (needsConditionRouteBackfill) {
+      db.exec(`
+        INSERT OR IGNORE INTO app_task_condition_routes(app_id, task_id, condition_id)
+        SELECT t.app_id, t.task_id, linked.value
+        FROM app_tasks t
+        JOIN json_each(t.resource_json, '$.status.conditionIds') linked
+        JOIN app_task_conditions c
+          ON c.app_id = t.app_id AND c.condition_id = linked.value
+        WHERE json_valid(t.resource_json) = 1
+      `);
+    }
+    if (needsRelationBackfill) {
+      db.exec(`
+        INSERT OR IGNORE INTO app_task_relations(app_id, source_task_id, relation_kind, target_task_id)
+        SELECT app_id, task_id, 'parent', json_extract(resource_json, '$.spec.parentId')
+        FROM app_tasks
+        WHERE json_valid(resource_json) = 1
+          AND json_type(resource_json, '$.spec.parentId') = 'text'
+          AND json_extract(resource_json, '$.spec.parentId') <> '';
+
+        INSERT OR IGNORE INTO app_task_relations(app_id, source_task_id, relation_kind, target_task_id)
+        SELECT task.app_id, task.task_id, 'dependency', dependency.value
+        FROM app_tasks task
+        JOIN json_each(task.resource_json, '$.spec.dependsOn') dependency
+        WHERE json_valid(task.resource_json) = 1
+          AND dependency.type = 'text'
+          AND dependency.value <> ''
+      `);
+    }
+    db.exec("RELEASE SAVEPOINT task_resource_schema");
+  } catch (error) {
+    try {
+      db.exec("ROLLBACK TO SAVEPOINT task_resource_schema");
+      db.exec("RELEASE SAVEPOINT task_resource_schema");
+    } catch {
+      // Preserve the migration failure.
+    }
+    throw error;
+  }
 }
