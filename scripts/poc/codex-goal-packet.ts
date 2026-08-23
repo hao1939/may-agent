@@ -1,4 +1,4 @@
-import type { TaskReconciliationEvents } from "@may-agent/sdk/app";
+import type { TaskAttempt, TaskReconciliationEvents } from "@may-agent/sdk/app";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -28,7 +28,7 @@ export type CanonicalTaskAttemptPacket = {
     checkpoint?: { summary: string; evidence: string[] };
   };
   observations: {
-    children: JsonRecord[];
+    children: TaskAttempt["children"];
     dependencies: JsonRecord[];
   };
   workspace: {

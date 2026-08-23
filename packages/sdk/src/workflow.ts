@@ -237,6 +237,13 @@ export type TaskAttempt = {
   task: TaskDetail;
   /** Attempt-scoped working directory selected by Runtime. */
   cwd: string;
+  /** App-declared paths this attempt may intentionally produce. */
+  declaredOutputPaths: string[];
+  /** Bounded direct-child facts needed to reconcile parent work. */
+  children: {
+    live: TaskReconciliationChild[];
+    completed: TaskReconciliationChild[];
+  };
   /** Ordered durable Task input not yet accepted by this Task generation. */
   events: TaskReconciliationEvents;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */

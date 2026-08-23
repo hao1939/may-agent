@@ -1811,6 +1811,8 @@ describe("canonical App task runtime", () => {
           expect(attempt.appId).toBe("sample");
           expect(attempt.task.id).toBe("work/registered-executor");
           expect(attempt.cwd).toBe(f.appDir);
+          expect(attempt.declaredOutputPaths).toEqual([]);
+          expect(attempt.children).toEqual({ live: [], completed: [] });
           expect(
             await attempt.publish(`pass-${calls}`, {
               type: "sample.progress",

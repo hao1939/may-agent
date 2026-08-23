@@ -61,6 +61,7 @@ function compactOpaqueId(value: string): string {
 
 function projection(input: {
   localKey: string;
+  executorName: string;
   threadId: string;
   turnId?: string | null;
   data: Record<string, unknown>;
@@ -70,7 +71,7 @@ function projection(input: {
     event: {
       type: CODEX_GOAL_PROGRESS_EVENT,
       data: {
-        executor: "codex-goal-poc",
+        executor: input.executorName,
         threadId: input.threadId,
         ...(input.turnId ? { turnId: input.turnId } : {}),
         ...input.data,
@@ -84,7 +85,10 @@ function projection(input: {
  * event. Token/reasoning deltas and payload-heavy item fields are deliberately
  * ignored; the Task result remains the only terminal answer.
  */
-export function projectCodexGoalProgress(notification: AppServerNotification): CodexGoalProgressProjection | null {
+export function projectCodexGoalProgress(
+  notification: AppServerNotification,
+  executorName = "codex-goal",
+): CodexGoalProgressProjection | null {
   const params = record(notification.params);
   if (!params) return null;
   const threadId = boundedString(params.threadId);
@@ -98,6 +102,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     const status = boundedString(turn?.status, 64);
     return projection({
       localKey: stableLocalKey(stage, threadId, turnId),
+      executorName,
       threadId,
       turnId,
       data: { stage, ...(status ? { status } : {}) },
@@ -115,6 +120,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
       // Status transitions matter; repeated usage updates while the status is
       // unchanged are heartbeat noise and would consume the durable event cap.
       localKey: stableLocalKey("goal-status", threadId, turnId, status),
+      executorName,
       threadId,
       turnId,
       data: {
@@ -144,6 +150,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     if (!message) return null;
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
+      executorName,
       threadId,
       turnId,
       data: { stage: "intermediate", ...base, message },
@@ -155,6 +162,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     if (!message) return null;
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
+      executorName,
       threadId,
       turnId,
       data: { stage: "intermediate", ...base, message },
@@ -168,6 +176,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     if (status === "completed" && (exitCode === null || exitCode === 0)) return null;
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
+      executorName,
       threadId,
       turnId,
       data: {
@@ -185,6 +194,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     const status = boundedString(item.status, 64);
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
+      executorName,
       threadId,
       turnId,
       data: {
@@ -204,6 +214,7 @@ export function projectCodexGoalProgress(notification: AppServerNotification): C
     if (status === "completed") return null;
     return projection({
       localKey: stableLocalKey("item", threadId, turnId, rawItemId),
+      executorName,
       threadId,
       turnId,
       data: {
@@ -229,6 +240,7 @@ function errorMessage(error: unknown): string {
 export class CodexGoalProgressPublisher {
   private readonly publish: (localKey: string, event: AppEvent<Record<string, unknown>>) => Promise<TaskEventReceipt>;
   private readonly maxEvents: number;
+  private readonly executorName: string;
   private readonly seen = new Set<string>();
   private tail: Promise<void> = Promise.resolve();
   private stats: CodexGoalProgressStats = { queued: 0, published: 0, failed: 0, dropped: 0 };
@@ -236,16 +248,18 @@ export class CodexGoalProgressPublisher {
   constructor(input: {
     publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
     maxEvents?: number;
+    executorName?: string;
   }) {
     this.publish = input.publish;
     this.maxEvents = input.maxEvents ?? DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS;
+    this.executorName = input.executorName ?? "codex-goal";
     if (!Number.isSafeInteger(this.maxEvents) || this.maxEvents <= 0) {
       throw new Error("Codex goal progress maxEvents must be a positive integer");
     }
   }
 
   observe(notification: AppServerNotification): void {
-    const projected = projectCodexGoalProgress(notification);
+    const projected = projectCodexGoalProgress(notification, this.executorName);
     if (!projected || this.seen.has(projected.localKey)) return;
     this.seen.add(projected.localKey);
     if (this.stats.queued >= this.maxEvents) {

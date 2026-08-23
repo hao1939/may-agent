@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import {
   taskReconcileResultSchema,
   type AppEvent,
@@ -70,6 +70,7 @@ export type CodexGoalClient = {
 
 export type CodexGoalPocExecutorOptions = {
   stateFile: string;
+  executorName?: string;
   command?: string;
   softStaleAfterMs?: number;
   hardStaleAfterMs?: number;
@@ -84,6 +85,19 @@ const DEFAULT_SOFT_STALE_MS = 2 * 60_000;
 const DEFAULT_HARD_STALE_MS = 10 * 60_000;
 const DEFAULT_CHECK_INTERVAL_MS = 5_000;
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
+const MAX_AGENT_INSTRUCTIONS_BYTES = 48 * 1024;
+
+function selectedAgentInstructions(attempt: TaskAttempt): string {
+  const agent = attempt.task.agent?.trim() || "codex";
+  if (!/^[A-Za-z0-9._-]{1,128}$/.test(agent)) {
+    return `Act as the selected May agent ${JSON.stringify(agent)}.`;
+  }
+  const path = join(attempt.cwd, "agents", agent, "AGENTS.md");
+  if (!existsSync(path)) return `Act as the selected May agent ${agent}.`;
+  const instructions = readFileSync(path, "utf8");
+  if (Buffer.byteLength(instructions) <= MAX_AGENT_INSTRUCTIONS_BYTES) return instructions;
+  return `${instructions.slice(0, MAX_AGENT_INSTRUCTIONS_BYTES)}\n\n[Selected agent instructions truncated by Runtime.]`;
+}
 
 function bindingKey(attempt: TaskAttempt): string {
   return `${attempt.appId}\u0000${attempt.task.id}`;
@@ -202,13 +216,16 @@ function packetFor(attempt: TaskAttempt) {
     },
     role: {
       agent: attempt.task.agent ?? "codex",
-      instructions:
-        "Work only on this bounded Task attempt. In this trial the workspace is read-only; cite exact evidence and do not mutate files or external systems. Progress commentary may become a durable Task event, so summarize without secret values, raw command output, tool payloads, or diffs.",
+      instructions: [
+        selectedAgentInstructions(attempt),
+        "Work only on this bounded Task attempt. The workspace is read-only; cite exact evidence and do not mutate files or external systems.",
+        "Progress commentary may become a durable Task event, so summarize without secret values, raw command output, tool payloads, or diffs.",
+      ].join("\n\n"),
       capabilities: ["read-workspace", "publish-task-event", "receive-task-event"],
     },
     events: attempt.events,
-    observations: { children: [], dependencies: [] },
-    workspace: { cwd: attempt.cwd, declaredOutputPaths: [] },
+    observations: { children: attempt.children, dependencies: [] },
+    workspace: { cwd: attempt.cwd, declaredOutputPaths: attempt.declaredOutputPaths },
     contract: { resultSchema: structuredClone(taskReconcileResultSchema) as unknown as Record<string, unknown> },
     limits: {
       deadlineAt: new Date(Date.now() + DEFAULT_TURN_TIMEOUT_MS).toISOString(),
@@ -249,6 +266,7 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
     const progress = new CodexGoalProgressPublisher({
       publish: attempt.publish,
       maxEvents: maxProgressEvents,
+      executorName: options.executorName ?? "codex-goal",
     });
     const finish = async (result: TaskReconcileResult): Promise<TaskReconcileResult> => {
       const stats = await progress.flush();
