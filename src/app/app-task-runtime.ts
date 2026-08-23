@@ -563,6 +563,8 @@ async function ensureAppAgentRegistered(
 type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
   runId: string | null;
+  /** Live Task events incorporated into this attempt's candidate result. */
+  acceptedLiveEventIds?: number[];
   verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
@@ -1002,6 +1004,7 @@ export function projectAppTaskReconciliationEvents(claim: AppTaskClaim): {
 type RuntimeTaskAttempt = {
   attempt: TaskAttempt;
   events: AppTaskEvents;
+  acceptedLiveEventIds(): number[];
   close(): void;
 };
 
@@ -1033,6 +1036,7 @@ function runtimeTaskAttempt(input: {
     ...(input.event ? { parentEvent: input.event as AgentEvent } : {}),
   });
   const subscriptions = new Set<() => void>();
+  const acceptedLiveEventIds = new Set<number>();
   let closed = false;
   return {
     events,
@@ -1061,7 +1065,13 @@ function runtimeTaskAttempt(input: {
       },
       onEvent(listener) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
-        const unsubscribe = events.onEvent((incoming) => listener(canonicalAppEvent(incoming)));
+        const unsubscribe = events.onEvent((incoming) => {
+          const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
+          listener(canonicalAppEvent(incoming), () => {
+            if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
+            acceptedLiveEventIds.add(eventId);
+          });
+        });
         let subscribed = true;
         const stop = () => {
           if (!subscribed) return;
@@ -1073,6 +1083,7 @@ function runtimeTaskAttempt(input: {
         return stop;
       },
     },
+    acceptedLiveEventIds: () => [...acceptedLiveEventIds].sort((left, right) => left - right),
     close() {
       if (closed) return;
       closed = true;
@@ -2090,7 +2101,9 @@ async function runTaskExecutorAttempt(input: {
   );
   leaseTimer.unref();
   try {
-    return await input.execute(taskAttempt.attempt, taskAttempt.events);
+    const result = await input.execute(taskAttempt.attempt, taskAttempt.events);
+    const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
+    return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
   } finally {
     clearInterval(leaseTimer);
     taskAttempt.close();
@@ -2850,6 +2863,7 @@ async function reconcileTask(input: {
               evidence: primaryHandlerResult.evidence,
               actions: primaryHandlerResult.actions,
               acceptanceBasis,
+              acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             }),
           );
           const appliedDisposition = apply.taskContinues
@@ -2954,6 +2968,7 @@ async function reconcileTask(input: {
             evidence: primaryHandlerResult.evidence,
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,
+            acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           }),
         );
         interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);

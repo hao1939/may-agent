@@ -378,7 +378,8 @@ describe("codex-goal-poc Task executor", () => {
   it("steers queued events into the authoritative next automatic turn", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-turn-transition");
-    let taskEvent: ((event: AppEvent<Record<string, unknown>>) => void) | undefined;
+    let taskEvent: ((event: AppEvent<Record<string, unknown>>, accept: () => void) => void) | undefined;
+    let accepted = false;
     const steered: Array<{ turnId: string; message: string }> = [];
     client.steer = async (input) => {
       steered.push({ turnId: input.turnId, message: input.message });
@@ -389,7 +390,9 @@ describe("codex-goal-poc Task executor", () => {
         method: "turn/completed",
         params: { threadId: client.threadId, turn: { id: "turn-1", status: "completed" } },
       });
-      taskEvent?.({ type: "project.comment.created", data: { comment: "LIVE-STEER-TEST" } });
+      taskEvent?.({ type: "project.comment.created", data: { comment: "LIVE-STEER-TEST" } }, () => {
+        accepted = true;
+      });
       client.emit({
         method: "turn/started",
         params: { threadId: client.threadId, turn: { id: "turn-2", status: "inProgress" } },
@@ -446,5 +449,6 @@ describe("codex-goal-poc Task executor", () => {
     expect(steered).toHaveLength(1);
     expect(steered[0]).toMatchObject({ turnId: "turn-2" });
     expect(steered[0]?.message).toContain("LIVE-STEER-TEST");
+    expect(accepted).toBeTrue();
   });
 });
