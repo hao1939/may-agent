@@ -42,6 +42,47 @@ function attachPersistence(bus: EventBus, root: string): void {
 }
 
 describe("delivery acceptance recording", () => {
+  it("retries transient SQLite contention at the durable event boundary", () => {
+    const root = tempRoot();
+    try {
+      const writer = new DbWriter(root);
+      const db = getDb(root);
+      let beginAttempts = 0;
+      const flakyDb = new Proxy(db as object, {
+        get(target, property) {
+          if (property === "exec") {
+            return (sql: string) => {
+              if (sql === "BEGIN IMMEDIATE" && beginAttempts++ === 0) {
+                throw new Error("database is locked");
+              }
+              return db.exec(sql);
+            };
+          }
+          const value = Reflect.get(target, property);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      (writer as unknown as { db: typeof db }).db = flakyDb as typeof db;
+
+      const event = {
+        type: "handler.started",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "maintenance-proof", handlerRunId: "handler:maintenance-proof:1", agent: "may" },
+      } as any;
+      writer.handler(event);
+
+      expect(beginAttempts).toBe(2);
+      expect(event[EVENT_ROW_ID]).toBeNumber();
+      expect(db.prepare("SELECT event_type FROM events WHERE id = ?").get(event[EVENT_ROW_ID])).toEqual({
+        event_type: "handler.started",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("retries transient SQLite contention instead of leaving an accepted event unhandled", () => {
     const root = tempRoot();
     try {
