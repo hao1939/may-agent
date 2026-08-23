@@ -113,17 +113,16 @@ describe("restart-aware deploy receipts", () => {
     }
   });
 
-  it("injects succeeded verification of SHA, health, wake, and idempotency", () => {
+  it("injects succeeded verification of SHA, health, and idempotency", () => {
     const f = fixture();
     try {
       requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123");
-      settleReceipt(f.path, "succeeded", "abc123", "healthy", true);
+      settleReceipt(f.path, "succeeded", "abc123", "healthy");
       const receipt = readDeployReceiptForTask(f.projectDir, "task-1");
       expect(receipt).toMatchObject({
         phase: "succeeded",
         loadedArtifactSha: "abc123",
         health: "healthy",
-        targetedWake: true,
         duplicateDeploy: false,
       });
       expect(deployReceiptPrompt(f.projectDir, "task-1").join("\n")).toContain("loadedArtifactSha equals artifactSha");
@@ -139,7 +138,7 @@ describe("restart-aware deploy receipts", () => {
       chmodSync(f.path, 0o640);
       const before = statSync(f.path);
 
-      settleReceipt(f.path, "succeeded", "abc123", "healthy", true);
+      settleReceipt(f.path, "succeeded", "abc123", "healthy");
 
       const after = statSync(f.path);
       expect(after.uid).toBe(before.uid);
@@ -160,7 +159,6 @@ describe("restart-aware deploy receipts", () => {
           phase,
           "oldsha",
           phase === "rolled_back" ? "healthy" : "unhealthy",
-          true,
           "health-check-failed",
         );
         const prompt = deployReceiptPrompt(f.projectDir, "task-1").join("\n");
@@ -194,14 +192,18 @@ describe("restart-aware deploy receipts", () => {
     }
   });
 
-  it("records a targeted wake only after the restarter emits it successfully", () => {
+  it("settles terminal receipt state before emitting its best-effort task wake", () => {
     const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
-    expect(restarter.indexOf("emit_wake succeeded")).toBeLessThan(
-      restarter.indexOf('settle succeeded "$loaded" healthy true'),
+    expect(restarter.indexOf('settle succeeded "$loaded" healthy')).toBeLessThan(
+      restarter.indexOf("emit_wake succeeded"),
     );
-    expect(restarter).toContain("if emit_wake rolled_back; then rollback_wake=true; fi");
-    expect(restarter).toContain('settle rolled_back "$loaded" "$rollback_health" "$rollback_wake"');
-    expect(restarter).toContain('settle failed "$loaded" unhealthy false "restarter-exit-$rc"');
+    expect(restarter).toContain(
+      'emit_wake succeeded || echo "[may-agent-restarter] terminal task wake failed; periodic recovery will observe the settled receipt"',
+    );
+    expect(restarter.indexOf('settle rolled_back "$loaded" "$rollback_health" health-check-failed')).toBeLessThan(
+      restarter.indexOf("emit_wake rolled_back"),
+    );
+    expect(restarter).toContain('settle failed "$loaded" unhealthy "restarter-exit-$rc"');
   });
 
   it("uses the same startup-sized health wait for deployment and rollback", () => {
@@ -261,7 +263,7 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain("docker exec -u root");
     expect(deploy).toContain("fail_restarter_launch docker-launch-failed");
     expect(deploy).toContain("fail_restarter_launch supervisor-launch-failed");
-    expect(deploy).toContain('deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false "$failure"');
+    expect(deploy).toContain('deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy "$failure"');
     const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
     expect(restarter).toContain(
       'receipt_tool="${MAY_AGENT_DEPLOY_RECEIPT_TOOL:-/app/projects/may-agent/bundle/deploy-receipt.ts}"',

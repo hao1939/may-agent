@@ -91,7 +91,7 @@ export function requestReceipt(
       phase: "requested",
       requestedAt: new Date().toISOString(),
       verification:
-        "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, duplicateDeploy is false, then complete the owner task without redeploying.",
+        "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
     });
     return true;
   } finally {
@@ -104,7 +104,6 @@ export function settleReceipt(
   phase: Exclude<DeployReceiptPhase, "requested">,
   loadedArtifactSha: string,
   health: "healthy" | "unhealthy",
-  targetedWake: boolean,
   failure?: string,
 ): void {
   const receipt = JSON.parse(readFileSync(path, "utf8"));
@@ -115,7 +114,6 @@ export function settleReceipt(
     completedAt: new Date().toISOString(),
     loadedArtifactSha,
     health,
-    targetedWake,
     duplicateDeploy: false,
     ...(failure ? { failure } : {}),
   });
@@ -143,12 +141,12 @@ if (import.meta.main) {
       process.exit(73);
     }
   } else if (command === "settle") {
-    const [phaseArg, shaArg, healthArg, wakeArg, failureArg] = args;
+    const [phaseArg, shaArg, healthArg, failureArg] = args;
     if (phaseArg !== "succeeded" && phaseArg !== "failed" && phaseArg !== "rolled_back") {
       throw new Error("Invalid terminal deploy phase");
     }
     if (healthArg !== "healthy" && healthArg !== "unhealthy") throw new Error("Invalid health value");
-    settleReceipt(path, phaseArg, shaArg ?? "unknown", healthArg, wakeArg === "true", failureArg);
+    settleReceipt(path, phaseArg, shaArg ?? "unknown", healthArg, failureArg);
   } else {
     throw new Error(`Unknown deploy receipt command: ${command}`);
   }

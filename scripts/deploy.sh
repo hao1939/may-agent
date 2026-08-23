@@ -115,7 +115,7 @@ deploy_in_container='install -m 755 /app/projects/may-agent/bundle/may-agent-sup
 
 fail_restarter_launch() {
   failure="$1"
-  bun scripts/deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false "$failure"
+  bun scripts/deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy "$failure"
   echo "Cannot start the live may-agent restarter: $failure" >&2
   exit 1
 }
