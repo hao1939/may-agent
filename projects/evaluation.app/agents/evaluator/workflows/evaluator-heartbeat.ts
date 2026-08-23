@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import {
   admitTaskReconcileResult,
   taskAgentResultSchema,
+  type Condition,
   type ExecutionResult,
   type TaskAction,
   type TaskReconcileResult,
@@ -31,6 +33,77 @@ function fallbackResult(summary: string, evidence: string[]): AgentResult {
     evidence: evidence.slice(0, 32),
     actions: [],
   };
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    return `{${Object.keys(object)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(object[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+function conditionSpecification(condition: Condition): string {
+  const { id: _id, ...specification } = condition;
+  return canonicalJson(specification);
+}
+
+function stableConditionId(condition: Condition): string {
+  const digest = createHash("sha256")
+    .update(conditionSpecification(condition))
+    .digest("hex")
+    .slice(0, 24);
+  return `${condition.id}:spec-${digest}`;
+}
+
+function preserveConditionIdentities(
+  result: AgentResult,
+  reconciliation: TaskReconciliationContext<OwnerReviewInput>,
+): AgentResult {
+  if (!result.conditions?.length) return result;
+
+  const existingById = new Map<string, Set<string>>();
+  for (const child of [
+    ...reconciliation.children.live,
+    ...reconciliation.children.completed,
+  ]) {
+    for (const condition of child.conditions) {
+      const specifications =
+        existingById.get(condition.id) ?? new Set<string>();
+      specifications.add(conditionSpecification(condition));
+      existingById.set(condition.id, specifications);
+    }
+  }
+
+  const remapped: string[] = [];
+  const conditions = result.conditions.map((condition) => {
+    const existing = existingById.get(condition.id);
+    if (
+      !existing ||
+      [...existing].every(
+        (specification) => specification === conditionSpecification(condition),
+      )
+    ) {
+      return condition;
+    }
+    const id = stableConditionId(condition);
+    remapped.push(`condition-identity-remapped:${condition.id}->${id}`);
+    return { ...condition, id };
+  });
+
+  return remapped.length === 0
+    ? result
+    : {
+        ...result,
+        conditions,
+        evidence: [...result.evidence, ...remapped].slice(0, 32),
+      };
 }
 
 function allowedExistingTarget(
@@ -91,7 +164,10 @@ export function normalizeAgentResult(
     );
   }
 
-  const admitted = admission.result as AgentResult;
+  const admitted = preserveConditionIdentities(
+    admission.result as AgentResult,
+    reconciliation,
+  );
   if (
     admitted.state === "waiting" &&
     (!admitted.conditions || admitted.conditions.length === 0)

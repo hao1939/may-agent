@@ -36,7 +36,15 @@ function reconciliation(
           outcome: "Keep pipeline health current.",
           evidence: [],
           input: {},
-          conditions: [],
+          conditions: [
+            {
+              id: "app-request:appdep_shared",
+              type: "app.dependency.completed",
+              subject: "id:appdep_shared",
+              expected: { field: "status", equals: "done" },
+              owner: "evaluator",
+            },
+          ],
           hasLiveChildren: false,
           status: "waiting",
         },
@@ -200,6 +208,60 @@ describe("evaluator heartbeat", () => {
         defaultParentId: "runtime/owner-review",
       }),
     ).toMatchObject({ ok: true, result: { state: "waiting" } });
+  });
+
+  test("reuses a dependency Condition identity only for an unchanged specification", () => {
+    const unchanged = {
+      state: "waiting" as const,
+      summary: "Wait for the shared dependency.",
+      evidence: ["dependency remains open"],
+      conditions: [
+        {
+          id: "app-request:appdep_shared",
+          type: "app.dependency.completed",
+          subject: "id:appdep_shared",
+          expected: { equals: "done", field: "status" },
+          owner: "evaluator",
+        },
+      ],
+    };
+
+    const first = normalizeAgentResult(unchanged, reconciliation());
+    const repeated = normalizeAgentResult(unchanged, reconciliation());
+
+    expect(first.conditions?.[0]?.id).toBe("app-request:appdep_shared");
+    expect(repeated.conditions?.[0]?.id).toBe(first.conditions?.[0]?.id);
+    expect(first.evidence).not.toContainEqual(
+      expect.stringContaining("condition-identity-remapped:"),
+    );
+  });
+
+  test("allocates a distinct stable dependency Condition identity when its specification changes", () => {
+    const changed = {
+      state: "waiting" as const,
+      summary: "Wait for a different dependency outcome.",
+      evidence: ["dependency specification changed"],
+      conditions: [
+        {
+          id: "app-request:appdep_shared",
+          type: "app.dependency.completed",
+          subject: "id:appdep_shared",
+          expected: { field: "status", equals: "converged" },
+          owner: "evaluator",
+        },
+      ],
+    };
+
+    const first = normalizeAgentResult(changed, reconciliation());
+    const repeated = normalizeAgentResult(changed, reconciliation());
+    const changedId = first.conditions?.[0]?.id;
+
+    expect(changedId).toStartWith("app-request:appdep_shared:spec-");
+    expect(changedId).not.toBe("app-request:appdep_shared");
+    expect(repeated.conditions?.[0]?.id).toBe(changedId);
+    expect(first.evidence).toContain(
+      `condition-identity-remapped:app-request:appdep_shared->${changedId}`,
+    );
   });
 
   test("rejects malformed output as a visible no-op without self-waking the reviewed task", async () => {
