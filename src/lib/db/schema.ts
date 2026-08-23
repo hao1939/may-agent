@@ -270,9 +270,6 @@ CREATE TABLE IF NOT EXISTS event_trace_links (
 CREATE INDEX IF NOT EXISTS idx_event_trace_links_from ON event_trace_links(from_event_id, type);
 CREATE INDEX IF NOT EXISTS idx_event_trace_links_to ON event_trace_links(to_event_id, type);
 
-INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
-SELECT id, 'event:' || id, NULL, 'default' FROM events;
-
 CREATE TRIGGER IF NOT EXISTS trg_events_default_trace
 AFTER INSERT ON events
 BEGIN
@@ -565,6 +562,11 @@ export function applyDbSchema(db: SqliteDb): void {
   // process cannot observe a table between rename, rebuild, and copy.
   db.exec("BEGIN IMMEDIATE");
   try {
+    // Only databases created before event traces existed need the historical
+    // backfill. Once the table exists, the insert trigger below owns all new
+    // rows; rescanning the complete event journal on every process start makes
+    // startup proportional to retained history.
+    const needsEventTraceBackfill = tableExists(db, "events") && !tableExists(db, "event_traces");
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppInboxWaitKinds(db);
@@ -573,6 +575,12 @@ export function applyDbSchema(db: SqliteDb): void {
     // reference added to the canonical schema.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec(SCHEMA);
+    if (needsEventTraceBackfill) {
+      db.exec(`
+        INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+        SELECT id, 'event:' || id, NULL, 'default' FROM events
+      `);
+    }
     ensureTaskResourceSchema(db);
     ensureExistingAppInboxDeliveryShape(db);
     ensureExistingEventsTableColumns(db);
