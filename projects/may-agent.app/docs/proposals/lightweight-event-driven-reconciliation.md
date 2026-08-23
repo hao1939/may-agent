@@ -1118,6 +1118,26 @@ Package metadata is now embedded, and the archive build injects the immutable
 source commit instead of inferring identity from the runtime working tree.
 Production activation and a retained-state quiet window remain outstanding.
 
+### Startup and maintenance checkpoint (2026-08-23)
+
+Startup no longer runs an unconditional SQLite integrity scan over retained
+history. In the measured deployment, total startup fell from 44.454 seconds to
+6.669 seconds and the database phase fell from 35.657 seconds to 39
+milliseconds. This removes history-proportional work from the ordinary startup
+path without deleting historical data or changing the existing bounded
+retention policy.
+
+A production failure also identified a separate maintenance boundary: the
+bounded retention transaction held SQLite's writer lock long enough for EventHub
+persistence to time out and terminate the daemon. The EventHub now has an index
+on event timestamp, retries writer contention only at the small durable event
+insertion boundary, and retries bounded schema startup when another process is
+applying a legitimate upgrade. Under the same active workload, scheduled
+maintenance deleted only records selected by the existing policy, checkpointed
+successfully in 6.642 seconds, and completed without restarting the daemon.
+These repairs keep publication durable and recovery bounded; they do not add a
+queue, another worker lifecycle, or broad cleanup.
+
 ### Phase 0: freeze the contract and expose cost
 
 - Add deterministic tests for the structural properties above.
