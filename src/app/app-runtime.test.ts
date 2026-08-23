@@ -61,9 +61,11 @@ describe("app runtime startup order", () => {
     expect(source).not.toContain("createManagerAppOwnerInvoker");
   });
 
-  it("publishes inbox and canonical task routes in one registry transaction", () => {
+  it("publishes source, inbox, and canonical task routes in one registry transaction", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("appTasks.publishGeneration({ snapshot, publish: commit })");
+    expect(source).toContain("appTasks.publishGeneration({");
+    expect(source).toContain("appSources.activate(candidate);");
+    expect(source).toContain("commit();");
   });
 
   it("reloads App generations explicitly instead of polling every source file", () => {

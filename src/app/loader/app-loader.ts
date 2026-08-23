@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import type { AppDefinition } from "@may-agent/sdk";
 import { importRuntimeModule, type RuntimeImportOptions } from "../../lib/runtime-import.js";
 import { assertValidAppDefinition } from "../app-definition-validation.js";
@@ -29,6 +29,7 @@ export function listAppDefinitionFiles(projectsRoot: string): string[] {
 export async function loadAppDefinitions(
   projectsRoot: string,
   importOptions: RuntimeImportOptions = {},
+  canonicalProjectsRoot = projectsRoot,
 ): Promise<LoadedAppDefinition[]> {
   const loaded: LoadedAppDefinition[] = [];
   const ids = new Set<string>();
@@ -41,7 +42,8 @@ export async function loadAppDefinitions(
     assertValidAppDefinition(definition);
     if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
     ids.add(definition.id);
-    loaded.push({ appDir: resolve(modulePath, ".."), definition });
+    const sourceAppDir = resolve(modulePath, "..");
+    loaded.push({ appDir: resolve(canonicalProjectsRoot, basename(sourceAppDir)), definition });
   }
   return loaded;
 }

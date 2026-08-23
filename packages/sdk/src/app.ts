@@ -186,6 +186,7 @@ export type AppTaskPolicy = {
 export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
   id: string;
   version: 1;
+  /** Default managed worker for bounded attempts; this App owns its durable Tasks. */
   owner: string;
   description?: string;
   inputSchema: TInputSchema;
