@@ -22,10 +22,16 @@ import type { Cron } from "./cron.js";
 import { currentAgentSessionId } from "../lib/agent-session-context.js";
 import {
   loadAgents as loadAgentsFromRegistry,
+  prepareAgents as prepareAgentsFromRegistry,
+  publishAgentGeneration as publishAgentGenerationFromRegistry,
   reloadAgents as reloadAgentsFromRegistry,
+  discardAgentGeneration,
+  type AgentGenerationPublication,
   type AgentLoaderOptions,
+  type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
 import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
+import { activateAgentCrons } from "./cron-activation.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export {
@@ -75,6 +81,60 @@ function addCleanup(agentName: string, fn: () => void): void {
   }
 }
 
+function publishResources(opts: AgentLoaderOptions, generation: PreparedAgentGeneration): AgentGenerationPublication {
+  const previousCrons = new Map(agentCrons);
+  const previousCleanups = new Map([...agentCleanups].map(([name, cleanups]) => [name, [...cleanups]]));
+
+  try {
+    agentCrons.clear();
+    for (const [name, cron] of generation.crons) agentCrons.set(name, cron);
+    // Keep cleanup callbacks for already-running sessions and add the callbacks
+    // captured by the new definitions. They are retired naturally when the
+    // corresponding session ends.
+    for (const [name, cleanups] of generation.cleanups) {
+      const existing = agentCleanups.get(name);
+      if (existing) existing.push(...cleanups);
+      else agentCleanups.set(name, [...cleanups]);
+    }
+    if (opts.cronEnabled) activateAgentCrons(generation.crons, opts.bus);
+  } catch (error) {
+    discardAgentGeneration(generation);
+    agentCrons.clear();
+    for (const [name, cron] of previousCrons) agentCrons.set(name, cron);
+    agentCleanups.clear();
+    for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
+    throw error;
+  }
+
+  let settled = false;
+  return {
+    rollback() {
+      if (settled) return;
+      settled = true;
+      discardAgentGeneration(generation);
+      agentCrons.clear();
+      for (const [name, cron] of previousCrons) agentCrons.set(name, cron);
+      agentCleanups.clear();
+      for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
+    },
+    finalize() {
+      if (settled) return;
+      settled = true;
+      const retained = new Set(generation.crons.values());
+      for (const cron of previousCrons.values()) {
+        if (!retained.has(cron)) cron.close();
+      }
+    },
+  };
+}
+
+function registryRuntime(opts: AgentLoaderOptions) {
+  return {
+    getAgentSessionId,
+    publishResources: (generation: PreparedAgentGeneration) => publishResources(opts, generation),
+  };
+}
+
 /** Run all cleanup functions for an agent and clear the list. */
 export function runAgentCleanup(agentName: string): void {
   const fns = agentCleanups.get(agentName);
@@ -95,12 +155,24 @@ export function runAgentCleanup(agentName: string): void {
  * take effect on next session. Active sessions keep their old config.
  */
 export async function loadAgents(opts: AgentLoaderOptions) {
-  return loadAgentsFromRegistry(opts, {
-    getAgentSessionId,
-    getAgentCrons,
-    setAgentCron: (agentName, cron) => agentCrons.set(agentName, cron),
-    addCleanup,
-  });
+  return loadAgentsFromRegistry(opts, registryRuntime(opts));
+}
+
+/** Prepare every definition and side-effect container without publication. */
+export async function prepareAgentGeneration(opts: AgentLoaderOptions): Promise<PreparedAgentGeneration> {
+  const generation = await prepareAgentsFromRegistry(opts, registryRuntime(opts));
+  const handlers = await loadHandlersForAgentCrons({ ...opts, agentCrons: generation.crons });
+  if (handlers.errors.length === 0) return generation;
+  discardAgentGeneration(generation);
+  throw new Error(`Agent handler preparation failed:\n${handlers.errors.map((error) => `  ${error}`).join("\n")}`);
+}
+
+/** Publish a prepared generation synchronously; caller finalizes or rolls it back. */
+export function publishPreparedAgentGeneration(
+  opts: AgentLoaderOptions,
+  generation: PreparedAgentGeneration,
+): AgentGenerationPublication {
+  return publishAgentGenerationFromRegistry(opts, registryRuntime(opts), generation);
 }
 
 /**
@@ -111,12 +183,7 @@ export async function loadAgents(opts: AgentLoaderOptions) {
 export async function reloadAgents(
   opts: AgentLoaderOptions,
 ): Promise<{ added: string[]; updated: string[]; errors: string[] }> {
-  return reloadAgentsFromRegistry(opts, {
-    getAgentSessionId,
-    getAgentCrons,
-    setAgentCron: (agentName, cron) => agentCrons.set(agentName, cron),
-    addCleanup,
-  });
+  return reloadAgentsFromRegistry(opts, registryRuntime(opts));
 }
 
 /**

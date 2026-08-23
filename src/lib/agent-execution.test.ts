@@ -175,9 +175,12 @@ describe("shared agent execution preparation", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-preparation-"));
     roots.push(root);
     const agentDir = join(root, "agents", "sample");
+    const definitionSharedRoot = join(root, "release", "shared");
     mkdirSync(join(root, "shared"), { recursive: true });
+    mkdirSync(definitionSharedRoot, { recursive: true });
     mkdirSync(agentDir, { recursive: true });
-    writeFileSync(join(root, "shared", "common-sense.md"), "shared rules\n");
+    writeFileSync(join(root, "shared", "common-sense.md"), "mutable rules\n");
+    writeFileSync(join(definitionSharedRoot, "common-sense.md"), "released shared rules\n");
     writeFileSync(join(agentDir, "AGENTS.md"), "sample identity\n");
 
     const prepared = prepareAgentExecution({
@@ -187,6 +190,7 @@ describe("shared agent execution preparation", () => {
         domain: "tests",
         agentDir,
         projectRoot: root,
+        sharedRoot: definitionSharedRoot,
         model: { contextWindow: 10_000 } as any,
         tools: [tool("read"), tool("finish")],
       },
@@ -203,7 +207,8 @@ describe("shared agent execution preparation", () => {
     expect(prepared.tools.find((candidate) => candidate.name === "finish")?.executionMode).toBe("sequential");
     expect(prepared.runner.sessionId).toBe("direct-1");
     expect(prepared.runner.streamFn).toBeFunction();
-    expect(prepared.systemPrompt).toContain("shared rules\n\nsample identity");
+    expect(prepared.systemPrompt).toContain("released shared rules\n\nsample identity");
+    expect(prepared.systemPrompt).not.toContain("mutable rules");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
     expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
   });

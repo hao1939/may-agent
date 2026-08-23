@@ -35,6 +35,9 @@ export interface SubagentDefinition {
   /** Project root / exec cwd. Injected into system prompt as a concrete runtime fact. */
   projectRoot?: string;
 
+  /** Immutable shared prompt/skill source selected with this definition generation. */
+  sharedRoot?: string;
+
   // Capabilities
   tools: AgentTool[];
   model: Model<any>;

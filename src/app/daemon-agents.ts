@@ -17,6 +17,7 @@ import type { HostCapacity } from "./host-capacity.js";
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
   sharedRoot: string;
+  definitionSharedRoot: string;
   projectsRoot: string;
   projectRoot: string;
   persistDir: string;
@@ -34,6 +35,7 @@ export async function prepareDaemonAgents(opts: {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
+    definitionSharedRoot: opts.definitionSharedRoot,
     projectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
@@ -116,7 +118,7 @@ export async function prepareDaemonAgents(opts: {
         addCleanup: () => {},
       }),
       projectRoot: opts.projectRoot,
-      sharedRoot: opts.sharedRoot,
+      sharedRoot: opts.definitionSharedRoot,
       globalAgentsRoot: opts.agentsRoot,
       appLocal: true,
     });
