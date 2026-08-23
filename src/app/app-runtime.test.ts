@@ -52,7 +52,7 @@ describe("app runtime startup order", () => {
     expect(source).not.toContain("setEventPublisher");
   });
 
-  it("uses configured Host capacity without an App-owner execution path", () => {
+  it("uses configured Host capacity without a separate App-agent execution path", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).toContain("const hostCapacity = new HostCapacity");
     expect(source).toContain("process.env.MAY_HOST_MAX_CONCURRENT ?? 4");

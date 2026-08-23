@@ -21,16 +21,11 @@ export function readJson<T>(path: string, fallback: T): T {
   }
 }
 
-export function resolveAppDir(
-  projectDir: string,
-  explicitAppDir?: string,
-): string {
+export function resolveAppDir(projectDir: string, explicitAppDir?: string): string {
   if (explicitAppDir) return explicitAppDir;
-  const siblingAppDir = projectDir.endsWith(".app")
-    ? projectDir
-    : `${projectDir}.app`;
+  const siblingAppDir = projectDir.endsWith(".app") ? projectDir : `${projectDir}.app`;
   if (existsSync(join(siblingAppDir, "project.json"))) return siblingAppDir;
-  throw new Error(`Cannot resolve sibling Agent App for workspace ${projectDir}`);
+  throw new Error(`Cannot resolve sibling App for workspace ${projectDir}`);
 }
 
 export function parseTriggerEvent(raw: string): TriggerEvent | null {
@@ -52,10 +47,7 @@ export function triggerValue(event: TriggerEvent | null, key: string): unknown {
       : event?.[key];
 }
 
-function triggerNumber(
-  event: TriggerEvent | null,
-  key: string,
-): number | undefined {
+function triggerNumber(event: TriggerEvent | null, key: string): number | undefined {
   const value = triggerValue(event, key);
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim()) {
@@ -93,15 +85,8 @@ export function triggerBlock(raw: string): string {
   return raw.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
 }
 
-export function maxConcurrent(
-  raw: string,
-  trigger: TriggerEvent | null,
-  fallback = 3,
-): number {
+export function maxConcurrent(raw: string, trigger: TriggerEvent | null, fallback = 3): number {
   const match = raw.match(/^maxConcurrent:\s*(.+)$/m);
   const fromTask = Number.parseInt(match?.[1]?.trim() ?? "", 10);
-  return Math.max(
-    1,
-    triggerNumber(trigger, "maxConcurrent") || fromTask || fallback,
-  );
+  return Math.max(1, triggerNumber(trigger, "maxConcurrent") || fromTask || fallback);
 }

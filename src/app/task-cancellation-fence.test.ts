@@ -82,9 +82,9 @@ describe("Task cancellation fence", () => {
     expect(
       claimObservedAppTask(config, {
         taskId: "work",
-        appOwner: "may",
+        appAgent: "may",
         handler: "auto",
-        isOwnerRunnable: () => true,
+        isAgentRunnable: () => true,
       }),
     ).toEqual({ kind: "completed", taskId: "work", generation: 1 });
     expect(store.listRecoveryCandidates().items).toEqual([]);

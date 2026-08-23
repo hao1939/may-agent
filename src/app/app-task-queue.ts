@@ -1,5 +1,5 @@
 /**
- * A small level-triggered work queue for one Agent App.
+ * A small level-triggered work queue for one App.
  *
  * Queue entries are task IDs only. Resource state remains in the task store.
  * Repeated wakes collapse while pending; a wake received during reconciliation

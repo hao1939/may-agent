@@ -332,10 +332,19 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
-  } else if (options.toolPolicy === "deputy" || options.toolPolicy === "app-owner-deputy") {
+  } else if (
+    options.toolPolicy === "deputy" ||
+    options.toolPolicy === "app-agent-deputy" ||
+    options.toolPolicy === "app-owner-deputy"
+  ) {
     tools = tools.filter((tool) => DEPUTY_TOOL_ALLOWLIST.has(tool.name));
   }
-  if (options.toolPolicy === "app-owner-full" || options.toolPolicy === "app-owner-deputy") {
+  if (
+    options.toolPolicy === "app-agent-full" ||
+    options.toolPolicy === "app-agent-deputy" ||
+    options.toolPolicy === "app-owner-full" ||
+    options.toolPolicy === "app-owner-deputy"
+  ) {
     tools = tools.filter((tool) => !APP_OWNER_TOOL_DENYLIST.has(tool.name));
   }
   if (!requireFinish) return applyToolExecutionPolicy(tools);

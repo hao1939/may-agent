@@ -366,7 +366,7 @@ describe("App inbox store", () => {
     expect(getAppInboxItem(db, "item-1")?.result).toEqual({ summary: "finished" });
   });
 
-  it("fences owner session association and clears it when the item waits", () => {
+  it("fences agent session association and clears it when the item waits", () => {
     create("item-1", { now: 100 });
     const claim = claimAppInboxItem(db, "item-1", "worker-1", 50, 100)!;
 

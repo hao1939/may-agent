@@ -52,9 +52,7 @@ describe("cron startup recovery", () => {
         const persisted = session(appDir, "workflow:task-handler", "app-task-reconciler");
         persisted.task +=
           '\n\n## Reconciliation Task\n```json\n{"appId":"sample","taskId":"work/legacy","generation":1}\n```';
-        expect(
-          shouldResumeStartupSession(sessionId, persisted),
-        ).toEqual({
+        expect(shouldResumeStartupSession(sessionId, persisted)).toEqual({
           resume: false,
           reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
         });
@@ -68,7 +66,7 @@ describe("cron startup recovery", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-task-worker-app-"));
     try {
       const persisted = session(appDir, "workflow:domain-task-execution", "app-task-reconciler");
-      persisted.task = "Execute the bounded reconciliation task below.\n\n{\"appId\":\"sample\",\"taskId\":\"work\"}";
+      persisted.task = 'Execute the bounded reconciliation task below.\n\n{"appId":"sample","taskId":"work"}';
       expect(shouldResumeStartupSession("task-worker-session", persisted)).toEqual({
         resume: false,
         reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
@@ -104,14 +102,14 @@ describe("cron startup recovery", () => {
     }
   });
 
-  it("lets the App inbox fence and replace an interrupted owner attempt", () => {
-    expect(shouldResumeStartupSession("app-owner-session", session("/tmp/evaluation.app", "app-inbox-owner"))).toEqual({
+  it("lets the App inbox fence and replace an interrupted legacy agent attempt", () => {
+    expect(shouldResumeStartupSession("app-agent-session", session("/tmp/evaluation.app", "app-inbox-owner"))).toEqual({
       resume: false,
-      reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
+      reason: "Legacy App inbox agent sessions are replaced by Task reconciliation",
     });
     expect(shouldResumeStartupSession("human-app-owner", session("/tmp/may.app", "telegram", "app-inbox"))).toEqual({
       resume: false,
-      reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
+      reason: "Legacy App inbox agent sessions are replaced by Task reconciliation",
     });
   });
 

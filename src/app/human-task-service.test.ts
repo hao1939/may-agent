@@ -84,7 +84,7 @@ function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt:
       outcome: `Finish ${taskId}`,
       acceptance: ["done"],
       owner: `${appId}-owner`,
-      handler: "owner",
+      handler: "agent",
       summary: `${taskId} finished`,
       response: `${taskId} result`,
       evidence: ["proof"],
@@ -210,7 +210,9 @@ describe("Human Task service", () => {
   test("keeps list cards bounded and reserves full results for exact detail", () => {
     const db = database();
     insertReceipt(db, "alpha", "large", 20);
-    const row = db.prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = 'alpha' AND receipt_id = 'large'").get() as {
+    const row = db
+      .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = 'alpha' AND receipt_id = 'large'")
+      .get() as {
       receipt_json: string;
     };
     const receipt = JSON.parse(row.receipt_json);
@@ -257,7 +259,7 @@ describe("Human Task service", () => {
         taskGeneration: 2,
         specHash: "hash",
         owner: "alpha-owner",
-        handler: "owner:alpha-owner",
+        handler: "agent:alpha-owner",
         runtimeId: "runtime",
         state: "running",
         reason: "test",
@@ -279,9 +281,7 @@ describe("Human Task service", () => {
     });
 
     expect(result).toMatchObject({ status: "cancelled", terminal: true, cancellable: false });
-    expect(cancelled).toEqual([
-      { appId: "alpha", taskId: "work", sessionId: "session-1", reason: "no longer needed" },
-    ]);
+    expect(cancelled).toEqual([{ appId: "alpha", taskId: "work", sessionId: "session-1", reason: "no longer needed" }]);
     expect(service.listTasks().items).toEqual([]);
     expect(service.listTasks({ includeDone: true }).items).toEqual([
       expect.objectContaining({ taskId: "work", status: "cancelled" }),

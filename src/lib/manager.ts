@@ -1015,7 +1015,7 @@ export class SubagentManager {
 
     try {
       for (const dirName of listActiveSessionIds(this._persistDir)) {
-        // Agent App installation may start controller work before startup
+        // App installation may start controller work before startup
         // recovery scans the durable session directory. A session already in
         // this manager is current work, never a stale session from a prior
         // process.

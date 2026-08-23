@@ -8,6 +8,7 @@ export {
   conditionSchema,
   isTypedConditionSubject,
   taskActionSchema,
+  taskAgentResultSchema,
   taskOwnerResultSchema,
   taskReconcileResultSchema,
   taskVerificationResultSchema,

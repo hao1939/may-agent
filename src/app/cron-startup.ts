@@ -42,7 +42,7 @@ export function shouldResumeStartupSession(
   if (session.recoveryOwner === LEGACY_APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
       resume: false,
-      reason: "Legacy App inbox owner sessions are replaced by Task reconciliation",
+      reason: "Legacy App inbox agent sessions are replaced by Task reconciliation",
     };
   }
   if (
@@ -50,6 +50,7 @@ export function shouldResumeStartupSession(
     (typeof session.taskId === "string" && session.taskId.trim()) ||
     (typeof session.projectTaskId === "string" && session.projectTaskId.trim()) ||
     parseAppTaskSessionBinding(session.task) ||
+    session.source === "app-task-agent" ||
     session.source === "app-task-owner" ||
     session.source === "project-app-task-owner"
   ) {

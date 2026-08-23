@@ -2632,7 +2632,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         available: false,
         path,
         treePath: null,
-        reason: "Project has no Agent App task attachment.",
+        reason: "Project has no App task attachment.",
       });
     }
     const treePath = projectRuntimePaths(appDir).taskTreePath;
@@ -2643,7 +2643,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         available: false,
         path,
         treePath: `${projectNameFromPath(path)}.app/.state/tasks/tree.json`,
-        reason: "Agent App does not attach task reconciliation.",
+        reason: "App does not attach task reconciliation.",
       });
     }
 
@@ -2774,7 +2774,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
     const appDir = appDirForPath(path);
-    if (!appDir) return json({ error: "Project has no Agent App task attachment." }, 404);
+    if (!appDir) return json({ error: "Project has no App task attachment." }, 404);
     const identity = projectTaskIdentity(path, appDir);
     const treePath = projectRuntimePaths(appDir).taskTreePath;
     let model: ReturnType<typeof buildProjectTasksReadModel> | null = null;

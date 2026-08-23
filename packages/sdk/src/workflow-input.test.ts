@@ -32,6 +32,6 @@ describe("resolveAppDir", () => {
     mkdirSync(join(root, ".app"), { recursive: true });
     writeFileSync(join(root, ".app", "project.json"), "{}\n");
 
-    expect(() => resolveAppDir(root)).toThrow("Cannot resolve sibling Agent App");
+    expect(() => resolveAppDir(root)).toThrow("Cannot resolve sibling App");
   });
 });

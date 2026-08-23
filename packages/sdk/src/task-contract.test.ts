@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { Check } from "typebox/value";
-import { admitTaskReconcileResult, admitTaskVerificationResult, taskOwnerResultSchema } from "./task-contract.js";
+import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultSchema } from "./task-contract.js";
 
-const workflowOptions = { allowNeedsOwner: true, defaultParentId: "app-root" };
+const workflowOptions = { allowNeedsAgent: true, defaultParentId: "app-root" };
 
 describe("project task handler contract", () => {
   it("preserves a caller response separately from task summary", () => {
@@ -224,7 +224,7 @@ describe("project task handler contract", () => {
             taskId: "work/stale",
             expectedGeneration: 3,
             workflow: null,
-            owner: "scout",
+            agent: "scout",
           },
         ],
       },
@@ -238,6 +238,51 @@ describe("project task handler contract", () => {
       workflow: null,
       owner: "scout",
     });
+  });
+
+  it("normalizes a canonical agent removal and rejects conflicting update aliases", () => {
+    const removed = admitTaskReconcileResult(
+      {
+        state: "converged",
+        summary: "Use the inherited App agent",
+        evidence: [],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: "work/stale-agent",
+            expectedGeneration: 4,
+            agent: null,
+          },
+        ],
+      },
+      workflowOptions,
+    );
+    expect(removed.ok && removed.result.actions?.[0]).toEqual({
+      kind: "update-task",
+      taskId: "work/stale-agent",
+      expectedGeneration: 4,
+      owner: null,
+    });
+
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "Ambiguous update",
+          evidence: [],
+          actions: [
+            {
+              kind: "update-task",
+              taskId: "work/ambiguous",
+              expectedGeneration: 2,
+              agent: null,
+              owner: "specialist",
+            },
+          ],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "actions[0].agent conflicts with legacy owner" });
   });
 
   it("admits one executor selection and rejects ambiguous workflow binding", () => {
@@ -332,15 +377,27 @@ describe("project task handler contract", () => {
   it("keeps failure outside the public handler states", () => {
     expect(
       admitTaskReconcileResult({ state: "failed", summary: "attempt failed", evidence: [] }, workflowOptions),
-    ).toEqual({ ok: false, error: "state must be converged, waiting, or needs-owner" });
+    ).toEqual({ ok: false, error: "state must be converged, waiting, or needs-agent" });
   });
 
-  it("allows needs-owner only at the workflow boundary", () => {
-    const output = { state: "needs-owner", summary: "Novel judgment", evidence: ["scope:novel"] };
+  it("allows needs-agent only at the workflow boundary", () => {
+    const output = { state: "needs-agent", summary: "Novel judgment", evidence: ["scope:novel"] };
     expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(true);
-    expect(admitTaskReconcileResult(output, { ...workflowOptions, allowNeedsOwner: false })).toEqual({
+    expect(admitTaskReconcileResult(output, { ...workflowOptions, allowNeedsAgent: false })).toEqual({
       ok: false,
-      error: "a resolved owner cannot return needs-owner",
+      error: "a resolved agent cannot return needs-agent",
+    });
+  });
+
+  it("normalizes the legacy needs-owner result at admission", () => {
+    expect(
+      admitTaskReconcileResult(
+        { state: "needs-owner", summary: "Legacy handoff", evidence: ["legacy:workflow"] },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: true,
+      result: { state: "needs-agent", summary: "Legacy handoff", evidence: ["legacy:workflow"] },
     });
   });
 
@@ -419,7 +476,7 @@ describe("project task handler contract", () => {
         },
       ],
     };
-    expect(Check(taskOwnerResultSchema, untypedConditionResult)).toBe(false);
+    expect(Check(taskAgentResultSchema, untypedConditionResult)).toBe(false);
     expect(admitTaskReconcileResult(untypedConditionResult, workflowOptions)).toEqual({
       ok: false,
       error: "conditions[0].subject must be a typed subject",

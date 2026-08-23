@@ -250,7 +250,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const attachTask: AppTaskAttacher | undefined = options.attachTask
     ? async (input) => {
         const appDir = appDirById.get(input.appId);
-        if (!appDir) throw new Error(`Unknown App task owner: ${input.appId}`);
+        if (!appDir) throw new Error(`Unknown App: ${input.appId}`);
         return options.attachTask!({ ...input, appDir });
       }
     : undefined;

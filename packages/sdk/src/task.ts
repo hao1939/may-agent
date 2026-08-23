@@ -37,7 +37,7 @@ export type Condition = {
   reviewAfterMs?: number;
 };
 
-export type TaskReconcileState = "converged" | "waiting" | "needs-owner";
+export type TaskReconcileState = "converged" | "waiting" | "needs-agent";
 
 /** One child App outcome required by the current task. */
 export type TaskAppDependency = {
@@ -114,7 +114,7 @@ export type TaskReconcileResult = {
 };
 
 export type TaskAcceptanceBasis = {
-  method: "deterministic" | "workflow-contract" | "owner-judgment";
+  method: "deterministic" | "workflow-contract" | "agent-judgment";
   verifier?: string;
   evidence: string[];
 };
@@ -150,6 +150,7 @@ export {
   conditionSchema,
   isTypedConditionSubject,
   taskActionSchema,
+  taskAgentResultSchema,
   taskOwnerResultSchema,
   taskReconcileResultSchema,
   taskVerificationResultSchema,

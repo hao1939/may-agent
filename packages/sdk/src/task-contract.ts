@@ -126,8 +126,8 @@ const resultFields = {
   ),
 };
 
-/** Model-output schema for a resolved owner. */
-export const taskOwnerResultSchema = Type.Object(
+/** Model-output schema for a resolved agent. */
+export const taskAgentResultSchema = Type.Object(
   {
     state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
     ...resultFields,
@@ -135,12 +135,15 @@ export const taskOwnerResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
-/** Model-output schema for a workflow, including its explicit owner handoff. */
+/** @deprecated Use `taskAgentResultSchema`. */
+export const taskOwnerResultSchema = taskAgentResultSchema;
+
+/** Model-output schema for a workflow, including its explicit agent handoff. */
 export const taskReconcileResultSchema = Type.Union([
-  taskOwnerResultSchema,
+  taskAgentResultSchema,
   Type.Object(
     {
-      state: Type.Literal("needs-owner"),
+      state: Type.Literal("needs-agent"),
       summary: nonEmptyStringSchema,
       evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
     },
@@ -160,7 +163,7 @@ export const taskVerificationResultSchema = Type.Object(
 export type TaskReconcileAdmission = { ok: true; result: TaskReconcileResult } | { ok: false; error: string };
 
 export type TaskReconcileAdmissionOptions = {
-  allowNeedsOwner: boolean;
+  allowNeedsAgent: boolean;
   defaultParentId: string;
   rootParentAliases?: string[];
 };
@@ -244,15 +247,18 @@ function normalizeCreateTaskAction(
   const priority = value.priority === undefined ? "P2" : value.priority;
   if (!validPriority(priority)) return `actions[${index}].priority must be P0, P1, P2, or P3`;
   const agent = optionalAgent(value);
-  if (!agent.ok) return `actions[${index}].${agent.error}`;
+  if ("error" in agent) return `actions[${index}].${agent.error}`;
   const workflow = optionalString(value, "workflow");
   if (!workflow.ok) return `actions[${index}].workflow must be a non-empty string when present`;
   if (workflow.value === "project") {
-    return `actions[${index}].workflow must name a real workflow; omit workflow for owner-handled project work`;
+    return `actions[${index}].workflow must name a real workflow; omit workflow for agent-handled project work`;
   }
-  const executor = value.executor === undefined ? undefined : value.executor;
-  if (executor !== undefined && !validExecutor(executor)) {
-    return `actions[${index}].executor must be a lowercase name of at most 64 characters when present`;
+  let executor: TaskExecutorName | undefined;
+  if (value.executor !== undefined) {
+    if (!validExecutor(value.executor)) {
+      return `actions[${index}].executor must be a lowercase name of at most 64 characters when present`;
+    }
+    executor = value.executor;
   }
   if (workflow.value && executor !== undefined) {
     return `actions[${index}] cannot configure both workflow and executor`;
@@ -348,7 +354,7 @@ function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number
     action.priority = value.priority;
   }
   const agent = nullableAgentBinding(value);
-  if (!agent.ok) return `actions[${index}].${agent.error}`;
+  if ("error" in agent) return `actions[${index}].${agent.error}`;
   if (agent.present) action.owner = agent.value;
   for (const key of ["workflow", "category"] as const) {
     const binding = nullableBinding(value, key);
@@ -469,18 +475,19 @@ export function admitTaskReconcileResult(
   if (!evidence) return { ok: false, error: "evidence must be a string array" };
   if (evidence.length > 32) return { ok: false, error: "evidence exceeds the 32-entry limit" };
 
-  if (output.state === "needs-owner") {
-    if (!options.allowNeedsOwner) return { ok: false, error: "a resolved owner cannot return needs-owner" };
+  if (output.state === "needs-agent" || output.state === "needs-owner") {
+    if (!options.allowNeedsAgent) return { ok: false, error: "a resolved agent cannot return needs-agent" };
     if (
       output.response !== undefined ||
       output.actions !== undefined ||
       output.conditions !== undefined ||
       output.dependencies !== undefined
     ) {
-      return { ok: false, error: "needs-owner cannot include response, actions, Conditions, or dependencies" };
+      return { ok: false, error: "needs-agent cannot include response, actions, Conditions, or dependencies" };
     }
-    if (!Check(taskReconcileResultSchema, output)) {
-      const first = [...Errors(taskReconcileResultSchema, output)][0];
+    const canonicalOutput = output.state === "needs-owner" ? { ...output, state: "needs-agent" } : output;
+    if (!Check(taskReconcileResultSchema, canonicalOutput)) {
+      const first = [...Errors(taskReconcileResultSchema, canonicalOutput)][0];
       return {
         ok: false,
         error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
@@ -488,11 +495,11 @@ export function admitTaskReconcileResult(
     }
     return {
       ok: true,
-      result: { state: "needs-owner", summary: output.summary.trim(), evidence },
+      result: { state: "needs-agent", summary: output.summary.trim(), evidence },
     };
   }
   if (output.state !== "converged" && output.state !== "waiting") {
-    return { ok: false, error: "state must be converged, waiting, or needs-owner" };
+    return { ok: false, error: "state must be converged, waiting, or needs-agent" };
   }
   const admittedOutput = output as Record<string, unknown>;
   const response = optionalString(admittedOutput, "response");

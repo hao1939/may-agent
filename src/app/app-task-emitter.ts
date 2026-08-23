@@ -78,7 +78,7 @@ function taskEventMux(bus: EventBus): TaskEventMux {
 export function createAppTaskEvents(input: {
   bus: EventBus;
   appId: string;
-  claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "owner">;
+  claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
 }): AppTaskEvents {
   const emitter = createAppTaskEmitter(input);
@@ -107,7 +107,7 @@ export function createAppTaskEvents(input: {
 export function createAppTaskEmitter(input: {
   bus: EventBus;
   appId: string;
-  claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "owner">;
+  claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
 }): AppTaskEmitter {
   const appId = input.appId.trim().replace(/\.app$/, "");
@@ -123,7 +123,7 @@ export function createAppTaskEmitter(input: {
       const event = {
         type: emitted.type,
         source: `app-task:${appId}`,
-        owner: emitted.owner ?? `agent:${input.claim.owner}`,
+        owner: emitted.owner ?? `agent:${input.claim.agent}`,
         ...(emitted.target ? { target: emitted.target } : {}),
         ...(emitted.action ? { action: emitted.action } : {}),
         ...(emitted.urgency ? { urgency: emitted.urgency } : {}),

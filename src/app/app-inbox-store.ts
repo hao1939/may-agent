@@ -94,7 +94,7 @@ export type AppInboxClaim = {
   owner: string;
 };
 
-/** A claim durably associated with the exact owner session that was executing it. */
+/** A claim durably associated with the exact agent session that was executing it. */
 export type AppInboxSessionClaim = {
   claim: AppInboxClaim;
   sessionId: string;
