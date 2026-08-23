@@ -328,6 +328,15 @@ function taskResult(task) {
   return "";
 }
 
+function taskProgress(task) {
+  const progress = task?.progress;
+  if (!progress || typeof progress !== "object") return "";
+  if (typeof progress.message === "string" && progress.message.trim()) return progress.message.trim();
+  const stage = typeof progress.stage === "string" ? progress.stage.trim().replaceAll("-", " ") : "";
+  const status = typeof progress.status === "string" ? progress.status.trim() : "";
+  return [stage, status].filter(Boolean).join(" · ");
+}
+
 function renderApps(apps, pending) {
   if (!Array.isArray(apps)) return;
   const lines = ["", pending?.appId ? `App ${pending.appId}:` : "Apps:"];
@@ -394,9 +403,17 @@ function renderTask(task, command, options = {}) {
     `  Outcome: ${task.outcome}`,
     `  Updated: ${formatWorkTime(task.updatedAt)}`,
   ];
-  const result = taskResult(task);
+  const observedProgress = task.terminal ? "" : taskProgress(task);
+  const result = observedProgress || taskResult(task);
   if (result)
-    lines.push(task.terminal ? "  Result:" : "  Progress:", ...result.split("\n").map((line) => `    ${line}`));
+    lines.push(
+      task.terminal
+        ? "  Result:"
+        : observedProgress && Number.isSafeInteger(task.progress?.updatedAt)
+          ? `  Progress (${formatWorkTime(task.progress.updatedAt)}):`
+          : "  Progress:",
+      ...result.split("\n").map((line) => `    ${line}`),
+    );
   if (task.execution?.sessionId) lines.push(`  Diagnostic session: ${task.execution.sessionId}`);
   lines.push("");
   if (options.transient) printLine(lines.join("\n"));

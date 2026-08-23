@@ -171,6 +171,33 @@ describe("AppTaskEmitter", () => {
     });
   });
 
+  it("correlates a passive progress event without waking its own Task", () => {
+    const { db, emitter } = harness();
+    const before = db
+      .prepare("SELECT changed, ready, trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+      .get("sample", "task-1");
+
+    const eventId = emitter.emit("executor-progress", {
+      type: "project.task.executor.progress",
+      data: { executor: "codex-goal-poc", stage: "intermediate", message: "Inspecting evidence" },
+    });
+
+    expect(db.prepare("SELECT task_id, attempt_id FROM events WHERE id = ?").get(eventId)).toEqual({
+      task_id: "task-1",
+      attempt_id: "attempt-1",
+    });
+    expect(
+      db
+        .prepare("SELECT changed, ready, trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("sample", "task-1"),
+    ).toEqual(before);
+    expect(
+      db
+        .prepare("SELECT COUNT(*) AS count FROM app_task_events WHERE app_id = ? AND task_id = ?")
+        .get("sample", "task-1"),
+    ).toEqual({ count: 0 });
+  });
+
   it("records an exact target wake in the event transaction before subscribers run", () => {
     const { db, bus, emitter } = harness();
     const observed: Array<{ changed: number; linked: number }> = [];

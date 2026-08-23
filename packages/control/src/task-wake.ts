@@ -7,6 +7,7 @@ export const TASK_UPDATE_EVENT_TYPES = [
   "project.task.verification.failed",
   "project.task.recovery.requeued",
   "project.task.recovery.repaired",
+  "project.task.executor.progress",
   "app.task.cancelled",
 ] as const;
 
@@ -24,10 +25,14 @@ export function taskUpdateIdentity(event: unknown): { appId: string; taskId: str
     envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
       ? (envelope.target as Record<string, unknown>)
       : {};
-  const appId = [data.appId, data.project, target.appId].find(
+  const emission =
+    data.emission && typeof data.emission === "object" && !Array.isArray(data.emission)
+      ? (data.emission as Record<string, unknown>)
+      : {};
+  const appId = [emission.appId, data.appId, data.project, target.appId].find(
     (value): value is string => typeof value === "string" && Boolean(value.trim()),
   );
-  const taskId = [data.taskId, target.taskId].find(
+  const taskId = [emission.taskId, data.taskId, target.taskId].find(
     (value): value is string => typeof value === "string" && Boolean(value.trim()),
   );
   return appId && taskId ? { appId: appId.trim().replace(/\.app$/, ""), taskId: taskId.trim() } : null;
