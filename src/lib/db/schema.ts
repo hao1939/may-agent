@@ -236,6 +236,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp, id);
 CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delivery_route, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp);

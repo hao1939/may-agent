@@ -6,6 +6,23 @@ import { closeDb, getDb } from "./connection.js";
 import { runDbMaintenancePass } from "./maintenance.js";
 
 describe("bounded DB maintenance", () => {
+  it("indexes the retained-event cutoff instead of sorting event history under the writer lock", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-event-index-"));
+    try {
+      const db = getDb(persistDir);
+      const indexes = db.prepare("PRAGMA index_list(events)").all() as Array<{ name?: string }>;
+      expect(indexes.some((index) => index.name === "idx_events_timestamp")).toBe(true);
+
+      const plan = db
+        .prepare("EXPLAIN QUERY PLAN SELECT id FROM events WHERE timestamp < ? ORDER BY timestamp LIMIT ?")
+        .all(Date.now(), 5_000) as Array<{ detail?: string }>;
+      expect(plan.some((step) => step.detail?.includes("idx_events_timestamp"))).toBe(true);
+      expect(plan.some((step) => step.detail?.includes("TEMP B-TREE FOR ORDER BY"))).toBe(false);
+    } finally {
+      closeDb(persistDir);
+    }
+  });
+
   it("keeps WAL checkpoint work on the maintenance path", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-checkpoint-"));
     try {
