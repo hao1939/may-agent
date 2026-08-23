@@ -3033,14 +3033,25 @@ function admitResolvedAppTaskEvent(input: {
   const { opts, descriptor, controller, event, intent } = input;
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
   const config = appTaskConfig(descriptor);
-  const conditionWakes = trackAppTaskConditionEventForTasks(config, event, input.conditionTaskIds ?? []);
+  const selectedConditionTaskIds = [
+    ...new Set((input.conditionTaskIds ?? []).map((taskId) => taskId.trim()).filter(Boolean)),
+  ];
+  const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
   if (controller) {
     for (const wake of conditionWakes) {
       enqueueAppTask(controller, config, wake.taskId, { front: true });
     }
   }
-  const conditionDelivery = conditionWakes.length
-    ? appTaskDelivery(descriptor, conditionWakes.map((wake) => wake.taskId).join(","), "task Condition event accepted")
+  // A frozen Condition route is idempotent admission authority. On recovery,
+  // its task may already have consumed the fact or left its wait. Accept that
+  // no-op instead of retrying the immutable plan forever. Exact targets with
+  // no selected Condition remain strict existing-task references below.
+  const conditionDelivery = selectedConditionTaskIds.length
+    ? appTaskDelivery(
+        descriptor,
+        (conditionWakes.length ? conditionWakes.map((wake) => wake.taskId) : selectedConditionTaskIds).join(","),
+        conditionWakes.length ? "task Condition event accepted" : "task Condition event already observed",
+      )
     : undefined;
   if (targetedTaskId) {
     const existingIntent = readAppTaskIntent(config, targetedTaskId);
