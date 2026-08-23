@@ -23,7 +23,7 @@ export interface AgentHandlerLoaderOptions {
   projectRoot: string;
   manager: SubagentManager;
   bus: EventBus;
-  agentCrons: Map<string, Cron>;
+  agentCrons: ReadonlyMap<string, Cron>;
 }
 
 type CronWithConfigPath = Cron & { getConfigPath?: () => string; hasHandler?: (jobName: string) => boolean };
@@ -39,7 +39,15 @@ export async function loadHandlersForAgentCrons(
     const entries = cron.getEntries();
     const handlersNeeded = entries.filter((e) => e.handler && !(cron as CronWithConfigPath).hasHandler?.(e.name));
 
-    const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, sharedRoot, projectsRoot, agentName });
+    const sessionHelpers = buildSessionHelpers({
+      bus,
+      persistDir,
+      projectRoot,
+      agentsRoot,
+      sharedRoot,
+      projectsRoot,
+      agentName,
+    });
     const fullSdk = buildAgentSDK({
       bus,
       persistDir,
@@ -171,7 +179,12 @@ export async function loadHandlersForAgentCrons(
           type: "handler.load-failed",
           source: "handler-loader",
           owner: `agent:${agentName}`,
-          data: { handler: entryName, agent: agentName, path: `${handlerDir}/${entry.handler}.(js|ts)`, error: loadMsg },
+          data: {
+            handler: entryName,
+            agent: agentName,
+            path: `${handlerDir}/${entry.handler}.(js|ts)`,
+            error: loadMsg,
+          },
         });
         return false;
       }
@@ -225,11 +238,7 @@ function workflowHandler(entry: CronEntry): WorkflowBackedHandler | undefined {
   return handler && typeof handler === "object" && typeof handler.workflow === "string" ? handler : undefined;
 }
 
-function createWorkflowBackedHandler(
-  ctx: WorkflowHandlerContext,
-  entry: CronEntry,
-  handler: WorkflowBackedHandler,
-) {
+function createWorkflowBackedHandler(ctx: WorkflowHandlerContext, entry: CronEntry, handler: WorkflowBackedHandler) {
   return createWorkflowHandler({
     workflow: handler.workflow,
     source: handler.agent ?? entry.agent ?? ctx.agentName,

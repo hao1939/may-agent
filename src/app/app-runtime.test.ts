@@ -71,7 +71,7 @@ describe("app runtime startup order", () => {
   it("reloads App generations explicitly instead of polling every source file", () => {
     const runtime = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     const tasks = readFileSync(new URL("./app-task-runtime.ts", import.meta.url), "utf8");
-    expect(runtime).toContain("reloadApps: async () =>");
+    expect(runtime).toContain("reloadApps: async ({ publishAgents }) =>");
     expect(runtime).not.toContain("watchGenerations");
     expect(tasks).not.toContain("appTaskHostFingerprint");
     expect(tasks).not.toContain("Auto-reloaded");

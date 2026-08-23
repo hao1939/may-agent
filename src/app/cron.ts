@@ -476,13 +476,14 @@ export class Cron {
   }
 
   private _busSubscribed = false;
+  private _unsubscribeBus?: () => void;
 
   /** Subscribe to bus — auto-dispatch domain events (dot-separated types) to handlers.
    *  Also handles `heartbeat` events: triggers the matching heartbeat entry. */
   subscribeToBus(bus: EventBus): void {
     if (this._busSubscribed) return;
     this._busSubscribed = true;
-    bus.subscribe((event): DeliveryResult | void => {
+    this._unsubscribeBus = bus.subscribe((event): DeliveryResult | void => {
       // Convention trigger: any entry can be manually fired by emitting
       // `trigger.<entry-name>`. This keeps operator/adapters simple and avoids
       // per-entry `on` boilerplate for timer jobs.
@@ -556,6 +557,14 @@ export class Cron {
     for (const timer of this.pendingStartTimers.values()) clearTimeout(timer);
     this.pendingStartTimers.clear();
     this.started = false;
+  }
+
+  /** Retire this scheduler generation, including its EventBus attachment. */
+  close(): void {
+    this.stop();
+    this._unsubscribeBus?.();
+    this._unsubscribeBus = undefined;
+    this._busSubscribed = false;
   }
 
   reload(): void {
