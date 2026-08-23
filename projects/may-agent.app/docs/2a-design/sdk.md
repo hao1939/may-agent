@@ -274,7 +274,7 @@ type TaskAttempt = {
   cwd: string;
   events: TaskReconciliationEvents;
   publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
-  onEvent(listener: (event: AppEvent) => void): () => void;
+  onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
 };
 
 type TaskExecutor =
@@ -283,8 +283,11 @@ type TaskExecutor =
 
 `appId` scopes the Task identity and `cwd` is the attempt working directory.
 `publish` is immediate, durable, idempotent within the Task generation, and
-rejected after the attempt fence expires. `onEvent` is only a live convenience;
-the addressed event is also durable Task input for replay on a later attempt.
+rejected after the attempt fence expires. `onEvent` is only a live convenience.
+Its `accept` callback marks the exact event for consumption only if the returned
+result is admitted; a failed, interrupted, or stale attempt cannot lose it.
+Without that result-coupled acceptance, the event remains durable Task input
+for replay on a later attempt.
 Task-owned workflows expose these as `ctx.events.emit` and
 `ctx.events.onEvent`; Runtime removes live listeners when the bounded workflow
 ends. The returned result is the only Task state transition.

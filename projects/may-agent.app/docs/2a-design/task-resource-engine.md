@@ -65,16 +65,17 @@ type TaskExecutor = (attempt: {
   cwd: string;
   events: TaskReconciliationEvents;
   publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
-  onEvent(listener: (event: AppEvent) => void): () => void;
+  onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
 }) => Promise<TaskReconcileResult>;
 ```
 
 An executor reads current Task state and its bounded unobserved event batch,
 does one useful bounded attempt, optionally publishes retry-safe progress or
 findings, and returns one result. `onEvent` is an optional low-latency view of
-new durable Task input such as feedback, approval, steering, or cancellation;
-the next attempt still receives that input if the executor cannot consume it
-live. The Runtime owns fencing, leases, event persistence, result admission,
+new durable Task input such as feedback, approval, steering, or cancellation.
+The listener's attempt-local `accept` consumes the exact input only with an
+admitted result; the next attempt still receives it if the executor cannot
+incorporate it live. The Runtime owns fencing, leases, event persistence, result admission,
 and recovery, so an executor implements no scheduler, queue, retry loop, or
 Task storage.
 

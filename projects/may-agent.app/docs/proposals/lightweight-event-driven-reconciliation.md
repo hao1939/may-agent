@@ -128,14 +128,16 @@ type TaskAttempt = {
   cwd: string;
   events: TaskEventBatch;
   publish(localKey: string, event: AppEvent): Promise<EventReceipt>;
-  onEvent(listener: (event: AppEvent) => void): () => void;
+  onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
 };
 
 type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
 
-Live input is an optional latency improvement. The durable next-attempt batch
-is always authoritative. Changing executor changes how one attempt runs, not
+Live input is an optional latency improvement. Calling its attempt-local
+`accept` only consumes that exact event if Runtime later admits the returned
+result in the same fenced transaction. Otherwise the durable next-attempt batch
+remains authoritative. Changing executor changes how one attempt runs, not
 Task identity, fencing, recovery, or acceptance.
 
 ## Recovery is insurance

@@ -76,7 +76,8 @@ the first goal-created turn is the final one.
 4. A Codex thread is bound to at most one live May Task.
 5. A Task has at most one active attempt and therefore at most one active Codex turn.
 6. Every external event is persisted against the Task before best-effort live steering.
-7. Missing live steering is repaired by the next Task attempt's durable event batch.
+7. Missing or unincorporated live steering is repaired by the next Task
+   attempt's durable event batch; only an admitted result may consume it.
 8. Raw Codex stream traffic is diagnostic evidence, not a new event log or task state.
 9. Restart may repeat work; workspace changes and event publication must remain idempotent.
 10. Changing `codex` to the native May executor does not change App code or Task semantics.
@@ -170,11 +171,17 @@ type TaskAttempt = {
   events: TaskReconciliationEvents;
   signal: AbortSignal;
   publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
-  onEvent(listener: (event: AppEvent) => void): () => void;
+  onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
 };
 
 type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
+
+`accept()` is attempt-local, idempotent, and has no immediate durable effect.
+Runtime removes that exact event only in the same fenced transaction that
+admits the returned result. A failed, interrupted, or stale attempt therefore
+replays it. An executor calls `accept()` only after the event is incorporated
+into its candidate result, not merely because transport delivery succeeded.
 
 Do not add a public executor session controller. Completion is the returned
 promise, output is `publish`, input is `onEvent`, and cancellation is `signal`.
@@ -237,6 +244,9 @@ Task events remain the shared interface.
 
 - If a turn is active, `TaskAttempt.onEvent` sends the canonical event through
   `turn/steer` with the active turn ID as a precondition.
+- After the correlated terminal turn yields an admitted Task result, the
+  adapter calls the event's attempt-local `accept`; Runtime consumes it
+  atomically with that result.
 - If steering races with turn completion, retain the event for the next attempt;
   do not retry it against an unknown turn.
 - If the thread is idle, the next reconcile attempt includes the event in the
@@ -594,10 +604,21 @@ is registered as explicit executor name `codex-goal`; the former
   again. Evaluation now reserves Codex for a new breach, recovery, explicit
   request, or daily owner heartbeat; repeat updates for an already-open alert
   remain durable facts without starting another owner attempt.
+- Production event `5976972` (`LIVE-STEER-DELTA`) reached turn
+  `57710273-47ff-42cd-ae52-d33f4992de5d` inside attempt
+  `r_49_cc19283c-e66f-4b22-bbbc-3d1a4b429cdc`; the admitted result at event
+  `5976987` explicitly incorporated it after 28.9 seconds with no progress
+  degradation. Runtime nevertheless scheduled
+  `r_49_8c2b53a1-2af0-4bf4-b2fe-027da9f70f2e` because live delivery had no
+  result-coupled consumption signal. The shared `TaskAttempt.onEvent` contract
+  now supplies an attempt-local `accept` callback. Unit and Runtime integration
+  fixtures prove that accepted live input is consumed only with the fenced
+  result, while unaccepted or later input remains replayable.
 
 Still required before promoting this beyond the Evaluation canary:
 checked-in generated protocol types beyond the current drift fingerprints,
 concurrent and one-shot resource comparison, retained-artifact bounds, an
 external policy for orphan cleanup after uncatchable Host death, and production
-evidence for restart recovery and live steering. The current one-shot
-executors remain unchanged.
+evidence for restart recovery and a post-fix production proof that incorporated
+live steering no longer causes a duplicate follow-up attempt. The current
+one-shot executors remain unchanged.
