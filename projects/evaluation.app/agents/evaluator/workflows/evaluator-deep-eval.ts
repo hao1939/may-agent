@@ -91,9 +91,14 @@ export async function execute(
 
   const evaluation = { ...outcome.evaluation, createdAt: Date.now() };
   await ctx.events.emit({
-    type: "evaluation.deep_recorded",
+    type: "evaluation.recorded",
     localKey: taskEmissionKey(ctx, "deep-recorded"),
-    data: { source: name, evaluation },
+    data: {
+      source: name,
+      evaluationMethod: "llm",
+      evaluatedByHeuristic: false,
+      evaluation,
+    },
     target: {
       appId: "evaluation",
       project: "evaluation",

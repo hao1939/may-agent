@@ -193,10 +193,12 @@ describe("evaluator deep workflow", () => {
       },
     });
     expect(events[1]).toMatchObject({
-      type: "evaluation.deep_recorded",
+      type: "evaluation.recorded",
       localKey: "deep-recorded",
       data: {
         source: "evaluator-deep-eval",
+        evaluationMethod: "llm",
+        evaluatedByHeuristic: false,
         evaluation: {
           sessionId: "s_source",
           verdict: "good",
