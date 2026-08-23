@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppEvent, TaskAttempt } from "@may-agent/sdk";
@@ -43,6 +43,8 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
       conditions: [],
     },
     cwd: "/app/projects/evaluation.app",
+    declaredOutputPaths: [],
+    children: { live: [], completed: [] },
     events: { items: [], truncated: false },
     async publish() {
       return { eventId: 1 };
@@ -146,6 +148,40 @@ class FakeClient implements CodexGoalClient {
 }
 
 describe("codex-goal-poc Task executor", () => {
+  it("loads the selected App agent role and real Task observations into the packet", () => {
+    const root = fixtureRoot();
+    const agentDir = join(root, "agents", "evaluator");
+    mkdirSync(agentDir, { recursive: true });
+    writeFileSync(join(agentDir, "AGENTS.md"), "Judge from exact evidence.\n");
+    const packet = codexGoalPocInternals.packetFor(
+      attempt({
+        cwd: root,
+        declaredOutputPaths: ["reports/review.md"],
+        children: {
+          live: [],
+          completed: [
+            {
+              taskId: "collect-facts",
+              parentId: "project-app-audit",
+              generation: 1,
+              outcome: "Collect facts",
+              agent: "evaluator",
+              input: {},
+              conditions: [],
+              hasLiveChildren: false,
+              status: "done",
+              evidence: ["facts.json"],
+              completedAt: "2026-08-24T00:00:00.000Z",
+            },
+          ],
+        },
+      }),
+    );
+    expect(packet.role.instructions).toContain("Judge from exact evidence.");
+    expect(packet.workspace.declaredOutputPaths).toEqual(["reports/review.md"]);
+    expect(packet.observations.children.completed[0]?.taskId).toBe("collect-facts");
+  });
+
   it("persists one Task binding, admits exact-turn JSON, and resumes it across generations", async () => {
     const root = fixtureRoot();
     const stateFile = join(root, "bindings.json");

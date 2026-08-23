@@ -148,6 +148,11 @@ export async function prepareDaemonAgents(opts: {
       started = true;
       openStartGate();
     };
+    const codexGoalExecutor = createCodexGoalPocExecutor({
+      stateFile: join(opts.persistDir, "codex-goal-poc-bindings.json"),
+      command: process.env.MAY_CODEX_GOAL_COMMAND,
+      executorName: "codex-goal",
+    });
     appTaskOptions = {
       projectsRoot: opts.projectsRoot,
       projectRoot: opts.projectRoot,
@@ -158,10 +163,10 @@ export async function prepareDaemonAgents(opts: {
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
       executors: {
-        "codex-goal-poc": createCodexGoalPocExecutor({
-          stateFile: join(opts.persistDir, "codex-goal-poc-bindings.json"),
-          command: process.env.MAY_CODEX_GOAL_COMMAND,
-        }),
+        "codex-goal": codexGoalExecutor,
+        // Existing trial Tasks keep their durable executor name through the
+        // rollout; new Evaluation work uses the production name above.
+        "codex-goal-poc": codexGoalExecutor,
       },
       registerLocalAgent,
       appRegistry: opts.appRegistry,

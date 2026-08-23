@@ -966,6 +966,8 @@ async function runTaskCapability(
     descriptor: input.descriptor,
     claim: input.claim,
     executionPaths: input.executionPaths,
+    declaredOutputPaths: input.declaredOutputPaths,
+    childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: (attempt, taskEvents) => executeTaskCapability({ ...input, attempt, taskEvents }),
   });
@@ -1009,6 +1011,8 @@ function runtimeTaskAttempt(input: {
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
   cwd: string;
+  declaredOutputPaths: string[];
+  childContext: AppTaskChildContext;
   event?: EventEnvelope;
 }): RuntimeTaskAttempt {
   const { opts, descriptor, claim } = input;
@@ -1038,6 +1042,17 @@ function runtimeTaskAttempt(input: {
       resourceVersion: claim.resourceVersion,
       task: structuredClone(task),
       cwd: input.cwd,
+      declaredOutputPaths: [...input.declaredOutputPaths],
+      children: {
+        live: input.childContext.live.map(({ phase, ...child }) => ({
+          ...structuredClone(child),
+          status: phase === "converged" ? "done" : phase,
+        })),
+        completed: input.childContext.completed.map((child) => ({
+          ...structuredClone(child),
+          status: "done" as const,
+        })),
+      },
       events: projectAppTaskReconciliationEvents(claim),
       async publish(localKey, event) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
@@ -2049,6 +2064,8 @@ async function runTaskExecutorAttempt(input: {
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
   executionPaths: AppTaskExecutionPaths;
+  declaredOutputPaths: string[];
+  childContext: AppTaskChildContext;
   event?: EventEnvelope;
   execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
 }): Promise<TaskCapabilityRun> {
@@ -2057,6 +2074,8 @@ async function runTaskExecutorAttempt(input: {
     descriptor: input.descriptor,
     claim: input.claim,
     cwd: input.executionPaths.workspaceDir,
+    declaredOutputPaths: input.declaredOutputPaths,
+    childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
   });
   const leaseTimer = setInterval(
@@ -2086,6 +2105,8 @@ async function runTaskAgent(
     descriptor: input.descriptor,
     claim: input.claim,
     executionPaths: input.executionPaths,
+    declaredOutputPaths: input.declaredOutputPaths,
+    childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: (attempt) => executeTaskAgent({ ...input, attempt }),
   });
@@ -2097,6 +2118,8 @@ async function runTaskCli(input: Omit<Parameters<typeof executeTaskCli>[0], "att
     descriptor: input.descriptor,
     claim: input.claim,
     executionPaths: input.executionPaths,
+    declaredOutputPaths: input.declaredOutputPaths,
+    childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: (attempt) => executeTaskCli({ ...input, attempt }),
   });
@@ -2108,6 +2131,8 @@ async function runRegisteredTaskExecutor(input: {
   claim: AppTaskClaim;
   defaultParentId: string;
   executionPaths: AppTaskExecutionPaths;
+  declaredOutputPaths: string[];
+  childContext: AppTaskChildContext;
   event?: EventEnvelope;
   observer?: AppTaskExecutionObserver;
   name: TaskExecutorName;
@@ -2118,6 +2143,8 @@ async function runRegisteredTaskExecutor(input: {
     descriptor: input.descriptor,
     claim: input.claim,
     executionPaths: input.executionPaths,
+    declaredOutputPaths: input.declaredOutputPaths,
+    childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: async (attempt) => {
       const runId = `executor:${input.name}:${input.claim.attemptId}`;
@@ -2689,6 +2716,8 @@ async function reconcileTask(input: {
           claim: primary,
           defaultParentId,
           executionPaths,
+          declaredOutputPaths,
+          childContext,
           event,
           observer,
           name: executorKey,

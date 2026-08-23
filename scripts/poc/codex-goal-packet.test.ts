@@ -42,7 +42,24 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
       checkpoint: { summary: "Read the proposal", evidence: ["docs/design.md"] },
     },
     observations: {
-      children: [{ taskId: "review:tests", status: "done" }],
+      children: {
+        live: [],
+        completed: [
+          {
+            taskId: "review:tests",
+            parentId: "review:design",
+            generation: 1,
+            outcome: "Verify the review",
+            agent: "reviewer",
+            input: {},
+            conditions: [],
+            hasLiveChildren: false,
+            status: "done",
+            evidence: ["test:pass"],
+            completedAt: "2026-08-23T08:00:00.000Z",
+          },
+        ],
+      },
       dependencies: [{ taskId: "collect:evidence", status: "done" }],
     },
     workspace: { cwd: "/tmp/sample", declaredOutputPaths: ["docs/design.md"] },
