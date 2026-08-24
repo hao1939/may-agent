@@ -313,14 +313,14 @@ describe("App Task agent prompt context", () => {
         appId: "evaluation",
         description: "Owns evidence-based evaluation outcomes.",
         inputs: [
-          { kind: "deep-eval", requiredData: [], fixedData: {} },
-          { kind: "owner-review", requiredData: [], fixedData: {} },
+          { kind: "deep-eval", requiredData: [], dataTypes: {}, fixedData: {} },
+          { kind: "owner-review", requiredData: [], dataTypes: {}, fixedData: {} },
         ],
       },
     ]);
   });
 
-  it("summarizes required and fixed input data without copying the full schema", () => {
+  it("summarizes required paths, field shapes, and fixed data without copying the full schema", () => {
     const f = fixture();
     const bus = eventBus();
     const target = defineApp({
@@ -330,7 +330,11 @@ describe("App Task agent prompt context", () => {
       inputSchema: Type.Union([
         Type.Object({
           kind: Type.Literal("general-operation"),
-          data: Type.Object({ outcome: Type.String(), evidence: Type.Array(Type.String()) }),
+          data: Type.Object({
+            outcome: Type.String(),
+            evidence: Type.Array(Type.String()),
+            constraints: Type.Optional(Type.Array(Type.String())),
+          }),
         }),
         Type.Object({
           kind: Type.Literal("specialized-operation"),
@@ -369,11 +373,18 @@ describe("App Task agent prompt context", () => {
       {
         kind: "general-operation",
         requiredData: ["evidence", "outcome"],
+        dataTypes: { constraints: "string[]", evidence: "string[]", outcome: "string" },
         fixedData: {},
       },
       {
         kind: "specialized-operation",
         requiredData: ["context", "context.callerApp", "context.callerTask", "outcome"],
+        dataTypes: {
+          context: "object",
+          "context.callerApp": "string",
+          "context.callerTask": "string",
+          outcome: "string",
+        },
         fixedData: { "context.callerApp": "alpha-project" },
       },
     ]);
