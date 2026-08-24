@@ -591,7 +591,7 @@ describe("Gym task reconciliation", () => {
     expect(focused?.input).toEqual({ agent: "may", curriculumDrain: true });
   });
 
-  test("wakes May campaign only for May-owned metric breaches", () => {
+  test("wakes May campaign only for genuine May metric identities", () => {
     expect(
       resolveGymTask(
         event(
@@ -604,15 +604,49 @@ describe("Gym task reconciliation", () => {
       id: "improve/may",
       input: { agent: "may", curriculumDrain: true },
     });
+
     expect(
       resolveGymTask(
         event(
           "metric.breach",
-          { metricId: "aks.task-timeout-rate" },
+          {
+            metricId: "  AGENT.MAY.response-quality  ",
+            agent: "app-ops",
+          },
           { owner: "agent:app-ops" },
         ),
       ),
-    ).toBeNull();
+    ).toMatchObject({
+      id: "improve/may",
+      input: { agent: "may", curriculumDrain: true },
+    });
+
+    for (const breach of [
+      event(
+        "metric.breach",
+        { metricId: "event.unhandled-signal-count-1h" },
+        { owner: "agent:may" },
+      ),
+      event("metric.breach", {
+        metricId: "system.unhandled-event-count-1h",
+        agent: "may",
+      }),
+      event(
+        "metric.breach",
+        {
+          metricId: "runtime.unhandled-signal-rate",
+          agent: "may",
+        },
+        { owner: "may" },
+      ),
+      event(
+        "metric.breach",
+        { metricId: "aks.task-timeout-rate" },
+        { owner: "agent:app-ops" },
+      ),
+    ]) {
+      expect(resolveGymTask(breach)).toBeNull();
+    }
   });
 });
 

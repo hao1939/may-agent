@@ -101,18 +101,12 @@ function selected(
 
 function isMayMetricBreach(event: Record<string, unknown>): boolean {
   const details = eventDetails(event);
-  const owner = String(details.owner ?? "").toLowerCase();
-  const agent = String(details.agent ?? "").toLowerCase();
   const metric = String(
     details.metricId ?? details.metric_id ?? details.id ?? details.name ?? "",
-  ).toLowerCase();
-  return (
-    owner === "may" ||
-    owner === "agent:may" ||
-    agent === "may" ||
-    metric.startsWith("may.") ||
-    metric.startsWith("agent.may.")
-  );
+  )
+    .trim()
+    .toLowerCase();
+  return metric.startsWith("may.") || metric.startsWith("agent.may.");
 }
 
 function mayImprovementIntent(): TaskIntent {
