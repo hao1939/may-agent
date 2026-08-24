@@ -100,13 +100,46 @@ describe("canonical evaluation App", () => {
       },
     });
     expect(taskIntentForInput(input!)).toMatchObject({
-      id: expect.stringMatching(/^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/),
+      id: expect.stringMatching(
+        /^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/,
+      ),
       mode: "achieve",
       agent: "evaluator",
       executor: "codex-goal",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
     });
-    expect(app.schedules?.some((schedule) => schedule.id.includes("codex-goal"))).toBeFalse();
+    expect(
+      app.schedules?.some((schedule) => schedule.id.includes("codex-goal")),
+    ).toBeFalse();
+  });
+
+  test("offers an isolated workflow sibling for a paired executor trial", () => {
+    const data = {
+      targetProject: "may-agent.app",
+      focus: "Check whether the Task mental model matches current code.",
+    };
+    const codexInput =
+      app.actions?.["trial-codex-goal-review"]?.toInput?.(data);
+    const workflowInput =
+      app.actions?.["trial-workflow-review"]?.toInput?.(data);
+    const codex = taskIntentForInput(codexInput!);
+    const workflow = taskIntentForInput(workflowInput!);
+
+    expect(workflowInput).toEqual({ kind: "workflow-trial", data });
+    expect(workflow).toMatchObject({
+      id: expect.stringMatching(
+        /^runtime\/workflow-trial\/may-agent\.app\/[a-f0-9]{12}$/,
+      ),
+      mode: "achieve",
+      workflow: "executor-trial",
+      input: { targetProject: "may-agent.app", trial: true, readOnly: true },
+    });
+    expect(workflow?.outcome).toBe(codex?.outcome);
+    expect(workflow?.acceptance).toEqual(codex?.acceptance);
+    expect(workflow?.input).toEqual(codex?.input);
+    expect(workflow?.id).not.toBe(codex?.id);
+    expect(workflow).not.toHaveProperty("executor");
+    expect(codex).not.toHaveProperty("workflow");
   });
 
   test("resolves every admitted input to one task", () => {
@@ -374,7 +407,11 @@ describe("evaluation fact admission", () => {
       taskInputForEvent(
         event(
           "metric.breach",
-          { metricId: "eval.llm-coverage-lag-h", repeat: true, reason: "open-alert-updated" },
+          {
+            metricId: "eval.llm-coverage-lag-h",
+            repeat: true,
+            reason: "open-alert-updated",
+          },
           { owner: "agent:evaluator" },
         ),
       ),
@@ -387,7 +424,10 @@ describe("evaluation fact admission", () => {
           { owner: "agent:evaluator" },
         ),
       ),
-    ).toMatchObject({ kind: "owner-review", data: { reason: "metric.recovered" } });
+    ).toMatchObject({
+      kind: "owner-review",
+      data: { reason: "metric.recovered" },
+    });
   });
 
   test("admits only Telegram replies addressed to evaluation", () => {

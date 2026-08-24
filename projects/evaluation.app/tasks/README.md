@@ -57,15 +57,16 @@ after their result is absorbed.
 
 `app.ts` maps known events to task intent:
 
-| Task key                              | Mode       | Handler                                 | Convergence                                                                                                                                       |
-| ------------------------------------- | ---------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runtime/aftermath-coverage-snapshot` | `achieve`  | `evaluator-aftermath-coverage-snapshot` | One fresh trailing-3h eligible/evaluated count and coverage metric sample is persisted.                                                           |
-| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`                   | An eligible or explicitly requested session has a durable evaluation or structured skip.                                                          |
-| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`                   | The requested session has one workflow-traced deep judgment.                                                                                      |
-| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                            |
-| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection`        | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                            |
-| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`              | The target fingerprint is current and any due report/feedback is persisted.                                                                       |
-| `runtime/owner-review`                | `maintain` | `codex-goal`                            | Codex resumes the evaluator role against bounded Task events and child facts; typed child actions are applied or it records a justified no-op.    |
+| Task key                              | Mode       | Handler                                 | Convergence                                                                                                                                     |
+| ------------------------------------- | ---------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime/aftermath-coverage-snapshot` | `achieve`  | `evaluator-aftermath-coverage-snapshot` | One fresh trailing-3h eligible/evaluated count and coverage metric sample is persisted.                                                         |
+| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`                   | An eligible or explicitly requested session has a durable evaluation or structured skip.                                                        |
+| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`                   | The requested session has one workflow-traced deep judgment.                                                                                    |
+| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                          |
+| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection`        | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                          |
+| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`              | The target fingerprint is current and any due report/feedback is persisted.                                                                     |
+| `runtime/owner-review`                | `maintain` | `codex-goal`                            | Codex resumes the evaluator role against bounded Task events and child facts; typed child actions are applied or it records a justified no-op.  |
+| `runtime/*-trial/<target>/<key>`      | `achieve`  | `codex-goal` or `executor-trial`        | Manual read-only sibling Tasks run the same assessment contract in isolation so executor behavior can be compared without production authority. |
 
 Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.

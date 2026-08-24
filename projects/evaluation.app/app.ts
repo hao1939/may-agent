@@ -104,6 +104,19 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
+  Type.Object(
+    {
+      kind: Type.Literal("workflow-trial"),
+      data: Type.Object(
+        {
+          targetProject: Type.String({ minLength: 1 }),
+          focus: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
   ...["aftermath-coverage-snapshot", "deep-scan"].map((kind) =>
     Type.Object(
       { kind: Type.Literal(kind), data: detailsSchema },
@@ -370,6 +383,30 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         mode: "achieve",
         agent: "evaluator",
         executor: evaluationExecutor,
+        input: { ...target, focus, trial: true, readOnly: true },
+        priority: "P2",
+        category: "executor-trial",
+      };
+    }
+    case "workflow-trial": {
+      const target = projectTarget(data.targetProject);
+      const focus = stringValue(data.focus);
+      if (!focus) return null;
+      const trialKey = createHash("sha256")
+        .update(`${target.targetProject}\u0000${focus}`)
+        .digest("hex")
+        .slice(0, 12);
+      return {
+        id: `runtime/workflow-trial/${safeTaskIdPart(target.targetProject)}/${trialKey}`,
+        parentId: "project-app-audit",
+        outcome: `Produce one bounded read-only assessment of ${target.targetProject}: ${focus}`,
+        acceptance: [
+          "The assessment answers the requested focus directly.",
+          "Every material claim cites an exact current file, command result, or durable observation.",
+          "No file, Task, external system, or repository state is changed.",
+        ],
+        mode: "achieve",
+        workflow: "executor-trial",
         input: { ...target, focus, trial: true, readOnly: true },
         priority: "P2",
         category: "executor-trial",
@@ -696,6 +733,18 @@ const app = defineApp({
         { additionalProperties: false },
       ),
       toInput: (data) => ({ kind: "codex-goal-trial", data }),
+    },
+    "trial-workflow-review": {
+      description:
+        "Run one manual, read-only evaluation task through Evaluation's workflow executor.",
+      inputSchema: Type.Object(
+        {
+          targetProject: Type.String({ minLength: 1 }),
+          focus: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => ({ kind: "workflow-trial", data }),
     },
   },
   tasks: {

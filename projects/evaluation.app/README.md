@@ -97,6 +97,10 @@ workflow bindings, and bounded owner judgment. Deterministic collection,
 publication, and projection stay in workflows. Open-ended owner reconciliation
 and addressed free-form requests use the `codex-goal` executor with the same
 Task result and event contract; changing executors does not change Task identity.
+The two manual `trial-codex-goal-review` and `trial-workflow-review` actions
+create isolated read-only sibling Tasks with the same desired input and
+acceptance contract. They are an observation tool: neither candidate owns or
+mutates the target, and neither is production result authority.
 Session aftermath runs only for eligible `session.end` or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
 new evaluator-owned metric breaches and recoveries wake the stable owner-review

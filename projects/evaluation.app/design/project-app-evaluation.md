@@ -276,16 +276,16 @@ not consume evaluator sessions merely to repeat unchanged child state.
 
 ### Runtime Tasks
 
-| Event                                              | Task                                  | Mode       | Observable postcondition                                                                               |
-| -------------------------------------------------- | ------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
-| eligible `session.end`                             | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip.                                |
-| `evaluation.aftermath.coverage_snapshot.requested` | `runtime/aftermath-coverage-snapshot` | `achieve`  | A fresh trailing-3h eligible/evaluated count and coverage metric sample are persisted.                 |
-| `evaluation.session.requested`                     | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                          |
-| `evaluation.deep.requested`                        | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                               |
+| Event                                              | Task                                  | Mode       | Observable postcondition                                                                                                                                                                                          |
+| -------------------------------------------------- | ------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| eligible `session.end`                             | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip.                                                                                                                                           |
+| `evaluation.aftermath.coverage_snapshot.requested` | `runtime/aftermath-coverage-snapshot` | `achieve`  | A fresh trailing-3h eligible/evaluated count and coverage metric sample are persisted.                                                                                                                            |
+| `evaluation.session.requested`                     | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                                                                                                                     |
+| `evaluation.deep.requested`                        | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                                                                                                                          |
 | new evaluator-owned metric breach or recovery      | `runtime/owner-review`                | `maintain` | The exact metric transition is reviewed from bounded reconciliation context without a broad pipeline rescan. Repeated updates for the same open alert stay as facts but do not wake another expensive owner turn. |
-| `evaluation.deep.scan`                             | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                               |
-| `evaluation.project.review.requested`              | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                           |
-| `evaluation.tick`                                  | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                     |
+| `evaluation.deep.scan`                             | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                                                                                                                          |
+| `evaluation.project.review.requested`              | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                                                                                                                      |
+| `evaluation.tick`                                  | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                                                                                                                                |
 
 An `achieve` task leaves the live graph after outcome absorption and keeps a
 bounded completion reference for deduplication. A converged `maintain` task
@@ -299,8 +299,15 @@ Task outcome and acceptance remain independent of the executor:
   the named Evaluation workflows;
 - `runtime/owner-review` and addressed free-form Evaluation requests use the
   resumable `codex-goal` executor with the selected `evaluator` role; and
-- the compatibility action for a bounded read-only Codex review uses that same
-  production executor rather than a separate work model.
+- the manual executor trial actions create separate read-only `achieve` Tasks
+  with identical outcome, acceptance, and input: one selects `codex-goal` and
+  one selects the `executor-trial` workflow.
+
+The trial Tasks are evidence, not production authority. They cannot mutate the
+target, do not share a Task identity, and are compared only after both results
+have independently crossed the normal Task result boundary. This prevents a
+race between two reconcilers while keeping the comparison about executor
+behavior rather than different desired state.
 
 Codex receives the current Task, bounded direct-child facts, durable events,
 declared outputs, and the selected evaluator instructions. Its thread is
