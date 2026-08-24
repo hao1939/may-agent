@@ -86,10 +86,7 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
 }
 
 export function renderTelegramTask(task: HumanTaskView): string {
-  const observedProgress = task.terminal
-    ? ""
-    : task.progress?.message?.trim() ||
-      [task.progress?.stage.replaceAll("-", " "), task.progress?.status].filter(Boolean).join(" · ");
+  const observedProgress = task.terminal ? "" : task.progress?.message?.trim();
   const result = observedProgress || task.response?.trim() || task.summary?.trim();
   return [
     `Task ${task.ref}`,
