@@ -131,6 +131,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     delivery: "required",
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
+      optionalTextField(input.data, "targetTaskId", "app.input.requested data.targetTaskId");
       const appInput = record(input.data.input, "app.input.requested data.input") as unknown as AppInput;
       if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
       if (!options.acceptsAppInput(appId, appInput)) throw new Error(`App ${appId} does not accept this input`);

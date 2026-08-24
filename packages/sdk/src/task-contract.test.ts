@@ -38,6 +38,7 @@ describe("project task handler contract", () => {
     const dependency = {
       id: "review",
       appId: "evaluation",
+      taskId: "review/current",
       input: { kind: "deep-scan", data: { reason: "caller-review" } },
     };
     expect(
@@ -86,6 +87,17 @@ describe("project task handler contract", () => {
       ok: false,
       error: "waiting cannot include response; put operational progress in summary",
     });
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "waiting",
+          summary: "Invalid target",
+          evidence: [],
+          dependencies: [{ ...dependency, taskId: " " }],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "dependencies[0].taskId must be a non-empty string when present" });
   });
 
   it("applies convention defaults to a finite create action", () => {

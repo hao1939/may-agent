@@ -57,6 +57,7 @@ export function createAppInputAdmission(options: {
         target: { appId: input.appId },
         idempotencyKey: input.idempotencyKey,
         data: {
+          ...(input.targetTaskId ? { targetTaskId: input.targetTaskId } : {}),
           input: input.input as unknown as AppInput,
           conversationId: input.conversationId,
           conversationSequence: input.conversationSequence,

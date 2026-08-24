@@ -182,6 +182,50 @@ describe("App inbox runtime", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("routes typed follow-up input to one exact existing Task", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    task.observations.set("probe/current", {
+      kind: "task",
+      id: "probe/current",
+      status: "waiting",
+      summary: "Waiting for a human correction",
+    });
+    const attachments: Array<Record<string, unknown>> = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      attachTask: async (input: any) => {
+        attachments.push(input.attachment);
+        return { taskId: input.attachment.taskId };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "app.input.requested",
+      source: "app-task:may",
+      owner: "app:evaluation",
+      data: {
+        appId: "evaluation",
+        requestId: "feedback-1",
+        targetTaskId: "probe/current",
+        input: { kind: "probe", data: { value: "human correction" } },
+        source: { kind: "app", id: "may" },
+        idempotencyKey: "feedback:1",
+      },
+    });
+
+    await waitUntil(() => attachments.length === 1);
+    expect(attachments).toEqual([{ kind: "existing", taskId: "probe/current" }]);
+    expect(runtime.host.get("feedback-1")).toMatchObject({
+      targetTaskId: "probe/current",
+      waitingOn: { kind: "task", id: "probe/current" },
+    });
+  });
+
   it("returns from durable publication before request coordination starts", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);

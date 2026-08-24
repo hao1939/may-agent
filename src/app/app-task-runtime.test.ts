@@ -34,6 +34,7 @@ import {
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
+  completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
@@ -819,7 +820,16 @@ describe("canonical App task runtime", () => {
     const bus = eventBus();
     const persistDir = join(f.root, "state");
     const evaluationDir = join(f.projectsRoot, "evaluation.app");
-    mkdirSync(evaluationDir, { recursive: true });
+    mkdirSync(join(evaluationDir, "tasks"), { recursive: true });
+    writeFileSync(
+      join(evaluationDir, "tasks", "seed.json"),
+      JSON.stringify({
+        root_task_id: "root",
+        groups: {
+          root: { id: "root", parent_id: null, state: "backlog", agent: "evaluator", children: [] },
+        },
+      }),
+    );
     writeFileSync(
       join(f.appDir, "app.js"),
       `export default {
@@ -874,16 +884,46 @@ describe("canonical App task runtime", () => {
 
     const registry = new AppRegistry(f.projectsRoot);
     await registry.reload();
-    activateTaskResources(
-      taskReconciliationConfig({
-        appDir: evaluationDir,
-        projectDir: evaluationDir,
-        owner: "evaluator",
-        maxConcurrent: 1,
-      }),
-      persistDir,
-      "evaluation",
-    );
+    const evaluationConfig = taskReconciliationConfig({
+      appDir: evaluationDir,
+      projectDir: evaluationDir,
+      owner: "evaluator",
+      maxConcurrent: 1,
+    });
+    const evaluationState = readTaskState(evaluationConfig);
+    evaluationState.project_lifecycle = "paused";
+    saveTaskState(evaluationConfig, evaluationState, { projectLifecycleReason: "pause deterministic test owner" });
+    activateTaskResources(evaluationConfig, persistDir, "evaluation");
+    observeAppTaskIntent(evaluationConfig, {
+      intent: {
+        id: "review/current",
+        parentId: "root",
+        outcome: "Review the current evidence",
+        acceptance: ["The accepted human decision is applied"],
+        mode: "achieve",
+        agent: "evaluator",
+      },
+      appAgent: "evaluator",
+    });
+    const waitingTarget = claimObservedAppTask(evaluationConfig, {
+      taskId: "review/current",
+      appAgent: "evaluator",
+      handler: "agent:evaluator",
+      reason: "await-human-decision",
+    });
+    if (waitingTarget.kind !== "claimed") throw new Error("expected target Task claim");
+    deferAppTask(evaluationConfig, waitingTarget, {
+      disposition: "waiting",
+      summary: "Waiting for the human decision",
+      conditions: [
+        {
+          id: "original-decision",
+          type: "session.end",
+          subject: "session:original-decision",
+          expected: "done",
+        },
+      ],
+    });
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
@@ -907,22 +947,30 @@ describe("canonical App task runtime", () => {
     });
     const db = openDatabase(":memory:");
     applyDbSchema(db);
-    const dependencyResults = new Map<string, { summary: string; response: string; evidence: string[] }>();
     let attachedDependencyTaskId: string | undefined;
     let attachedDependencyTaskCount = 0;
     const inbox = await startAppInboxRuntime({
       registry,
       db,
       bus,
-      attachTask: async ({ attachment }) => {
-        const taskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
+      attachTask: async (input) => {
+        const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
         attachedDependencyTaskId ??= taskId;
         attachedDependencyTaskCount += 1;
-        return { taskId };
+        return attachLoadedAppTask({ ...input, bus });
       },
-      readDependency: async ({ dependency }) => {
-        const result = dependencyResults.get(dependency.id);
-        return result ? { kind: "task", id: dependency.id, status: "done", ...result } : null;
+      readDependency: async ({ appDir, dependency }) => {
+        const task = readLoadedAppTaskView({ bus, appDir, taskId: dependency.id });
+        return task
+          ? {
+              kind: "task",
+              id: dependency.id,
+              status: task.status,
+              summary: task.summary,
+              response: task.response,
+              evidence: task.evidence,
+            }
+          : null;
       },
       previewTaskEvent: ({ appId, event, targetedTaskId }) => {
         const taskIds = previewLoadedCanonicalAppTaskEvent({ bus, appId, event, targetedTaskId });
@@ -979,6 +1027,7 @@ describe("canonical App task runtime", () => {
           {
             id: "review",
             appId: "evaluation",
+            taskId: "review/current",
             input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
           },
         ],
@@ -995,9 +1044,23 @@ describe("canonical App task runtime", () => {
       const attachmentDeadline = Date.now() + 5_000;
       while (!attachedDependencyTaskId && Date.now() < attachmentDeadline) await Bun.sleep(5);
       if (!attachedDependencyTaskId) throw new Error("expected child App request to attach to a Task");
+      expect(attachedDependencyTaskId).toBe("review/current");
+      expect(readTaskState(evaluationConfig).taskTriggers?.["review/current"]?.event).toMatchObject({
+        type: "app.task.requested",
+        data: {
+          taskId: "review/current",
+          request: {
+            input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
+          },
+        },
+      });
+      expect(
+        Object.keys(readTaskState(evaluationConfig).resources ?? {}).filter((id) => id.startsWith("review/")),
+      ).toEqual(["review/current"]);
       createAppInboxItem(getDb(persistDir), {
         id: requestId,
         appId: "evaluation",
+        targetTaskId: "review/current",
         source: { kind: "app", id: "sample" },
         input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
       });
@@ -1024,6 +1087,7 @@ describe("canonical App task runtime", () => {
           {
             id: requestId,
             appId: "evaluation",
+            taskId: "review/current",
             input: { kind: "deep-scan", data: { reason: "parent-needs-review " } },
           },
         ],
@@ -1063,6 +1127,7 @@ describe("canonical App task runtime", () => {
           {
             id: requestId,
             appId: "evaluation",
+            taskId: "review/current",
             input: { kind: "deep-scan", data: { reason: "parent-needs-review " } },
           },
           {
@@ -1093,7 +1158,21 @@ describe("canonical App task runtime", () => {
         waitingOn: { kind: "task", id: attachedDependencyTaskId },
       });
 
-      dependencyResults.set(attachedDependencyTaskId, {
+      const resumedTarget = claimObservedAppTask(evaluationConfig, {
+        taskId: attachedDependencyTaskId,
+        appAgent: "evaluator",
+        handler: "agent:evaluator",
+        reason: "typed-human-feedback",
+      });
+      if (resumedTarget.kind !== "claimed") throw new Error(`expected resumed target claim, got ${resumedTarget.kind}`);
+      expect(resumedTarget.events).toHaveLength(1);
+      expect(resumedTarget.events[0]?.event).toMatchObject({
+        type: "app.task.requested",
+        data: {
+          request: { input: { kind: "deep-scan", data: { reason: "parent-needs-review" } } },
+        },
+      });
+      completeAppTask(evaluationConfig, resumedTarget, {
         summary: "Independent review completed",
         response: "The dependency result is ready for the parent.",
         evidence: ["review:accepted"],
@@ -1261,6 +1340,7 @@ describe("canonical App task runtime", () => {
         {
           id: "review",
           appId: "evaluation",
+          taskId: "review/current",
           input: { kind: "deep-scan", data: { reason: "sample-review" } },
         },
       ],
@@ -1271,6 +1351,7 @@ describe("canonical App task runtime", () => {
       owner: "app:evaluation",
       data: {
         appId: "evaluation",
+        targetTaskId: "review/current",
         input: { kind: "deep-scan", data: { reason: "sample-review" } },
         source: { kind: "app", id: "sample" },
       },

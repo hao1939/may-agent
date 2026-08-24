@@ -245,6 +245,8 @@ export type SystemEvent =
       data: {
         requestId?: string;
         appId: string;
+        /** Continue one exact existing Task instead of resolving new App work. */
+        targetTaskId?: string;
         input: { kind: string; data: unknown };
         source?: { kind: "human" | "app" | "system"; id: string };
         parentId?: string;

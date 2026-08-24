@@ -733,6 +733,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         input: requestedInput(data),
         originEventId: eventRowId(event),
         parentId: typeof data.parentId === "string" ? data.parentId : undefined,
+        targetTaskId: typeof data.targetTaskId === "string" ? data.targetTaskId : undefined,
         conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
         conversationSequence:
           typeof data.conversationId === "string"

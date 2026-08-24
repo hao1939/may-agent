@@ -81,6 +81,7 @@ describe("app runtime startup order", () => {
 describe("App input control admission", () => {
   const command = {
     appId: "alpha-project",
+    targetTaskId: "normalization/current",
     input: { kind: "message", data: { message: "review" } },
     source: { kind: "human", id: "web-ui:project-comment-17" },
     conversationId: "web-ui:project:alpha-project",
@@ -111,6 +112,7 @@ describe("App input control admission", () => {
           target: { appId: "alpha-project" },
           idempotencyKey: "project-comment-17",
           data: {
+            targetTaskId: "normalization/current",
             input: command.input,
             conversationId: command.conversationId,
             conversationSequence: undefined,

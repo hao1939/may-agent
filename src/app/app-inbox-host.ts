@@ -65,6 +65,8 @@ export type AdmitAppInput = {
   id?: string;
   appId: string;
   parentId?: string;
+  /** Attach this request to one exact existing Task in the target App. */
+  targetTaskId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -113,6 +115,12 @@ type RegisteredApp = AppDefinition;
 
 const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["status"]>([
   "attention",
+  "done",
+  "error",
+  "interrupted",
+  "unknown",
+]);
+const TERMINAL_TASK_INPUT_STATUSES = new Set<AppDependencyObservation["status"]>([
   "done",
   "error",
   "interrupted",
@@ -696,8 +704,22 @@ export class AppInboxHost {
     if (!app.task) throw new Error(`App ${app.id} does not resolve admitted input to a Task`);
     if (!this.#attachTask) throw new Error("App task attachment is not configured");
 
-    const attachment =
-      request.dependency?.kind === "task"
+    if (claim.item.targetTaskId && this.#readDependency) {
+      const target: AppDependencyObservation = (await this.#observeDependency(app.id, {
+        kind: "task",
+        id: claim.item.targetTaskId,
+      })) ?? { kind: "task", id: claim.item.targetTaskId, status: "unknown" };
+      if (TERMINAL_TASK_INPUT_STATUSES.has(target.status)) {
+        return this.#completeRequest(claim, {
+          summary: `Task ${target.id} is already ${target.status}; the new input was not applied and must be reconsidered as distinct follow-up work if it still matters.`,
+          ...(target.evidence ? { evidence: target.evidence } : {}),
+        });
+      }
+    }
+
+    const attachment = claim.item.targetTaskId
+      ? ({ kind: "existing", taskId: claim.item.targetTaskId } as const)
+      : request.dependency?.kind === "task"
         ? ({ kind: "existing", taskId: request.dependency.id } as const)
         : app.task({ id: request.id, source: request.source, input: request.input });
     if (!attachment || typeof attachment !== "object") {
