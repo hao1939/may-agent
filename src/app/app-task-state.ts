@@ -50,6 +50,7 @@ export type AppTaskResource = {
     currentAttemptId?: string;
     summary?: string;
     response?: string;
+    result?: Record<string, unknown>;
     evidence?: string[];
     conditionIds?: string[];
     updatedAt: string;

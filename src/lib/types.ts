@@ -1,7 +1,7 @@
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./persistence.js";
-import type { SkillActivationRule, SkillCatalog } from "./skills.js";
+import type { SkillCatalog } from "./skills.js";
 
 /**
  * Model with an optional apiKey attached at runtime.
@@ -65,8 +65,6 @@ export interface SubagentDefinition {
   /** Validated, precedence-resolved skill snapshot used by new turns. */
   skillCatalog?: SkillCatalog;
 
-  /** Deterministic, owner-authored activation for narrow high-risk task classes. */
-  skillActivationRules?: readonly SkillActivationRule[];
 }
 
 /** Runtime info about a session. */

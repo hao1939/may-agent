@@ -12,12 +12,14 @@ describe("agent guard observations", () => {
         domain: "test",
         systemPrompt: "test agent",
         model: { contextWindow: 4096 } as any,
-        tools: [{
-          name: "finish",
-          description: "finish",
-          parameters: {},
-          execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
-        } as any],
+        tools: [
+          {
+            name: "finish",
+            description: "finish",
+            parameters: {},
+            execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
+          } as any,
+        ],
       },
       projectRoot: "/tmp",
       sessionId: "s_guard",
@@ -26,18 +28,22 @@ describe("agent guard observations", () => {
     });
     const context: BeforeToolCallContext = {
       toolCall: { name: "finish", id: "tc_1" },
-      args: { status: "success", summary: "Implemented the fix" },
+      args: {
+        status: "success",
+        summary: "Implemented the fix",
+        deliverables: [{ path: "src/fix.ts", description: "implementation" }],
+      },
       context: { messages: [] },
     };
 
     const result = await prepared.runner.beforeToolCall!(context as any);
 
-    expect(result).toMatchObject({ block: false, reason: expect.stringContaining("Ghost Deliverable") });
+    expect(result).toMatchObject({ block: false, reason: expect.stringContaining("no write, edit") });
     expect(observations).toEqual([
       expect.objectContaining({
         guard: "finish-evidence",
         block: false,
-        reason: expect.stringContaining("Ghost Deliverable"),
+        reason: expect.stringContaining("no write, edit"),
         context: expect.objectContaining({ toolCall: { name: "finish", id: "tc_1" } }),
       }),
     ]);

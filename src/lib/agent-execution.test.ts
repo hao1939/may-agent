@@ -416,7 +416,7 @@ describe("shared agent execution preparation", () => {
     expect(observations).toContainEqual({ before: "session-latest", after: "session-latest" });
   });
 
-  test("injects a rule-activated skill before the task", () => {
+  test("does not select a skill from Task wording", () => {
     const skill = {
       name: "proof-first",
       description: "Prepare proof before broad rollout.",
@@ -439,16 +439,15 @@ describe("shared agent execution preparation", () => {
           diagnostics: [],
           omittedFromPrompt: [],
         },
-        skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents?" }],
       },
       projectRoot: "/tmp",
       sessionId: "rule-skill-1",
       task: "Roll out this prompt to every agent.",
     });
 
-    expect(prepared.skillActivation).toBe("rule");
-    expect(prepared.activatedSkill?.name).toBe("proof-first");
-    expect(prepared.prompt).toContain("Freeze a baseline and candidate before broad rollout.");
+    expect(prepared.skillActivation).toBeUndefined();
+    expect(prepared.activatedSkill).toBeUndefined();
+    expect(prepared.prompt).not.toContain("Freeze a baseline and candidate before broad rollout.");
     expect(prepared.prompt).toContain("Roll out this prompt to every agent.");
   });
 

@@ -23,11 +23,6 @@ export interface SkillCatalog {
   readonly omittedFromPrompt: readonly string[];
 }
 
-export interface SkillActivationRule {
-  skill: string;
-  pattern: string;
-}
-
 interface SkillSource {
   scope: MaySkillScope;
   packagePath: string;
@@ -170,14 +165,6 @@ export function invokeCatalogSkill(
     throw new Error(`Skill "${name}" exceeds the ${MAX_EXPLICIT_SKILL_BYTES}-byte activation limit`);
   }
   return { prompt: formatSkillInvocation(skill, task), skill };
-}
-
-export function matchSkillActivationRule(
-  rules: readonly SkillActivationRule[] | undefined,
-  task: string,
-): SkillActivationRule | undefined {
-  if (!rules?.length) return undefined;
-  return rules.find((rule) => new RegExp(rule.pattern, "i").test(task));
 }
 
 export function parseExplicitSkill(text: string): { skill?: string; task: string } {

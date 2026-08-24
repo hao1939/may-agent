@@ -43,11 +43,6 @@ async function resolveValue<T>(
   return value;
 }
 
-function appendEvent(task: string, event: EventEnvelope | undefined): string {
-  if (!event) return task;
-  return `${task}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
-}
-
 /** Internal adapter for the remaining agent-owned cron handler convention. */
 export function createWorkflowHandler(options: WorkflowHandlerOptions) {
   return (ctx: WorkflowHandlerContext, entry: CronEntry) => async (event?: EventEnvelope): Promise<void> => {
@@ -87,13 +82,13 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions) {
       event,
       entry,
     );
-    const rawTask = await resolveValue(options.task, ctx, event, entry);
-    const task = options.includeEvent ? appendEvent(rawTask, event) : rawTask;
+    const task = await resolveValue(options.task, ctx, event, entry);
     const runOpts: RunOpts = {};
     if (source) runOpts.source = source;
     const sessionSource = await resolveValue(options.sessionSource, ctx, event, entry);
     if (sessionSource) runOpts.sessionSource = sessionSource;
     if (projectId) runOpts.projectId = projectId;
+    if (options.includeEvent) runOpts.input = { event };
 
     ctx.sdk.log(
       "info",

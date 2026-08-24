@@ -74,12 +74,12 @@ import {
 import { readIdentity } from "./detached.js";
 import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
-import type { SessionKind, PersistedSession } from "./persistence.js";
+import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.js";
 import type { ToolPolicy } from "./session-policy.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { invokeCatalogSkill, matchSkillActivationRule, parseExplicitSkill, type MaySkill } from "./skills.js";
+import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { createCheckpointTool } from "./tools/checkpoint.js";
 import { drainPersistedSessionBashProcessGroups } from "./tools/bash.js";
@@ -117,7 +117,7 @@ export interface RunOptions {
   channelMessageId?: number;
   projectId?: string;
   /** Current fenced App Task attempt exposed only to scoped Task tools. */
-  taskBinding?: { appId: string; taskId: string; generation: number; attemptId: string };
+  taskBinding?: TaskBinding;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
   orderId?: string;
@@ -145,6 +145,7 @@ export type CallAgentOptions = Pick<
   | "source"
   | "workflowRunId"
   | "projectId"
+  | "taskBinding"
   | "recoveryOwner"
   | "stepLabel"
   | "trace"
@@ -164,6 +165,7 @@ interface ActiveSession {
   startedAt: number;
   status: "running" | "paused" | "idle" | "interrupted";
   lastError?: string;
+  interruptionKind?: "execution-timeout" | "observation-timeout" | "cancelled";
   kind: SessionKind;
   autoClose: "immediate" | "never";
   parentSessionId?: string;
@@ -180,7 +182,7 @@ interface ActiveSession {
   conversationId?: string;
   channelMessageId?: number;
   projectId?: string;
-  taskBinding?: { appId: string; taskId: string; generation: number; attemptId: string };
+  taskBinding?: TaskBinding;
   recoveryOwner?: string;
   resumeMessages?: AgentMessage[];
   trace?: EventTrace;
@@ -202,14 +204,8 @@ type DispatchDedupDb = {
   version?: number;
 };
 
-function isLegacyHeartbeatSession(meta: { source?: string; task?: string }): boolean {
-  const source = meta.source ?? "";
-  const task = meta.task ?? "";
-  return source.includes("heartbeat") || task.includes("waking up for your heartbeat") || /^\[heartbeat\]/i.test(task);
-}
-
-function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
-  return meta.source === "heartbeat" || isLegacyHeartbeatSession(meta);
+function isHeartbeatSession(meta: { source?: string }): boolean {
+  return meta.source === "heartbeat";
 }
 
 function releaseStaleHeartbeatDispatchLease(persistDir: string, agent: string): boolean {
@@ -686,6 +682,7 @@ export class SubagentManager {
       conversationId: opts?.conversationId ?? existingMeta?.conversationId,
       channelMessageId: opts?.channelMessageId ?? existingMeta?.channelMessageId,
       projectId: opts?.projectId ?? existingMeta?.projectId,
+      taskBinding: opts?.taskBinding ?? existingMeta?.taskBinding,
       recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
       kind,
       autoClose,
@@ -720,6 +717,7 @@ export class SubagentManager {
         log("warn", `[runtime] ${sessionId} timed out after ${timeoutMs}ms`);
         session.status = "interrupted";
         session.lastError = reason;
+        session.interruptionKind = "execution-timeout";
         agent.cancel();
       }, timeoutMs);
     }
@@ -750,6 +748,7 @@ export class SubagentManager {
       const wasRunning = session.status === "running";
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       session.status = "interrupted";
+      session.interruptionKind = "cancelled";
       session.agent.cancel();
       this._registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
       updateSessionDb(this._persistDir, sessionId, {
@@ -779,13 +778,11 @@ export class SubagentManager {
     const skillName = opts?.skill ?? parsedSkill.skill;
     const turnTask = parsedSkill.skill ? parsedSkill.task : text;
     const def = this.agents.get(session.agentName)?.definition;
-    const matchedRule = skillName ? undefined : matchSkillActivationRule(def?.skillActivationRules, turnTask);
-    const activationName = skillName ?? matchedRule?.skill;
-    const activation = activationName ? invokeCatalogSkill(def?.skillCatalog, activationName, turnTask) : undefined;
+    const activation = skillName ? invokeCatalogSkill(def?.skillCatalog, skillName, turnTask) : undefined;
     this.queueTurnTrace(session, opts?.trace);
     if (activation) {
       session.loadedSkillHashes.add(activation.skill.contentHash);
-      this.emitSkillLoaded(session, activation.skill, matchedRule ? "rule" : "explicit", opts?.trace);
+      this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
     }
     const promptText = activation?.prompt ?? turnTask;
     const msg = { role: "user" as const, content: [{ type: "text" as const, text: promptText }] };
@@ -908,9 +905,7 @@ export class SubagentManager {
     await this.waitFor(sessionId);
   }
 
-  private callDepthLimitError(
-    parentSessionId?: string,
-  ): (TaskResult & { messages: AgentMessage[] }) | undefined {
+  private callDepthLimitError(parentSessionId?: string): (TaskResult & { messages: AgentMessage[] }) | undefined {
     const parentDepth = parentSessionId ? (this.callDepths.get(parentSessionId) ?? 0) : 0;
     if (parentDepth < this._maxCallDepth) return undefined;
     return {
@@ -1804,6 +1799,7 @@ export class SubagentManager {
         const reason = `No agent observation for ${timeoutMs}ms`;
         session.status = "interrupted";
         session.lastError = reason;
+        session.interruptionKind = "observation-timeout";
         log("warn", `[runtime] ${session.sessionId} interrupted: ${reason}`);
         session.agent.cancel();
         rejectDeadline(new Error(reason));
@@ -1980,6 +1976,7 @@ export class SubagentManager {
           outcome: status,
           summary: lastText,
           error: errorText,
+          interruptionKind: session.interruptionKind,
           durationMs,
           status,
           task,
@@ -2075,6 +2072,7 @@ export class SubagentManager {
     }
     session.status = "running";
     session.lastError = undefined;
+    session.interruptionKind = undefined;
     markSessionActive(this._persistDir, sessionId);
     try {
       writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
@@ -2201,6 +2199,7 @@ export class SubagentManager {
           status,
           task,
           error: errorText,
+          interruptionKind: session.interruptionKind,
           finishParams: finishParams as any,
           opCount: session.toolCalls,
           turnCount: session.turnCount,
@@ -2303,7 +2302,7 @@ export class SubagentManager {
   private emitSkillLoaded(
     session: ActiveSession,
     skill: MaySkill,
-    activation: "explicit" | "model" | "rule",
+    activation: "explicit" | "model",
     trace?: EventTrace,
   ): void {
     this.bus?.emit({
@@ -2348,6 +2347,7 @@ export class SubagentManager {
         sessionId,
         agent: agentName,
         task,
+        source: session.source,
         trigger: session.kind ?? "runtime",
         firedAt: session.startedAt,
         parentSessionId: session.parentSessionId,
@@ -2357,6 +2357,7 @@ export class SubagentManager {
         requestId: session.requestId,
         conversationId: session.conversationId,
         channelMessageId: session.channelMessageId,
+        taskBinding: session.taskBinding,
         stepLabel: session.stepLabel,
       },
       ...(session.trace ? { trace: session.trace } : {}),

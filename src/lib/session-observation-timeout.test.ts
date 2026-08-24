@@ -77,6 +77,7 @@ describe("job/call no-observation deadline", () => {
     );
     expect(fake.cancelled()).toBe(true);
     expect(active.status).toBe("interrupted");
+    expect(active.interruptionKind).toBe("observation-timeout");
   });
 
   it("resets the deadline on every observation", async () => {

@@ -137,6 +137,18 @@ function encodedBytes(value: unknown): number {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
 }
 
+function focusedTaskIdentity(input: AppInput): { appId: string; taskId: string } | null {
+  if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return null;
+  const context = (input.data as Record<string, unknown>).context;
+  if (!context || typeof context !== "object" || Array.isArray(context)) return null;
+  const focusedTask = (context as Record<string, unknown>).focusedTask;
+  if (!focusedTask || typeof focusedTask !== "object" || Array.isArray(focusedTask)) return null;
+  const value = focusedTask as Record<string, unknown>;
+  const appId = typeof value.appId === "string" ? value.appId.trim().replace(/\.app$/, "") : "";
+  const taskId = typeof value.taskId === "string" ? value.taskId.trim() : "";
+  return appId && taskId ? { appId, taskId } : null;
+}
+
 function boundedUtf8Text(value: string, maxBytes: number): string {
   if (Buffer.byteLength(value, "utf8") <= maxBytes) return value;
   const characters: string[] = [];
@@ -556,6 +568,7 @@ export class AppInboxHost {
                   ? `${request.input.kind} completed`
                   : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
               response: terminalTaskDependency.response,
+              result: terminalTaskDependency.result,
               evidence: terminalTaskDependency.evidence,
             })
           : await this.#attachRequestTask(app, claim, request);
@@ -596,6 +609,24 @@ export class AppInboxHost {
       parentId: item.parentId,
       input: item.input,
     };
+    const focusedTask = focusedTaskIdentity(item.input);
+    if (focusedTask) {
+      let observation: AppDependencyObservation | null = null;
+      if (this.#readDependency) {
+        try {
+          observation = await this.#readDependency({
+            appId: focusedTask.appId,
+            dependency: { kind: "task", id: focusedTask.taskId },
+          });
+        } catch {
+          // Focus is bounded context, not an admission or execution gate.
+        }
+      }
+      request.focusedTask = {
+        appId: focusedTask.appId,
+        task: observation ?? { kind: "task", id: focusedTask.taskId, status: "unknown" },
+      };
+    }
     if (item.conversationId) {
       const conversation = readAppConversationResource(this.#db, item.appId, item.conversationId, { limit: 40 });
       request.conversation = boundedAppRequestConversation(
@@ -628,6 +659,7 @@ export class AppInboxHost {
                     : "waiting",
             summary: child.result?.summary,
             response: child.result?.response,
+            result: child.result?.result,
             evidence: child.result?.evidence,
           }
         : { kind: "app", id: waitingOn.id, status: "unknown" };

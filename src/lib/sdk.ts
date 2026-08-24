@@ -76,6 +76,8 @@ export interface RunOpts {
   /** Session classification for agent steps started by a workflow. */
   sessionSource?: string;
   projectId?: string;
+  /** Structured workflow input; never encode control data into task prose. */
+  input?: unknown;
   timeout?: number;
 }
 

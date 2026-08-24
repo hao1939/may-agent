@@ -17,6 +17,7 @@ export type TaskView = {
   outcome: string;
   summary?: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence?: string[];
 };
 

@@ -23,6 +23,12 @@ describe("workflow run storage", () => {
         result_summary: null,
         result_reason: null,
         resumedFromRunId: null,
+        taskBinding: {
+          appId: "evaluation",
+          taskId: "task-1",
+          generation: 3,
+          attemptId: "attempt-4",
+        },
       });
 
       const row = getDb(persistDir).prepare("SELECT * FROM workflow_runs WHERE runId = ?").get("wr_test") as any;
@@ -30,6 +36,12 @@ describe("workflow run storage", () => {
       expect(row.task_ref).toBe("workflow-runs/wr_test/run.json");
       expect(row.task_sha256).toHaveLength(64);
       expect(row.artifact_sha256).toHaveLength(64);
+      expect(row).toMatchObject({
+        app_id: "evaluation",
+        task_id: "task-1",
+        task_generation: 3,
+        attempt_id: "attempt-4",
+      });
       expect(existsSync(join(persistDir, row.artifact_ref))).toBe(true);
 
       updateWorkflowRun(persistDir, "wr_test", {
@@ -39,6 +51,12 @@ describe("workflow run storage", () => {
       });
       const run = getWorkflowRun(persistDir, "wr_test");
       expect(run?.task).toBe(task);
+      expect(run?.taskBinding).toEqual({
+        appId: "evaluation",
+        taskId: "task-1",
+        generation: 3,
+        attemptId: "attempt-4",
+      });
       expect(run).toMatchObject({ status: "done", endedAt: 2, result_summary: "verified" });
       const artifact = JSON.parse(readFileSync(join(persistDir, row.artifact_ref), "utf8"));
       expect(artifact.task).toBe(task);

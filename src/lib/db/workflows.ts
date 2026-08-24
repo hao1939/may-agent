@@ -8,6 +8,7 @@ import {
   writeJsonArtifact,
 } from "../artifacts.js";
 import { readSessionMeta } from "../persistence.js";
+import type { TaskBinding } from "../persistence.js";
 
 export interface WorkflowRunRecord {
   runId: string;
@@ -23,6 +24,7 @@ export interface WorkflowRunRecord {
   parentSessionId: string | null;
   parentWorkflowRunId: string | null;
   projectId?: string | null;
+  taskBinding?: TaskBinding | null;
   depth: number;
   status: string;
   startedAt: number;
@@ -73,14 +75,19 @@ export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): v
   withSqliteBusyRetry(`insert workflow_run ${run.runId}`, () =>
     db.run(
       `INSERT OR REPLACE INTO workflow_runs
-        (runId, workflow, task, task_ref, task_sha256, task_bytes, artifact_ref, artifact_sha256, artifact_bytes, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId, sourcePath, sourceScope, entryContentHash)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (runId, workflow, task, task_ref, task_sha256, task_bytes, artifact_ref, artifact_sha256, artifact_bytes, parentSessionId, parentWorkflowRunId, projectId, app_id, task_id, task_generation, attempt_id, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId, sourcePath, sourceScope, entryContentHash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         persisted.runId, persisted.workflow, taskPreview(persisted.task),
         persisted.task_ref, persisted.task_sha256, persisted.task_bytes,
         persisted.artifact_ref, persisted.artifact_sha256, persisted.artifact_bytes,
         persisted.parentSessionId, persisted.parentWorkflowRunId,
-        persisted.projectId ?? null, persisted.depth, persisted.status, persisted.startedAt, persisted.endedAt,
+        persisted.projectId ?? null,
+        persisted.taskBinding?.appId ?? null,
+        persisted.taskBinding?.taskId ?? null,
+        persisted.taskBinding?.generation ?? null,
+        persisted.taskBinding?.attemptId ?? null,
+        persisted.depth, persisted.status, persisted.startedAt, persisted.endedAt,
         persisted.result_summary, persisted.result_reason, persisted.resumedFromRunId,
         persisted.sourcePath ?? null, persisted.sourceScope ?? null, persisted.entryContentHash ?? null,
       ],

@@ -55,7 +55,12 @@ import {
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
-import { cacheTaskStateReads, readTaskState, type TaskTree } from "./app-task-store.js";
+import {
+  cacheTaskStateReads,
+  readTaskState,
+  ResourceTaskMutationStaleError,
+  type TaskTree,
+} from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
@@ -255,28 +260,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function parseAppTaskSessionBinding(
-  task: unknown,
-): { appId: string; taskId: string; generation: number } | null {
-  if (typeof task !== "string" || !task.includes("## Reconciliation Task")) return null;
-  const blocks = task.matchAll(/## Reconciliation Task\s*```json\s*([\s\S]*?)```/g);
-  for (const block of blocks) {
-    try {
-      const parsed = JSON.parse(block[1] ?? "") as unknown;
-      if (!isRecord(parsed)) continue;
-      const appId = typeof parsed.appId === "string" ? parsed.appId.trim().replace(/\.app$/, "") : "";
-      const taskId = typeof parsed.taskId === "string" ? parsed.taskId.trim() : "";
-      const generation = parsed.generation;
-      if (appId && taskId && typeof generation === "number" && Number.isInteger(generation) && generation > 0) {
-        return { appId, taskId, generation };
-      }
-    } catch {
-      // A malformed prompt block is not a task binding.
-    }
-  }
-  return null;
+export function appTaskSessionBinding(value: unknown): { appId: string; taskId: string; generation: number } | null {
+  if (!isRecord(value)) return null;
+  const appId = typeof value.appId === "string" ? value.appId.trim().replace(/\.app$/, "") : "";
+  const taskId = typeof value.taskId === "string" ? value.taskId.trim() : "";
+  const generation = value.generation;
+  return appId && taskId && typeof generation === "number" && Number.isInteger(generation) && generation > 0
+    ? { appId, taskId, generation }
+    : null;
 }
-
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) return value.trim();
@@ -304,7 +296,7 @@ function readAppTaskSessionScope(persistDir: string | undefined, sessionId: stri
     };
   }
   return {
-    binding: parseAppTaskSessionBinding(meta.task),
+    binding: appTaskSessionBinding(meta.taskBinding),
     workflowRunId: firstNonEmptyString(meta.workflowRunId),
   };
 }
@@ -605,6 +597,7 @@ type NormalizedTaskHandlerResult = {
   state: "converged" | "waiting" | "needs-agent" | "error";
   summary: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence: string[];
   actions: AppTaskAction[];
   conditions?: AppTaskConditionSpec[];
@@ -754,6 +747,8 @@ export function consumePersistedTerminalAgentResult(input: {
       const applied = deferAppTask(input.config, claim, {
         disposition: "waiting",
         summary: result.summary,
+        response: result.response,
+        result: result.result,
         evidence: result.evidence,
         actions: result.actions,
         conditions: result.conditions,
@@ -876,8 +871,10 @@ async function executeTaskCapability(input: {
       sharedGuardsDir: paths.sharedGuardsDir,
       projectId: descriptor.id,
       taskBinding: {
+        appId: descriptor.id,
         taskId: claim.taskId,
         generation: claim.generation,
+        attemptId: claim.attemptId,
       },
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
       ...(descriptor.resourceStore ? { taskEmitter: input.taskEvents } : {}),
@@ -1215,9 +1212,9 @@ export function admitTaskAppDependencies(input: {
     // authority to retarget or create work.
     const resolvedCreatedTaskMatches = Boolean(
       match.item &&
-        match.item.targetTaskId === undefined &&
-        match.item.waitingOn?.kind === "task" &&
-        match.item.waitingOn.id === dependency.taskId,
+      match.item.targetTaskId === undefined &&
+      match.item.waitingOn?.kind === "task" &&
+      match.item.waitingOn.id === dependency.taskId,
     );
     if (match.item && match.item.targetTaskId !== dependency.taskId && !resolvedCreatedTaskMatches) {
       throw new Error(
@@ -1379,8 +1376,7 @@ export function projectAppTaskWaitPromptContext(
   });
   return {
     open,
-    note:
-      "These are accepted waits on this Task. Human feedback must reconsider this same Task. Preserve a still-valid wait by requestId; never create a replacement merely because it was absent from prose or child summaries. targetTaskId is the request's original target and must be preserved when redeclaring it. resolvedTaskId is only the Task created or found by that request; do not copy it into taskId when targetTaskId is absent.",
+    note: "These are accepted waits on this Task and remain part of its current state. Reconcile new events against the Task goal and these waits. Preserve a still-valid wait by requestId; create or replace work only when the goal requires it, never merely because the wait was absent from prose or child summaries. targetTaskId is the request's original target and must be preserved when redeclaring it. resolvedTaskId is only the Task created or found by that request; do not copy it into taskId when targetTaskId is absent.",
   };
 }
 
@@ -1428,27 +1424,15 @@ function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: 
     .filter((name: string, index: number, names: string[]) => names.indexOf(name) === index);
 }
 
-function extractReconciliationTaskId(taskPrompt: string | undefined): string | null {
-  if (!taskPrompt) return null;
-  const match = taskPrompt.match(/"taskId"\s*:\s*"([^"]+)"/);
-  return match?.[1]?.trim() || null;
-}
-
 function summarizeInterruptedAgentRecovery(input: {
-  meta: { task?: string; source?: string };
+  meta: { taskBinding?: unknown };
   persistDir: string;
   sessionId: string;
   reason: string;
   repairedPendingTools: string[];
   taskId?: string;
 }): { summary: string; taskId: string | null; evidence: string[] } {
-  const taskId = input.taskId?.trim()
-    ? input.taskId.trim()
-    : input.meta.source === "app-task-agent" ||
-        input.meta.source === "app-task-owner" ||
-        input.meta.source === "project-app-task-owner"
-      ? extractReconciliationTaskId(input.meta.task)
-      : null;
+  const taskId = input.taskId?.trim() || appTaskSessionBinding(input.meta.taskBinding)?.taskId || null;
   const summary = taskId
     ? `Agent session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
     : "Agent session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
@@ -1811,6 +1795,11 @@ export function deployReceiptPrompt(projectDir: string, taskId: string): string[
   ];
 }
 
+/** Exact durable wake that tells Runtime a deployment receipt is relevant. */
+export function hasDeployReceiptWake(events: TaskAttempt["events"]): boolean {
+  return events.items.some(({ event }) => event.data?.reason === "restart-aware-deploy-receipt");
+}
+
 export function planCanonicalAgentResidueCleanup(
   guard: CanonicalUntrackedResidueGuard | null,
 ): CanonicalAgentResidueCleanupPlan | null {
@@ -2111,6 +2100,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Perform the next bounded work needed by the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
     "Finish exactly once with finish().result. The tool schema is authoritative. A successful session without result does not resolve the task.",
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
+    "For App-defined machine-readable state or a domain decision, include result as an object; keep its human explanation in summary. A waiting Task may preserve a current decision there for its next reconciliation.",
     "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
     "For another App outcome, return a stable dependency { id, appId, input }. To continue an exact existing Task in that App, also include taskId. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
@@ -2118,7 +2108,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
     "After first acceptance-critical evidence, checkpoint a concise summary, next step, and exact artifact/session paths. Refresh only when those facts change, then finish promptly.",
     "For unresolved human work, give an exact useful response or a bounded wait with reviewAfterMs of at least 60000. Do not expose delivery or Host internals.",
-    "When feedback targets this Task, address the human's actual concern and reconcile this Task first. Inspect its Open Waits, preserve a live relevant dependency by identity, and create different work only when the existing Task cannot fulfill the requested outcome.",
+    "Treat new feedback as evidence for this Task. Address the human's actual concern against its goal and Open Waits, preserve a live relevant dependency by identity, and create different work only when the existing Task cannot fulfill the requested outcome.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");
 }
@@ -2195,8 +2185,8 @@ async function executeTaskAgent(input: {
           "```",
         ]
       : []),
-    ...(/deploy|restart/i.test(intent.outcome) ||
-    input.declaredOutputPaths.some((path) => path.includes("deploy-receipts"))
+    ...(hasDeployReceiptWake(reconciliationEvents) ||
+    readDeployReceiptForTask(input.executionPaths.projectDir, claim.taskId)
       ? ["", ...deployReceiptPrompt(input.executionPaths.projectDir, claim.taskId)]
       : []),
     ...(reconciliationEvents.items.length
@@ -2308,7 +2298,7 @@ function appTaskCliProtocol(appId: string): string {
     "Perform the next concrete work needed by the Task. The Task resource, not this CLI process or native session, owns status and retries.",
     "Do not edit Host task storage. Use the supplied workspace and paths only.",
     "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
-    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response only for a caller-facing converged result.',
+    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response for a caller-facing answer or result for App-defined machine-readable state. A waiting Task may preserve a current decision in result.',
     "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
     "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise complete one bounded useful step now.",
     "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
@@ -2689,11 +2679,18 @@ function recoverStaleTaskActionResult(
   claim: AppTaskClaim,
   error: unknown,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
-  if (!isAppTaskActionStaleError(error)) return null;
+  if (
+    !isAppTaskActionStaleError(error) &&
+    !(error instanceof ResourceTaskMutationStaleError)
+  ) {
+    return null;
+  }
   const recovery = releaseStaleAppTaskResult(
     config,
     claim,
-    `Stale handler action for ${error.taskId} was rejected; retrying ${claim.taskId} from current task evidence`,
+    `Stale handler action for ${
+      isAppTaskActionStaleError(error) ? error.taskId : claim.taskId
+    } was rejected; retrying ${claim.taskId} from current task evidence`,
   );
   return {
     staleRecovery: recovery.status,
@@ -3273,6 +3270,7 @@ async function reconcileTask(input: {
             completeAppTask(config, primary, {
               summary: primaryHandlerResult.summary,
               response: primaryHandlerResult.response,
+              result: primaryHandlerResult.result,
               evidence: primaryHandlerResult.evidence,
               actions: primaryHandlerResult.actions,
               acceptanceBasis,
@@ -3301,6 +3299,9 @@ async function reconcileTask(input: {
             acceptance: intent.acceptance,
             input: intent.input ?? {},
             summary: primaryHandlerResult.summary,
+            ...(primaryHandlerResult.result
+              ? { result: primaryHandlerResult.result }
+              : {}),
             evidence: primaryHandlerResult.evidence,
             acceptanceBasis,
             actionsApplied: apply.actionsApplied,
@@ -3385,6 +3386,8 @@ async function reconcileTask(input: {
           deferAppTask(config, primary, {
             disposition: "waiting",
             summary: primaryHandlerResult.summary,
+            response: primaryHandlerResult.response,
+            result: primaryHandlerResult.result,
             evidence: primaryHandlerResult.evidence,
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,
@@ -3403,6 +3406,12 @@ async function reconcileTask(input: {
             : {}),
           input: intent.input ?? {},
           summary: primaryHandlerResult.summary,
+          ...(primaryHandlerResult.response
+            ? { response: primaryHandlerResult.response }
+            : {}),
+          ...(primaryHandlerResult.result
+            ? { result: primaryHandlerResult.result }
+            : {}),
           evidence: primaryHandlerResult.evidence,
           actionsApplied: apply.actionsApplied,
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
@@ -4354,7 +4363,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       const event = flattenEvent(rawEvent);
       const startedSessionId =
         event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
-      const sessionBinding = startedSessionId ? parseAppTaskSessionBinding(event.task) : null;
+      const sessionBinding = startedSessionId ? appTaskSessionBinding(event.taskBinding) : null;
       if (sessionBinding) {
         const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
           (candidate) => candidate.id === sessionBinding.appId,

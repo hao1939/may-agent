@@ -30,12 +30,6 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     globalAgentDir: resolve(options.globalAgentsRoot, config.name),
     sharedRoot: options.sharedRoot,
   });
-  for (const rule of config.skillActivationRules ?? []) {
-    if (!skillCatalog.skills.has(rule.skill)) {
-      throw new Error(`Agent ${config.name} skillActivationRules references unavailable skill "${rule.skill}"`);
-    }
-  }
-
   return {
     name: config.name,
     description: config.description,
@@ -54,6 +48,5 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     compaction: config.compaction,
     contextFiles: config.context_files?.map((file) => resolve(source.dir, file)),
     skillCatalog,
-    skillActivationRules: config.skillActivationRules,
   };
 }

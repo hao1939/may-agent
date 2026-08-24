@@ -15,6 +15,12 @@ describe("session DB progress", () => {
         task: "do work",
         status: "running",
         startedAt: 1000,
+        taskBinding: {
+          appId: "evaluation",
+          taskId: "task-1",
+          generation: 3,
+          attemptId: "attempt-4",
+        },
       });
 
       updateSessionProgress(persistDir, "s_live", {
@@ -27,7 +33,9 @@ describe("session DB progress", () => {
       });
 
       const row = getDb(persistDir)
-        .prepare("select status, endedAt, opCount, lastActivityAt from sessions where sessionId = ?")
+        .prepare(
+          "select status, endedAt, opCount, lastActivityAt, app_id, task_id, task_generation, attempt_id from sessions where sessionId = ?",
+        )
         .get("s_live") as { status: string; endedAt: number | null; opCount: number; lastActivityAt: number };
       const foreignKeys = getDb(persistDir).prepare("PRAGMA foreign_keys").get() as { foreign_keys: number };
 
@@ -35,6 +43,12 @@ describe("session DB progress", () => {
       expect(row.endedAt).toBeNull();
       expect(row.opCount).toBe(2);
       expect(row.lastActivityAt).toBe(2000);
+      expect(row).toMatchObject({
+        app_id: "evaluation",
+        task_id: "task-1",
+        task_generation: 3,
+        attempt_id: "attempt-4",
+      });
       expect(readSessionLastActivityAt(persistDir, "s_live")).toBe(2000);
       expect(readSessionLastActivityAt(persistDir, "missing")).toBeNull();
       expect(foreignKeys.foreign_keys).toBe(1);

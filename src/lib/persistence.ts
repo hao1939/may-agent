@@ -38,6 +38,14 @@ export interface PersistedAgentConfig {
 /** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
 export type SessionKind = "chat" | "job" | "call";
 
+/** Exact fenced App Task attempt shared by Runtime persistence projections. */
+export interface TaskBinding {
+  appId: string;
+  taskId: string;
+  generation: number;
+  attemptId: string;
+}
+
 /** Serializable session record stored as meta.json per session directory. */
 export interface PersistedSession {
   agent: string;
@@ -62,6 +70,8 @@ export interface PersistedSession {
   /** Explicit task bindings retained by older task runtimes. */
   taskId?: string | null;
   projectTaskId?: string | null;
+  /** Exact fenced App Task attempt; never reconstructed from prompt prose. */
+  taskBinding?: TaskBinding;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
   detached?: boolean;

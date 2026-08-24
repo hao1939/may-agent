@@ -6,6 +6,7 @@ import type { TSchema } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import type { SubagentDefinition, TaskResult } from "./types.js";
+import type { TaskBinding } from "./persistence.js";
 import type {
   WorkflowContext,
   WorkflowModule,
@@ -34,6 +35,7 @@ export interface WorkflowRun {
   parentSessionId: string;
   parentWorkflowRunId?: string;
   projectId?: string;
+  taskBinding?: TaskBinding;
   depth: number;
   startedAt: number;
   endedAt?: number;
@@ -723,7 +725,7 @@ export interface RunWorkflowDirectOpts {
   parentSessionId?: string;
   projectId?: string;
   /** Explicit task resource whose controller owns this workflow result. */
-  taskBinding?: { taskId: string; generation: number };
+  taskBinding?: TaskBinding;
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   /** Fenced event capability for a resource-backed Task attempt. */
@@ -836,7 +838,7 @@ export interface WorkflowToolOptions {
   /** Canonical project id for sessions spawned by this workflow. */
   projectId?: string;
   /** Explicit task resource whose controller owns this workflow result. */
-  taskBinding?: { taskId: string; generation: number };
+  taskBinding?: TaskBinding;
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
@@ -1084,6 +1086,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       sourcePath: workflow.sourcePath,
       sourceScope: workflow.sourceScope,
       entryContentHash: workflow.entryContentHash,
+      taskBinding: opts.taskBinding,
     };
     if (persistDir) {
       insertWorkflowRun(persistDir, {
@@ -1103,6 +1106,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         sourcePath: workflow.sourcePath,
         sourceScope: workflow.sourceScope,
         entryContentHash: workflow.entryContentHash,
+        taskBinding: opts.taskBinding ?? null,
       });
     }
     emitRuntimeEvent({
@@ -1120,6 +1124,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         sourcePath: workflow.sourcePath,
         sourceScope: workflow.sourceScope,
         entryContentHash: workflow.entryContentHash,
+        taskBinding: opts.taskBinding,
       },
     });
     if (previousRun && !revisionMatches) {
@@ -1311,6 +1316,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               parentSessionId,
               workflowRunId: runId,
               projectId: effectiveProjectId,
+              taskBinding: opts.taskBinding,
               recoveryOwner: opts.recoveryOwner,
               stepLabel: agentName,
               source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
@@ -1338,6 +1344,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
           workflowRunId: runId,
           projectId: effectiveProjectId,
+          taskBinding: opts.taskBinding,
           recoveryOwner: opts.recoveryOwner,
           stepLabel: agentName,
           timeout: stepOpts?.timeoutMs,

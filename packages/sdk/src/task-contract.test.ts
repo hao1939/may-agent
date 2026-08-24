@@ -34,6 +34,35 @@ describe("project task handler contract", () => {
     ).toEqual({ ok: false, error: "response must be a non-empty string" });
   });
 
+  it("carries a bounded App-defined structured result across task states", () => {
+    const output = {
+      state: "converged" as const,
+      summary: "Classified the terminal run",
+      result: { productVerdict: "none", cause: "pipeline-artifact" },
+      evidence: ["pipeline-run:42"],
+    };
+    expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
+      ok: true,
+      result: { ...output, actions: [] },
+    });
+    expect(Check(taskAgentResultSchema, output)).toBeTrue();
+    expect(
+      admitTaskReconcileResult(
+        { ...output, state: "waiting" },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: true,
+      result: { ...output, state: "waiting", actions: [] },
+    });
+    expect(
+      admitTaskReconcileResult(
+        { ...output, result: { value: "x".repeat(17 * 1024) } },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "result exceeds the 16384-byte limit" });
+  });
+
   it("admits typed child App dependencies only while waiting", () => {
     const dependency = {
       id: "review",

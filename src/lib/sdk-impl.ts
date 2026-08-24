@@ -163,6 +163,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
         sharedGuardsDir: join(deps.sharedRoot, "guards"),
         projectId: opts?.projectId,
+        ...(opts?.input !== undefined ? { workflowInput: opts.input } : {}),
       });
       return {
         status: result.type === "done" ? "done" : "blocked",
