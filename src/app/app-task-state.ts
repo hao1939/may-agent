@@ -16,6 +16,8 @@ export type AppTaskCondition = {
   status: {
     observedGeneration: number;
     state: "unknown" | "false" | "true";
+    /** When the current Condition specification first began waiting. */
+    createdAt?: string;
     observed?: unknown;
     observedAt?: string;
     evidence?: string[];

@@ -115,6 +115,43 @@ function insertProgress(
   );
 }
 
+function insertCondition(
+  db: SqliteDb,
+  input: {
+    appId: string;
+    taskId: string;
+    conditionId: string;
+    owner?: string;
+    requestedAction?: string;
+    createdAt?: string;
+    state?: "unknown" | "false" | "true";
+  },
+): void {
+  const state = input.state ?? "unknown";
+  const condition = {
+    metadata: { id: input.conditionId, generation: 2, resourceVersion: 1 },
+    spec: {
+      type: "project.approval.submitted",
+      subject: `task:${input.taskId}`,
+      expected: { field: "decision", anyOf: ["approve", "reject"] },
+      ...(input.requestedAction ? { requestedAction: input.requestedAction } : {}),
+      ...(input.owner ? { owner: input.owner } : {}),
+    },
+    status: { observedGeneration: 2, state, ...(input.createdAt ? { createdAt: input.createdAt } : {}) },
+  };
+  db.prepare("INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, ?, ?)").run(
+    input.appId,
+    input.conditionId,
+    state,
+    JSON.stringify(condition),
+  );
+  db.prepare("INSERT INTO app_task_condition_routes(app_id, task_id, condition_id) VALUES (?, ?, ?)").run(
+    input.appId,
+    input.taskId,
+    input.conditionId,
+  );
+}
+
 describe("Task reference index", () => {
   test("derives stable length-safe references and backfills live and completed identities", () => {
     const db = database();
@@ -184,6 +221,62 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
+  test("derives human actions only from explicit unsatisfied human Conditions", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 40 });
+    insertTask(db, { appId: "alpha", taskId: "external", phase: "waiting", updatedAt: 30 });
+    insertTask(db, { appId: "alpha", taskId: "broken", phase: "attention", updatedAt: 20 });
+    insertTask(db, { appId: "beta", taskId: "input", phase: "waiting", updatedAt: 10 });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "approval",
+      conditionId: "human-approval",
+      owner: "human:operator",
+      createdAt: "2026-08-20T01:02:03.000Z",
+    });
+    insertCondition(db, { appId: "alpha", taskId: "external", conditionId: "external-fact" });
+    insertCondition(db, {
+      appId: "beta",
+      taskId: "input",
+      conditionId: "human-input",
+      owner: "human",
+      requestedAction: "Provide the rollout window.",
+    });
+    const service = new HumanTaskService(db, registry("alpha", "beta"));
+
+    expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({
+      total: 1,
+      items: [
+        {
+          appId: "alpha",
+          taskId: "approval",
+          status: "waiting",
+          humanAction: {
+            requestedAction: "Choose approve or reject for task:approval.",
+            since: Date.parse("2026-08-20T01:02:03.000Z"),
+          },
+        },
+      ],
+    });
+    expect(service.listTasks({ humanActionOnly: true }).items.map((task) => task.taskId)).toEqual([
+      "approval",
+      "input",
+    ]);
+    expect(service.getTask({ appId: "alpha", taskId: "approval" })?.humanAction).toEqual({
+      requestedAction: "Choose approve or reject for task:approval.",
+      since: Date.parse("2026-08-20T01:02:03.000Z"),
+    });
+    expect(service.getTask({ appId: "beta", taskId: "input" })?.humanAction?.requestedAction).toBe(
+      "Provide the rollout window.",
+    );
+    expect(service.getTask({ appId: "alpha", taskId: "external" })?.humanAction).toBeUndefined();
+
+    db.prepare(
+      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id = 'human-approval'",
+    ).run();
+    expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({ total: 0, items: [] });
+  });
+
   test("lists Apps and bounded Tasks from indexed resource rows", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "old", phase: "waiting", updatedAt: 10 });
