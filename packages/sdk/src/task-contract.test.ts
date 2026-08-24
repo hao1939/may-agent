@@ -482,6 +482,7 @@ describe("project task handler contract", () => {
               type: "credential.ready",
               subject: "credential:xhs",
               expected: { field: "state", equals: "ready" },
+              requestedAction: "Restore the xhs credential or confirm that it should remain disabled.",
               reviewAfterMs: 300000,
             },
           ],

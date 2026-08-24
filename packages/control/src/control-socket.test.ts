@@ -553,6 +553,24 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("passes the derived human-action filter through the Task resource read", async () => {
+    const core = createCore({
+      listTasks: (options) => {
+        expect(options).toEqual({ appId: "evaluation", humanActionOnly: true, limit: 20 });
+        return { items: [], total: 0 };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "tasks.list",
+        appId: "evaluation",
+        humanActionOnly: true,
+        limit: 20,
+      }),
+    ).resolves.toEqual({ type: "ok", command: "tasks.list", tasks: { items: [], total: 0 } });
+  });
+
   it("serves the shared App and Task resource interface without emitting work", async () => {
     const task = { appId: "evaluation", taskId: "review/docs", ref: "8f12ac90", status: "waiting" };
     const core = createCore({
@@ -801,6 +819,45 @@ describe("control socket protocol", () => {
     await expect(nextFrame(stream)).resolves.toEqual({
       type: "app.task.updated",
       data: { appId: "evaluation", taskId: "review/docs" },
+    });
+    stream.destroy();
+  });
+
+  it("uses an App-scoped identity wake for off-watch derived views", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    stream.write(
+      JSON.stringify({
+        type: "subscribe",
+        sessions: [],
+        conversations: ["may:primary"],
+        taskApps: ["evaluation"],
+      }) + "\n",
+    );
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+
+    core.getBroadcast()?.({
+      type: "project.task.reconciled",
+      data: { project: "other", taskId: "review/docs" },
+    });
+    core.getBroadcast()?.({
+      type: "project.task.executor.progress",
+      data: {
+        project: "evaluation",
+        taskId: "review/docs",
+        message: "This exact-Task progress must not refresh an App-scoped list",
+      },
+    });
+    core.getBroadcast()?.({
+      type: "project.task.reconciled",
+      data: { project: "evaluation", taskId: "review/other" },
+    });
+
+    await expect(nextFrame(stream)).resolves.toEqual({
+      type: "app.task.updated",
+      data: { appId: "evaluation", taskId: "review/other" },
     });
     stream.destroy();
   });

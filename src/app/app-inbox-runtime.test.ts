@@ -227,6 +227,65 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("continues an exact May Task when a human replies from that focused Task", async () => {
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may", version: 1, owner: "may",
+        inputSchema: { type: "object", required: ["kind", "data"], properties: {
+          kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
+            message: { type: "string" }, context: { type: "object" }
+          } }
+        } },
+        task(input) { return { kind: "desired", intent: {
+          id: "conversation/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"], mode: "achieve"
+        } }; },
+        tasks: {}
+      };\n`,
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    task.observations.set("decision/deploy", {
+      kind: "task",
+      id: "decision/deploy",
+      status: "waiting",
+      summary: "Waiting for a deployment decision",
+    });
+    const attachments: Array<Record<string, unknown>> = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      attachTask: async (input: any) => {
+        attachments.push(input.attachment);
+        return { taskId: input.attachment.taskId };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "conversation.message.created",
+      source: "may-console",
+      owner: "app:may",
+      target: { appId: "may" },
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "human", id: "human-reply-1" },
+        text: "approve it",
+        context: { focusedTask: { appId: "may", taskId: "decision/deploy" } },
+        metadata: { channel: "may-console" },
+      },
+    });
+
+    await waitUntil(() => attachments.length === 1);
+    expect(attachments).toEqual([{ kind: "existing", taskId: "decision/deploy" }]);
+    const row = db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = 'human-reply-1'").get();
+    expect(row).toEqual({ target_task_id: "decision/deploy" });
+  });
+
   it("announces the exact owner Task when a human request is assigned", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);

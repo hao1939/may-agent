@@ -31,6 +31,7 @@ describe("May Console", () => {
     const frames: Array<Record<string, any>> = [];
     const remoteConversationMessages: Array<Record<string, any>> = [];
     let taskTerminal = false;
+    let humanActionActive = false;
     let taskProgress: { stage: string; message: string; updatedAt: number } | undefined;
     let client: Socket | null = null;
     let inputBuffer = "";
@@ -115,6 +116,35 @@ describe("May Console", () => {
               })}\n`,
             );
           } else if (frame.type === "tasks.list") {
+            if (frame.humanActionOnly) {
+              const task = {
+                appId: "evaluation",
+                taskId: "review/docs",
+                ref: "8f12ac90",
+                status: "waiting",
+                outcome: "Review the docs",
+                summary: "Approve deployment or ask for another verification pass.",
+                resourceVersion: 4,
+                updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
+                terminal: false,
+                cancellable: true,
+                humanAction: {
+                  requestedAction: "Approve deployment or ask for another verification pass.",
+                  since: Date.UTC(2026, 7, 17, 9, 0, 0),
+                },
+              };
+              socket.write(
+                `${JSON.stringify({
+                  type: "ok",
+                  command: "tasks.list",
+                  tasks: {
+                    items: humanActionActive && !taskTerminal ? [task] : [],
+                    total: humanActionActive && !taskTerminal ? 1 : 0,
+                  },
+                })}\n`,
+              );
+              continue;
+            }
             const task = frame.cursor
               ? {
                   appId: "evaluation",
@@ -165,6 +195,14 @@ describe("May Console", () => {
                   updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
                   terminal: taskTerminal,
                   cancellable: !taskTerminal,
+                  ...(!taskTerminal && humanActionActive
+                    ? {
+                        humanAction: {
+                          requestedAction: "Approve deployment or ask for another verification pass.",
+                          since: Date.UTC(2026, 7, 17, 9, 0, 0),
+                        },
+                      }
+                    : {}),
                   ...(!taskTerminal && taskProgress ? { progress: taskProgress } : {}),
                 },
               })}\n`,
@@ -258,6 +296,7 @@ describe("May Console", () => {
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
       conversations: ["may:primary"],
+      taskApps: ["may"],
     });
     expect(output).not.toContain("focused work");
 
@@ -290,6 +329,43 @@ describe("May Console", () => {
         output.includes("Progress:") &&
         output.includes("Reviewing current behavior"),
     );
+
+    humanActionActive = true;
+    client?.write(
+      `${JSON.stringify({ type: "app.task.updated", data: { appId: "evaluation", taskId: "review/docs" } })}\n`,
+    );
+    await waitFor(
+      () =>
+        output.includes("[todo] 8f12ac90 · evaluation needs you") &&
+        output.includes("Approve deployment or ask for another verification pass.") &&
+        output.includes("you[evaluation · 1 todo]>"),
+    );
+    const todoNoticeCount = output.split("[todo] 8f12ac90 · evaluation needs you").length - 1;
+    client?.write(
+      `${JSON.stringify({ type: "app.task.updated", data: { appId: "evaluation", taskId: "review/docs" } })}\n`,
+    );
+    await Bun.sleep(30);
+    expect(output.split("[todo] 8f12ac90 · evaluation needs you").length - 1).toBe(todoNoticeCount);
+
+    child.stdin.write("/todo\n");
+    await waitFor(() => output.includes("Actions needed for evaluation:") && output.includes("8f12ac90"));
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "tasks.list" &&
+          frame.appId === "evaluation" &&
+          frame.humanActionOnly === true &&
+          frame.limit === 50,
+      ),
+    ).toBe(true);
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.data?.metadata?.command === "/todo" &&
+          frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
+      ),
+    ).toBe(true);
 
     const assignmentMessage = {
       id: "assignment-1",
@@ -412,7 +488,8 @@ describe("May Console", () => {
 
     child.stdin.write("/watch 8f12ac90\n");
     await waitFor(
-      () => output.includes("[catch-up] 8f12ac90 changed while it was not followed.") &&
+      () =>
+        output.includes("[catch-up] 8f12ac90 changed while it was not followed.") &&
         output.includes("Checking the final evidence"),
     );
     client?.write(

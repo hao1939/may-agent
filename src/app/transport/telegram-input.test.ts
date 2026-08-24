@@ -10,6 +10,7 @@ import {
   renderTelegramApps,
   renderTelegramTask,
   renderTelegramTasks,
+  renderTelegramTodos,
   telegramMayInputEvent,
 } from "./telegram.js";
 
@@ -105,6 +106,19 @@ describe("Telegram May input", () => {
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
     expect(renderTelegramTask(task)).toContain("Progress:\nReviewing current behavior");
     expect(
+      renderTelegramTodos(
+        [
+          {
+            ...task,
+            status: "waiting",
+            humanAction: { requestedAction: "Approve or reject deployment.", since: task.updatedAt },
+          },
+        ],
+        1,
+        "evaluation",
+      ),
+    ).toContain("Actions needed for evaluation:\n• 8f12ac90 · evaluation");
+    expect(
       renderTelegramTask({
         ...task,
         progress: {
@@ -190,6 +204,7 @@ describe("Telegram May input", () => {
           },
         ],
         listTasks(options: Record<string, unknown>) {
+          if (options.humanActionOnly) return { items: [], total: 0 };
           listCalls.push(options);
           return options.cursor
             ? { items: [task("22222222", "second")] }
@@ -209,6 +224,140 @@ describe("Telegram May input", () => {
       expect(sent[2]).toContain("22222222");
     } finally {
       bot.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
+  });
+
+  it("shows and refreshes the same derived human-action view off watch", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-todo-"));
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    const sent: string[] = [];
+    const observed: any[] = [];
+    const taskListReads: any[] = [];
+    let updatePolls = 0;
+    let resourceVersion = 1;
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const method = String(url).split("/").at(-1) ?? "";
+      if (method === "getMe")
+        return { json: async () => ({ ok: true, result: { username: "may", first_name: "May" } }) } as Response;
+      if (method === "getUpdates" && updatePolls++ === 0) {
+        return {
+          json: async () => ({
+            ok: true,
+            result: [
+              { update_id: 1, message: { message_id: 501, chat: { id: 123 }, text: "/apps evaluation" } },
+              { update_id: 2, message: { message_id: 502, chat: { id: 123 }, text: "/todo" } },
+            ],
+          }),
+        } as Response;
+      }
+      if (method === "getUpdates") return await new Promise<Response>(() => {});
+      if (method === "sendMessage") {
+        const body = JSON.parse(String(init?.body));
+        sent.push(body.text);
+        return { json: async () => ({ ok: true, result: { message_id: 900 + sent.length } }) } as Response;
+      }
+      throw new Error(`Unexpected Telegram method ${method}`);
+    }) as typeof fetch;
+    process.env.TELEGRAM_BOT_TOKEN = "test-token";
+    process.env.TELEGRAM_CHAT_ID = "123";
+
+    const todo = () => ({
+      appId: "evaluation",
+      taskId: "deploy/current",
+      ref: "8f12ac90",
+      status: "waiting" as const,
+      generation: 1,
+      resourceVersion,
+      outcome: "Deploy the verified release",
+      summary:
+        resourceVersion === 1 ? "Approve or reject deployment." : "Approve deployment or request one more canary.",
+      updatedAt: Date.UTC(2026, 7, 22, 1, 2, 3),
+      terminal: false,
+      cancellable: true,
+      humanAction: {
+        requestedAction:
+          resourceVersion === 1 ? "Approve or reject deployment." : "Approve deployment or request one more canary.",
+        since: Date.UTC(2026, 7, 22, 1, 2, 3),
+      },
+    });
+    const bus = new EventBus();
+    const unsubscribe = bus.subscribe((event) => observed.push(event));
+    const bot = attachTelegramBot({
+      bus,
+      interfaceAgent: "may",
+      persistDir: root,
+      humanTasks: {
+        listApps: () => [
+          {
+            id: "evaluation",
+            owner: "evaluator",
+            activeTasks: 1,
+            attentionTasks: 0,
+            runningTasks: 0,
+            waitingTasks: 1,
+          },
+        ],
+        listTasks: (options: any) => {
+          taskListReads.push(options);
+          return { items: [todo()], total: 1 };
+        },
+      } as any,
+    });
+    try {
+      await waitFor(() => sent.some((text) => text.includes("Actions needed for evaluation")));
+      expect(taskListReads.some((options) => options.humanActionOnly === true && options.limit === 50)).toBe(true);
+      expect(sent).toContainEqual(expect.stringContaining("Approve or reject deployment."));
+      await waitFor(() =>
+        observed.some(
+          (event) =>
+            event.type === "conversation.message.created" &&
+            event.data?.metadata?.command === "/todo" &&
+            event.data?.metadata?.taskRefs?.[0]?.taskId === "deploy/current",
+        ),
+      );
+
+      await Bun.sleep(30);
+      const readsBeforeProgress = taskListReads.length;
+      bus.emit({
+        type: "project.task.executor.progress",
+        data: {
+          project: "evaluation",
+          taskId: "deploy/current",
+          message: "This exact-Task progress does not change /todo membership",
+        },
+      } as any);
+      await Bun.sleep(30);
+      expect(taskListReads).toHaveLength(readsBeforeProgress);
+
+      resourceVersion = 2;
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "app-task:evaluation",
+        owner: "app:evaluation",
+        data: { project: "evaluation", taskId: "deploy/current" },
+      } as any);
+      await waitFor(() => sent.some((text) => text.includes("request one more canary")));
+      expect(sent.filter((text) => text.includes("request one more canary"))).toHaveLength(1);
+      await waitFor(() =>
+        observed.some(
+          (event) =>
+            event.type === "conversation.message.created" &&
+            event.data?.metadata?.command === "/todo notification" &&
+            event.data?.metadata?.taskRefs?.[0]?.taskId === "deploy/current",
+        ),
+      );
+    } finally {
+      bot.close();
+      unsubscribe();
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
       globalThis.fetch = priorFetch;
@@ -391,6 +540,7 @@ describe("Telegram May input", () => {
           },
         ],
         getTask: () => task(),
+        listTasks: () => ({ items: [], total: 0 }),
         cancelTask(input: Record<string, unknown>) {
           cancelCalls.push(input);
           taskTerminal = true;

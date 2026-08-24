@@ -19,6 +19,12 @@ export type HumanTaskProgress = {
   updatedAt: number;
 };
 
+/** Human work is a derived view of one Task's explicit open Condition. */
+export type HumanTaskAction = {
+  requestedAction: string;
+  since: number;
+};
+
 export type HumanTaskView = {
   appId: string;
   taskId: string;
@@ -36,6 +42,7 @@ export type HumanTaskView = {
   execution?: { attemptId: string; sessionId?: string };
   progress?: HumanTaskProgress;
   waitingOn?: HumanTaskWait[];
+  humanAction?: HumanTaskAction;
 };
 
 export type HumanTaskWait =
@@ -50,7 +57,7 @@ export type HumanTaskWait =
   | { kind: "app"; appId: string; status: "pending" | "running" | "waiting" }
   | { kind: "condition"; type: string; subject: string };
 
-export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string };
+export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string; total?: number };
 
 /** List cards stay small; `/task <ref>` is the exact detail read. */
 export const HUMAN_TASK_LIST_TEXT_MAX_BYTES = 96;
@@ -73,6 +80,7 @@ type TaskRow = {
   payload?: string;
   terminal?: number;
   attempt_json?: string | null;
+  human_conditions_json?: string | null;
 };
 
 type TaskProgressRow = { data?: string | null; timestamp?: number };
@@ -190,6 +198,92 @@ function listCard(view: HumanTaskView): HumanTaskView {
   };
 }
 
+const OPEN_HUMAN_CONDITION_SQL = `EXISTS (
+  SELECT 1
+  FROM app_task_condition_routes human_route
+  JOIN app_task_conditions human_condition
+    ON human_condition.app_id = human_route.app_id
+   AND human_condition.condition_id = human_route.condition_id
+  WHERE human_route.app_id = t.app_id
+    AND human_route.task_id = t.task_id
+    AND human_condition.state != 'true'
+    AND (
+      lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'human'
+      OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) LIKE 'human:%'
+    )
+)`;
+
+const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.condition_json))
+  FROM app_task_condition_routes human_route
+  JOIN app_task_conditions human_condition
+    ON human_condition.app_id = human_route.app_id
+   AND human_condition.condition_id = human_route.condition_id
+  WHERE human_route.app_id = t.app_id
+    AND human_route.task_id = t.task_id
+    AND human_condition.state != 'true'
+    AND (
+      lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'human'
+      OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) LIKE 'human:%'
+    )
+  ORDER BY human_route.condition_id)`;
+
+function humanConditions(row: TaskRow): AppTaskCondition[] {
+  const parsed = parseJson<unknown[]>(row.human_conditions_json);
+  return Array.isArray(parsed)
+    ? parsed.filter((condition): condition is AppTaskCondition =>
+        Boolean(
+          condition &&
+          typeof condition === "object" &&
+          !Array.isArray(condition) &&
+          (condition as AppTaskCondition).spec &&
+          typeof (condition as AppTaskCondition).spec.type === "string",
+        ),
+      )
+    : [];
+}
+
+function naturalList(values: string[]): string {
+  if (values.length < 2) return values[0] ?? "";
+  if (values.length === 2) return `${values[0]} or ${values[1]}`;
+  return `${values.slice(0, -1).join(", ")}, or ${values.at(-1)}`;
+}
+
+function conditionAction(condition: AppTaskCondition): string {
+  if (condition.spec.requestedAction?.trim()) return condition.spec.requestedAction.trim();
+  const expected =
+    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+      ? (condition.spec.expected as Record<string, unknown>)
+      : {};
+  const choices = Array.isArray(expected.anyOf)
+    ? expected.anyOf.filter((choice): choice is string => typeof choice === "string" && Boolean(choice.trim()))
+    : [];
+  if (condition.spec.type === "project.approval.submitted" && choices.length > 0) {
+    const approvalId =
+      typeof expected.approvalId === "string" && expected.approvalId.trim()
+        ? expected.approvalId.trim()
+        : condition.spec.subject;
+    return `Choose ${naturalList(choices)} for ${approvalId}.`;
+  }
+  return "";
+}
+
+function withHumanAction(view: HumanTaskView, conditions: AppTaskCondition[]): HumanTaskView {
+  const actions = [...new Set(conditions.map(conditionAction).filter(Boolean))];
+  const timestamps = conditions
+    .map((condition) => Date.parse(condition.status.createdAt ?? condition.status.observedAt ?? ""))
+    .filter(Number.isFinite);
+  return {
+    ...view,
+    humanAction: {
+      requestedAction: boundedUtf8Text(
+        actions.length > 0 ? actions.join(" ") : view.summary?.trim() || view.outcome,
+        240,
+      ),
+      since: timestamps.length > 0 ? Math.min(...timestamps) : view.updatedAt,
+    },
+  };
+}
+
 function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | null {
   const appId = row.app_id;
   const taskId = row.task_id;
@@ -270,19 +364,19 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
   return db
     .prepare(
       `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-         a.attempt_json
+         a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
          ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
        WHERE t.app_id = ? AND t.task_id = ?
        UNION ALL
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-         r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json
+         r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
        UNION ALL
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-         c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json
+         c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
        ORDER BY terminal DESC LIMIT 1`,
@@ -417,6 +511,7 @@ export class HumanTaskService {
     input: {
       appId?: string;
       includeDone?: boolean;
+      humanActionOnly?: boolean;
       status?: HumanTaskStatus[];
       limit?: number;
       cursor?: string;
@@ -429,9 +524,10 @@ export class HumanTaskService {
     const valid = new Set<HumanTaskStatus>(["pending", "running", "waiting", "attention", "done", "cancelled"]);
     if (input.status?.some((status) => !valid.has(status))) throw new Error("Invalid Task status filter");
     const statuses = input.status ? new Set(input.status) : null;
+    const humanActionOnly = input.humanActionOnly === true;
     const includeLive = !statuses || [...statuses].some((status) => status !== "done" && status !== "cancelled");
-    const includeDone = input.includeDone === true || statuses?.has("done") === true;
-    const includeCancelled = input.includeDone === true || statuses?.has("cancelled") === true;
+    const includeDone = !humanActionOnly && (input.includeDone === true || statuses?.has("done") === true);
+    const includeCancelled = !humanActionOnly && (input.includeDone === true || statuses?.has("cancelled") === true);
     const livePhases = statuses
       ? [...statuses].flatMap((status) => (status === "done" || status === "cancelled" ? [] : [status]))
       : ["pending", "running", "waiting", "attention"];
@@ -441,21 +537,22 @@ export class HumanTaskService {
     if (includeLive && livePhases.length > 0) {
       parts.push(
         `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-           a.attempt_json
+           a.attempt_json,
+           ${humanActionOnly ? HUMAN_CONDITIONS_SQL : "NULL"} AS human_conditions_json
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
          WHERE t.phase IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
-           )${appId ? " AND t.app_id = ?" : ""}`,
+           )${appId ? " AND t.app_id = ?" : ""}${humanActionOnly ? ` AND ${OPEN_HUMAN_CONDITION_SQL}` : ""}`,
       );
       values.push(...livePhases, ...(appId ? [appId] : []));
     }
     if (includeDone) {
       parts.push(
         `SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-           r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json
+           r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
          FROM app_task_receipts r
          WHERE NOT EXISTS (
            SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
@@ -466,7 +563,7 @@ export class HumanTaskService {
     if (includeCancelled) {
       parts.push(
         `SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-           c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json
+           c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
          FROM app_task_cancellations c${appId ? " WHERE c.app_id = ?" : ""}`,
       );
       if (appId) values.push(appId);
@@ -511,11 +608,31 @@ export class HumanTaskService {
       if (!identity) return [];
       const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
       const view = ref ? projectTask(row, ref, false) : null;
-      return view ? [view] : [];
+      return view ? [humanActionOnly && row.terminal === 0 ? withHumanAction(view, humanConditions(row)) : view] : [];
     });
+    const total = humanActionOnly
+      ? Number(
+          (
+            this.db
+              .prepare(
+                `SELECT COUNT(*) AS count
+                 FROM app_tasks t
+                 WHERE t.phase IN ('pending', 'running', 'waiting', 'attention')
+                   AND NOT EXISTS (
+                     SELECT 1 FROM app_task_cancellations c
+                     WHERE c.app_id = t.app_id AND c.task_id = t.task_id
+                   )
+                   ${appId ? "AND t.app_id = ?" : ""}
+                   AND ${OPEN_HUMAN_CONDITION_SQL}`,
+              )
+              .get(...(appId ? [appId] : [])) as { count?: number }
+          ).count ?? 0,
+        )
+      : undefined;
     const last = pageRows.at(-1);
     return {
       items,
+      ...(total === undefined ? {} : { total }),
       ...(rows.length > limit && last?.app_id && last.task_id && Number.isSafeInteger(last.updated_at)
         ? {
             nextCursor: encodeCursor({
@@ -555,11 +672,13 @@ export class HumanTaskService {
     if (!view || view.terminal) return view;
     const progress = latestTaskProgress(this.db, identity.appId, identity.taskId);
     const waitingOn = view.status === "waiting" ? taskWaits(this.db, identity.appId, identity.taskId) : [];
-    return {
+    const detail = {
       ...view,
       ...(progress ? { progress } : {}),
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };
+    const conditions = humanConditions(row);
+    return conditions.length > 0 ? withHumanAction(detail, conditions) : detail;
   }
 
   cancelTask(input: { ref?: string; appId?: string; taskId?: string; reason?: string }): HumanTaskView {

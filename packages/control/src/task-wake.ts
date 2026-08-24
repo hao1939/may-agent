@@ -11,6 +11,20 @@ export const TASK_UPDATE_EVENT_TYPES = [
   "app.task.cancelled",
 ] as const;
 
+/** Events after which a Task-derived list may have changed membership. */
+export const TASK_DERIVED_VIEW_EVENT_TYPES = ["project.task.reconciled", "app.task.cancelled"] as const;
+const TASK_DERIVED_VIEW_EVENTS = new Set<string>(TASK_DERIVED_VIEW_EVENT_TYPES);
+
+export function isTaskDerivedViewWake(event: unknown): boolean {
+  return Boolean(
+    event &&
+    typeof event === "object" &&
+    !Array.isArray(event) &&
+    typeof (event as Record<string, unknown>).type === "string" &&
+    TASK_DERIVED_VIEW_EVENTS.has((event as Record<string, unknown>).type as string),
+  );
+}
+
 const TASK_UPDATE_EVENTS = new Set<string>(TASK_UPDATE_EVENT_TYPES);
 
 export function taskUpdateIdentity(event: unknown): { appId: string; taskId: string } | null {
