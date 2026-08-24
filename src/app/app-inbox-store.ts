@@ -337,6 +337,31 @@ export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string,
     .map(rowToItem);
 }
 
+/** Human Conversation requests whose current Task is waiting on one exact App request. */
+export function listHumanAppInboxItemsWaitingOnAppRequest(db: SqliteDb, requestId: string): AppInboxItem[] {
+  const normalizedRequestId = requiredText(requestId, "requestId");
+  return db
+    .prepare(
+      `SELECT DISTINCT inbox.*
+       FROM app_task_conditions condition
+       JOIN app_task_condition_routes route
+         ON route.app_id = condition.app_id AND route.condition_id = condition.condition_id
+       JOIN app_inbox_items inbox
+         ON inbox.app_id = route.app_id
+        AND inbox.waiting_on_kind = 'task'
+        AND inbox.waiting_on_id = route.task_id
+       WHERE condition.condition_id = ?
+         AND json_extract(condition.condition_json, '$.spec.type') = 'app.dependency.completed'
+         AND json_extract(condition.condition_json, '$.spec.subject') = ?
+         AND inbox.source_kind = 'human'
+         AND inbox.conversation_id IS NOT NULL
+         AND inbox.status = 'handling'
+       ORDER BY inbox.created_at, inbox.id`,
+    )
+    .all(`app-request:${normalizedRequestId}`, `id:${normalizedRequestId}`)
+    .map(rowToItem);
+}
+
 function conversationText(input: AppInput): string | undefined {
   const data = input.data;
   if (!data || typeof data !== "object" || Array.isArray(data)) return undefined;
@@ -352,6 +377,15 @@ function boundedConversationText(value: string, limit = 8_000): string {
   const text = value.trim();
   if (text.length <= limit) return text;
   return `${text.slice(0, limit - 1).trimEnd()}…`;
+}
+
+function conversationTaskIdentity(value: unknown): { appId: string; taskId: string } | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const identity = value as Record<string, unknown>;
+  if (typeof identity.appId !== "string" || typeof identity.taskId !== "string") return undefined;
+  const appId = identity.appId.trim();
+  const taskId = identity.taskId.trim();
+  return appId && taskId ? { appId, taskId } : undefined;
 }
 
 function conversationEventMessage(row: ConversationEventRow): AppConversationMessage | undefined {
@@ -379,6 +413,7 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
     rawMetadata && typeof rawMetadata === "object" && !Array.isArray(rawMetadata)
       ? (rawMetadata as Record<string, unknown>)
       : undefined;
+  const followTask = conversationTaskIdentity(metadata?.followTask);
   return {
     id: `event:${row.id}`,
     sequence: row.id,
@@ -406,19 +441,11 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
             ...(typeof metadata.command === "string" && metadata.command.trim()
               ? { command: metadata.command.trim() }
               : {}),
+            ...(followTask ? { followTask } : {}),
             ...(Array.isArray(metadata.taskRefs)
               ? {
                   taskRefs: metadata.taskRefs
-                    .flatMap((value) => {
-                      if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-                      const ref = value as Record<string, unknown>;
-                      return typeof ref.appId === "string" &&
-                        ref.appId.trim() &&
-                        typeof ref.taskId === "string" &&
-                        ref.taskId.trim()
-                        ? [{ appId: ref.appId.trim(), taskId: ref.taskId.trim() }]
-                        : [];
-                    })
+                    .flatMap((value) => conversationTaskIdentity(value) ?? [])
                     .slice(0, 100),
                 }
               : {}),
@@ -545,18 +572,36 @@ export function listAppConversationMessages(
         left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id),
     )
     .slice(-limit);
-  const taskIdentities = bounded.flatMap((message) => message.metadata?.taskRefs ?? []);
+  const taskIdentities = bounded.flatMap((message) => [
+    ...(message.metadata?.taskRefs ?? []),
+    ...(message.metadata?.followTask ? [message.metadata.followTask] : []),
+  ]);
   const taskRefs = displayTaskReferences(db, taskIdentities);
   return bounded.map((message) =>
-    message.metadata?.taskRefs?.length
+    message.metadata?.taskRefs?.length || message.metadata?.followTask
       ? {
           ...message,
           metadata: {
             ...message.metadata,
-            taskRefs: message.metadata.taskRefs.map((task) => ({
-              ...task,
-              ref: taskRefs.get(`${task.appId}\0${task.taskId}`) ?? task.ref,
-            })),
+            ...(message.metadata.taskRefs?.length
+              ? {
+                  taskRefs: message.metadata.taskRefs.map((task) => ({
+                    ...task,
+                    ref: taskRefs.get(`${task.appId}\0${task.taskId}`) ?? task.ref,
+                  })),
+                }
+              : {}),
+            ...(message.metadata.followTask
+              ? {
+                  followTask: {
+                    ...message.metadata.followTask,
+                    ref:
+                      taskRefs.get(
+                        `${message.metadata.followTask.appId}\0${message.metadata.followTask.taskId}`,
+                      ) ?? message.metadata.followTask.ref,
+                  },
+                }
+              : {}),
           },
         }
       : message,

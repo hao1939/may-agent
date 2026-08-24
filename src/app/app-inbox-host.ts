@@ -109,6 +109,8 @@ export type AppInboxHostOptions = {
   onConversationChanged?: (appId: string, conversationId: string) => void;
   /** Durable semantic completion notification; transport delivery is separate. */
   onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
+  /** Notification after one request is durably attached to its exact Task. */
+  onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
 };
 
 type RegisteredApp = AppDefinition;
@@ -231,6 +233,7 @@ export class AppInboxHost {
   readonly #now: () => number;
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
+  readonly #onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
@@ -243,6 +246,7 @@ export class AppInboxHost {
     this.#now = options.now ?? Date.now;
     this.#onConversationChanged = options.onConversationChanged;
     this.#onRequestCompleted = options.onRequestCompleted;
+    this.#onRequestTaskAttached = options.onRequestTaskAttached;
     if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
@@ -738,6 +742,14 @@ export class AppInboxHost {
     const taskId = requiredText(attached.taskId, "Attached task id");
     const waiting = waitAppInboxClaim(this.#db, claim, { kind: "task", id: taskId }, { now: this.#now() });
     if (!waiting) throw new Error("claim is stale");
+    if (this.#onRequestTaskAttached) {
+      try {
+        this.#onRequestTaskAttached(claim.item, taskId);
+      } catch {
+        // The durable Task attachment is authoritative. A failed optional
+        // presentation hint must never undo or delay the work.
+      }
+    }
     if (attached.isComplete) {
       try {
         if (await attached.isComplete()) {

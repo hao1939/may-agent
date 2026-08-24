@@ -208,6 +208,7 @@ describe("simple event interface", () => {
               { appId: "evaluation", taskId: "review/docs" },
               { appId: "gym", taskId: "conversation-scenario" },
             ],
+            followTask: { appId: "evaluation", taskId: "review/docs" },
           },
         },
       },
@@ -220,6 +221,7 @@ describe("simple event interface", () => {
         { appId: "evaluation", taskId: "review/docs" },
         { appId: "gym", taskId: "conversation-scenario" },
       ],
+      followTask: { appId: "evaluation", taskId: "review/docs" },
     });
     expect(() =>
       events.publish(
@@ -236,6 +238,21 @@ describe("simple event interface", () => {
         { source: "control-socket" },
       ),
     ).toThrow("metadata.taskRefs");
+    expect(() =>
+      events.publish(
+        {
+          type: "conversation.message.created",
+          target: { appId: "sample" },
+          data: {
+            conversationId: "sample:primary",
+            author: { kind: "agent", id: "may" },
+            text: "Invalid follow target",
+            metadata: { followTask: { appId: "evaluation", taskId: "" } },
+          },
+        },
+        { source: "control-socket" },
+      ),
+    ).toThrow("metadata.followTask.taskId");
   });
 
   it("deduplicates one semantic input across trusted adapters", () => {

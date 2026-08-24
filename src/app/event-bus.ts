@@ -234,6 +234,8 @@ export type SystemEvent =
           requestId?: string;
           command?: string;
           taskRefs?: Array<{ appId: string; taskId: string }>;
+          /** Presentation hint for one exact owner Task; never inferred from text. */
+          followTask?: { appId: string; taskId: string };
         };
         idempotencyKey?: string;
       };

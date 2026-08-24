@@ -83,6 +83,8 @@ export type AppConversationMessage = {
     command?: string;
     /** Ordered canonical Tasks represented by this rendered command/tool view. */
     taskRefs?: Array<{ appId: string; taskId: string; ref?: string }>;
+    /** Exact unfinished owner Task an adapter may follow automatically. */
+    followTask?: { appId: string; taskId: string; ref?: string };
   };
   createdAt: number;
 };
