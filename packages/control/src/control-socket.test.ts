@@ -335,6 +335,7 @@ describe("control socket protocol", () => {
       admitAppInput: (input) => {
         expect(input).toEqual({
           appId: "alpha-project",
+          targetTaskId: "normalization/current",
           input: {
             kind: "message",
             data: { message: "Review the current normalization gap." },
@@ -352,6 +353,7 @@ describe("control socket protocol", () => {
       sendSocketCommand(core.endpoint, {
         type: "app.input.admit",
         appId: "alpha-project",
+        targetTaskId: "normalization/current",
         input: {
           kind: "message",
           data: { message: "Review the current normalization gap." },

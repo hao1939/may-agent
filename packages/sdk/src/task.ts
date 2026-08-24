@@ -44,6 +44,8 @@ export type TaskAppDependency = {
   /** Stable name within this task generation. */
   id: string;
   appId: string;
+  /** Continue this exact Task in the target App instead of creating new work. */
+  taskId?: string;
   input: AppInput;
 };
 

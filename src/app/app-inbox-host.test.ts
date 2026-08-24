@@ -6,6 +6,7 @@ import {
   defineApp,
   type AppConversationResource,
   type AppDefinition,
+  type AppRequest,
   type AppTaskAttachment,
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -117,6 +118,88 @@ describe("App inbox host", () => {
       },
     ]);
     expect(host.get("one")?.waitingOn).toEqual({ kind: "task", id: "probe/one" });
+  });
+
+  it("attaches typed follow-up input to one exact existing Task", async () => {
+    const attachments: Array<{ attachment: AppTaskAttachment; request: Readonly<AppRequest> }> = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      attachTask: async ({ attachment, request }) => {
+        attachments.push({ attachment, request });
+        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      },
+    });
+    host.admit({
+      id: "feedback",
+      appId: "evaluation",
+      targetTaskId: "probe/current",
+      source: { kind: "app", id: "may" },
+      input: { kind: "probe", data: { value: "human correction" } },
+    });
+
+    expect(await host.reconcileOnce("evaluation")).toEqual({ claimed: 1, admitted: 1, released: 0, errors: [] });
+    expect(attachments).toEqual([
+      {
+        attachment: { kind: "existing", taskId: "probe/current" },
+        request: expect.objectContaining({
+          id: "feedback",
+          input: { kind: "probe", data: { value: "human correction" } },
+        }),
+      },
+    ]);
+    expect(host.get("feedback")).toMatchObject({
+      targetTaskId: "probe/current",
+      waitingOn: { kind: "task", id: "probe/current" },
+    });
+  });
+
+  it("wakes an attention Task but does not silently apply input to a terminal Task", async () => {
+    const attachments: AppTaskAttachment[] = [];
+    const completed: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: dependency.id === "probe/attention" ? "attention" : "done",
+      }),
+      attachTask: async ({ attachment }) => {
+        attachments.push(attachment);
+        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      },
+      onRequestCompleted: (item, result) => completed.push({ id: item.id, result }),
+    });
+    for (const [id, taskId] of [
+      ["feedback-attention", "probe/attention"],
+      ["feedback-done", "probe/done"],
+    ] as const) {
+      host.admit({
+        id,
+        appId: "evaluation",
+        targetTaskId: taskId,
+        source: { kind: "app", id: "may" },
+        input: { kind: "probe", data: { value: "human correction" } },
+      });
+    }
+
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
+    expect(attachments).toEqual([{ kind: "existing", taskId: "probe/attention" }]);
+    expect(host.get("feedback-attention")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "task", id: "probe/attention" },
+    });
+    expect(host.get("feedback-done")).toMatchObject({
+      status: "done",
+      result: { summary: expect.stringContaining("new input was not applied") },
+    });
+    expect(completed).toEqual([
+      {
+        id: "feedback-done",
+        result: { summary: expect.stringContaining("must be reconsidered as distinct follow-up work") },
+      },
+    ]);
   });
 
   it("projects the Task semantic result to the correlated request", async () => {

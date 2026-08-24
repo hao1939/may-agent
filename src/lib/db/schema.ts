@@ -298,6 +298,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   id                  TEXT PRIMARY KEY,
   app_id              TEXT NOT NULL,
   parent_id           TEXT,
+  target_task_id      TEXT,
   continues_request_id TEXT,
   conversation_id     TEXT,
   conversation_seq    INTEGER,
@@ -720,6 +721,7 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
 
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["continues_request_id", "TEXT"],
+  ["target_task_id", "TEXT"],
   ["channel", "TEXT"],
   ["channel_target_id", "TEXT"],
   ["channel_thread_id", "TEXT"],

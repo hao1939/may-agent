@@ -117,6 +117,7 @@ const resultFields = {
         {
           id: nonEmptyStringSchema,
           appId: nonEmptyStringSchema,
+          taskId: Type.Optional(nonEmptyStringSchema),
           input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
         },
         { additionalProperties: false },
@@ -540,8 +541,12 @@ export function admitTaskReconcileResult(
     if (!isRecord(dependency)) return { ok: false, error: `dependencies[${index}] must be an object` };
     const id = normalizedString(dependency.id);
     const appId = normalizedString(dependency.appId);
+    const taskId = dependency.taskId === undefined ? undefined : normalizedString(dependency.taskId);
     if (!id) return { ok: false, error: `dependencies[${index}].id must be a non-empty string` };
     if (!appId) return { ok: false, error: `dependencies[${index}].appId must be a non-empty string` };
+    if (dependency.taskId !== undefined && !taskId) {
+      return { ok: false, error: `dependencies[${index}].taskId must be a non-empty string when present` };
+    }
     if (dependencyIds.has(id)) return { ok: false, error: `dependencies contains duplicate id ${id}` };
     if (!isRecord(dependency.input) || !nonEmptyString(dependency.input.kind) || !("data" in dependency.input)) {
       return { ok: false, error: `dependencies[${index}].input must contain kind and data` };
@@ -550,6 +555,7 @@ export function admitTaskReconcileResult(
     dependencies.push({
       id,
       appId,
+      ...(taskId ? { taskId } : {}),
       input: { kind: dependency.input.kind.trim(), data: structuredClone(dependency.input.data) },
     });
   }
