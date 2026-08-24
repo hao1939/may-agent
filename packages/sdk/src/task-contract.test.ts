@@ -71,6 +71,21 @@ describe("project task handler contract", () => {
         workflowOptions,
       ),
     ).toEqual({ ok: false, error: "dependencies are valid only for waiting" });
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "waiting",
+          summary: "The dependency is still running",
+          response: "I will tell you when it finishes.",
+          evidence: [],
+          dependencies: [dependency],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "waiting cannot include response; put operational progress in summary",
+    });
   });
 
   it("applies convention defaults to a finite create action", () => {

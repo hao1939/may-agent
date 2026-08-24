@@ -1849,7 +1849,7 @@ export function appTaskDependencyCatalog(
   sourceAppId: string,
 ): Array<{ appId: string; description: string; inputKinds: string[] }> {
   return configuredRegistryEntries(opts)
-    .filter(({ definition }) => definition.id !== sourceAppId && definition.task)
+    .filter(({ definition }) => definition.id !== sourceAppId && definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,
       description: definition.description?.trim() || "No description declared.",
@@ -1868,10 +1868,11 @@ function assertInstalledAppDependency(
       `App dependency ${dependency.id} cannot target its owning App ${sourceAppId}; use a direct child or advance the current Task`,
     );
   }
+  const registryConfigured = Boolean(opts.appRegistrySnapshot || opts.appRegistry);
+  if (!registryConfigured) return;
   const entries = configuredRegistryEntries(opts);
-  if (entries.length === 0) return;
   const target = entries.find(({ definition }) => definition.id === dependency.appId)?.definition;
-  if (!target?.task) {
+  if (!target?.task || !target.tasks) {
     throw new Error(`App dependency ${dependency.id} targets unavailable App ${dependency.appId}`);
   }
   if (!Check(target.inputSchema, dependency.input)) {
@@ -1886,7 +1887,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Perform the next bounded work needed by the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
     "Finish exactly once with finish().result. The tool schema is authoritative. A successful session without result does not resolve the task.",
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
-    "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
+    "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
     "For another App outcome, return a stable dependency { id, appId, input }. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Choose appId and input.kind from the Installed App catalog in this prompt. Describe the desired outcome, constraints, and acceptance proof in input.data; leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
@@ -2081,9 +2082,9 @@ function appTaskCliProtocol(appId: string): string {
     "Perform the next concrete work needed by the Task. The Task resource, not this CLI process or native session, owns status and retries.",
     "Do not edit Host task storage. Use the supplied workspace and paths only.",
     "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
-    'Return {"state":"converged"|"waiting","summary":"...","response":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]}.',
+    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response only for a caller-facing converged result.',
     "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
-    "Wait only for an exact observable Condition, a live direct child, or a typed App dependency; otherwise complete one bounded useful step now.",
+    "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise complete one bounded useful step now.",
     "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Put the desired outcome, constraints, and acceptance proof in input.data; leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
