@@ -8,6 +8,7 @@ import type {
   AppResult,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
+import { displayTaskReferences } from "./task-reference-index.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
@@ -314,6 +315,23 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
     });
 }
 
+/** Human conversations currently awaiting one exact App Task. */
+export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
+  return db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       WHERE app_id = ?
+         AND source_kind = 'human'
+         AND conversation_id IS NOT NULL
+         AND status = 'handling'
+         AND waiting_on_kind = 'task'
+         AND waiting_on_id = ?
+       ORDER BY created_at, id`,
+    )
+    .all(requiredText(appId, "appId"), requiredText(taskId, "taskId"))
+    .map(rowToItem);
+}
+
 function conversationText(input: AppInput): string | undefined {
   const data = input.data;
   if (!data || typeof data !== "object" || Array.isArray(data)) return undefined;
@@ -516,12 +534,28 @@ export function listAppConversationMessages(
     if (message) messages.push(message);
   }
 
-  return messages
+  const bounded = messages
     .sort(
       (left, right) =>
         left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id),
     )
     .slice(-limit);
+  const taskIdentities = bounded.flatMap((message) => message.metadata?.taskRefs ?? []);
+  const taskRefs = displayTaskReferences(db, taskIdentities);
+  return bounded.map((message) =>
+    message.metadata?.taskRefs?.length
+      ? {
+          ...message,
+          metadata: {
+            ...message.metadata,
+            taskRefs: message.metadata.taskRefs.map((task) => ({
+              ...task,
+              ref: taskRefs.get(`${task.appId}\0${task.taskId}`) ?? task.ref,
+            })),
+          },
+        }
+      : message,
+  );
 }
 
 /** Stable May/App-owned conversation resource derived without another store. */

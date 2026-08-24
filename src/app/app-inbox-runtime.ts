@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   matchesEventSelector,
   type AppDependencyObservation,
@@ -18,6 +19,7 @@ import {
   type EventBus,
 } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
+import { listHumanAppInboxItemsWaitingOnTask } from "./app-inbox-store.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
   completeAppEventAdmissionPlan,
@@ -776,6 +778,40 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
       if (sessionId) {
         for (const appId of host.wakeAppIds({ kind: "session", id: sessionId })) schedule(appId);
+      }
+    }
+    if (String(event.type) === "project.task.reconciled") {
+      const appId = typeof data.project === "string" ? data.project.trim() : "";
+      const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
+      const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
+      const summary = typeof data.summary === "string" ? data.summary.trim() : "";
+      if (appId === "may" && taskId && disposition === "waiting") {
+        const statusIdentity = `${data.generation ?? "?"}:${createHash("sha256")
+          .update(`${disposition}\0${summary}`)
+          .digest("hex")
+          .slice(0, 16)}`;
+        for (const item of listHumanAppInboxItemsWaitingOnTask(options.db, appId, taskId)) {
+          const idempotencyKey = `conversation-task-status:${item.id}:${statusIdentity}:${disposition}`;
+          options.bus.emit({
+            type: "conversation.message.created",
+            source: "app-inbox",
+            owner: `app:${appId}`,
+            data: {
+              appId,
+              conversationId: item.conversationId!,
+              author: { kind: "agent", id: "may" },
+              text: summary || "I’m continuing this as a Task and it is waiting for new evidence.",
+              metadata: {
+                channel: item.channel,
+                channelTargetId: item.channelTargetId,
+                channelThreadId: item.channelThreadId,
+                requestId: item.id,
+                taskRefs: [{ appId, taskId }],
+              },
+              idempotencyKey,
+            },
+          });
+        }
       }
     }
     const identity = eventIdentity(event);

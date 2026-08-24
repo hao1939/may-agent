@@ -1,5 +1,5 @@
 import type { AppRegistry } from "./app-registry.js";
-import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
+import type { AppTaskAttempt, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
 import type { TaskCompletionReceipt } from "./app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import {
@@ -35,7 +35,20 @@ export type HumanTaskView = {
   cancellable: boolean;
   execution?: { attemptId: string; sessionId?: string };
   progress?: HumanTaskProgress;
+  waitingOn?: HumanTaskWait[];
 };
+
+export type HumanTaskWait =
+  | {
+      kind: "task";
+      appId: string;
+      taskId: string;
+      ref: string;
+      status: HumanTaskStatus;
+      outcome: string;
+    }
+  | { kind: "app"; appId: string; status: "pending" | "running" | "waiting" }
+  | { kind: "condition"; type: string; subject: string };
 
 export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string };
 
@@ -252,6 +265,105 @@ function rowIdentity(row: TaskRow): { appId: string; taskId: string } | null {
   return row.app_id && row.task_id ? { appId: row.app_id, taskId: row.task_id } : null;
 }
 
+function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | null {
+  return db
+    .prepare(
+      `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
+         a.attempt_json
+       FROM app_tasks t
+       LEFT JOIN app_task_attempts a
+         ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
+       WHERE t.app_id = ? AND t.task_id = ?
+       UNION ALL
+       SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
+         r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json
+       FROM app_task_receipts r
+       WHERE r.app_id = ? AND r.receipt_id = ?
+       UNION ALL
+       SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
+         c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json
+       FROM app_task_cancellations c
+       WHERE c.app_id = ? AND c.task_id = ?
+       ORDER BY terminal DESC LIMIT 1`,
+    )
+    .get(appId, taskId, appId, taskId, appId, taskId) as TaskRow | null;
+}
+
+function taskWaits(db: SqliteDb, appId: string, taskId: string): HumanTaskWait[] {
+  const rows = db
+    .prepare(
+      `SELECT condition.condition_json
+       FROM app_task_condition_routes route
+       JOIN app_task_conditions condition
+         ON condition.app_id = route.app_id AND condition.condition_id = route.condition_id
+       WHERE route.app_id = ? AND route.task_id = ? AND condition.state != 'true'
+       ORDER BY route.condition_id
+       LIMIT 20`,
+    )
+    .all(appId, taskId) as Array<{ condition_json?: string }>;
+  const conditions = rows.flatMap((row) => {
+    const condition = parseJson<AppTaskCondition>(row.condition_json);
+    return condition ? [condition] : [];
+  });
+  const taskIdentities: Array<{ appId: string; taskId: string }> = [];
+  const unresolved: HumanTaskWait[] = [];
+  for (const condition of conditions) {
+    const requestId =
+      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
+        ? condition.spec.subject.slice(3)
+        : "";
+    const request = requestId
+      ? (db
+          .prepare(
+            "SELECT app_id, status, lease_owner, waiting_on_kind, waiting_on_id FROM app_inbox_items WHERE id = ?",
+          )
+          .get(requestId) as {
+          app_id?: string;
+          status?: string;
+          lease_owner?: string | null;
+          waiting_on_kind?: string | null;
+          waiting_on_id?: string | null;
+        } | null)
+      : null;
+    if (request?.app_id && request.waiting_on_kind === "task" && request.waiting_on_id) {
+      taskIdentities.push({ appId: request.app_id, taskId: request.waiting_on_id });
+      continue;
+    }
+    if (request?.app_id) {
+      unresolved.push({
+        kind: "app",
+        appId: request.app_id,
+        status: request.status === "pending" ? "pending" : request.lease_owner ? "running" : "waiting",
+      });
+      continue;
+    }
+    unresolved.push({
+      kind: "condition",
+      type: condition.spec.type,
+      subject: requestId ? "responsible App request" : condition.spec.subject,
+    });
+  }
+  const refs = displayTaskReferences(db, taskIdentities);
+  const tasks = taskIdentities.flatMap((identity) => {
+    const row = readTaskRow(db, identity.appId, identity.taskId);
+    const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
+    const view = row && ref ? projectTask(row, ref, false) : null;
+    return view
+      ? [
+          {
+            kind: "task" as const,
+            appId: view.appId,
+            taskId: view.taskId,
+            ref: view.ref,
+            status: view.status,
+            outcome: view.outcome,
+          },
+        ]
+      : [];
+  });
+  return [...tasks, ...unresolved];
+}
+
 export class HumanTaskService {
   constructor(
     private readonly db: SqliteDb,
@@ -435,40 +547,18 @@ export class HumanTaskService {
       if (!appId || !taskId) throw new Error("Task read requires ref or App and Task ids");
       identity = { appId, taskId, digest: taskReferenceDigest(appId, taskId) };
     }
-    const row = this.db
-      .prepare(
-        `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-           a.attempt_json
-         FROM app_tasks t
-         LEFT JOIN app_task_attempts a
-           ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
-         WHERE t.app_id = ? AND t.task_id = ?
-         UNION ALL
-         SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-           r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json
-         FROM app_task_receipts r
-         WHERE r.app_id = ? AND r.receipt_id = ?
-         UNION ALL
-         SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-           c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json
-         FROM app_task_cancellations c
-         WHERE c.app_id = ? AND c.task_id = ?
-         ORDER BY terminal DESC LIMIT 1`,
-      )
-      .get(
-        identity.appId,
-        identity.taskId,
-        identity.appId,
-        identity.taskId,
-        identity.appId,
-        identity.taskId,
-      ) as TaskRow | null;
+    const row = readTaskRow(this.db, identity.appId, identity.taskId);
     if (!row) return null;
     const refs = displayTaskReferences(this.db, [{ appId: identity.appId, taskId: identity.taskId }]);
     const view = projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
     if (!view || view.terminal) return view;
     const progress = latestTaskProgress(this.db, identity.appId, identity.taskId);
-    return progress ? { ...view, progress } : view;
+    const waitingOn = view.status === "waiting" ? taskWaits(this.db, identity.appId, identity.taskId) : [];
+    return {
+      ...view,
+      ...(progress ? { progress } : {}),
+      ...(waitingOn.length > 0 ? { waitingOn } : {}),
+    };
   }
 
   cancelTask(input: { ref?: string; appId?: string; taskId?: string; reason?: string }): HumanTaskView {

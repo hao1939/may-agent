@@ -54,7 +54,7 @@ export function primaryConversationId(agent: string): string {
   return `${agent.trim() || "may"}:primary`;
 }
 
-export function renderTelegramApps(apps: HumanAppView[]): string {
+export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): string {
   if (apps.length === 0) return "No Apps found.";
   return [
     "Apps:",
@@ -65,7 +65,7 @@ export function renderTelegramApps(apps: HumanAppView[]): string {
         ...(app.waitingTasks ? [`${app.waitingTasks} waiting`] : []),
         ...(app.attentionTasks ? [`${app.attentionTasks} attention`] : []),
       ];
-      return `• ${app.id} — ${states.join(" · ")}`;
+      return `• ${app.id === selectedApp ? "✓ " : ""}${app.id} — ${states.join(" · ")}`;
     }),
   ].join("\n");
 }
@@ -107,7 +107,23 @@ export function renderTelegramTask(task: HumanTaskView): string {
               : `Progress:\n${result}`,
         ]
       : []),
+    ...(task.waitingOn ?? []).map((wait) =>
+      wait.kind === "task"
+        ? `Waiting on: ${wait.ref} · ${wait.appId} · ${wait.status}\n${wait.outcome}`
+        : wait.kind === "app"
+          ? `Waiting on: App ${wait.appId} · ${wait.status}`
+          : `Waiting for: ${wait.type}\n${wait.subject}`,
+    ),
   ].join("\n");
+}
+
+function representedTaskIdentities(task: HumanTaskView): Array<{ appId: string; taskId: string }> {
+  return [
+    { appId: task.appId, taskId: task.taskId },
+    ...(task.waitingOn ?? []).flatMap((wait) =>
+      wait.kind === "task" ? [{ appId: wait.appId, taskId: wait.taskId }] : [],
+    ),
+  ];
 }
 
 function formatWorkTime(value: number): string {
@@ -119,7 +135,11 @@ function formatWorkTime(value: number): string {
 
 function renderTelegramConversationMessage(message: AppConversationMessage): string {
   const channel = message.metadata?.channel?.trim() || "another surface";
-  if (channel === "telegram" && message.author.kind === "agent") return message.text;
+  const taskLines = (message.metadata?.taskRefs ?? []).flatMap((task) =>
+    task.ref ? [`Task ${task.ref} (${task.appId})`] : [],
+  );
+  const text = taskLines.length > 0 ? `${message.text}\n\n${taskLines.join("\n")}` : message.text;
+  if (channel === "telegram" && message.author.kind === "agent") return text;
   const surface = channel === "may-console" ? "Console" : channel;
   const speaker =
     message.author.kind === "human"
@@ -129,7 +149,7 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
         : message.author.kind === "command"
           ? "View"
           : "Tool";
-  return `${surface} · ${speaker}\n${message.text}`;
+  return `${surface} · ${speaker}\n${text}`;
 }
 
 export function telegramMayInputEvent(input: {
@@ -201,6 +221,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     string,
     { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
   >();
+  const selectedApps = new Map<string, string>();
   const nextTaskPageBySurface = new Map<string, { appId?: string; includeDone: boolean; cursor: string }>();
   const pendingReloads = new Map<
     string,
@@ -507,6 +528,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // Every ordinary turn becomes one durable May request.
     const focusedTask = watchedTasks.get(surfaceKey(chatIdStr, topicId));
+    const focusedApp = selectedApps.get(surfaceKey(chatIdStr, topicId)) ?? opts.interfaceAgent;
+    inputContext = { ...(inputContext ?? {}), focusedApp };
     if (focusedTask) {
       inputContext = {
         ...(inputContext ?? {}),
@@ -556,7 +579,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/apps") {
       if (rest.length > 1) await deliverCommandView("Use: /apps [app]");
-      else await deliverCommandView(renderTelegramApps(opts.humanTasks.listApps(rest[0])));
+      else {
+        const apps = opts.humanTasks.listApps(rest[0]);
+        if (rest[0] && apps.length === 1) selectedApps.set(surface, apps[0]!.id);
+        const selected = selectedApps.get(surface) ?? opts.interfaceAgent;
+        await deliverCommandView(
+          apps.length === 0
+            ? `App ${rest[0]} was not found.`
+            : `${rest[0] ? `Selected App: ${selected}\n` : ""}${renderTelegramApps(apps, selected)}`,
+        );
+      }
       return true;
     }
 
@@ -567,13 +599,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         await deliverCommandView("No next page. Use /tasks first.");
         return true;
       }
-      const includeDone = prior?.includeDone ?? rest.some((part) => part.toLowerCase() === "all");
-      const appIds = more ? [] : rest.filter((part) => part.toLowerCase() !== "all");
-      if (appIds.length > 1) {
-        await deliverCommandView("Use: /tasks [app] [all], or /tasks more");
+      const tokens = more ? [] : rest.map((part) => part.toLowerCase());
+      if (tokens.some((part) => part !== "all" && part !== "history") || new Set(tokens).size !== tokens.length) {
+        await deliverCommandView("Use: /tasks [all] [history], or /tasks more");
         return true;
       }
-      const appId = prior?.appId ?? appIds[0];
+      const includeDone = prior?.includeDone ?? tokens.includes("history");
+      const appId =
+        prior?.appId ?? (tokens.includes("all") ? undefined : (selectedApps.get(surface) ?? opts.interfaceAgent));
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
@@ -600,7 +633,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const task = opts.humanTasks.getTask({ ref: rest[0] });
       await deliverCommandView(
         task ? renderTelegramTask(task) : `Task ${rest[0]} was not found.`,
-        task ? [{ appId: task.appId, taskId: task.taskId }] : [],
+        task ? representedTaskIdentities(task) : [],
       );
       return true;
     }
@@ -617,7 +650,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
           await deliverCommandView(
             task ? renderTelegramTask(task) : `Task ${watched.ref} was not found; watch ended.`,
-            task ? [{ appId: task.appId, taskId: task.taskId }] : [],
+            task ? representedTaskIdentities(task) : [],
           );
           if (!task || task.terminal) watchedTasks.delete(surface);
         }
@@ -629,7 +662,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else if (task.terminal) {
         watchedTasks.delete(surface);
         await deliverCommandView(`${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched.`, [
-          { appId: task.appId, taskId: task.taskId },
+          ...representedTaskIdentities(task),
         ]);
       } else {
         watchedTasks.set(surface, {
@@ -641,7 +674,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         });
         await deliverCommandView(
           `${renderTelegramTask(task)}\n\nWatching ${task.ref}. Replies are Task feedback through May.`,
-          [{ appId: task.appId, taskId: task.taskId }],
+          representedTaskIdentities(task),
         );
       }
       return true;
@@ -675,7 +708,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               },
         );
         watchedTasks.delete(surface);
-        await deliverCommandView(renderTelegramTask(task), [{ appId: task.appId, taskId: task.taskId }]);
+        await deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task));
       } catch (error) {
         await deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -688,8 +721,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         "🤖 *May*\n\n" +
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
-          "/apps \[app\] — Show Apps and active Task counts\n" +
-          "/tasks \[app\] \[all\], /tasks more — Show Tasks\n" +
+          "/apps \[app\] — List or select an App\n" +
+          "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
           "/task <ref> — Show one Task\n" +
           "/watch \[ref\] — Watch or show one Task\n" +
           "/unwatch — Stop watching without changing the Task\n" +

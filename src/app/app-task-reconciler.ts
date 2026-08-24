@@ -396,7 +396,14 @@ function restoreAttemptEvents(
 
 function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
   if (!trigger) return false;
-  if (trigger.type === "project.comment.created" || trigger.type === "message.created") return true;
+  if (
+    trigger.type === "project.comment.created" ||
+    trigger.type === "message.created" ||
+    trigger.type === "app.input.requested" ||
+    trigger.type === "app.task.requested"
+  ) {
+    return true;
+  }
   const data = isRecord(trigger.data) ? trigger.data : {};
   return trigger.overrideWait === true || data.overrideWait === true;
 }
