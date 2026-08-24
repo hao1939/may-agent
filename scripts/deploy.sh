@@ -111,17 +111,28 @@ mv -f "$bundle_dir/ui-requested.next" "$bundle_dir/ui-requested"
 printf '%s\n' "$receipt" > "$bundle_dir/deploy-requested.next"
 mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
+staged_restarter="/app/projects/may-agent/bundle/may-agent-supervisor-restart"
+installed_restarter="/usr/local/bin/may-agent-supervisor-restart"
 deploy_in_container='install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && MAY_AGENT_DEPLOY_RECEIPT="'"$receipt"'" MAY_AGENT_DEPLOY_CORRELATION="'"$correlation"'" MAY_AGENT_DEPLOY_PROJECT="'"$project"'" MAY_AGENT_DEPLOY_TASK_ID="'"$task_id"'" supervisorctl start may-agent-restarter'
 
 fail_restarter_launch() {
   failure="$1"
+  rm -f "$bundle_dir/deploy-requested" "$bundle_dir/sdk-requested" "$bundle_dir/ui-requested"
   bun scripts/deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy "$failure"
   echo "Cannot start the live may-agent restarter: $failure" >&2
   exit 1
 }
 
 if [ -S /tmp/supervisor.sock ] && command -v supervisorctl >/dev/null 2>&1; then
-  if ! sh -lc "$deploy_in_container"; then
+  # The in-container Runtime user cannot overwrite the root-owned restarter.
+  # Reuse it only when it is exactly the staged, reviewed script; a changed
+  # restarter still requires the root-capable Docker path.
+  if [ -w "$installed_restarter" ] || { [ ! -e "$installed_restarter" ] && [ -w "$(dirname "$installed_restarter")" ]; }; then
+    install -m 755 "$staged_restarter" "$installed_restarter"
+  elif ! cmp -s "$staged_restarter" "$installed_restarter"; then
+    fail_restarter_launch restarter-update-requires-root
+  fi
+  if ! MAY_AGENT_DEPLOY_RECEIPT="$receipt" MAY_AGENT_DEPLOY_CORRELATION="$correlation" MAY_AGENT_DEPLOY_PROJECT="$project" MAY_AGENT_DEPLOY_TASK_ID="$task_id" supervisorctl start may-agent-restarter; then
     fail_restarter_launch supervisor-launch-failed
   fi
 elif command -v docker >/dev/null 2>&1; then

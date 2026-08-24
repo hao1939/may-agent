@@ -261,8 +261,13 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"');
     expect(deploy).toContain('mv -f "$bundle_dir/ui-requested.next" "$bundle_dir/ui-requested"');
     expect(deploy).toContain("docker exec -u root");
+    expect(deploy).toContain('cmp -s "$staged_restarter" "$installed_restarter"');
+    expect(deploy).toContain("fail_restarter_launch restarter-update-requires-root");
     expect(deploy).toContain("fail_restarter_launch docker-launch-failed");
     expect(deploy).toContain("fail_restarter_launch supervisor-launch-failed");
+    expect(deploy).toContain(
+      'rm -f "$bundle_dir/deploy-requested" "$bundle_dir/sdk-requested" "$bundle_dir/ui-requested"',
+    );
     expect(deploy).toContain('deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy "$failure"');
     const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
     expect(restarter).toContain(
