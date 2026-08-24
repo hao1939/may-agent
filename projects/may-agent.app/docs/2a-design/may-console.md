@@ -97,7 +97,9 @@ with canonical `taskRefs` metadata. This lets a later Console or Telegram turn
 refer naturally to what the human saw. Automatic watch refreshes are transient.
 
 Normal rendering hides unrelated sessions, successful tool calls, heartbeats,
-queue movement, and delivery bookkeeping.
+executor lifecycle stages, queue movement, and delivery bookkeeping. A passive
+executor progress event wakes the human surface only when it carries a useful
+human-readable message.
 
 ## Watch
 
@@ -139,7 +141,14 @@ renders unseen stable message IDs. Messages from Telegram use a source label
 such as `you[telegram]>`. A Console process suppresses only messages it already
 rendered; another Console process may still display the same shared message.
 Passive synchronization reads messages only; it does not query Host request
-history or Task resources.
+history. A newly read `followTask` hint may separately start one exact Task read;
+that follow operation is not part of the Conversation projection.
+
+Console processes unseen messages in Conversation order. If one bounded read
+contains several new assignment hints, only the newest is followed. Every
+pending automatic read is fenced by the exact App and Task identity: a newer
+assignment, explicit `/watch`, `/unwatch`, or App switch makes an older reply a
+no-op. Repeated assignment of the currently watched Task changes nothing.
 
 Durable messages render only from this Conversation read. The raw message event
 is not a second presentation path, so an assignment or answer cannot appear

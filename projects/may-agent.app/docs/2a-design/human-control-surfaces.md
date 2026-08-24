@@ -151,10 +151,11 @@ exact Task.
 The adapter never steers a temporary session and May never edits another App's
 Task storage directly.
 
-A semantic Task transition emits an identity-only wake. The adapter coalesces
-updates, performs at most one read at a time, and renders the latest Task. A
-terminal result ends the watch automatically. `/unwatch` changes only local
-presentation.
+A semantic Task transition or human-readable executor progress message emits
+an identity-only wake. Executor lifecycle stages remain diagnostic and do not
+wake a human surface. The adapter coalesces updates, performs at most one read
+at a time, and renders the latest Task. A terminal result ends the watch
+automatically. `/unwatch` changes only local presentation.
 
 Automatic progress is shown at most once per live adapter surface and semantic
 Task revision. The adapter retains a bounded map of revisions it actually
