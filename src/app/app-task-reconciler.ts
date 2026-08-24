@@ -1240,8 +1240,6 @@ export function releaseInterruptedAppTaskAttempt(
       phase: "pending",
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
-      summary: recoveredSummary,
-      conditionIds: [],
     });
     syncTaskProjection(task, resource, attempt.owner);
     refreshActiveTaskProjection(tree);
@@ -3058,8 +3056,6 @@ export function releaseStaleAppTaskResult(
     if (!attempt || attempt.state !== "running") {
       return { status: "superseded", taskId: claim.taskId };
     }
-    const conditionIds = [...(resource.status.conditionIds ?? [])];
-
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "interrupted", summary, now);
     attempt.metadata.resourceVersion += 1;
@@ -3068,8 +3064,6 @@ export function releaseStaleAppTaskResult(
       phase: "pending",
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
-      summary,
-      conditionIds: [],
     });
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
@@ -3086,7 +3080,7 @@ export function releaseStaleAppTaskResult(
         ],
         tasks: [resourceWrite(tree, resource, true)],
         attempts: [attempt],
-        deleteConditionIds: conditionIds.filter((id) => !tree.conditions?.[id]),
+        deleteConditionIds: [],
       },
     });
     return { status: "released", taskId: claim.taskId };

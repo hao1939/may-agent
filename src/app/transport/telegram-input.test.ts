@@ -106,6 +106,18 @@ describe("Telegram May input", () => {
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
     expect(renderTelegramTask(task)).toContain("Progress:\nReviewing current behavior");
     expect(
+      renderTelegramTask({
+        ...task,
+        requestedBy: {
+          appId: "may",
+          taskId: "conversation/one",
+          ref: "4a7af065",
+          status: "waiting",
+          outcome: "Review the systemic gap",
+        },
+      }),
+    ).toContain("Requested by: 4a7af065 · may · waiting\nReview the systemic gap");
+    expect(
       renderTelegramTodos(
         [
           {

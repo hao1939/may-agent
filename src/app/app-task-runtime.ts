@@ -817,6 +817,7 @@ async function executeTaskCapability(input: {
         acceptance: intent.acceptance,
         input: intent.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
+        waits: projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId),
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -1287,6 +1288,65 @@ function openTaskAppDependencyConditions(
     }
     return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
   });
+}
+
+/** Current accepted waits supplied to every executor before it judges feedback. */
+export function projectAppTaskWaitPromptContext(
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
+  taskId: string,
+): {
+  open: Array<{
+    conditionId: string;
+    type: string;
+    subject: string;
+    state: string;
+    dependency?: {
+      requestId: string;
+      appId: string;
+      status: string;
+      targetTaskId?: string;
+      ownerTaskId?: string;
+    };
+  }>;
+  note: string;
+} {
+  const tree = readTaskState(appTaskConfig(descriptor), { taskIds: [taskId] });
+  const resource = tree.resources?.[taskId];
+  const db = opts.persistDir ? getDb(opts.persistDir) : null;
+  const open = (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
+    const condition = tree.conditions?.[conditionId];
+    if (!condition || condition.status.state === "true") return [];
+    const requestId =
+      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
+        ? condition.spec.subject.slice(3)
+        : "";
+    const item = requestId && db ? getAppInboxItem(db, requestId) : null;
+    return [
+      {
+        conditionId,
+        type: condition.spec.type,
+        subject: condition.spec.subject,
+        state: condition.status.state,
+        ...(item
+          ? {
+              dependency: {
+                requestId,
+                appId: item.appId,
+                status: item.status,
+                ...(item.targetTaskId ? { targetTaskId: item.targetTaskId } : {}),
+                ...(item.waitingOn?.kind === "task" ? { ownerTaskId: item.waitingOn.id } : {}),
+              },
+            }
+          : {}),
+      },
+    ];
+  });
+  return {
+    open,
+    note:
+      "These are accepted waits on this Task. Human feedback must reconsider this same Task. Preserve a still-valid wait; never create a replacement merely because it was absent from prose or child summaries.",
+  };
 }
 
 function mergeTaskConditions(conditions: AppTaskConditionSpec[]): AppTaskConditionSpec[] {
@@ -2023,6 +2083,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
     "After first acceptance-critical evidence, checkpoint a concise summary, next step, and exact artifact/session paths. Refresh only when those facts change, then finish promptly.",
     "For unresolved human work, give an exact useful response or a bounded wait with reviewAfterMs of at least 60000. Do not expose delivery or Host internals.",
+    "When feedback targets this Task, address the human's actual concern and reconcile this Task first. Inspect its Open Waits, preserve a live relevant dependency by identity, and create different work only when the existing Task cannot fulfill the requested outcome.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");
 }
@@ -2080,6 +2141,7 @@ async function executeTaskAgent(input: {
         acceptance: intent.acceptance,
         input: intent.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
+        waits: projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId),
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -2268,6 +2330,7 @@ async function executeTaskCli(input: {
         acceptance: intent.acceptance,
         input: intent.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
+        waits: projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId),
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,

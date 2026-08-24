@@ -28,6 +28,7 @@ import {
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   projectAppTaskChildPromptContext,
+  projectAppTaskWaitPromptContext,
   projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
   rejectConvergedDirectAgentResidue,
@@ -508,6 +509,79 @@ describe("App Task agent prompt context", () => {
       agent: "sample-owner",
     });
     expect(projected.completed[0]).not.toHaveProperty("owner");
+  });
+
+  it("shows the executor the exact accepted wait before it judges feedback", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const taskIntent = {
+      id: "work/focused-feedback",
+      parentId: "operations",
+      outcome: "Resolve the human concern on this Task",
+      acceptance: ["The concern is resolved"],
+      mode: "achieve" as const,
+      agent: "sample-owner",
+    };
+    observeAppTaskIntent(config, { intent: taskIntent, appAgent: "sample-owner" });
+    const claim = claimObservedAppTask(config, {
+      taskId: taskIntent.id,
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    createAppInboxItem(getDb(persistDir), {
+      id: "existing-proof",
+      appId: "gym",
+      source: { kind: "app", id: "sample" },
+      input: { kind: "probe", data: { value: "compare current behavior" } },
+      now: 1,
+    });
+    expect(
+      deferAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "Gym is comparing current behavior",
+        evidence: ["comparison requested"],
+        conditions: [
+          {
+            id: "app-request:existing-proof",
+            type: "app.dependency.completed",
+            subject: "id:existing-proof",
+            expected: { field: "status", equals: "done" },
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied" });
+
+    expect(
+      projectAppTaskWaitPromptContext(
+        { ...options(f, bus), persistDir },
+        {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          agent: "sample-owner",
+          app: definition(),
+          reconciliationPaused: false,
+        },
+        taskIntent.id,
+      ),
+    ).toMatchObject({
+      open: [
+        {
+          conditionId: "app-request:existing-proof",
+          type: "app.dependency.completed",
+          state: "unknown",
+          dependency: { requestId: "existing-proof", appId: "gym", status: "pending" },
+        },
+      ],
+    });
   });
 });
 
