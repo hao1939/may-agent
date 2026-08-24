@@ -182,11 +182,12 @@ limit ends the burst as visible attention instead of spinning or claiming
 convergence. A durable continuation keeps the task pending; it is never
 surfaced as convergence.
 
-### Parallelism
+### Bounded work
 
-One reconcile may assess at most two independent learning tracks in parallel.
-Each has frozen inputs and its own evidence scope. The Gym owner then selects at
-most one result for integration.
+One reconcile advances one learning track. When approved material remains, Gym
+saves the current checkpoint and emits one continuation event for the next
+track. This keeps peak work small and prevents one failed assessment from
+leaving an unowned sibling run behind.
 
 Fresh assessment and candidate integration are separate reconciliation stages.
 After an expensive assessment produces an actionable finding, Gym saves the
@@ -199,8 +200,9 @@ Candidate creation, revision, release verification, approval, application, and
 confirmation remain ordered. Gym never parallelizes two revisions of the same
 hypothesis and never sends more than one integrated candidate for approval.
 
-An evaluator or runtime issue in one track does not prevent assessment of an
-independent track. It does prevent that track from authorizing an agent change.
+An evaluator or runtime issue in one track does not prevent a later wake from
+assessing the next track. It does prevent that track from authorizing an agent
+change.
 
 ## Evidence and workspace
 

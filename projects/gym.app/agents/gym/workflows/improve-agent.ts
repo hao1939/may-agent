@@ -300,15 +300,6 @@ const failedReviewSchema = Type.Object(
   { additionalProperties: false },
 );
 
-const prioritySelectionSchema = Type.Object(
-  {
-    targetId: Type.String({ minLength: 1, maxLength: 120 }),
-    reason: Type.String({ minLength: 1, maxLength: 1_000 }),
-    evidence: Type.Array(Type.String({ minLength: 1 }), { maxItems: 16 }),
-  },
-  { additionalProperties: false },
-);
-
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -4604,43 +4595,34 @@ function curriculumScope(campaignId: string, targetId: string): string {
   return `${targetId}-${campaignId.slice("sha256:".length, "sha256:".length + 16)}`;
 }
 
-async function prepareCurriculumExperiments(
+async function prepareCurriculumExperiment(
   ctx: WorkflowContext,
   loop: GymLoopApi,
-  targets: CurriculumTarget[],
+  target: CurriculumTarget,
   agent: string,
   campaignId: string,
   taskId: string,
   generation: number,
-): Promise<CurriculumExperiment[]> {
-  return Promise.all(
-    targets.map(async (target) => {
-      const input = curriculumInput(agent, target);
-      const scope = curriculumScope(campaignId, target.id);
-      const { assessmentPath } = improvementStatePaths(
-        ctx,
-        taskId,
-        generation,
-        scope,
-      );
-      const assessmentWasFresh = !existsSync(assessmentPath);
-      const prepared = await prepareAssessment(
-        ctx,
-        input,
-        assessmentPath,
-        loop,
-      );
-      return {
-        target,
-        input,
-        scope,
-        assessmentPath,
-        assessmentWasFresh,
-        assessment: prepared.assessment,
-        ...(prepared.problem ? { problem: prepared.problem } : {}),
-      };
-    }),
+): Promise<CurriculumExperiment> {
+  const input = curriculumInput(agent, target);
+  const scope = curriculumScope(campaignId, target.id);
+  const { assessmentPath } = improvementStatePaths(
+    ctx,
+    taskId,
+    generation,
+    scope,
   );
+  const assessmentWasFresh = !existsSync(assessmentPath);
+  const prepared = await prepareAssessment(ctx, input, assessmentPath, loop);
+  return {
+    target,
+    input,
+    scope,
+    assessmentPath,
+    assessmentWasFresh,
+    assessment: prepared.assessment,
+    ...(prepared.problem ? { problem: prepared.problem } : {}),
+  };
 }
 
 export function experimentNeedsIntegration(
@@ -4653,42 +4635,6 @@ export function experimentNeedsIntegration(
       ({ classification }) =>
         classification === "benchmark" || classification === "scorer",
     ),
-  );
-}
-
-async function selectPriorityExperiment(
-  ctx: WorkflowContext,
-  experiments: CurriculumExperiment[],
-  wake: Record<string, unknown>,
-): Promise<CurriculumExperiment> {
-  if (experiments.length === 1) return experiments[0]!;
-  const choices = experiments.map((experiment) => ({
-    targetId: experiment.target.id,
-    assessmentPath: experiment.assessmentPath,
-    focus: experiment.assessment.focus,
-    findings: experiment.assessment.findings,
-  }));
-  const result = await callGymAgent(
-    ctx,
-    "gym",
-    [
-      "You own the improve/may goal and must choose the single highest-priority integration path from two independent, frozen development assessments.",
-      "Prioritize safety, human intent, impact, reproducibility, and the clearest bounded proof. Do not change benchmark truth or propose child tasks.",
-      "Select exactly one targetId. The workflow will keep the other assessment checkpoint for the next reconcile.",
-      "Wake evidence:",
-      "```json",
-      JSON.stringify(wake, null, 2),
-      "```",
-      "Choices:",
-      "```json",
-      JSON.stringify(choices, null, 2),
-      "```",
-    ].join("\n"),
-    { schema: prioritySelectionSchema },
-  );
-  const selected = String(result.structuredResult?.targetId ?? "");
-  return (
-    experiments.find(({ target }) => target.id === selected) ?? experiments[0]!
   );
 }
 
@@ -5064,46 +5010,40 @@ export async function runImprovement(
       });
     }
 
-    // Two independent assessments may run together. Candidate construction,
-    // integration, release verification, and promotion remain serialized.
-    const experiments = await prepareCurriculumExperiments(
+    // One wake advances one learning track. The continuation event moves the
+    // next track forward without doubling peak load or leaving a sibling run
+    // behind when an assessment fails.
+    const selected = await prepareCurriculumExperiment(
       ctx,
       loop,
-      remaining.slice(0, 2),
+      remaining[0]!,
       agent,
       campaignId,
       taskId,
       generation,
     );
-    for (const experiment of experiments) {
-      const passive = experimentPassiveResult(experiment);
-      if (!passive) continue;
+    const passive = experimentPassiveResult(selected);
+    if (passive) {
       checkpointTrack(checkpoint, {
-        id: experiment.target.id,
+        id: selected.target.id,
         ...passive,
       });
     }
 
-    const actionable = experiments.filter(experimentNeedsIntegration);
-    if (
-      actionable.length &&
-      experiments.some(({ assessmentWasFresh }) => assessmentWasFresh)
-    ) {
+    const actionable = experimentNeedsIntegration(selected);
+    if (actionable && selected.assessmentWasFresh) {
       writeJson(checkpointPath, checkpoint);
       emitCurriculumContinuation(ctx, campaignId);
-      const summary = `Gym checkpointed ${experiments.length} fresh assessment${experiments.length === 1 ? "" : "s"}; integration will resume from that evidence on the next wake.`;
+      const summary =
+        "Gym checkpointed one fresh assessment; integration will resume from that evidence on the next wake.";
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: boundedEvidence([
-          checkpointPath,
-          ...experiments.map(({ assessmentPath }) => assessmentPath),
-        ]),
+        evidence: boundedEvidence([checkpointPath, selected.assessmentPath]),
         actions: [],
       });
     }
-    if (actionable.length) {
-      const selected = await selectPriorityExperiment(ctx, actionable, input);
+    if (actionable) {
       const result = await runImprovementOnce(
         ctx,
         loop,

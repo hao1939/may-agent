@@ -1544,7 +1544,7 @@ describe("single agent-improvement loop", () => {
     expect(visited).toEqual(targets.map(({ id }) => id));
   });
 
-  test("reconciles two assessments at a time and resumes from the campaign checkpoint", async () => {
+  test("reconciles one assessment per wake and resumes from the campaign checkpoint", async () => {
     const root = mkdtempSync(join(tmpdir(), "gym-bounded-campaign-"));
     roots.push(root);
     const projectsRoot = join(root, "projects");
@@ -1658,10 +1658,10 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(first.summary).toContain("1 approved track remains");
+    expect(first.summary).toContain("2 approved tracks remain");
     expect(outputOf(first).actions).toEqual([]);
-    expect(runCount).toBe(2);
-    expect(maxActive).toBe(2);
+    expect(runCount).toBe(1);
+    expect(maxActive).toBe(1);
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.improvement.requested",
@@ -1696,7 +1696,14 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(second.summary).toContain("training material is exhausted");
+    expect(second.summary).toContain("1 approved track remains");
+    expect(runCount).toBe(2);
+    (ctx as unknown as { task: string }).task = task("curriculum-continue");
+    const third = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(third.summary).toContain("training material is exhausted");
     expect(runCount).toBe(3);
 
     const trainingPath = join(
