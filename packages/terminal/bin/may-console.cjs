@@ -27,6 +27,7 @@ let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
 let lastDisconnectedMessage = "";
 let conversationReady = false;
+let appSelectionInFlight = false;
 const pendingInputLines = [];
 
 const renderedConversationMessages = new Set();
@@ -620,7 +621,12 @@ function handleEvent(event) {
         if (conversationSyncDirty) requestConversation("sync");
       }
       if (event.command === "apps.list") {
-        renderApps(event.apps, pendingAppReads.shift());
+        const pending = pendingAppReads.shift();
+        renderApps(event.apps, pending);
+        if (pending?.select) {
+          appSelectionInFlight = false;
+          flushPendingInput();
+        }
       }
       if (event.command === "tasks.list") {
         renderTasks(event.tasks, pendingTaskListReads.shift());
@@ -670,7 +676,13 @@ function handleEvent(event) {
           flushPendingInput();
         }
       }
-      if (event.command === "apps.list") pendingAppReads.shift();
+      if (event.command === "apps.list") {
+        const pending = pendingAppReads.shift();
+        if (pending?.select) {
+          appSelectionInFlight = false;
+          flushPendingInput();
+        }
+      }
       if (event.command === "tasks.list") pendingTaskListReads.shift();
       if (event.command === "task.get") {
         const pending = pendingTaskReads.shift();
@@ -765,7 +777,10 @@ function connectSocket() {
     conversationReady = false;
     socket = null;
     pendingConversationReads.length = 0;
+    const interruptedSelection = pendingAppReads.find((pending) => pending.select);
     pendingAppReads.length = 0;
+    if (interruptedSelection) pendingInputLines.unshift(interruptedSelection.command);
+    appSelectionInFlight = false;
     pendingTaskListReads.length = 0;
     pendingTaskReads.length = 0;
     watchedTaskReadInFlight = false;
@@ -815,7 +830,8 @@ function handleCommand(input) {
         printLine("Usage: /apps [app]");
         return;
       }
-      requestApps(rest || null, input, Boolean(rest));
+      if (rest) appSelectionInFlight = true;
+      if (!requestApps(rest || null, input, Boolean(rest))) appSelectionInFlight = false;
       return;
     case "tasks": {
       if (restParts.length === 1 && restParts[0].toLowerCase() === "more") {
@@ -947,6 +963,15 @@ function handleInput(line) {
   if (!connected || !conversationReady) {
     pendingInputLines.push(input);
     printLine("[waiting for May; input queued]");
+    return;
+  }
+
+  // A selected App changes the meaning of the next bare turn and /tasks.
+  // Keep terminal input ordered across that one asynchronous lookup while
+  // leaving the daemon's event handlers independent and non-blocking.
+  if (appSelectionInFlight) {
+    pendingInputLines.push(input);
+    refreshPrompt();
     return;
   }
 
