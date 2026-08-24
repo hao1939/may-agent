@@ -1544,6 +1544,54 @@ describe("App task reconciler state", () => {
     expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual(["older-external-run-finished"]);
   });
 
+  it.each(["app.input.requested", "app.task.requested"])(
+    "reconsiders a waiting task for fresh %s input without deleting its condition",
+    (type) => {
+      const { config } = fixture();
+      const monitor = intent("maintain");
+
+      observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
+      const firstClaim = claimObservedAppTask(config, {
+        taskId: monitor.id,
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+      });
+      if (firstClaim.kind !== "claimed") throw new Error("expected first claim");
+
+      deferAppTask(config, firstClaim, {
+        disposition: "waiting",
+        summary: "waiting for an earlier decision",
+        conditions: [
+          {
+            id: "earlier-decision",
+            type: "project.approval.resolved",
+            subject: "approval:old",
+            expected: "approved",
+          },
+        ],
+      });
+
+      const inputEvent = {
+        type,
+        eventId: 43,
+        data: { appId: "sample", input: { kind: "feedback", data: { message: "The wait is no longer valid" } } },
+      };
+      observeAppTaskIntent(config, {
+        intent: monitor,
+        appAgent: "app-owner",
+        trigger: inputEvent,
+      });
+
+      const claim = claimObservedAppTask(config, {
+        taskId: monitor.id,
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+      });
+      expect(claim).toMatchObject({ kind: "claimed", taskId: monitor.id, trigger: inputEvent });
+      expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual(["earlier-decision"]);
+    },
+  );
+
   it("invalidates an old attempt when desired state changes generation", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {

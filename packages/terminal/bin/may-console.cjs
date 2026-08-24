@@ -21,6 +21,7 @@ let reconnectDelayMs = 250;
 let buffer = "";
 let raw = false;
 let debug = false;
+let selectedApp = "may";
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
@@ -84,7 +85,7 @@ function completeInput(line) {
     command === "/apps"
       ? [...knownAppIds]
       : command === "/tasks"
-        ? [...knownAppIds, "all"]
+        ? ["all", "history"]
         : command === "/task" || command === "/watch" || command === "/cancel"
           ? [...knownTaskRefs]
           : [];
@@ -107,8 +108,8 @@ function shortSessionId(sessionId) {
 
 function promptText() {
   if (!connected) return "you[disconnected]> ";
-  if (watchedTask) return `you[task ${watchedTask.ref}]> `;
-  return "you> ";
+  if (watchedTask) return `you[${watchedTask.appId}:${watchedTask.ref}]> `;
+  return `you[${selectedApp}]> `;
 }
 
 function refreshPrompt() {
@@ -197,7 +198,10 @@ function mayInputFrame(message) {
         conversationId,
         author: { kind: "human", id: messageId },
         text: message,
-        ...(watchedTask ? { context: { focusedTask: { appId: watchedTask.appId, taskId: watchedTask.taskId } } } : {}),
+        context: {
+          focusedApp: selectedApp,
+          ...(watchedTask ? { focusedTask: { appId: watchedTask.appId, taskId: watchedTask.taskId } } : {}),
+        },
         metadata: { channel: source, channelThreadId: "local-terminal" },
       },
       idempotencyKey: messageId,
@@ -228,8 +232,8 @@ function requestConversation(kind = "startup") {
   return sent;
 }
 
-function requestApps(appId = null, command = "/apps") {
-  pendingAppReads.push({ appId, command });
+function requestApps(appId = null, command = "/apps", select = false) {
+  pendingAppReads.push({ appId, command, select });
   const sent = sendFrame({ type: "apps.list", ...(appId ? { appId } : {}) }, { silent: true });
   if (!sent) pendingAppReads.pop();
   return sent;
@@ -322,6 +326,13 @@ function taskIdentity(task) {
     : null;
 }
 
+function representedTaskIdentities(task) {
+  return [
+    taskIdentity(task),
+    ...(Array.isArray(task?.waitingOn) ? task.waitingOn.filter((wait) => wait?.kind === "task").map(taskIdentity) : []),
+  ].filter(Boolean);
+}
+
 function taskResult(task) {
   if (typeof task?.response === "string" && task.response.trim()) return task.response.trim();
   if (typeof task?.summary === "string" && task.summary.trim()) return task.summary.trim();
@@ -339,7 +350,11 @@ function taskProgress(task) {
 
 function renderApps(apps, pending) {
   if (!Array.isArray(apps)) return;
-  const lines = ["", pending?.appId ? `App ${pending.appId}:` : "Apps:"];
+  if (pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim()) {
+    selectedApp = apps[0].id.trim();
+    nextTaskPage = null;
+  }
+  const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:"];
   if (apps.length === 0) lines.push("  Nothing found.");
   for (const app of apps) {
     if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
@@ -350,8 +365,9 @@ function renderApps(apps, pending) {
       ...(Number(app.waitingTasks || 0) ? [`${app.waitingTasks} waiting`] : []),
       ...(Number(app.attentionTasks || 0) ? [`${app.attentionTasks} attention`] : []),
     ];
-    lines.push(`  ${app.id} — ${details.join(" · ")}`);
-    if (pending?.appId && typeof app.description === "string" && app.description.trim()) {
+    const marker = app.id === selectedApp ? "*" : " ";
+    lines.push(` ${marker} ${app.id} — ${details.join(" · ")}`);
+    if (pending?.select && typeof app.description === "string" && app.description.trim()) {
       lines.push(`    ${app.description.trim()}`);
     }
   }
@@ -361,7 +377,8 @@ function renderApps(apps, pending) {
 
 function renderTasks(page, pending) {
   const tasks = Array.isArray(page?.items) ? page.items : [];
-  const title = pending?.includeDone ? "Tasks (active and recent):" : "Active Tasks:";
+  const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
+  const title = pending?.includeDone ? `Tasks${scope} (active and recent):` : `Active Tasks${scope}:`;
   const lines = ["", title];
   if (tasks.length === 0) lines.push("  Nothing found.");
   for (const task of tasks) {
@@ -414,10 +431,19 @@ function renderTask(task, command, options = {}) {
           : "  Progress:",
       ...result.split("\n").map((line) => `    ${line}`),
     );
+  for (const wait of Array.isArray(task.waitingOn) ? task.waitingOn : []) {
+    if (wait?.kind === "task") {
+      lines.push(`  Waiting on: ${wait.ref} · ${wait.appId} · ${wait.status} — ${wait.outcome}`);
+    } else if (wait?.kind === "app") {
+      lines.push(`  Waiting on: App ${wait.appId} · ${wait.status}`);
+    } else if (wait?.kind === "condition") {
+      lines.push(`  Waiting for: ${wait.type} — ${wait.subject}`);
+    }
+  }
   if (task.execution?.sessionId) lines.push(`  Diagnostic session: ${task.execution.sessionId}`);
   lines.push("");
   if (options.transient) printLine(lines.join("\n"));
-  else presentView(command, lines.join("\n"), { taskRefs: [taskIdentity(task)] });
+  else presentView(command, lines.join("\n"), { taskRefs: representedTaskIdentities(task) });
 }
 
 function setWatchedTask(task) {
@@ -462,7 +488,14 @@ function renderConversation(messages) {
     const kind = message.author && typeof message.author.kind === "string" ? message.author.kind : "agent";
     const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
-    printConversationText(speaker, text);
+    const taskRefs = Array.isArray(message.metadata?.taskRefs)
+      ? message.metadata.taskRefs.flatMap((task) =>
+          task && typeof task.ref === "string" && task.ref.trim()
+            ? [`Task ${task.ref.trim()} (${task.appId || "unknown App"})`]
+            : [],
+        )
+      : [];
+    printConversationText(speaker, taskRefs.length > 0 ? `${text}\n\n${taskRefs.join("\n")}` : text);
     rememberRenderedConversationMessage(id);
   }
 }
@@ -756,14 +789,14 @@ function printHelp() {
   printLine(
     [
       "Commands:",
-      "  /apps [app]",
-      "  /tasks [app] [all], /tasks more",
+      "  /apps [app]                 List or select an App",
+      "  /tasks [all] [history], /tasks more",
       "  /task <ref>",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
       "  /reload, /restart, /shell, /exit",
       "",
-      "Bare text goes to May. While watching, it is feedback for that Task.",
+      "Bare text goes to May in the selected App context. While watching, it is feedback for that Task.",
     ].join("\n"),
   );
 }
@@ -782,7 +815,7 @@ function handleCommand(input) {
         printLine("Usage: /apps [app]");
         return;
       }
-      requestApps(rest || null, input);
+      requestApps(rest || null, input, Boolean(rest));
       return;
     case "tasks": {
       if (restParts.length === 1 && restParts[0].toLowerCase() === "more") {
@@ -793,13 +826,14 @@ function handleCommand(input) {
         requestTasks({ ...nextTaskPage, command: input });
         return;
       }
-      const includeDone = restParts.some((part) => part.toLowerCase() === "all");
-      const appIds = restParts.filter((part) => part.toLowerCase() !== "all");
-      if (appIds.length > 1) {
-        printLine("Usage: /tasks [app] [all], or /tasks more");
+      const tokens = restParts.map((part) => part.toLowerCase());
+      if (tokens.some((part) => part !== "all" && part !== "history") || new Set(tokens).size !== tokens.length) {
+        printLine("Usage: /tasks [all] [history], or /tasks more");
         return;
       }
-      requestTasks({ appId: appIds[0], includeDone, command: input });
+      const allApps = tokens.includes("all");
+      const includeDone = tokens.includes("history");
+      requestTasks({ appId: allApps ? null : selectedApp, includeDone, command: input });
       return;
     }
     case "task":

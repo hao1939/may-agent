@@ -572,7 +572,14 @@ describe("App inbox runtime", () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     let updates = 0;
+    const statuses: AgentEvent[] = [];
     bus.subscribe((event) => {
+      if (
+        event.type === "conversation.message.created" &&
+        (event.data as Record<string, any>)?.author?.kind === "agent"
+      ) {
+        statuses.push(event);
+      }
       if (event.type !== "conversation.updated") return;
       updates += 1;
       return { accepted: true, by: "test-view" };
@@ -600,8 +607,51 @@ describe("App inbox runtime", () => {
     });
     await waitUntil(() => runtime?.host.get("turn-1")?.waitingOn?.kind === "task");
 
+    bus.emit({
+      type: "project.task.reconciled",
+      source: "app-task:may",
+      owner: "agent:may",
+      target: { appId: "may" },
+      data: {
+        project: "may",
+        taskId: "conversation/turn-1",
+        generation: 1,
+        attemptId: "attempt-1",
+        disposition: "waiting",
+        summary: "Gym is checking the reported behavior.",
+      },
+    });
+    await waitUntil(() => statuses.length === 1);
+    bus.emit({
+      type: "project.task.reconciled",
+      source: "app-task:may",
+      owner: "agent:may",
+      target: { appId: "may" },
+      data: {
+        project: "may",
+        taskId: "conversation/turn-1",
+        generation: 1,
+        attemptId: "attempt-2",
+        disposition: "waiting",
+        summary: "Gym is checking the reported behavior.",
+      },
+    });
+    await Bun.sleep(20);
+
     expect(updates).toBeGreaterThan(0);
     expect(runtime.host.get("turn-1")?.conversationId).toBe("may:primary");
+    expect(statuses[0]).toMatchObject({
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        text: "Gym is checking the reported behavior.",
+        metadata: {
+          requestId: "turn-1",
+          taskRefs: [{ appId: "may", taskId: "conversation/turn-1" }],
+        },
+      },
+    });
+    expect(statuses).toHaveLength(1);
   });
 
   it("publishes event schedules as record-only facts", async () => {

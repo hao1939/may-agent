@@ -188,7 +188,13 @@ describe("App inbox store", () => {
           metadata: {
             channel: "may-console",
             command: "/tasks",
-            taskRefs: [{ appId: "evaluation", taskId: "review/docs" }],
+            taskRefs: [
+              {
+                appId: "evaluation",
+                taskId: "review/docs",
+                ref: expect.stringMatching(/^[0-9a-f]{8}$/),
+              },
+            ],
           },
         },
       ],

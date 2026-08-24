@@ -82,7 +82,7 @@ export type AppConversationMessage = {
     requestId?: string;
     command?: string;
     /** Ordered canonical Tasks represented by this rendered command/tool view. */
-    taskRefs?: Array<{ appId: string; taskId: string }>;
+    taskRefs?: Array<{ appId: string; taskId: string; ref?: string }>;
   };
   createdAt: number;
 };
