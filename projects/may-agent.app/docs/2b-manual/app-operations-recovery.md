@@ -159,6 +159,27 @@ later supervisor start cannot accidentally activate that failed request.
 The retained App-local `.state/tasks/state.json` is migration evidence after
 cutover. Deployment must not consult, recreate, or mutate it.
 
+### Read-only deployment verification
+
+Verification of an exact live commit is not another deployment attempt. Begin
+with the requested source commit, correlation, or Host Operations Task and
+inspect only matching JSON receipts under
+`/app/projects/may-agent/.state/deploy-receipts/`. The terminal receipt is the
+authoritative binding among `sourceCommit`, `artifactSha`, the loaded artifact,
+health, and the originating `{project, taskId, correlation}`. Internal
+activation markers and their disappearance are not completion evidence.
+
+A successful proof requires `phase: succeeded`,
+`loadedArtifactSha == artifactSha`, `health: healthy`, and
+`duplicateDeploy: false`. Cross-check that receipt against
+`bundle/may-agent.provenance.json`, the SHA-256 of the live container's
+`/usr/local/bin/may-agent`, the three long-lived supervisor services
+(`may-agent`, `may-agent-web`, and `may-agent-maintenance`), and
+`http://127.0.0.1:${WEB_PORT:-8080}/api/readiness`. A requested receipt is an
+exact wait; a failed or rolled-back receipt is a terminal disposition. Stop
+when these bounded facts answer the request—do not scan the workspace, inspect
+unrelated worktrees, or tail broad logs as a substitute for receipt evidence.
+
 ## Delivery uncertainty
 
 An App result and its outward delivery are separate durable facts. Retry only a
