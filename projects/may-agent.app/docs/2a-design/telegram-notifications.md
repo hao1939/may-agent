@@ -225,7 +225,7 @@ Telegram exposes the same small Task meanings as Console:
 
 - `/apps [app]`;
 - `/tasks [all] [history]`;
-- `/todo [all]`;
+- `/todo [all]` and `/todo more`;
 - `/task <ref>`;
 - `/watch [ref]` and `/unwatch`;
 - `/cancel [ref]`; and
@@ -247,13 +247,17 @@ directly to an execution session. Semantic Task events wake one coalesced exact
 read. Passive Conversation synchronization reads bounded messages only. Idle
 watch has no poller, timer, workflow, session, or model call.
 
-`/todo` returns at most 50 Tasks with explicit open human-owned Conditions;
-`/todo all` crosses App scope. Reconciliation and cancellation events trigger
+`/todo` returns up to 50 Tasks with explicit open human-owned Conditions,
+`/todo more` follows the current opaque cursor, and `/todo all` crosses App
+scope. Reconciliation and cancellation events trigger
 one coalesced App-scoped reread for active chat/topic surfaces. Executor
 progress refreshes an exact watch only and does not rescan `/todo`. A new or
-changed off-watch action produces one compact notification, records exact Task
-references in shared Conversation, and remains independent of provider
-delivery status.
+changed off-watch action may produce one best-effort compact notification on
+each configured surface and records exact Task references in shared
+Conversation after it is shown. Surfaces do not coordinate or promise global
+exactly-once delivery. Configured base chats are active after startup without
+waiting for a new inbound message. Provider delivery status remains
+observational.
 
 The adapter validates the exact target and records the control result. A
 human-requested read result that may shape the next turn is appended as a

@@ -191,8 +191,9 @@ watch cursor or delivery guarantee.
 Human surfaces may ask the same Host reader for `humanActionOnly`. This is a
 derived filter over live Tasks with at least one unsatisfied Condition owned by
 `human` or `human:<role>`; it is not another resource or lifecycle. The bounded
-card adds `{ requestedAction, since }`. Generic `attention`, age, and delivery
-state never satisfy this filter.
+card adds `{ requestedAction, since? }`. `since` is present only when the
+current Condition start is known; later observation time is not a substitute.
+Generic `attention`, age, and delivery state never satisfy this filter.
 
 There is deliberately no generic task write API. A caller asks the accountable
 App for an outcome, optionally naming the observed task. App policy then keeps,

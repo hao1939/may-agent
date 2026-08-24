@@ -35,6 +35,7 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 | `/apps [app]`          | List Apps or select one App                           |
 | `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps/history |
 | `/todo [all]`          | Show Tasks that explicitly need human action         |
+| `/todo more`           | Continue the current human-action page                |
 | `/task <ref>`          | Read one exact Task                                   |
 | `/watch [ref]`         | Watch a Task or show the current watched Task         |
 | `/unwatch`             | Stop watching without changing the Task               |
@@ -101,11 +102,12 @@ Explicitly requested views are appended to Conversation after presentation,
 with canonical `taskRefs` metadata. This lets a later Console or Telegram turn
 refer naturally to what the human saw. Automatic watch refreshes are transient.
 
-`/todo` is the same Task read filtered to explicit open human-owned Conditions.
-Console subscribes to identity-only semantic wakes for the selected App,
-coalesces bursts, rereads the bounded view, and announces a new or changed
-off-watch action once per live revision. It never polls or asks May to build the
-list. While a Task is watched, its ordinary card carries `Action needed`.
+`/todo` is the same Task read filtered to explicit open human-owned Conditions;
+`/todo more` follows its opaque cursor. Console subscribes to identity-only
+semantic wakes for the selected App, coalesces bursts, rereads the bounded
+view, and may best-effort announce a new or changed requested action once in
+the current process. It never polls or asks May to build the list. While a Task
+is watched, its ordinary card carries `Action needed`.
 
 Normal rendering hides unrelated sessions, successful tool calls, heartbeats,
 executor lifecycle stages, queue movement, and delivery bookkeeping. A passive

@@ -32,7 +32,9 @@ a Task a human action. They may need an App owner or Host repair instead.
   that exact Task through May.
 - `/unwatch` stops presentation only.
 
-One row contains the Task reference, App, requested action, and waiting age.
+One row contains the Task reference, App, requested action, and waiting age
+when the Condition start is known. Unknown age is omitted rather than inferred
+from a later observation.
 The requested action is the Task's current waiting summary, falling back to its
 desired outcome. A human-waiting Task therefore has one additional convention:
 its summary must say plainly what the human needs to decide, approve, or
@@ -50,20 +52,22 @@ Watching changes presentation, not truth:
 - while watched, the normal Task card shows `Action needed` and live changes;
 - while not watched, an identity-only Task wake causes the adapter to re-read a
   bounded `/todo` projection;
-- a new or materially changed action produces one compact notification;
+- a new or materially changed action may produce one best-effort compact
+  notification per surface;
 - Console keeps a scoped prompt count such as `you[evaluation · 2 todo]>`;
 - Telegram uses a compact message and may later add native buttons;
-- `/todo` reconstructs all current items after reconnect or restart.
+- Task state reconstructs the authoritative count and `/todo` pages after
+  reconnect or restart.
 
-The first adapter that shows an automatic notification appends one
-command-authored Conversation view with a stable Task-revision idempotency key.
-Other adapters render that shared message rather than creating independent
-semantic notifications. This records what the human saw without creating work
-or gating Task progress on delivery.
+An adapter may append a command-authored Conversation view after it shows an
+automatic notification. Adapters keep bounded local requested-action maps;
+they do not coordinate delivery or promise cross-surface exactly-once
+presentation. This records useful human context without creating work or
+gating Task progress on delivery.
 
-Adapter cursors and revision caches are bounded presentation state. Losing
-them may repeat a notification, but cannot lose, complete, or duplicate the
-human obligation.
+Adapter cursors and requested-action caches are bounded presentation state.
+Losing them may repeat a notification, but cannot lose, complete, or duplicate
+the human obligation.
 
 ## Event and performance contract
 
@@ -72,9 +76,8 @@ App, coalesce bursts, and perform one bounded derived read. No model call is
 needed for `/todo`, prompt counts, reconnect recovery, or watch refresh.
 
 The Event remains a wake only. Current Task and Condition state is always
-re-read before display. Repeated executor lifecycle events without a useful
-Task change produce no repeated notification because presentation is keyed by
-Task resource revision and requested action.
+re-read before display. Repeated wakes produce no notification when the
+requested human action is unchanged.
 
 ## PoC scenarios
 
@@ -83,12 +86,13 @@ The PoC is accepted only if all of these hold:
 1. A waiting Task with one open `owner: "human"` Condition appears in `/todo`;
    generic `attention`, failure, and non-human Conditions do not.
 2. `/todo` is scoped to the selected App and `/todo all` crosses App boundaries.
-3. A new off-watch action yields one notification and updates the Console
-   count without starting a model or polling loop.
+3. A new off-watch action may yield at most one best-effort notification per
+   live surface and updates the Console count without starting a model or
+   polling loop.
 4. Watching the Task shows the same request without a duplicate off-watch
    notification.
-5. Repeated unchanged wakes are silent; a materially changed Task revision is
-   shown once.
+5. Repeated unchanged wakes are silent; a materially changed requested action
+   may be shown once per live surface.
 6. `/todo` output and automatic notification carry exact Task references into
    Conversation.
 7. Reconnect reconstructs the count and current list from Task state.
@@ -105,15 +109,15 @@ Read-only inspection of the live store found 1,480 live Tasks and 28 open
 human-owned Conditions. This proved that no new attention resource was needed,
 but also exposed two experience constraints:
 
-- ten rows undercounted real human work, so the view is independently capped at
-  50 and always reports its authoritative total; and
+- ten rows undercounted real human work, so the view is independently paged in
+  groups of 50 and always reports its authoritative total; and
 - existing Task summaries were often operational narratives rather than short
   decisions, so `Condition.requestedAction` is now the authoring convention.
   Legacy approval Conditions are rendered deterministically from their allowed
   decisions and approval identity.
 
 Focused Console/Telegram tests proved App scoping, exact Task references,
-off-watch notification deduplication, watch suppression, Condition clearing,
+local off-watch notification suppression, watch suppression, Condition clearing,
 reconnect reconstruction, and exact May Task continuation. Executor progress
 continues to wake an exact watch but no longer rescans the App-wide derived
 view.

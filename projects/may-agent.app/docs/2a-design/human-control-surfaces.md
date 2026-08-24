@@ -39,7 +39,7 @@ Every human adapter exposes the same small meanings:
 | ------------------- | ------------------------- | ------------------------------------- |
 | list or select App  | `/apps [app]`             | native `/apps [app]`                  |
 | list Tasks          | `/tasks [all] [history]`, then `/tasks more` | native `/tasks [all] [history]`, then `/tasks more` |
-| show human actions  | `/todo [all]`             | native `/todo [all]`                  |
+| show human actions  | `/todo [all]`, `/todo more` | native `/todo [all]`, `/todo more`   |
 | read one Task       | `/task <ref>`             | native `/task <ref>`                  |
 | watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
 | stop watching       | `/unwatch`                | `/unwatch`                            |
@@ -103,24 +103,26 @@ in `/todo` only while it has an unsatisfied Condition whose owner is `human` or
 delivery state do not qualify.
 
 `/todo` reads the selected App and `/todo all` widens the read to every App.
-Each row shows one stable Task reference, App, plain requested action, and the
-age of the current human wait. A human-owned Condition should set
+Each row shows one stable Task reference, App, plain requested action, and,
+when the Condition records it, the age of the current human wait. An unknown
+start time is omitted rather than inferred from later observation. A
+human-owned Condition should set
 `requestedAction`; existing approval Conditions are rendered from their
 allowed decisions and approval identity, and older generic Conditions fall
-back to the Task's waiting summary. The projection is capped at 50 Tasks and
-reports the authoritative total when more exist.
+back to the Task's waiting summary. The projection is paged in groups of 50;
+`/todo more` follows the same opaque cursor used by the Task reader.
 
 Off watch, a semantic reconciliation or cancellation wake causes one
-coalesced App-scoped reread. A new or materially changed action produces one
-compact notification and updates Console's prompt count, for example
-`you[evaluation · 2 todo]>`. Executor progress does not rescan this list.
+coalesced App-scoped reread. A surface may best-effort announce a new or
+materially changed requested action, and Console updates its prompt count, for
+example `you[evaluation · 2 todo]>`. Executor progress does not rescan this list.
 While watched, the normal exact Task card shows `Action needed`; the same
 change is not also presented as an off-watch notification on that surface.
 
 After `/todo` or an automatic notification is actually shown, its canonical
-Task identities enter Conversation as command-view metadata. The automatic
-view uses a stable hash of the current bounded Task revisions, so several
-adapters can preserve one semantic Conversation view while choosing native
+Task identities may enter Conversation as command-view metadata. Each adapter
+keeps only a bounded local map of the requested actions it has shown. Adapters
+do not coordinate notification delivery or promise cross-surface exactly-once
 presentation. A lost adapter cache may repeat presentation, but never creates,
 completes, or acknowledges human work. Clearing the Condition removes the Task
 on the next semantic wake. Delivery never gates that transition.
