@@ -38,7 +38,6 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     state: "needs-agent",
     summary,
     evidence: [],
-    actions: [],
   });
 }
 
