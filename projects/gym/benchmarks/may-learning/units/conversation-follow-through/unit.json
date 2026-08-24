@@ -15,8 +15,8 @@
     "communication.human-attention-judgment"
   ],
   "sources": [
-    { "path": "../may-agent.app/docs/2a-design/message-lifecycle.md", "section": "The loud rule" },
-    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation and sessions" },
+    { "path": "../may-agent.app/docs/2a-design/message-lifecycle.md", "section": "Mental model" },
+    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation" },
     { "path": "../may-agent.app/docs/2a-design/telegram-notifications.md", "section": "Reply Correlation" }
   ],
   "benchmark": "may-conversation-follow-through-development",

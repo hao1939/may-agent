@@ -1,5 +1,5 @@
 {
-  "required_rules": ["plain_by_default", "actionable", "precise_when_needed", "owner_not_mechanics", "no_contradiction"],
+  "required_rules": ["plain_by_default", "actionable", "precise_when_needed", "owner_not_mechanics", "bounded_current_state", "no_contradiction"],
   "cases": [
     {
       "id": "plain-investigation",
@@ -37,6 +37,27 @@
               "outcome": "Materialize a compensating workflow and poll its Condition until the failure-family projection converges.",
               "workflow": "slice-repair-v4",
               "retryPolicy": "exponential"
+            }
+          }
+        }]
+      }
+    },
+    {
+      "id": "plain-but-narrates-may-follow-through",
+      "expected": "fail",
+      "decision": {
+        "state": "waiting",
+        "summary": "AKS owns the failing slice. May will review the result and replan if proof is missing.",
+        "evidence": ["build:176033245:slice:networking-3"],
+        "dependencies": [{
+          "id": "investigate-networking-3",
+          "appId": "aks-rp-e2e",
+          "input": {
+            "kind": "problem-investigation",
+            "data": {
+              "outcome": "Find and fix the root cause of the networking-3 failure in build 176033245.",
+              "proof": "Return a passing rerun of networking-3 and show that unrelated slices still pass.",
+              "followThrough": "May will review the proof and decide whether to replan."
             }
           }
         }]

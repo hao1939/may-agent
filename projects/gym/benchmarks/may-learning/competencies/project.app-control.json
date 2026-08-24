@@ -11,7 +11,7 @@
     },
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",
-      "section": "Task capability"
+      "section": "Task reconciliation"
     }
   ],
   "prerequisites": ["system.owner-and-route"],

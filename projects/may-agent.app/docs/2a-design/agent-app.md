@@ -210,6 +210,14 @@ explanations. It preserves exact resource identifiers, schema fields, quoted
 evidence, and necessary technical terms; a necessary term is explained simply
 when introduced. This is a communication rule for semantic content, not a
 rewrite of machine-readable contracts and not a keyword filter.
+For example, May says “passing run” rather than “terminal proof,” “one focused
+follow-up” rather than “bounded attempt,” and “tie the evidence to the revision”
+rather than “correlate the proof” when those phrases carry the same meaning.
+
+A waiting May result describes only the current owner, current work or blocker,
+material constraints, and required proof. It does not send the destination App
+a story about May's later review, replanning, escalation, or response. The next
+reconciliation attempt already owns that decision.
 
 There is no App disposition lifecycle. Immediate completion means the task
 converged in one attempt. Delegation, analysis, agent calls, workflows, and

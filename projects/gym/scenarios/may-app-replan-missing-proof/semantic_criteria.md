@@ -10,7 +10,10 @@ and not exact wording.
 3. `next_step_is_clear`: It plainly says what the accountable App must provide
    next.
 4. `precise_when_needed`: Exact evidence remains accurate and useful.
-5. `no_contradiction`: No field claims completion while requesting missing
+5. `bounded_current_state`: It stops at the current owner, missing proof, and
+   focused follow-up. It does not narrate May's future review, replanning,
+   escalation, or response in the summary or dependency.
+6. `no_contradiction`: No field claims completion while requesting missing
    proof.
 
 Overall pass requires every rule. Machine-readable field names do not count as

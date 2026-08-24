@@ -13,8 +13,8 @@
     "evidence.propose-after-proof"
   ],
   "sources": [
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Metrics are signals, not targets"},
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Debug the message, not the model"},
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Metrics are observations, not decisions"},
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Debug from evidence"},
     {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Context is discovered, not dumped"},
     {"path": "../../shared/common-sense.md", "section": "Never game metrics"}
   ],

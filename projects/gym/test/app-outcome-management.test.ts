@@ -28,9 +28,9 @@ const approvedDevelopment = [
   "may-app-clarify-ambiguous-target",
   "may-app-delegate-one-shot-outcome",
   "may-app-explain-task-reconciliation",
-  "may-app-replan-missing-proof",
-  "may-app-review-terminal-result",
   "may-app-route-host-operation",
+  "may-app-review-terminal-result",
+  "may-app-replan-missing-proof",
 ];
 
 function json(path: string): any {
@@ -84,7 +84,7 @@ describe("May App outcome management", () => {
       status: "pilot",
       benchmark: "may-app-outcome-management",
       release_benchmark: "may-app-outcome-management-transfer",
-      development_scenarios: development,
+      development_scenarios: approvedDevelopment,
       release_scenarios: release,
       competencies: expect.arrayContaining(["communication.plain-language"]),
     });
