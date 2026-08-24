@@ -1,4 +1,5 @@
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
+import type { TSchema } from "@earendil-works/pi-ai";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -48,6 +49,8 @@ export type DirectAgentRunOptions = {
   visibleAgentDir?: string;
   outputRoot: string;
   models: Record<string, ModelWithApiKey>;
+  /** Optional caller-owned structured result contract, enforced by finish(). */
+  outputSchema?: TSchema;
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
   /** Fixed only when deterministic preparation/evaluation evidence is required. */
@@ -203,6 +206,8 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     projectRoot: options.projectRoot,
     sessionId,
     task: options.task,
+    outputSchema: options.outputSchema,
+    requireFinish: options.outputSchema !== undefined,
     promptTimestamp: options.promptTimestamp,
     createFinish: () =>
       createFinishTool({
