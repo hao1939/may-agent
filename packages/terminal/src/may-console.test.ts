@@ -260,9 +260,11 @@ describe("May Console", () => {
     });
     expect(output).not.toContain("focused work");
 
-    child.stdin.write("/apps evaluation\n");
+    // A human may paste the context switch and the next command together.
+    // The Console must preserve that input order even though both reads are
+    // asynchronous on the control socket.
+    child.stdin.write("/apps evaluation\n/tasks\n");
     await waitFor(() => output.includes("Selected App: evaluation") && output.includes("Reviews project behavior"));
-    child.stdin.write("/tasks\n");
     await waitFor(
       () =>
         output.includes("Active Tasks for evaluation:") &&
