@@ -406,6 +406,49 @@ describe("App task reconciler state", () => {
     ]);
   });
 
+  it("does not apply task actions across newer unaccepted evidence", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appAgent: "app-owner",
+      handler: "executor:reviewer",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    recordAppTaskTrigger(config, claim.taskId, {
+      type: "sample.corrected",
+      eventId: 101,
+      data: { state: "corrected" },
+    });
+    const action = {
+      kind: "create-task" as const,
+      id: "work/from-stale-result",
+      parentId: claim.taskId,
+      outcome: "Act on the latest correction",
+      acceptance: ["The correction is handled"],
+      mode: "achieve" as const,
+      outputs: [],
+    };
+
+    expect(() =>
+      completeAppTask(config, claim, {
+        summary: "Act on the older snapshot",
+        evidence: ["snapshot:old"],
+        actions: [action],
+      }),
+    ).toThrow("newer Task evidence is pending");
+    expect(readTaskState(config).resources?.[action.id]).toBeUndefined();
+
+    expect(
+      completeAppTask(config, claim, {
+        summary: "Act on the accepted correction",
+        evidence: ["event:101"],
+        actions: [action],
+        acceptedLiveEventIds: [101],
+      }),
+    ).toMatchObject({ status: "applied", actionsApplied: [`created ${action.id}`] });
+  });
+
   it("claims an ordered bounded event prefix without losing the remaining wakes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {

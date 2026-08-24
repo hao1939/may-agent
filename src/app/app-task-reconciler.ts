@@ -116,11 +116,14 @@ export class AppTaskActionStaleError extends Error {
     expectedGeneration: number;
     currentGeneration: number;
     currentPhase?: AppTaskResource["status"]["phase"];
+    reason?: string;
   }) {
     super(
-      input.currentPhase
-        ? `Handler action for ${input.taskId} is stale: target phase is now ${input.currentPhase}`
-        : `Handler action for ${input.taskId} is stale: expected generation ${input.expectedGeneration}, current ${input.currentGeneration}`,
+      input.reason
+        ? `Handler effect for ${input.taskId} is stale: ${input.reason}`
+        : input.currentPhase
+          ? `Handler action for ${input.taskId} is stale: target phase is now ${input.currentPhase}`
+          : `Handler action for ${input.taskId} is stale: expected generation ${input.expectedGeneration}, current ${input.currentGeneration}`,
     );
     this.name = "AppTaskActionStaleError";
     this.taskId = input.taskId;
@@ -290,6 +293,46 @@ function consumeAcceptedLiveTaskEvents(
       observedAt: remaining[remaining.length - 1]!.observedAt,
     },
   };
+}
+
+function hasUnacceptedLiveTaskEvents(tree: TaskTree, taskId: string, eventIds: readonly number[] | undefined): boolean {
+  const pending = tree.taskTriggers?.[taskId];
+  if (!pending) return false;
+  const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
+  return taskTriggerEvents(pending).some(({ event }) => {
+    const eventId = Number(event.eventId);
+    return !Number.isSafeInteger(eventId) || eventId <= 0 || !accepted.has(eventId);
+  });
+}
+
+/** Reject an externally visible effect when newer Task evidence is still unaccepted. */
+export function assertAppTaskEffectFresh(
+  config: TaskStateConfig,
+  claim: AppTaskClaim,
+  acceptedLiveEventIds?: readonly number[],
+): void {
+  withTaskStateLock(config, () => {
+    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const match = matchingTask(tree, claim);
+    if (!match) {
+      const resource = tree.resources?.[claim.taskId];
+      throw new AppTaskActionStaleError({
+        taskId: claim.taskId,
+        expectedGeneration: claim.generation,
+        currentGeneration: resource?.metadata.generation ?? claim.generation,
+        currentPhase: resource?.status.phase,
+      });
+    }
+    if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, acceptedLiveEventIds)) {
+      throw new AppTaskActionStaleError({
+        taskId: claim.taskId,
+        expectedGeneration: claim.generation,
+        currentGeneration: match.resource.metadata.generation,
+        currentPhase: match.resource.status.phase,
+        reason: "newer Task evidence is pending",
+      });
+    }
+  });
 }
 
 function appendTaskTriggerEvent(
@@ -3873,6 +3916,15 @@ export function completeAppTask(
       };
     }
     const { task, resource } = match;
+    if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
+      throw new AppTaskActionStaleError({
+        taskId: task.id,
+        expectedGeneration: claim.generation,
+        currentGeneration: resource.metadata.generation,
+        currentPhase: resource.status.phase,
+        reason: "newer Task evidence is pending",
+      });
+    }
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const selfUpdates = actions.filter(
       (action): action is Extract<AppTaskAction, { kind: "update-task" }> =>
@@ -4056,6 +4108,15 @@ export function deferAppTask(
     const match = matchingTask(tree, claim);
     if (!match) return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };
     const { task, resource } = match;
+    if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
+      throw new AppTaskActionStaleError({
+        taskId: task.id,
+        expectedGeneration: claim.generation,
+        currentGeneration: resource.metadata.generation,
+        currentPhase: resource.status.phase,
+        reason: "newer Task evidence is pending",
+      });
+    }
     consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
     const conditions = boundedReviewConditions(claim, input.conditions);
     const waitsForChildren =
@@ -4168,13 +4229,29 @@ export function deferAppTask(
 export function markAppTaskAttention(
   config: TaskStateConfig,
   claim: AppTaskClaim,
-  input: { summary: string; reason: string; evidence?: string[]; wakeParent?: boolean },
+  input: {
+    summary: string;
+    reason: string;
+    evidence?: string[];
+    acceptedLiveEventIds?: number[];
+    wakeParent?: boolean;
+  },
 ): { status: "applied" | "stale"; parentTaskId?: string } {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config, { taskIds: [claim.taskId] });
     const match = matchingTask(tree, claim);
     if (!match) return { status: "stale" };
     const { task, resource, attempt } = match;
+    if (hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
+      throw new AppTaskActionStaleError({
+        taskId: task.id,
+        expectedGeneration: claim.generation,
+        currentGeneration: resource.metadata.generation,
+        currentPhase: resource.status.phase,
+        reason: "newer Task evidence is pending",
+      });
+    }
+    consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
     const mutationScope = beginResourceMutationScope(tree, claim, []);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "failed", input.summary, now);

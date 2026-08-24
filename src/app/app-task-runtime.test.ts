@@ -339,6 +339,64 @@ function projectDirForBypass(): string {
 }
 
 describe("canonical App task runtime", () => {
+  it("does not publish a dependency requested from a stale task result", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/stale-dependency",
+        parentId: "operations",
+        outcome: "Use current evidence before requesting review",
+        acceptance: ["Only a current result can request review"],
+        mode: "achieve",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/stale-dependency",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskTrigger(config, claim.taskId, {
+      type: "app.dependency.completed",
+      eventId: 42,
+      data: { kind: "app", id: "earlier-review" },
+    });
+
+    const emitted: AgentEvent[] = [];
+    bus.subscribe((event) => emitted.push(event));
+    expect(() =>
+      admitTaskAppDependencies({
+        opts: options(f, bus),
+        descriptor: {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          agent: "sample-owner",
+          app: definition(),
+          reconciliationPaused: true,
+        },
+        claim,
+        dependencies: [
+          {
+            id: "new-review",
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "stale-snapshot" } },
+          },
+        ],
+      }),
+    ).toThrow("newer Task evidence is pending");
+    expect(emitted.filter((event) => event.type === "app.input.requested")).toEqual([]);
+    expect(readTaskState(config).taskTriggers?.[claim.taskId]?.event).toMatchObject({ eventId: 42 });
+  });
+
   it("accepts a recovered frozen Condition route after its task has already left the wait", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -687,10 +745,23 @@ describe("canonical App task runtime", () => {
       expect(dependencyRequests).toHaveLength(1);
       expect(attachedDependencyTaskCount).toBe(1);
 
+      expect(
+        recordAppTaskTrigger(config, initial.taskId, {
+          type: "message.created",
+          data: { message: "Add one distinct second review" },
+        }),
+      ).toEqual({ kind: "recorded" });
+      const expandedReview = claimObservedAppTask(config, {
+        taskId: initial.taskId,
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
+        reason: "second-review-requested",
+      });
+      if (expandedReview.kind !== "claimed") throw new Error("expected expanded review claim");
       const expanded = admitTaskAppDependencies({
         opts: { ...options(f, bus), persistDir },
         descriptor,
-        claim: checkpointReview,
+        claim: expandedReview,
         existingConditions: conditions,
         dependencies: [
           {
@@ -707,6 +778,13 @@ describe("canonical App task runtime", () => {
       });
       expect(expanded[0]).toEqual(conditions[0]);
       expect(expanded[1]?.subject).not.toBe(conditions[0]?.subject);
+      expect(
+        deferAppTask(config, expandedReview, {
+          disposition: "waiting",
+          summary: "Waiting for both independent reviews",
+          conditions: expanded,
+        }).status,
+      ).toBe("applied");
       const secondAttachmentDeadline = Date.now() + 5_000;
       while (attachedDependencyTaskCount < 2 && Date.now() < secondAttachmentDeadline) await Bun.sleep(5);
       expect(dependencyRequests).toHaveLength(2);

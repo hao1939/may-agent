@@ -77,6 +77,7 @@ import {
 import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import {
   acknowledgeAppTaskRecoveryAttention,
+  assertAppTaskEffectFresh,
   associateAppTaskSession,
   claimObservedAppTask,
   completeAppTask,
@@ -1120,6 +1121,7 @@ export function admitTaskAppDependencies(input: {
   claim: AppTaskClaim;
   dependencies: TaskAppDependency[];
   existingConditions?: AppTaskConditionSpec[];
+  acceptedLiveEventIds?: number[];
 }): AppTaskConditionSpec[] {
   const dependencyIds = new Set<string>();
   for (const dependency of input.dependencies) {
@@ -1194,6 +1196,9 @@ export function admitTaskAppDependencies(input: {
         `App dependencies ${duplicate.id} and ${dependency.id} request the same ${dependency.appId} outcome`,
       );
     }
+  }
+  if (newDependencies.length > 0) {
+    assertAppTaskEffectFresh(appTaskConfig(input.descriptor), input.claim, input.acceptedLiveEventIds);
   }
 
   const admitted = new Map<string, AppTaskConditionSpec>();
@@ -2834,6 +2839,34 @@ async function reconcileTask(input: {
     if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
 
     const primaryHandlerResult = primaryResult.handlerResult;
+    const rejectStaleEffect = (error: unknown) => {
+      const stale = recoverStaleTaskActionResult(config, primary, error);
+      if (!stale) return null;
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: primary.generation,
+        attemptId: primary.attemptId,
+        handler: primary.handler,
+        disposition: "stale",
+        input: intent.input ?? {},
+        summary: error instanceof Error ? error.message : String(error),
+        evidence: primaryHandlerResult.evidence,
+        staleRecovery: stale.staleRecovery,
+        workflowRunId: primaryResult.runId,
+      });
+      return stale;
+    };
+    const fenceWorkspaceFinalization = async () => {
+      if (!taskWorkspace) return null;
+      try {
+        assertAppTaskEffectFresh(config, primary, primaryResult.acceptedLiveEventIds);
+        return null;
+      } catch (error) {
+        await finalizeWorkspace("failed");
+        const stale = rejectStaleEffect(error);
+        if (!stale) throw error;
+        return stale;
+      }
+    };
     if (
       primaryHandlerResult.state === "converged" &&
       primary.handoff?.reason === "needs-agent" &&
@@ -2873,6 +2906,8 @@ async function reconcileTask(input: {
           workflowRunId: primaryResult.runId,
         });
       } else {
+        const stale = await fenceWorkspaceFinalization();
+        if (stale) return stale.reconcileTaskIds;
         const finalized = await finalizeWorkspace("accepted");
         if (!finalized.ok) {
           primaryHandlerResult.state = "error";
@@ -2953,6 +2988,8 @@ async function reconcileTask(input: {
     }
 
     if (primaryHandlerResult.state === "waiting") {
+      const stale = await fenceWorkspaceFinalization();
+      if (stale) return stale.reconcileTaskIds;
       const finalized = await finalizeWorkspace("waiting");
       if (!finalized.ok) {
         primaryHandlerResult.state = "error";
@@ -2971,6 +3008,7 @@ async function reconcileTask(input: {
               claim: primary,
               dependencies: primaryHandlerResult.dependencies,
               existingConditions: existingAppDependencyConditions,
+              acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             })
           : [];
         const conditions = mergeTaskConditions([
@@ -2980,6 +3018,10 @@ async function reconcileTask(input: {
         ]);
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {
+        const stale = rejectStaleEffect(error);
+        if (stale) {
+          return stale.reconcileTaskIds;
+        }
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`;
       }
@@ -3046,22 +3088,30 @@ async function reconcileTask(input: {
     await finalizeWorkspace("failed");
 
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
-    const attention = persistResult(() =>
-      markAppTaskAttention(config, primary, {
-        summary: primaryHandlerResult.summary,
-        evidence: primaryHandlerResult.evidence,
-        reason: primaryResult.unavailable
-          ? "HandlerUnavailable"
-          : primaryResult.executionFailed
-            ? "HandlerExecutionFailed"
-            : primaryResult.workspacePreparationFailed
-              ? "WorkspacePreparationFailed"
-              : primaryHandlerResult.state === "needs-agent"
-                ? "needs-agent"
-                : "handler-blocked",
-        wakeParent: !agentHandoff,
-      }),
-    );
+    let attention: ReturnType<typeof markAppTaskAttention>;
+    try {
+      attention = persistResult(() =>
+        markAppTaskAttention(config, primary, {
+          summary: primaryHandlerResult.summary,
+          evidence: primaryHandlerResult.evidence,
+          acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
+          reason: primaryResult.unavailable
+            ? "HandlerUnavailable"
+            : primaryResult.executionFailed
+              ? "HandlerExecutionFailed"
+              : primaryResult.workspacePreparationFailed
+                ? "WorkspacePreparationFailed"
+                : primaryHandlerResult.state === "needs-agent"
+                  ? "needs-agent"
+                  : "handler-blocked",
+          wakeParent: !agentHandoff,
+        }),
+      );
+    } catch (error) {
+      const stale = rejectStaleEffect(error);
+      if (!stale) throw error;
+      return stale.reconcileTaskIds;
+    }
     if (attention.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
     if (!agentHandoff) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
