@@ -1457,6 +1457,86 @@ describe("canonical App task runtime", () => {
     ).toEqual(first);
   });
 
+  it("reattaches an exact live request from the same Task generation after recovery", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const emitted: Array<Record<string, unknown>> = [];
+    bus.subscribe((event) => emitted.push(event as unknown as Record<string, unknown>));
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/reattach-request",
+        parentId: "operations",
+        outcome: "Recover one independent review",
+        acceptance: ["The review result is considered"],
+        mode: "achieve",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/reattach-request",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "recovery",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const requestId = "appdep_existing";
+    const requestInput = { kind: "deep-scan", data: { reason: "original" } };
+    const db = getDb(persistDir);
+    createAppInboxItem(db, {
+      id: requestId,
+      appId: "evaluation",
+      source: { kind: "app", id: "sample" },
+      input: requestInput,
+      idempotencyKey: `task-dependency:sample:${claim.taskId}:${claim.generation}:review:existing`,
+      now: 1,
+    });
+    const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
+    if (!requestClaim) throw new Error("expected request claim");
+    expect(
+      waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 }),
+    ).toBe(true);
+    const emittedBeforeReuse = emitted.length;
+
+    expect(
+      admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor: {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          agent: "sample-owner",
+          app: definition(),
+          reconciliationPaused: false,
+        },
+        claim,
+        existingConditions: [],
+        dependencies: [
+          {
+            id: requestId,
+            appId: "evaluation",
+            taskId: "review/resolved",
+            input: { kind: "deep-scan", data: { reason: "restated" } },
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: `app-request:${requestId}`,
+        type: "app.dependency.completed",
+        subject: `id:${requestId}`,
+        expected: { field: "status", equals: "done" },
+      },
+    ]);
+    expect(emitted).toHaveLength(emittedBeforeReuse);
+  });
+
   it("turns a typed child App dependency into deterministic input and an exact completion Condition", () => {
     const f = fixture();
     const bus = eventBus();
