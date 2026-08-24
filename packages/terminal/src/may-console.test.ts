@@ -438,7 +438,9 @@ describe("May Console", () => {
       })}\n`,
     );
     await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
-    await waitFor(() => output.includes("[watch] Following assigned Task 8f12ac90"));
+    await waitFor(() =>
+      output.includes("[watch] Following assigned Task 8f12ac90 (evaluation) for Task 1a2b3c4d (may)."),
+    );
     expect(output.split("Assigned to evaluation.").length - 1).toBe(1);
 
     child.stdin.write("please keep the compatibility alias\n");

@@ -2957,8 +2957,8 @@ describe("App task reconciler state", () => {
     const released = readTaskState(config);
     expect(released.tasks[claim.taskId]).toMatchObject({
       state: "backlog",
-      summary: "trigger packet was not persisted; retrying from current task evidence",
     });
+    expect(released.tasks[claim.taskId].summary).toBeUndefined();
     expect(released.resources?.[claim.taskId]).toMatchObject({
       status: { phase: "pending" },
     });
@@ -3073,6 +3073,7 @@ describe("App task reconciler state", () => {
     expect(pending.resources?.[claim.taskId].status).toMatchObject({
       phase: "pending",
     });
+    expect(pending.resources?.[claim.taskId].status.summary).toBeUndefined();
     expect(pending.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(pending.attempts?.[claim.attemptId]).toMatchObject({
       state: "interrupted",
@@ -4112,6 +4113,59 @@ describe("App task reconciler state", () => {
       failureReason: "stale-reconciliation-result",
     });
     expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
+  });
+
+  it("keeps accepted waits and semantic progress when feedback fences an attempt", () => {
+    const { config } = fixture();
+    const taskIntent = intent();
+    const initial = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (initial.kind !== "claimed") throw new Error("expected initial claim");
+    expect(
+      deferAppTask(config, initial, {
+        disposition: "waiting",
+        summary: "Waiting for the existing owner proof",
+        evidence: ["proof request accepted"],
+        conditions: [
+          {
+            id: "app-request:existing-proof",
+            type: "app.dependency.completed",
+            subject: "id:existing-proof",
+            expected: { field: "status", equals: "done" },
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied" });
+
+    observeAppTaskIntent(config, {
+      intent: taskIntent,
+      appAgent: "app-owner",
+      trigger: {
+        type: "app.task.requested",
+        source: "human",
+        target: { project: "sample", taskId: taskIntent.id },
+        data: { message: "Why is this still waiting?" },
+      },
+    });
+    const feedback = claimObservedAppTask(config, {
+      taskId: taskIntent.id,
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (feedback.kind !== "claimed") throw new Error("expected feedback claim");
+
+    expect(releaseStaleAppTaskResult(config, feedback, "newer feedback superseded this attempt")).toEqual({
+      status: "released",
+      taskId: taskIntent.id,
+    });
+    expect(readTaskState(config).resources?.[taskIntent.id]?.status).toMatchObject({
+      phase: "pending",
+      summary: "Waiting for the existing owner proof",
+      conditionIds: ["app-request:existing-proof"],
+    });
   });
 
   it("applies handler actions atomically with reconciliation completion", () => {
