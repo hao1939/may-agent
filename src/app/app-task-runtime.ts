@@ -1828,32 +1828,90 @@ function schemaStringLiterals(value: unknown): string[] {
   return [...values];
 }
 
-function appInputKinds(schema: unknown): string[] {
+type AppInputContract = {
+  kind: string;
+  requiredData: string[];
+  fixedData: Record<string, string | number | boolean | null>;
+};
+
+function schemaRequiredPaths(value: unknown, prefix = "", depth = 0): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return [];
+  const node = value as Record<string, unknown>;
+  const combined = ["allOf"].flatMap((key) => {
+    const entries = node[key];
+    return Array.isArray(entries) ? entries.flatMap((entry) => schemaRequiredPaths(entry, prefix, depth)) : [];
+  });
+  const properties =
+    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
+      ? (node.properties as Record<string, unknown>)
+      : {};
+  const required = new Set(Array.isArray(node.required) ? node.required.filter((key): key is string => typeof key === "string") : []);
+  for (const key of required) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    combined.push(path, ...schemaRequiredPaths(properties[key], path, depth + 1));
+  }
+  return [...new Set(combined)].sort().slice(0, 16);
+}
+
+function schemaFixedValues(
+  value: unknown,
+  prefix = "",
+  depth = 0,
+): Record<string, string | number | boolean | null> {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return {};
+  const node = value as Record<string, unknown>;
+  const fixed: Record<string, string | number | boolean | null> = {};
+  if (prefix && (typeof node.const === "string" || typeof node.const === "number" || typeof node.const === "boolean" || node.const === null)) {
+    fixed[prefix] = node.const as string | number | boolean | null;
+  }
+  for (const key of ["allOf"] as const) {
+    if (!Array.isArray(node[key])) continue;
+    for (const entry of node[key]) Object.assign(fixed, schemaFixedValues(entry, prefix, depth));
+  }
+  const properties =
+    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
+      ? (node.properties as Record<string, unknown>)
+      : {};
+  for (const [key, property] of Object.entries(properties)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    Object.assign(fixed, schemaFixedValues(property, path, depth + 1));
+  }
+  return Object.fromEntries(Object.entries(fixed).sort(([left], [right]) => left.localeCompare(right)).slice(0, 12));
+}
+
+function appInputContracts(schema: unknown): AppInputContract[] {
   if (!schema || typeof schema !== "object" || Array.isArray(schema)) return [];
   const node = schema as Record<string, unknown>;
-  const properties = node.properties;
-  const own =
-    properties && typeof properties === "object" && !Array.isArray(properties)
-      ? schemaStringLiterals((properties as Record<string, unknown>).kind)
-      : [];
-  const nested = ["anyOf", "oneOf", "allOf"].flatMap((key) => {
+  const properties =
+    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
+      ? (node.properties as Record<string, unknown>)
+      : {};
+  const kinds = schemaStringLiterals(properties.kind);
+  const own = kinds.map((kind) => ({
+    kind,
+    requiredData: schemaRequiredPaths(properties.data),
+    fixedData: schemaFixedValues(properties.data),
+  }));
+  const nested = ["anyOf", "oneOf"].flatMap((key) => {
     const entries = node[key];
-    return Array.isArray(entries) ? entries.flatMap(appInputKinds) : [];
+    return Array.isArray(entries) ? entries.flatMap(appInputContracts) : [];
   });
-  return [...new Set([...own, ...nested])].sort();
+  const byKind = new Map<string, AppInputContract>();
+  for (const contract of [...own, ...nested]) byKind.set(contract.kind, contract);
+  return [...byKind.values()].sort((left, right) => left.kind.localeCompare(right.kind));
 }
 
 /** Compact live ownership surface supplied to bounded executors. */
 export function appTaskDependencyCatalog(
   opts: AppTaskRuntimeOptions,
   sourceAppId: string,
-): Array<{ appId: string; description: string; inputKinds: string[] }> {
+): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
   return configuredRegistryEntries(opts)
     .filter(({ definition }) => definition.id !== sourceAppId && definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,
       description: definition.description?.trim() || "No description declared.",
-      inputKinds: appInputKinds(definition.inputSchema),
+      inputs: appInputContracts(definition.inputSchema),
     }))
     .sort((left, right) => left.appId.localeCompare(right.appId));
 }
@@ -1889,7 +1947,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
     "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
     "For another App outcome, return a stable dependency { id, appId, input }. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
-    "Choose appId and input.kind from the Installed App catalog in this prompt. Describe the desired outcome, constraints, and acceptance proof in input.data; leave Task, workflow, executor, schedule, retry, and session choices to that App.",
+    "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
     "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
     "After first acceptance-critical evidence, checkpoint a concise summary, next step, and exact artifact/session paths. Refresh only when those facts change, then finish promptly.",
@@ -2085,7 +2143,7 @@ function appTaskCliProtocol(appId: string): string {
     'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response only for a caller-facing converged result.',
     "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
     "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise complete one bounded useful step now.",
-    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Put the desired outcome, constraints, and acceptance proof in input.data; leave Task, workflow, executor, schedule, retry, and session choices to that App.",
+    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");

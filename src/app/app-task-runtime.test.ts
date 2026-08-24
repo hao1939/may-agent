@@ -268,7 +268,7 @@ describe("App Task agent prompt context", () => {
     );
   });
 
-  it("shows only installed accountable Apps and their accepted input kinds", () => {
+  it("shows only installed accountable Apps and their accepted input contracts", () => {
     const f = fixture();
     const bus = eventBus();
     const target = defineApp({
@@ -312,7 +312,69 @@ describe("App Task agent prompt context", () => {
       {
         appId: "evaluation",
         description: "Owns evidence-based evaluation outcomes.",
-        inputKinds: ["deep-eval", "owner-review"],
+        inputs: [
+          { kind: "deep-eval", requiredData: [], fixedData: {} },
+          { kind: "owner-review", requiredData: [], fixedData: {} },
+        ],
+      },
+    ]);
+  });
+
+  it("summarizes required and fixed input data without copying the full schema", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const target = defineApp({
+      id: "operations",
+      version: 1,
+      agent: "operator",
+      inputSchema: Type.Union([
+        Type.Object({
+          kind: Type.Literal("general-operation"),
+          data: Type.Object({ outcome: Type.String(), evidence: Type.Array(Type.String()) }),
+        }),
+        Type.Object({
+          kind: Type.Literal("specialized-operation"),
+          data: Type.Object({
+            outcome: Type.String(),
+            context: Type.Object({ callerApp: Type.Literal("alpha-project"), callerTask: Type.String() }),
+          }),
+        }),
+      ]),
+      task: () => ({
+        kind: "desired" as const,
+        intent: {
+          id: "operation",
+          parentId: "operations",
+          outcome: "Perform the operation",
+          acceptance: ["Done"],
+          mode: "achieve" as const,
+        },
+      }),
+      tasks: {},
+    });
+
+    expect(
+      appTaskDependencyCatalog(
+        {
+          ...options(f, bus),
+          appRegistrySnapshot: {
+            id: "catalog:shapes",
+            generation: 1,
+            entries: [{ appDir: join(f.projectsRoot, "operations.app"), definition: target }],
+          },
+        },
+        "may",
+      )[0]?.inputs,
+    ).toEqual([
+      {
+        kind: "general-operation",
+        requiredData: ["evidence", "outcome"],
+        fixedData: {},
+      },
+      {
+        kind: "specialized-operation",
+        requiredData: ["context", "context.callerApp", "context.callerTask", "outcome"],
+        fixedData: { "context.callerApp": "alpha-project" },
       },
     ]);
   });
