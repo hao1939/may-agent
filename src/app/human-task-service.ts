@@ -22,7 +22,8 @@ export type HumanTaskProgress = {
 /** Human work is a derived view of one Task's explicit open Condition. */
 export type HumanTaskAction = {
   requestedAction: string;
-  since: number;
+  /** When the current human-owned Condition began, when known. */
+  since?: number;
 };
 
 export type HumanTaskView = {
@@ -270,7 +271,7 @@ function conditionAction(condition: AppTaskCondition): string {
 function withHumanAction(view: HumanTaskView, conditions: AppTaskCondition[]): HumanTaskView {
   const actions = [...new Set(conditions.map(conditionAction).filter(Boolean))];
   const timestamps = conditions
-    .map((condition) => Date.parse(condition.status.createdAt ?? condition.status.observedAt ?? ""))
+    .map((condition) => Date.parse(condition.status.createdAt ?? ""))
     .filter(Number.isFinite);
   return {
     ...view,
@@ -279,7 +280,7 @@ function withHumanAction(view: HumanTaskView, conditions: AppTaskCondition[]): H
         actions.length > 0 ? actions.join(" ") : view.summary?.trim() || view.outcome,
         240,
       ),
-      since: timestamps.length > 0 ? Math.min(...timestamps) : view.updatedAt,
+      ...(timestamps.length > 0 ? { since: Math.min(...timestamps) } : {}),
     },
   };
 }

@@ -117,29 +117,44 @@ describe("May Console", () => {
             );
           } else if (frame.type === "tasks.list") {
             if (frame.humanActionOnly) {
-              const task = {
-                appId: "evaluation",
-                taskId: "review/docs",
-                ref: "8f12ac90",
-                status: "waiting",
-                outcome: "Review the docs",
-                summary: "Approve deployment or ask for another verification pass.",
-                resourceVersion: 4,
-                updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
-                terminal: false,
-                cancellable: true,
-                humanAction: {
-                  requestedAction: "Approve deployment or ask for another verification pass.",
-                  since: Date.UTC(2026, 7, 17, 9, 0, 0),
-                },
-              };
+              const task = frame.cursor
+                ? {
+                    appId: "evaluation",
+                    taskId: "review/second-approval",
+                    ref: "6d22bc11",
+                    status: "waiting",
+                    outcome: "Approve the second change",
+                    summary: "Approve or reject the second change.",
+                    resourceVersion: 1,
+                    updatedAt: Date.UTC(2026, 7, 17, 9, 1, 0),
+                    terminal: false,
+                    cancellable: true,
+                    humanAction: { requestedAction: "Approve or reject the second change." },
+                  }
+                : {
+                    appId: "evaluation",
+                    taskId: "review/docs",
+                    ref: "8f12ac90",
+                    status: "waiting",
+                    outcome: "Review the docs",
+                    summary: "Approve deployment or ask for another verification pass.",
+                    resourceVersion: 4,
+                    updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
+                    terminal: false,
+                    cancellable: true,
+                    humanAction: {
+                      requestedAction: "Approve deployment or ask for another verification pass.",
+                      since: Date.UTC(2026, 7, 17, 9, 0, 0),
+                    },
+                  };
               socket.write(
                 `${JSON.stringify({
                   type: "ok",
                   command: "tasks.list",
                   tasks: {
                     items: humanActionActive && !taskTerminal ? [task] : [],
-                    total: humanActionActive && !taskTerminal ? 1 : 0,
+                    total: humanActionActive && !taskTerminal ? 2 : 0,
+                    ...(!frame.cursor && humanActionActive && !taskTerminal ? { nextCursor: "todo-page-2" } : {}),
                   },
                 })}\n`,
               );
@@ -336,19 +351,23 @@ describe("May Console", () => {
     );
     await waitFor(
       () =>
-        output.includes("[todo] 8f12ac90 · evaluation needs you") &&
-        output.includes("Approve deployment or ask for another verification pass.") &&
-        output.includes("you[evaluation · 1 todo]>"),
+        output.includes("[todo] 2 Tasks need you in evaluation. Run /todo.") &&
+        output.includes("you[evaluation · 2 todo]>"),
     );
-    const todoNoticeCount = output.split("[todo] 8f12ac90 · evaluation needs you").length - 1;
+    const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
     client?.write(
       `${JSON.stringify({ type: "app.task.updated", data: { appId: "evaluation", taskId: "review/docs" } })}\n`,
     );
     await Bun.sleep(30);
-    expect(output.split("[todo] 8f12ac90 · evaluation needs you").length - 1).toBe(todoNoticeCount);
+    expect(output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1).toBe(todoNoticeCount);
 
     child.stdin.write("/todo\n");
-    await waitFor(() => output.includes("Actions needed for evaluation:") && output.includes("8f12ac90"));
+    await waitFor(
+      () =>
+        output.includes("Actions needed for evaluation:") &&
+        output.includes("8f12ac90") &&
+        output.includes("Run /todo more."),
+    );
     expect(
       frames.some(
         (frame) =>
@@ -356,6 +375,17 @@ describe("May Console", () => {
           frame.appId === "evaluation" &&
           frame.humanActionOnly === true &&
           frame.limit === 50,
+      ),
+    ).toBe(true);
+    child.stdin.write("/todo more\n");
+    await waitFor(() => output.includes("6d22bc11") && output.includes("Approve or reject the second change."));
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "tasks.list" &&
+          frame.humanActionOnly === true &&
+          frame.appId === "evaluation" &&
+          frame.cursor === "todo-page-2",
       ),
     ).toBe(true);
     expect(
