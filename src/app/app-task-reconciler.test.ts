@@ -4940,6 +4940,10 @@ describe("App task reconciler state", () => {
     const result = deferAppTask(config, claim, {
       disposition: "waiting",
       summary: "waiting for the source session",
+      result: {
+        classification: "prod_issue",
+        failureFingerprint: "failure-1",
+      },
       evidence: ["source session is still running"],
       conditions: [
         {
@@ -4957,6 +4961,10 @@ describe("App task reconciler state", () => {
       status: {
         phase: "waiting",
         conditionIds: ["session-terminal:s_1"],
+        result: {
+          classification: "prod_issue",
+          failureFingerprint: "failure-1",
+        },
       },
     });
     expect(readTaskState(config).conditions?.["session-terminal:s_1"]).toMatchObject({

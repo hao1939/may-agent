@@ -18,6 +18,8 @@ import { readSessionMessages } from "./persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import { log } from "./log.js";
+import { Type } from "typebox";
+import { Check } from "typebox/value";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -32,7 +34,7 @@ export interface DigestRow {
   outcome: string | null;
   still_open: string | null;
   files_modified: string | null; // JSON array
-  details: string | null;        // JSON object
+  details: string | null; // JSON object
   action: string | null;
   action_reason: string | null;
   created_at: number;
@@ -49,6 +51,21 @@ export interface DigestInput {
   files_modified?: string[];
   details?: Record<string, unknown>;
 }
+
+const sessionDigestResultSchema = Type.Object(
+  {
+    what_happened: Type.String({ minLength: 1, maxLength: 2_000 }),
+    outcome: Type.Union([
+      Type.Literal("success"),
+      Type.Literal("partial"),
+      Type.Literal("failure"),
+      Type.Literal("in_progress"),
+      Type.Literal("interrupted"),
+    ]),
+    still_open: Type.Union([Type.String({ minLength: 1, maxLength: 2_000 }), Type.Null()]),
+  },
+  { additionalProperties: false },
+);
 
 export type DigestAction = "resume" | "requeue" | "escalate" | "kill" | "nothing";
 
@@ -83,11 +100,7 @@ export function getLastDigest(persistDir: string, sessionId: string): DigestRow 
  * Get recent digests for an agent (for context injection).
  * Deduplicates — returns only the latest row per session.
  */
-export function getRecentDigests(
-  persistDir: string,
-  agent: string,
-  limit = 10,
-): DigestRow[] {
+export function getRecentDigests(persistDir: string, agent: string, limit = 10): DigestRow[] {
   const db = getDb(persistDir);
   return db
     .prepare(
@@ -212,7 +225,7 @@ function formatDigestEntry(d: DigestRow, whatHappenedMaxLen = 200): string[] {
   // Use what_happened as primary description; fall back to cleaned task text
   const description = d.what_happened
     ? truncateStr(d.task ?? "unknown task", 80)
-    : cleanTaskText(d.task) ?? "unknown task";
+    : (cleanTaskText(d.task) ?? "unknown task");
 
   let line = `- ${ts}: ${description} — ${outcome}${durationStr}`;
 
@@ -251,9 +264,7 @@ function formatDigestEntry(d: DigestRow, whatHappenedMaxLen = 200): string[] {
 function formatCrossAgentEntry(d: DigestRow): string[] {
   const ts = formatDigestTimestamp(d.created_at);
   const timeOnly = ts.split(" ")[1]; // just "HH:MM"
-  const what = d.what_happened
-    ? truncateStr(d.what_happened, 150)
-    : cleanTaskText(d.task) ?? "unknown activity";
+  const what = d.what_happened ? truncateStr(d.what_happened, 150) : (cleanTaskText(d.task) ?? "unknown activity");
 
   const result: string[] = [`- ${d.agent} ${timeOnly}: ${what}`];
 
@@ -329,9 +340,10 @@ function insertDigest(
   const fullTask = row.task ?? "";
   const taskRef = sessionMetaRef(row.sessionId);
   const taskArtifact = describeText(taskRef, fullTask);
-  const taskPreview = fullTask.length <= 2_000
-    ? fullTask
-    : `${fullTask.slice(0, 2_000)}\n...[full task in session meta; ${fullTask.length} chars]`;
+  const taskPreview =
+    fullTask.length <= 2_000
+      ? fullTask
+      : `${fullTask.slice(0, 2_000)}\n...[full task in session meta; ${fullTask.length} chars]`;
   const result = db
     .prepare(
       `${insertVerb} INTO session_digests
@@ -364,18 +376,9 @@ function insertDigest(
 /**
  * Update the action/reason on an existing digest row.
  */
-function updateDigestAction(
-  persistDir: string,
-  id: number,
-  action: string,
-  reason: string,
-): void {
+function updateDigestAction(persistDir: string, id: number, action: string, reason: string): void {
   const db = getDb(persistDir);
-  db.prepare(`UPDATE session_digests SET action = ?, action_reason = ? WHERE id = ?`).run(
-    action,
-    reason,
-    id,
-  );
+  db.prepare(`UPDATE session_digests SET action = ?, action_reason = ? WHERE id = ?`).run(action, reason, id);
 }
 
 // ── Transcript helpers ─────────────────────────────────────────────────
@@ -443,8 +446,23 @@ function readTranscriptDelta(
 function extractFilesModified(messages: AgentMessage[]): string[] {
   // Known file extensions for project files
   const FILE_EXTS = new Set([
-    "ts", "js", "tsx", "jsx", "json", "md", "yaml", "yml", "toml",
-    "css", "html", "sh", "sql", "txt", "env", "lock", "jsonl",
+    "ts",
+    "js",
+    "tsx",
+    "jsx",
+    "json",
+    "md",
+    "yaml",
+    "yml",
+    "toml",
+    "css",
+    "html",
+    "sh",
+    "sql",
+    "txt",
+    "env",
+    "lock",
+    "jsonl",
   ]);
 
   function isLikelyFilePath(s: string): boolean {
@@ -514,9 +532,7 @@ async function llmSynthesize(
     ? `Previous digest: ${opts.previous}`
     : "This is the first digest for this session.";
 
-  const triggerSection = opts.triggerContext
-    ? `\nTrigger context: ${opts.triggerContext}`
-    : "";
+  const triggerSection = opts.triggerContext ? `\nTrigger context: ${opts.triggerContext}` : "";
 
   const prompt = [
     `# Session Digest Request`,
@@ -529,19 +545,21 @@ async function llmSynthesize(
     opts.delta.slice(0, 8000),
     ``,
     `## Instructions`,
-    `Produce a brief structured digest of what happened in this session segment.`,
-    `Output EXACTLY this format (no markdown fences, no extra text):`,
-    ``,
-    `WHAT_HAPPENED: <1-3 sentences describing what the agent did>`,
-    `OUTCOME: <one of: success, partial, failure, in_progress, interrupted>`,
-    `STILL_OPEN: <what remains to be done, or "none">`,
+    `Decide the concise session digest requested by the finish() result schema.`,
+    `Use null for still_open only when no work remains.`,
   ].join("\n");
 
   try {
-    const sessionId = manager.run("evaluator", prompt, { kind: "job" });
+    const sessionId = manager.run("evaluator", prompt, {
+      kind: "job",
+      requireFinish: true,
+      outputSchema: sessionDigestResultSchema,
+    });
     const result = await manager.waitFor(sessionId);
-    const text = result?.lastAssistantText ?? "";
-    return parseDigestResponse(text);
+    if (!Check(sessionDigestResultSchema, result.structuredResult)) {
+      throw new Error("evaluator returned no schema-validated session digest");
+    }
+    return result.structuredResult;
   } catch (err) {
     log("warn", `[digest] LLM synthesis failed for ${opts.agent}: ${err}`);
     return {
@@ -550,31 +568,6 @@ async function llmSynthesize(
       still_open: null,
     };
   }
-}
-
-/**
- * Parse the structured digest response from the LLM.
- */
-function parseDigestResponse(text: string): {
-  what_happened: string;
-  outcome: string;
-  still_open: string | null;
-} {
-  const whatMatch = text.match(/WHAT_HAPPENED:\s*(.+?)(?=\nOUTCOME:|\n\n|$)/s);
-  const outcomeMatch = text.match(/OUTCOME:\s*(\S+)/);
-  const stillOpenMatch = text.match(/STILL_OPEN:\s*(.+?)(?=\n\n|$)/s);
-
-  const validOutcomes = new Set(["success", "partial", "failure", "in_progress", "interrupted"]);
-  const rawOutcome = outcomeMatch?.[1]?.trim().toLowerCase() ?? "in_progress";
-
-  return {
-    what_happened: whatMatch?.[1]?.trim() ?? text.slice(0, 500),
-    outcome: validOutcomes.has(rawOutcome) ? rawOutcome : "in_progress",
-    still_open:
-      stillOpenMatch?.[1]?.trim().toLowerCase() === "none"
-        ? null
-        : stillOpenMatch?.[1]?.trim() ?? null,
-  };
 }
 
 // ── Classifier ─────────────────────────────────────────────────────────
@@ -647,7 +640,8 @@ export function logShadowComparison(
   try {
     const classifierAction = digest?.action ?? "none(no_digest)";
     const match = existingAction === classifierAction;
-    log("info",
+    log(
+      "info",
       `[digest-shadow] ${sessionId} trigger=${trigger} existing_action=${existingAction} classifier_action=${classifierAction} match=${match}`,
     );
   } catch {
@@ -703,9 +697,7 @@ export async function upsertDigest(
     // Read transcript delta once — reused for both LLM synthesis and file extraction
     const needsLlm = !what_happened && manager;
     const needsFiles = !files_modified;
-    const delta = (needsLlm || needsFiles)
-      ? readTranscriptDelta(persistDir, input.sessionId, last?.step ?? 0)
-      : null;
+    const delta = needsLlm || needsFiles ? readTranscriptDelta(persistDir, input.sessionId, last?.step ?? 0) : null;
 
     // If what_happened is already provided (e.g., piggybacked on eval), skip LLM
     if (needsLlm && delta) {
@@ -751,7 +743,10 @@ export async function upsertDigest(
         input.trigger,
       );
       updateDigestAction(persistDir, id, classification.action, classification.reason);
-      log("info", `[digest] Classified ${input.sessionId} (${input.trigger}): action=${classification.action}, reason=${classification.reason}`);
+      log(
+        "info",
+        `[digest] Classified ${input.sessionId} (${input.trigger}): action=${classification.action}, reason=${classification.reason}`,
+      );
     }
 
     return getLastDigest(persistDir, input.sessionId);
@@ -767,22 +762,21 @@ export async function upsertDigest(
  * Create the initial digest entry when a session starts.
  * Lightweight — no LLM, just metadata.
  */
-export function createStartDigest(
-  persistDir: string,
-  sessionId: string,
-  agent: string,
-  task: string,
-): void {
+export function createStartDigest(persistDir: string, sessionId: string, agent: string, task: string): void {
   try {
-    insertDigest(persistDir, {
-      sessionId,
-      agent,
-      trigger: "session.start",
-      step: 1,
-      task,
-      outcome: "in_progress",
-      created_at: Date.now(),
-    }, { onConflict: "ignore" });
+    insertDigest(
+      persistDir,
+      {
+        sessionId,
+        agent,
+        trigger: "session.start",
+        step: 1,
+        task,
+        outcome: "in_progress",
+        created_at: Date.now(),
+      },
+      { onConflict: "ignore" },
+    );
   } catch (err) {
     log("warn", `[digest] Failed to create start digest for ${sessionId}: ${err}`);
   }
@@ -857,7 +851,12 @@ export function createCheckpointDigest(
       task: last?.task ?? null,
       what_happened: typeof checkpoint.summary === "string" ? checkpoint.summary : JSON.stringify(checkpoint.summary),
       outcome: "in_progress",
-      still_open: typeof checkpoint.data?.next_steps === "string" ? checkpoint.data.next_steps : checkpoint.data?.next_steps ? JSON.stringify(checkpoint.data.next_steps) : null,
+      still_open:
+        typeof checkpoint.data?.next_steps === "string"
+          ? checkpoint.data.next_steps
+          : checkpoint.data?.next_steps
+            ? JSON.stringify(checkpoint.data.next_steps)
+            : null,
       files_modified: filesModified ?? null,
       details: checkpoint.data ?? null,
       created_at: Date.now(),

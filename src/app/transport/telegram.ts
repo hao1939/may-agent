@@ -857,7 +857,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           ...(topicId === undefined ? {} : { topicId }),
         });
         await deliverCommandView(
-          `${renderTelegramTask(task)}\n\nWatching ${task.ref}. Replies are Task feedback through May.`,
+          `${renderTelegramTask(task)}\n\nWatching ${task.ref}. May receives replies with this Task in context.`,
           representedTaskIdentities(task),
         );
       }

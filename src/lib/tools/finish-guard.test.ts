@@ -80,35 +80,29 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  // === Ghost Deliverable Guard (FM-3.1 preventive) Tests ===
+  // Summary prose is not a control input. Only typed deliverables and tool
+  // evidence participate in deterministic finish checks.
 
-  it("signals finish(success) with 'Fixed bug' summary but no file changes", async () => {
+  it("does not infer a deliverable from action words in the summary", async () => {
     const ctx = makeCtx({ status: "success", summary: "Fixed the authentication bug in login handler" }, [
       assistantWithToolCall("read", { path: "src/auth.ts" }),
     ]);
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(false);
-    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
-    expect(result!.reason).toContain("Fixed the authentication bug");
+    expect(result).toBeUndefined();
   });
 
-  it("signals finish(success) with 'Implemented' summary but no file changes", async () => {
+  it("does not classify implementation wording", async () => {
     const ctx = makeCtx({ status: "success", summary: "Implemented the new caching layer" }, [
       assistantWithToolCall("read", { path: "src/cache.ts" }),
     ]);
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(false);
-    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+    expect(result).toBeUndefined();
   });
 
-  it("signals finish(success) with 'Refactored' summary but no file changes", async () => {
+  it("does not classify refactor wording", async () => {
     const ctx = makeCtx({ status: "success", summary: "Refactored the database module for clarity" }, []);
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(false);
-    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+    expect(result).toBeUndefined();
   });
 
   it("allows 'Fixed' summary when write evidence exists", async () => {
@@ -116,7 +110,6 @@ describe("finish-guard", () => {
       assistantWithToolCall("edit", { path: "src/auth.ts", oldText: "a", newText: "b" }),
       assistantWithToolCall("read", { path: "src/auth.ts" }),
     ]);
-    // No deliverables listed — but has write evidence, ghost guard doesn't fire
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
@@ -135,60 +128,52 @@ describe("finish-guard", () => {
       { status: "success", summary: "Verified the existing behavior is correct, no changes needed" },
       [assistantWithToolCall("read", { path: "src/auth.ts" })],
     );
-    // "Verified" is NOT in the ghost keyword list — this should pass
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("signals 'Deleted old module' summary but no file changes", async () => {
+  it("does not classify deletion wording", async () => {
     const ctx = makeCtx({ status: "success", summary: "Deleted the deprecated logging module" }, [
       assistantWithToolCall("read", { path: "src/old-logger.ts" }),
     ]);
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(false);
-    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+    expect(result).toBeUndefined();
   });
 
-  it("allows 'Added new feature' summary without writes (generic word removed from GHOST_KEYWORDS)", async () => {
+  it("allows 'Added new feature' summary without typed deliverables", async () => {
     const ctx = makeCtx({ status: "success", summary: "Added retry logic to the API client" }, []);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("allows 'created' in analytical summary without writes (generic word removed)", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "File was created in a previous session, verified it exists" },
-      [assistantWithToolCall("read", { path: "src/foo.ts" })],
-    );
+  it("allows 'created' in analytical summary without typed deliverables", async () => {
+    const ctx = makeCtx({ status: "success", summary: "File was created in a previous session, verified it exists" }, [
+      assistantWithToolCall("read", { path: "src/foo.ts" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("allows 'removed' in analytical summary without writes (generic word removed)", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Analyzed what could be removed or consolidated" },
-      [assistantWithToolCall("read", { path: "src/foo.ts" })],
-    );
+  it("allows 'removed' in analytical summary without typed deliverables", async () => {
+    const ctx = makeCtx({ status: "success", summary: "Analyzed what could be removed or consolidated" }, [
+      assistantWithToolCall("read", { path: "src/foo.ts" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("allows 'changed' in analytical summary without writes (generic word removed)", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Nothing changed since last review — all metrics stable" },
-      [assistantWithToolCall("read", { path: "src/foo.ts" })],
-    );
+  it("allows 'changed' in analytical summary without typed deliverables", async () => {
+    const ctx = makeCtx({ status: "success", summary: "Nothing changed since last review — all metrics stable" }, [
+      assistantWithToolCall("read", { path: "src/foo.ts" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("signals 'wrote' summary with no file changes", async () => {
+  it("does not classify write wording", async () => {
     const ctx = makeCtx({ status: "success", summary: "Wrote the new caching module" }, []);
     const result = await guard(ctx);
-    expect(result).toBeDefined();
-    expect(result!.block).toBe(false);
-    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+    expect(result).toBeUndefined();
   });
 
   // === Orchestration Tool Exemption Tests ===
@@ -265,26 +250,23 @@ describe("finish-guard", () => {
     expect(result!.reason).toContain("no write, edit");
   });
 
-  it("allows ghost keyword summary when workflow tool was used (no deliverables)", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Implemented the feature via auto-loop workflow" },
-      [assistantWithToolCall("workflow", { action: "run", name: "auto-loop", task: "implement feature" })],
-    );
+  it("ignores summary wording when workflow was used without typed deliverables", async () => {
+    const ctx = makeCtx({ status: "success", summary: "Implemented the feature via auto-loop workflow" }, [
+      assistantWithToolCall("workflow", { action: "run", name: "auto-loop", task: "implement feature" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("allows ghost keyword summary when agents tool was used (no deliverables)", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Fixed the bug by delegating to coder" },
-      [assistantWithToolCall("agents", { action: "call", agent: "coder", task: "fix bug" })],
-    );
+  it("ignores summary wording when delegation was used without typed deliverables", async () => {
+    const ctx = makeCtx({ status: "success", summary: "Fixed the bug by delegating to coder" }, [
+      assistantWithToolCall("agents", { action: "call", agent: "coder", task: "fix bug" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("does not block ghost guard when deliverables ARE listed (falls through to Gate 1)", async () => {
-    // If deliverables are listed, the ghost guard should not fire — Gate 1 handles it
+  it("checks typed deliverables independently of summary wording", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -296,8 +278,6 @@ describe("finish-guard", () => {
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(false);
-    // Should be Gate 1 (write evidence), not Gate 0 (ghost)
-    expect(result!.reason).not.toContain("Ghost Deliverable");
     expect(result!.reason).toContain("no write, edit");
   });
 

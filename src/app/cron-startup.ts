@@ -5,7 +5,7 @@ import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOp
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
-import { parseAppTaskSessionBinding, recoverInstalledAppTasks } from "./app-task-runtime.js";
+import { recoverInstalledAppTasks } from "./app-task-runtime.js";
 import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
 import { activateAgentCrons } from "./cron-activation.js";
 
@@ -15,11 +15,6 @@ export interface CronRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   loaderOpts: AgentLoaderOptions;
-}
-
-function fieldFromPrompt(prompt: string, name: string): string | null {
-  const match = prompt.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
-  return match?.[1]?.trim() ?? null;
 }
 
 function currentProjectLifecycle(appDir: string): string | null {
@@ -49,7 +44,6 @@ export function shouldResumeStartupSession(
     session.recoveryOwner === APP_TASK_RECOVERY_OWNER ||
     (typeof session.taskId === "string" && session.taskId.trim()) ||
     (typeof session.projectTaskId === "string" && session.projectTaskId.trim()) ||
-    parseAppTaskSessionBinding(session.task) ||
     session.source === "app-task-agent" ||
     session.source === "app-task-owner" ||
     session.source === "project-app-task-owner"
@@ -61,7 +55,7 @@ export function shouldResumeStartupSession(
   }
   if (!session.projectId) return { resume: true };
 
-  const appDir = fieldFromPrompt(session.task, "App") ?? `/app/projects/${session.projectId}.app`;
+  const appDir = `/app/projects/${session.projectId}.app`;
   if (currentProjectLifecycle(appDir) === "paused") {
     return {
       resume: false,

@@ -3,7 +3,11 @@ import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writ
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
-import { deployReceiptPrompt, readDeployReceiptForTask } from "../src/app/app-task-runtime";
+import {
+  deployReceiptPrompt,
+  hasDeployReceiptWake,
+  readDeployReceiptForTask,
+} from "../src/app/app-task-runtime";
 import { requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
 
 function fixture() {
@@ -34,6 +38,27 @@ function taskDatabase(projectDir: string, appId: string, taskIds: string[]): str
 }
 
 describe("restart-aware deploy receipts", () => {
+  it("selects receipt context from an exact wake instead of Task wording", () => {
+    const events = (reason: string) => ({
+      items: [
+        {
+          eventId: 1,
+          observedAt: new Date(0).toISOString(),
+          event: {
+            type: "project.task.tick",
+            source: "may-agent-restarter",
+            data: { reason },
+          },
+        },
+      ],
+      throughEventId: 1,
+      truncated: false,
+    });
+
+    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(true);
+    expect(hasDeployReceiptWake(events("ordinary-task-wake"))).toBe(false);
+  });
+
   it("rejects a stale exact-task wake before deployment", () => {
     const f = fixture();
     try {

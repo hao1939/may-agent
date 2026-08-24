@@ -274,6 +274,7 @@ export type SystemEvent =
         status?: string;
         summary?: string;
         response?: string;
+        result?: Record<string, unknown>;
         evidence?: string[];
       };
     }
@@ -762,7 +763,7 @@ export type SystemEvent =
         name: string;
         agent: string;
         sessionId: string;
-        activation: "explicit" | "model" | "rule";
+        activation: "explicit" | "model";
         scope: string;
         filePath: string;
         contentHash: string;

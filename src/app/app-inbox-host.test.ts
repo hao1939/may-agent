@@ -486,6 +486,68 @@ describe("App inbox host", () => {
     expect(conversation).not.toHaveProperty("work");
   });
 
+  it("projects one exact focused Task observation without making focus an action", async () => {
+    let request: AppRequest | undefined;
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          id: "may",
+          version: 1,
+          owner: "may",
+          inputSchema: Type.Object({
+            kind: Type.Literal("probe"),
+            data: Type.Object({
+              value: Type.String(),
+              context: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+            }),
+          }),
+          task: (input) => desiredTask(input.id),
+          tasks: {},
+        }),
+      ],
+      readDependency: async ({ appId, dependency }) => ({
+        kind: "task",
+        id: dependency.id,
+        status: "waiting",
+        summary: `${appId} is waiting for verified evidence`,
+      }),
+      attachTask: async (input) => {
+        request = input.request;
+        return { taskId: input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id };
+      },
+    });
+    host.admit({
+      id: "turn-focused",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-focused" },
+      input: {
+        kind: "probe",
+        data: {
+          value: "why is this waiting?",
+          context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } },
+        },
+      },
+    });
+
+    await host.reconcileOnce("may");
+
+    expect(request?.focusedTask).toEqual({
+      appId: "evaluation",
+      task: {
+        kind: "task",
+        id: "review/docs",
+        status: "waiting",
+        summary: "evaluation is waiting for verified evidence",
+      },
+    });
+    expect(request?.input).toMatchObject({
+      data: { context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } } },
+    });
+  });
+
   it("bounds owner Conversation context by bytes instead of retained message count", () => {
     const conversation: AppConversationResource = {
       id: "may:primary",

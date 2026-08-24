@@ -110,6 +110,8 @@ export type TaskReconcileResult = {
   summary: string;
   /** Caller-facing semantic answer, when this task fulfills an addressed request. */
   response?: string;
+  /** App-defined machine-readable state/result. The runtime carries it without interpreting domain meaning. */
+  result?: Record<string, unknown>;
   evidence: string[];
   actions?: TaskAction[];
   conditions?: Condition[];

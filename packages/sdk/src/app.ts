@@ -48,6 +48,7 @@ export type AppInputSource = {
 export type AppResult = {
   summary: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence?: string[];
 };
 
@@ -62,6 +63,7 @@ export type AppDependencyObservation = {
   status: "pending" | "running" | "waiting" | "attention" | "done" | "error" | "interrupted" | "unknown";
   summary?: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence?: string[];
 };
 
@@ -111,6 +113,11 @@ export type AppRequest<TData = unknown> = {
   parentId?: string;
   input: AppInput<TData>;
   dependency?: AppDependencyObservation;
+  /** Exact bounded observation for the human's focused Task, when supplied. */
+  focusedTask?: {
+    appId: string;
+    task: AppDependencyObservation;
+  };
   /** Bounded exact conversation evidence; it never owns or schedules work. */
   conversation?: AppConversationResource;
 };

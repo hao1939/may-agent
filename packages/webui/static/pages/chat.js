@@ -233,12 +233,11 @@ function initChat(deepLinkSessionId) {
     const candidates = activeSessions.filter(s => {
       if (s.status !== 'running' && s.status !== 'idle') return false;
       if (currentAgentChat && s.agent !== currentAgentChat) return false;
-      const task = String(s.task || '').toLowerCase();
       const kind = String(s.kind || '').toLowerCase();
-      // Skip heartbeat and worker-pattern sessions — those are not for chat.
-      if (kind === 'heartbeat' || kind === 'worker') return false;
-      if (task.startsWith('[heartbeat]')) return false;
-      if (task.includes('waking up for your heartbeat')) return false;
+      const source = String(s.source || '').toLowerCase();
+      // Skip explicitly typed heartbeat and worker sessions; task prose is not
+      // a lifecycle or presentation classifier.
+      if (kind === 'heartbeat' || kind === 'worker' || source === 'heartbeat') return false;
       return true;
     });
     if (candidates.length) {
@@ -489,7 +488,14 @@ function connectWs() {
           }
           // Update session picker
           if (data.sessionId && !activeSessions.find(s => s.sessionId === data.sessionId)) {
-            activeSessions.push({ agent: data.agent, sessionId: data.sessionId, status: 'running', task: data.task });
+            activeSessions.push({
+              agent: data.agent,
+              sessionId: data.sessionId,
+              status: 'running',
+              task: data.task,
+              kind: data.kind,
+              source: data.source,
+            });
             renderSessionPicker();
           }
           addFeedItem(data.agent, 'started session: ' + (data.task || '').slice(0, 80), 'start');

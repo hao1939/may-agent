@@ -14,13 +14,7 @@ import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
-import {
-  formatBoundedSkillCatalog,
-  invokeCatalogSkill,
-  matchSkillActivationRule,
-  parseExplicitSkill,
-  type MaySkill,
-} from "./skills.js";
+import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./types.js";
 import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
@@ -195,7 +189,7 @@ export type PreparedAgentExecution = {
   requireFinish: boolean;
   outputSchema?: TSchema;
   activatedSkill?: MaySkill;
-  skillActivation?: "explicit" | "rule";
+  skillActivation?: "explicit";
   systemPrompt: string;
   tools: AgentTool[];
   runner: AgentRunnerConfig;
@@ -447,11 +441,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const definition = definitionForExecution(options);
   options = { ...options, definition, projectRoot: options.executionRoot ?? options.projectRoot };
   const parsedSkill = parseExplicitSkill(options.task);
-  const matchedRule =
-    options.skill || parsedSkill.skill
-      ? undefined
-      : matchSkillActivationRule(options.definition.skillActivationRules, parsedSkill.task);
-  const skillName = options.skill ?? parsedSkill.skill ?? matchedRule?.skill;
+  const skillName = options.skill ?? parsedSkill.skill;
   const task = parsedSkill.skill ? parsedSkill.task : options.task;
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);
   const activation = skillName ? invokeCatalogSkill(options.definition.skillCatalog, skillName, task) : undefined;
@@ -508,7 +498,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
     requireFinish,
     outputSchema,
     activatedSkill: activation?.skill,
-    skillActivation: activation ? (matchedRule ? "rule" : "explicit") : undefined,
+    skillActivation: activation ? "explicit" : undefined,
     systemPrompt,
     tools,
     runner: {

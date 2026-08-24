@@ -70,29 +70,17 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
 }
 
 /**
- * Keywords in a finish() summary that imply code/file changes were made.
- * If these appear in the summary but no write/edit/bash-write evidence exists
- * in the transcript, the ghost deliverable guard emits a signal.
- */
-const GHOST_KEYWORDS =
-  /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote|rewrite|updat(?:ed?)|deploy(?:ed)?|patch(?:ed)?|modif(?:ied|y)|delet(?:ed?)|migrat(?:ed?)|rewir(?:ed?)|wrote)\b/i;
-
-/**
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
  *
- * Three gates:
- * 1. Ghost Deliverable Guard (FM-3.1 preventive): signals when summary implies
- *    code changes ("Fixed", "Implemented", etc.) but no write/edit evidence
- *    exists in the transcript AND no deliverables are listed. This catches the
- *    #1 behavioral failure: agents claiming work without doing it.
- * 2. Write Evidence Guard: signals when deliverables are listed but no write/edit
+ * Two gates:
+ * 1. Write Evidence Guard: signals when deliverables are listed but no write/edit
  *    evidence exists in the transcript.
- * 3. Verification Guard (FM-3.3): signals when writes exist but no verification
+ * 2. Verification Guard (FM-3.3): signals when writes exist but no verification
  *    (read-back, test, type-check) occurs after the last write.
  *
  * Exceptions (no signal):
  * - `finish()` with status other than "success"
- * - Summaries that don't match ghost keywords (e.g., "Analyzed logs", "No new work")
+ * - Sessions without typed deliverables; summary prose is not evidence
  * - Sessions where write, edit, or file-producing bash commands were used
  */
 export function createFinishGuard(): (
@@ -105,7 +93,6 @@ export function createFinishGuard(): (
 
     const args = ctx.args as {
       status?: string;
-      summary?: string;
       deliverables?: { path: string; description: string }[];
     };
 
@@ -127,11 +114,9 @@ export function createFinishGuard(): (
     // is not completion.
     if (
       !hasWriteEvidence &&
-      (
-        toolNames.has("workflow") ||
+      (toolNames.has("workflow") ||
         toolNames.has("agents") ||
-        (toolNames.has("run_cli_agent") && toolNames.has("read"))
-      )
+        (toolNames.has("run_cli_agent") && toolNames.has("read")))
     ) {
       hasWriteEvidence = true;
     }
@@ -141,25 +126,9 @@ export function createFinishGuard(): (
       hasWriteEvidence = true;
     }
 
-    // ── Gate 0: Ghost Deliverable Guard (FM-3.1 preventive) ──────
-    // Summary implies code changes but no write evidence AND no deliverables.
-    // This catches "Fixed the bug" with zero file modifications.
-    const summary = args.summary ?? "";
     const hasDeliverables = args.deliverables && args.deliverables.length > 0;
-    if (!hasWriteEvidence && !hasDeliverables && GHOST_KEYWORDS.test(summary)) {
-      return {
-        block: false, // signal-only: guard emits metric but does not block
-        reason:
-          `finish(status: "success") guard signal [FM-3.1 Ghost Deliverable]: Your summary implies ` +
-          `code changes ("${summary.slice(0, 80)}") but your session contains no write, edit, or ` +
-          `file-producing bash commands, and no deliverables are listed. Either:\n` +
-          `1. Actually write/edit the files, list them as deliverables, then call finish()\n` +
-          `2. Rephrase summary to reflect what you actually did (e.g., "Analyzed X", "Verified Y")\n` +
-          `3. Use status: "partial" if work is incomplete`,
-      };
-    }
-
-    // If no deliverables listed and no ghost keywords, allow (analysis-only sessions)
+    // Without typed deliverables there is no mechanical claim for this guard
+    // to validate. Meaning in the summary remains the model's responsibility.
     if (!hasDeliverables) return undefined;
 
     // ── Gate 1: No write evidence at all — signal (original FM-3.1/FM-2.2 guard) ──
