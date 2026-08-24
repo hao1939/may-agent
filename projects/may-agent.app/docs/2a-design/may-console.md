@@ -32,8 +32,8 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 
 | Command                | Meaning                                               |
 | ---------------------- | ----------------------------------------------------- |
-| `/apps [app]`          | List Apps or show one App                             |
-| `/tasks [app] [all]`   | List active Tasks, optionally including recent history |
+| `/apps [app]`          | List Apps or select one App                           |
+| `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps/history |
 | `/task <ref>`          | Read one exact Task                                   |
 | `/watch [ref]`         | Watch a Task or show the current watched Task         |
 | `/unwatch`             | Stop watching without changing the Task               |
@@ -63,21 +63,23 @@ then records that rendered command result in Conversation. Other Console
 processes ignore the fact unless they issued that exact request; they receive
 the eventual shared Conversation message normally.
 
-The normal prompt is:
+The selected App defaults to `may`; `/apps <app>` switches it for this Console
+process. The normal prompt is:
 
 ```text
-you>
+you[may]>
 ```
 
 While watching a Task:
 
 ```text
-you[task 8f12ac90]>
+you[evaluation:8f12ac90]>
 ```
 
 Bare text in the second prompt is still a May Conversation turn. Console adds
-the exact `{ appId, taskId }` under `context.focusedTask`; May interprets the
-feedback and the owning App decides how it changes the Task.
+the selected App as `context.focusedApp` and the exact `{ appId, taskId }` under
+`context.focusedTask`; May interprets the feedback and the owning App decides
+how it changes the Task.
 
 ## Reads and rendering
 

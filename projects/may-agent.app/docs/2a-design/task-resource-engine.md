@@ -29,6 +29,11 @@ Facts with no owned outcome or desired-state change remain facts and do not
 enter the App. Sessions, workflows, analyses, and child App calls are bounded
 capabilities used while reconciling a task; none is another App lifecycle.
 
+A fresh admitted App input wakes a waiting Task for one bounded
+reconsideration. Existing Conditions remain evidence; the App decides whether
+they still apply. This makes human feedback and newly requested work actionable
+without turning duplicate ticks or recovery scans into event storms.
+
 ## Mental model
 
 ```text

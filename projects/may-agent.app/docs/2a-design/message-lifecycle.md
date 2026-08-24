@@ -67,6 +67,22 @@ context.
 
 ## Reconciliation
 
+A human request has two conversational stages, without another stored
+lifecycle:
+
+1. **Clarifying.** May may ask one concise question and complete the current
+   Conversation Task with that response. The next human message carries the
+   bounded Conversation context. No project Task is claimed before outcome,
+   material constraints, acceptance proof, and owner are clear.
+2. **Assigned.** May routes the clear outcome to the responsible App. The
+   accepted waiting result appends one concise Conversation status linked to
+   the stable May Task reference. `/task <ref>` exposes the responsible App
+   Task when its exact dependency has been attached.
+
+Each turn still has one durable request and one May Task. “Clarifying” and
+“assigned” describe what May is doing; they are not resources, queues, or
+additional states.
+
 May receives the current request plus one bounded Conversation projection:
 
 ```text
@@ -102,6 +118,13 @@ feedback. This Host fence prevents guessed IDs or cross-conversation context
 from mutating work. The task's dependency is replaceable; caller request IDs
 remain stable. If replacement work is asynchronous, its terminal observation
 wakes the same target task later.
+
+A fresh admitted App input is meaningful desired-state evidence. It wakes a
+waiting Task for one bounded reconsideration even while the previous Condition
+remains open. The App then accepts the new evidence, replaces or preserves the
+wait, changes the Task, or converges. The Host never declares an old Condition
+true merely because the human spoke. Duplicate ticks and unchanged recovery
+pulses remain suppressible.
 
 During migration, a represented May request admitted before Conversation IDs
 existed may have no scope value. May may continue that legacy-unscoped request
@@ -153,6 +176,9 @@ human/May dialogue.
   admission.
 - Persisting the accepted May task result completes the request and appends the
   result itself to the Conversation.
+- An accepted May wait appends a concise status with its exact Task identity
+  and useful current finding or blocker. It is not a delivery receipt and does
+  not complete the request. Unchanged retries are idempotent.
 - Each adapter observes Conversation updates and renders independently. No
   adapter acknowledgement is required for semantic completion.
 - Provider send failures and receipts may remain available to operational

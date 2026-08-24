@@ -37,8 +37,8 @@ Every human adapter exposes the same small meanings:
 
 | Meaning             | Console form              | Telegram form                         |
 | ------------------- | ------------------------- | ------------------------------------- |
-| list Apps           | `/apps [app]`             | native `/apps [app]`                  |
-| list Tasks          | `/tasks [app] [all]`, then `/tasks more` | native `/tasks [app] [all]`, then `/tasks more` |
+| list or select App  | `/apps [app]`             | native `/apps [app]`                  |
+| list Tasks          | `/tasks [all] [history]`, then `/tasks more` | native `/tasks [all] [history]`, then `/tasks more` |
 | read one Task       | `/task <ref>`             | native `/task <ref>`                  |
 | watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
 | stop watching       | `/unwatch`                | `/unwatch`                            |
@@ -49,6 +49,13 @@ Every human adapter exposes the same small meanings:
 Adapters may render these resources differently. Console uses aligned text and
 tab completion. Telegram uses compact messages and may add native buttons.
 The Host resolves Apps and Task references and revalidates canonical identity.
+
+Each adapter surface keeps one selected App, initially `may`. `/apps` lists
+Apps and `/apps <app>` changes that local selection. `/tasks` reads active
+Tasks for the selected App, `all` widens the read to every App, and `history`
+adds retained terminal Tasks. Selection is a small Console-process or Telegram
+chat/topic variable, not another durable resource. An exact `/task <ref>` may
+cross the selected App boundary.
 
 Host request history is diagnostic data, not a second work interface.
 `/session`, `/sessions`, and `/steer` are not ordinary human commands.
@@ -87,6 +94,15 @@ cursor. Exact outcome, progress, result, and evidence stay available through
 
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
+
+Bare text always goes to May with `context.focusedApp`. A watch additionally
+adds `context.focusedTask`. The selected App is a useful conversational lens,
+not permission to force work into the wrong owner.
+
+When May assigns asynchronous work, the Conversation shows the stable May Task
+reference and its useful current wait. Exact Task detail shows linked App Task
+references and typed Conditions, never internal request IDs. A human can
+`/watch` the linked owner Task for live progress or continue talking naturally.
 
 Runtime reload is deterministic control, not App work. The request is accepted
 synchronously, the Runtime performs one reload, and one correlated
@@ -166,6 +182,7 @@ send slash-command ambiguity to a model.
 ## Verification
 
 Tests must prove stable collision-aware references, bounded indexed reads,
-one-watch replacement, focused feedback through May, wake coalescing, automatic
+selected-App defaults, one-watch replacement, focused feedback through May,
+fresh-input wake from waits, wake coalescing, automatic
 terminal exit, durable Task cancellation, stale-attempt fencing, cross-surface
 Conversation context, and independence from adapter delivery.

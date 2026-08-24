@@ -220,7 +220,7 @@ trace or conversation.
 Telegram exposes the same small Task meanings as Console:
 
 - `/apps [app]`;
-- `/tasks [app] [all]`;
+- `/tasks [all] [history]`;
 - `/task <ref>`;
 - `/watch [ref]` and `/unwatch`;
 - `/cancel [ref]`; and
@@ -235,8 +235,9 @@ The presentation may use native buttons without changing the resource API.
 Ordinary help does not expose Host request history, session listing, steering,
 or session cancellation.
 
-One chat/topic watches at most one Task. While watched, ordinary text remains a
-May Conversation turn with exact `context.focusedTask`; it is never sent
+One chat/topic selects one App (initially `may`) and watches at most one Task.
+While watched, ordinary text remains a May Conversation turn with exact
+`context.focusedApp` and `context.focusedTask`; it is never sent
 directly to an execution session. Semantic Task events wake one coalesced exact
 read. Passive Conversation synchronization reads bounded messages only. Idle
 watch has no poller, timer, workflow, session, or model call.

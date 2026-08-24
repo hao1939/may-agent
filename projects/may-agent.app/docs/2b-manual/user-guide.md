@@ -92,8 +92,8 @@ not to the bounded agent run named `may`.
 
 | Command               | Action                                                    |
 | --------------------- | --------------------------------------------------------- |
-| `/apps [app]`         | List Apps and active Task counts                          |
-| `/tasks [app] [all]`  | List the first page of active Tasks, optionally with recent terminal Tasks |
+| `/apps [app]`         | List Apps or select the current App                       |
+| `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps or recent terminal Tasks |
 | `/tasks more`         | Continue the exact prior Task list when another page exists |
 | `/task <ref>`         | Read one exact Task                                       |
 | `/watch [ref]`        | Watch or show one Task                                    |
@@ -102,9 +102,10 @@ not to the bounded agent run named `may`.
 | `/reload`, `/restart` | Reload definitions or restart the Runtime                 |
 | `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
 
-Bare text always goes through May. While watching, Console attaches the exact
-Task identity so the text becomes natural Task feedback through May; it never
-steers an execution session directly.
+Bare text always goes through May with the selected App as context. While
+watching, Console also attaches the exact Task identity so the text becomes
+natural Task feedback through May; it never steers an execution session
+directly.
 
 ## Agents
 

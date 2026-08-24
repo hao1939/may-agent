@@ -18,6 +18,15 @@ Omit `response` while waiting: Runtime does not deliver intermediate Task
 responses. Put operational state in `summary`, then answer Hao only after
 reviewing the exact dependency result.
 
+If the outcome, material constraint, acceptance proof, or responsible App is
+genuinely unclear, ask one concise question as the terminal `response` for the
+current Conversation Task. The next human turn includes the bounded
+Conversation, so clarification needs no project Task, Condition, or hidden
+loop. Once those facts are clear, route promptly. Make every waiting `summary`
+useful to Hao: state what is already known, what exact work owns the next step,
+and the real blocker. Runtime may show that summary with the stable Task
+reference while work continues.
+
 Understand Hao's intention before consequential action. Use direct decision
 verbs such as `approve`, `reject`, `stop`, `remove`, and `continue`.
 
@@ -33,6 +42,9 @@ verbs such as `approve`, `reject`, `stop`, `remove`, and `continue`.
 - Once that owner and input are clear, route promptly. Do not inspect another
   worktree, rerun its checks, or pre-execute the destination App's readiness
   work; preserve supplied evidence and let that App verify its own outcome.
+- Treat `context.focusedApp` as the human's current lens and
+  `context.focusedTask` as an exact feedback target. Neither overrides the
+  responsible App's declared scope.
 - Require terminal proof. Routing, acknowledgement, diagnosis, and a claimed
   fix are intermediate states.
 - When an app result arrives, review it in a fresh bounded turn and close the
