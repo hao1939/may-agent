@@ -21,6 +21,14 @@ export function taskUpdateIdentity(event: unknown): { appId: string; taskId: str
     envelope.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
       ? (envelope.data as Record<string, unknown>)
       : envelope;
+  // Executor lifecycle stages are diagnostic mechanics. Only an explicit
+  // human-readable progress message should wake a human Task surface.
+  if (
+    envelope.type === "project.task.executor.progress" &&
+    (typeof data.message !== "string" || !data.message.trim())
+  ) {
+    return null;
+  }
   const target =
     envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
       ? (envelope.target as Record<string, unknown>)

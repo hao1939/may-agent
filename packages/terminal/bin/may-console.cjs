@@ -348,9 +348,7 @@ function taskProgress(task) {
   const progress = task?.progress;
   if (!progress || typeof progress !== "object") return "";
   if (typeof progress.message === "string" && progress.message.trim()) return progress.message.trim();
-  const stage = typeof progress.stage === "string" ? progress.stage.trim().replaceAll("-", " ") : "";
-  const status = typeof progress.status === "string" ? progress.status.trim() : "";
-  return [stage, status].filter(Boolean).join(" · ");
+  return "";
 }
 
 function renderApps(apps, pending) {

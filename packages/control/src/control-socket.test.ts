@@ -14,6 +14,7 @@ import {
 import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/event-bus.js";
 import { DbWriter } from "../../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
+import { taskUpdateIdentity } from "./task-wake.js";
 
 let sockets: ControlSocket[] = [];
 const persistDirs: string[] = [];
@@ -805,6 +806,12 @@ describe("control socket protocol", () => {
   });
 
   it("turns passive executor progress into an identity-only wake without forwarding its payload", async () => {
+    expect(
+      taskUpdateIdentity({
+        type: "project.task.executor.progress",
+        data: { stage: "turn-started", status: "inProgress", emission: { appId: "evaluation", taskId: "review/docs" } },
+      }),
+    ).toBeNull();
     const core = createCore();
     const stream = (core.endpoint as () => Duplex)();
     await nextFrame(stream);
