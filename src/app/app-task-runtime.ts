@@ -1184,7 +1184,17 @@ export function admitTaskAppDependencies(input: {
         `App dependency ${dependency.id} refers to open request ${match.requestId} for App ${match.item.appId}, not ${dependency.appId}`,
       );
     }
-    if (match.item && match.item.targetTaskId !== dependency.taskId) {
+    // A create-work request has no original targetTaskId. Once admitted, the
+    // inbox records the Task it resolved to in waitingOn. Agents may echo that
+    // observed Task while preserving the exact request ID; this is reuse, not
+    // authority to retarget or create work.
+    const resolvedCreatedTaskMatches = Boolean(
+      match.item &&
+        match.item.targetTaskId === undefined &&
+        match.item.waitingOn?.kind === "task" &&
+        match.item.waitingOn.id === dependency.taskId,
+    );
+    if (match.item && match.item.targetTaskId !== dependency.taskId && !resolvedCreatedTaskMatches) {
       throw new Error(
         `App dependency ${dependency.id} refers to open request ${match.requestId} for Task ${match.item.targetTaskId ?? "new work"}, not ${dependency.taskId ?? "new work"}`,
       );
@@ -1306,7 +1316,7 @@ export function projectAppTaskWaitPromptContext(
       appId: string;
       status: string;
       targetTaskId?: string;
-      ownerTaskId?: string;
+      resolvedTaskId?: string;
     };
   }>;
   note: string;
@@ -1335,7 +1345,7 @@ export function projectAppTaskWaitPromptContext(
                 appId: item.appId,
                 status: item.status,
                 ...(item.targetTaskId ? { targetTaskId: item.targetTaskId } : {}),
-                ...(item.waitingOn?.kind === "task" ? { ownerTaskId: item.waitingOn.id } : {}),
+                ...(item.waitingOn?.kind === "task" ? { resolvedTaskId: item.waitingOn.id } : {}),
               },
             }
           : {}),
@@ -1345,7 +1355,7 @@ export function projectAppTaskWaitPromptContext(
   return {
     open,
     note:
-      "These are accepted waits on this Task. Human feedback must reconsider this same Task. Preserve a still-valid wait; never create a replacement merely because it was absent from prose or child summaries.",
+      "These are accepted waits on this Task. Human feedback must reconsider this same Task. Preserve a still-valid wait by requestId; never create a replacement merely because it was absent from prose or child summaries. targetTaskId is the request's original target and must be preserved when redeclaring it. resolvedTaskId is only the Task created or found by that request; do not copy it into taskId when targetTaskId is absent.",
   };
 }
 

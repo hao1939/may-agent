@@ -483,6 +483,10 @@ export function listAppConversationMessages(
     )
     .all(appId, conversationId, limit)
     .map(rowToItem);
+  const targetedTaskIds = new Set(
+    humanRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])),
+  );
+  const projectedTaskResults = new Set<string>();
   for (const item of humanRows) {
     const text = conversationText(item.input);
     const sequence = item.originEventId ?? item.conversationSequence ?? item.createdAt;
@@ -507,6 +511,17 @@ export function listAppConversationMessages(
       ? item.result?.response?.trim()
       : item.result?.response?.trim() || item.result?.summary?.trim();
     if (!resultText) continue;
+    const inferredCreatedTaskId = [...targetedTaskIds].find(
+      (taskId) => taskId === item.id || taskId.endsWith(`/${item.id}`),
+    );
+    const resultTaskId =
+      item.waitingOn?.kind === "task" ? item.waitingOn.id : item.targetTaskId ?? inferredCreatedTaskId;
+    const resultIdentity = resultTaskId ? `${resultTaskId}\0${resultText}` : `request:${item.id}`;
+    // Several human turns may feed one Task, but its accepted result has one
+    // public owner in the Conversation. Rows are newest-first, so the result
+    // stays beside the feedback that most recently shaped that Task.
+    if (projectedTaskResults.has(resultIdentity)) continue;
+    projectedTaskResults.add(resultIdentity);
     messages.push({
       id: `result:${item.id}`,
       sequence,
