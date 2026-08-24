@@ -56,6 +56,10 @@
       "path": "communication.human-decision-packet.json"
     },
     {
+      "id": "communication.plain-language",
+      "path": "communication.plain-language.json"
+    },
+    {
       "id": "security.secret-channel-boundary",
       "path": "security.secret-channel-boundary.json"
     },

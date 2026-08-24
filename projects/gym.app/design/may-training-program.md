@@ -302,7 +302,8 @@ work. Callers do not choose Gym's internal task, workflow, or wake path.
 
 Typed actions are optional automation shortcuts:
 
-- `improve-may-now` evaluates the approved focused May canary immediately;
+- `improve-may-now` advances the approved autonomous May curriculum
+  immediately;
 - `run-regression` runs a requested benchmark or scenario;
 - `report-incident` submits concrete failure evidence;
 - `collect-codex-learning` scans a bounded source batch; and

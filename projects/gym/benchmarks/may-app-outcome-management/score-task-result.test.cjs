@@ -52,6 +52,12 @@ const referenceResults = {
       proof: "Show the standing responsibility is active and reports verified health or a real decision blocker.",
     })],
   },
+  "may-app-explain-task-reconciliation": {
+    state: "converged",
+    summary: "Task, Event, App, and Runtime each have one clear role.",
+    response: "A Task is the goal and its current state. An Event carries new information that may wake the Task; it is not another Task. The App decides how to move the Task forward in one bounded attempt. Runtime stores the Task, connects Events, schedules the attempt, and checks its result without deciding what the work means.",
+    evidence: ["accepted-design:task-event-app-runtime"],
+  },
   "may-app-route-capability-improvement": {
     state: "waiting",
     summary: "Gym owns the requested May behavior improvement.",
@@ -72,6 +78,24 @@ const referenceResults = {
       scope: "Team calendar conflict review.",
       cadence: "Every morning.",
       proof: "Identify or establish the accountable App contract before recurring work begins.",
+    })],
+  },
+  "may-app-route-host-operation": {
+    state: "waiting",
+    summary: "The May-agent Host Operations App now owns the requested deployment and live check.",
+    evidence: ["installed-app:may-agent"],
+    dependencies: [dependency("deploy-may-runtime", "may-agent", "runtime-capability-request", {
+      outcome: "Deploy and live-validate exact commit b359244d2de10c45fb96c154bf519bdc21aab185.",
+      acceptance: [
+        "Return the deployment receipt.",
+        "Prove the exact commit is loaded.",
+        "Provide live health proof.",
+        "Confirm retained state still works.",
+      ],
+      evidence: [
+        "Focused Runtime and TypeScript checks passed.",
+        "The full suite passed 2,434 tests; the known maxCallDepth failure is unrelated.",
+      ],
     })],
   },
   "may-app-review-terminal-result": {
@@ -143,6 +167,19 @@ const referenceResults = {
 };
 
 test("all proposed cases have a production-valid satisfying Task result", () => {
+  const development = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "suite.json"), "utf8"),
+  ).scenarios;
+  const transfer = JSON.parse(
+    fs.readFileSync(
+      path.resolve(__dirname, "../may-app-outcome-management-transfer/suite.json"),
+      "utf8",
+    ),
+  ).scenarios;
+  assert.deepEqual(
+    Object.keys(referenceResults).sort(),
+    [...development, ...transfer].sort(),
+  );
   for (const [scenario, result] of Object.entries(referenceResults)) {
     const scored = scoreScenario(scenario, result);
     assert.equal(

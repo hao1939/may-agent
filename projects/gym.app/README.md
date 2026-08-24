@@ -73,7 +73,7 @@ scheduling, delivery, or runtime defects are reported to their owning App.
 ## Actions
 
 - `improve-may-now` — run one bounded improvement cycle over the approved
-  four-case canary.
+  autonomous learning tracks.
 - `run-regression` — run `may-alignment`, optionally with `scenario` and
   `trials` parameters.
 - `report-incident` — submit a May failure or human correction for intake.

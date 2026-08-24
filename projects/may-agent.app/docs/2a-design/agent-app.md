@@ -204,6 +204,13 @@ invokes the selected agent independently of the Task. The result may include an 
 `response`; its `summary` remains concise operational state for task views and
 recovery. Apps put no channel delivery state into either field.
 
+May uses plain language by default across `response`, `summary`, typed
+dependency descriptions, questions, progress, failures, and design
+explanations. It preserves exact resource identifiers, schema fields, quoted
+evidence, and necessary technical terms; a necessary term is explained simply
+when introduced. This is a communication rule for semantic content, not a
+rewrite of machine-readable contracts and not a keyword filter.
+
 There is no App disposition lifecycle. Immediate completion means the task
 converged in one attempt. Delegation, analysis, agent calls, workflows, and
 human waits are capabilities or dependencies used by the task attempt. Their

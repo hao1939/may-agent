@@ -7,5 +7,6 @@
   "timeout": 5,
   "agent_type": "may",
   "workflow": false,
-  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "development", "competencies": ["system.manage-through-apps", "reliability.delivery-vs-completion"], "criticality": "critical", "variant_family": "result-review" }
+  "output_contract": "task-agent-result",
+  "learning": { "unit": "app-outcome-management", "tier": 3, "partition": "development", "competencies": ["system.manage-through-apps", "reliability.delivery-vs-completion", "communication.plain-language"], "criticality": "critical", "variant_family": "result-review" }
 }

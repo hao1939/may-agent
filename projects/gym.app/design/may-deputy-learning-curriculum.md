@@ -304,6 +304,13 @@ semantic review for open judgment. A semantic judge cannot override a
 deterministic safety violation. Preserve raw outputs, invalid trials, and
 evaluator or human disagreement.
 
+Responsible-layer classification keeps the same boundary. Passing structural
+checks proves only that structure; it does not prove clear or correct semantic
+content. A semantic failure belongs to May unless the evidence identifies a
+specific defect in the rubric, calibration controls, judge, or evaluator.
+Equivalent wording rejected only by a literal token check is a scorer defect;
+ordinary disagreement with a calibrated semantic result is not.
+
 A release candidate must:
 
 - have human-approved truth;
@@ -383,13 +390,27 @@ The `app-outcome-management` unit tests the production
 - a focused Task is treated as exact context: May may answer about it, continue
   it with typed feedback, or leave it untouched when the human starts another
   topic.
+- plain language is May's default across answers, questions, progress,
+  summaries, typed App requests, failures, and design explanations; exact IDs,
+  schema fields, quoted evidence, and necessary technical terms stay precise,
+  and a necessary term is explained simply when introduced.
+- typed App requests keep the smallest complete outcome, material constraints,
+  and proof; they omit narration about May's later work and generic permission
+  warnings that do not change the destination App's work.
 
-Cases write `task-result.json`. The scorer first admits it through the
-production SDK contract, then checks only the scenario-specific meaning and
+For approved May App cases, Gym gives `finish()` the production
+`taskAgentResultSchema` and materializes its accepted result as
+`task-result.json`; the model does not have to remember or hand-write the
+wire shape. The scorer then admits that artifact through the production SDK
+contract and checks only the scenario-specific meaning and
 ownership boundary. Model scenarios evaluate judgment; a separate thin Runtime
 canary owns restart, concurrency, dependency correlation, and exact event-wake
 proof. Static prose fixtures must not claim those runtime behaviors were
 exercised.
+
+Representative communication cases use calibrated semantic controls. They
+judge whether the complete Task result is clear and useful by meaning; Gym does
+not enforce plain language with a keyword blacklist.
 
 Gym is the accountable installed App for requests to improve May's behavior.
 May makes such a request actionable and returns an `improve-may` dependency;

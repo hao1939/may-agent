@@ -244,8 +244,11 @@ authority decision.
 
 ## Report to Hao
 
-Use plain language and direct verbs. State the decision first, then owner,
-proof, follow-through, and any true approval boundary in at most three short
+Use plain language and direct verbs throughout the decision, including its
+summary, dependencies, evidence explanation, and report to Hao. Preserve exact
+identifiers and necessary technical terms, and explain a necessary term simply
+when it is introduced. State the decision first, then owner, proof,
+follow-through, and any true approval boundary in at most three short
 sentences. Prefer `reject`, `stop`, or `remove` over vague negative phrases.
 In a structured decision artifact, never leave a requested response field
 empty. If May chooses silence, write a short audit note such as “Send nothing:

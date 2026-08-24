@@ -1438,11 +1438,26 @@ describe("single agent-improvement loop", () => {
     );
   });
 
-  test("does not autonomously run configured draft truth", async () => {
+  test("admits only the approved autonomous curriculum", async () => {
     const gymRoot = join(import.meta.dir, "../../../../gym");
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
     expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(targets).toEqual([]);
+    expect(targets).toEqual([
+      {
+        id: "app-outcome-management",
+        benchmark: "may-app-outcome-management",
+        scenarios: [
+          "may-app-answer-status-directly",
+          "may-app-clarify-ambiguous-target",
+          "may-app-delegate-one-shot-outcome",
+          "may-app-explain-task-reconciliation",
+          "may-app-route-host-operation",
+          "may-app-review-terminal-result",
+          "may-app-replan-missing-proof",
+        ],
+        trials: 3,
+      },
+    ]);
   });
 
   test("drains every approved learning track and stops at the first decision boundary", async () => {
@@ -2544,10 +2559,12 @@ describe("single agent-improvement loop", () => {
       },
     };
     let classificationAttempts = 0;
+    const classificationPrompts: string[] = [];
     const ctx = canonicalGymTestContext({
       projectsRoot,
-      async runAgent() {
+      async runAgent(_agent: string, prompt: string) {
         classificationAttempts++;
+        classificationPrompts.push(prompt);
         if (classificationAttempts === 1) {
           return {
             status: "error",
@@ -2601,6 +2618,16 @@ describe("single agent-improvement loop", () => {
     );
     expect(prepared.assessment.baseline_run_id).toBe("run-4");
     expect(classificationAttempts).toBe(2);
+    expect(classificationPrompts).toHaveLength(2);
+    expect(classificationPrompts[1]).toContain(
+      "A passing deterministic check proves only",
+    );
+    expect(classificationPrompts[1]).toContain(
+      "classify May unless the evidence identifies a concrete rubric",
+    );
+    expect(classificationPrompts[1]).toContain(
+      "Use scorer only for a demonstrated evaluator defect",
+    );
     expect(
       JSON.parse(
         readFileSync(

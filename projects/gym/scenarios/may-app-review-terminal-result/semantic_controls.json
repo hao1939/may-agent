@@ -1,0 +1,25 @@
+{
+  "required_rules": ["plain_by_default", "result_first", "precise_when_needed", "next_action_is_clear", "no_contradiction"],
+  "cases": [
+    {
+      "id": "plain-result",
+      "expected": "pass",
+      "decision": {
+        "state": "converged",
+        "summary": "Parallel slice execution is fixed and verified.",
+        "response": "The forced sequential setting was removed. Build 176034001 ran the slices in parallel and passed, so no action is needed.",
+        "evidence": ["build:176034001:passed"]
+      }
+    },
+    {
+      "id": "opaque-result",
+      "expected": "fail",
+      "decision": {
+        "state": "converged",
+        "summary": "Terminal dependency convergence accepted.",
+        "response": "The executionGroup serialization override was elided and the 176034001 fan-out DAG yielded a green terminal aggregate; the caller has no residual obligation.",
+        "evidence": ["build:176034001:passed"]
+      }
+    }
+  ]
+}

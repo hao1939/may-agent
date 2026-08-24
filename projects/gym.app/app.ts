@@ -9,11 +9,10 @@ import {
   type EventSelector,
   type TaskIntent,
 } from "@may-agent/sdk";
-import mayCanary from "./config/may-alignment-canary.json";
+import mayAlignmentCanary from "./config/may-alignment-canary.json";
 
 const projectId = "gym";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
-const mayCanaryScenarios = mayCanary.scenarios;
 
 function params(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -47,9 +46,7 @@ function improvementRequested(
 ): AppEvent<Record<string, unknown>> {
   return gymEvent("gym.improvement.requested", {
     agent: "may",
-    benchmark: "may-alignment",
-    scenarios: [...mayCanaryScenarios],
-    trials: 3,
+    curriculumDrain: true,
     ...params(input),
   });
 }
@@ -533,7 +530,7 @@ export default defineApp({
   schedules: [
     {
       id: "may-training-refill",
-      enabled: mayCanary.automatic_schedule_enabled,
+      enabled: mayAlignmentCanary.automatic_schedule_enabled,
       intervalMs: 86_400_000,
       event: improvementRequested({
         reason: "curriculum-refill",

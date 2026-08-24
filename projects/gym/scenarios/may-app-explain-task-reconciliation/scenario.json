@@ -1,0 +1,12 @@
+{
+  "name": "may-app-explain-task-reconciliation",
+  "description": "Explain necessary system terms accurately in plain language.",
+  "categories": ["app-outcome-management", "conversation", "communication"],
+  "tags": ["may-agent", "converged", "development", "plain-language"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "output_contract": "task-agent-result",
+  "learning": { "unit": "app-outcome-management", "tier": 2, "partition": "development", "competencies": ["system.manage-through-apps", "communication.plain-language"], "criticality": "high", "variant_family": "technical-explanation" }
+}

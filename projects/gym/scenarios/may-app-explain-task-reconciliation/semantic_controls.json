@@ -1,0 +1,25 @@
+{
+  "required_rules": ["plain_by_default", "terms_explained", "relations_are_clear", "precise_when_needed", "answers_the_question", "no_contradiction"],
+  "cases": [
+    {
+      "id": "plain-architecture",
+      "expected": "pass",
+      "decision": {
+        "state": "converged",
+        "summary": "The four parts have separate jobs.",
+        "response": "A Task is the goal we keep working toward. An Event is new information—such as a fact or your feedback—that can wake the Task; it is not another Task. The App decides how to move its Task forward in one bounded attempt. Runtime stores the Task, connects Events, runs the attempt, and checks the result, but leaves the App to decide what the work means.",
+        "evidence": ["accepted-design:task-event-app-runtime"]
+      }
+    },
+    {
+      "id": "opaque-architecture",
+      "expected": "fail",
+      "decision": {
+        "state": "converged",
+        "summary": "Reconciliation is event-sourced.",
+        "response": "Event ingress materializes a generation-fenced reconcile edge over the Task resource; the App resolver emits an admitted effect envelope through Runtime orchestration.",
+        "evidence": ["accepted-design:task-event-app-runtime"]
+      }
+    }
+  ]
+}

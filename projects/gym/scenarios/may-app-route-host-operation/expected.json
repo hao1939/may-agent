@@ -9,9 +9,8 @@
     "appId": "may-agent",
     "inputKind": "runtime-capability-request",
     "contains": {
-      "dependency.input.data.outcome": ["b359244d2de10c45fb96c154bf519bdc21aab185", "deploy", "live-validate"],
-      "dependency.input.data.acceptance": ["receipt", "loaded", "healthy", "retained"],
-      "dependency.input.data.evidence": ["focused", "typescript", "2,434", "maxcalldepth"]
+      "dependency.input.data.outcome": ["b359244d2de10c45fb96c154bf519bdc21aab185"],
+      "dependency.input.data.evidence": ["typescript", "2,434", "maxcalldepth"]
     },
     "absentPaths": [
       "dependency.input.data.taskId",
@@ -19,12 +18,6 @@
       "dependency.input.data.executor",
       "dependency.input.data.sessionId",
       "dependency.input.data.retryPolicy"
-    ],
-    "forbiddenText": [
-      "finish-result-candidate",
-      "0 pass",
-      "i deployed",
-      "deployment is complete"
     ]
   }
 }

@@ -1,4 +1,4 @@
 {
   "approval_case": { "situation": "A loose request implies a durable AKS recovery that may outlive this May attempt.", "hao_request": "AKS is red again on networking-3. Can you take care of it?", "correct_behavior": "Understand take care of it as restoring the scoped validation outcome, then depend once on aks-rp-e2e with constraints and terminal proof; leave mechanics to the App." },
-  "expected": { "state": "waiting", "appId": "aks-rp-e2e", "inputKind": "problem-investigation", "contains": { "dependency.input.data": ["176033245", "networking-3", "root cause", "passing", "unrelated"] }, "absentPaths": ["dependency.input.data.taskId", "dependency.input.data.workflow", "dependency.input.data.schedule", "dependency.input.data.sessionId", "dependency.input.data.retryPolicy"] }
+  "expected": { "state": "waiting", "appId": "aks-rp-e2e", "inputKind": "problem-investigation", "contains": { "dependency.input.data": ["176033245", "networking-3"] }, "absentPaths": ["dependency.input.data.taskId", "dependency.input.data.workflow", "dependency.input.data.schedule", "dependency.input.data.sessionId", "dependency.input.data.retryPolicy"] }
 }

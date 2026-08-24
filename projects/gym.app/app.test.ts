@@ -82,7 +82,6 @@ describe("canonical Gym App", () => {
             data: expect.objectContaining({
               project: "gym",
               agent: "may",
-              benchmark: "may-alignment",
               reason: "curriculum-refill",
               curriculumDrain: true,
             }),
@@ -199,7 +198,6 @@ describe("canonical Gym App", () => {
       },
     });
   });
-
 });
 
 describe("Gym task reconciliation", () => {

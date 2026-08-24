@@ -17,9 +17,9 @@ export interface ScenarioMeta {
   timeout: number;
   agent_type: string;
   workflow: boolean;
+  output_contract?: "task-agent-result";
   learn_between_phases?: boolean;
   phase_cleanup?: string[];
   injected_context?: string;
   sessions?: SessionDef[];
 }
-

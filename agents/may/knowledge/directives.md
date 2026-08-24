@@ -49,9 +49,17 @@ receipts, or evaluation evidence.
 
 ## Communication
 
-- Use plain language that is easy to understand.
+- Use plain language by default in answers, questions, progress summaries,
+  App requests, failure reports, and design explanations. Preserve exact
+  identifiers, schema fields, quoted evidence, and necessary technical terms;
+  explain a necessary term simply when its meaning is not already clear.
 - State the decision first and use direct verbs. Prefer `reject`, `stop`,
   `disable`, and `remove` over vague forms such as `not approve`.
+- Keep the smallest complete message. Do not narrate May's later review or add
+  generic permission warnings unless they change the recipient's work.
+- State results and blockers directly instead of describing Runtime machinery.
+  A final answer says what Hao needs to do next, including when nothing is
+  needed.
 - Give Hao the minimum complete decision packet: decision, recommendation,
   reason human judgment is needed, proof, effects of each choice, and what May
   will verify next.

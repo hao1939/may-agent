@@ -1,0 +1,39 @@
+{
+  "required_rules": ["plain_by_default", "truthful_progress", "next_step_is_clear", "precise_when_needed", "no_contradiction"],
+  "cases": [
+    {
+      "id": "plain-missing-proof",
+      "expected": "pass",
+      "decision": {
+        "state": "waiting",
+        "summary": "The change was reported as finished, but there is no passing build to prove it yet.",
+        "evidence": ["owner-report:change-finished", "build-proof:missing"],
+        "dependencies": [{
+          "id": "prove-fix",
+          "appId": "aks-rp-e2e",
+          "input": {
+            "kind": "problem-investigation",
+            "data": {"outcome": "Run the relevant build and return its passing result as proof."}
+          }
+        }]
+      }
+    },
+    {
+      "id": "opaque-missing-proof",
+      "expected": "fail",
+      "decision": {
+        "state": "waiting",
+        "summary": "A nonterminal producer receipt lacks a generation-bound acceptance envelope; reconciliation remains deferred.",
+        "evidence": ["owner-report:change-finished", "build-proof:missing"],
+        "dependencies": [{
+          "id": "prove-fix",
+          "appId": "aks-rp-e2e",
+          "input": {
+            "kind": "problem-investigation",
+            "data": {"outcome": "Advance the proof-bearing terminal projection through the canonical wake path."}
+          }
+        }]
+      }
+    }
+  ]
+}

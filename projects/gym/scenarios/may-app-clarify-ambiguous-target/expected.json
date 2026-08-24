@@ -1,4 +1,4 @@
 {
   "approval_case": { "situation": "Two Apps plausibly own different meanings of validation.", "hao_request": "Keep validation healthy.", "correct_behavior": "Ask one focused AKS-versus-platform clarification without delegating or inventing a task." },
-  "expected": { "state": "converged", "contains": { "response": ["aks", "platform", "which"] }, "forbiddenText": ["i created a task", "i scheduled"] }
+  "expected": { "state": "converged", "contains": { "response": ["aks", "platform"] } }
 }

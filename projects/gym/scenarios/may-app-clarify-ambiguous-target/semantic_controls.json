@@ -1,0 +1,25 @@
+{
+  "required_rules": ["plain_by_default", "smallest_question", "choices_are_clear", "precise_when_needed", "no_contradiction"],
+  "cases": [
+    {
+      "id": "focused-question",
+      "expected": "pass",
+      "decision": {
+        "state": "converged",
+        "summary": "The target is unclear.",
+        "response": "Which cleanup do you mean: the AKS project files or the shared platform files?",
+        "evidence": ["conversation:two-possible-targets"]
+      }
+    },
+    {
+      "id": "contract-question",
+      "expected": "fail",
+      "decision": {
+        "state": "converged",
+        "summary": "Owner resolution is underdetermined.",
+        "response": "Specify the desired accountable-App routing discriminator, scope vector, acceptance-proof schema, authority envelope, urgency, retry posture, and wake semantics.",
+        "evidence": []
+      }
+    }
+  ]
+}

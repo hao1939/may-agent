@@ -1,22 +1,34 @@
-# May scenario migration to the simplified App contract
+# May scenario migration to Task reconciliation
 
-**Status:** Implemented corpus boundary; new truth awaits human review.
+**Status:** Implemented corpus boundary; seven representative plain-language
+development cases approved 2026-08-25; remaining draft and transfer truth still
+awaits human review.
 
 ## Contract
 
-May owns the conversation. Apps own durable work. A May owner pass returns only:
+May owns the Conversation Task. Apps own durable domain Tasks. One May attempt
+returns the production `TaskReconcileResult`:
 
-- `complete` — answer, clarify, reject, or close with the exact human response;
-- `delegate` — send one typed outcome to one accountable App.
+- `converged` with `response` — answer, clarify, reject, or close the request;
+- `waiting` with exactly one typed App dependency and no `response` — ask one
+  accountable App to own the next durable outcome.
 
-May never attaches a task or chooses the destination App's workflow, schedule,
-retry policy, session, or wake path. The Host persists and recovers the request,
-child dependency, attempts, result, and delivery.
+`summary` records useful task state; it is not a delivery receipt or a second
+human response. May never mutates another App's Task or chooses its workflow,
+schedule, retry policy, session, or wake path. Runtime persists and recovers the
+request, task, dependency, attempts, and accepted result.
+
+Plain language is the default across responses, questions, summaries,
+dependency descriptions, progress, failures, and design explanations. Exact
+IDs, schema fields, quoted evidence, and necessary technical terms remain
+precise. This quality is judged by meaning with calibrated semantic controls,
+not by a word blacklist.
 
 ## Audit result
 
 The previous corpus contained 17 May suites and 79 unique scenarios. All 79
-required `alignment-decision.json`; none exercised the real `complete | delegate`
+required `alignment-decision.json`; none exercised the real
+`TaskReconcileResult`
 boundary. Seventeen also encoded removed inbox actions such as `accept`,
 `closeout`, or `handle/route/deliver`.
 
@@ -28,12 +40,12 @@ comparison, but they cannot authorize a new May candidate.
 
 | Previous suite | Count | Disposition under the simplified design |
 | --- | ---: | --- |
-| `may-admission-review-closure` | 3 | Retire the removed admission-review lifecycle. Preserve human-authority and terminal-proof meaning in direct `complete`/`delegate` cases. |
+| `may-admission-review-closure` | 3 | Retire the removed admission-review lifecycle. Preserve human-authority and terminal-proof meaning in direct answers or typed App-dependency cases. |
 | `may-alignment` | 16 | Keep as historical general-judgment regression evidence. Do not use its nine-field artifact to train App management. Migrate useful intent/proof pairs only when a real disposition case needs them. |
 | `may-cli-worker-learning*` | 6 | Move CLI lifecycle and packetization decisions to the accountable App/worker owner. May may request a durable App outcome but does not manage an asynchronous CLI worker. |
-| `may-conversation-follow-through*` | 6 | Replace with persisted May request, exact child dependency, restart closeout, concurrent-request, and approval cases using the real disposition. |
-| `may-deputy-learning*` | 17 | Split: keep owner/proof judgment, replace App routing with `delegate`, and move task/workflow/schedule/session choices into App tests. |
-| `may-human-inbox-deputy*` | 16 | Remove the parallel `handle/route/deliver` vocabulary. Map useful meanings to `complete` or `delegate`; Host delivery remains separate evidence. |
+| `may-conversation-follow-through*` | 6 | Replace with persisted May request, exact App dependency, restart closeout, concurrent-request, and approval cases using the real Task result. |
+| `may-deputy-learning*` | 17 | Split: keep owner/proof judgment, use typed dependencies for App routing, and move task/workflow/schedule/session choices into App tests. |
+| `may-human-inbox-deputy*` | 16 | Remove the parallel `handle/route/deliver` vocabulary. Map useful meanings to a direct response or typed App dependency; channel delivery remains Infra evidence. |
 | `may-learning-transfer` | 2 | Keep as historical initiative judgment; cover App behavior through new transfer cases. |
 | `may-practical-judgment*` | 8 | Keep as historical general-judgment regression evidence; not an App-management contract. |
 | `may-signals-and-context*` | 5 | Keep as historical diagnosis evidence; metrics and context do not add May lifecycle states. |
@@ -50,16 +62,18 @@ The exact previous scenarios reviewed were:
 
 ## Replacement coverage
 
-The new `app-outcome-management` unit has eight visible development cases and
+The new `app-outcome-management` unit has eleven visible development cases and
 five withheld transfer cases. It covers direct answers, focused clarification,
-one-shot delegation, recurring outcomes, ownership gaps, terminal review,
+one-shot delegation, recurring outcomes, plain technical explanation, May
+capability improvement, Host operations, ownership gaps, terminal review,
 missing proof, stopping standing work, paraphrase transfer, restart recovery,
 concurrent requests, exact approval, and secret handling.
 
-The scorer validates the actual `may-disposition.json`, rejects `task`, rejects
-invented lifecycle fields, checks the complete and delegated schemas, checks
-the destination App and input kind, and recursively rejects App-internal task,
-workflow, schedule, retry, session, and wake fields. A reference disposition
-proves that every proposed case is satisfiable. New labels remain `draft` until
-Hao reviews their exact expected behavior. Promotion cannot use them before
-that approval.
+The scorer admits the actual `task-result.json` through the production SDK,
+checks the Task state and typed dependency, rejects cross-App Task mutation and
+App-internal workflow/schedule/retry/session/wake choices, and verifies required
+scenario meaning. Representative communication cases add calibrated semantic
+judges for plain-language quality. Hao approved the seven visible communication
+cases on 2026-08-25 for bounded training. Other development cases remain
+`draft`, and transfer truth remains withheld until separate exact review.
+Promotion cannot use unapproved cases.

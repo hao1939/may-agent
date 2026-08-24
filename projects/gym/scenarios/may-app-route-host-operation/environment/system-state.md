@@ -27,4 +27,5 @@ do not inspect another worktree or rerun destination checks.
 
 The App owns readiness, deployment mechanics, the correlated receipt,
 retained-state validation, and loaded-version health proof. No human authority
-decision is currently needed.
+decision is currently needed, so omit generic permission and escalation text
+from the dependency.
