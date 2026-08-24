@@ -113,7 +113,7 @@ describe("canonical evaluation App", () => {
     ).toBeFalse();
   });
 
-  test("offers an isolated workflow sibling for a paired executor trial", () => {
+  test("holds goal semantics constant across isolated executor trial siblings", () => {
     const data = {
       targetProject: "may-agent.app",
       focus: "Check whether the Task mental model matches current code.",

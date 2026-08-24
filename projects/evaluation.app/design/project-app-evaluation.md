@@ -306,8 +306,20 @@ Task outcome and acceptance remain independent of the executor:
 The trial Tasks are evidence, not production authority. They cannot mutate the
 target, do not share a Task identity, and are compared only after both results
 have independently crossed the normal Task result boundary. This prevents a
-race between two reconcilers while keeping the comparison about executor
-behavior rather than different desired state.
+race between two reconcilers. The pair holds goal semantics constant, not the
+whole Task spec: `workflow` and `executor` are intentionally different
+execution-relevant spec fields. A valid comparison therefore checks the same
+outcome, acceptance, and input while recording handler selection separately.
+
+The first paired canary used frozen key `6651ccb82bfa` against
+`evaluation.app`. Both candidates independently identified the same wording
+error above and converged without actions. After an equivalent 51-second ready
+wait, the workflow Task completed in 79.3 seconds (77.8 seconds provider time)
+and the Codex Task in 106.5 seconds (106.3 seconds provider time). Codex emitted
+four semantic intermediate updates and reported 107,190 goal tokens; the
+workflow's six model turns recorded 279,609 aggregate model tokens. Those token
+counters come from different adapters and are useful observations, not yet a
+normalized cost comparison.
 
 Codex receives the current Task, bounded direct-child facts, durable events,
 declared outputs, and the selected evaluator instructions. Its thread is
