@@ -24,7 +24,21 @@ export class AppTaskQueue {
   private readonly ordinaryPrioritySkips = new Map<string, number>();
   private consecutiveFrontTakes = 0;
 
-  constructor(readonly maxConcurrent: number) {
+  constructor(private concurrency: number) {
+    this.validateMaxConcurrent(concurrency);
+  }
+
+  get maxConcurrent(): number {
+    return this.concurrency;
+  }
+
+  /** Change the App-local limit without replacing the queue or its running work. */
+  updateMaxConcurrent(maxConcurrent: number): void {
+    this.validateMaxConcurrent(maxConcurrent);
+    this.concurrency = maxConcurrent;
+  }
+
+  private validateMaxConcurrent(maxConcurrent: number): void {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
       throw new Error("AppTaskQueue maxConcurrent must be a positive integer");
     }

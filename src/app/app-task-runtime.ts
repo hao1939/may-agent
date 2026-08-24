@@ -17,6 +17,7 @@ import {
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
+import type { SubagentDefinition } from "../lib/types.js";
 import type { EventEnvelope } from "../lib/handler-context.js";
 import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
 import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../lib/workflow-tool.js";
@@ -191,6 +192,8 @@ const APP_TASK_CLI_TIMEOUT_MS = 30 * 60_000;
 
 export interface AppTaskRuntimeDescriptor {
   id: string;
+  /** Stable writable App root; definition code may live in a release checkout. */
+  stateAppDir?: string;
   appDir: string;
   projectDir: string;
   agent: string;
@@ -202,6 +205,8 @@ export interface AppTaskRuntimeDescriptor {
 
 export interface AppTaskRuntimeOptions {
   projectsRoot: string;
+  /** Canonical writable projects root, independent of definition releases. */
+  stateProjectsRoot?: string;
   projectRoot: string;
   persistDir?: string;
   agentsRoot?: string;
@@ -226,6 +231,22 @@ export interface AppTaskRuntimeOptions {
    * project-local agent.json. Returns true if registration succeeded.
    */
   registerLocalAgent?: (agentName: string, appDir: string, agentDir?: string) => Promise<boolean>;
+  /** Internal immutable agent catalog published with this definition generation. */
+  agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+}
+
+function captureAgentDefinitions(opts: AppTaskRuntimeOptions): ReadonlyMap<string, SubagentDefinition> | undefined {
+  const manager = opts.manager as SubagentManager & {
+    agentNames?: () => string[];
+    getAgentDefinition?: (name: string) => SubagentDefinition | undefined;
+  };
+  if (typeof manager.agentNames !== "function" || typeof manager.getAgentDefinition !== "function") return undefined;
+  const definitions = new Map<string, SubagentDefinition>();
+  for (const name of manager.agentNames()) {
+    const definition = manager.getAgentDefinition(name);
+    if (definition) definitions.set(name, definition);
+  }
+  return definitions;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -827,6 +848,7 @@ async function executeTaskCapability(input: {
       workflowName: capability.workflow,
       task,
       manager: opts.manager,
+      agentDefinitions: opts.agentDefinitions,
       runtimeCtx,
       agentName,
       persistDir: runtime.persistDir,
@@ -1861,9 +1883,10 @@ async function executeTaskAgent(input: {
     typeof opts.manager.waitFor === "function" &&
     typeof opts.manager.progress === "function"
       ? await (async () => {
-          const sessionId = opts.manager.run(claim.agent, prompt, {
+          const definition = opts.agentDefinitions?.get(claim.agent);
+          const runOptions = {
             source: agentOptions.source,
-            kind: "call",
+            kind: "call" as const,
             projectId: agentOptions.projectId,
             taskBinding: {
               appId: descriptor.id,
@@ -1878,7 +1901,10 @@ async function executeTaskAgent(input: {
             toolPolicy: agentOptions.toolPolicy,
             timeoutMs: agentOptions.timeout,
             executionRoot: agentOptions.executionRoot,
-          });
+          };
+          const sessionId = definition
+            ? opts.manager.runDefinition(definition, prompt, runOptions)
+            : opts.manager.run(claim.agent, prompt, runOptions);
           recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, sessionId);
           const unsubscribe = input.attempt.onEvent((incoming) => {
             try {
@@ -3075,6 +3101,12 @@ function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTa
 
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
 const appTaskRecoverySchedulersByBus = new WeakMap<EventBus, Map<string, AppTaskRecoveryScheduler>>();
+type AppTaskControllerBinding = {
+  descriptor: AppTaskRuntimeDescriptor;
+  opts: AppTaskRuntimeOptions;
+  recoveryScheduler?: AppTaskRecoveryScheduler;
+};
+const appTaskControllerBindingsByBus = new WeakMap<EventBus, Map<string, AppTaskControllerBinding>>();
 const APP_TASK_RECOVERY_SAFETY_INTERVAL_MS = 60_000;
 
 function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, note: string): DeliveryResult {
@@ -3282,46 +3314,53 @@ function replayPersistedConditionEvents(
   return [...new Set(wakes.map((wake) => wake.taskId))];
 }
 
-export function appControllerStartGate(
-  previousControllers: ReadonlyMap<string, Pick<AppTaskController, "whenDrained">> | undefined,
-  appId: string,
-  runtimeStartAfter?: PromiseLike<void>,
-): PromiseLike<void> | undefined {
-  const previousAppDrained = previousControllers?.get(appId)?.whenDrained();
-  if (previousAppDrained && runtimeStartAfter) {
-    return Promise.all([previousAppDrained, runtimeStartAfter]).then(() => undefined);
-  }
-  return previousAppDrained ?? runtimeStartAfter;
-}
-
 function installConventionTaskControllers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
 ): Map<string, AppTaskController> {
-  const previousControllers = appTaskControllersByBus.get(opts.bus);
-  for (const scheduler of appTaskRecoverySchedulersByBus.get(opts.bus)?.values() ?? []) scheduler.close();
-  for (const controller of previousControllers?.values() ?? []) {
-    controller.close();
+  const controllers = appTaskControllersByBus.get(opts.bus) ?? new Map<string, AppTaskController>();
+  const recoverySchedulers =
+    appTaskRecoverySchedulersByBus.get(opts.bus) ?? new Map<string, AppTaskRecoveryScheduler>();
+  const bindings = appTaskControllerBindingsByBus.get(opts.bus) ?? new Map<string, AppTaskControllerBinding>();
+  const installedIds = new Set(
+    descriptors.filter((descriptor) => descriptor.app.tasks).map((descriptor) => descriptor.id),
+  );
+  for (const previous of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
+    if (installedIds.has(previous.id)) continue;
+    if (previous.resourceStore?.hasUnfinishedTasks()) {
+      throw new Error(`Cannot remove App ${previous.id} while it has unfinished Tasks`);
+    }
   }
-  const controllers = new Map<string, AppTaskController>();
-  const recoverySchedulers = new Map<string, AppTaskRecoveryScheduler>();
 
   for (const descriptor of descriptors) {
     const tasks = descriptor.app.tasks;
-    if (!tasks || descriptor.reconciliationPaused) continue;
-    const config = appTaskConfig(descriptor);
-    let recoveryScheduler: AppTaskRecoveryScheduler | undefined;
+    if (!tasks) continue;
+    const existingController = controllers.get(descriptor.id);
+    const existingBinding = bindings.get(descriptor.id);
+    if (existingController && existingBinding) {
+      // Publication swaps one immutable definition pointer. A reconcile that
+      // already started retains its local descriptor; the next one reads this.
+      existingBinding.descriptor = descriptor;
+      existingBinding.opts = opts;
+      existingController.updateMaxConcurrent(descriptor.app.tasks?.maxConcurrent ?? 1);
+      existingController.setEnabled(!descriptor.reconciliationPaused);
+      continue;
+    }
+    if (descriptor.reconciliationPaused) continue;
+
+    const binding: AppTaskControllerBinding = { descriptor, opts };
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
-      // A superseded generation of this App may still own its task-state lock.
-      // Other Apps are independent and must not hold this controller closed.
-      startAfter: appControllerStartGate(previousControllers, descriptor.id, opts.startAfter),
+      startAfter: opts.startAfter,
       maxRetries: 3,
       reconcile: async (taskId, dispatch) => {
+        const activeDescriptor = binding.descriptor;
+        const activeOpts = binding.opts;
+        const config = appTaskConfig(activeDescriptor);
         const dependentTaskIds = await reconcileTask({
-          opts,
-          descriptor,
+          opts: activeOpts,
+          descriptor: activeDescriptor,
           taskId,
           dispatch,
           reason: "task-controller",
@@ -3330,25 +3369,25 @@ function installConventionTaskControllers(
           appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
         );
         for (const dependentTaskId of dependentTaskIds) {
-          const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
           // A same-task result is an immediate continuation, such as a
           // workflow-to-agent handoff. Other children/dependents enter the
           // priority-ordered ordinary lane so continuation bursts stay bounded.
-          activeController.enqueue(dependentTaskId, {
+          controller.enqueue(dependentTaskId, {
             front: dependentTaskId === taskId,
             priority: dependentEntries.get(dependentTaskId)?.options.priority,
           });
         }
-        recoveryScheduler?.stateChanged();
+        binding.recoveryScheduler?.stateChanged();
       },
       onError: (taskId, error, willRetry) => {
-        opts.bus.emit({
+        const activeDescriptor = binding.descriptor;
+        binding.opts.bus.emit({
           type: "handler.failed",
           source: "cron",
-          owner: `agent:${descriptor.agent}`,
+          owner: `agent:${activeDescriptor.agent}`,
           data: {
             handler: `app-task-controller:${taskId}`,
-            agent: descriptor.agent,
+            agent: activeDescriptor.agent,
             error: `${error instanceof Error ? error.message : String(error)}; willRetry=${willRetry}`,
             durationMs: 0,
           },
@@ -3356,20 +3395,33 @@ function installConventionTaskControllers(
       },
     });
     controllers.set(descriptor.id, controller);
+    bindings.set(descriptor.id, binding);
+    const config = appTaskConfig(descriptor);
     if (!config.resourceStore) throw new Error(`App ${descriptor.id} task resource authority is unavailable`);
-    recoveryScheduler = new AppTaskRecoveryScheduler({
+    const recoveryScheduler = new AppTaskRecoveryScheduler({
       source: config.resourceStore,
       safetyIntervalMs: APP_TASK_RECOVERY_SAFETY_INTERVAL_MS,
       enqueue: (taskId, options) => {
         controller.enqueue(taskId, options);
       },
     });
+    binding.recoveryScheduler = recoveryScheduler;
     recoverySchedulers.set(descriptor.id, recoveryScheduler);
     recoveryScheduler.start();
   }
 
+  for (const [appId, controller] of controllers) {
+    if (installedIds.has(appId)) continue;
+    controller.close();
+    controllers.delete(appId);
+    bindings.delete(appId);
+    recoverySchedulers.get(appId)?.close();
+    recoverySchedulers.delete(appId);
+  }
+
   appTaskControllersByBus.set(opts.bus, controllers);
   appTaskRecoverySchedulersByBus.set(opts.bus, recoverySchedulers);
+  appTaskControllerBindingsByBus.set(opts.bus, bindings);
   return controllers;
 }
 
@@ -3383,6 +3435,7 @@ export async function closeInstalledAppTaskRuntimes(bus: EventBus): Promise<void
   if (!controllers) return;
 
   appTaskControllersByBus.delete(bus);
+  appTaskControllerBindingsByBus.delete(bus);
   for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.close();
   appTaskRecoverySchedulersByBus.delete(bus);
   for (const controller of controllers.values()) controller.close();
@@ -3417,6 +3470,7 @@ function appTaskConfig(descriptor: AppTaskRuntimeDescriptor) {
   if (existing) return existing;
   const config = taskReconciliationConfig({
     appDir: descriptor.appDir,
+    stateAppDir: descriptor.stateAppDir,
     projectDir: descriptor.projectDir,
     agent: descriptor.agent,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
@@ -4062,6 +4116,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
     const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
+      stateAppDir: opts.stateProjectsRoot ? resolve(opts.stateProjectsRoot, basename(appDir)) : appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       agent: configuredAppAgent(app, appDir),
       app,
@@ -4106,6 +4161,17 @@ async function commitAppTaskRuntimeDescriptors(
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
   }
+  // This is the one synchronous publication boundary. Controller bindings,
+  // App routing, agent definitions, and the public registry become visible in
+  // one turn; queued reconciliation cannot run until the turn is released.
+  opts.afterCommit?.({ installed });
+  const agentDefinitions = captureAgentDefinitions(opts);
+  if (agentDefinitions) {
+    for (const descriptor of installed) {
+      const binding = appTaskControllerBindingsByBus.get(opts.bus)?.get(descriptor.id);
+      if (binding) binding.opts = { ...binding.opts, agentDefinitions };
+    }
+  }
   recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
   await requeueRepairedAppTaskHandlers(opts, installed, controllers);
 
@@ -4118,15 +4184,29 @@ export async function installAppTaskRuntimes(
 ): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
+  let published = false;
   try {
-    const result = await commitAppTaskRuntimeDescriptors(opts, prepared, {
-      includeFreshLeases: recovery.includeFreshLeases === true,
-    });
-    opts.afterCommit?.(result);
-    return result;
+    return await commitAppTaskRuntimeDescriptors(
+      {
+        ...opts,
+        afterCommit: (result) => {
+          opts.afterCommit?.(result);
+          published = true;
+        },
+      },
+      prepared,
+      {
+        includeFreshLeases: recovery.includeFreshLeases === true,
+      },
+    );
   } catch (error) {
+    // Once publication succeeded, recovery errors must not roll the visible
+    // generation backward. Normal indexed recovery will retry the work.
+    if (published) throw error;
     try {
-      await commitAppTaskRuntimeDescriptors(opts, previous, { includeFreshLeases: false });
+      await commitAppTaskRuntimeDescriptors({ ...opts, afterCommit: undefined }, previous, {
+        includeFreshLeases: false,
+      });
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],

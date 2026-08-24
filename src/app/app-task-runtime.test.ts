@@ -3,7 +3,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent/sdk";
+import { Type, defineApp, type AppDefinition, type AppRequest, type TaskExecutor } from "@may-agent/sdk";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
@@ -14,7 +14,6 @@ import { createAppTaskCapability } from "./app-task-capability.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
-  appControllerStartGate,
   appTaskAgentProtocol,
   applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
@@ -50,33 +49,6 @@ import {
   readSessionMeta,
   writeSessionMeta,
 } from "../lib/persistence.js";
-
-describe("App controller replacement gates", () => {
-  it("waits only for the same App predecessor", async () => {
-    let releaseMay = () => {};
-    let releaseAks = () => {};
-    const mayDrained = new Promise<void>((resolve) => {
-      releaseMay = resolve;
-    });
-    const aksDrained = new Promise<void>((resolve) => {
-      releaseAks = resolve;
-    });
-    const previous = new Map([
-      ["may", { whenDrained: () => mayDrained }],
-      ["alpha-project", { whenDrained: () => aksDrained }],
-    ]);
-    let started = false;
-
-    void Promise.resolve(appControllerStartGate(previous, "may")).then(() => {
-      started = true;
-    });
-    releaseMay();
-    await Bun.sleep(0);
-
-    expect(started).toBeTrue();
-    releaseAks();
-  });
-});
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
@@ -1718,7 +1690,7 @@ describe("canonical App task runtime", () => {
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
     const f = fixture();
     const bus = eventBus();
-    await installAppTaskRuntimes({
+    const installed = await installAppTaskRuntimes({
       ...options(f, bus),
       appRegistrySnapshot: {
         id: "boot:1",
@@ -1726,7 +1698,6 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     });
-
     const request: Readonly<AppRequest> = {
       id: "request-1",
       source: { kind: "human", id: "operator" },
@@ -1901,6 +1872,92 @@ describe("canonical App task runtime", () => {
       summary: "Registered executor completed the Task",
       evidence: ["test:reviewer:1"],
     });
+  });
+
+  it("starts new work from a reloaded definition while an old attempt is still running", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const started: string[] = [];
+    let releaseOld = () => {};
+    const oldBlocked = new Promise<void>((resolve) => {
+      releaseOld = resolve;
+    });
+    const app = definition();
+    const concurrentApp = {
+      ...app,
+      tasks: { ...app.tasks!, maxConcurrent: 2 },
+    } as AppDefinition;
+    const runtimeOptions = {
+      ...options(f, bus),
+      stateProjectsRoot: join(f.root, "canonical-projects"),
+      executors: {
+        reviewer: async (attempt: Parameters<TaskExecutor>[0]) => {
+          started.push(attempt.task.id);
+          if (attempt.task.id === "work/before-reload") await oldBlocked;
+          return { state: "converged" as const, summary: "done", evidence: ["test:reload"] };
+        },
+      },
+    };
+
+    const installedRelease = await installAppTaskRuntimes({
+      ...runtimeOptions,
+      appRegistrySnapshot: {
+        id: "boot:stable-controller:1",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: concurrentApp }],
+      },
+    });
+    expect(installedRelease.installed[0]?.stateAppDir).toBe(join(f.root, "canonical-projects", "sample.app"));
+
+    const attach = (taskId: string) =>
+      attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            outcome: `Run ${taskId}`,
+            acceptance: ["Executor returns"],
+            mode: "achieve",
+            agent: "sample-owner",
+            executor: "reviewer",
+          },
+        },
+        idempotencyKey: `attach:${taskId}`,
+        request: {
+          id: `request:${taskId}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "test", data: {} },
+        },
+      });
+
+    await attach("work/before-reload");
+    while (!started.includes("work/before-reload")) await Bun.sleep(1);
+
+    await expect(
+      installAppTaskRuntimes({
+        ...runtimeOptions,
+        appRegistrySnapshot: { id: "boot:stable-controller:remove", generation: 2, entries: [] },
+      }),
+    ).rejects.toThrow("Cannot remove App sample while it has unfinished Tasks");
+
+    await installAppTaskRuntimes({
+      ...runtimeOptions,
+      appRegistrySnapshot: {
+        id: "boot:stable-controller:2",
+        generation: 3,
+        entries: [{ appDir: f.appDir, definition: concurrentApp }],
+      },
+    });
+    await attach("work/after-reload");
+
+    const deadline = Date.now() + 1_000;
+    while (!started.includes("work/after-reload") && Date.now() < deadline) await Bun.sleep(5);
+    expect(started).toEqual(["work/before-reload", "work/after-reload"]);
+    releaseOld();
   });
 
   it("lets a registered executor replace a built-in CLI adapter", async () => {

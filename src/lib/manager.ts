@@ -139,6 +139,23 @@ export interface RunOptions {
   executionRoot?: string;
 }
 
+export type CallAgentOptions = Pick<
+  RunOptions,
+  | "parentSessionId"
+  | "source"
+  | "workflowRunId"
+  | "projectId"
+  | "recoveryOwner"
+  | "stepLabel"
+  | "trace"
+  | "skill"
+  | "requireFinish"
+  | "operationAllowance"
+  | "outputSchema"
+  | "toolPolicy"
+  | "executionRoot"
+> & { timeout?: number };
+
 interface ActiveSession {
   sessionId: string;
   agent: AgentRun;
@@ -505,8 +522,11 @@ export class SubagentManager {
   run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
     if (!registered) throw new Error(`Agent "${name}" not registered`);
-    const def = registered.definition;
+    return this.runDefinition(registered.definition, task, opts);
+  }
 
+  /** Start from an immutable definition captured by the caller. */
+  runDefinition(def: SubagentDefinition, task: string, opts?: RunOptions): string {
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
     const startedAt = opts?.startedAt ?? Date.now();
@@ -534,7 +554,7 @@ export class SubagentManager {
       promptTimestamp: this._promptTimestamp,
       ...(persistentChat
         ? {
-            chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(sessionId, name, task)}`,
+            chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(sessionId, def.name, task)}`,
           }
         : {}),
       createFinish: () =>
@@ -609,7 +629,7 @@ export class SubagentManager {
     const session: ActiveSession = {
       sessionId,
       agent,
-      agentName: name,
+      agentName: def.name,
       task: sessionTask,
       startedAt,
       status: "running",
@@ -654,7 +674,7 @@ export class SubagentManager {
     }
     this._registry.saveSession(sessionId, {
       ...(existingMeta ?? {}),
-      agent: name,
+      agent: def.name,
       task: sessionTask,
       status: "running",
       startedAt,
@@ -891,22 +911,18 @@ export class SubagentManager {
   async callAgent(
     agentName: string,
     task: string,
-    opts?: {
-      parentSessionId?: string;
-      source?: string;
-      workflowRunId?: string;
-      projectId?: string;
-      recoveryOwner?: string;
-      stepLabel?: string;
-      timeout?: number;
-      trace?: EventTrace;
-      skill?: string;
-      requireFinish?: boolean;
-      operationAllowance?: number;
-      outputSchema?: TSchema;
-      toolPolicy?: ToolPolicy;
-      executionRoot?: string;
-    },
+    opts?: CallAgentOptions,
+  ): Promise<TaskResult & { messages: AgentMessage[] }> {
+    const definition = this.getAgentDefinition(agentName);
+    if (!definition) throw new Error(`Agent "${agentName}" not registered`);
+    return this.callAgentDefinition(definition, task, opts);
+  }
+
+  /** Call an agent through an immutable definition captured by the caller. */
+  async callAgentDefinition(
+    definition: SubagentDefinition,
+    task: string,
+    opts?: CallAgentOptions,
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
     if (parentDepth >= this._maxCallDepth) {
@@ -920,7 +936,7 @@ export class SubagentManager {
         error: `Call depth limit exceeded (${parentDepth}/${this._maxCallDepth})`,
       };
     }
-    const sessionId = this.run(agentName, task, {
+    const sessionId = this.runDefinition(definition, task, {
       parentSessionId: opts?.parentSessionId,
       source: opts?.source ?? "callAgent",
       kind: "call",

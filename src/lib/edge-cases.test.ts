@@ -70,6 +70,16 @@ describe("Edge cases", () => {
       expect(result).not.toBeNull();
       expect(result!.sessionId).toBe(sessionId);
     });
+
+    it("can start a later session from an explicitly captured definition", () => {
+      const captured = { ...baseDef("agent-pinned"), sessionIdPrefix: "old" };
+      manager.register(captured);
+      manager.register({ ...baseDef("agent-pinned"), sessionIdPrefix: "new" });
+
+      const sessionId = manager.runDefinition(captured, "use the captured release");
+      expect(sessionId).toMatch(/^old_/);
+      manager.cancel(sessionId);
+    });
   });
 
   describe("result() edge cases", () => {

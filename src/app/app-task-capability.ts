@@ -37,7 +37,11 @@ export type AppTaskCapability = {
   }): Promise<AppDependencyObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   get(input: { appId: string; taskId: string }): TaskView | null;
-  publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
+  publishGeneration(input: {
+    snapshot: AppRegistrySnapshot;
+    definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
+    publish: () => void;
+  }): Promise<AppTaskGenerationResult>;
 };
 
 /**
@@ -57,13 +61,14 @@ export function createAppTaskCapability(options: {
     attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
-    async publishGeneration({ snapshot, publish }) {
+    async publishGeneration({ snapshot, definitionSource, publish }) {
       if (!options.runtime) {
         publish();
         return { apps: 0 };
       }
       const result = await installAppTaskRuntimes({
         ...options.runtime,
+        ...definitionSource,
         appRegistrySnapshot: snapshot,
         afterCommit: () => publish(),
       });

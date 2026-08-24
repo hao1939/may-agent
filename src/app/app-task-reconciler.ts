@@ -266,9 +266,7 @@ function consumeAcceptedLiveTaskEvents(
   resource: AppTaskResource,
   eventIds: readonly number[] | undefined,
 ): void {
-  const accepted = new Set(
-    (eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0),
-  );
+  const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
   if (accepted.size === 0) return;
   const previous = tree.taskTriggers?.[task.id];
   if (!previous) return;
@@ -722,6 +720,8 @@ function pruneTaskAttempts(tree: TaskTree, limit = 1_000): void {
 
 export function taskReconciliationConfig(input: {
   appDir: string;
+  /** Stable writable App root when appDir is an immutable definition release. */
+  stateAppDir?: string;
   projectDir: string;
   agent?: string;
   /** @deprecated Compatibility for Host callers not yet migrated. */
@@ -729,11 +729,12 @@ export function taskReconciliationConfig(input: {
   maxConcurrent: number;
   resourceStore?: import("./app-task-resource-store.js").AppTaskResourceStore;
 }): TaskStateConfig {
-  const paths = projectRuntimePaths(input.appDir);
+  const paths = projectRuntimePaths(input.resourceStore && input.stateAppDir ? input.stateAppDir : input.appDir);
   const agent = input.agent?.trim() || input.owner?.trim();
   if (!agent) throw new Error("Task reconciliation requires a default agent");
   return {
     appDir: input.appDir,
+    ...(input.stateAppDir ? { stateAppDir: input.stateAppDir } : {}),
     projectDir: input.projectDir,
     statePath: input.resourceStore ? paths.taskStatePath : ensureTaskState(input.appDir).path,
     journalPath: paths.journalPath,
@@ -2734,7 +2735,9 @@ export function claimObservedAppTask(
     }
     const claimedEvents = pendingEvents.slice(0, MAX_TASK_EVENTS_PER_ATTEMPT);
     const remainingEvents = pendingEvents.slice(MAX_TASK_EVENTS_PER_ATTEMPT);
-    const hasTrigger = Boolean(pendingTrigger?.event ?? (previousAttempt ? attemptTrigger(previousAttempt) : undefined));
+    const hasTrigger = Boolean(
+      pendingTrigger?.event ?? (previousAttempt ? attemptTrigger(previousAttempt) : undefined),
+    );
     if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
       const now = new Date().toISOString();
       const summary = "Previous runtime attempt had no persisted trigger; retrying from current task evidence";
