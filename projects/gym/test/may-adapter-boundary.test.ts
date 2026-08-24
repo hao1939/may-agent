@@ -13,6 +13,10 @@ describe("May Gym adapter boundary", () => {
     expect(source).toContain("toolDenials: gymToolDenials(agentDir)");
     expect(source).toContain("execution_manifest");
     expect(source).toContain("tools: configured");
+    expect(source).toContain(
+      'const DEFAULT_APP_AGENTS_ROOT = join(REPO_ROOT, "agents")',
+    );
+    expect(source).not.toContain('"projects/may-agent.app/agents"');
     for (const forbidden of [
       "--oneshot",
       "MAY_BIN",

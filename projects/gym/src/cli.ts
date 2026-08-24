@@ -151,10 +151,7 @@ interface AdapterOpts {
 const PROJECT_ROOT = resolve(import.meta.dirname, "../../may-agent");
 const REPO_ROOT = resolve(PROJECT_ROOT, "../..");
 const GYM_PROJECT_ROOT = resolve(import.meta.dirname, "..");
-const DEFAULT_APP_AGENTS_ROOT = join(
-  REPO_ROOT,
-  "projects/may-agent.app/agents",
-);
+const DEFAULT_APP_AGENTS_ROOT = join(REPO_ROOT, "agents");
 const LEGACY_APP_ROOT = join(PROJECT_ROOT, "app");
 const APP_AGENTS_ROOT = resolve(
   process.env["GYM_AGENTS_ROOT"] ||
