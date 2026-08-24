@@ -2,10 +2,48 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Type } from "@earendil-works/pi-ai";
 import { prepareAgentExecution } from "../lib/agent-execution.js";
 import { prepareDirectAgentExecution, resolveDirectToolPolicy, runDirectAgent } from "./direct-agent.js";
 
 describe("direct agent tool policy", () => {
+  test("enforces a caller-owned structured result through finish", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-schema-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["read-only"],
+      }),
+    );
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      direct = await prepareDirectAgentExecution({
+        agentName: "example",
+        task: "Return one decision",
+        projectRoot: root,
+        workRoot: root,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        outputSchema: Type.Object({ decision: Type.String() }),
+      });
+
+      expect(direct.prepared.requireFinish).toBe(true);
+      expect(direct.prepared.tools.map((tool) => tool.name)).toContain("finish");
+      expect(direct.prepared.systemPrompt).toContain("schema-validated result payload");
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("derives effective tools from configured tools and explicit denials in stable order", () => {
     expect(
       resolveDirectToolPolicy(
