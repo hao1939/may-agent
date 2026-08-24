@@ -214,6 +214,8 @@ export type TaskTree = {
 
 export type TaskStateConfig = {
   appDir: string;
+  /** Stable writable App root; defaults to appDir for legacy callers. */
+  stateAppDir?: string;
   projectDir: string;
   statePath: string;
   journalPath: string;
@@ -356,7 +358,7 @@ export function readTaskState(
     }
     return tree;
   }
-  const canonicalPath = projectRuntimePaths(config.appDir).taskStatePath;
+  const canonicalPath = projectRuntimePaths(config.stateAppDir ?? config.appDir).taskStatePath;
   if (config.statePath !== canonicalPath) {
     throw new Error(`Task state must be read from canonical state.json: ${canonicalPath}`);
   }
@@ -433,7 +435,7 @@ function serializeCanonicalTaskState(state: Record<string, unknown>): string {
 }
 
 export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?: SaveTaskStateOptions): void {
-  const runtimePaths = projectRuntimePaths(config.appDir);
+  const runtimePaths = projectRuntimePaths(config.stateAppDir ?? config.appDir);
   if (config.statePath !== runtimePaths.taskStatePath) {
     throw new Error(`Task state must be written to canonical state.json: ${runtimePaths.taskStatePath}`);
   }
@@ -553,11 +555,7 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   ensureDir(dirname(projectionPath));
   const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
   const serializedProjection = `${JSON.stringify(projection)}\n`;
-  writeFileSync(
-    projectionTempPath,
-    serializedProjection,
-    "utf-8",
-  );
+  writeFileSync(projectionTempPath, serializedProjection, "utf-8");
   renameSync(projectionTempPath, projectionPath);
 
   if (existingLifecycle !== null && existingLifecycle !== normalizedLifecycle(tree.project_lifecycle)) {
@@ -880,11 +878,7 @@ const COMPACT_TRIGGER_KEYS = [
   "action",
   "urgency",
 ] as const;
-const COMPACT_TRIGGER_KEY_SET = new Set<string>([
-  ...COMPACT_TRIGGER_KEYS,
-  "data",
-  "compactedPayloadSha256",
-]);
+const COMPACT_TRIGGER_KEY_SET = new Set<string>([...COMPACT_TRIGGER_KEYS, "data", "compactedPayloadSha256"]);
 
 function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string, unknown> {
   const existingDigest =
@@ -1198,7 +1192,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
 /** Rebuild the disposable read projection without mutating canonical task state. */
 export function refreshAppTaskTreeProjection(config: TaskStateConfig, options: { ifStaleOnly?: boolean } = {}): string {
   return withTaskStateLock(config, () => {
-    const projectionPath = projectRuntimePaths(config.appDir).taskTreePath;
+    const projectionPath = projectRuntimePaths(config.stateAppDir ?? config.appDir).taskTreePath;
     if (options.ifStaleOnly) {
       try {
         if (statSync(projectionPath).mtimeMs >= statSync(config.statePath).mtimeMs) return projectionPath;
@@ -1209,11 +1203,7 @@ export function refreshAppTaskTreeProjection(config: TaskStateConfig, options: {
     const tree = readTaskState(config);
     const tempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
     ensureDir(dirname(projectionPath));
-    writeFileSync(
-      tempPath,
-      `${JSON.stringify(buildAppTaskTreeProjection(tree, config.maxConcurrent))}\n`,
-      "utf-8",
-    );
+    writeFileSync(tempPath, `${JSON.stringify(buildAppTaskTreeProjection(tree, config.maxConcurrent))}\n`, "utf-8");
     renameSync(tempPath, projectionPath);
     return projectionPath;
   });

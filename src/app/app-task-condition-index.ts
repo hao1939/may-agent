@@ -77,7 +77,7 @@ function buildIndex(tree: TaskTree, state: TaskStateSignature): AppTaskCondition
  * readers detect that and fall back to canonical state.
  */
 export function writeAppTaskConditionRouteIndex(config: TaskStateConfig, tree: TaskTree): boolean {
-  const paths = projectRuntimePaths(config.appDir);
+  const paths = projectRuntimePaths(config.stateAppDir ?? config.appDir);
   const indexPath = paths.taskConditionRoutesPath;
   const tempPath = `${indexPath}.${process.pid}.${Date.now()}.tmp`;
   try {
@@ -99,7 +99,7 @@ export function writeAppTaskConditionRouteIndex(config: TaskStateConfig, tree: T
 
 /** Return indexed candidates, or null when canonical state must be consulted. */
 export function readAppTaskConditionRoutes(config: TaskStateConfig, eventType: string): AppTaskConditionRoute[] | null {
-  const indexPath = projectRuntimePaths(config.appDir).taskConditionRoutesPath;
+  const indexPath = projectRuntimePaths(config.stateAppDir ?? config.appDir).taskConditionRoutesPath;
   try {
     const before = stateSignature(config.statePath);
     const index = JSON.parse(readFileSync(indexPath, "utf-8")) as AppTaskConditionRouteIndex;

@@ -5,7 +5,7 @@ import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
-import type { TaskResult } from "./types.js";
+import type { SubagentDefinition, TaskResult } from "./types.js";
 import type {
   WorkflowContext,
   WorkflowModule,
@@ -531,6 +531,7 @@ async function resolveDemands(
   injectedCount: { value: number },
   maxInjected: number,
   manager: SubagentManager,
+  agentDefinitions: ReadonlyMap<string, SubagentDefinition> | undefined,
   parentSessionId: string | undefined,
   projectId: string | undefined,
   recoveryOwner: string | undefined,
@@ -630,7 +631,7 @@ async function resolveDemands(
 
         onEvent?.({ type: "workflow.step_started", step: label });
 
-        const taskResult = await manager.callAgent(demand.step.agent, demand.step.task, {
+        const callOptions = {
           parentSessionId,
           workflowRunId: runId,
           projectId,
@@ -639,7 +640,11 @@ async function resolveDemands(
           source: "guard",
           trace,
           requireFinish: true,
-        });
+        };
+        const pinnedDefinition = agentDefinitions?.get(demand.step.agent);
+        const taskResult = pinnedDefinition
+          ? await manager.callAgentDefinition(pinnedDefinition, demand.step.task, callOptions)
+          : await manager.callAgent(demand.step.agent, demand.step.task, callOptions);
 
         const step: CompletedStep = { step: label, sessionId: taskResult.sessionId, result: taskResult };
         completedSteps.push(step);
@@ -705,6 +710,8 @@ export interface RunWorkflowDirectOpts {
   workflowName: string;
   task: string;
   manager: SubagentManager;
+  /** Immutable definitions captured with the owning Task attempt. */
+  agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
   runtimeCtx: RuntimeCtx;
   agentName: string;
   /** Exact source stored on agent sessions started by this workflow. */
@@ -745,6 +752,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
 }> {
   const runner = createWorkflowRunner({
     manager: opts.manager,
+    agentDefinitions: opts.agentDefinitions,
     workflowDir: opts.workflowDir ?? "",
     guardsDir: opts.guardsDir,
     sharedGuardsDir: opts.sharedGuardsDir,
@@ -801,6 +809,8 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
 
 export interface WorkflowToolOptions {
   manager: SubagentManager;
+  /** Optional immutable agent catalog for one release-bound execution. */
+  agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
   workflowDir: string;
   /** Agent-specific guards directory. */
   guardsDir?: string;
@@ -851,6 +861,16 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: fals
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
   const { manager, workflowDir, persistDir, onEvent } = opts;
+  const runAgent = (agentName: string, task: string, runOptions: Parameters<SubagentManager["run"]>[2]): string => {
+    const definition = opts.agentDefinitions?.get(agentName);
+    return definition ? manager.runDefinition(definition, task, runOptions) : manager.run(agentName, task, runOptions);
+  };
+  const callAgent = (agentName: string, task: string, callOptions: Parameters<SubagentManager["callAgent"]>[2]) => {
+    const definition = opts.agentDefinitions?.get(agentName);
+    return definition
+      ? manager.callAgentDefinition(definition, task, callOptions)
+      : manager.callAgent(agentName, task, callOptions);
+  };
   const maxDepth = opts.maxDepth ?? 3;
   const resolveTrace = (): EventTrace | undefined => opts.callerTrace?.() ?? opts.trace;
   const emitRuntimeEvent = (event: { type: string; [key: string]: unknown }): void => {
@@ -1286,7 +1306,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           if (message.includes("not found")) {
-            sid = manager.run(agentName, effectiveTask, {
+            sid = runAgent(agentName, effectiveTask, {
               sessionId: sid,
               parentSessionId,
               workflowRunId: runId,
@@ -1313,7 +1333,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       }
       if (!taskResult || !sid) {
         onEvent?.({ type: "workflow.step_started", step: agentName });
-        taskResult = await manager.callAgent(agentName, effectiveTask, {
+        taskResult = await callAgent(agentName, effectiveTask, {
           parentSessionId,
           source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
           workflowRunId: runId,
@@ -1375,6 +1395,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             injectedStepCount,
             maxInjected,
             manager,
+            opts.agentDefinitions,
             parentSessionId,
             effectiveProjectId,
             opts.recoveryOwner,
@@ -1637,6 +1658,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               injectedStepCount,
               maxInjected,
               manager,
+              opts.agentDefinitions,
               parentSessionId,
               effectiveProjectId,
               opts.recoveryOwner,
@@ -1728,7 +1750,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             const stepName = `session:${label}`;
             onEvent?.({ type: "workflow.step_started", step: stepName });
 
-            const taskResult = await manager.callAgent(agentName, fullPrompt, {
+            const taskResult = await callAgent(agentName, fullPrompt, {
               parentSessionId,
               workflowRunId: runId,
               projectId: effectiveProjectId,
@@ -1792,6 +1814,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                   injectedStepCount,
                   maxInjected,
                   manager,
+                  opts.agentDefinitions,
                   parentSessionId,
                   effectiveProjectId,
                   opts.recoveryOwner,
@@ -1852,6 +1875,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           injectedStepCount,
           maxInjected,
           manager,
+          opts.agentDefinitions,
           parentSessionId,
           effectiveProjectId,
           opts.recoveryOwner,

@@ -239,9 +239,7 @@ export class AppTaskResourceStore {
   /** Refresh only the exact structural links declared by one Task. */
   private putTaskRelations(resource: AppTaskResource): void {
     const taskId = resource.metadata.id;
-    this.db
-      .prepare("DELETE FROM app_task_relations WHERE app_id = ? AND source_task_id = ?")
-      .run(this.appId, taskId);
+    this.db.prepare("DELETE FROM app_task_relations WHERE app_id = ? AND source_task_id = ?").run(this.appId, taskId);
     const insert = this.db.prepare(
       `INSERT OR IGNORE INTO app_task_relations(
          app_id, source_task_id, relation_kind, target_task_id
@@ -954,6 +952,22 @@ export class AppTaskResourceStore {
         )
         .all(this.appId, ...phases, boundedLimit) as Array<{ task_id?: string }>
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
+  }
+
+  hasUnfinishedTasks(): boolean {
+    return Boolean(
+      this.db
+        .prepare(
+          `SELECT 1 AS unfinished FROM app_tasks
+           WHERE app_id = ? AND phase <> 'converged'
+             AND NOT EXISTS (
+               SELECT 1 FROM app_task_cancellations c
+               WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
+             )
+           LIMIT 1`,
+        )
+        .get(this.appId),
+    );
   }
 
   /** Exact failed attempts that one later successful agent session may repair. */

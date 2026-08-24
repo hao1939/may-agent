@@ -221,6 +221,7 @@ export async function runAppRuntime(opts: {
     sharedRoot: opts.sharedRoot,
     definitionSharedRoot: activeAppSource.sharedRoot,
     projectsRoot: activeAppSource.projectsRoot,
+    stateProjectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,
@@ -324,6 +325,11 @@ export async function runAppRuntime(opts: {
         const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
           const result = await appTasks.publishGeneration({
             snapshot,
+            definitionSource: {
+              projectsRoot: candidate.projectsRoot,
+              agentsRoot: candidate.agentsRoot,
+              sharedRoot: candidate.sharedRoot,
+            },
             publish: () => {
               appSources.activate(candidate);
               try {

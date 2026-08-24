@@ -108,6 +108,37 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("updates concurrency without replacing queued or running work", async () => {
+    const started: string[] = [];
+    const releases: Array<() => void> = [];
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releases.push(resolve);
+        }),
+    });
+    controller.enqueue("a");
+    controller.enqueue("b");
+    await waitUntil(() => started.length === 1);
+
+    controller.updateMaxConcurrent(2);
+    await waitUntil(() => started.length === 2);
+    expect(started).toEqual(["a", "b"]);
+
+    controller.updateMaxConcurrent(1);
+    controller.enqueue("c");
+    releases.shift()?.();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(started).toEqual(["a", "b"]);
+    releases.shift()?.();
+    await waitUntil(() => started.includes("c"));
+    releases.shift()?.();
+    controller.close();
+    await controller.whenDrained();
+  });
+
   it("yields to the event loop between immediately completed reconciles", async () => {
     const started: string[] = [];
     let releaseFirst: (() => void) | undefined;
@@ -293,7 +324,7 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
-  it("shares the Host limit across replacement controllers", async () => {
+  it("shares the Host limit across independent controllers", async () => {
     // One of three Host slots is reserved for foreground May conversation.
     const appCapacity = new HostCapacity(3);
     const started: string[] = [];
@@ -333,7 +364,7 @@ describe("AppTaskController", () => {
     current.close();
   });
 
-  it("keeps replacement controllers within the shared Host limit", async () => {
+  it("keeps independent controllers within the shared Host limit", async () => {
     const appCapacity = new HostCapacity(1);
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
@@ -455,7 +486,7 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
-  it("cancels stale capacity waits when hot reload replaces controllers", async () => {
+  it("cancels stale capacity waits when controllers close", async () => {
     const appCapacity = new HostCapacity(1);
     const releaseGlobal = await appCapacity.acquire();
     const started: string[] = [];
@@ -492,7 +523,7 @@ describe("AppTaskController", () => {
     await current.whenDrained();
   });
 
-  it("keeps replacement controllers behind the draining predecessor chain", async () => {
+  it("supports an explicit startup chain when the caller requires one", async () => {
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
     const old = new AppTaskController({
