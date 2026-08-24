@@ -16,6 +16,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { Check } from "typebox/value";
 import type { SubagentManager } from "../lib/index.js";
 import type { SubagentDefinition } from "../lib/types.js";
 import type { EventEnvelope } from "../lib/handler-context.js";
@@ -618,6 +619,7 @@ export function normalizeTaskHandlerResult(
     defaultParentId?: string;
     rootParentAliases?: string[];
     validateAction?: (action: AppTaskAction) => string | null;
+    validateCondition?: (condition: AppTaskConditionSpec) => string | null;
   } = {},
 ): NormalizedTaskHandlerResult {
   if (output === undefined && fallback.type === "blocked") {
@@ -649,6 +651,20 @@ export function normalizeTaskHandlerResult(
         return {
           state: "error",
           summary: `Handler result was rejected: actions[${index}] ${problem}`,
+          evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+          actions: [],
+        };
+      }
+    }
+  }
+  const conditions = admission.result.conditions ?? [];
+  if (options.validateCondition) {
+    for (let index = 0; index < conditions.length; index += 1) {
+      const problem = options.validateCondition(conditions[index]!);
+      if (problem) {
+        return {
+          state: "error",
+          summary: `Handler result was rejected: conditions[${index}] ${problem}`,
           evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
         };
@@ -712,6 +728,7 @@ export function consumePersistedTerminalAgentResult(input: {
         defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
+        validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
     );
     if (result.state === "converged") {
@@ -912,6 +929,7 @@ async function executeTaskCapability(input: {
         defaultParentId: input.defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
+        validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
     );
     opts.bus.emit({
@@ -1129,6 +1147,7 @@ export function admitTaskAppDependencies(input: {
       throw new Error(`Task result declares App dependency ${dependency.id} more than once`);
     }
     dependencyIds.add(dependency.id);
+    assertInstalledAppDependency(input.opts, input.descriptor.id, dependency);
   }
 
   const existing = (input.existingConditions ?? []).flatMap((condition) => {
@@ -1786,6 +1805,80 @@ export function rejectConvergedDirectAgentResidue(
 export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
   "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
 
+function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnapshot["entries"] {
+  return opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
+}
+
+function schemaStringLiterals(value: unknown): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const node = value as Record<string, unknown>;
+  const values = new Set<string>();
+  if (typeof node.const === "string" && node.const.trim()) values.add(node.const.trim());
+  if (Array.isArray(node.enum)) {
+    for (const entry of node.enum) {
+      if (typeof entry === "string" && entry.trim()) values.add(entry.trim());
+    }
+  }
+  for (const key of ["anyOf", "oneOf", "allOf"] as const) {
+    if (!Array.isArray(node[key])) continue;
+    for (const entry of node[key]) {
+      for (const literal of schemaStringLiterals(entry)) values.add(literal);
+    }
+  }
+  return [...values];
+}
+
+function appInputKinds(schema: unknown): string[] {
+  if (!schema || typeof schema !== "object" || Array.isArray(schema)) return [];
+  const node = schema as Record<string, unknown>;
+  const properties = node.properties;
+  const own =
+    properties && typeof properties === "object" && !Array.isArray(properties)
+      ? schemaStringLiterals((properties as Record<string, unknown>).kind)
+      : [];
+  const nested = ["anyOf", "oneOf", "allOf"].flatMap((key) => {
+    const entries = node[key];
+    return Array.isArray(entries) ? entries.flatMap(appInputKinds) : [];
+  });
+  return [...new Set([...own, ...nested])].sort();
+}
+
+/** Compact live ownership surface supplied to bounded executors. */
+export function appTaskDependencyCatalog(
+  opts: AppTaskRuntimeOptions,
+  sourceAppId: string,
+): Array<{ appId: string; description: string; inputKinds: string[] }> {
+  return configuredRegistryEntries(opts)
+    .filter(({ definition }) => definition.id !== sourceAppId && definition.task)
+    .map(({ definition }) => ({
+      appId: definition.id,
+      description: definition.description?.trim() || "No description declared.",
+      inputKinds: appInputKinds(definition.inputSchema),
+    }))
+    .sort((left, right) => left.appId.localeCompare(right.appId));
+}
+
+function assertInstalledAppDependency(
+  opts: AppTaskRuntimeOptions,
+  sourceAppId: string,
+  dependency: TaskAppDependency,
+): void {
+  if (dependency.appId === sourceAppId) {
+    throw new Error(
+      `App dependency ${dependency.id} cannot target its owning App ${sourceAppId}; use a direct child or advance the current Task`,
+    );
+  }
+  const entries = configuredRegistryEntries(opts);
+  if (entries.length === 0) return;
+  const target = entries.find(({ definition }) => definition.id === dependency.appId)?.definition;
+  if (!target?.task) {
+    throw new Error(`App dependency ${dependency.id} targets unavailable App ${dependency.appId}`);
+  }
+  if (!Check(target.inputSchema, dependency.input)) {
+    throw new Error(`App dependency ${dependency.id} input is not accepted by installed App ${dependency.appId}`);
+  }
+}
+
 /** Compact bounded-agent rules; the finish tool schema enforces field-level detail. */
 export function appTaskAgentProtocol(appId: string): string {
   return [
@@ -1795,6 +1888,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
     "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
     "For another App outcome, return a stable dependency { id, appId, input }. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
+    "Choose appId and input.kind from the Installed App catalog in this prompt. Describe the desired outcome, constraints, and acceptance proof in input.data; leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
     "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
     "After first acceptance-critical evidence, checkpoint a concise summary, next step, and exact artifact/session paths. Refresh only when those facts change, then finish promptly.",
@@ -1838,6 +1932,7 @@ async function executeTaskAgent(input: {
   const { opts, descriptor, intent, claim, event } = input;
   const reconciliationEvents = input.attempt.events;
   const trace = childEventTrace(event);
+  const dependencyCatalog = appTaskDependencyCatalog(opts, descriptor.id);
   const prompt = [
     appTaskAgentProtocol(descriptor.id),
     "",
@@ -1863,6 +1958,16 @@ async function executeTaskAgent(input: {
       2,
     ),
     "```",
+    ...(dependencyCatalog.length
+      ? [
+          "",
+          "## Installed Apps",
+          "Choose the accountable App by responsibility. These are the currently installed typed dependency targets:",
+          "```json",
+          JSON.stringify(dependencyCatalog, null, 2),
+          "```",
+        ]
+      : []),
     ...(/deploy|restart/i.test(intent.outcome) ||
     input.declaredOutputPaths.some((path) => path.includes("deploy-receipts"))
       ? ["", ...deployReceiptPrompt(input.executionPaths.projectDir, claim.taskId)]
@@ -1958,6 +2063,7 @@ async function executeTaskAgent(input: {
         defaultParentId: input.defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
+        validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
     ),
     restoredAgentResidue,
@@ -1978,6 +2084,7 @@ function appTaskCliProtocol(appId: string): string {
     'Return {"state":"converged"|"waiting","summary":"...","response":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]}.',
     "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
     "Wait only for an exact observable Condition, a live direct child, or a typed App dependency; otherwise complete one bounded useful step now.",
+    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Put the desired outcome, constraints, and acceptance proof in input.data; leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");
@@ -2012,6 +2119,7 @@ async function executeTaskCli(input: {
     };
   }
   const reconciliationEvents = input.attempt.events;
+  const dependencyCatalog = appTaskDependencyCatalog(opts, descriptor.id);
   const prompt = [
     appTaskCliProtocol(descriptor.id),
     "",
@@ -2038,6 +2146,16 @@ async function executeTaskCli(input: {
       2,
     ),
     "```",
+    ...(dependencyCatalog.length
+      ? [
+          "",
+          "## Installed Apps",
+          "Choose the accountable App by responsibility. These are the currently installed typed dependency targets:",
+          "```json",
+          JSON.stringify(dependencyCatalog, null, 2),
+          "```",
+        ]
+      : []),
     ...(reconciliationEvents.items.length
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
@@ -2085,6 +2203,7 @@ async function executeTaskCli(input: {
       defaultParentId: input.defaultParentId,
       rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
       validateAction: input.descriptor.app.tasks?.validateAction,
+      validateCondition: input.descriptor.app.tasks?.validateCondition,
     },
   );
   normalized.evidence = [...new Set([...normalized.evidence, ...execution.evidence])];
@@ -2204,6 +2323,7 @@ async function runRegisteredTaskExecutor(input: {
               defaultParentId: input.defaultParentId,
               rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
               validateAction: input.descriptor.app.tasks?.validateAction,
+              validateCondition: input.descriptor.app.tasks?.validateCondition,
             },
           ),
           runId,
