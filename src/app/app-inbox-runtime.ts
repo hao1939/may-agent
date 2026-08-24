@@ -22,6 +22,7 @@ import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from
 import {
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
+  type AppInboxItem,
 } from "./app-inbox-store.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
@@ -271,6 +272,20 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       data: { appId: normalizedAppId, conversationId: normalizedConversationId },
     });
   };
+  const oneItemPerConversationTask = (items: AppInboxItem[]): AppInboxItem[] => {
+    const selected = new Map<string, AppInboxItem>();
+    for (const item of items) {
+      if (!item.conversationId || item.waitingOn?.kind !== "task") continue;
+      const key = `${item.conversationId}\0${item.appId}\0${item.waitingOn.id}`;
+      // Prefer the request that created the Conversation Task. Later focused
+      // human turns are inputs to that same Task, not additional owners of its
+      // public output stream. Oldest-first order is the fallback for Tasks that
+      // were already present before this Conversation.
+      const current = selected.get(key);
+      if (!current || (current.targetTaskId && !item.targetTaskId)) selected.set(key, item);
+    }
+    return [...selected.values()];
+  };
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
@@ -287,7 +302,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     onConversationChanged: notifyConversationUpdated,
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
-      for (const parent of listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id)) {
+      for (const parent of oneItemPerConversationTask(
+        listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id),
+      )) {
         const parentTaskId = parent.waitingOn?.kind === "task" ? parent.waitingOn.id : undefined;
         if (!parent.conversationId || !parentTaskId) continue;
         options.bus.emit({
@@ -310,7 +327,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               ],
               followTask: { appId: item.appId, taskId },
             },
-            idempotencyKey: `conversation-task-assigned:${parent.id}:${item.id}:${item.appId}:${taskId}`,
+            idempotencyKey: `conversation-task-assigned:${parent.conversationId}:${parent.appId}:${parentTaskId}:${item.appId}:${taskId}`,
           },
         });
       }
@@ -830,8 +847,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           .update(`${disposition}\0${summary}`)
           .digest("hex")
           .slice(0, 16)}`;
-        for (const item of listHumanAppInboxItemsWaitingOnTask(options.db, appId, taskId)) {
-          const idempotencyKey = `conversation-task-status:${item.id}:${statusIdentity}:${disposition}`;
+        for (const item of oneItemPerConversationTask(
+          listHumanAppInboxItemsWaitingOnTask(options.db, appId, taskId),
+        )) {
+          const idempotencyKey = `conversation-task-status:${item.conversationId}:${appId}:${taskId}:${statusIdentity}:${disposition}`;
           options.bus.emit({
             type: "conversation.message.created",
             source: "app-inbox",

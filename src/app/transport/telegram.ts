@@ -132,6 +132,11 @@ export function renderTelegramTask(task: HumanTaskView): string {
     `Status: ${task.status}`,
     `Outcome: ${task.outcome}`,
     `Updated: ${formatWorkTime(task.updatedAt)}`,
+    ...(task.requestedBy
+      ? [
+          `Requested by: ${task.requestedBy.ref} · ${task.requestedBy.appId} · ${task.requestedBy.status}\n${task.requestedBy.outcome}`,
+        ]
+      : []),
     ...(task.humanAction ? [`Action needed: ${humanActionText(task)}`] : []),
     ...(result
       ? [
@@ -155,6 +160,7 @@ export function renderTelegramTask(task: HumanTaskView): string {
 function representedTaskIdentities(task: HumanTaskView): Array<{ appId: string; taskId: string }> {
   return [
     { appId: task.appId, taskId: task.taskId },
+    ...(task.requestedBy ? [{ appId: task.requestedBy.appId, taskId: task.requestedBy.taskId }] : []),
     ...(task.waitingOn ?? []).flatMap((wait) =>
       wait.kind === "task" ? [{ appId: wait.appId, taskId: wait.taskId }] : [],
     ),

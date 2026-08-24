@@ -412,6 +412,14 @@ describe("Human Task service", () => {
         outcome: "Handle review/docs",
       }),
     ]);
+    expect(service.getTask({ appId: "evaluation", taskId: "review/docs" })?.requestedBy).toEqual(
+      expect.objectContaining({
+        appId: "may",
+        taskId: "conversation/one",
+        status: "waiting",
+        outcome: "Handle conversation/one",
+      }),
+    );
   });
 
   test("lets a terminal Task result replace passive executor progress", () => {

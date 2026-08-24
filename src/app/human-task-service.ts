@@ -43,7 +43,16 @@ export type HumanTaskView = {
   execution?: { attemptId: string; sessionId?: string };
   progress?: HumanTaskProgress;
   waitingOn?: HumanTaskWait[];
+  requestedBy?: HumanTaskLink;
   humanAction?: HumanTaskAction;
+};
+
+export type HumanTaskLink = {
+  appId: string;
+  taskId: string;
+  ref: string;
+  status: HumanTaskStatus;
+  outcome: string;
 };
 
 export type HumanTaskWait =
@@ -460,6 +469,39 @@ function taskWaits(db: SqliteDb, appId: string, taskId: string): HumanTaskWait[]
   return [...tasks, ...unresolved];
 }
 
+function taskRequester(db: SqliteDb, appId: string, taskId: string): HumanTaskLink | null {
+  const row = db
+    .prepare(
+      `SELECT route.app_id, route.task_id
+       FROM app_inbox_items request
+       JOIN app_task_condition_routes route
+         ON route.condition_id = 'app-request:' || request.id
+       JOIN app_task_conditions condition
+         ON condition.app_id = route.app_id AND condition.condition_id = route.condition_id
+       WHERE request.app_id = ?
+         AND request.waiting_on_kind = 'task' AND request.waiting_on_id = ?
+         AND request.source_kind = 'app'
+         AND json_extract(condition.condition_json, '$.spec.subject') = 'id:' || request.id
+       ORDER BY request.created_at DESC
+       LIMIT 1`,
+    )
+    .get(appId, taskId) as { app_id?: string; task_id?: string } | null;
+  if (!row?.app_id || !row.task_id) return null;
+  const parent = readTaskRow(db, row.app_id, row.task_id);
+  if (!parent) return null;
+  const refs = displayTaskReferences(db, [{ appId: row.app_id, taskId: row.task_id }]);
+  const view = projectTask(parent, refs.get(`${row.app_id}\0${row.task_id}`) ?? "");
+  return view
+    ? {
+        appId: view.appId,
+        taskId: view.taskId,
+        ref: view.ref,
+        status: view.status,
+        outcome: view.outcome,
+      }
+    : null;
+}
+
 export class HumanTaskService {
   constructor(
     private readonly db: SqliteDb,
@@ -670,11 +712,14 @@ export class HumanTaskService {
     if (!row) return null;
     const refs = displayTaskReferences(this.db, [{ appId: identity.appId, taskId: identity.taskId }]);
     const view = projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
-    if (!view || view.terminal) return view;
+    if (!view) return null;
+    const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
+    const linkedView = requestedBy ? { ...view, requestedBy } : view;
+    if (view.terminal) return linkedView;
     const progress = latestTaskProgress(this.db, identity.appId, identity.taskId);
     const waitingOn = view.status === "waiting" ? taskWaits(this.db, identity.appId, identity.taskId) : [];
     const detail = {
-      ...view,
+      ...linkedView,
       ...(progress ? { progress } : {}),
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };

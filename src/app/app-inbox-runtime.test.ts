@@ -310,6 +310,21 @@ describe("App inbox runtime", () => {
     expect(waitAppInboxClaim(db, humanClaim, { kind: "task", id: "conversation/human-turn" }, { now: 3 })).toBe(
       true,
     );
+    createAppInboxItem(db, {
+      id: "human-follow-up",
+      appId: "may",
+      targetTaskId: "conversation/human-turn",
+      conversationId: "may:primary",
+      conversationSequence: 2,
+      channel: "may-console",
+      source: { kind: "human", id: "human-message-2" },
+      input: { kind: "message", data: { message: "Why is this still waiting?" } },
+      now: 4,
+    });
+    const followUpClaim = claimNextAppInboxItem(db, "may", "test", 10_000, 5)!;
+    expect(
+      waitAppInboxClaim(db, followUpClaim, { kind: "task", id: "conversation/human-turn" }, { now: 6 }),
+    ).toBe(true);
     db.prepare(
       `INSERT INTO app_tasks(
          app_id, task_id, generation, resource_version, observed_generation, phase,
@@ -355,6 +370,7 @@ describe("App inbox runtime", () => {
     });
 
     await waitUntil(() => assignments.length === 1);
+    await Bun.sleep(20);
     expect(assignments[0]).toMatchObject({
       data: {
         appId: "may",
@@ -797,6 +813,21 @@ describe("App inbox runtime", () => {
       },
     });
     await waitUntil(() => runtime?.host.get("turn-1")?.waitingOn?.kind === "task");
+    createAppInboxItem(db, {
+      id: "turn-2",
+      appId: "may",
+      targetTaskId: "conversation/turn-1",
+      conversationId: "may:primary",
+      conversationSequence: 2,
+      channel: "may-console",
+      source: { kind: "human", id: "message-2" },
+      input: { kind: "probe", data: { value: "why is it waiting?" } },
+      now: 2,
+    });
+    const followUpClaim = claimNextAppInboxItem(db, "may", "test", 10_000, 3)!;
+    expect(waitAppInboxClaim(db, followUpClaim, { kind: "task", id: "conversation/turn-1" }, { now: 4 })).toBe(
+      true,
+    );
 
     bus.emit({
       type: "project.task.reconciled",

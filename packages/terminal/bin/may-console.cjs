@@ -315,6 +315,7 @@ function requestTask(input) {
     command: input.command || `/task ${input.ref || ""}`.trim(),
     ...(input.appId ? { appId: input.appId } : {}),
     ...(input.taskId ? { taskId: input.taskId } : {}),
+    ...(input.assignedFrom ? { assignedFrom: input.assignedFrom } : {}),
   };
   pendingTaskReads.push(pending);
   if (pending.kind === "watch-refresh") watchedTaskReadInFlight = true;
@@ -385,6 +386,7 @@ function taskIdentity(task) {
 function representedTaskIdentities(task) {
   return [
     taskIdentity(task),
+    taskIdentity(task?.requestedBy),
     ...(Array.isArray(task?.waitingOn) ? task.waitingOn.filter((wait) => wait?.kind === "task").map(taskIdentity) : []),
   ].filter(Boolean);
 }
@@ -554,6 +556,11 @@ function renderTask(task, command, options = {}) {
     `  Outcome: ${task.outcome}`,
     `  Updated: ${formatWorkTime(task.updatedAt)}`,
   ];
+  if (task.requestedBy) {
+    lines.push(
+      `  Requested by: ${task.requestedBy.ref} · ${task.requestedBy.appId} · ${task.requestedBy.status} — ${task.requestedBy.outcome}`,
+    );
+  }
   if (task.humanAction) {
     lines.push(`  Action needed: ${humanActionText(task)}`);
   }
@@ -597,6 +604,7 @@ function taskPresentationRevision(task) {
     evidence: task?.evidence,
     progress: task?.progress,
     waitingOn: task?.waitingOn,
+    requestedBy: task?.requestedBy,
     execution: task?.execution,
     terminal: task?.terminal,
   });
@@ -653,6 +661,7 @@ function requestDesiredAutoFollow() {
     kind: "auto-follow",
     appId: desiredAutoFollow.appId,
     taskId: desiredAutoFollow.taskId,
+    assignedFrom: desiredAutoFollow.assignedFrom,
     command: "automatic Task follow",
   });
 }
@@ -661,7 +670,7 @@ function autoFollowTask(task) {
   const appId = typeof task?.appId === "string" ? task.appId.trim() : "";
   const taskId = typeof task?.taskId === "string" ? task.taskId.trim() : "";
   if (!appId || !taskId) return;
-  desiredAutoFollow = { appId, taskId };
+  desiredAutoFollow = { appId, taskId, ...(task?.assignedFrom ? { assignedFrom: task.assignedFrom } : {}) };
   requestDesiredAutoFollow();
 }
 
@@ -701,13 +710,12 @@ function renderConversation(messages) {
     const kind = message.author && typeof message.author.kind === "string" ? message.author.kind : "agent";
     const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
-    const taskRefs = Array.isArray(message.metadata?.taskRefs)
-      ? message.metadata.taskRefs.flatMap((task) =>
-          task && typeof task.ref === "string" && task.ref.trim()
-            ? [`Task ${task.ref.trim()} (${task.appId || "unknown App"})`]
-            : [],
-        )
-      : [];
+    const metadataTaskRefs = Array.isArray(message.metadata?.taskRefs) ? message.metadata.taskRefs : [];
+    const taskRefs = metadataTaskRefs.flatMap((task) =>
+      task && typeof task.ref === "string" && task.ref.trim()
+        ? [`Task ${task.ref.trim()} (${task.appId || "unknown App"})`]
+        : [],
+    );
     printConversationText(speaker, taskRefs.length > 0 ? `${text}\n\n${taskRefs.join("\n")}` : text);
     rememberRenderedConversationMessage(id);
     const followTask = message.metadata?.followTask;
@@ -719,7 +727,18 @@ function renderConversation(messages) {
       typeof followTask.taskId === "string" &&
       followTask.taskId.trim()
     ) {
-      latestFollowTask = { appId: followTask.appId.trim(), taskId: followTask.taskId.trim() };
+      const assignedFrom = metadataTaskRefs.find(
+        (task) =>
+          task &&
+          typeof task.appId === "string" &&
+          typeof task.taskId === "string" &&
+          (task.appId !== followTask.appId || task.taskId !== followTask.taskId),
+      );
+      latestFollowTask = {
+        appId: followTask.appId.trim(),
+        taskId: followTask.taskId.trim(),
+        ...(assignedFrom ? { assignedFrom } : {}),
+      };
     }
   }
   if (latestFollowTask) autoFollowTask(latestFollowTask);
@@ -909,9 +928,15 @@ function handleEvent(event) {
             renderWatchSnapshot(task, { catchUp: Boolean(shownTaskRevisions.has(taskPresentationKey(task))) });
             setWatchedTask(task);
             printLine(
-              previous && autoFollowKey(previous) !== autoFollowKey(task)
-                ? `[watch] Following assigned Task ${task.ref}; stopped following ${previous.ref}.`
-                : `[watch] Following assigned Task ${task.ref}. Bare text is feedback through May.`,
+              `${
+                pending.assignedFrom?.ref
+                  ? `[watch] Following assigned Task ${task.ref} (${task.appId}) for Task ${pending.assignedFrom.ref} (${pending.assignedFrom.appId}).`
+                  : `[watch] Following assigned Task ${task.ref}.`
+              }${
+                previous && autoFollowKey(previous) !== autoFollowKey(task)
+                  ? ` Stopped following ${previous.ref}.`
+                  : " Bare text is feedback through May."
+              }`,
             );
           }
           requestDesiredAutoFollow();
