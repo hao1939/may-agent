@@ -53,6 +53,7 @@ export class AppTaskController {
   private readonly readySince = new Map<string, number>();
   private scheduled = false;
   private closed = false;
+  private enabled = true;
   private startReady: boolean;
   private waitingForCapacity = false;
   private waitingCapacityLane?: AppTaskLane;
@@ -84,6 +85,29 @@ export class AppTaskController {
     return added;
   }
 
+  /** Apply a reloaded App limit while preserving queued and in-flight work. */
+  updateMaxConcurrent(maxConcurrent: number): void {
+    if (this.closed) return;
+    this.queue.updateMaxConcurrent(maxConcurrent);
+    this.schedulePump();
+  }
+
+  /** Pause or resume new claims without discarding the queue or active work. */
+  setEnabled(enabled: boolean): void {
+    if (this.closed || this.enabled === enabled) return;
+    this.enabled = enabled;
+    if (!enabled) {
+      cancelHostPumps(this);
+      this.scheduled = false;
+      this.cancelCapacityWait?.();
+      this.cancelCapacityWait = undefined;
+      this.waitingForCapacity = false;
+      this.waitingCapacityLane = undefined;
+      return;
+    }
+    this.schedulePump();
+  }
+
   close(): void {
     this.closed = true;
     cancelHostPumps(this);
@@ -106,7 +130,7 @@ export class AppTaskController {
   }
 
   private schedulePump(): void {
-    if (this.scheduled || this.closed || !this.startReady) return;
+    if (this.scheduled || this.closed || !this.enabled || !this.startReady) return;
     this.scheduled = true;
     // A ready-work chain must not monopolize the event loop between tasks.
     scheduleHostPump(this, () => {
@@ -116,7 +140,7 @@ export class AppTaskController {
   }
 
   private pump(): void {
-    if (this.closed) return;
+    if (this.closed || !this.enabled) return;
     if (this.options.capacity) {
       if (this.queue.pendingCount === 0 || this.queue.runningCount >= this.queue.maxConcurrent) return;
       const lane = this.queue.nextLane();
@@ -146,14 +170,14 @@ export class AppTaskController {
   }
 
   private waitForCapacity(lane: AppTaskLane): void {
-    if (this.waitingForCapacity || this.closed || !this.startReady || !this.options.capacity) return;
+    if (this.waitingForCapacity || this.closed || !this.enabled || !this.startReady || !this.options.capacity) return;
     this.waitingForCapacity = true;
     this.waitingCapacityLane = lane;
     const acquired = (release: () => void) => {
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
       this.cancelCapacityWait = undefined;
-      if (this.closed || !this.startReady) {
+      if (this.closed || !this.enabled || !this.startReady) {
         release();
         this.resolveDrainWaiters();
         return;
