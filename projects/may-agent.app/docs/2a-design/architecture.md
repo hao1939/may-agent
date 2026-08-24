@@ -40,6 +40,11 @@ The module names describe code organization only. `runtime`, `inbox`,
 question is always simpler: is this mechanical Host code, or meaning owned by
 an App?
 
+The same rule governs decisions: code collects bounded trustworthy context and
+executes a schema-validated decision; the LLM decides meaning. Code may handle
+an explicit deterministic case, but it must not become a second intent
+classifier, keyword router, or conversation state machine.
+
 ## App shape
 
 ```text

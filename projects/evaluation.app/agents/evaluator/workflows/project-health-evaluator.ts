@@ -168,15 +168,8 @@ function severity(verdict: string | undefined): number {
   }
 }
 
-function dedupeFamily(value: string | undefined): string {
-  const key = text(value);
-  if (!key) return "";
-  const project = key.split(":")[0] || "";
-  if (/approval/i.test(key)) return `${project}:approval`;
-  if (/review[-_]?failed|workflow[-_]?blocked|provider/i.test(key)) {
-    return `${project}:audit-execution`;
-  }
-  return key;
+function dedupeIdentity(value: string | undefined): string {
+  return text(value);
 }
 
 function canonicalValue(value: unknown): unknown {
@@ -379,7 +372,10 @@ export function shouldNotify(
     !ACTIONABLE_HUMAN_REQUESTS.has(previousAction)
   )
     return true;
-  if (dedupeFamily(previous.lastDedupeKey) !== dedupeFamily(judgment.dedupeKey))
+  if (
+    dedupeIdentity(previous.lastDedupeKey) !==
+    dedupeIdentity(judgment.dedupeKey)
+  )
     return true;
   if (
     previous.lastRequestedHumanAction !== undefined &&
@@ -398,8 +394,8 @@ export function shouldFeedbackTargetOwner(
   if (options.force) return true;
   if (!previous.lastFeedbackDedupeKey) return true;
   if (
-    dedupeFamily(previous.lastFeedbackDedupeKey) !==
-    dedupeFamily(judgment.dedupeKey)
+    dedupeIdentity(previous.lastFeedbackDedupeKey) !==
+    dedupeIdentity(judgment.dedupeKey)
   ) {
     return true;
   }

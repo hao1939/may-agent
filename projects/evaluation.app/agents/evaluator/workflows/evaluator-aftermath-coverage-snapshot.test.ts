@@ -4,6 +4,7 @@ import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   METRIC_ID,
   buildCoverageTask,
+  coverageCountsSchema,
   execute,
   parseCoverageCounts,
 } from "./evaluator-aftermath-coverage-snapshot.ts";
@@ -41,7 +42,7 @@ describe("aftermath coverage snapshot", () => {
     expect(task).toContain("routineWorkflowSession admission policy");
   });
 
-  test("parses direct and finish-result count envelopes", () => {
+  test("parses only structured direct and result count envelopes", () => {
     const counts = {
       eligible: 10,
       evaluated: 3,
@@ -50,14 +51,13 @@ describe("aftermath coverage snapshot", () => {
     };
     expect(parseCoverageCounts(counts)).toEqual(counts);
     expect(parseCoverageCounts({ result: counts })).toEqual(counts);
-    expect(parseCoverageCounts({ summary: JSON.stringify(counts) })).toEqual(
-      counts,
-    );
+    expect(parseCoverageCounts({ summary: JSON.stringify(counts) })).toBeNull();
     expect(parseCoverageCounts({ ...counts, evaluated: 11 })).toBeNull();
   });
 
-  test("records value, sample size, and source counts from a finish summary then converges", async () => {
+  test("requests structured counts, records the sample, and converges", async () => {
     const records: unknown[][] = [];
+    let suppliedSchema: unknown;
     const counts = {
       eligible: 10,
       evaluated: 3,
@@ -68,13 +68,17 @@ describe("aftermath coverage snapshot", () => {
       createTestAppWorkflowContext({
         input: { reason: "repair" },
         reconciliation: reconciliation(),
-        callAgent: async () => agent(undefined, JSON.stringify(counts)),
+        callAgent: async (_agent, _task, options) => {
+          suppliedSchema = options?.schema;
+          return agent(counts);
+        },
         recordMetric: async (...args) => {
           records.push(args);
         },
       }),
     );
     expect(result.status).toBe("done");
+    expect(suppliedSchema).toBe(coverageCountsSchema);
     expect(records).toHaveLength(1);
     expect(records[0]?.[0]).toBe(METRIC_ID);
     expect(records[0]?.[1]).toBe(0.3);

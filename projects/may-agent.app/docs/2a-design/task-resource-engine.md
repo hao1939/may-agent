@@ -146,12 +146,18 @@ tasks.get({ appId, taskId })
 The current shared `TaskView` is deliberately small:
 
 ```text
-{ id, status, generation, outcome, summary?, response?, evidence? }
+{ id, status, generation, outcome, summary?, response?, result?, evidence? }
 ```
 
 The list form returns bounded views from live resources and immutable completed
 receipts. It accepts exact status filters, a capped page size, and an opaque
 continuation token. Omitting status includes every phase.
+
+`result` is a bounded App-defined object for machine-readable domain decisions.
+Runtime validates its transport shape and size but never interprets its domain
+meaning. A parent that needs a child's verdict reads this object; it never
+reconstructs the verdict from `summary`, `response`, evidence labels, or task
+prose. Human explanation stays in `summary` or `response`.
 
 The get form returns the same projection for one exact ID or not-found. Richer
 Conditions, dependencies, direct children, attempt, and activity detail may be
@@ -326,6 +332,8 @@ type HandlerResult =
       state: "converged" | "waiting";
       summary: string;
       evidence: string[];
+      response?: string; // caller-facing only when converged
+      result?: Record<string, unknown>; // App-defined current machine state
       actions?: TaskAction[];
       conditions?: ConditionSpec[];
     }
@@ -338,7 +346,9 @@ type HandlerResult =
 
 Unknown fields are rejected. `needs-agent` is workflow-only. `waiting` requires
 at least one open exact Condition or live direct child after actions are
-applied. A thrown exception, timeout, unavailable runtime, invalid result,
+applied. A waiting result may retain the App's current typed judgment in
+`result`; a later attempt reads that object instead of rebuilding state from
+summary or evidence prose. A thrown exception, timeout, unavailable runtime, invalid result,
 rejected action batch, or failed verifier is a failed attempt—not a domain
 result.
 
@@ -559,7 +569,9 @@ Tests and audits must prove:
 8. Pause/restart/pressure retain work without inventing another attempt; an
    indexed safety query can rebuild a lost ready-set entry.
 9. Direct agent and workflow-nested sessions remain correlated to the current
-   task generation and obsolete sessions cannot complete it.
+   task generation and obsolete sessions cannot complete it. Workflow and
+   session storage project the exact `(appId, taskId, generation, attemptId)`
+   binding supplied by Runtime; readers never recover ownership from prompts.
 10. A task-owned emitted event is visible only after durable acceptance, and a
     retry with the same local key cannot duplicate it.
 11. Every App-owned execution uses this engine; only direct non-App execution

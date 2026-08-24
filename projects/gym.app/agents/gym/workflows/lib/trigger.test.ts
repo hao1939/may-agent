@@ -3,22 +3,19 @@ import { triggerDetails } from "./trigger.ts";
 
 describe("Gym workflow reconciliation details", () => {
   test("uses stable task input when no transient trigger packet survives", () => {
-    const task = [
-      "Reconcile Gym task",
-      "## Reconciliation Task",
-      "```json",
-      JSON.stringify({
-        taskId: "runtime/review-proposal/example",
+    const context = {
+      input: {},
+      reconciliation: {
         input: {
           kind: "regression",
           requestKey: "regression-example",
           outcomePath: "/app/projects/gym.app/.state/runs/example.json",
         },
-      }),
-      "```",
-    ].join("\n");
+        events: { items: [] },
+      },
+    } as never;
 
-    expect(triggerDetails(task)).toEqual({
+    expect(triggerDetails(context)).toEqual({
       kind: "regression",
       requestKey: "regression-example",
       outcomePath: "/app/projects/gym.app/.state/runs/example.json",
@@ -26,18 +23,21 @@ describe("Gym workflow reconciliation details", () => {
   });
 
   test("prefers a fresh trigger observation when one is present", () => {
-    const task = [
-      "## Reconciliation Task",
-      "```json",
-      JSON.stringify({ input: { requestKey: "old" } }),
-      "```",
-      "## Trigger Event",
-      "```json",
-      JSON.stringify({ type: "gym.review.requested", requestKey: "fresh" }),
-      "```",
-    ].join("\n");
+    const context = {
+      input: {},
+      reconciliation: {
+        input: { requestKey: "old" },
+        events: {
+          items: [
+            {
+              event: { type: "gym.review.requested", requestKey: "fresh" },
+            },
+          ],
+        },
+      },
+    } as never;
 
-    expect(triggerDetails(task)).toMatchObject({
+    expect(triggerDetails(context)).toMatchObject({
       type: "gym.review.requested",
       requestKey: "fresh",
     });

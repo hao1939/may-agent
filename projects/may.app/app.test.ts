@@ -9,6 +9,7 @@ import { Check } from "typebox/value";
 import app, {
   evaluationHumanDecisionInput,
   taskForMayInput,
+  validateMayAction,
   validateMayCondition,
 } from "./app.ts";
 
@@ -133,6 +134,21 @@ describe("canonical May conversation App", () => {
     expect(
       validateMayCondition({ ...condition, type: "human-decision" }),
     ).toContain("not an observable May approval event");
+  });
+
+  test("keeps May as deputy instead of a second durable task planner", () => {
+    expect(
+      validateMayAction({
+        kind: "create-task",
+        id: "hidden-work",
+        parentId: "may",
+        outcome: "Do hidden work",
+        mode: "achieve",
+        outputs: [],
+        acceptance: ["Done"],
+        priority: "P1",
+      }),
+    ).toContain("answer, clarify, or use a typed accountable-App dependency");
   });
 
   test("translates Evaluation decisions without losing their dedupe lineage", () => {

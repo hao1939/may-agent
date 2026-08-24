@@ -306,7 +306,8 @@ describe("evaluation fact admission", () => {
         sessionId: "s_resume_lifecycle",
         agent: "aks-explorer",
         status: "interrupted",
-        error: "No agent observation for 300000ms",
+        error: "localized runtime detail",
+        interruptionKind: "observation-timeout",
       },
       { source: "app-task-owner" },
     );
@@ -327,6 +328,7 @@ describe("evaluation fact admission", () => {
         agent: "aks-explorer",
         status: "interrupted",
         error: "No agent observation for 300000ms",
+        interruptionKind: "observation-timeout",
       },
       { source: "runtime:auto-resume" },
     );

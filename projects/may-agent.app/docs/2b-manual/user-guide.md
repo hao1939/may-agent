@@ -105,9 +105,9 @@ not to the bounded agent run named `may`.
 | `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
 
 Bare text always goes through May with the selected App as context. While
-watching, Console also attaches the exact Task identity so the text becomes
-natural Task feedback through May; it never steers an execution session
-directly.
+watching, Console also attaches the exact Task identity as context. May decides
+whether the human is asking about it, changing it, or starting another topic;
+Console never steers an execution session directly.
 
 Use `/todo` for decisions needed by the selected App, `/todo all` for the
 cross-App view, and `/todo more` when another page exists. The prompt count and

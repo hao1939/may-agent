@@ -11,43 +11,5 @@
     "cli-delegation",
     "system-status",
     "finish"
-  ],
-  "skillActivationRules": [
-    {
-      "skill": "system-deputy-decisions",
-      "pattern": "(?=[\\s\\S]*system-state\\.md)(?=[\\s\\S]*(?:decide|next move|what .* do next))"
-    },
-    {
-      "skill": "may-agent-system",
-      "pattern": "(?=[\\s\\S]*system-state\\.md)(?=[\\s\\S]*(?:decide|next move|what .* do next))"
-    },
-    {
-      "skill": "proof-rollout",
-      "pattern": "^(?![\\s\\S]*\\b(?:already|previously)\\s+(?:proved|proven|validated|approved)\\b)(?![\\s\\S]*\\b(?:do not|don.t|never)\\s+(?:roll|turn|adopt|enable|deploy|ship|apply)\\b)(?=[\\s\\S]*\\b(?:(?:all|every)\\s+(?:agents?|teams?|projects?|project\\s+apps?|apps?|services?)|fleet(?:-wide)?|system-?wide|multi-?agent|across\\s+(?:the\\s+)?(?:agents|team|projects?|apps?|services?))\\b)[\\s\\S]*\\b(?:roll(?:\\s+\\w+){0,4}\\s+out|turn(?:\\s+\\w+){0,4}\\s+on|adopt|enable|deploy|ship|apply)\\b"
-    },
-    {
-      "skill": "bounded-cleanup",
-      "pattern": "^(?![\\s\\S]*\\b(?:format(?:ting)?|whitespace|lint|prettier|style)\\b)(?![\\s\\S]*\\b(?:remove|delete|archive)\\s+(?:the\\s+)?(?:active|in-use|live|current)\\b)(?![\\s\\S]*\\b(?:all|everything|entire|bulk)\\b[\\s\\S]*\\b(?:remove|delete|archive|clean ?up|prune)\\b)(?=[\\s\\S]*\\b(?:clean ?up|remove|delete|prune|archive)\\b)(?=[\\s\\S]*\\b(?:old|obsolete|superseded|legacy|unused|stale|dead)\\b)"
-    },
-    {
-      "skill": "system-deputy-decisions",
-      "pattern": "(?=[\\s\\S]*\\b(?:app|project\\s+app)\\b)(?=[\\s\\S]*\\b(?:inspect|check|stuck|moving|owner|task|condition|state|triage|unfamiliar|unsure)\\b)"
-    },
-    {
-      "skill": "system-deputy-decisions",
-      "pattern": "(?=[\\s\\S]*\\b(?:workflow|task|intake|process)\\b)(?=[\\s\\S]*\\b(?:stuck|blocked|timeout|timed\\s+out|failed|no\\s+progress)\\b)(?=[\\s\\S]*\\b(?:fix|continue|resume|recover|unblock|moving|closure)\\b)"
-    },
-    {
-      "skill": "system-deputy-decisions",
-      "pattern": "(?=[\\s\\S]*\\b(?:old|past|previous)\\b[\\s\\S]{0,80}\\b(?:session|evidence|example)\\b)(?=[\\s\\S]*\\b(?:train|training|learn|lesson)\\b)(?=[\\s\\S]*\\b(?:accepted|current|design|truth|conflict)\\b)"
-    },
-    {
-      "skill": "system-deputy-decisions",
-      "pattern": "(?=[\\s\\S]*\\b(?:accepted|delivered|stored|queued)\\b)(?=[\\s\\S]*\\b(?:no|missing|never|without)\\b[\\s\\S]{0,100}\\b(?:result|output|report|response|artifact|completion)\\b)(?=[\\s\\S]*\\b(?:cause|diagnos(?:e|is|tic)|investigat(?:e|ion)|fix)\\b)"
-    },
-    {
-      "skill": "provider-proof-approval",
-      "pattern": "^(?![\\s\\S]*\\b(?:approval granted|already approved|approved to (?:rotate|change|switch|deploy|roll)|go ahead and (?:rotate|change|switch|deploy)|rotate now|change credentials now)\\b)(?=[\\s\\S]*\\b(?:provider|model|api|credential|credentials|token|auth|401|403|unauthori[sz]ed|quota|routing)\\b)(?=[\\s\\S]*\\b(?:control|comparison|baseline|other provider|healthy path|kept working|succeeded|still works)\\b)(?=[\\s\\S]*\\b(?:remediation|diagnos|root cause|fix|proposal|canary|prove|proof)\\b)"
-    }
   ]
 }

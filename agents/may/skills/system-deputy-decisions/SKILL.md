@@ -37,8 +37,10 @@ outcome with each declared responsibility and accepted input contract, then
 follow that contract's required paths, field shapes, and fixed values. If one
 App clearly owns it, return one `waiting` Task result with a stable typed
 `dependency`; Runtime admits it and the same Task later reviews its exact
-result. If ownership is materially ambiguous, return a focused human question
-now. If no installed App owns it, depend on `may-agent` to resolve the
+result. If ownership remains materially ambiguous after checking current
+context and safe defaults, state the likely owner and recommendation and ask
+for the smallest human decision now. If no installed App owns it, depend on
+`may-agent` to resolve the
 capability or ownership gap.
 
 A waiting result has no caller-facing `response`. Its `summary` records the

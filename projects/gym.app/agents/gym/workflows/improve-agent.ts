@@ -1575,15 +1575,9 @@ function existingResult(path: string): StoredResult | null {
   if (!summary) return null;
   const approval = approvalFromStored(value);
   const recoverableInterruption =
-    !approval &&
-    (/Workflow ["']improve-agent["'] timed out after \d+ms/i.test(summary) ||
-      summary.startsWith(
-        "Interrupted reconciliation improve/may belonged to a previous runtime",
-      ));
+    !approval && value.stop_reason === "runtime-interrupted";
   if (recoverableInterruption) return null;
-  const safetyStop =
-    value.stop_reason === "candidate-safety-limit" ||
-    summary.startsWith("Gym reached the safety limit");
+  const safetyStop = value.stop_reason === "candidate-safety-limit";
   if (safetyStop) {
     value.stop_reason = "candidate-safety-limit";
     value.next = "ask-owner";
@@ -1850,48 +1844,12 @@ function evaluationOnlyAdjustmentFromValue(
   };
 }
 
-/**
- * Adjustments normally arrive with the structured contract above. This narrow
- * parser keeps decisions made before that contract was introduced resumable.
- * Every extracted value is independently checked against durable state before
- * any evaluation starts.
- */
 export function evaluationOnlyAdjustmentFromResponse(
   response: ApprovalResponse,
 ): EvaluationOnlyAdjustment | null {
-  if (response.decision !== "adjust") return null;
-  if (response.adjustment) {
-    return evaluationOnlyAdjustmentFromValue(response.adjustment);
-  }
-
-  const message = response.message.trim();
-  const candidate = message.match(
-    /\bverify exact candidate fingerprint\s+(?:sha256:)?([a-f0-9]{64})\b/i,
-  );
-  const benchmark = message.match(
-    /\bagainst the unchanged full approved\s+([a-z0-9][a-z0-9-]*)\s+suite\b/i,
-  );
-  if (
-    !candidate ||
-    !benchmark ||
-    !/\bfresh same-framework baseline and candidate comparison\b/i.test(
-      message,
-    ) ||
-    !/\bno invalid runs\b/i.test(message) ||
-    !/\bno regressions\b/i.test(message)
-  ) {
-    return null;
-  }
-  const benchmarkName = safeName(benchmark[1], "");
-  if (!benchmarkName) return null;
-  return {
-    schema_version: 1,
-    kind: "verify-candidate",
-    candidateFingerprint: candidate[1]!.toLowerCase(),
-    benchmark: benchmarkName,
-    scenarios: "active-suite",
-    freshBaseline: true,
-  };
+  return response.decision === "adjust" && response.adjustment
+    ? evaluationOnlyAdjustmentFromValue(response.adjustment)
+    : null;
 }
 
 function approvalResponse(
@@ -2696,7 +2654,7 @@ async function reviewFailedCandidate(
       [
         "Review this failed May candidate before deciding what changes next.",
         "Read the baseline, comparison, failed decisions, approved expected answers, scorer checks, prompt/model provenance, and runtime evidence.",
-        "Read the exact candidate snapshot preserved by the verification manifest. If it contains agent.json skillActivationRules, execute each relevant rule against the frozen task text and distinguish a trigger miss from a loaded-skill policy failure.",
+        "Read the exact candidate snapshot preserved by the verification manifest. Use the skill.loaded trace to distinguish model retrieval failure from a loaded-skill policy failure; never infer activation from task wording.",
         "Use revise-candidate only when the evidence still establishes a May behavior gap.",
         "When the failed candidate text was present in the actual prompt but behavior did not improve, propose a different learning mechanism instead of stronger wording in the same file.",
         "Use review-benchmark, review-scorer, review-runtime, or needs-human for the responsible alternative.",
@@ -2946,9 +2904,9 @@ async function runCandidateIteration(
             ]
           : []),
         "Read prior generation results for this task when present; they are evidence about mechanisms that already failed even when this generation has no in-run revision yet.",
-        "When repeated valid trials prove model-selected skill loading is ignored, use the validated agent.json skillActivationRules mechanism for a narrow deterministic trigger instead of adding more prompt wording. For a first candidate, copy the full prepared agent.json into the overlay, change only skillActivationRules, and pair the rule with its named skill package. For a revision, edit the agent.json already present in the candidate overlay and preserve unrelated rules and skills from earlier iterations.",
-        "Keep activation rules general, bounded, and tied to the real high-risk task class. Require an opposite control so a rule does not make May over-apply the skill.",
-        "Before finishing, validate candidate agent.json with the May-agent config validator: each activation pattern must be valid and 1-512 characters, and every named skill must exist in the candidate catalog.",
+        "When repeated valid trials show model-selected skill retrieval is unreliable, improve the skill name, description, catalog visibility, or the calling workflow's explicit skill selection. Do not add keyword or regex activation over task prose.",
+        "Require an opposite control so improved discoverability or explicit selection does not make May over-apply the skill.",
+        "Before finishing, validate candidate agent.json and every changed skill package with the May-agent loaders.",
         `Candidate overlay directory: ${candidateDir}`,
         ...(plan.revision
           ? [

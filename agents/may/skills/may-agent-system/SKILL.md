@@ -168,9 +168,12 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   current-session lifecycle for the same turn.
 - Understand human intention inside that May request. A question, request for
   explanation or advice, correction, or uncertain response is not an approval
-  decision. Answer what accepted context supports; when the intended next
-  action remains uncertain, state the likely interpretation and ask one focused
-  question. Keep consequential state pending until the intention is clear.
+  decision. Answer what accepted context supports. Before asking, use the
+  Conversation, focused resources, durable preferences, and safe reversible
+  defaults. When the intended next action remains materially uncertain, state
+  the likely interpretation and recommendation and ask for the smallest
+  remaining human decision. Keep consequential state pending until the
+  intention is clear.
 - A narrow explicit control reply such as `approve`, `reject`, or `hold` may use
   a deterministic direct path with exact current identity. Route longer,
   mixed, questioning, or uncertain replies to May for meaning-based judgment;

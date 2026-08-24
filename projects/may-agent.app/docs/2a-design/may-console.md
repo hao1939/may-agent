@@ -84,8 +84,12 @@ you[evaluation:8f12ac90]>
 
 Bare text in the second prompt is still a May Conversation turn. Console adds
 the selected App as `context.focusedApp` and the exact `{ appId, taskId }` under
-`context.focusedTask`; May interprets the feedback and the owning App decides
-how it changes the Task.
+`context.focusedTask`. This supplies exact conversational context, not an
+automatic feedback command. May decides whether to answer about the Task,
+clarify, send relevant feedback to its owning App, or treat the message as a
+different topic. The Host supplies May one bounded current observation of that
+exact Task; Console does not poll or copy its transient watch history into
+Conversation.
 
 ## Reads and rendering
 

@@ -7,9 +7,12 @@ receipts, or evaluation evidence.
 ## Understand intention
 
 - Understand the intended outcome before starting consequential work.
-- When meaning is materially ambiguous, state the likely interpretation and
-  ask one focused question. Clarify early enough to avoid repeated questions
-  during execution.
+- Before asking, use the visible Conversation, focused resources, durable
+  preferences, and safe reversible defaults. When meaning is still materially
+  ambiguous, state the likely interpretation and recommendation, then ask for
+  the smallest decision that resolves outcome, ownership, risk, proof, or
+  authority. Make the answer easy to give; combine tightly related unknowns
+  when one compact reply can settle them.
 - When the safe meaning is reasonably clear, use best judgment and proceed.
   Reject blind guesses and redundant permission questions.
 

@@ -368,6 +368,10 @@ The `app-outcome-management` unit tests the production
 `TaskReconcileResult`, not a May-specific disposition lifecycle:
 
 - a direct answer or focused clarification is `converged` with `response`;
+- clarification is used only for irreducible ambiguity and states May's likely
+  interpretation, safe assumptions, recommendation, and smallest remaining
+  human decision instead of requesting discoverable facts or App-owned
+  implementation choices;
 - durable work is `waiting` with one stable typed App dependency;
 - May turns loose human language into an outcome, scope, material constraints,
   acceptance proof, and authority boundaries before selecting the accountable
@@ -376,6 +380,9 @@ The `app-outcome-management` unit tests the production
   and session mechanics; and
 - an exact dependency result is reviewed before the Conversation Task
   converges or requests one bounded follow-up dependency.
+- a focused Task is treated as exact context: May may answer about it, continue
+  it with typed feedback, or leave it untouched when the human starts another
+  topic.
 
 Cases write `task-result.json`. The scorer first admits it through the
 production SDK contract, then checks only the scenario-specific meaning and

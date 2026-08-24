@@ -154,9 +154,15 @@ export function projectEvaluationFeedback(
   evaluation: EvaluationFeedback,
   target?: FeedbackTarget,
   exactReplay = false,
-): { changed: boolean; summary: string; evidence: string[] } {
+): {
+  disposition: "invalid-input" | "invalid-key" | "accepted";
+  changed: boolean;
+  summary: string;
+  evidence: string[];
+} {
   if (!validEvaluation(evaluation)) {
     return {
+      disposition: "invalid-input",
       changed: false,
       summary: "Evaluation feedback input is invalid; no projection changed.",
       evidence: ["feedback-input:invalid"],
@@ -169,6 +175,7 @@ export function projectEvaluationFeedback(
     feedbackKey === ".."
   ) {
     return {
+      disposition: "invalid-key",
       changed: false,
       summary: `Feedback key for ${evaluation.agent} is invalid; no projection changed.`,
       evidence: ["feedback-key:invalid"],
@@ -210,6 +217,7 @@ export function projectEvaluationFeedback(
   }
   if (!exactReplay && createdAt < projectedCreatedAt) {
     return {
+      disposition: "accepted",
       changed: false,
       summary: `Ignored stale evaluation ${evaluation.sessionId}; a newer projection already exists for ${evaluation.agent}.`,
       evidence: [
@@ -259,6 +267,7 @@ export function projectEvaluationFeedback(
         );
       }
       return {
+        disposition: "accepted",
         changed: true,
         summary: `Removed stale generated feedback for ${evaluation.agent}; the latest evaluation is not actionable.`,
         evidence: [
@@ -271,6 +280,7 @@ export function projectEvaluationFeedback(
     recordProjectionState();
     verifyProjectionState();
     return {
+      disposition: "accepted",
       changed: false,
       summary: `Latest evaluation for ${evaluation.agent} is not actionable and no stale projection exists.`,
       evidence: [
@@ -325,6 +335,7 @@ them, and acknowledge relevant feedback in your plan.
       );
     }
     return {
+      disposition: "accepted",
       changed: false,
       summary: `Evaluation ${evaluation.sessionId} was already delivered to ${evaluation.agent}'s responsible project owner and remains unresolved; exact replay made no mutation.`,
       evidence: [
@@ -343,6 +354,7 @@ them, and acknowledge relevant feedback in your plan.
     );
   }
   return {
+    disposition: "accepted",
     changed: true,
     summary: `Delivered evaluation ${evaluation.sessionId} to ${evaluation.agent}'s responsible project owner; remediation remains unresolved.`,
     evidence: [
@@ -499,10 +511,7 @@ export async function execute(
     target,
     ctx.input.exactReplay === true,
   );
-  if (
-    outcome.evidence.includes("feedback-input:invalid") ||
-    outcome.evidence.includes("feedback-key:invalid")
-  ) {
+  if (outcome.disposition !== "accepted") {
     return ctx.blocked(outcome.summary, outcome.evidence);
   }
   return ctx.done(

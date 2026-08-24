@@ -729,6 +729,14 @@ describe("single agent-improvement loop", () => {
     );
     const originalProposal = JSON.parse(readFileSync(resultPath, "utf8"));
     const adjustmentMessage = `Keep draft-transfer unchanged. Verify exact candidate fingerprint ${candidateFingerprint} against the unchanged full approved ${benchmark} suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`;
+    const adjustment = {
+      schema_version: 1,
+      kind: "verify-candidate",
+      candidateFingerprint,
+      benchmark,
+      scenarios: "active-suite",
+      freshBaseline: true,
+    } as const;
 
     const task = [
       "## Reconciliation Task",
@@ -747,6 +755,7 @@ describe("single agent-improvement loop", () => {
           packetPath: resultPath,
           decision: "adjust",
           message: adjustmentMessage,
+          adjustment,
         },
       }),
       "```",
@@ -915,6 +924,7 @@ describe("single agent-improvement loop", () => {
       JSON.stringify({
         decision: "adjust",
         message: adjustmentMessage,
+        adjustment,
         ...originalProposal.approval,
       }),
     );
@@ -994,11 +1004,19 @@ describe("single agent-improvement loop", () => {
     });
   });
 
-  test("recognizes only a complete evaluation-only adjustment", () => {
+  test("uses only the structured evaluation-only adjustment", () => {
     const fingerprint = "a".repeat(64);
     const accepted = evaluationOnlyAdjustmentFromResponse({
       decision: "adjust",
-      message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`,
+      message: "Please run the bounded comparison.",
+      adjustment: {
+        schema_version: 1,
+        kind: "verify-candidate",
+        candidateFingerprint: fingerprint,
+        benchmark: "may-test",
+        scenarios: "active-suite",
+        freshBaseline: true,
+      },
     });
     expect(accepted).toMatchObject({
       candidateFingerprint: fingerprint,
@@ -1008,13 +1026,21 @@ describe("single agent-improvement loop", () => {
     expect(
       evaluationOnlyAdjustmentFromResponse({
         decision: "adjust",
-        message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite.`,
+        message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`,
       }),
     ).toBeNull();
     expect(
       evaluationOnlyAdjustmentFromResponse({
         decision: "decline",
         message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`,
+        adjustment: {
+          schema_version: 1,
+          kind: "verify-candidate",
+          candidateFingerprint: fingerprint,
+          benchmark: "may-test",
+          scenarios: "active-suite",
+          freshBaseline: true,
+        },
       }),
     ).toBeNull();
   });
@@ -3154,6 +3180,7 @@ describe("single agent-improvement loop", () => {
       join(iterationDir, "..", "..", "result.json"),
       JSON.stringify({
         summary: 'Workflow "improve-agent" timed out after 7200000ms',
+        stop_reason: "runtime-interrupted",
         next: "ask-owner",
         workflow_state: "converged",
         approval: null,

@@ -41,6 +41,16 @@ Everything before that call is validation, pure mapping, admission, or
 preparation. Everything after it is result validation, persistence, wake
 scheduling, recovery, or delivery.
 
+The semantic-decision boundary is equally small:
+
+> Code collects bounded trustworthy context and executes a validated decision;
+> the LLM makes the semantic decision.
+
+Code owns exact reads, schemas, deterministic controls, identity, authority,
+fencing, and effects. It may apply a pure deterministic rule when meaning is
+already explicit. It must not grow a parallel keyword router, intent
+classifier, or conversational state machine.
+
 ## Public mental model
 
 The ordinary interaction model has four nouns:
@@ -89,6 +99,12 @@ May is the App; “May App” is only the precise name used when contrasting May
 with another App or with the Host. That is the complete ordinary mental model.
 The Host may run a bounded executor such as `agent:may` while reconciling the
 Conversation Task, but the executor is not another service or owner.
+
+May is the human's deputy rather than a forwarding layer. It uses Conversation,
+preferences, and focused resources to understand the intention; answers or
+asks for the smallest irreducible decision when it can; delegates only a clear
+outcome; and reviews the exact App result before closing with the human. Focus
+is context, not automatic mutation authority.
 
 The names describe different responsibilities:
 
@@ -285,7 +301,7 @@ a new attempt, but it keeps the same request and task identities.
 | App request | One caller still owed a correlated result            | Host                     |
 | Task        | One desired outcome reconciled by an App             | Host storage, App policy |
 | Attempt     | One bounded agent or workflow execution              | Host                     |
-| Result      | Accepted status, caller response, and evidence       | App                      |
+| Result      | Accepted status, optional typed domain result, caller response, and evidence | App |
 | Delivery    | Optional transport evidence for an external send     | Host                     |
 
 Queues, leases, traces, metrics, sessions, and projections support these
@@ -323,7 +339,8 @@ A task result may request a typed child App outcome with a stable local ID,
 target App, and typed input. Runtime derives one deterministic child request
 ID, publishes that request durably, and installs an exact completion Condition
 on the parent. The child App resolves its input to its own Task. Its accepted
-result returns as an ordinary Event containing summary, response, and evidence;
+result returns as an ordinary Event containing summary, optional structured
+result, response, and evidence;
 the parent reconciles again and decides its own outcome.
 
 Dependency completion is one durable Event, not a private callback. The Host

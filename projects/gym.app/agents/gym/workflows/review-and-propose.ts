@@ -60,48 +60,12 @@ type ReviewDecision = {
   dispositionReason: string;
 };
 
-function contentText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .map((block) => {
-      if (typeof block === "string") return block;
-      if (!block || typeof block !== "object") return "";
-      const value = block as Record<string, unknown>;
-      return typeof value.text === "string"
-        ? value.text
-        : typeof value.content === "string"
-          ? value.content
-          : "";
-    })
-    .filter(Boolean)
-    .join("\n");
-}
-
 function reviewProposal(result: {
   structuredResult?: { proposal?: unknown };
-  lastAssistantText?: string | null;
-  messages?: unknown[];
 }): string {
-  const candidates = [
-    typeof result.structuredResult?.proposal === "string"
-      ? result.structuredResult.proposal
-      : "",
-    result.lastAssistantText ?? "",
-  ];
-  for (const message of result.messages ?? []) {
-    if (!message || typeof message !== "object") continue;
-    const value = message as Record<string, unknown>;
-    if (value.role !== "assistant") continue;
-    candidates.push(
-      typeof value.text === "string" ? value.text : contentText(value.content),
-    );
-  }
-  return (
-    candidates
-      .map((candidate) => candidate.trim())
-      .sort((left, right) => right.length - left.length)[0] ?? ""
-  );
+  return typeof result.structuredResult?.proposal === "string"
+    ? result.structuredResult.proposal.trim()
+    : "";
 }
 
 function coverageSummary(projectsRoot: string): string {

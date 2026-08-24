@@ -99,8 +99,10 @@ is being watched.
 May reads the same bounded Conversation available to Console, including the
 latest command view each surface actually showed. Task views carry exact Task
 references. Never choose the most recent session, latest event, or fuzzy text
-match as durable routing. If the human's meaning remains ambiguous, May asks
-one focused clarification inside the new request.
+match as durable routing. If the human's meaning remains materially ambiguous
+after using available context and safe defaults, May states the likely
+interpretation and recommendation and asks for the smallest remaining decision
+inside the new request.
 
 The channel-message index records at least:
 
@@ -242,8 +244,9 @@ or session cancellation.
 
 One chat/topic selects one App (initially `may`) and watches at most one Task.
 While watched, ordinary text remains a May Conversation turn with exact
-`context.focusedApp` and `context.focusedTask`; it is never sent
-directly to an execution session. Semantic Task events wake one coalesced exact
+`context.focusedApp` and `context.focusedTask`; focus supplies context and does
+not force feedback or mutation. Text is never sent directly to an execution
+session. Semantic Task events wake one coalesced exact
 read. Passive Conversation synchronization reads bounded messages only. Idle
 watch has no poller, timer, workflow, session, or model call.
 

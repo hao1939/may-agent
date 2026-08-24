@@ -3,6 +3,7 @@ import type {
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath-coverage-snapshot";
 export const description =
@@ -17,6 +18,16 @@ export type CoverageCounts = {
   windowStart: number;
   windowEnd: number;
 };
+
+export const coverageCountsSchema = Type.Object(
+  {
+    eligible: Type.Integer({ minimum: 0 }),
+    evaluated: Type.Integer({ minimum: 0 }),
+    windowStart: Type.Integer({ minimum: 0 }),
+    windowEnd: Type.Integer({ minimum: 0 }),
+  },
+  { additionalProperties: false },
+);
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -33,19 +44,7 @@ function integer(value: unknown): number | null {
 export function parseCoverageCounts(value: unknown): CoverageCounts | null {
   const root = record(value);
   const result = record(root.result);
-  let summary: Record<string, unknown> = {};
-  if (typeof root.summary === "string") {
-    try {
-      summary = record(JSON.parse(root.summary));
-    } catch {
-      summary = {};
-    }
-  }
-  const raw = Object.keys(result).length
-    ? result
-    : Object.keys(summary).length
-      ? summary
-      : root;
+  const raw = Object.keys(result).length ? result : root;
   const eligible = integer(raw.eligible);
   const evaluated = integer(raw.evaluated);
   const windowStart = integer(raw.windowStart);
@@ -84,16 +83,16 @@ export async function execute(
       "evaluator-aftermath-coverage-snapshot requires canonical reconciliation context",
     );
   }
-  const execution = await ctx.agents.call("evaluator", buildCoverageTask());
+  const execution = await ctx.agents.call("evaluator", buildCoverageTask(), {
+    schema: coverageCountsSchema,
+  });
   if (execution.status !== "done") {
     return ctx.blocked(
       `Coverage counter ${execution.id} ended ${execution.status}: ${execution.summary}`,
       [`execution:${execution.id}`],
     );
   }
-  const counts = parseCoverageCounts(
-    execution.output ?? { summary: execution.summary },
-  );
+  const counts = parseCoverageCounts(execution.output);
   if (!counts) {
     return ctx.blocked(
       `Coverage counter ${execution.id} returned invalid counts.`,

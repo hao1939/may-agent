@@ -141,9 +141,11 @@ and carries a canonical `followTask` presentation hint. Console automatically
 follows that owner Task; it never guesses from prose, the newest session, or the
 last Task reference. Exact Task detail shows linked App Task references and typed
 Conditions, never internal request IDs. A human can also `/watch` another Task or
-continue talking naturally. While watching, feedback is routed as typed input to
-that exact owner Task. It wakes waiting work for one reconsideration and does not
-create a sibling Task.
+continue talking naturally. While watching, text still goes to May. May uses the
+focused identity as context and routes typed input to that exact owner Task only
+when the understood intention concerns it. Relevant feedback wakes waiting work
+for one reconsideration and does not create a sibling Task; an answerable
+question or unrelated topic does not mutate it.
 Several human turns may target the same Task, but they do not become several
 owners of its output. Waiting status is unique by Conversation, Task, and
 semantic revision; assignment is unique by Conversation, parent Task, and owner
@@ -180,20 +182,27 @@ While watching, bare text still goes through May. The adapter attaches:
 }
 ```
 
-May therefore receives natural human language plus an exact Task identity. May
-uses that identity only when the message is feedback for the unfinished Task.
+May therefore receives natural human language plus an exact Task identity. The
+identity is a candidate referent, not an instruction. May first decides whether
+the human is asking about that Task, changing or controlling it, or starting an
+unrelated topic. It uses the identity for mutation only when the understood
+intention concerns the unfinished Task. When authoring the May request, the
+Host resolves that identity once to a bounded current status, summary, response,
+and evidence observation. A missing or unreadable Task is reported as unknown;
+focus never causes a broad scan, poll, or admission failure.
 The executor also receives the Task's accepted open Conditions and live App
-request identities. It must reconsider the existing Task and the human's actual
-concern first, preserve a still-relevant wait, and create different work only
-when the current Task cannot fulfill the outcome.
+request identities. For relevant feedback it must reconsider the human's actual
+concern against that existing state, preserve a still-relevant wait, and create
+different work only when the current Task cannot fulfill the outcome.
 For a request that originally asked an App to create suitable work, its later
 resolved owner Task is observation, not a new target. Reusing that request keeps
 the original request identity and target semantics; it does not retarget or
 replace the dependency.
 Fresh feedback wakes a waiting or attention Task once. Unrelated text and text
 without an exact focus do not globally wake every blocked Task.
-May then interprets the feedback and sends typed input to the owning App and
-exact Task.
+May then answers directly, asks for the smallest irreducible clarification,
+sends typed input to the owning App and exact Task, or delegates a genuinely
+new outcome.
 The adapter never steers a temporary session and May never edits another App's
 Task storage directly.
 

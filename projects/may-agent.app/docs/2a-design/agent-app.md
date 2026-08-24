@@ -257,14 +257,65 @@ of May's task outcome.
 For a durable human request, May follows one small ownership decision:
 
 1. understand the desired outcome, scope, material constraints, proof, and
-   authority boundary;
+   authority boundary from the message, bounded Conversation, focused
+   resources, and durable preferences;
 2. answer immediately when current evidence is sufficient;
-3. ask one focused question only when ambiguity materially changes the outcome
-   or owner; otherwise choose the installed App whose declared responsibility
-   fits the outcome and whose input schema accepts the typed request;
-4. return one dependency and let that App choose its stable Task, workflow,
-   executor, schedule, and retry policy; and
-5. review the exact dependency result before answering the human.
+3. when ambiguity remains, infer safe reversible defaults and ask only for the
+   smallest human decision that materially changes outcome, ownership, risk,
+   proof, or authority;
+4. when the human means to question, steer, approve, cancel, or otherwise
+   change existing work, address or continue that exact Task instead of
+   creating sibling work;
+5. otherwise choose the installed App whose declared responsibility fits the
+   clear outcome and whose input schema accepts the typed request; and
+6. review the exact dependency result against the human's intention before
+   answering, steering the same Task when the result is incomplete.
+
+May is the human's deputy, not an intent classifier or forwarding router. A
+focused App or Task is exact context, not a predetermined action. May decides
+whether the new message concerns that work at all. Delegation transfers domain
+execution, not May's responsibility to close the human conversation with a
+useful verified result.
+
+A good clarification minimizes human work. Before asking, May checks whether
+the answer is already present or can be chosen safely. The question states the
+likely interpretation, safe assumptions, recommended choice, and only the
+remaining decision. Prefer confirmation or a short choice over “what do you
+want?” One compact question may include tightly related unknowns when doing so
+avoids another turn. Clarification remains ordinary Conversation text; there is
+no intent-draft resource, clarification Condition, or extra lifecycle.
+
+### Understanding boundary
+
+Understanding is one bounded LLM decision over structured, Host-authored
+context. Code supplies the current message, bounded visible Conversation,
+focused Task identity and observation, current Task goal and waits, durable
+preferences, and installed App input contracts. The LLM decides what the human
+means and returns the ordinary fenced Task result:
+
+- `converged` with `response` for an answer or clarification; or
+- `waiting` with a typed dependency for delegated work, including `taskId` only
+  when continuing an exact existing Task.
+
+Code validates schemas, canonical identities, App availability, authority
+boundaries, idempotency, and stale-result fences. It does not duplicate the LLM
+with keyword routing, a second intent classifier, or a clarification state
+machine. Conversely, the LLM cannot invent Apps, bypass typed input, retarget a
+Task implicitly, or make stale effects authoritative.
+
+The same boundary applies after admission. Code may parse explicit commands,
+typed event and resource fields, declared artifact formats, provider error
+compatibility, and presentation-only search. It must not decide domain meaning
+by searching summaries, evidence labels, reasons, or ordinary messages for
+keywords. When later code needs a decision, the LLM or owning App returns it in
+a schema-validated `result`; parents read the exact child Task result by ID.
+Summaries and evidence explain a decision but never become its machine
+authority.
+
+When a turn explicitly carries the exact unfinished May Conversation Task, the
+Host may attach that turn to the same Task so its goal, waits, and new evidence
+reach one bounded decision. This is context continuity, not semantic routing:
+it authorizes no target-App change and does not decide what the human means.
 
 The waiting result omits `response`; Runtime does not project intermediate Task
 responses to the caller. Its `summary` is operational state. May produces the

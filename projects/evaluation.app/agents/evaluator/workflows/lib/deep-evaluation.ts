@@ -68,20 +68,7 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function parsedRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== "string") return record(value);
-  const fenced = value.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
-  for (const candidate of [fenced, value]) {
-    if (!candidate) continue;
-    const start = candidate.indexOf("{");
-    const end = candidate.lastIndexOf("}");
-    if (start < 0 || end <= start) continue;
-    try {
-      return record(JSON.parse(candidate.slice(start, end + 1)));
-    } catch {
-      continue;
-    }
-  }
-  return {};
+  return record(value);
 }
 
 function unitScore(value: unknown): number | null {

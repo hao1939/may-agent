@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
-import { extractTrigger, reconciliationPacket } from "./trigger";
 
 type LegacyAgentResult = {
   id?: string;
@@ -31,6 +30,22 @@ function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+/** Test-fixture compatibility only; production workflows receive typed context. */
+function fencedObject(task: string, header: string, useLast = false): Record<string, unknown> {
+  const headerIndex = useLast ? task.lastIndexOf(header) : task.indexOf(header);
+  if (headerIndex < 0) return {};
+  const fenceStart = task.indexOf("```json", headerIndex + header.length);
+  if (fenceStart < 0) return {};
+  const jsonStart = fenceStart + "```json".length;
+  const fenceEnd = task.indexOf("```", jsonStart);
+  if (fenceEnd < 0) return {};
+  try {
+    return record(JSON.parse(task.slice(jsonStart, fenceEnd).trim()));
+  } catch {
+    return {};
+  }
 }
 
 function terminalStatus(value: unknown): ExecutionResult["status"] {
@@ -139,9 +154,9 @@ export function canonicalGymTestContext(
   } as WorkflowContext & { task?: string };
 
   const refresh = () => {
-    const packet = reconciliationPacket(task) ?? {};
+    const packet = fencedObject(task, "## Reconciliation Task");
     const authoredInput = record(packet.input);
-    const rawTrigger = extractTrigger(task);
+    const rawTrigger = fencedObject(task, "## Trigger Event", true);
     const trigger = rawTrigger?.type
       ? {
           type: String(rawTrigger.type),

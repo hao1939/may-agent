@@ -300,12 +300,18 @@ state or reconciliation. Registering an executor adds a function, not a queue,
 worker lifecycle, retry policy, or store.
 
 One fenced reconciliation attempt returns a typed state, summary, evidence,
-optional caller-facing response, task changes, Conditions, and typed cross-App
-dependencies. The
+an optional caller-facing response, an optional bounded App-defined `result`
+object, task changes, Conditions, and typed cross-App dependencies. Runtime
+carries `result` without interpreting domain meaning. The
 current compatibility field and type are `actions` and `TaskAction`; they mean
 task changes, not App commands or a separate action lifecycle. Runtime
 admission validates generation, change scope, Conditions, dependencies, and
 verification evidence before any mutation becomes authoritative.
+
+`result` may describe current machine state for either `waiting` or
+`converged`. A parent obtains an exact child result with `tasks.get(taskId)`;
+SDK helpers never recover decisions by parsing child summaries, evidence
+tokens, or free-form failure reasons.
 
 `summary` describes the task decision for operators and later reconciliation.
 `response` is optional semantic content for callers linked to the task. Runtime

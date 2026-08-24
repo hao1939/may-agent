@@ -70,12 +70,17 @@ context.
 A human request has two conversational stages, without another stored
 lifecycle:
 
-1. **Clarifying.** May may ask one concise question and complete the current
-   Conversation Task with that response. The next human message carries the
-   bounded Conversation context. This may repeat for several natural turns;
-   the Conversation itself is the requirement draft, so no draft-Task resource
-   is needed. No project Task is claimed before outcome, material constraints,
-   acceptance proof, and owner are clear enough to act.
+1. **Clarifying.** May first uses the bounded Conversation, exact focused
+   resources, durable preferences, and safe reversible defaults. It asks only
+   when the remaining ambiguity materially changes outcome, ownership, risk,
+   proof, or authority. The response states May's likely interpretation and
+   recommendation and requests the smallest decision the human must supply;
+   tightly related unknowns may share one compact question when that reduces
+   human turns. The current Conversation Task completes with that response and
+   the next human message carries the bounded Conversation context. This may
+   repeat only when genuinely necessary. The Conversation itself is the
+   requirement draft, so no draft-Task resource is needed. No project Task is
+   claimed before the request is clear enough for one accountable App to act.
 2. **Assigned.** May routes the clear outcome to the responsible App. The
    accepted waiting result appends one concise Conversation status linked to
    the stable May Task reference. `/task <ref>` exposes the responsible App
@@ -109,11 +114,20 @@ constraints, approval bounds, and expected evidence. A project App decides its
 task shape, workflow, waits, retries, and terminal proof.
 
 May's pure task resolver is the admission decision and gives every human turn a
-stable input task. During reconciliation, feedback such as “continue the second
-one” or “that wait is invalid” may produce a typed revision, wake, or dependency
-for the represented unfinished task. The Host records the feedback turn as
-linked Conversation context and persists the validated task change before
-scheduling more work.
+stable input task. Focus identifies an exact candidate referent but does not
+decide the meaning of the message. The Host resolves that exact identity once
+to a bounded current Task observation while authoring the request, avoiding a
+broad query or another lifecycle. During reconciliation, May may answer a
+question about the focused Task, ignore it for an unrelated topic, or interpret
+feedback such as “continue the second one” or “that wait is invalid” as a typed
+revision, wake, or dependency for the represented unfinished task. The Host
+records the turn as linked Conversation context and persists any validated Task
+change before scheduling more work.
+
+If the exact focus is the unfinished May Conversation Task itself, the Host
+attaches the turn there to preserve one commitment and expose its current waits.
+That structural attachment is only context collection; May still decides the
+meaning, and another App changes only through validated typed input.
 
 Only a task linked to the same App and Conversation may be revised by human
 feedback. This Host fence prevents guessed IDs or cross-conversation context

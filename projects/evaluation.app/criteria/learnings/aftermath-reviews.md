@@ -237,9 +237,9 @@
 - Symptom: a heartbeat session correctly gathers live health data and finishes cleanly, but the prompt also required per-signal act/delegate/dismiss/escalate handling and at least one concrete improvement action. The transcript shows only snapshot queries plus a no-change finish.
 - Fix: score these as low-value maintenance rather than strong material-output successes. For good-session credit, require transcript evidence of explicit signal dispositions, a delegation/message, a project move, or another concrete improvement action that answers the prompt beyond "all clear."
 
-## Pattern: verification-only closes can trip Ghost Deliverable on implementation-sounding wording
-- Symptom: a session makes no file changes and correctly intends to finish as analysis/verification only, but its first `finish()` summary says things like "completed triage" or "fix warranted / no fix warranted" in a way the guard interprets as claimed implementation output.
-- Fix: verify whether the transcript shows only read/query/bash inspection plus no deliverables. If so, treat the blocked closeout as wording friction, not fake output; the right recovery is a narrower verification-only summary, and aftermath scoring should preserve credit for the underlying judgment while applying at most a small efficiency penalty.
+## Pattern: summary prose is not deliverable evidence
+- Historical symptom: a removed guard inferred implementation claims from words in `finish()` summaries, creating false positives for verification-only work.
+- Current rule: evaluate typed deliverables and observed tool or repository evidence. Do not classify work type, completion, or honesty from summary keywords; semantic judgment belongs to the evaluator model.
 
 ## Pattern: source commit is not enough for metric calibration if live runtime state disagrees
 - Symptom: a metric-alert triage commits the threshold change in source and may even print a successful direct DB write from bash, but `query_db` still shows the live metric row at the old threshold afterward.

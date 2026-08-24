@@ -122,7 +122,7 @@ describe("canonical evaluator aftermath", () => {
     });
   });
 
-  test("accepts canonical result and legacy finish-summary envelopes", () => {
+  test("accepts a structured result envelope but never parses summary prose", () => {
     const expected = {
       kind: "evaluation" as const,
       evaluation,
@@ -136,7 +136,7 @@ describe("canonical evaluator aftermath", () => {
         { summary: JSON.stringify(expected), completed_items: ["evaluated"] },
         "s_source",
       ),
-    ).toEqual(expected);
+    ).toBeNull();
   });
 
   test("rejects substitution, invalid scores, and partially valid finding lists", () => {
@@ -318,7 +318,7 @@ describe("canonical evaluator aftermath", () => {
     expect(events.every((event) => Boolean(event.localKey))).toBe(true);
   });
 
-  test("evaluates an exact session from a finish summary, persists before routing, and returns a typed reconciliation result", async () => {
+  test("rejects a summary that impersonates the missing structured result", async () => {
     const events: AppEvent[] = [];
     const outcome = {
       kind: "evaluation",
@@ -333,22 +333,14 @@ describe("canonical evaluator aftermath", () => {
         JSON.stringify(outcome),
       ),
     );
-    expect(result.status).toBe("done");
-    expect(events.map((event) => event.type)).toEqual([
-      "evaluation.recorded",
-      "project.owner.requested",
-      "evaluation.human_decision.requested",
-    ]);
-    expect(events.map((event) => event.localKey)).toEqual([
-      "evaluation-recorded",
-      expect.stringMatching(/^owner-finding-[a-f0-9]{16}$/),
-      expect.stringMatching(/^human-decision-[a-f0-9]{16}$/),
-    ]);
-    expect(result.output).toMatchObject({
-      state: "converged",
-      actions: [],
-      evidence: ["execution:s_evaluator", "evaluated-session:s_source"],
+    expect(result).toMatchObject({
+      status: "blocked",
+      summary:
+        "Evaluator execution s_evaluator returned no valid aftermath result.",
     });
+    expect(events.map((event) => event.type)).toEqual([
+      "evaluation.review_failed",
+    ]);
   });
 
   test("records a structured skip as the same durable evaluation fact", async () => {
@@ -497,7 +489,7 @@ describe("canonical evaluator aftermath", () => {
     ).toBe(true);
   });
 
-  test("durably suppresses equivalent cross-session findings while delivering material changes", async () => {
+  test("does not guess cross-session equivalence and suppresses only exact repeated material", async () => {
     const appRoot = mkdtempSync(join(tmpdir(), "aftermath-finding-delivery-"));
     const firstFinding: AftermathFinding = {
       targetAppId: "gym",
@@ -580,12 +572,12 @@ describe("canonical evaluator aftermath", () => {
     ]);
     expect(equivalentEvents.map((event) => event.type)).toEqual([
       "evaluation.recorded",
+      "project.owner.requested",
     ]);
     expect(equivalentResult.output).toMatchObject({
       evidence: [
         "execution:s_evaluator",
         "evaluated-session:s_1787349957833_811",
-        "finding-delivery-suppressed:gym:gym-implementer-missing-writable-artifact-directory",
         expect.stringContaining("finding-delivery-receipt:"),
       ],
     });
@@ -618,10 +610,16 @@ describe("canonical evaluator aftermath", () => {
     });
 
     const receiptDir = join(appRoot, ".state", "finding-delivery", "receipts");
-    expect(readdirSync(receiptDir)).toHaveLength(1);
-    const receipt = JSON.parse(
-      readFileSync(join(receiptDir, readdirSync(receiptDir)[0]!), "utf8"),
-    );
+    expect(readdirSync(receiptDir)).toHaveLength(2);
+    const receipt = readdirSync(receiptDir)
+      .map((name) =>
+        JSON.parse(readFileSync(join(receiptDir, name), "utf8")),
+      )
+      .find(
+        (candidate) =>
+          candidate.stableIdentity?.dedupeKey ===
+          "gym-implementer-missing-artifact-directory-dispatch",
+      );
     expect(receipt).toMatchObject({
       disposition: "delivered",
       stableIdentity: {

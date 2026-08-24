@@ -23,6 +23,16 @@ May is a small App that understands human intent and reconciles
 Conversation Tasks. The Host supplies persistence, wake-up, bounded execution,
 recovery, and delivery. Every App supplies meaning.
 
+The governing semantic-decision rule is:
+
+> Code collects bounded trustworthy context and executes a validated decision;
+> the LLM makes the semantic decision.
+
+Code owns exact reads, schemas, deterministic controls, identity, authority,
+fencing, and effects. It may apply a pure deterministic rule when meaning is
+already explicit. It must not grow a parallel keyword router, intent
+classifier, or conversational state machine.
+
 The governing cost rule is:
 
 > Handling one event should cost roughly the size of that event and the exact

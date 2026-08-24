@@ -6,6 +6,7 @@ import {
   type AppTaskAttachment,
   type AppTaskInput,
   type Condition,
+  type TaskAction,
 } from "@may-agent/sdk";
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
@@ -133,6 +134,10 @@ export function validateMayCondition(condition: Condition): string | null {
     : `type ${condition.type} is not an observable May approval event; clarify now or use a typed installed-App dependency`;
 }
 
+export function validateMayAction(action: TaskAction): string | null {
+  return `May Conversation Tasks cannot ${action.kind}; answer, clarify, or use a typed accountable-App dependency`;
+}
+
 export default defineApp({
   id: "may",
   version: 1,
@@ -143,6 +148,7 @@ export default defineApp({
   task: taskForMayInput,
   tasks: {
     maxConcurrent: 8,
+    validateAction: validateMayAction,
     validateCondition: validateMayCondition,
   },
   subscriptions: [

@@ -48,11 +48,10 @@ export function shouldDeferResumableInterruption(
   data: Record<string, unknown>,
 ): boolean {
   const status = text(data.status ?? data.outcome).toLowerCase();
-  const error = text(data.error);
   return (
     status === "interrupted" &&
     text(source) !== "runtime:auto-resume" &&
-    /no agent observation for \d+ms/i.test(error)
+    text(data.interruptionKind) === "observation-timeout"
   );
 }
 
@@ -203,30 +202,11 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function parsedRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== "string") {
-    const envelope = record(value);
-    if (Object.keys(record(envelope.result)).length) {
-      return record(envelope.result);
-    }
-    if (typeof envelope.summary === "string") {
-      const summary = parsedRecord(envelope.summary);
-      if (Object.keys(summary).length) return summary;
-    }
-    return envelope;
+  const envelope = record(value);
+  if (Object.keys(record(envelope.result)).length) {
+    return record(envelope.result);
   }
-  const fenced = value.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
-  for (const candidate of [fenced, value]) {
-    if (!candidate) continue;
-    const start = candidate.indexOf("{");
-    const end = candidate.lastIndexOf("}");
-    if (start < 0 || end <= start) continue;
-    try {
-      return record(JSON.parse(candidate.slice(start, end + 1)));
-    } catch {
-      continue;
-    }
-  }
-  return {};
+  return envelope;
 }
 
 function text(value: unknown, limit = 2_000): string {
@@ -667,7 +647,7 @@ export async function execute(
   }
 
   const outcome = parseAftermathOutcome(
-    execution.output ?? { summary: execution.summary },
+    execution.output,
     requestedSessionId,
   );
   if (!outcome) {

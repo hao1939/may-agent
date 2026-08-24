@@ -180,7 +180,7 @@ describe("canonical project-health evaluator", () => {
         lastDedupeKey: "gym.app:approval-old",
         lastVerdict: "blocked-on-human",
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldNotify({ ...approval, requestedHumanAction: "watch" }, {}),
     ).toBe(false);
