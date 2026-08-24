@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { readTaskState, saveTaskState } from "./app-task-store.js";
 import {
   claimObservedAppTask,
@@ -160,5 +161,52 @@ describe("App task Condition review checkpoint", () => {
     const state = readTaskState(config);
     expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBeUndefined();
     expect(listRunnableAppTaskIds(config)).toEqual([]);
+  });
+
+  it("clears a consumed stale due index when the Condition remains event-driven", () => {
+    const legacyConfig = fixture();
+    const store = AppTaskResourceStore.openStandalone(
+      join(legacyConfig.appDir, ".state", "resource-store.sqlite"),
+      "sample",
+    );
+    store.bootstrapSnapshot(readTaskState(legacyConfig), "seed:test");
+    const config = taskReconciliationConfig({
+      appDir: legacyConfig.appDir,
+      projectDir: legacyConfig.projectDir,
+      owner: legacyConfig.worker,
+      maxConcurrent: legacyConfig.maxConcurrent,
+      resourceStore: store,
+    });
+
+    deferAppTask(config, claim(config), {
+      disposition: "waiting",
+      summary: "Waiting for an approval event",
+      evidence: ["approval:unchanged"],
+      conditions: [
+        {
+          id: "approval-submitted",
+          type: "approval.submitted",
+          subject: "approval:may-ground-truth",
+          expected: { field: "status", equals: "submitted" },
+        },
+      ],
+    });
+    store.setRecoveryState("human-request", {
+      ready: false,
+      changed: false,
+      nextCheckAt: Date.now() - 1,
+    });
+    expect(store.listRecoveryCandidates().items.map(({ taskId }) => taskId)).toContain("human-request");
+
+    expect(
+      claimObservedAppTask(config, {
+        taskId: "human-request",
+        appAgent: "app-owner",
+        handler: "agent",
+      }),
+    ).toMatchObject({ kind: "waiting", conditionIds: ["approval-submitted"] });
+    expect(store.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain("human-request");
+    expect(store.nextDueAt()).toBeNull();
+    store.close();
   });
 });
