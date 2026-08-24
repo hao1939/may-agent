@@ -3,7 +3,7 @@ import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { normalizeSocketFrame, type EventInput, type EventReceipt } from "./protocol.js";
-import { taskUpdateIdentity } from "./task-wake.js";
+import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
 export type ControlEmitResult = { eventId?: number };
@@ -49,6 +49,7 @@ export interface AttachControlSocketOptions {
   listTasks?: (options?: {
     appId?: string;
     includeDone?: boolean;
+    humanActionOnly?: boolean;
     status?: string[];
     limit?: number;
     cursor?: string;
@@ -76,6 +77,7 @@ interface ClientState {
   socket: Duplex;
   filter: Set<string> | null;
   conversations: Set<string>;
+  taskApps: Set<string>;
   task: { appId: string; taskId: string } | null;
   chatMode: boolean;
   subscribed: boolean;
@@ -306,9 +308,18 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 
     const wake = taskUpdateIdentity(event);
     if (!wake) return;
+    const derivedViewWake = isTaskDerivedViewWake(event);
     let wakeLine: string | undefined;
     for (const [sock, client] of clients) {
-      if (!client.subscribed || client.task?.appId !== wake.appId || client.task.taskId !== wake.taskId) continue;
+      if (
+        !client.subscribed ||
+        !(
+          (client.task?.appId === wake.appId && client.task.taskId === wake.taskId) ||
+          (derivedViewWake && client.taskApps.has(wake.appId))
+        )
+      ) {
+        continue;
+      }
       try {
         wakeLine ??= `${JSON.stringify({ type: "app.task.updated", data: wake })}\n`;
         if (sock.writableLength + Buffer.byteLength(wakeLine) > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
@@ -344,6 +355,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       socket,
       filter: null,
       conversations: new Set(),
+      taskApps: new Set(),
       task: null,
       chatMode: false,
       subscribed: false,
@@ -407,6 +419,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = frame.sessions;
           const conversations = frame.conversations;
+          const taskApps = frame.taskApps;
           const task = frame.task;
           const client = clients.get(socket);
           if (
@@ -415,6 +428,8 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             sessions.every((session) => typeof session === "string") &&
             (conversations === undefined ||
               (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim()))) &&
+            (taskApps === undefined ||
+              (Array.isArray(taskApps) && taskApps.every((id) => typeof id === "string" && id.trim()))) &&
             (task === undefined ||
               task === null ||
               (typeof task === "object" &&
@@ -438,6 +453,15 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             client.conversations = new Set(
               Array.isArray(conversations) ? conversations.map((id) => String(id).trim()) : [],
             );
+            client.taskApps = new Set(
+              Array.isArray(taskApps)
+                ? taskApps.map((id) =>
+                    String(id)
+                      .trim()
+                      .replace(/\.app$/, ""),
+                  )
+                : [],
+            );
             client.task =
               task && typeof task === "object" && !Array.isArray(task)
                 ? {
@@ -460,14 +484,17 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
                       (!Array.isArray(conversations) ||
                         !conversations.every((id) => typeof id === "string" && id.trim()))
                     ? "conversations must be an array of non-empty strings"
-                    : task !== undefined &&
-                        task !== null &&
-                        (typeof task !== "object" ||
-                          Array.isArray(task) ||
-                          typeof (task as Record<string, unknown>).appId !== "string" ||
-                          typeof (task as Record<string, unknown>).taskId !== "string")
-                      ? "task must contain non-empty appId and taskId strings"
-                      : "invalid subscription",
+                    : taskApps !== undefined &&
+                        (!Array.isArray(taskApps) || !taskApps.every((id) => typeof id === "string" && id.trim()))
+                      ? "taskApps must be an array of non-empty strings"
+                      : task !== undefined &&
+                          task !== null &&
+                          (typeof task !== "object" ||
+                            Array.isArray(task) ||
+                            typeof (task as Record<string, unknown>).appId !== "string" ||
+                            typeof (task as Record<string, unknown>).taskId !== "string")
+                        ? "task must contain non-empty appId and taskId strings"
+                        : "invalid subscription",
             });
           }
           continue;
@@ -816,6 +843,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               tasks: listTasks({
                 ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
                 ...(frame.includeDone === true ? { includeDone: true } : {}),
+                ...(frame.humanActionOnly === true ? { humanActionOnly: true } : {}),
                 ...(Array.isArray(frame.status) ? { status: frame.status as string[] } : {}),
                 ...(frame.limit === undefined ? {} : { limit: Number(frame.limit) }),
                 ...(typeof frame.cursor === "string" && frame.cursor.trim() ? { cursor: frame.cursor.trim() } : {}),

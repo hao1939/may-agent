@@ -719,8 +719,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
             ? metadata.channelMessageId
             : undefined;
+        const context = record(data.context);
+        const focusedTask = record(context.focusedTask);
+        const focusedAppId =
+          typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
+        const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
         const admitted = host.admit({
           appId,
+          ...(focusedAppId === appId && focusedTaskId ? { targetTaskId: focusedTaskId } : {}),
           source: { kind: "human", id: authorId },
           input: {
             kind: "message",
@@ -739,7 +745,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
           channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
           replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
-          idempotencyKey:
+        idempotencyKey:
             typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
               ? data.idempotencyKey.trim()
               : eventIdentity(event),
@@ -779,7 +785,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
         channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
         replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
-        idempotencyKey:
+          idempotencyKey:
           typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
       });
       schedule(admitted.item.appId);

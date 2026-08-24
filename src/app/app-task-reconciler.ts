@@ -987,6 +987,7 @@ function materializeWaitingConditions(
       type: raw.type.trim(),
       subject: raw.subject.trim(),
       expected: raw.expected,
+      ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       ...(raw.owner?.trim() ? { owner: raw.owner.trim() } : {}),
       ...(raw.reviewAfterMs !== undefined ? { reviewAfterMs: raw.reviewAfterMs } : {}),
     };
@@ -1019,6 +1020,7 @@ function materializeWaitingConditions(
           status: {
             observedGeneration: 0,
             state: "unknown",
+            createdAt: now,
             observedAt: now,
           },
         };
@@ -1928,7 +1930,9 @@ export type AppTaskSnapshotContext = {
   priority?: "P0" | "P1" | "P2" | "P3";
   category?: string;
   dependsOn?: string[];
-  conditions: Array<Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "owner" | "reviewAfterMs">>;
+  conditions: Array<
+    Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "requestedAction" | "owner" | "reviewAfterMs">
+  >;
   readiness?: {
     state:
       | "ready"
@@ -2034,6 +2038,7 @@ function liveTaskSnapshotContext(
           id: condition.metadata.id,
           type: condition.spec.type,
           subject: condition.spec.subject,
+          ...(condition.spec.requestedAction ? { requestedAction: condition.spec.requestedAction } : {}),
           ...(condition.spec.owner ? { owner: condition.spec.owner } : {}),
           ...(condition.spec.reviewAfterMs === undefined ? {} : { reviewAfterMs: condition.spec.reviewAfterMs }),
         },
@@ -3506,6 +3511,9 @@ function validateConditions(
     }
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
+    }
+    if (condition.requestedAction !== undefined) {
+      requireNonEmptyString(condition.requestedAction, `Handler result Condition ${identity} requestedAction`);
     }
     if (
       condition.reviewAfterMs !== undefined &&

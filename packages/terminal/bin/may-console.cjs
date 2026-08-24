@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const net = require("node:net");
-const { randomUUID } = require("node:crypto");
+const { createHash, randomUUID } = require("node:crypto");
 const path = require("node:path");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
@@ -29,6 +29,9 @@ let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 let conversationReady = false;
 let appSelectionInFlight = false;
+let todoCount = 0;
+let todoReadInFlight = false;
+let todoReadDirty = false;
 const pendingInputLines = [];
 
 const renderedConversationMessages = new Set();
@@ -53,6 +56,7 @@ const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const shownTaskRevisions = new Map();
+let shownTodoRevisions = new Map();
 
 function rememberCompletion(set, value, limit) {
   if (set.has(value)) set.delete(value);
@@ -63,6 +67,7 @@ function rememberCompletion(set, value, limit) {
 const ordinaryCommands = [
   "/apps",
   "/tasks",
+  "/todo",
   "/task",
   "/watch",
   "/unwatch",
@@ -74,6 +79,7 @@ const ordinaryCommands = [
   "/exit",
 ];
 const taskPageSize = 10;
+const todoPageSize = 50;
 
 function completeInput(line) {
   const input = String(line || "");
@@ -89,6 +95,8 @@ function completeInput(line) {
       ? [...knownAppIds]
       : command === "/tasks"
         ? ["all", "history"]
+        : command === "/todo"
+          ? ["all"]
         : command === "/task" || command === "/watch" || command === "/cancel"
           ? [...knownTaskRefs]
           : [];
@@ -112,13 +120,27 @@ function shortSessionId(sessionId) {
 function promptText() {
   if (!connected) return "you[disconnected]> ";
   if (watchedTask) return `you[${watchedTask.appId}:${watchedTask.ref}]> `;
-  return `you[${selectedApp}]> `;
+  return `you[${selectedApp}${todoCount > 0 ? ` · ${todoCount} todo` : ""}]> `;
 }
 
 function refreshPrompt() {
   if (closing) return;
   rl.setPrompt(promptText());
   rl.prompt(true);
+}
+
+function selectAppContext(appId) {
+  const next = typeof appId === "string" ? appId.trim() : "";
+  if (!next || next === selectedApp) return false;
+  selectedApp = next;
+  todoCount = 0;
+  shownTodoRevisions = new Map();
+  if (connected) {
+    subscribe();
+    requestTodoRefresh();
+  }
+  refreshPrompt();
+  return true;
 }
 
 function writeStdout(text, callback) {
@@ -244,8 +266,10 @@ function requestApps(appId = null, command = "/apps", select = false) {
 
 function requestTasks(options = {}) {
   const pending = {
+    kind: options.kind || "tasks",
     appId: options.appId || null,
     includeDone: options.includeDone === true,
+    humanActionOnly: options.humanActionOnly === true,
     command: options.command || "/tasks",
     cursor: options.cursor || null,
   };
@@ -255,12 +279,31 @@ function requestTasks(options = {}) {
       type: "tasks.list",
       ...(pending.appId ? { appId: pending.appId } : {}),
       ...(pending.includeDone ? { includeDone: true } : {}),
+      ...(pending.humanActionOnly ? { humanActionOnly: true } : {}),
       ...(pending.cursor ? { cursor: pending.cursor } : {}),
-      limit: taskPageSize,
+      limit: options.limit || taskPageSize,
     },
     { silent: true },
   );
   if (!sent) pendingTaskListReads.pop();
+  return sent;
+}
+
+function requestTodoRefresh() {
+  if (!connected) return false;
+  if (todoReadInFlight) {
+    todoReadDirty = true;
+    return true;
+  }
+  todoReadInFlight = true;
+  const sent = requestTasks({
+    kind: "todo-refresh",
+    appId: selectedApp,
+    humanActionOnly: true,
+    limit: todoPageSize,
+    command: "automatic todo refresh",
+  });
+  if (!sent) todoReadInFlight = false;
   return sent;
 }
 
@@ -289,7 +332,7 @@ function requestTask(input) {
   return sent;
 }
 
-function appendConversationMessage({ author, text, transient = false, metadata = {} }) {
+function appendConversationMessage({ author, text, transient = false, metadata = {}, idempotencyKey }) {
   const sequence = Math.max(Date.now(), lastConversationSequence + 1);
   lastConversationSequence = sequence;
   sendFrame(
@@ -305,7 +348,10 @@ function appendConversationMessage({ author, text, transient = false, metadata =
           ...(transient ? { transient: true } : {}),
           metadata: { channel: source, ...metadata },
         },
-        idempotencyKey: `${source}:${adapterInstanceId}:conversation:${sequence}`,
+        idempotencyKey:
+          typeof idempotencyKey === "string" && idempotencyKey
+            ? idempotencyKey
+            : `${source}:${adapterInstanceId}:conversation:${sequence}`,
       },
     },
     { silent: true },
@@ -322,6 +368,9 @@ function presentView(command, text, options = {}) {
       command,
       ...(Array.isArray(options.taskRefs) && options.taskRefs.length > 0 ? { taskRefs: options.taskRefs } : {}),
     },
+    ...(typeof options.idempotencyKey === "string" && options.idempotencyKey
+      ? { idempotencyKey: options.idempotencyKey }
+      : {}),
   });
 }
 
@@ -363,7 +412,7 @@ function renderApps(apps, pending) {
         setWatchedTask(null);
       }
     }
-    selectedApp = nextApp;
+    selectAppContext(nextApp);
     nextTaskPage = null;
   }
   const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:"];
@@ -417,6 +466,82 @@ function renderTasks(page, pending) {
   });
 }
 
+function humanActionText(task) {
+  const value = task?.humanAction?.requestedAction;
+  return typeof value === "string" && value.trim()
+    ? value.trim()
+    : typeof task?.summary === "string" && task.summary.trim()
+      ? task.summary.trim()
+      : String(task?.outcome || "Human input is required.");
+}
+
+function elapsedText(value) {
+  const elapsedMs = Math.max(0, Date.now() - Number(value || Date.now()));
+  const minutes = Math.floor(elapsedMs / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function todoRevision(task) {
+  return JSON.stringify({
+    resourceVersion: task?.resourceVersion,
+    requestedAction: humanActionText(task),
+    since: task?.humanAction?.since,
+    status: task?.status,
+  });
+}
+
+function renderTodos(page, pending) {
+  const tasks = Array.isArray(page?.items) ? page.items : [];
+  const total = Number.isSafeInteger(page?.total) ? page.total : tasks.length;
+  const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
+  const lines = ["", `Actions needed${scope}:`];
+  if (tasks.length === 0) lines.push("  Nothing needs your action.");
+  for (const task of tasks) {
+    if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
+    lines.push(
+      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${humanActionText(task)} · ${elapsedText(task?.humanAction?.since)}`,
+    );
+  }
+  if (total > tasks.length) lines.push(`  ${total - tasks.length} more action(s) are not shown.`);
+  lines.push("");
+  presentView(pending?.command || "/todo", lines.join("\n"), {
+    taskRefs: tasks.map(taskIdentity).filter(Boolean),
+  });
+}
+
+function applyTodoRefresh(page) {
+  const tasks = Array.isArray(page?.items) ? page.items : [];
+  const next = new Map(tasks.map((task) => [taskPresentationKey(task), todoRevision(task)]));
+  const changed = tasks.filter((task) => shownTodoRevisions.get(taskPresentationKey(task)) !== todoRevision(task));
+  todoCount = Number.isSafeInteger(page?.total) ? page.total : tasks.length;
+
+  const unwatched = changed.filter(
+    (task) => !watchedTask || task.appId !== watchedTask.appId || task.taskId !== watchedTask.taskId,
+  );
+  if (unwatched.length > 0) {
+    const first = unwatched[0];
+    const text =
+      todoCount === 1 && unwatched.length === 1
+        ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /watch ${first.ref} to respond.`
+        : `[todo] ${todoCount} Tasks need you in ${selectedApp}. Run /todo.`;
+    const identity = tasks
+      .map((task) => `${task.appId}:${task.taskId}:${task.resourceVersion}:${todoRevision(task)}`)
+      .sort()
+      .concat(`total:${todoCount}`)
+      .join("\n");
+    presentView("/todo notification", text, {
+      taskRefs: tasks.map(taskIdentity).filter(Boolean),
+      idempotencyKey: `todo-notification:${createHash("sha256").update(identity).digest("hex")}`,
+    });
+  }
+  shownTodoRevisions = next;
+  refreshPrompt();
+}
+
 function renderTask(task, command, options = {}) {
   if (!task || typeof task !== "object") {
     printLine("[task] Task not found.");
@@ -433,6 +558,9 @@ function renderTask(task, command, options = {}) {
     `  Outcome: ${task.outcome}`,
     `  Updated: ${formatWorkTime(task.updatedAt)}`,
   ];
+  if (task.humanAction) {
+    lines.push(`  Action needed: ${humanActionText(task)}`);
+  }
   const observedProgress = task.terminal ? "" : taskProgress(task);
   const result = observedProgress || taskResult(task);
   if (result)
@@ -498,9 +626,9 @@ function renderWatchSnapshot(task, options = {}) {
 
 function setWatchedTask(task) {
   watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
-  if (watchedTask) selectedApp = watchedTask.appId;
+  const appChanged = watchedTask ? selectAppContext(watchedTask.appId) : false;
   watchedTaskDirty = false;
-  subscribe();
+  if (!appChanged) subscribe();
   refreshPrompt();
 }
 
@@ -618,6 +746,7 @@ function subscribe() {
     type: "subscribe",
     sessions: subscribedSessions(),
     conversations: [conversationId],
+    taskApps: [selectedApp],
     task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
   });
 }
@@ -672,6 +801,7 @@ function handleEvent(event) {
     if (watchedTask && data.appId === watchedTask.appId && data.taskId === watchedTask.taskId) {
       refreshWatchedTask();
     }
+    if (data.appId === selectedApp) requestTodoRefresh();
     return;
   }
   if (event.type === "conversation.updated") {
@@ -738,7 +868,19 @@ function handleEvent(event) {
         }
       }
       if (event.command === "tasks.list") {
-        renderTasks(event.tasks, pendingTaskListReads.shift());
+        const pending = pendingTaskListReads.shift();
+        if (pending?.kind === "todo-refresh") {
+          todoReadInFlight = false;
+          applyTodoRefresh(event.tasks);
+          if (todoReadDirty) {
+            todoReadDirty = false;
+            requestTodoRefresh();
+          }
+        } else if (pending?.kind === "todo-command") {
+          renderTodos(event.tasks, pending);
+        } else {
+          renderTasks(event.tasks, pending);
+        }
       }
       if (event.command === "task.get") {
         const pending = pendingTaskReads.shift();
@@ -817,7 +959,16 @@ function handleEvent(event) {
           flushPendingInput();
         }
       }
-      if (event.command === "tasks.list") pendingTaskListReads.shift();
+      if (event.command === "tasks.list") {
+        const pending = pendingTaskListReads.shift();
+        if (pending?.kind === "todo-refresh") {
+          todoReadInFlight = false;
+          if (todoReadDirty) {
+            todoReadDirty = false;
+            requestTodoRefresh();
+          }
+        }
+      }
       if (event.command === "task.get") {
         const pending = pendingTaskReads.shift();
         if (pending?.kind === "watch-refresh") watchedTaskReadInFlight = false;
@@ -877,11 +1028,13 @@ function connectSocket() {
         type: "subscribe",
         sessions: subscribedSessions(),
         conversations: [conversationId],
+        taskApps: [selectedApp],
         task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
       },
       { silent: true },
     );
     requestConversation();
+    requestTodoRefresh();
     watchedTaskReadInFlight = false;
     refreshWatchedTask();
     requestDesiredAutoFollow();
@@ -921,6 +1074,8 @@ function connectSocket() {
     if (interruptedSelection) pendingInputLines.unshift(interruptedSelection.command);
     appSelectionInFlight = false;
     pendingTaskListReads.length = 0;
+    todoReadInFlight = false;
+    todoReadDirty = false;
     pendingTaskReads.length = 0;
     watchedTaskReadInFlight = false;
     if (closing) return;
@@ -945,6 +1100,7 @@ function printHelp() {
       "Commands:",
       "  /apps [app]                 List or select an App",
       "  /tasks [all] [history], /tasks more",
+      "  /todo [all]                 Show Tasks that need your action",
       "  /task <ref>",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
@@ -989,6 +1145,21 @@ function handleCommand(input) {
       const allApps = tokens.includes("all");
       const includeDone = tokens.includes("history");
       requestTasks({ appId: allApps ? null : selectedApp, includeDone, command: input });
+      return;
+    }
+    case "todo": {
+      const tokens = restParts.map((part) => part.toLowerCase());
+      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all")) {
+        printLine("Usage: /todo [all]");
+        return;
+      }
+      requestTasks({
+        kind: "todo-command",
+        appId: tokens.includes("all") ? null : selectedApp,
+        humanActionOnly: true,
+        limit: todoPageSize,
+        command: input,
+      });
       return;
     }
     case "task":

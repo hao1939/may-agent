@@ -99,6 +99,7 @@ export const conditionSchema = Type.Object(
     type: nonEmptyStringSchema,
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
+    requestedAction: Type.Optional(nonEmptyStringSchema),
     owner: Type.Optional(nonEmptyStringSchema),
     reviewAfterMs: Type.Optional(Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS })),
   },
@@ -446,6 +447,10 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].subject must be a typed subject`;
   }
   if (!("expected" in value)) return `conditions[${index}].expected is required`;
+  const requestedAction = optionalString(value, "requestedAction");
+  if (!requestedAction.ok) {
+    return `conditions[${index}].requestedAction must be a non-empty string when present`;
+  }
   const owner = optionalString(value, "owner");
   if (!owner.ok) return `conditions[${index}].owner must be a non-empty string when present`;
   const reviewAfterMs = value.reviewAfterMs;
@@ -460,6 +465,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     type,
     subject,
     expected: structuredClone(value.expected),
+    ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     ...(owner.value ? { owner: owner.value } : {}),
     ...(reviewAfterMs !== undefined ? { reviewAfterMs: Number(reviewAfterMs) } : {}),
   };

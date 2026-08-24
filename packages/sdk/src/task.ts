@@ -33,6 +33,8 @@ export type Condition = {
   type: string;
   subject: string;
   expected: unknown;
+  /** Plain-language action shown when this Condition explicitly belongs to a human. */
+  requestedAction?: string;
   owner?: string;
   reviewAfterMs?: number;
 };
