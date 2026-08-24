@@ -209,12 +209,14 @@ converged in one attempt. Delegation, analysis, agent calls, workflows, and
 human waits are capabilities or dependencies used by the task attempt. Their
 runtime records do not replace the task.
 
-May feedback about unfinished work becomes a small input task. During ordinary
-reconciliation, May may return a typed revision, wake, or dependency for the
-referenced task. Exact structured references can wake the target directly. This
-does not require a special `continue` disposition, semantic judgment during
-admission, or a second work loop. The root request—not the opening event or a
-later feedback message—retains caller correlation and result delivery.
+May feedback about unfinished work becomes typed input to that exact Task.
+During ordinary reconciliation, May returns a dependency with the responsible
+`appId`, exact `taskId`, and accepted App input. Runtime attaches the input to
+the existing Task, wakes it once, and correlates its next result. Omitting
+`taskId` asks the App for a genuinely new outcome. This does not require a
+special `continue` disposition, semantic judgment during admission, or a
+second work loop. The root request—not the opening event or a later feedback
+message—retains caller correlation and result delivery.
 
 A dependency wake means “re-read and decide,” not only success. Completion,
 failure, interruption, task attention, and a missing formerly linked task all
@@ -226,6 +228,12 @@ The task result shape for child App work is intentionally small:
 
 ```ts
 dependencies: [{ id: "review", appId: "evaluation", input: { kind, data } }];
+```
+
+For feedback or a decision on existing work:
+
+```ts
+dependencies: [{ id: "feedback", appId: "evaluation", taskId, input: { kind, data } }];
 ```
 
 `id` is stable within the parent task generation. Runtime owns the derived

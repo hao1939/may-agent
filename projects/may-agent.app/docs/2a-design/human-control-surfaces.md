@@ -105,6 +105,12 @@ When May assigns asynchronous work, the Conversation shows the stable May Task
 reference and its useful current wait. Exact Task detail shows linked App Task
 references and typed Conditions, never internal request IDs. A human can
 `/watch` the linked owner Task for live progress or continue talking naturally.
+While watching, feedback is routed as typed input to that exact owner Task. It
+wakes waiting work for one reconsideration and does not create a sibling Task.
+The first waiting status is shown as soon as May accepts the dependency: what
+is known, which Task owns the next step, and what it is actually waiting for.
+Later distinct waiting summaries may update it; unchanged summaries are
+deduplicated. This is visible observation, not a transport receipt.
 
 Runtime reload is deterministic control, not App work. The request is accepted
 synchronously, the Runtime performs one reload, and one correlated
@@ -131,7 +137,11 @@ While watching, bare text still goes through May. The adapter attaches:
 ```
 
 May therefore receives natural human language plus an exact Task identity. May
-interprets the feedback and sends a typed Task-targeted event to the owning App.
+uses that identity only when the message is feedback for the unfinished Task.
+Fresh feedback wakes a waiting or attention Task once. Unrelated text and text
+without an exact focus do not globally wake every blocked Task.
+May then interprets the feedback and sends typed input to the owning App and
+exact Task.
 The adapter never steers a temporary session and May never edits another App's
 Task storage directly.
 

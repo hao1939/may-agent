@@ -318,12 +318,13 @@ A cross-App dependency is valid only with `state: "waiting"`:
 type TaskAppDependency = {
   id: string; // stable within this task generation
   appId: string;
+  taskId?: string; // continue one exact existing Task
   input: AppInput;
 };
 ```
 
 Runtime derives the initial child request ID from the parent App, task
-generation, dependency ID, target App, and input. It admits the request
+generation, dependency ID, target App, optional target Task, and input. It admits the request
 idempotently and adds the exact completion Condition. Later attempts retain
 every open child-request Condition. They reuse a request by returning its
 durable request ID, or by repeating the exact target input; changed prose does
@@ -332,7 +333,9 @@ work for the same target App, return both the existing durable request and a
 new stable dependency ID and input. A replacement that omits the open request
 fails before publication. The completion Event is part of a later
 `reconciliation.events` batch, including the child summary, optional response,
-and evidence. There is no imperative `delegate()` capability.
+and evidence. `taskId` attaches the typed input to that Task's existing lineage
+and wakes it once; omitting it uses the target App's normal new-work resolver.
+There is no imperative `delegate()` capability.
 
 Apps may supply pure task-change validation and bounded verification policy.
 They do not save task state, acquire locks, edit projections, or manufacture

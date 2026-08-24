@@ -72,8 +72,10 @@ lifecycle:
 
 1. **Clarifying.** May may ask one concise question and complete the current
    Conversation Task with that response. The next human message carries the
-   bounded Conversation context. No project Task is claimed before outcome,
-   material constraints, acceptance proof, and owner are clear.
+   bounded Conversation context. This may repeat for several natural turns;
+   the Conversation itself is the requirement draft, so no draft-Task resource
+   is needed. No project Task is claimed before outcome, material constraints,
+   acceptance proof, and owner are clear enough to act.
 2. **Assigned.** May routes the clear outcome to the responsible App. The
    accepted waiting result appends one concise Conversation status linked to
    the stable May Task reference. `/task <ref>` exposes the responsible App
@@ -125,6 +127,15 @@ remains open. The App then accepts the new evidence, replaces or preserves the
 wait, changes the Task, or converges. The Host never declares an old Condition
 true merely because the human spoke. Duplicate ticks and unchanged recovery
 pulses remain suppressible.
+
+Cross-App input normally resolves to new App work. When a typed dependency also
+names `taskId`, Runtime attaches it to that exact existing Task instead. This is
+the single feedback/decision path: the same Task sees the new evidence and its
+result returns to May. A new sibling Task is incorrect unless the human asked
+for a distinct outcome. A waiting or attention Task is woken once by fresh
+input. A completed Task remains immutable; May must decide whether the new
+message is distinct follow-up work instead of silently treating old proof as
+the result of new input.
 
 During migration, a represented May request admitted before Conversation IDs
 existed may have no scope value. May may continue that legacy-unscoped request

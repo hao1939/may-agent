@@ -34,6 +34,10 @@ reconsideration. Existing Conditions remain evidence; the App decides whether
 they still apply. This makes human feedback and newly requested work actionable
 without turning duplicate ticks or recovery scans into event storms.
 
+A typed cross-App dependency may name an exact `taskId`. Runtime then admits
+the input against that existing Task and waits for the same Task lineage. With
+no `taskId`, normal App task resolution creates or finds the requested outcome.
+
 ## Mental model
 
 ```text
