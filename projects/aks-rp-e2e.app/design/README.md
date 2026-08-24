@@ -219,13 +219,18 @@ and PR watchers emit provider facts where those facts are actually needed; the
 generic Condition tracker performs correlation. Disposition repair and
 read-only investigations do not use this workflow.
 
-Executable compact-package repair uses the same workflow boundary. Bind the
-same compact task to `spec-live-reconciliation` with the complete feature
-`specIds`, checked-in `livePlanPath`, fixed target, and any prepared
-`sourceBranch`/`sourceCommit`. The workflow reconciles that prepared source into
-the current task worktree, publishes the exact resulting commit, runs the
-compact plan, validates every selected spec and cleanup artifact, and integrates
-only the passing tested source into `dev`. `domain-task-execution` remains for
+Executable compact-package repair uses the same workflow boundary without
+violating the runtime's no-self-action rule. A compact task already bound to
+`spec-live-reconciliation` continues on that same task. When an unbound running
+compact task discovers that executable source must change, its result cannot
+rebind itself: it creates exactly one direct child bound to
+`spec-live-reconciliation` with the complete feature `specIds`, checked-in
+`livePlanPath`, fixed target, and any prepared `sourceBranch`/`sourceCommit`,
+then waits on that child. The child is decomposition of the same compact outcome,
+not a sibling or successor chain. The workflow reconciles prepared source into
+the child task worktree, publishes the exact resulting commit, runs the compact
+plan, validates every selected spec and cleanup artifact, and integrates only
+the passing tested source into `dev`. `domain-task-execution` remains for
 source-only patches whose acceptance does not require live behavior proof; it
 must not be used as an intermediate publication step for an executable compact
 package.

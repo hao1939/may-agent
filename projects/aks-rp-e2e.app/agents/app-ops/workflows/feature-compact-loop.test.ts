@@ -1208,8 +1208,13 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
     expect(acceptance).toContain(
-      "Rebind the same task to spec-live-reconciliation",
+      "do not return a self-targeting update action",
     );
+    expect(acceptance).toContain(
+      "create exactly one direct child bound to spec-live-reconciliation",
+    );
+    expect(acceptance).toContain("keep this compact task waiting");
+    expect(acceptance).toContain("Do not create a sibling or successor chain");
     expect(acceptance).toContain("domain-task-execution");
     expect(acceptance).toContain("one natural ordered journey candidate");
     expect(acceptance).toContain("partial constraints");
