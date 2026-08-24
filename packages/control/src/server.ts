@@ -26,6 +26,7 @@ export interface AttachControlSocketOptions {
   describeProjectActions?: (projectId: string) => unknown[];
   admitAppInput?: (input: {
     appId: string;
+    targetTaskId?: string;
     input: Record<string, unknown>;
     source: Record<string, unknown>;
     conversationId?: string;
@@ -40,11 +41,7 @@ export interface AttachControlSocketOptions {
     eventId: number;
     eventType: string;
   };
-  getAppConversation?: (
-    appId: string,
-    conversationId: string,
-    options?: { limit?: number },
-  ) => unknown;
+  getAppConversation?: (appId: string, conversationId: string, options?: { limit?: number }) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
@@ -616,6 +613,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               appId,
               input: input as Record<string, unknown>,
               source: source as Record<string, unknown>,
+              ...(typeof frame.targetTaskId === "string" && frame.targetTaskId.trim()
+                ? { targetTaskId: frame.targetTaskId.trim() }
+                : {}),
               ...(typeof frame.conversationId === "string" && frame.conversationId.trim()
                 ? { conversationId: frame.conversationId.trim() }
                 : {}),

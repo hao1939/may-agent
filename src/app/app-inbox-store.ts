@@ -43,6 +43,8 @@ export type AppInboxItem = {
   id: string;
   appId: string;
   parentId?: string;
+  /** Exact existing Task that this typed input continues. */
+  targetTaskId?: string;
   /** Human feedback linked to an existing root request, not separate work. */
   continuesRequestId?: string;
   conversationId?: string;
@@ -75,6 +77,7 @@ export type CreateAppInboxItem = {
   id?: string;
   appId: string;
   parentId?: string;
+  targetTaskId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -165,6 +168,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     id: requiredText(row.id, "id"),
     appId: requiredText(row.app_id, "app_id"),
     parentId: optionalText(row.parent_id),
+    targetTaskId: optionalText(row.target_task_id),
     continuesRequestId: optionalText(row.continues_request_id),
     conversationId: optionalText(row.conversation_id),
     conversationSequence: optionalNumber(row.conversation_seq),
@@ -225,6 +229,7 @@ function validateCreate(input: CreateAppInboxItem): void {
   requiredText(input.appId, "appId");
   requiredText(input.source.id, "source.id");
   requiredText(input.input.kind, "input.kind");
+  if (input.targetTaskId !== undefined) requiredText(input.targetTaskId, "targetTaskId");
   if (!(["human", "app", "system"] as const).includes(input.source.kind)) {
     throw new Error(`Invalid App inbox source kind: ${input.source.kind}`);
   }
@@ -742,15 +747,16 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   const id = input.id ?? `app_${randomUUID()}`;
   const result = db.run(
     `INSERT OR IGNORE INTO app_inbox_items (
-       id, app_id, parent_id, conversation_id, conversation_seq,
+       id, app_id, parent_id, target_task_id, conversation_id, conversation_seq,
        channel, channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id,
        source_kind, source_id, input_kind, input_data, status,
        available_at, origin_event_id, idempotency_key, created_at, changed_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
       input.parentId ?? null,
+      input.targetTaskId ?? null,
       input.conversationId ?? null,
       input.conversationSequence ?? null,
       input.channel ?? null,
@@ -789,6 +795,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   }
   if (
     item.parentId !== input.parentId ||
+    item.targetTaskId !== input.targetTaskId ||
     item.source.kind !== input.source.kind ||
     item.source.id !== input.source.id ||
     !isDeepStrictEqual(item.input, input.input)

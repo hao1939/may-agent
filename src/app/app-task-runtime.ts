@@ -1166,7 +1166,11 @@ export function admitTaskAppDependencies(input: {
         dependency.id === requestId || dependency.id === condition.id || dependency.id === `app-request:${requestId}`,
     );
     const exact = existing.filter(
-      ({ item }) => item && item.appId === dependency.appId && isDeepStrictEqual(item.input, dependency.input),
+      ({ item }) =>
+        item &&
+        item.appId === dependency.appId &&
+        item.targetTaskId === dependency.taskId &&
+        isDeepStrictEqual(item.input, dependency.input),
     );
     const candidates = direct.length > 0 ? direct : exact;
     if (candidates.length > 1) {
@@ -1177,6 +1181,11 @@ export function admitTaskAppDependencies(input: {
     if (match.item && match.item.appId !== dependency.appId) {
       throw new Error(
         `App dependency ${dependency.id} refers to open request ${match.requestId} for App ${match.item.appId}, not ${dependency.appId}`,
+      );
+    }
+    if (match.item && match.item.targetTaskId !== dependency.taskId) {
+      throw new Error(
+        `App dependency ${dependency.id} refers to open request ${match.requestId} for Task ${match.item.targetTaskId ?? "new work"}, not ${dependency.taskId ?? "new work"}`,
       );
     }
     if (matchedExisting.has(match.requestId)) {
@@ -1208,7 +1217,10 @@ export function admitTaskAppDependencies(input: {
     const duplicate = newDependencies
       .slice(0, index)
       .find(
-        (candidate) => candidate.appId === dependency.appId && isDeepStrictEqual(candidate.input, dependency.input),
+        (candidate) =>
+          candidate.appId === dependency.appId &&
+          candidate.taskId === dependency.taskId &&
+          isDeepStrictEqual(candidate.input, dependency.input),
       );
     if (duplicate) {
       throw new Error(
@@ -1230,6 +1242,7 @@ export function admitTaskAppDependencies(input: {
           generation: input.claim.generation,
           dependencyId: dependency.id,
           targetAppId: dependency.appId,
+          targetTaskId: dependency.taskId,
           targetInput: dependency.input,
         }),
       )
@@ -1244,6 +1257,7 @@ export function admitTaskAppDependencies(input: {
       data: {
         requestId,
         appId: dependency.appId,
+        ...(dependency.taskId ? { targetTaskId: dependency.taskId } : {}),
         input: dependency.input,
         source: { kind: "app", id: input.descriptor.id },
         idempotencyKey,
@@ -2003,7 +2017,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Finish exactly once with finish().result. The tool schema is authoritative. A successful session without result does not resolve the task.",
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
     "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
-    "For another App outcome, return a stable dependency { id, appId, input }. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
+    "For another App outcome, return a stable dependency { id, appId, input }. To continue an exact existing Task in that App, also include taskId. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
     "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
@@ -3805,11 +3819,11 @@ export function attachLoadedAppTask(input: {
   if (input.attachment.kind === "existing") {
     const taskId = input.attachment.taskId.trim();
     if (!taskId) throw new Error("Existing task id must be non-empty");
+    if (isAppTaskConverged(config, taskId)) {
+      throw new Error(`Task ${taskId} in App ${descriptor.id} is already complete; create distinct follow-up work`);
+    }
     const existingIntent = readAppTaskIntent(config, taskId);
     if (!existingIntent) {
-      if (isAppTaskConverged(config, taskId)) {
-        return { taskId, isComplete: async () => true };
-      }
       throw new Error(`Task ${taskId} does not exist in App ${descriptor.id}`);
     }
     intent = existingIntent;
