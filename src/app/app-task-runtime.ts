@@ -2722,9 +2722,12 @@ async function reconcileTask(input: {
       timing.resultPersistenceMs += Math.max(0, performance.now() - startedAt);
     }
   };
+  let activeConfig: ReturnType<typeof appTaskConfig> | undefined;
+  let activeClaim: AppTaskClaim | undefined;
 
   try {
     const config = appTaskConfig(descriptor);
+    activeConfig = config;
     const claimStartedAt = performance.now();
     const defaultParentId = config.resourceStore?.rootTaskId() ?? readTaskState(config).root_task_id;
     if (!defaultParentId) {
@@ -2829,6 +2832,7 @@ async function reconcileTask(input: {
       if (primary.kind === "attention") emitAppTaskDependencyUpdated(opts, descriptor, input.taskId);
       return [];
     }
+    activeClaim = primary;
     timing.attemptId = primary.attemptId;
     timing.generation = primary.generation;
     for (const sessionId of primary.supersededSessionIds ?? []) {
@@ -3385,6 +3389,42 @@ async function reconcileTask(input: {
     return [intent.id];
   } catch (error) {
     timing.outcome = "failed";
+    if (activeConfig && activeClaim) {
+      const failedConfig = activeConfig;
+      const failedClaim = activeClaim;
+      const summary = `Task handler failed before returning a persistable result: ${
+        error instanceof Error ? error.message : String(error)
+      }`;
+      try {
+        const attention = persistResult(() =>
+          markAppTaskAttention(failedConfig, failedClaim, {
+            summary,
+            evidence: [],
+            reason: "HandlerExecutionFailed",
+          }),
+        );
+        if (attention.status === "applied") {
+          emitAppTaskDependencyUpdated(opts, descriptor, failedClaim.taskId);
+          emitTaskReconciliationEvent(
+            opts,
+            descriptor,
+            failedClaim.trigger as EventEnvelope | undefined,
+            "project.task.reconciled",
+            failedClaim.taskId,
+            {
+              generation: failedClaim.generation,
+              attemptId: failedClaim.attemptId,
+              handler: failedClaim.handler,
+              disposition: "attention",
+              summary,
+            },
+          );
+        }
+      } catch {
+        // Preserve the original failure. Recovery still fences attempts whose
+        // persistence boundary itself is unavailable.
+      }
+    }
     throw error;
   } finally {
     publishAppTaskTiming(opts, descriptor, input.taskId, timing);
