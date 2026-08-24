@@ -290,6 +290,7 @@ describe("App Task agent prompt context", () => {
           mode: "achieve" as const,
         },
       }),
+      tasks: {},
     });
     const source = { ...definition(), id: "may" };
     const catalog = appTaskDependencyCatalog(
@@ -314,6 +315,41 @@ describe("App Task agent prompt context", () => {
         inputKinds: ["deep-eval", "owner-review"],
       },
     ]);
+  });
+
+  it("does not advertise an input resolver without an active Task policy", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const target = defineApp({
+      id: "incomplete",
+      version: 1,
+      agent: "incomplete-owner",
+      inputSchema: Type.Object({ kind: Type.Literal("review"), data: Type.Record(Type.String(), Type.Unknown()) }),
+      task: () => ({
+        kind: "desired" as const,
+        intent: {
+          id: "review",
+          parentId: "incomplete",
+          outcome: "Review evidence",
+          acceptance: ["Reviewed"],
+          mode: "achieve" as const,
+        },
+      }),
+    });
+
+    expect(
+      appTaskDependencyCatalog(
+        {
+          ...options(f, bus),
+          appRegistrySnapshot: {
+            id: "catalog:incomplete",
+            generation: 1,
+            entries: [{ appDir: join(f.projectsRoot, "incomplete.app"), definition: target }],
+          },
+        },
+        "may",
+      ),
+    ).toEqual([]);
   });
 
   it("lets an App reject Conditions it cannot meaningfully observe", () => {
@@ -478,6 +514,52 @@ describe("canonical App task runtime", () => {
         dependencies: [{ id: "review", appId: "evaluation", input: { kind: "invented", data: {} } }],
       }),
     ).toThrow("input is not accepted by installed App evaluation");
+  });
+
+  it("rejects a dependency when the configured registry has no target Apps", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/missing-owner",
+        parentId: "operations",
+        outcome: "Use one installed accountable App",
+        acceptance: ["The target is installed"],
+        mode: "achieve",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/missing-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      admitTaskAppDependencies({
+        opts: {
+          ...options(f, bus),
+          appRegistrySnapshot: { id: "empty:1", generation: 1, entries: [] },
+        },
+        descriptor: {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          agent: "sample-owner",
+          app: definition(),
+          reconciliationPaused: true,
+        },
+        claim,
+        dependencies: [{ id: "review", appId: "evaluation", input: { kind: "review", data: {} } }],
+      }),
+    ).toThrow("targets unavailable App evaluation");
   });
 
   it("does not publish a dependency requested from a stale task result", () => {

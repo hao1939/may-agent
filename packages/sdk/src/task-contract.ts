@@ -504,6 +504,9 @@ export function admitTaskReconcileResult(
   const admittedOutput = output as Record<string, unknown>;
   const response = optionalString(admittedOutput, "response");
   if (!response.ok) return { ok: false, error: "response must be a non-empty string" };
+  if (output.state === "waiting" && response.value) {
+    return { ok: false, error: "waiting cannot include response; put operational progress in summary" };
+  }
 
   const rawActions = admittedOutput.actions ?? [];
   if (!Array.isArray(rawActions)) return { ok: false, error: "actions must be an array" };
