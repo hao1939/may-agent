@@ -1,4 +1,4 @@
 {
   "approval_case": { "situation": "The child App claimed a patch but omitted the terminal proof requested by Hao.", "hao_request": "Repair master validation and prove it with a passing run.", "correct_behavior": "Delegate a bounded follow-up to the same App requiring a current passing build or an exact external blocker; do not report completion." },
-  "expected": { "type": "delegate", "appId": "aks-rp-e2e", "inputKind": "problem-investigation", "contains": { "input.data": ["passing", "build", "proof"] }, "absentPaths": ["input.data.taskId", "input.data.workflow", "input.data.schedule", "input.data.sessionId"], "forbiddenText": ["the request is complete", "done and verified"] }
+  "expected": { "state": "waiting", "appId": "aks-rp-e2e", "inputKind": "problem-investigation", "contains": { "dependency.input.data": ["passing", "build", "proof"] }, "absentPaths": ["dependency.input.data.taskId", "dependency.input.data.workflow", "dependency.input.data.schedule", "dependency.input.data.sessionId"], "forbiddenText": ["the request is complete", "done and verified"] }
 }

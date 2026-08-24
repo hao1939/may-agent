@@ -20,8 +20,11 @@ The human boundary has one additional, strict convention:
 
 > **May owns the conversation. Apps own the work.**
 
-May handles one human turn; an accountable app owns durable execution and
-proof. One bounded, audited break-glass attempt is the exception. The complete
+May handles one human turn; an accountable App owns durable execution and
+proof. May first makes the request actionable: desired outcome, relevant scope,
+material constraints, acceptance proof, and true authority boundaries. It asks
+one focused question only when ambiguity would materially change that outcome
+or its accountable App. One bounded, audited break-glass attempt is the exception. The complete
 ingress, routing, closure, and recovery contract is in
 [Message Lifecycle](../2a-design/message-lifecycle.md).
 

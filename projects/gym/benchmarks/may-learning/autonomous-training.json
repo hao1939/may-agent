@@ -117,6 +117,7 @@
         "may-app-clarify-ambiguous-target",
         "may-app-delegate-one-shot-outcome",
         "may-app-delegate-recurring-outcome",
+        "may-app-route-capability-improvement",
         "may-app-route-ownership-gap",
         "may-app-review-terminal-result",
         "may-app-replan-missing-proof",

@@ -22,7 +22,7 @@ proof work, but wait before consequential mutation.
    evaluation owner to run the candidate against the frozen baseline on the
    narrowest sample that can show the intended improvement and catch material
    regressions.
-4. **Make the delegation concrete.** The handoff should name the evaluation
+4. **Make the dependency concrete.** The typed App request should name the evaluation
    owner, baseline, candidate, sample/canary scope, success criteria, regression
    criteria, and expected evidence artifact or return path.
 5. **Return a rollout proposal before adoption.** If the candidate shows clear
@@ -48,7 +48,7 @@ fields before finishing:
 - `next_action`: explicitly include the frozen baseline, the exact candidate,
   the bounded baseline-vs-candidate comparison, and a proof-backed rollout
   proposal returned before adoption.
-- `delegations`: include exactly one async Gym or Coach handoff that requests
+- `dependencies`: include exactly one typed Gym dependency that requests
   the representative sample, success evidence for the intended improvement, and
   regression evidence for material safety risks.
 - `constraints`: literally state `reject broad rollout until Hao approval` and

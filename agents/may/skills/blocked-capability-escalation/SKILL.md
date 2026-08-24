@@ -14,18 +14,17 @@ description: Handle missing capabilities, unavailable commands or tools, permiss
    use the supervisor-owned restarter path from the May-agent system skill;
    do not improvise process signals or inline stop/copy/start sequences.
 3. **Return locally when the caller owns the decision.** A workflow uses
-   `ctx.blocked(...)`. A task workflow returns `needs-owner`, while an owner
-   waiting on a capability returns `waiting` with an exact Condition; the app
-   reconciler records the attempt and owns fallback.
-4. **Escalate only across an App ownership boundary.** Return a typed child App
-   delegation containing the requested action, evidence, blocker, resume
+   `ctx.blocked(...)`. A task attempt returns the schema-valid result that its
+   App can review; an exact external wait uses a real observable Condition.
+4. **Escalate only across an App ownership boundary.** Return one typed Task
+   dependency containing the requested outcome, evidence, blocker, resume
    context, severity, source obligation, and stable semantic correlation key.
    Human attention is a child request to the `may` App. Do not use an
    `escalation.created` event, owner label, direct agent call, or async message
    as durable handoff authority.
-5. **Verify acceptance.** Confirm the local blocked result, bounded target
-   agent execution, or durable target App inbox accepted the handoff. A
-   file-only todo or owner label without an explicit route is not delivery.
+5. **Review the result.** The Runtime admits and correlates the dependency. When
+   its exact result wakes this Task, judge the evidence, converge, or request a
+   bounded follow-up from the same accountable App.
 
 ## Completion Contract
 

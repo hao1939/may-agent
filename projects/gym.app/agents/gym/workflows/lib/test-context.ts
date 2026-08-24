@@ -103,6 +103,7 @@ export function canonicalGymTestContext(
           input.emit?.(event);
         }
       },
+      onEvent: () => () => undefined,
     },
     metrics: input.metrics ?? {
       define() {},
@@ -167,6 +168,7 @@ export function canonicalGymTestContext(
       generation: Number(packet.generation ?? 1),
       resourceVersion: Number(packet.resourceVersion ?? 1),
       owner: String(packet.owner ?? "gym"),
+      agent: String(packet.agent ?? "gym"),
       mode: packet.mode === "achieve" ? "achieve" : "maintain",
       outcome: String(packet.outcome ?? "Test Gym workflow"),
       acceptance: Array.isArray(packet.acceptance)

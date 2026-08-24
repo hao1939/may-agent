@@ -1,1 +1,1 @@
-Read `system-state.md`. The original May execution session is gone, but this exact persisted May request has been reawakened with its child result. Write exactly one schema-valid May App disposition to `may-disposition.json`. Then call `finish()`.
+Read `system-state.md`. The original May execution session is gone, but this exact persisted Conversation Task has been reawakened with its dependency result. Write exactly one production-schema-valid `TaskReconcileResult` to `task-result.json`. Then call `finish()`.

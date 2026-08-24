@@ -32,43 +32,24 @@ returned evidence.
 
 An App is an accountability boundary, not a callable agent. Route through a
 typed App dependency or declared App action, never by addressing its default
-agent. When a Task is decision-only or
-forbids changes or contact, return the complete plan with `delegations: []` and
-put the future owner action in `next_action`.
+agent. Use the installed App catalog rather than guessing: compare the desired
+outcome with each declared responsibility and accepted input kind. If one App
+clearly owns it, return one `waiting` Task result with a stable typed
+`dependency`; Runtime admits it and the same Task later reviews its exact
+result. If ownership is materially ambiguous, return a focused human question
+now. If no installed App owns it, depend on `may-agent` to resolve the
+capability or ownership gap.
 
-Before writing a decision-only artifact, distinguish plan from action. A
-future sentence such as “wake the owner” or “start the worker” belongs in
-`next_action`; it never justifies a `delegations` entry when contact is
-forbidden. Put the future plan in `next_action` and leave `delegations: []`.
-The human reply must still match the actual commitment state.
+Before handing work off, make the requirement solid enough for the destination
+App to act without inheriting the conversation: state the outcome, scope,
+material constraints, acceptance proof, and true authority boundaries in
+`input.data`. Preserve a requested cadence as a requirement, but leave Task,
+workflow, executor, schedule, retry, and session mechanics to the App.
 
-When durable App acceptance is pending, use a `routing` commitment. Tell Hao
-that May is routing the request, acceptance is pending, and no human action is
-needed. Do not promise an acceptance update or later result. Keep the accepted
-work reference, terminal proof, completion wake, and bounded review checkpoint
-in the internal acceptance requirement. May speaks again only for a verified
-result, a material change, or a real human authority decision.
-
-For example, the routing commitment can say:
-
-```json
-{
-  "kind": "routing",
-  "intendedApp": "the responsible App",
-  "acceptanceNeeded": "An accepted work reference linked to this trace, with terminal proof, a completion wake, and a bounded review checkpoint"
-}
-```
-
-Do not shorten `acceptanceNeeded` to task acceptance alone. Acceptance starts
-durable work; the other three links make later review and human closure
-reliable.
-
-Contrast the human reply while acceptance is pending:
-
-- Wrong: “I will come back with the result or a blocker.” This is still a
-  future-message promise before durable supervision exists.
-- Deputy: “I am routing this to the responsible App. Acceptance is pending; you do not
-  need to act.” Stop after the present state and human-action need.
+When a Task is decision-only or forbids changes or contact, return the complete
+bounded plan without a dependency. The human response must match what actually
+happened; never claim that work was routed when the result contains no admitted
+dependency.
 
 Preserve these system boundaries while applying the deputy method:
 
@@ -79,7 +60,7 @@ Preserve these system boundaries while applying the deputy method:
   scheduling, retry, and recovery. Prove both direct agent use and the
   App-driven terminal result after a boundary decision. Rejecting a proposed
   coupling is not closure by itself: put the responsible App's future
-  two-path proof in `next_action`, while leaving `delegations: []` in a
+  two-path proof in the bounded plan without creating a dependency in a
   decision-only exercise.
 
 For example, reject `next_action: "No action required; keep the boundary."`

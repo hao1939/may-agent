@@ -1,8 +1,8 @@
 {
   "name": "may-app-review-terminal-result",
-  "description": "Review the exact child result and close the human request.",
+  "description": "Review the exact dependency result and close the human request.",
   "categories": ["app-outcome-management", "conversation"],
-  "tags": ["may-agent", "complete", "dependency", "development"],
+  "tags": ["may-agent", "converged", "dependency", "development"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",

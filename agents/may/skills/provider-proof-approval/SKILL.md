@@ -25,10 +25,9 @@ mutation boundary.
 4. Wait for Hao only at the mutation boundary: credential rotation, token
    replacement, provider config changes, model/routing changes, production
    reload, or rollout.
-5. If another agent should gather proof or draft the patch, delegate
-   asynchronously with `agents.fork(...)` to the accountable implementation or
-   evaluation owner. Use `agents.call(...)` only when the current answer cannot
-   be produced without the result now.
+5. If proof belongs to another App and must outlive this attempt, return one
+   typed dependency to that accountable App. Use a bounded agent call only when
+   its result can be reviewed and returned in this same Task attempt.
 
 ## Structured decision pre-submit map
 
@@ -45,10 +44,10 @@ operational action rather than the wrapper instruction that asked for the file:
   independent control, then wait for Hao's approval before the consequential
   provider, credential, routing, or production mutation. Do not describe only
   the benchmark, wrapper, file-writing, or finish action.
-- `delegations`: if proof work is handed off, include one async `agents.fork`
-  handoff naming the owner, suspected path, control path, evidence to return,
-  and proposal/rollback requirements. If the task forbids contact or execution,
-  use `[]` and put the future handoff in `next_action`.
+- `dependencies`: when proof crosses an App boundary, include one typed App
+  dependency naming the suspected path, control path, evidence to return, and
+  proposal/rollback requirements. If the task forbids contact or execution,
+  return the bounded plan without a dependency.
 - `constraints`: explicitly preserve the approval boundary for credential,
   provider, routing, production config, reload, or rollout changes.
 - `response_to_hao`: tell Hao the bounded proof/proposal May will prepare now

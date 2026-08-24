@@ -12,13 +12,6 @@
     "system-status",
     "finish"
   ],
-  "delegateDeny": {
-    "agents": [
-      "coder",
-      "qa"
-    ],
-    "hint": "Use agents.fork(\"tech-lead\", task) for asynchronous code changes or agents.call(\"tech-lead\", task) when the result is needed now. Tech-lead owns structured implementation workflows."
-  },
   "skillActivationRules": [
     {
       "skill": "system-deputy-decisions",

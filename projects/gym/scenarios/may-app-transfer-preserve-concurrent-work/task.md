@@ -1,1 +1,1 @@
-Read `system-state.md`. Act as May for the exact request that woke. Write exactly one schema-valid May App disposition to `may-disposition.json`. Do not change or close unrelated requests. Then call `finish()`.
+Read `system-state.md`. Act as the bounded May executor for the exact Conversation Task that woke. Write exactly one production-schema-valid `TaskReconcileResult` to `task-result.json`. Do not change or close unrelated requests. Then call `finish()`.

@@ -181,15 +181,15 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Treat every human message as its own request. Reply anchors and channel IDs
   add context; they never reopen an older request or select a session.
 - A session is one replaceable attempt. Carry the exact May Task and correlated
-  request through tools, calls/forks, workflows, CLI analysis, and outbound delivery. Closure
-  belongs to the App result and confirmed delivery, not `session.idle` or
-  `session.end`.
+  request through tools, bounded agent calls, workflows, CLI analysis, and
+  outbound presentation. Closure belongs to the accepted App result, not
+  `session.idle`, `session.end`, or adapter delivery state.
 
 ### Project-intent traces
 
 - Explicit project HTTP/UI intent may persist `project.comment.created`
   directly as its receipt and trace root. Conversational intent remains one May
-  request; May delegates a typed child App request when project work is needed.
+  request; May returns a typed App dependency when project work is needed.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.
@@ -199,7 +199,7 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Runtime validates and applies Task changes. When a typed child App dependency
   completes, `app.dependency.completed` wakes the exact parent Task so its App
   can review the observation and return its own result.
-- Compatible inbox work may batch and task wakes may coalesce, but every
+- Compatible addressed work may batch and task wakes may coalesce, but every
   addressed request keeps its own identity and result. A shared task does not
   absorb the request lifecycle.
 - Work or waiting that must survive an attempt belongs in the same durable
@@ -268,8 +268,8 @@ Keep domain projects portable and App policy separate from Host mechanics.
   bootstrap intent; Apps and agents consume only bounded task views.
 - Workflows use their reconciliation context and exact `ctx.read.task` views;
   agents use bounded task readouts. They return `converged`, `waiting` with
-  exact Conditions, or `needs-owner`, plus typed actions for the host to
-  validate and apply.
+  exact Conditions or typed App dependencies, or `needs-agent` before an
+  executor is selected, plus typed actions for Runtime to validate and apply.
 - When an App looks stuck, inspect the App and canonical Task state first.
   Reuse its existing Task and Condition, wake it through a declared App
   action, and follow the same trace through a typed response to a terminal
@@ -278,7 +278,7 @@ Keep domain projects portable and App policy separate from Host mechanics.
   complete plan must explicitly name both the typed App response and terminal
   domain result; do not infer or compress either step.
 - Project comments enter through a declared App subscription. Several requests
-  may attach one stable task, but each keeps its own inbox identity and response
+  may attach one stable task, but each keeps its own request identity and response
   correlation.
 - Resource `spec` is desired state and resource `status.phase` is observed
   reconciliation state. The old task-state vocabulary may appear only in a
@@ -341,14 +341,14 @@ Distinguish local blockers from ownership-boundary escalations.
 - A workflow `ctx.blocked(...)` result is local and synchronous. The caller
   records it, returns it to the task/project owner, or promotes it only when it
   crosses an owner boundary.
-- A task workflow that cannot decide returns `needs-owner`; an owner waiting on
-  an external fact returns `waiting` with an exact Condition. The reconciler
-  records the attempt and performs the bounded same-App owner handoff—do not
-  emit a parallel task-completion event.
+- An unresolved executor selection may return `needs-agent`; an App Task waiting
+  on an external fact returns `waiting` with an exact observable Condition.
+  Runtime records the attempt and owns retry and recovery—do not emit a
+  parallel task-completion event.
 - Work without task context enters through a typed App input/action or a
   declared event subscription that creates one correlated App request. Do not
   address an owner string or workflow event as an alternate inbox.
-- When another App must answer or act, return typed App delegation with the
+- When another App must answer or act, return a typed Task dependency with the
   exact request, evidence, source obligation, severity, and stable semantic
   correlation key. The parent waits on that exact child result.
 - Route human attention through a typed child request to the `may` App. May

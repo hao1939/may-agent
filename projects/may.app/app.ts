@@ -5,6 +5,7 @@ import {
   type AppInput,
   type AppTaskAttachment,
   type AppTaskInput,
+  type Condition,
 } from "@may-agent/sdk";
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
@@ -115,6 +116,17 @@ export function taskForMayInput(
   };
 }
 
+const mayObservableConditionTypes = new Set([
+  "project.approval.submitted",
+  "project.approval.resolved",
+]);
+
+export function validateMayCondition(condition: Condition): string | null {
+  return mayObservableConditionTypes.has(condition.type)
+    ? null
+    : `type ${condition.type} is not an observable May approval event; clarify now or use a typed installed-App dependency`;
+}
+
 export default defineApp({
   id: "may",
   version: 1,
@@ -123,7 +135,10 @@ export default defineApp({
     "Conversation App for durable human requests and explicit human-decision obligations.",
   inputSchema: mayInputSchema,
   task: taskForMayInput,
-  tasks: { maxConcurrent: 8 },
+  tasks: {
+    maxConcurrent: 8,
+    validateCondition: validateMayCondition,
+  },
   subscriptions: [
     {
       id: "evaluation-human-decision",

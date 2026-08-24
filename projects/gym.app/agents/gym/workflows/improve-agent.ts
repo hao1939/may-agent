@@ -363,7 +363,7 @@ export function loadCurriculumTargets(gymRoot: string): {
   const rows = (Array.isArray(config.tracks) ? config.tracks : []).filter(
     (value) => record(value).enabled !== false,
   );
-  const targets = rows.map((value) => {
+  const targets = rows.flatMap((value) => {
     const row = record(value);
     const id = safeName(row.id, "");
     const benchmark = safeName(row.benchmark, "");
@@ -399,9 +399,14 @@ export function loadCurriculumTargets(gymRoot: string): {
     const approvedScenarios = (
       Array.isArray(suite.scenarios) ? suite.scenarios : []
     )
-      .filter(
-        (scenario) => record(labels[String(scenario)]).status === "approved",
-      )
+      .filter((scenario) => {
+        const label = record(labels[String(scenario)]);
+        return (
+          label.status === "approved" &&
+          String(label.approved_by ?? "").trim().length > 0 &&
+          String(label.approved_at ?? "").trim().length > 0
+        );
+      })
       .map(String);
     const configured = new Set(scenarios as string[]);
     const missing = approvedScenarios.filter(
@@ -412,20 +417,15 @@ export function loadCurriculumTargets(gymRoot: string): {
         `Autonomous May training track ${id} omits approved scenarios: ${missing.join(", ")}`,
       );
     }
-    return {
-      id,
-      benchmark,
-      scenarios: scenarios as string[],
-      trials,
-    };
-  });
-  if (
-    !targets.length ||
-    new Set(targets.map(({ id }) => id)).size !== targets.length
-  ) {
-    throw new Error(
-      "Autonomous May training tracks must be non-empty and unique",
+    const approved = (scenarios as string[]).filter((scenario) =>
+      approvedScenarios.includes(scenario),
     );
+    return approved.length
+      ? [{ id, benchmark, scenarios: approved, trials }]
+      : [];
+  });
+  if (new Set(targets.map(({ id }) => id)).size !== targets.length) {
+    throw new Error("Autonomous May training tracks must be unique");
   }
 
   const hash = createHash("sha256");

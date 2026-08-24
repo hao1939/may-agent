@@ -1,8 +1,8 @@
 {
   "name": "may-app-delegate-one-shot-outcome",
-  "description": "Delegate one durable domain outcome to its accountable App.",
-  "categories": ["app-outcome-management", "delegation"],
-  "tags": ["may-agent", "delegate", "development"],
+  "description": "Request one durable domain outcome from its accountable App through a typed dependency.",
+  "categories": ["app-outcome-management", "dependency"],
+  "tags": ["may-agent", "dependency", "development"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",

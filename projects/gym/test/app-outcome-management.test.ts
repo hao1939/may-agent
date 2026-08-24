@@ -8,6 +8,7 @@ const development = [
   "may-app-clarify-ambiguous-target",
   "may-app-delegate-one-shot-outcome",
   "may-app-delegate-recurring-outcome",
+  "may-app-route-capability-improvement",
   "may-app-route-ownership-gap",
   "may-app-review-terminal-result",
   "may-app-replan-missing-proof",
@@ -58,7 +59,7 @@ describe("May App outcome management", () => {
         "benchmarks/may-learning/units/app-outcome-management/unit.json",
       ),
     );
-    expect(competency.objective).toContain("one accountable App request");
+    expect(competency.objective).toContain("accountable installed App");
     expect(competency.objective).toContain("without choosing the App's tasks");
     expect(unit).toMatchObject({
       status: "draft",
@@ -90,13 +91,20 @@ describe("May App outcome management", () => {
   });
 
   for (const scenario of [...development, ...release]) {
-    test(`${scenario} uses the real May disposition boundary`, () => {
+    test(`${scenario} uses the production Task-result boundary`, () => {
       const scenarioDir = resolve(gymRoot, "scenarios", scenario);
       const task = readFileSync(resolve(scenarioDir, "task.md"), "utf8");
       const expected = json(resolve(scenarioDir, "expected.json")).expected;
-      expect(task).toContain("may-disposition.json");
-      expect(["complete", "delegate"]).toContain(expected.type);
-      expect(JSON.stringify(expected)).not.toContain('"type":"task"');
+      expect(task).toContain("task-result.json");
+      expect(["converged", "waiting"]).toContain(expected.state);
+      if (expected.state === "waiting") {
+        expect(expected.appId).toBeString();
+        expect(expected.appId.length).toBeGreaterThan(0);
+        expect(expected.inputKind).toBeString();
+        expect(expected.inputKind.length).toBeGreaterThan(0);
+      } else {
+        expect(expected.contains?.response).toBeArray();
+      }
     });
   }
 });

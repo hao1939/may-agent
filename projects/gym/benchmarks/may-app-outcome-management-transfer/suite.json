@@ -1,9 +1,9 @@
 {
-  "name": "may-app-outcome-management-transfer-v1",
-  "version": 1,
-  "artifact": "may-disposition.json",
+  "name": "may-app-outcome-management-transfer-v2",
+  "version": 2,
+  "artifact": "task-result.json",
   "labels_file": "labels.json",
-  "evaluator": "../may-app-outcome-management/score-disposition.cjs",
+  "evaluator": "../may-app-outcome-management/score-task-result.cjs",
   "scenarios": [
     "may-app-transfer-paraphrased-recurring-outcome",
     "may-app-transfer-restart-closeout",

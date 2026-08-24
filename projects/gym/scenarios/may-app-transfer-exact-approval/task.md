@@ -1,1 +1,1 @@
-Read `system-state.md`. Act as May for Hao's reply. Write exactly one schema-valid May App disposition to `may-disposition.json`. Preserve the exact approval identity and artifact; do not select the App's task or workflow. Then call `finish()`.
+Read `system-state.md`. Act as the bounded May executor for Hao's reply. Write exactly one production-schema-valid `TaskReconcileResult` to `task-result.json`. Preserve the exact approval identity and artifact in one typed dependency; do not select the App's Task or workflow. Then call `finish()`.

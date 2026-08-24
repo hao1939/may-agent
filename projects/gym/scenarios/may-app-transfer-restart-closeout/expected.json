@@ -1,4 +1,4 @@
 {
-  "approval_case": { "situation": "The request and exact child result survived loss of the original May session.", "hao_request": "Verify this candidate before rollout.", "correct_behavior": "Complete the same May request with the verified fingerprint and ask for the remaining rollout approval." },
-  "expected": { "type": "complete", "contains": { "response": ["sha256:8b61", "five", "no", "regression", "approve"] }, "forbiddenText": ["session was lost so", "i need to rerun", "already rolled out"] }
+  "approval_case": { "situation": "The request and exact dependency result survived loss of the original May session.", "hao_request": "Verify this candidate before rollout.", "correct_behavior": "Converge the same May request with the verified fingerprint and ask for the remaining rollout approval." },
+  "expected": { "state": "converged", "contains": { "response": ["sha256:8b61", "five", "no", "regression", "approve"] }, "forbiddenText": ["session was lost so", "i need to rerun", "already rolled out"] }
 }

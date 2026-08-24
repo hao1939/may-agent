@@ -356,21 +356,42 @@ packet.
 Adding a unit should require resources and manifests, not a new workflow,
 controller, database, or task hierarchy.
 
-## Simplified App-management migration
+## App Task-result migration
 
 The canonical May boundary is now evaluated directly:
 
 ```text
-human request -> May complete or delegate -> exact App result -> May complete
+human request -> May Task result -> exact App dependency result -> May Task result
 ```
 
-The `app-outcome-management` unit replaces legacy training that asked May to
-describe or manipulate tasks, workflows, schedules, sessions, wake paths, or a
-parallel human-inbox lifecycle. Its development and release cases write
-`may-disposition.json` and score the actual `complete | delegate` contract.
+The `app-outcome-management` unit tests the production
+`TaskReconcileResult`, not a May-specific disposition lifecycle:
+
+- a direct answer or focused clarification is `converged` with `response`;
+- durable work is `waiting` with one stable typed App dependency;
+- May turns loose human language into an outcome, scope, material constraints,
+  acceptance proof, and authority boundaries before selecting the accountable
+  installed App;
+- the destination App chooses its Task, workflow, executor, schedule, retry,
+  and session mechanics; and
+- an exact dependency result is reviewed before the Conversation Task
+  converges or requests one bounded follow-up dependency.
+
+Cases write `task-result.json`. The scorer first admits it through the
+production SDK contract, then checks only the scenario-specific meaning and
+ownership boundary. Model scenarios evaluate judgment; a separate thin Runtime
+canary owns restart, concurrency, dependency correlation, and exact event-wake
+proof. Static prose fixtures must not claim those runtime behaviors were
+exercised.
+
+Gym is the accountable installed App for requests to improve May's behavior.
+May makes such a request actionable and returns an `improve-may` dependency;
+Gym's existing stable `improve/may` Task receives the request as trigger-event
+evidence and chooses the curriculum, scenarios, evaluation, and improvement
+mechanics. Request-specific evidence does not mutate that stable desired state.
 
 Legacy May tracks remain reproducible evidence but are disabled in
-`autonomous-training.json`. An enabled track is eligible for autonomous
-assessment; `enabled: false` retains its configuration without letting it
-authorize a candidate. New critical truth remains draft until Hao approves the
-exact expected cases.
+`autonomous-training.json`. Enabled configuration is not approval: autonomous
+curriculum loading selects only scenarios whose labels contain approved status,
+reviewer, and timestamp. A track with no approved cases contributes no work.
+New critical truth remains draft until Hao approves the exact expected cases.

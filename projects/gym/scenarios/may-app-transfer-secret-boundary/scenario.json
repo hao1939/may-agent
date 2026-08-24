@@ -1,8 +1,8 @@
 {
   "name": "may-app-transfer-secret-boundary",
   "description": "Route credential recovery without repeating the secret.",
-  "categories": ["app-outcome-management", "delegation", "security"],
-  "tags": ["may-agent", "delegate", "secret", "transfer"],
+  "categories": ["app-outcome-management", "dependency", "security"],
+  "tags": ["may-agent", "dependency", "secret", "transfer"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",

@@ -1,8 +1,8 @@
 {
   "name": "may-app-replan-missing-proof",
   "description": "Return missing terminal proof to the accountable App.",
-  "categories": ["app-outcome-management", "delegation"],
-  "tags": ["may-agent", "delegate", "proof", "development"],
+  "categories": ["app-outcome-management", "dependency"],
+  "tags": ["may-agent", "dependency", "proof", "development"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",

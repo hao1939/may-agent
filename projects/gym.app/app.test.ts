@@ -48,6 +48,7 @@ describe("canonical Gym App", () => {
       id: "gym",
       version: 1,
       agent: "gym",
+      description: expect.stringContaining("May behavior learning"),
       workspace: { kind: "local", localPath: "../gym" },
       tasks: { maxConcurrent: 2 },
     });
@@ -198,6 +199,7 @@ describe("canonical Gym App", () => {
       },
     });
   });
+
 });
 
 describe("Gym task reconciliation", () => {

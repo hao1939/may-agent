@@ -246,6 +246,32 @@ as a bounded capability. Console and Telegram independently render the
 resulting Conversation message; their delivery state is Host concern, not part
 of May's task outcome.
 
+For a durable human request, May follows one small ownership decision:
+
+1. understand the desired outcome, scope, material constraints, proof, and
+   authority boundary;
+2. answer immediately when current evidence is sufficient;
+3. ask one focused question only when ambiguity materially changes the outcome
+   or owner; otherwise choose the installed App whose declared responsibility
+   fits the outcome and whose input schema accepts the typed request;
+4. return one dependency and let that App choose its stable Task, workflow,
+   executor, schedule, and retry policy; and
+5. review the exact dependency result before answering the human.
+
+Runtime projects the current installed App IDs, descriptions, and accepted
+input kinds into the bounded executor prompt. This catalog is discovery, not
+routing policy: May chooses the accountable App, while Runtime validates the
+chosen App and input against the same registry generation before publishing the
+dependency. A missing owner or capability goes to the Host Operations App
+(`may-agent`) for resolution rather than becoming hidden May work.
+
+Ordinary May Conversation Tasks do not invent Conditions for future human
+replies. A clarification converges with the question, making the next human
+message a new Conversation Task. An explicit approval obligation may wait on a
+canonical `project.approval.submitted` or `project.approval.resolved` event;
+durable work in another domain waits on its exact typed App dependency. This
+keeps human conversation natural and wait correlation real.
+
 The **Host Operations App** (stable `appId: may-agent`) is a different App. It
 owns platform/runtime Tasks such as a correlated Host deployment. May may route
 a human request to it, but the resulting Task belongs to `may-agent`; an agent

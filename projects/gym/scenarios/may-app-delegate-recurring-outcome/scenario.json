@@ -1,8 +1,8 @@
 {
   "name": "may-app-delegate-recurring-outcome",
   "description": "Preserve a recurring obligation as App intent without designing its schedule or task.",
-  "categories": ["app-outcome-management", "delegation"],
-  "tags": ["may-agent", "delegate", "recurring", "development"],
+  "categories": ["app-outcome-management", "dependency"],
+  "tags": ["may-agent", "dependency", "recurring", "development"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",

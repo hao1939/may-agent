@@ -1143,7 +1143,11 @@ describe("single agent-improvement loop", () => {
       join(benchmarkDir, "labels.json"),
       JSON.stringify({
         labels: {
-          "current-case": { status: "approved", approved_by: "hao" },
+          "current-case": {
+            status: "approved",
+            approved_by: "hao",
+            approved_at: "2026-08-24",
+          },
         },
       }),
     );
@@ -1389,8 +1393,16 @@ describe("single agent-improvement loop", () => {
       join(benchmarkDir, "labels.json"),
       JSON.stringify({
         labels: {
-          "included-case": { status: "approved" },
-          "omitted-case": { status: "approved" },
+          "included-case": {
+            status: "approved",
+            approved_by: "hao",
+            approved_at: "2026-08-24",
+          },
+          "omitted-case": {
+            status: "approved",
+            approved_by: "hao",
+            approved_at: "2026-08-24",
+          },
         },
       }),
     );
@@ -1400,14 +1412,22 @@ describe("single agent-improvement loop", () => {
     );
   });
 
-  test("drains every approved learning track and stops at the first decision boundary", async () => {
+  test("does not autonomously run configured draft truth", async () => {
     const gymRoot = join(import.meta.dir, "../../../../gym");
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
     expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(targets.map(({ id }) => id)).toEqual(["app-outcome-management"]);
-    expect(targets[0]?.scenarios).toContain(
-      "may-app-delegate-recurring-outcome",
-    );
+    expect(targets).toEqual([]);
+  });
+
+  test("drains every approved learning track and stops at the first decision boundary", async () => {
+    const targets = [
+      {
+        id: "app-outcome-management",
+        benchmark: "may-app-outcome-management",
+        scenarios: ["may-app-delegate-recurring-outcome"],
+        trials: 3,
+      },
+    ];
 
     const visited: string[] = [];
     const exhausted = await runCurriculumSequence(targets, async (target) => {

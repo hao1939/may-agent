@@ -512,7 +512,7 @@ export default defineApp({
   version: 1,
   agent: "gym",
   description:
-    "Autonomous operator for incident-derived benchmark proposals and May regression runs.",
+    "Owns May behavior learning, reviewed benchmark truth, evaluation, and evidence-gated improvement.",
   workspace: {
     kind: "local",
     localPath: "../gym",

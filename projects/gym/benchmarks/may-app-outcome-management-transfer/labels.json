@@ -4,8 +4,8 @@
   "labels": {
     "may-app-transfer-paraphrased-recurring-outcome": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "A natural-language cadence remains outcome intent and does not authorize May to invent schedule mechanics.", "approved_by": null, "approved_at": null },
     "may-app-transfer-restart-closeout": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "A replacement May session reviews the persisted dependency and closes the same request.", "approved_by": null, "approved_at": null },
-    "may-app-transfer-preserve-concurrent-work": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "May closes only the request whose exact child result completed and preserves unrelated work.", "approved_by": null, "approved_at": null },
-    "may-app-transfer-exact-approval": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "A clear approval is delegated with its exact identity and fingerprint, without selecting App internals.", "approved_by": null, "approved_at": null },
+    "may-app-transfer-preserve-concurrent-work": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "May closes only the request whose exact dependency result completed and preserves unrelated work.", "approved_by": null, "approved_at": null },
+    "may-app-transfer-exact-approval": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "A clear approval becomes one typed dependency with its exact identity and fingerprint, without selecting App internals.", "approved_by": null, "approved_at": null },
     "may-app-transfer-secret-boundary": { "status": "draft", "review_status": "withheld", "source": "withheld-synthetic-transfer", "rationale": "May routes secure recovery without repeating a credential in its App request or human response.", "approved_by": null, "approved_at": null }
   }
 }

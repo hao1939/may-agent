@@ -6,7 +6,11 @@ import {
   type AppTaskInput,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import app, { evaluationHumanDecisionInput, taskForMayInput } from "./app.ts";
+import app, {
+  evaluationHumanDecisionInput,
+  taskForMayInput,
+  validateMayCondition,
+} from "./app.ts";
 
 function decisionEvent(
   overrides: Partial<AppEvent<Record<string, unknown>>> = {},
@@ -95,6 +99,23 @@ describe("canonical May conversation App", () => {
         data: { message: "Review the latest state" },
       }),
     ).toBeTrue();
+  });
+
+  test("admits canonical approval waits and rejects invented event types", () => {
+    const condition = {
+      id: "approval",
+      subject: "id:rollout-1",
+      expected: { field: "decision", equals: "approve" },
+    };
+    expect(
+      validateMayCondition({
+        ...condition,
+        type: "project.approval.submitted",
+      }),
+    ).toBeNull();
+    expect(
+      validateMayCondition({ ...condition, type: "human-decision" }),
+    ).toContain("not an observable May approval event");
   });
 
   test("translates Evaluation decisions without losing their dedupe lineage", () => {

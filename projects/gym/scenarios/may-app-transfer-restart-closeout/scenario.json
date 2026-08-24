@@ -2,7 +2,7 @@
   "name": "may-app-transfer-restart-closeout",
   "description": "Close the exact persisted request after the original May session is gone.",
   "categories": ["app-outcome-management", "conversation"],
-  "tags": ["may-agent", "complete", "restart", "transfer"],
+  "tags": ["may-agent", "converged", "restart", "transfer"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",

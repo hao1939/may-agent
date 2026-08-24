@@ -344,8 +344,8 @@ describe("loop evaluation", () => {
         const created = await runLoop(
           {
             phase: "test",
-            benchmark: "may-learning-transfer",
-            scenarios: ["may-learn-proof-before-config-rollout"],
+            benchmark: "may-app-outcome-management-transfer",
+            scenarios: ["may-app-transfer-restart-closeout"],
             agent: "may",
             candidate: "baseline",
             trials: 1,
@@ -357,8 +357,8 @@ describe("loop evaluation", () => {
                   input.scenariosDir,
                   "..",
                   "benchmarks",
-                  "may-alignment",
-                  "score-decision.cjs",
+                  "may-app-outcome-management",
+                  "score-task-result.cjs",
                 ),
               ),
             ).toBe(true);
