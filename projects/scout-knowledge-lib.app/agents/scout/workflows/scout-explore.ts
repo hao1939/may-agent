@@ -104,7 +104,13 @@ Current XHS source packet:
 ${JSON.stringify(xhsPacket ?? { query: "missing", items: [] }, null, 2)}
 \`\`\`
 `
-      : "";
+      : source === "arxiv"
+        ? `
+arXiv execution contract:
+- Every arXiv HTTP request must have both a bounded connection timeout and a bounded total timeout. For curl, supply both \`--connect-timeout\` and \`--max-time\`; do not run an unbounded retrieval.
+- If arXiv cannot be reached within those bounds, do not substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and the timeout or retrieval error.
+`
+        : "";
   const resultContract = `
 Result contract:
 - Return summary, source, and outputs through finish().

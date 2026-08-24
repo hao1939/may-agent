@@ -136,6 +136,22 @@ describe("scout-explore workflow prompt", () => {
     expect(task).toContain("Read every created or changed output back");
   });
 
+  it("requires bounded arXiv retrieval and an evidence-backed no-op on source failure", () => {
+    const task = buildExploreTask(
+      "Explore arXiv for AI agent research.",
+      undefined,
+      undefined,
+      "arxiv",
+    );
+
+    expect(task).toContain("Every arXiv HTTP request");
+    expect(task).toContain("`--connect-timeout`");
+    expect(task).toContain("`--max-time`");
+    expect(task).toContain("do not run an unbounded retrieval");
+    expect(task).toContain("Return an evidence-backed no-op with outputs: []");
+    expect(task).toContain("do not substitute another source");
+  });
+
   it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
     const result = xhsWaitResult("xhs", {
       credential: "xhs",
