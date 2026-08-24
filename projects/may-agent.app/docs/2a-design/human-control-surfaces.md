@@ -55,7 +55,9 @@ Apps and `/apps <app>` changes that local selection. `/tasks` reads active
 Tasks for the selected App, `all` widens the read to every App, and `history`
 adds retained terminal Tasks. Selection is a small Console-process or Telegram
 chat/topic variable, not another durable resource. An exact `/task <ref>` may
-cross the selected App boundary.
+cross the selected App boundary. An adapter preserves the human's local input
+order across an asynchronous selection read, so a following command or message
+uses the newly selected App without serializing Host event handling.
 
 Host request history is diagnostic data, not a second work interface.
 `/session`, `/sessions`, and `/steer` are not ordinary human commands.

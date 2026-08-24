@@ -64,7 +64,8 @@ processes ignore the fact unless they issued that exact request; they receive
 the eventual shared Conversation message normally.
 
 The selected App defaults to `may`; `/apps <app>` switches it for this Console
-process. The normal prompt is:
+process. If a switch and the next input arrive together, Console waits only for
+the selection read before interpreting that next input. The normal prompt is:
 
 ```text
 you[may]>
