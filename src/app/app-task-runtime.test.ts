@@ -1502,7 +1502,7 @@ describe("canonical App task runtime", () => {
 
     const staleMutation = join(f.root, "superseded-owner-mutation");
     const stalePgidPath = join(f.root, "superseded-owner-pgid");
-    const staleCommand = `trap '' TERM; sleep 0.6; printf stale > ${JSON.stringify(staleMutation)}; sleep 30`;
+    const staleCommand = `trap '' TERM; sleep 3; printf stale > ${JSON.stringify(staleMutation)}; sleep 30`;
     const externalReaper = spawn(
       "/usr/bin/python3",
       [
