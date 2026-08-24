@@ -174,8 +174,11 @@ resulting Task. For example, May can understand a deployment request and route
 it, while the Host Operations App owns and reconciles the deployment Task.
 Runtime supplies the bounded May attempt with a compact catalog generated from
 the current installed App registry: App identity, declared responsibility, and
-accepted input kinds. May judges semantic ownership; Runtime only rejects a
-missing App or input that does not satisfy that App's declared schema.
+accepted input kinds. The catalog includes only Apps with both an input-to-Task
+resolver and active Task policy, so every advertised target can actually admit
+and reconcile the dependency. May judges semantic ownership; Runtime only
+rejects a missing App or input that does not satisfy that App's declared
+schema.
 
 ## Implementation words
 

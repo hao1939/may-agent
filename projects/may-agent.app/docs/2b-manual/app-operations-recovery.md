@@ -149,6 +149,13 @@ versioned UI release. The supervisor activates binary, Console, SDK, and UI as
 one set and restores the prior set on failed readiness; the build must not
 write through an archive-relative path into retained `.state`.
 
+An in-container deploy may reuse the root-owned supervisor restarter only when
+it is byte-identical to the staged restarter. A changed restarter requires the
+root-capable deployment path and fails before activation; it must never be
+silently reused or patched by an unprivileged Runtime attempt. A failed
+restarter launch settles its receipt and removes the activation markers, so a
+later supervisor start cannot accidentally activate that failed request.
+
 The retained App-local `.state/tasks/state.json` is migration evidence after
 cutover. Deployment must not consult, recreate, or mutate it.
 

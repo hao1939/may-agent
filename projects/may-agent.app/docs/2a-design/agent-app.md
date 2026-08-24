@@ -263,11 +263,13 @@ responses to the caller. Its `summary` is operational state. May produces the
 human answer only when a later attempt has reviewed the dependency result.
 
 Runtime projects the current installed App IDs, descriptions, and accepted
-input kinds into the bounded executor prompt. This catalog is discovery, not
-routing policy: May chooses the accountable App, while Runtime validates the
-chosen App and input against the same registry generation before publishing the
-dependency. A missing owner or capability goes to the Host Operations App
-(`may-agent`) for resolution rather than becoming hidden May work.
+input kinds into the bounded executor prompt. Only an App with a loaded Task
+policy and an input-to-Task resolver is an advertised dependency target. This
+catalog is discovery, not routing policy: May chooses the accountable App,
+while Runtime validates the chosen App and input against the same registry
+generation before publishing the dependency. A missing owner or capability
+goes to the Host Operations App (`may-agent`) for resolution rather than
+becoming hidden May work.
 
 Ordinary May Conversation Tasks do not invent Conditions for future human
 replies. A clarification converges with the question, making the next human
