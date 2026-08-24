@@ -294,6 +294,42 @@ describe("App inbox store", () => {
     }
   });
 
+  it("projects one Task result for several human turns targeting that Task", () => {
+    const taskId = "conversation/request-1";
+    const inputs = [
+      { id: "request-1", targetTaskId: undefined, now: 100 },
+      { id: "request-2", targetTaskId: taskId, now: 110 },
+      { id: "request-3", targetTaskId: taskId, now: 120 },
+    ];
+    for (const input of inputs) {
+      createAppInboxItem(db, {
+        id: input.id,
+        appId: "may",
+        source: { kind: "human", id: `human:${input.id}` },
+        input: { kind: "message", data: { message: input.id } },
+        conversationId: "may:primary",
+        conversationSequence: input.now,
+        ...(input.targetTaskId ? { targetTaskId: input.targetTaskId } : {}),
+        now: input.now,
+      });
+      const claim = claimAppInboxItem(db, input.id, "worker", 1_000, input.now + 1);
+      if (!claim) throw new Error(`expected claim for ${input.id}`);
+      expect(waitAppInboxClaim(db, claim, { kind: "task", id: taskId }, { now: input.now + 2 })).toBe(true);
+    }
+    expect(wakeAppInboxItemsWaitingOn(db, { kind: "task", id: taskId }, 200)).toBe(3);
+    for (const input of inputs) {
+      const claim = claimAppInboxItem(db, input.id, "worker", 1_000, 201);
+      if (!claim) throw new Error(`expected completion claim for ${input.id}`);
+      expect(completeAppInboxClaim(db, claim, { summary: "The Task is finished" }, 202)).toBe(true);
+    }
+
+    const messages = readAppConversationResource(db, "may", "may:primary").messages;
+    expect(messages.filter((message) => message.author.kind === "human")).toHaveLength(3);
+    expect(messages.filter((message) => message.author.kind === "agent")).toEqual([
+      expect.objectContaining({ id: "result:request-3", text: "The Task is finished" }),
+    ]);
+  });
+
   it("does not treat a cross-App id collision as an idempotent create", () => {
     create("shared-id", { now: 100 });
 

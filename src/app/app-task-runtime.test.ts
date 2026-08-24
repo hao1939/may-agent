@@ -8,7 +8,7 @@ import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
-import { createAppInboxItem } from "./app-inbox-store.js";
+import { claimAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./app-registry.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import {
@@ -543,6 +543,16 @@ describe("App Task agent prompt context", () => {
       input: { kind: "probe", data: { value: "compare current behavior" } },
       now: 1,
     });
+    const dependencyClaim = claimAppInboxItem(getDb(persistDir), "existing-proof", "gym", 1_000, 2);
+    if (!dependencyClaim) throw new Error("expected dependency claim");
+    expect(
+      waitAppInboxClaim(
+        getDb(persistDir),
+        dependencyClaim,
+        { kind: "task", id: "runtime/regression-run/existing-proof" },
+        { now: 3 },
+      ),
+    ).toBe(true);
     expect(
       deferAppTask(config, claim, {
         disposition: "waiting",
@@ -578,7 +588,12 @@ describe("App Task agent prompt context", () => {
           conditionId: "app-request:existing-proof",
           type: "app.dependency.completed",
           state: "unknown",
-          dependency: { requestId: "existing-proof", appId: "gym", status: "pending" },
+          dependency: {
+            requestId: "existing-proof",
+            appId: "gym",
+            status: "handling",
+            resolvedTaskId: "runtime/regression-run/existing-proof",
+          },
         },
       ],
     });
@@ -1365,6 +1380,81 @@ describe("canonical App task runtime", () => {
       }),
     ).toThrow(`would replace open request ${requestId}`);
     expect(emitted).toHaveLength(emittedBeforeConflict);
+  });
+
+  it("reuses a create-work request when the agent reports its resolved Task", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/reuse-created-task",
+        parentId: "operations",
+        outcome: "Reuse one independent review",
+        acceptance: ["The review result is considered"],
+        mode: "achieve",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/reuse-created-task",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const descriptor = {
+      id: "sample",
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      app: definition(),
+      reconciliationPaused: false,
+    };
+    const dependency = { kind: "deep-scan", data: { reason: "original" } };
+    const first = admitTaskAppDependencies({
+      opts: { ...options(f, bus), persistDir },
+      descriptor,
+      claim,
+      dependencies: [{ id: "review", appId: "evaluation", input: dependency }],
+    });
+    const requestId = first[0]!.subject.slice("id:".length);
+    const db = getDb(persistDir);
+    createAppInboxItem(db, {
+      id: requestId,
+      appId: "evaluation",
+      source: { kind: "app", id: "sample" },
+      input: dependency,
+      now: 1,
+    });
+    const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
+    if (!requestClaim) throw new Error("expected request claim");
+    expect(
+      waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 }),
+    ).toBe(true);
+
+    expect(
+      admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor,
+        claim,
+        existingConditions: first,
+        dependencies: [
+          {
+            id: requestId,
+            appId: "evaluation",
+            taskId: "review/resolved",
+            input: { kind: "deep-scan", data: { reason: "agent restatement is not authority" } },
+          },
+        ],
+      }),
+    ).toEqual(first);
   });
 
   it("turns a typed child App dependency into deterministic input and an exact completion Condition", () => {
