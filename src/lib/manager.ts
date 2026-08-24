@@ -908,11 +908,29 @@ export class SubagentManager {
     await this.waitFor(sessionId);
   }
 
+  private callDepthLimitError(
+    parentSessionId?: string,
+  ): (TaskResult & { messages: AgentMessage[] }) | undefined {
+    const parentDepth = parentSessionId ? (this.callDepths.get(parentSessionId) ?? 0) : 0;
+    if (parentDepth < this._maxCallDepth) return undefined;
+    return {
+      sessionId: "",
+      status: "error",
+      lastAssistantText: null,
+      messages: [],
+      duration: "0s",
+      outputDir: "",
+      error: `Call depth limit exceeded (${parentDepth}/${this._maxCallDepth})`,
+    };
+  }
+
   async callAgent(
     agentName: string,
     task: string,
     opts?: CallAgentOptions,
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
+    const depthError = this.callDepthLimitError(opts?.parentSessionId);
+    if (depthError) return depthError;
     const definition = this.getAgentDefinition(agentName);
     if (!definition) throw new Error(`Agent "${agentName}" not registered`);
     return this.callAgentDefinition(definition, task, opts);
@@ -925,17 +943,8 @@ export class SubagentManager {
     opts?: CallAgentOptions,
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
-    if (parentDepth >= this._maxCallDepth) {
-      return {
-        sessionId: "",
-        status: "error",
-        lastAssistantText: null,
-        messages: [],
-        duration: "0s",
-        outputDir: "",
-        error: `Call depth limit exceeded (${parentDepth}/${this._maxCallDepth})`,
-      };
-    }
+    const depthError = this.callDepthLimitError(opts?.parentSessionId);
+    if (depthError) return depthError;
     const sessionId = this.runDefinition(definition, task, {
       parentSessionId: opts?.parentSessionId,
       source: opts?.source ?? "callAgent",
