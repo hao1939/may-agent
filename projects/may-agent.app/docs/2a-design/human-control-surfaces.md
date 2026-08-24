@@ -102,11 +102,15 @@ adds `context.focusedTask`. The selected App is a useful conversational lens,
 not permission to force work into the wrong owner.
 
 When May assigns asynchronous work, the Conversation shows the stable May Task
-reference and its useful current wait. Exact Task detail shows linked App Task
-references and typed Conditions, never internal request IDs. A human can
-`/watch` the linked owner Task for live progress or continue talking naturally.
-While watching, feedback is routed as typed input to that exact owner Task. It
-wakes waiting work for one reconsideration and does not create a sibling Task.
+reference and its useful current wait. When the destination App durably attaches
+the request, one assignment message names both the May Task and exact owner Task
+and carries a canonical `followTask` presentation hint. Console automatically
+follows that owner Task; it never guesses from prose, the newest session, or the
+last Task reference. Exact Task detail shows linked App Task references and typed
+Conditions, never internal request IDs. A human can also `/watch` another Task or
+continue talking naturally. While watching, feedback is routed as typed input to
+that exact owner Task. It wakes waiting work for one reconsideration and does not
+create a sibling Task.
 The first waiting status is shown as soon as May accepts the dependency: what
 is known, which Task owns the next step, and what it is actually waiting for.
 Later distinct waiting summaries may update it; unchanged summaries are
@@ -123,7 +127,9 @@ what the human actually saw. Reload creates no Task, queue entry, or model turn.
 
 Each Console process or Telegram chat/topic may watch at most one Task. Watch
 state belongs to the adapter surface; it is not a Task field and does not force
-another surface to watch.
+another surface to watch. Console follows a newly assigned owner Task by default.
+An explicit `/watch`, a newer assignment, or an App-context switch replaces or
+ends that local watch without changing either Task.
 
 While watching, bare text still goes through May. The adapter attaches:
 
@@ -149,6 +155,14 @@ A semantic Task transition emits an identity-only wake. The adapter coalesces
 updates, performs at most one read at a time, and renders the latest Task. A
 terminal result ends the watch automatically. `/unwatch` changes only local
 presentation.
+
+Automatic progress is shown at most once per live adapter surface and semantic
+Task revision. The adapter retains a bounded map of revisions it actually
+rendered. Returning with `/watch <ref>` shows one compact catch-up snapshot only
+when the current Task revision differs; it does not replay a transcript or turn
+presentation into delivery state. Explicit `/task <ref>` remains an intentional
+read and may show the current value again. Restarting an adapter creates a new
+surface, so it may show the current snapshot once.
 
 Watch does not poll and owns no timer, workflow, session, or model turn.
 
@@ -187,14 +201,15 @@ events do not wake human Task watches. Slow adapters never block Task commit.
 ## Adapter responsibilities
 
 An adapter may parse native commands, cache bounded completions, choose layout,
-and keep one local watch. It must not own a work queue, infer a Task from the
-latest session, make delivery part of Task state, poll for watch progress, or
-send slash-command ambiguity to a model.
+and keep one local watch plus a bounded rendered-revision map. It must not own a
+work queue, infer a Task from the latest session, make delivery part of Task
+state, poll for watch progress, or send slash-command ambiguity to a model.
 
 ## Verification
 
 Tests must prove stable collision-aware references, bounded indexed reads,
-selected-App defaults, one-watch replacement, focused feedback through May,
-fresh-input wake from waits, wake coalescing, automatic
+selected-App defaults, explicit assignment auto-follow, App-switch watch exit,
+one-watch replacement, at-most-once automatic progress, focused feedback through
+May, fresh-input wake from waits, wake coalescing, automatic
 terminal exit, durable Task cancellation, stale-attempt fencing, cross-surface
 Conversation context, and independence from adapter delivery.

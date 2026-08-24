@@ -105,9 +105,22 @@ Console subscribes to one exact canonical Task identity. A semantic Task event
 produces `app.task.updated(appId, taskId)` on the socket; the wake contains no
 Task body. Console then re-reads the exact resource.
 
+When Runtime records that May's request was attached to an exact owner Task,
+the durable Conversation message carries `metadata.followTask`. Console follows
+that Task automatically after reading the message; it does not infer ownership
+from prose, Task order, or session activity. A newer assignment or explicit
+`/watch` replaces the local watch. Selecting another App or `/unwatch` ends it
+without changing the Task.
+
 Only one read may be in flight. Further wakes set one dirty bit, resulting in
 at most one additional read. There is no polling timer. Completion or
 cancellation shows the terminal result and automatically clears the watch.
+
+Console remembers a bounded set of semantic Task revisions shown on this live
+surface. Repeated wakes for an unchanged revision render nothing. Returning
+with `/watch <ref>` shows one compact catch-up snapshot only when the Task has
+changed; it does not replay intermediate updates. An explicit `/task <ref>` is
+an intentional read and may repeat current information.
 
 Reconnect preserves the in-process watch preference, resubscribes, and reads
 current truth. A missed wake is harmless.
@@ -127,6 +140,11 @@ such as `you[telegram]>`. A Console process suppresses only messages it already
 rendered; another Console process may still display the same shared message.
 Passive synchronization reads messages only; it does not query Host request
 history or Task resources.
+
+Durable messages render only from this Conversation read. The raw message event
+is not a second presentation path, so an assignment or answer cannot appear
+twice. A transient notification is intentionally different: because it never
+enters Conversation, Console may render its raw event directly.
 
 The event journal retains prior command views, but the Conversation read
 returns only the newest view for each Console or Telegram surface. This keeps

@@ -137,6 +137,13 @@ input. A completed Task remains immutable; May must decide whether the new
 message is distinct follow-up work instead of silently treating old proof as
 the result of new input.
 
+When a destination App attaches a Conversation-owned dependency to its exact
+Task, Runtime appends one idempotent assignment message. Its metadata contains
+the represented May and owner Task identities plus one `followTask` owner
+identity. This is a presentation hint, not work or delivery state. An adapter
+may follow that Task for push-to-read progress; adapters never derive focus from
+message wording, session activity, or Task-list order.
+
 During migration, a represented May request admitted before Conversation IDs
 existed may have no scope value. May may continue that legacy-unscoped request
 from `may:primary`; the Host assigns that scope while fencing it. A non-empty
