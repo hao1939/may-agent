@@ -16,7 +16,6 @@
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
-import { createHash } from "node:crypto";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage } from "@may-agent/sdk";
 import type { EventInput, EventReceipt } from "../event-interface.js";
@@ -103,16 +102,23 @@ function elapsedText(value: number): string {
   return hours < 48 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
 }
 
-export function renderTelegramTodos(tasks: HumanTaskView[], total = tasks.length, appId?: string): string {
+export function renderTelegramTodos(
+  tasks: HumanTaskView[],
+  total = tasks.length,
+  appId?: string,
+  hasMore = false,
+): string {
   const scope = appId ? ` for ${appId}` : " across all Apps";
   if (tasks.length === 0) return `Nothing needs your action${scope}.`;
   return [
     `Actions needed${scope}:`,
-    ...tasks.map(
-      (task) =>
-        `• ${task.ref} · ${task.appId} · ${elapsedText(task.humanAction?.since ?? task.updatedAt)}\n  ${humanActionText(task)}`,
-    ),
-    ...(total > tasks.length ? [`${total - tasks.length} more action(s) are not shown.`] : []),
+    ...tasks.map((task) => {
+      const since = task.humanAction?.since;
+      return `• ${task.ref} · ${task.appId}${since === undefined ? "" : ` · ${elapsedText(since)}`}\n  ${humanActionText(task)}`;
+    }),
+    ...(total > tasks.length
+      ? [`${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
+      : []),
   ].join("\n");
 }
 
@@ -252,7 +258,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   >();
   const selectedApps = new Map<string, string>();
   const surfaces = new Map<string, { chatId: string; topicId?: number }>();
-  const shownTodoRevisions = new Map<string, Map<string, string>>();
+  const shownTodoActions = new Map<string, Map<string, string>>();
   const todoReads = new Set<string>();
   const dirtyTodos = new Set<string>();
   const scheduledTodos = new Set<string>();
@@ -266,6 +272,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const scheduledWatches = new Set<string>();
   const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
   const sharedConversationId = primaryConversationId(opts.interfaceAgent);
+  const nextTodoPageBySurface = new Map<string, { appId?: string; cursor: string }>();
   const renderedConversationMessages = new Set<string>();
   const rememberRenderedConversationMessage = (messageId: string): void => {
     renderedConversationMessages.add(messageId);
@@ -398,13 +405,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoRevision = (task: HumanTaskView): string =>
-    JSON.stringify({
-      resourceVersion: task.resourceVersion,
-      requestedAction: humanActionText(task),
-      since: task.humanAction?.since,
-      status: task.status,
-    });
+  const todoActionSignature = (task: HumanTaskView): string => humanActionText(task);
 
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
@@ -417,16 +418,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     try {
       const appId = selectedApps.get(surface) ?? opts.interfaceAgent;
       const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
-      const prior = shownTodoRevisions.get(surface) ?? new Map<string, string>();
-      const next = new Map(page.items.map((task) => [todoTaskKey(task), todoRevision(task)]));
-      shownTodoRevisions.set(surface, next);
+      const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
+      const next = new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)]));
       const watched = watchedTasks.get(surface);
       const changed = page.items.filter(
         (task) =>
-          prior.get(todoTaskKey(task)) !== todoRevision(task) &&
+          prior.get(todoTaskKey(task)) !== todoActionSignature(task) &&
           !(watched?.appId === task.appId && watched.taskId === task.taskId),
       );
-      if (changed.length === 0) return;
+      if (changed.length === 0) {
+        shownTodoActions.set(surface, next);
+        return;
+      }
       const first = changed[0]!;
       const text =
         page.total === 1 && changed.length === 1
@@ -438,11 +441,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         messageThreadId: coordinates.topicId,
       });
       if (!messageId) return;
-      const identity = page.items
-        .map((task) => `${task.appId}:${task.taskId}:${task.resourceVersion}:${todoRevision(task)}`)
-        .sort()
-        .concat(`total:${page.total ?? page.items.length}`)
-        .join("\n");
+      shownTodoActions.set(surface, next);
       recordConversationMessage({
         conversationId: sharedConversationId,
         text,
@@ -451,7 +450,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         chatId: coordinates.chatId,
         topicId: coordinates.topicId,
         taskRefs: page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
-        idempotencyKey: `todo-notification:${createHash("sha256").update(identity).digest("hex")}`,
+        idempotencyKey: `todo-notification:telegram:${surface}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
       });
     } finally {
       todoReads.delete(surface);
@@ -679,7 +678,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const deliverCommandView = async (
       rendered: string,
       taskRefs: Array<{ appId: string; taskId: string }> = [],
-    ): Promise<void> => {
+    ): Promise<boolean> => {
       const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
         eventType: "telegram.reply",
         agent: opts.interfaceAgent,
@@ -697,7 +696,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           topicId,
           taskRefs,
         });
+        return true;
       }
+      return false;
     };
 
     if (command === "/apps") {
@@ -708,7 +709,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (rest[0] && apps.length === 1) {
           const nextApp = apps[0]!.id;
           selectedApps.set(surface, nextApp);
-          shownTodoRevisions.delete(surface);
+          shownTodoActions.delete(surface);
+          nextTodoPageBySurface.delete(surface);
           const watched = watchedTasks.get(surface);
           if (watched && watched.appId !== nextApp) watchedTasks.delete(surface);
           selectedChanged = true;
@@ -726,21 +728,42 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/todo") {
       const tokens = rest.map((part) => part.toLowerCase());
-      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all")) {
-        await deliverCommandView("Use: /todo [all]");
+      const more = tokens.length === 1 && tokens[0] === "more";
+      const prior = more ? nextTodoPageBySurface.get(surface) : undefined;
+      if (more && !prior) {
+        await deliverCommandView("No next page. Use /todo first.");
         return true;
       }
-      const appId = tokens.includes("all") ? undefined : (selectedApps.get(surface) ?? opts.interfaceAgent);
+      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all" && !more)) {
+        await deliverCommandView("Use: /todo [all], or /todo more");
+        return true;
+      }
+      const appId = more
+        ? prior!.appId
+        : tokens.includes("all")
+          ? undefined
+          : (selectedApps.get(surface) ?? opts.interfaceAgent);
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         humanActionOnly: true,
         limit: TODO_PAGE_SIZE,
+        ...(prior?.cursor ? { cursor: prior.cursor } : {}),
       });
-      shownTodoRevisions.set(surface, new Map(page.items.map((task) => [todoTaskKey(task), todoRevision(task)])));
-      await deliverCommandView(
-        renderTelegramTodos(page.items, page.total ?? page.items.length, appId),
+      if (page.nextCursor) {
+        nextTodoPageBySurface.set(surface, { ...(appId ? { appId } : {}), cursor: page.nextCursor });
+      } else {
+        nextTodoPageBySurface.delete(surface);
+      }
+      const delivered = await deliverCommandView(
+        renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
       );
+      if (delivered && !more && appId === (selectedApps.get(surface) ?? opts.interfaceAgent)) {
+        shownTodoActions.set(
+          surface,
+          new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)])),
+        );
+      }
       return true;
     }
 
@@ -757,8 +780,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       const includeDone = prior?.includeDone ?? tokens.includes("history");
-      const appId =
-        prior?.appId ?? (tokens.includes("all") ? undefined : (selectedApps.get(surface) ?? opts.interfaceAgent));
+      const appId = more
+        ? prior!.appId
+        : tokens.includes("all")
+          ? undefined
+          : (selectedApps.get(surface) ?? opts.interfaceAgent);
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
@@ -875,7 +901,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           "*Commands:*\n" +
           "/apps \[app\] — List or select an App\n" +
           "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
-          "/todo \[all\] — Show Tasks that need your action\n" +
+          "/todo \[all\], /todo more — Show Tasks that need your action\n" +
           "/task <ref> — Show one Task\n" +
           "/watch \[ref\] — Watch or show one Task\n" +
           "/unwatch — Stop watching without changing the Task\n" +
@@ -940,6 +966,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     try {
       const me = await apiCall("getMe");
       bus.emit({ type: "info", message: `[telegram] Bot: @${me.username} (${me.first_name})` });
+      // Configured chats are valid notification surfaces immediately after a
+      // restart; receiving a new message is not a prerequisite for alerts.
+      for (const chatId of allowedChatIds) {
+        const surface = surfaceKey(chatId);
+        surfaces.set(surface, { chatId });
+        queueTodoRefresh(surface);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       bus.emit({ type: "info", message: `[telegram] Failed to connect: ${msg}` });
