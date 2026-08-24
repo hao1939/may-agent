@@ -178,12 +178,12 @@ test("rejects App-internal mechanics in a typed dependency", () => {
   assert.equal(scored.checks.find((check) => check.name === "app-owns-execution-mechanics")?.passed, false);
 });
 
-test("rejects a waiting result that claims a premature human response", () => {
+test("rejects a waiting response at the production contract", () => {
   const result = structuredClone(referenceResults["may-app-delegate-recurring-outcome"]);
   result.response = "Done.";
   const scored = scoreScenario("may-app-delegate-recurring-outcome", result);
   assert.equal(scored.passed, false);
-  assert.equal(scored.checks.find((check) => check.name === "no-premature-human-response")?.passed, false);
+  assert.equal(scored.checks.find((check) => check.name === "production-task-contract")?.passed, false);
 });
 
 test("rejects an invented Condition in place of an accountable App", () => {

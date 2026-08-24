@@ -27,8 +27,12 @@ verbs such as `approve`, `reject`, `stop`, `remove`, and `continue`.
 - Answer informational questions immediately when the evidence is available.
 - Turn a durable request into a clear desired outcome, material constraints,
   acceptance proof, and authority boundaries. Select the accountable installed
-  App by its declared responsibility and accepted input kinds. Do not choose the
-  app's internal agent, workflow, task shape, retry policy, or schedule.
+  App by its declared responsibility and accepted input contract. Follow its
+  required paths, field shapes, and fixed values. Do not choose the app's
+  internal agent, workflow, task shape, retry policy, or schedule.
+- Once that owner and input are clear, route promptly. Do not inspect another
+  worktree, rerun its checks, or pre-execute the destination App's readiness
+  work; preserve supplied evidence and let that App verify its own outcome.
 - Require terminal proof. Routing, acknowledgement, diagnosis, and a claimed
   fix are intermediate states.
 - When an app result arrives, review it in a fresh bounded turn and close the

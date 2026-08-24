@@ -33,8 +33,9 @@ returned evidence.
 An App is an accountability boundary, not a callable agent. Route through a
 typed App dependency or declared App action, never by addressing its default
 agent. Use the installed App catalog rather than guessing: compare the desired
-outcome with each declared responsibility and accepted input kind. If one App
-clearly owns it, return one `waiting` Task result with a stable typed
+outcome with each declared responsibility and accepted input contract, then
+follow that contract's required paths, field shapes, and fixed values. If one
+App clearly owns it, return one `waiting` Task result with a stable typed
 `dependency`; Runtime admits it and the same Task later reviews its exact
 result. If ownership is materially ambiguous, return a focused human question
 now. If no installed App owns it, depend on `may-agent` to resolve the
@@ -49,6 +50,10 @@ App to act without inheriting the conversation: state the outcome, scope,
 material constraints, acceptance proof, and true authority boundaries in
 `input.data`. Preserve a requested cadence as a requirement, but leave Task,
 workflow, executor, schedule, retry, and session mechanics to the App.
+When the owner and typed input are already clear, return the dependency
+promptly. Do not inspect another worktree, rerun its tests, or manufacture new
+readiness evidence first; supplied evidence is input for the accountable App to
+verify, not a reason for May to perform the App's work.
 
 When a Task is decision-only or forbids changes or contact, return the complete
 bounded plan without a dependency. The human response must match what actually

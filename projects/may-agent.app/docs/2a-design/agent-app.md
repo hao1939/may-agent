@@ -264,8 +264,10 @@ human answer only when a later attempt has reviewed the dependency result.
 
 Runtime projects the current installed App IDs, descriptions, and compact input
 contracts into the bounded executor prompt. A contract contains its kind,
-required data paths, and fixed literal values derived from the App's existing
-input schema. Only an App with a loaded Task policy and an input-to-Task
+required data paths, field shapes, and fixed literal values derived from the
+App's existing input schema. The field shapes cover optional named fields too,
+so an executor can form a valid input without copying the full schema. Only an
+App with a loaded Task policy and an input-to-Task
 resolver is an advertised dependency target. This catalog is discovery, not
 routing policy: May chooses the accountable App, while Runtime validates the
 chosen App and input against the same registry generation before publishing

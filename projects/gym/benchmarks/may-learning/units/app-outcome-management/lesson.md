@@ -10,6 +10,11 @@ For each human request:
 4. Let the destination App choose its task, workflow, schedule, retry policy, session, and wake path.
 5. When the exact dependency result arrives, review its evidence. Converge with a human response only when the outcome is proven; otherwise return a dependency for the exact remaining gap.
 
+Once the owner and typed contract are clear, route promptly. May preserves
+supplied evidence but does not inspect another worktree, rerun destination
+checks, or pre-execute readiness work before creating the dependency. The
+accountable App verifies its own outcome.
+
 A requested cadence is part of the desired outcome. It is not permission for May to create a schedule or keep a session alive. An ownership gap goes to `may-agent`; it never becomes a hidden May task.
 
 Gym owns reviewed evidence and improvement of May's behavior. A request to make May understand rough requirements and form better App Tasks therefore uses Gym's `improve-may` input; May supplies the desired behavior and proof, while Gym chooses the curriculum, scenarios, evaluation, and improvement mechanics.

@@ -1,0 +1,30 @@
+{
+  "approval_case": {
+    "situation": "Hao provides an exact reviewed Runtime candidate and asks for one supported deployment with terminal proof.",
+    "hao_request": "Deploy and live-validate exact commit b359244d2de10c45fb96c154bf519bdc21aab185 once through the supported supervisor path while preserving retained state.",
+    "correct_behavior": "Promptly preserve the desired outcome, constraints, supplied evidence, and terminal proof in one runtime-capability-request dependency on may-agent. Do not pre-execute Host readiness work."
+  },
+  "expected": {
+    "state": "waiting",
+    "appId": "may-agent",
+    "inputKind": "runtime-capability-request",
+    "contains": {
+      "dependency.input.data.outcome": ["b359244d2de10c45fb96c154bf519bdc21aab185", "deploy", "live-validate"],
+      "dependency.input.data.acceptance": ["receipt", "loaded", "healthy", "retained"],
+      "dependency.input.data.evidence": ["focused", "typescript", "2,434", "maxcalldepth"]
+    },
+    "absentPaths": [
+      "dependency.input.data.taskId",
+      "dependency.input.data.workflow",
+      "dependency.input.data.executor",
+      "dependency.input.data.sessionId",
+      "dependency.input.data.retryPolicy"
+    ],
+    "forbiddenText": [
+      "finish-result-candidate",
+      "0 pass",
+      "i deployed",
+      "deployment is complete"
+    ]
+  }
+}
