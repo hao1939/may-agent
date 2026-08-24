@@ -16,6 +16,7 @@ import {
   EventBus,
 } from "./event-bus.js";
 import { AppRegistry } from "./app-registry.js";
+import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
   const registry = new AppRegistry(projectsRoot);
@@ -223,6 +224,93 @@ describe("App inbox runtime", () => {
     expect(runtime.host.get("feedback-1")).toMatchObject({
       targetTaskId: "probe/current",
       waitingOn: { kind: "task", id: "probe/current" },
+    });
+  });
+
+  it("announces the exact owner Task when a human request is assigned", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const assignments: Array<Record<string, any>> = [];
+    bus.subscribe((event) => {
+      if (event.type === "conversation.message.created" && (event.data as any)?.metadata?.followTask) {
+        assignments.push(event as unknown as Record<string, any>);
+      }
+    });
+
+    createAppInboxItem(db, {
+      id: "human-turn",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "may-console",
+      source: { kind: "human", id: "human-message" },
+      input: { kind: "message", data: { message: "Review the docs" } },
+      now: 1,
+    });
+    const humanClaim = claimNextAppInboxItem(db, "may", "test", 10_000, 2)!;
+    expect(waitAppInboxClaim(db, humanClaim, { kind: "task", id: "conversation/human-turn" }, { now: 3 })).toBe(
+      true,
+    );
+    db.prepare(
+      `INSERT INTO app_tasks(
+         app_id, task_id, generation, resource_version, observed_generation, phase,
+         lane, changed, ready, updated_at, resource_json
+       ) VALUES ('may', 'conversation/human-turn', 1, 1, 1, 'waiting', 'human', 0, 0, 3, '{}')`,
+    ).run();
+    const condition = {
+      metadata: { id: "app-request:owner-request", generation: 1, resourceVersion: 1 },
+      spec: {
+        type: "app.dependency.completed",
+        subject: "id:owner-request",
+        expected: { field: "status", equals: "done" },
+      },
+      status: { state: "unknown", observedGeneration: 0 },
+    };
+    db.prepare(
+      `INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json)
+       VALUES ('may', 'app-request:owner-request', 'unknown', ?)`,
+    ).run(JSON.stringify(condition));
+    db.prepare(
+      `INSERT INTO app_task_condition_routes(app_id, condition_id, task_id)
+       VALUES ('may', 'app-request:owner-request', 'conversation/human-turn')`,
+    ).run();
+
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      scanIntervalMs: 10_000,
+    });
+    bus.emit({
+      type: "app.input.requested",
+      source: "app-task:may",
+      owner: "app:evaluation",
+      data: {
+        appId: "evaluation",
+        requestId: "owner-request",
+        input: { kind: "probe", data: { value: "docs" } },
+        source: { kind: "app", id: "may" },
+        idempotencyKey: "owner-request",
+      },
+    });
+
+    await waitUntil(() => assignments.length === 1);
+    expect(assignments[0]).toMatchObject({
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        text: "Assigned to evaluation.",
+        metadata: {
+          channel: "may-console",
+          requestId: "human-turn",
+          taskRefs: [
+            { appId: "may", taskId: "conversation/human-turn" },
+            { appId: "evaluation", taskId: "probe/owner-request" },
+          ],
+          followTask: { appId: "evaluation", taskId: "probe/owner-request" },
+        },
+      },
     });
   });
 

@@ -25,6 +25,7 @@ let selectedApp = "may";
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
+let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 let conversationReady = false;
 let appSelectionInFlight = false;
@@ -51,6 +52,7 @@ let nextTaskPage = null;
 const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
+const shownTaskRevisions = new Map();
 
 function rememberCompletion(set, value, limit) {
   if (set.has(value)) set.delete(value);
@@ -266,6 +268,8 @@ function requestTask(input) {
   const pending = {
     kind: input.kind || "detail",
     command: input.command || `/task ${input.ref || ""}`.trim(),
+    ...(input.appId ? { appId: input.appId } : {}),
+    ...(input.taskId ? { taskId: input.taskId } : {}),
   };
   pendingTaskReads.push(pending);
   if (pending.kind === "watch-refresh") watchedTaskReadInFlight = true;
@@ -351,8 +355,17 @@ function taskProgress(task) {
 
 function renderApps(apps, pending) {
   if (!Array.isArray(apps)) return;
+  let stoppedWatch = null;
   if (pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim()) {
-    selectedApp = apps[0].id.trim();
+    const nextApp = apps[0].id.trim();
+    if (nextApp !== selectedApp) {
+      desiredAutoFollow = null;
+      if (watchedTask) {
+        stoppedWatch = watchedTask.ref;
+        setWatchedTask(null);
+      }
+    }
+    selectedApp = nextApp;
     nextTaskPage = null;
   }
   const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:"];
@@ -372,6 +385,7 @@ function renderApps(apps, pending) {
       lines.push(`    ${app.description.trim()}`);
     }
   }
+  if (stoppedWatch) lines.push(`  Stopped following ${stoppedWatch}; the Task continues unchanged.`);
   lines.push("");
   presentView(pending?.command || "/apps", lines.join("\n"));
 }
@@ -447,11 +461,86 @@ function renderTask(task, command, options = {}) {
   else presentView(command, lines.join("\n"), { taskRefs: representedTaskIdentities(task) });
 }
 
+function taskPresentationKey(task) {
+  return taskIdentity(task) ? `${task.appId}\0${task.taskId}` : "";
+}
+
+function taskPresentationRevision(task) {
+  return JSON.stringify({
+    status: task?.status,
+    outcome: task?.outcome,
+    updatedAt: task?.updatedAt,
+    summary: task?.summary,
+    response: task?.response,
+    evidence: task?.evidence,
+    progress: task?.progress,
+    waitingOn: task?.waitingOn,
+    execution: task?.execution,
+    terminal: task?.terminal,
+  });
+}
+
+function rememberTaskRevision(key, revision) {
+  if (shownTaskRevisions.has(key)) shownTaskRevisions.delete(key);
+  shownTaskRevisions.set(key, revision);
+  while (shownTaskRevisions.size > 128) shownTaskRevisions.delete(shownTaskRevisions.keys().next().value);
+}
+
+function renderWatchSnapshot(task, options = {}) {
+  const key = taskPresentationKey(task);
+  if (!key) return { rendered: false, seenBefore: false };
+  const revision = taskPresentationRevision(task);
+  const previous = shownTaskRevisions.get(key);
+  if (previous === revision) return { rendered: false, seenBefore: true };
+  if (options.catchUp && previous) printLine(`[catch-up] ${task.ref} changed while it was not followed.`);
+  renderTask(task, `/watch ${task.ref}`, { transient: true });
+  rememberTaskRevision(key, revision);
+  return { rendered: true, seenBefore: previous !== undefined };
+}
+
 function setWatchedTask(task) {
   watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
+  if (watchedTask) selectedApp = watchedTask.appId;
   watchedTaskDirty = false;
   subscribe();
   refreshPrompt();
+}
+
+function autoFollowKey(task) {
+  return task && typeof task.appId === "string" && typeof task.taskId === "string"
+    ? `${task.appId}\0${task.taskId}`
+    : "";
+}
+
+function requestDesiredAutoFollow() {
+  if (!connected || !desiredAutoFollow) return;
+  const key = autoFollowKey(desiredAutoFollow);
+  if (!key) return;
+  if (watchedTask && autoFollowKey(watchedTask) === key) {
+    desiredAutoFollow = null;
+    return;
+  }
+  if (
+    pendingTaskReads.some(
+      (pending) => pending.kind === "auto-follow" && `${pending.appId || ""}\0${pending.taskId || ""}` === key,
+    )
+  ) {
+    return;
+  }
+  requestTask({
+    kind: "auto-follow",
+    appId: desiredAutoFollow.appId,
+    taskId: desiredAutoFollow.taskId,
+    command: "automatic Task follow",
+  });
+}
+
+function autoFollowTask(task) {
+  const appId = typeof task?.appId === "string" ? task.appId.trim() : "";
+  const taskId = typeof task?.taskId === "string" ? task.taskId.trim() : "";
+  if (!appId || !taskId) return;
+  desiredAutoFollow = { appId, taskId };
+  requestDesiredAutoFollow();
 }
 
 function refreshWatchedTask() {
@@ -481,6 +570,7 @@ function formatWorkTime(value) {
 
 function renderConversation(messages) {
   if (!Array.isArray(messages)) return;
+  let latestFollowTask = null;
   for (const message of messages) {
     const id = typeof message.id === "string" ? message.id : "";
     const text = typeof message.text === "string" ? message.text.trim() : "";
@@ -498,7 +588,19 @@ function renderConversation(messages) {
       : [];
     printConversationText(speaker, taskRefs.length > 0 ? `${text}\n\n${taskRefs.join("\n")}` : text);
     rememberRenderedConversationMessage(id);
+    const followTask = message.metadata?.followTask;
+    if (
+      kind === "agent" &&
+      followTask &&
+      typeof followTask.appId === "string" &&
+      followTask.appId.trim() &&
+      typeof followTask.taskId === "string" &&
+      followTask.taskId.trim()
+    ) {
+      latestFollowTask = { appId: followTask.appId.trim(), taskId: followTask.taskId.trim() };
+    }
   }
+  if (latestFollowTask) autoFollowTask(latestFollowTask);
 }
 
 function runtimeFrame(type) {
@@ -591,7 +693,16 @@ function handleEvent(event) {
     const data = flatPayload(event);
     const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata : {};
     const author = data.author && typeof data.author === "object" ? data.author : {};
-    if (metadata.channel === source && author.id !== source && typeof data.text === "string") {
+    // Durable messages are rendered only from the Conversation projection.
+    // Rendering the raw event as well would show the same message twice when
+    // conversation.updated causes the normal read. Transient messages are not
+    // part of that projection, so they intentionally use the direct path.
+    if (
+      data.transient === true &&
+      metadata.channel === source &&
+      author.id !== source &&
+      typeof data.text === "string"
+    ) {
       const speaker = author.kind === "agent" ? "may" : author.kind || "notice";
       printConversationText(speaker, data.text);
     }
@@ -635,17 +746,42 @@ function handleEvent(event) {
         const pending = pendingTaskReads.shift();
         const task = event.task;
         if (pending?.kind === "watch-start") {
-          renderTask(task, pending.command);
           if (task?.terminal) {
+            renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(null);
             printLine("[watch] Task is already terminal.");
           } else if (task) {
+            const snapshot = renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(task);
-            printLine(`[watch] Watching ${task.ref}. Bare text is Task feedback through May.`);
+            printLine(
+              snapshot.rendered || !snapshot.seenBefore
+                ? `[watch] Watching ${task.ref}. Bare text is Task feedback through May.`
+                : `[watch] Watching ${task.ref}; there is no new progress since it was last shown.`,
+            );
           }
+        } else if (pending?.kind === "auto-follow") {
+          const pendingKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
+          if (!desiredAutoFollow || autoFollowKey(desiredAutoFollow) !== pendingKey) {
+            // The human changed context or a newer assignment superseded this read.
+          } else if (!task) {
+            desiredAutoFollow = null;
+          } else if (task.terminal) {
+            desiredAutoFollow = null;
+          } else {
+            const previous = watchedTask;
+            desiredAutoFollow = null;
+            renderWatchSnapshot(task, { catchUp: Boolean(shownTaskRevisions.has(taskPresentationKey(task))) });
+            setWatchedTask(task);
+            printLine(
+              previous && autoFollowKey(previous) !== autoFollowKey(task)
+                ? `[watch] Following assigned Task ${task.ref}; stopped following ${previous.ref}.`
+                : `[watch] Following assigned Task ${task.ref}. Bare text is feedback through May.`,
+            );
+          }
+          requestDesiredAutoFollow();
         } else if (pending?.kind === "watch-refresh") {
           watchedTaskReadInFlight = false;
-          renderTask(task, pending.command, { transient: true });
+          if (task) renderWatchSnapshot(task);
           if (!task || task.terminal) {
             setWatchedTask(null);
             if (task?.terminal) printLine("[watch] Task finished; watch ended.");
@@ -687,6 +823,10 @@ function handleEvent(event) {
       if (event.command === "task.get") {
         const pending = pendingTaskReads.shift();
         if (pending?.kind === "watch-refresh") watchedTaskReadInFlight = false;
+        if (pending?.kind === "auto-follow" && desiredAutoFollow) {
+          const pendingKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
+          if (autoFollowKey(desiredAutoFollow) === pendingKey) desiredAutoFollow = null;
+        }
       }
       printLine(`[error] ${event.message || "unknown error"}`);
       return;
@@ -746,6 +886,7 @@ function connectSocket() {
     requestConversation();
     watchedTaskReadInFlight = false;
     refreshWatchedTask();
+    requestDesiredAutoFollow();
     refreshPrompt();
   });
 
@@ -877,6 +1018,7 @@ function handleCommand(input) {
         printLine("Usage: /watch [ref]");
         return;
       }
+      desiredAutoFollow = null;
       requestTask({ kind: "watch-start", ref: rest, command: input });
       return;
     }
@@ -885,13 +1027,12 @@ function handleCommand(input) {
         printLine("Usage: /unwatch");
         return;
       }
-      if (!watchedTask) {
+      if (!watchedTask && !desiredAutoFollow) {
         printLine("[watch] No Task is watched.");
         return;
       }
-      watchedTask = null;
-      watchedTaskDirty = false;
-      subscribe();
+      desiredAutoFollow = null;
+      if (watchedTask) setWatchedTask(null);
       printLine("Stopped watching. The Task is unchanged.");
       return;
     case "cancel": {

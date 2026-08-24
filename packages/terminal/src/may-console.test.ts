@@ -96,17 +96,18 @@ describe("May Console", () => {
               })}\n`,
             );
           } else if (frame.type === "apps.list") {
+            const appId = typeof frame.appId === "string" ? frame.appId : "evaluation";
             socket.write(
               `${JSON.stringify({
                 type: "ok",
                 command: "apps.list",
                 apps: [
                   {
-                    id: "evaluation",
-                    owner: "evaluator",
-                    description: "Reviews project behavior",
-                    activeTasks: taskTerminal ? 0 : 1,
-                    runningTasks: taskTerminal ? 0 : 1,
+                    id: appId,
+                    owner: appId === "may" ? "may" : "evaluator",
+                    description: appId === "may" ? "Handles human conversation" : "Reviews project behavior",
+                    activeTasks: appId === "may" || taskTerminal ? 0 : 1,
+                    runningTasks: appId === "may" || taskTerminal ? 0 : 1,
                     waitingTasks: 0,
                     attentionTasks: 0,
                   },
@@ -290,9 +291,49 @@ describe("May Console", () => {
         output.includes("Reviewing current behavior"),
     );
 
-    child.stdin.write("/watch 8f12ac90\n");
+    const assignmentMessage = {
+      id: "assignment-1",
+      sequence: 3,
+      author: { kind: "agent", id: "may" },
+      text: "Assigned to evaluation.",
+      metadata: {
+        channel: "may-console",
+        taskRefs: [
+          { appId: "may", taskId: "conversation/turn-1", ref: "1a2b3c4d" },
+          { appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" },
+        ],
+        followTask: { appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" },
+      },
+      createdAt: 3,
+    };
+    remoteConversationMessages.push(assignmentMessage);
+    // A durable message can arrive as a raw event before the Conversation
+    // wake. It must still be rendered exactly once from Conversation truth.
+    client?.write(
+      `${JSON.stringify({
+        type: "conversation.message.created",
+        source: "app-inbox",
+        owner: "app:may",
+        data: {
+          appId: "may",
+          conversationId: "may:primary",
+          author: assignmentMessage.author,
+          text: assignmentMessage.text,
+          metadata: assignmentMessage.metadata,
+        },
+      })}\n`,
+    );
+    client?.write(
+      `${JSON.stringify({
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      })}\n`,
+    );
     await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
-    await waitFor(() => output.includes("[watch] Watching 8f12ac90"));
+    await waitFor(() => output.includes("[watch] Following assigned Task 8f12ac90"));
+    expect(output.split("Assigned to evaluation.").length - 1).toBe(1);
 
     child.stdin.write("please keep the compatibility alias\n");
     await waitFor(() => humanFrames().length === 1);
@@ -338,6 +379,50 @@ describe("May Console", () => {
     await waitFor(
       () => output.includes("Progress (2026-08-17 09:03:04 UTC):") && output.includes("Inspecting exact evidence"),
     );
+    client?.write(
+      `${JSON.stringify({
+        type: "app.task.updated",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      })}\n`,
+    );
+    await Bun.sleep(30);
+    expect(output.split("Inspecting exact evidence").length - 1).toBe(1);
+
+    child.stdin.write("/apps may\n");
+    await waitFor(
+      () =>
+        output.includes("Selected App: may") &&
+        output.includes("Stopped following 8f12ac90; the Task continues unchanged."),
+    );
+    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").at(-1)?.task === null);
+
+    taskProgress = {
+      stage: "intermediate",
+      message: "Checking the final evidence",
+      updatedAt: Date.UTC(2026, 7, 17, 9, 4, 5),
+    };
+    client?.write(
+      `${JSON.stringify({
+        type: "app.task.updated",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      })}\n`,
+    );
+    await Bun.sleep(20);
+    expect(output).not.toContain("Checking the final evidence");
+
+    child.stdin.write("/watch 8f12ac90\n");
+    await waitFor(
+      () => output.includes("[catch-up] 8f12ac90 changed while it was not followed.") &&
+        output.includes("Checking the final evidence"),
+    );
+    client?.write(
+      `${JSON.stringify({
+        type: "app.task.updated",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      })}\n`,
+    );
+    await Bun.sleep(30);
+    expect(output.split("Checking the final evidence").length - 1).toBe(1);
 
     taskTerminal = true;
     client?.write(
