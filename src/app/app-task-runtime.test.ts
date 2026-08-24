@@ -15,6 +15,7 @@ import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
   appTaskAgentProtocol,
+  appTaskDependencyCatalog,
   applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
   beginCanonicalAgentResidueGuard,
@@ -23,6 +24,7 @@ import {
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   finishCanonicalAgentResidueGuard,
   installAppTaskRuntimes,
+  normalizeTaskHandlerResult,
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   projectAppTaskChildPromptContext,
@@ -266,6 +268,74 @@ describe("App Task agent prompt context", () => {
     );
   });
 
+  it("shows only installed accountable Apps and their accepted input kinds", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const target = defineApp({
+      id: "evaluation",
+      version: 1,
+      agent: "evaluator",
+      description: "Owns evidence-based evaluation outcomes.",
+      inputSchema: Type.Union([
+        Type.Object({ kind: Type.Literal("owner-review"), data: Type.Record(Type.String(), Type.Unknown()) }),
+        Type.Object({ kind: Type.Literal("deep-eval"), data: Type.Record(Type.String(), Type.Unknown()) }),
+      ]),
+      task: () => ({
+        kind: "desired" as const,
+        intent: {
+          id: "review",
+          parentId: "evaluation",
+          outcome: "Review evidence",
+          acceptance: ["Evidence is reviewed"],
+          mode: "achieve" as const,
+        },
+      }),
+    });
+    const source = { ...definition(), id: "may" };
+    const catalog = appTaskDependencyCatalog(
+      {
+        ...options(f, bus),
+        appRegistrySnapshot: {
+          id: "catalog:1",
+          generation: 1,
+          entries: [
+            { appDir: f.appDir, definition: source },
+            { appDir: join(f.projectsRoot, "evaluation.app"), definition: target },
+          ],
+        },
+      },
+      "may",
+    );
+
+    expect(catalog).toEqual([
+      {
+        appId: "evaluation",
+        description: "Owns evidence-based evaluation outcomes.",
+        inputKinds: ["deep-eval", "owner-review"],
+      },
+    ]);
+  });
+
+  it("lets an App reject Conditions it cannot meaningfully observe", () => {
+    const normalized = normalizeTaskHandlerResult(
+      {
+        state: "waiting",
+        summary: "Waiting for an invented human event",
+        evidence: [],
+        conditions: [{ id: "approval", type: "human-decision", subject: "id:approval", expected: true }],
+      },
+      { type: "done", summary: "done", runId: "run-1" },
+      {
+        validateCondition: () => "is not observable by this App",
+      },
+    );
+
+    expect(normalized).toMatchObject({
+      state: "error",
+      summary: "Handler result was rejected: conditions[0] is not observable by this App",
+    });
+  });
+
   it("keeps parent prompts bounded while preserving child identity and state", () => {
     const hiddenDetail = "exact-child-detail-" + "x".repeat(8_000);
     const context: Parameters<typeof projectAppTaskChildPromptContext>[0] = {
@@ -339,6 +409,77 @@ function projectDirForBypass(): string {
 }
 
 describe("canonical App task runtime", () => {
+  it("rejects a dependency that is not accepted by the installed App contract", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/invalid-owner",
+        parentId: "operations",
+        outcome: "Choose one installed accountable App",
+        acceptance: ["The target accepts the typed input"],
+        mode: "achieve",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/invalid-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const target = defineApp({
+      id: "evaluation",
+      version: 1,
+      agent: "evaluator",
+      inputSchema: Type.Object({
+        kind: Type.Literal("owner-review"),
+        data: Type.Record(Type.String(), Type.Unknown()),
+      }),
+      task: () => ({
+        kind: "desired" as const,
+        intent: {
+          id: "review",
+          parentId: "evaluation",
+          outcome: "Review evidence",
+          acceptance: ["Reviewed"],
+          mode: "achieve" as const,
+        },
+      }),
+      tasks: {},
+    });
+    const opts = {
+      ...options(f, bus),
+      appRegistrySnapshot: {
+        id: "dependency:1",
+        generation: 1,
+        entries: [{ appDir: join(f.projectsRoot, "evaluation.app"), definition: target }],
+      },
+    };
+
+    expect(() =>
+      admitTaskAppDependencies({
+        opts,
+        descriptor: {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          agent: "sample-owner",
+          app: definition(),
+          reconciliationPaused: true,
+        },
+        claim,
+        dependencies: [{ id: "review", appId: "evaluation", input: { kind: "invented", data: {} } }],
+      }),
+    ).toThrow("input is not accepted by installed App evaluation");
+  });
+
   it("does not publish a dependency requested from a stale task result", () => {
     const f = fixture();
     const bus = eventBus();
