@@ -75,9 +75,12 @@ findings, and returns one result. `onEvent` is an optional low-latency view of
 new durable Task input such as feedback, approval, steering, or cancellation.
 The listener's attempt-local `accept` consumes the exact input only with an
 admitted result; the next attempt still receives it if the executor cannot
-incorporate it live. The Runtime owns fencing, leases, event persistence, result admission,
-and recovery, so an executor implements no scheduler, queue, retry loop, or
-Task storage.
+incorporate it live. Before the result can publish a dependency, merge a task
+workspace, apply task actions, or move the Task to attention, the Runtime
+checks again for newer unaccepted Task input. If any exists, it applies no
+effect and immediately retries from that evidence. The Runtime owns fencing,
+leases, event persistence, result admission, and recovery, so an executor
+implements no scheduler, queue, retry loop, or Task storage.
 
 Every adapter receives the same bounded Task detail and ordered event batch,
 may publish a fact through the current generation/attempt fence, and returns
@@ -267,6 +270,16 @@ and normal lanes form the scheduling boundary, and human work has reserved Host
 capacity. App priority may order peers inside a lane but cannot override
 trusted human origin.
 
+The controller is stable across definition reloads. Publication changes one
+immutable definition pointer; a claim captures that pointer and uses its App,
+agent, workflow, guard, skill, and shared definitions until the attempt ends.
+Later claims use the new pointer immediately, even while older attempts remain
+active. Reload may update the App concurrency limit in place: raising it starts
+queued work, while lowering it permits active attempts to finish and delays new
+claims until usage is below the limit. Pause disables new claims without
+discarding the queue. Removing or renaming an App is rejected while it has
+unfinished Tasks.
+
 ## Selecting the attempt mechanism
 
 Agent selection is:
@@ -370,8 +383,11 @@ Each task retains ordered links to actionable events until an accepted
 reconciliation has observed them. Claiming a task moves only a bounded prefix
 into the attempt; it does not acknowledge that prefix. Result admission records
 the attempt result and advances the task event checkpoint atomically. Events
-linked during the attempt remain pending, so both `maintain` and `achieve`
-tasks run again before becoming quiet or terminal.
+linked during the attempt remain pending. A result with no external effect may
+commit and leave them for the next attempt. A result that would publish work,
+change another Task, merge a workspace, or classify failure is rejected if it
+did not explicitly accept those newer events. Both `maintain` and `achieve`
+therefore run again from current evidence before becoming quiet or terminal.
 
 A newer desired task generation may explicitly supersede pending links fenced
 to the older specification. Their causal events remain in the event store and
@@ -472,11 +488,12 @@ completion.
 
 Hot reload publishes one validated agent-and-App generation. Prior active
 attempts retain their definitions and capacity claims until they end, while the
-replacement controller may use remaining capacity. Generation and attempt
-fences prevent duplicate execution or stale completion. The durable definition
-source link changes at the same publication boundary, so a later restart
-restores the accepted generation rather than the checkout that happens to be
-present.
+same controller starts new attempts from the new definition with any remaining
+capacity. Reload never waits for an unrelated old attempt to drain. Generation
+and attempt fences prevent duplicate execution or stale completion. The durable
+definition source link changes at the same publication boundary, so a later
+restart restores the accepted generation rather than the checkout that happens
+to be present. Runtime-code changes still require process restart.
 
 Recovery follows one ladder:
 
@@ -498,7 +515,8 @@ Tests and audits must prove:
 2. Queue entries contain IDs and stale readers claim current canonical state.
 3. At most one current attempt exists per `(appId, taskId)`.
 4. Condition update and trigger persistence are atomic.
-5. Result/task-change admission is atomic and stale results apply nothing.
+5. Result/task-change admission is atomic; stale results and effects based on
+   newer unaccepted Task events apply nothing.
 6. Completion has an explicit acceptance basis.
 7. Parent waits and child creation commit together; meaningful child changes
    durably wake the same parent.

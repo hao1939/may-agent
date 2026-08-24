@@ -51,14 +51,18 @@ Reload stages committed global and App-local agent definitions, shared
 every agent, tool surface, skill catalog, handler, and App registry before
 publication. Validation, skill, or handler errors reject the whole candidate.
 The final synchronous publication switches manager definitions, App registry
-consumers, scheduler resources, and the durable `current` release link as one
-generation; a later failure restores the previous set. Active attempts retain
-the definitions they started with. Generation-owned timers, subscriptions, and
-tool resources are closed when replaced or rejected. A restart restores the
-same link; it never discovers newer prompt, skill, agent, or App behavior from
-the mutable checkout. App state, operational shared files, and execution
-workspaces remain at their canonical writable paths and are not copied into
-definition releases.
+consumers, each stable App controller's definition pointer, and the durable
+`current` release link as one generation; a rejected publication restores the
+previous set. Each attempt captures the release's App descriptor, global and
+local agent definitions, workflow/guard roots, and shared definition root when
+it starts. New attempts can therefore start from the new release while old
+attempts finish from the old release; reload does not create or drain a
+replacement controller. Generation-owned timers, subscriptions, and tool
+resources are closed when replaced or rejected. A restart restores the same
+link; it never discovers newer prompt, skill, agent, or App behavior from the
+mutable checkout. App state, operational shared files, and execution workspaces
+remain at explicit canonical writable paths and are not copied into definition
+releases.
 
 ## Deployment
 
