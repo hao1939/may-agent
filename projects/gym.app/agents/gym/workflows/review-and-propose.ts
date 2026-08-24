@@ -9,12 +9,8 @@ import {
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
-import {
-  callGymAgent,
-  emitGymEvent,
-  gymEvent,
-  gymProjectsRoot,
-} from "./lib/context";
+import { callGymAgent, emitGymEvent, gymProjectsRoot } from "./lib/context";
+import { reviewEvent } from "./lib/review-event";
 import {
   reconciliationInput,
   reconciliationPacket,
@@ -484,26 +480,32 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   });
 
   if (decision.disposition !== "human-review") {
-    await emitGymEvent(ctx, gymEvent("gym.review.filtered", {
-      kind: details.kind,
-      requestKey,
-      reviewPath,
-      decisionPath,
-      disposition: decision.disposition,
-      matchedCoverage: decision.matchedCoverage,
-      reason: decision.dispositionReason,
-    }));
-    await emitGymEvent(ctx, gymEvent("project.approval.resolved", {
-      approvalKind: "review-proposal",
-      approvalId: approval.approvalId,
-      waitId: approval.waitId,
-      taskId,
-      taskGeneration: generation,
-      artifactFingerprint: approval.artifactFingerprint,
-      resolution: "superseded",
-      disposition: decision.disposition,
-      reason: decision.dispositionReason,
-    }));
+    await emitGymEvent(
+      ctx,
+      reviewEvent(ctx, "filtered", "gym.review.filtered", {
+        kind: details.kind,
+        requestKey,
+        reviewPath,
+        decisionPath,
+        disposition: decision.disposition,
+        matchedCoverage: decision.matchedCoverage,
+        reason: decision.dispositionReason,
+      }),
+    );
+    await emitGymEvent(
+      ctx,
+      reviewEvent(ctx, "approval-superseded", "project.approval.resolved", {
+        approvalKind: "review-proposal",
+        approvalId: approval.approvalId,
+        waitId: approval.waitId,
+        taskId,
+        taskGeneration: generation,
+        artifactFingerprint: approval.artifactFingerprint,
+        resolution: "superseded",
+        disposition: decision.disposition,
+        reason: decision.dispositionReason,
+      }),
+    );
     const matched = decision.matchedCoverage.length
       ? ` Coverage: ${decision.matchedCoverage.join(", ")}.`
       : "";
@@ -520,29 +522,35 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
 
   if (humanDecision === "approve") {
     const learningTarget = approvedLearningTarget(gymProjectsRoot(ctx), requestKey);
-    await emitGymEvent(ctx, gymEvent("gym.review.approved", {
-      requestKey,
-      reviewPath,
-      approvalId: approval.approvalId,
-      artifactFingerprint: approval.artifactFingerprint,
-    }));
-    if (learningTarget) {
-      await emitGymEvent(ctx, gymEvent("gym.improvement.requested", {
-        agent: "may",
-        reason: "approved-review-proposal",
+    await emitGymEvent(
+      ctx,
+      reviewEvent(ctx, "approved", "gym.review.approved", {
         requestKey,
         reviewPath,
-        incidentId: details.incidentId,
         approvalId: approval.approvalId,
-        benchmark: learningTarget.benchmark,
-        scenarios: learningTarget.scenarios,
-      }));
+        artifactFingerprint: approval.artifactFingerprint,
+      }),
+    );
+    if (learningTarget) {
+      await emitGymEvent(
+        ctx,
+        reviewEvent(ctx, "improvement-requested", "gym.improvement.requested", {
+          agent: "may",
+          reason: "approved-review-proposal",
+          requestKey,
+          reviewPath,
+          incidentId: details.incidentId,
+          approvalId: approval.approvalId,
+          benchmark: learningTarget.benchmark,
+          scenarios: learningTarget.scenarios,
+        }),
+      );
     }
     const summary = learningTarget
       ? `Accepted Gym review proposal ${requestKey} and started its ${learningTarget.scenarios.length}-scenario May learning target.`
       : `Accepted Gym review proposal ${requestKey}; create and approve its benchmark cases before training May.`;
     return ctx.done(summary, {
-      state: learningTarget ? "converged" : "needs-agent",
+      state: learningTarget ? "converged" : "needs-owner",
       summary,
       evidence: [reviewPath, `approval:${approval.approvalId}`],
       ...(learningTarget ? { actions: [] } : {}),
@@ -550,12 +558,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   }
 
   if (humanDecision === "decline") {
-    await emitGymEvent(ctx, gymEvent("gym.review.declined", {
-      requestKey,
-      reviewPath,
-      approvalId: approval.approvalId,
-      artifactFingerprint: approval.artifactFingerprint,
-    }));
+    await emitGymEvent(
+      ctx,
+      reviewEvent(ctx, "declined", "gym.review.declined", {
+        requestKey,
+        reviewPath,
+        approvalId: approval.approvalId,
+        artifactFingerprint: approval.artifactFingerprint,
+      }),
+    );
     const summary = `Rejected Gym review proposal ${requestKey}; no improvement work started.`;
     return ctx.done(summary, {
       state: "converged",
@@ -565,64 +576,79 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
   }
 
-  await emitGymEvent(ctx, gymEvent("gym.review.ready", {
-    kind: details.kind,
-    requestKey,
-    reviewPath,
-    humanApprovalRequired: true,
-  }));
-  await emitGymEvent(ctx, gymEvent("project.approval.requested", {
-    taskId,
-    taskGeneration: generation,
-    approvalKind: "review-proposal",
-    approvalId: approval.approvalId,
-    waitId: approval.waitId,
-    artifactFingerprint: approval.artifactFingerprint,
-    packetPath: reviewPath,
-    requestedAction: "Approve or reject this Gym review proposal.",
-    reason: `Gym review ${requestKey} is ready for a human decision.`,
-    expectedResponse: approval.expectedResponse,
-  }));
-  const existingHumanDecision = String(details.approvedBy ?? "").trim();
-  if (!existingHumanDecision) {
-    await emitGymEvent(ctx, gymEvent("message.created", {
-      to: "human",
-      from: "gym",
-      project: "gym",
-      projectId: "projects/gym.app",
-      projectPath: "projects/gym.app",
+  await emitGymEvent(
+    ctx,
+    reviewEvent(ctx, "ready", "gym.review.ready", {
+      kind: details.kind,
+      requestKey,
+      reviewPath,
+      humanApprovalRequired: true,
+    }),
+  );
+  await emitGymEvent(
+    ctx,
+    reviewEvent(ctx, "approval-requested", "project.approval.requested", {
       taskId,
       taskGeneration: generation,
-      content: [
-        "Gym review ready",
-        "",
-        `Review: ${reviewPath}`,
-        "Decision: approve or reject this proposal.",
-      ].join("\n"),
-      priority: "P1",
-      intent: "gym-approval",
-      approval: {
-        kind: "review-proposal",
-        approvalId: approval.approvalId,
-        waitId: approval.waitId,
-        taskId,
-        taskGeneration: generation,
-        artifactFingerprint: approval.artifactFingerprint,
-        packetPath: reviewPath,
-        question: "Approve or reject this Gym review proposal.",
-        directEvent: approval.expectedResponse,
-      },
       approvalKind: "review-proposal",
       approvalId: approval.approvalId,
       waitId: approval.waitId,
       artifactFingerprint: approval.artifactFingerprint,
       packetPath: reviewPath,
-      pathId: taskId,
       requestedAction: "Approve or reject this Gym review proposal.",
       reason: `Gym review ${requestKey} is ready for a human decision.`,
       expectedResponse: approval.expectedResponse,
-      dedupKey: approval.approvalId,
-    }, { target: { human: true } }));
+    }),
+  );
+  const existingHumanDecision = String(details.approvedBy ?? "").trim();
+  if (!existingHumanDecision) {
+    await emitGymEvent(
+      ctx,
+      reviewEvent(
+        ctx,
+        "human-message",
+        "message.created",
+        {
+          to: "human",
+          from: "gym",
+          project: "gym",
+          projectId: "projects/gym.app",
+          projectPath: "projects/gym.app",
+          taskId,
+          taskGeneration: generation,
+          content: [
+            "Gym review ready",
+            "",
+            `Review: ${reviewPath}`,
+            "Decision: approve or reject this proposal.",
+          ].join("\n"),
+          priority: "P1",
+          intent: "gym-approval",
+          approval: {
+            kind: "review-proposal",
+            approvalId: approval.approvalId,
+            waitId: approval.waitId,
+            taskId,
+            taskGeneration: generation,
+            artifactFingerprint: approval.artifactFingerprint,
+            packetPath: reviewPath,
+            question: "Approve or reject this Gym review proposal.",
+            directEvent: approval.expectedResponse,
+          },
+          approvalKind: "review-proposal",
+          approvalId: approval.approvalId,
+          waitId: approval.waitId,
+          artifactFingerprint: approval.artifactFingerprint,
+          packetPath: reviewPath,
+          pathId: taskId,
+          requestedAction: "Approve or reject this Gym review proposal.",
+          reason: `Gym review ${requestKey} is ready for a human decision.`,
+          expectedResponse: approval.expectedResponse,
+          dedupKey: approval.approvalId,
+        },
+        { target: { human: true } },
+      ),
+    );
   }
   const summary = existingHumanDecision
     ? `Prepared Gym review proposal at ${reviewPath} and restored typed approval lineage from ${existingHumanDecision}.`

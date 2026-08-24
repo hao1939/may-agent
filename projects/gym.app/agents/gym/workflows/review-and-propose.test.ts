@@ -106,6 +106,7 @@ test("semantic novelty gate files covered evidence without asking the human", as
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.review.filtered",
+        localKey: expect.stringMatching(/-filtered$/),
         data: expect.objectContaining({
           disposition: "covered",
           matchedCoverage: ["may-alignment/durable-submission-path"],
@@ -113,6 +114,7 @@ test("semantic novelty gate files covered evidence without asking the human", as
       }),
       expect.objectContaining({
         type: "project.approval.resolved",
+        localKey: expect.stringMatching(/-approval-superseded$/),
         data: expect.objectContaining({
           taskId: "runtime/review-proposal/incident-42",
           taskGeneration: 3,
@@ -199,8 +201,12 @@ test("review proposal requests one typed project approval", async () => {
     const requested = emitted.find(
       (event) => event.type === "project.approval.requested",
     );
+    expect(
+      emitted.find((event) => event.type === "gym.review.ready"),
+    ).toMatchObject({ localKey: expect.stringMatching(/-ready$/) });
     expect(requested).toMatchObject({
       type: "project.approval.requested",
+      localKey: expect.stringMatching(/-approval-requested$/),
       data: expect.objectContaining({
         project: "gym",
         taskId: "runtime/review-proposal/incident-42",
@@ -290,10 +296,12 @@ test("approved review starts the existing improvement path", async () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: "gym.review.approved",
+          localKey: expect.stringMatching(/-approved$/),
           data: expect.objectContaining({ approvalId: expected.approvalId }),
         }),
         expect.objectContaining({
           type: "gym.improvement.requested",
+          localKey: expect.stringMatching(/-improvement-requested$/),
           data: expect.objectContaining({
             reason: "approved-review-proposal",
             requestKey: "incident-42",
@@ -350,7 +358,7 @@ test("approved review never falls back to an unrelated benchmark", async () => {
 
     expect(result).toMatchObject({
       status: "done",
-      output: { state: "needs-agent" },
+      output: { state: "needs-owner" },
     });
     expect(
       (result as { output?: Record<string, unknown> }).output,
