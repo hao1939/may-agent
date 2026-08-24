@@ -1,6 +1,6 @@
 import type { Static, TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
-import type { TaskAction, TaskIntent } from "./task.js";
+import type { Condition, TaskAction, TaskIntent } from "./task.js";
 import type { ObserverContext } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -178,6 +178,8 @@ export type AppTaskPolicy = {
   subscriptions?: EventSelector[];
   resolve?: (event: AppEvent<Record<string, unknown>>) => TaskIntent | null;
   validateAction?: (action: TaskAction) => string | null;
+  /** Optional App-specific semantic admission for externally observable waits. */
+  validateCondition?: (condition: Condition) => string | null;
   maxConcurrent?: number;
 };
 
