@@ -310,6 +310,40 @@ function context(
         truncated: false,
       },
     },
+    read: {
+      tasks: {
+        get: async (taskId: string) => {
+          const resource = resources[taskId];
+          if (resource) {
+            const status = resource.status ?? {};
+            const spec = resource.spec ?? {};
+            return {
+              id: taskId,
+              status: String(status.phase ?? "pending"),
+              generation: Number(resource.metadata?.generation ?? 1),
+              outcome: String(spec.outcome ?? "fixture task"),
+              parentId: String(spec.parentId ?? "scenario-normalization"),
+              acceptance: spec.acceptance ?? [],
+              input: spec.input ?? {},
+              conditions: [],
+            };
+          }
+          const receipt = state.receipts?.[taskId];
+          return receipt
+            ? {
+                id: taskId,
+                status: "done",
+                generation: Number(receipt.metadata?.generation ?? 1),
+                outcome: String(receipt.outcome ?? "fixture receipt"),
+                parentId: String(receipt.parentId ?? "scenario-normalization"),
+                acceptance: [],
+                input: receipt.input ?? {},
+                conditions: [],
+              }
+            : null;
+        },
+      },
+    },
     workspace: {
       appRoot: appDir,
       projectRoot: projectDir,
@@ -2278,17 +2312,25 @@ describe("normalize scenario frontier workflow", () => {
     };
     await writeFile(statePath, JSON.stringify(state));
 
-    const result = (await execute(
-      context(ws.appDir, ws.projectDir, taskInput),
-    )) as any;
+    const currentContext = context(ws.appDir, ws.projectDir, taskInput);
+    currentContext.reconciliation.children.completed = [];
+    const result = (await execute(currentContext)) as any;
 
     expect(result.output.actions).toHaveLength(1);
     expect(result.output.actions[0].id).not.toBe(completedId);
     expect(result.output.actions[0].input.scenarioTestPath).toBe(
       "features/feature-a/tests/case-b.test.ts",
     );
-    expect(result.output.evidence).toContain(
+    expect(result.output.evidence).not.toContain(
       "completed-receipt-represented-quality-rows:1",
+    );
+    expect(result.output.evidence).toEqual(
+      expect.arrayContaining([
+        "canonical-existing-quality-task-rows:1",
+        "canonical-live-quality-task-rows:0",
+        "canonical-completed-quality-task-rows:1",
+        `canonical-existing-quality-task:${completedId};status=done`,
+      ]),
     );
   });
 

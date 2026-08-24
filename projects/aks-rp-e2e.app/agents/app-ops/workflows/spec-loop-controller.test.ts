@@ -323,7 +323,9 @@ describe("spec loop reconciliation workflow", () => {
       },
     });
     const [action] = result.output.actions;
-    expect(action.id).toMatch(/^spec\/verify-spec-example-[a-f0-9]{10}$/);
+    expect(action.id).toMatch(
+      /^spec\/verify-spec-example-[a-f0-9]{10}-[a-f0-9]{10}$/,
+    );
     expect(Object.keys(action.input).sort()).toEqual([
       "loopId",
       "specId",
@@ -1008,6 +1010,34 @@ describe("spec loop reconciliation workflow", () => {
     expect(boundedResult.output.actions).not.toContainEqual(
       expect.objectContaining({ id: completedHolderId }),
     );
+  });
+
+  test("changes an ordinary holder identity after a stale fenced observation even when the colliding resource is outside the bounded projection", async () => {
+    const specId = "spec.aad-rbac.azure-rbac-authorization";
+    const ws = await workspace({
+      specs: {
+        [specId]: {
+          status: "pending",
+          attempts: 0,
+          lastRunId: null,
+          updatedAt: "2026-08-24T08:00:00Z",
+          inputFingerprint: "unchanged-work-revision",
+        },
+      },
+    });
+
+    const first = (await execute(context(ws.appDir, ws.projectDir, 41))) as any;
+    const second = (await execute(
+      context(ws.appDir, ws.projectDir, 42),
+    )) as any;
+    const baseId =
+      "spec/verify-spec-aad-rbac-azure-rbac-authorization-5fb7c1e203";
+
+    expect(first.output.actions).toHaveLength(1);
+    expect(second.output.actions).toHaveLength(1);
+    expect(first.output.actions[0].id).toStartWith(`${baseId}-`);
+    expect(second.output.actions[0].id).toStartWith(`${baseId}-`);
+    expect(first.output.actions[0].id).not.toBe(second.output.actions[0].id);
   });
 
   test("uses a fresh task identity when the deterministic repair identity already completed", async () => {

@@ -440,7 +440,17 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           priority: "P1",
         };
       }
-      const taskId = ensureFreshTaskId(workId(specId, spec), historicalIds);
+      // The bounded parent projection may omit an older receipt/resource with
+      // this deterministic base id. Scope every new holder identity to the
+      // current fenced observation, just as disposition repair does, so an
+      // invisible historical resource cannot reject the whole atomic batch on
+      // every later pulse. A rejected batch advances resourceVersion and the
+      // next observation therefore selects a genuinely fresh identity.
+      const taskId = ensureFreshTaskId(
+        workId(specId, spec),
+        historicalIds,
+        `work-projection:${ctx.reconciliation?.generation ?? 0}:${ctx.reconciliation?.resourceVersion ?? 0}`,
+      );
       return {
         kind: "create-task",
         id: taskId,

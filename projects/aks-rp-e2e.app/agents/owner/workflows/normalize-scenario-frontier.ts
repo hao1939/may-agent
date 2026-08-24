@@ -1726,6 +1726,49 @@ function selectQualityRows(
   return selected;
 }
 
+async function selectUndeclaredQualityRows(
+  rows: QualityFrontierRow[],
+  limit: number,
+  occupiedFeatureScopes: ReadonlySet<string>,
+  originDevCommit: string,
+  getTask: (taskId: string) => Promise<{
+    status: "pending" | "running" | "waiting" | "attention" | "done";
+  } | null>,
+): Promise<{
+  selected: QualityFrontierRow[];
+  existing: Array<{ taskId: string; status: string }>;
+}> {
+  if (limit <= 0) return { selected: [], existing: [] };
+
+  const remaining = [...rows].sort(
+    (left, right) =>
+      qualityRowPriority(left) - qualityRowPriority(right) ||
+      left.scenarioTestPath.localeCompare(right.scenarioTestPath),
+  );
+  const selected: QualityFrontierRow[] = [];
+  const existing: Array<{ taskId: string; status: string }> = [];
+  const selectedScopes = new Set(occupiedFeatureScopes);
+
+  while (selected.length < limit && remaining.length > 0) {
+    const disjointIndex = remaining.findIndex((row) => {
+      const scope = qualityRowFeatureScope(row);
+      return !scope || !selectedScopes.has(scope);
+    });
+    const [row] = remaining.splice(disjointIndex >= 0 ? disjointIndex : 0, 1);
+    const taskId = qualityRowTaskId(row, originDevCommit);
+    const current = await getTask(taskId);
+    if (current) {
+      existing.push({ taskId, status: current.status });
+      continue;
+    }
+    selected.push(row);
+    const scope = qualityRowFeatureScope(row);
+    if (scope) selectedScopes.add(scope);
+  }
+
+  return { selected, existing };
+}
+
 function qualityRowMatchesNode(
   row: QualityFrontierRow,
   node: GraphNode,
@@ -2353,11 +2396,16 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             .map(qualityRowFeatureScope)
             .filter(Boolean),
         );
-        const selectedRows = selectQualityRows(
+        const canonicalSelection = await selectUndeclaredQualityRows(
           rowsNeedingWork,
           actionBudget,
           occupiedFeatureScopes,
-        ).map((row) => inspectQualityRowBranches(projectDir, row));
+          originDevCommit,
+          (taskId) => ctx.read.tasks.get(taskId),
+        );
+        const selectedRows = canonicalSelection.selected.map((row) =>
+          inspectQualityRowBranches(projectDir, row),
+        );
         const actions = priorityRepairs.concat(
           contractRepairs,
           workflowRepairs,
@@ -2381,11 +2429,22 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
             `actionable-quality-rows:${accounting.actionableTaskIds.length}`,
             `waiting-quality-rows:${accounting.waitingTaskIds.length}`,
             `unrepresented-quality-rows:${rowsNeedingWork.length}`,
+            ...(canonicalSelection.existing.length > 0
+              ? [
+                  `canonical-existing-quality-task-rows:${canonicalSelection.existing.length}`,
+                  `canonical-live-quality-task-rows:${canonicalSelection.existing.filter(({ status }) => status !== "done").length}`,
+                  `canonical-completed-quality-task-rows:${canonicalSelection.existing.filter(({ status }) => status === "done").length}`,
+                ]
+              : []),
             ...(completedReceiptRows.length > 0
               ? [
                   `completed-receipt-represented-quality-rows:${completedReceiptRows.length}`,
                 ]
               : []),
+            ...canonicalSelection.existing.map(
+              ({ taskId, status }) =>
+                `canonical-existing-quality-task:${taskId};status=${status}`,
+            ),
           ],
           qualityRows,
           (row) =>

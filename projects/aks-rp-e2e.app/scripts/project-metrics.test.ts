@@ -1017,6 +1017,49 @@ describe("specLoopRepresentationAuthority", () => {
     });
   });
 
+  it("does not publish a false recovery while a running controller retains an unchanged stale-fence failure", () => {
+    const loopTaskId = "aks-spec-verification-loop";
+    const specId = "spec.aad-rbac.azure-rbac-authorization";
+    const state = {
+      loopTaskId,
+      specs: { [specId]: { status: "pending", taskId: null } },
+    };
+    const staleRunningTree = {
+      tasks: {
+        [loopTaskId]: {
+          id: loopTaskId,
+          phase: "running",
+          summary:
+            "Handler actions were rejected: Resource-backed task mutation was rejected by a stale fence",
+        },
+      },
+    };
+    const healthyRunningTree = {
+      tasks: {
+        [loopTaskId]: {
+          id: loopTaskId,
+          phase: "running",
+          summary: "Prior bounded frontier reconciliation applied",
+        },
+      },
+    };
+
+    expect(
+      specLoopRepresentationAuthority({ tree: staleRunningTree, state }),
+    ).toMatchObject({
+      unrepresentedNonTerminalCount: 1,
+      representedSpecIds: [],
+      unrepresentedSpecIds: [specId],
+    });
+    expect(
+      specLoopRepresentationAuthority({ tree: healthyRunningTree, state }),
+    ).toMatchObject({
+      unrepresentedNonTerminalCount: 0,
+      representedSpecIds: [specId],
+      unrepresentedSpecIds: [],
+    });
+  });
+
   it("excludes projected attention from holder authority while preserving exact waiting holders", () => {
     const loopTaskId = "aks-spec-verification-loop";
     const machinesSpecId = "spec.localdns.topology-machines";

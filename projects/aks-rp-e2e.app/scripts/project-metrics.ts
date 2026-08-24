@@ -2498,13 +2498,25 @@ export function specLoopRepresentationAuthority(input: {
   const loopTaskId = input.state.loopTaskId || "aks-spec-verification-loop";
   const loopTask = input.tree.tasks?.[loopTaskId];
   const loopPhase = loopTask ? projectionPhase(loopTask) : "";
+  const loopSummary = String(loopTask?.summary ?? "").toLowerCase();
+  const retainedStaleFenceFailure =
+    loopSummary.includes("stale fence") ||
+    loopSummary.includes("handler actions were rejected");
   // The standing controller deliberately keeps its complete unfinished ledger
   // larger than its bounded direct-child frontier. A live controller is the
   // holder and wake path for those queued rows; child transitions wake it to
   // select the next slice. Requiring one direct child per row defeats that
   // contract and reports the bounded backlog itself as an integrity breach.
+  //
+  // Starting a new attempt changes the projection to running before its action
+  // batch is accepted. If the retained durable result is a stale-fence failure,
+  // that transient phase is not recovery: counting it used to publish a false
+  // 0 between unchanged 289 samples. Keep the attributed nonzero until a
+  // successful reconciliation replaces the failure result.
   const ledgerRepresentedByController =
-    !!loopTask && ["pending", "running", "waiting"].includes(loopPhase);
+    !!loopTask &&
+    (["pending", "waiting"].includes(loopPhase) ||
+      (loopPhase === "running" && !retainedStaleFenceFailure));
 
   for (const [specId, spec] of Object.entries(input.state.specs ?? {})) {
     const status = normalizeSpecStatus(spec.status);
