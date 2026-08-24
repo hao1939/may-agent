@@ -27,6 +27,7 @@ contracts; Tier-2 design governs when wording conflicts.
 | [simple-event-interface.md](decisions/simple-event-interface.md)                                                     | [Events](../2a-design/events.md), [Runtime](../2a-design/runtime.md), and [HTTP Boundary](../2a-design/http-boundary.md) |
 | [herdr-backed-web-terminal.md](decisions/herdr-backed-web-terminal.md)                                               | [Web Terminal](../2a-design/web-terminal.md)                                                                          |
 | [task-focused-shared-human-interface.md](decisions/task-focused-shared-human-interface.md)                         | [Human Control Surfaces](../2a-design/human-control-surfaces.md), [May Console](../2a-design/may-console.md), and [Telegram](../2a-design/telegram-notifications.md) |
+| [human-action-task-view.md](decisions/human-action-task-view.md)                                                   | [Human Control Surfaces](../2a-design/human-control-surfaces.md) and [Task Resource Engine](../2a-design/task-resource-engine.md) |
 
 ## Reviews
 

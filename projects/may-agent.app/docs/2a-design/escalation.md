@@ -93,22 +93,26 @@ source-session resume record, or generic event owner field.
 
 ## Human attention
 
-Human escalation crosses into the May App because May owns conversation and
-channel policy:
+Straightforward human judgment stays on the source Task as one exact
+human-owned Condition. The shared human adapters derive `/todo` from that
+Condition and return the reply as evidence. The App never calls Telegram or a
+browser directly, and adapter delivery never becomes Task state.
+
+Use a typed child request to the May App only when clarification, sensitive
+channel policy, deduplication, or a multi-turn human conversation is itself a
+separate outcome:
 
 ```text
 domain App/task
-  -> typed child request to May with question, evidence, choices, and urgency
-  -> May decides whether/how to contact the human
-  -> channel delivery and reply remain correlated to the May request
-  -> May's task returns one accepted result
-  -> source task resumes
+  -> direct human Condition, or typed child request to May
+  -> Console/Telegram present the same Task identity
+  -> exact human reply becomes evidence
+  -> source task reconciles and resumes
 ```
 
-Naming a human role does not grant a domain App direct access to Telegram or a
-browser session. May may clarify, reject, deduplicate, or deliver according to
-human preferences, but its task must return an accepted result to the source
-task.
+Naming a human role grants neither transport access nor automatic completion.
+May may clarify, reject, deduplicate, or deliver according to human preferences
+when it owns a child request, but the source still applies the exact result.
 
 An actionable human ask includes:
 
@@ -119,6 +123,10 @@ An actionable human ask includes:
 - urgency/severity;
 - a stable semantic correlation key; and
 - what source obligation will resume after the answer.
+
+Put the short plain-language ask in `Condition.requestedAction`; keep detailed
+reasoning and evidence on the Task. This makes `/todo` decision-ready without a
+parallel inbox or a model-generated list.
 
 Do not paste an entire transcript when exact artifacts, task IDs, or execution
 IDs identify the evidence.

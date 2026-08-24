@@ -188,6 +188,12 @@ The event stream is the change notification: consumers observe a relevant
 event and reread current resource state. The read API does not add a second
 watch cursor or delivery guarantee.
 
+Human surfaces may ask the same Host reader for `humanActionOnly`. This is a
+derived filter over live Tasks with at least one unsatisfied Condition owned by
+`human` or `human:<role>`; it is not another resource or lifecycle. The bounded
+card adds `{ requestedAction, since }`. Generic `attention`, age, and delivery
+state never satisfy this filter.
+
 There is deliberately no generic task write API. A caller asks the accountable
 App for an outcome, optionally naming the observed task. App policy then keeps,
 revises, wakes, decomposes, or closes it through the normal input-to-task path
@@ -381,6 +387,25 @@ A Condition names one exact external observation, for example:
 }
 ```
 
+A Condition that explicitly belongs to a human adds one plain action:
+
+```ts
+{
+  id: "rollout-approval:v4",
+  type: "project.approval.submitted",
+  subject: "approval:rollout-v4",
+  expected: { field: "decision", anyOf: ["approve", "reject", "hold"] },
+  owner: "human:operator",
+  requestedAction: "Approve, reject, or hold rollout v4."
+}
+```
+
+`requestedAction` is presentation guidance on the Condition, not a second
+request. The Host records when the current Condition specification began
+waiting; adapters use that time for age. Changing the specification starts a
+new wait, while rereconciling the same Condition does not create another human
+obligation.
+
 A watcher reads an external source and publishes a fact. It does not know task
 storage or invoke an agent. The generic Condition tracker atomically updates
 the Condition, stores the triggering event, and returns the affected task IDs
@@ -416,9 +441,10 @@ review the task remains on its exact event-driven wait rather than becoming a
 polling loop. Provider observation time and monotonic source revision, when
 available, prevent known older facts from replacing newer Condition state.
 
-Human approval or action uses an explicit May task dependency or a Condition on
-its exact accepted result. The reply becomes evidence for the next attempt; it
-does not itself prove the task outcome.
+Human approval or action uses a human-owned Condition on the exact source Task,
+or an explicit May task dependency when conversational mediation is required.
+The reply satisfies or updates exact evidence for the next attempt; it does not
+itself prove the Task outcome.
 
 ## Modes and phases
 

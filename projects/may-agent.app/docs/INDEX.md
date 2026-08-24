@@ -133,7 +133,8 @@ The decision records and current authorities are indexed under
 [archive/](archive/README.md).
 
 Completed proposals do not remain in the active proposal folder. The Task
-interface decision and its earlier presentation evidence are archived below.
+interface, human-action projection, and their earlier presentation evidence are
+archived below.
 
 ## Historical material
 

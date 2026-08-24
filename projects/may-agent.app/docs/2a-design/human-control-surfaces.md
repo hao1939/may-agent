@@ -39,6 +39,7 @@ Every human adapter exposes the same small meanings:
 | ------------------- | ------------------------- | ------------------------------------- |
 | list or select App  | `/apps [app]`             | native `/apps [app]`                  |
 | list Tasks          | `/tasks [all] [history]`, then `/tasks more` | native `/tasks [all] [history]`, then `/tasks more` |
+| show human actions  | `/todo [all]`             | native `/todo [all]`                  |
 | read one Task       | `/task <ref>`             | native `/task <ref>`                  |
 | watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
 | stop watching       | `/unwatch`                | `/unwatch`                            |
@@ -93,6 +94,36 @@ projection exposes only the newest command view per adapter surface. `/tasks`
 returns ten compact cards at a time and `/tasks more` continues the same opaque
 cursor. Exact outcome, progress, result, and evidence stay available through
 `/task <ref>`.
+
+## Human actions
+
+Human attention is a derived Task view, not another inbox. A live Task appears
+in `/todo` only while it has an unsatisfied Condition whose owner is `human` or
+`human:<role>`. Generic `attention`, failure, elapsed time, and provider
+delivery state do not qualify.
+
+`/todo` reads the selected App and `/todo all` widens the read to every App.
+Each row shows one stable Task reference, App, plain requested action, and the
+age of the current human wait. A human-owned Condition should set
+`requestedAction`; existing approval Conditions are rendered from their
+allowed decisions and approval identity, and older generic Conditions fall
+back to the Task's waiting summary. The projection is capped at 50 Tasks and
+reports the authoritative total when more exist.
+
+Off watch, a semantic reconciliation or cancellation wake causes one
+coalesced App-scoped reread. A new or materially changed action produces one
+compact notification and updates Console's prompt count, for example
+`you[evaluation · 2 todo]>`. Executor progress does not rescan this list.
+While watched, the normal exact Task card shows `Action needed`; the same
+change is not also presented as an off-watch notification on that surface.
+
+After `/todo` or an automatic notification is actually shown, its canonical
+Task identities enter Conversation as command-view metadata. The automatic
+view uses a stable hash of the current bounded Task revisions, so several
+adapters can preserve one semantic Conversation view while choosing native
+presentation. A lost adapter cache may repeat presentation, but never creates,
+completes, or acknowledges human work. Clearing the Condition removes the Task
+on the next semantic wake. Delivery never gates that transition.
 
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
@@ -194,7 +225,9 @@ Human reads do not invoke a model and do not reconstruct Conversation history:
   exact prior App/state query without asking the human to copy that cursor;
 - `/apps` reads the loaded registry plus aggregate active counts;
 - Task reference hashes are indexed at Task creation/import; and
-- watch is push-to-read with one coalesced in-flight read.
+- watch is push-to-read with one coalesced in-flight read; and
+- `/todo` is a capped indexed Condition projection, refreshed only by
+  App-scoped semantic Task wakes and coalesced to one in-flight read.
 
 Lease renewals, tool chunks, transcript text, queue movement, and delivery
 events do not wake human Task watches. Slow adapters never block Task commit.
@@ -213,4 +246,5 @@ selected-App defaults, explicit assignment auto-follow, App-switch watch exit,
 one-watch replacement, at-most-once automatic progress, focused feedback through
 May, fresh-input wake from waits, wake coalescing, automatic
 terminal exit, durable Task cancellation, stale-attempt fencing, cross-surface
-Conversation context, and independence from adapter delivery.
+Conversation context, exact human-Condition membership, bounded `/todo`
+reconstruction, and independence from adapter delivery.

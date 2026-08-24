@@ -3,7 +3,8 @@
 **Design status:** Accepted.
 **Implementation status:** Shared Conversation admission, stable reply identity,
 correlated outbound delivery, native App/Task reads, one Task watch per
-chat/topic, focused feedback, and Task cancellation are implemented.
+chat/topic, focused feedback, human-action projection, and Task cancellation
+are implemented.
 
 ## Purpose
 
@@ -153,8 +154,10 @@ resume marker is not a substitute for this dependency.
 
 ## Proactive Human Attention
 
-When a domain App/task genuinely requires human judgment, it establishes a
-typed child request to the `may` App containing:
+When a domain App/task genuinely requires human judgment, it either keeps one
+explicit human-owned Condition on the source Task or establishes a typed child
+request to the `may` App when conversation policy or clarification is itself
+work. The direct Condition contains:
 
 - the exact decision/action requested;
 - source App request or task identity;
@@ -163,11 +166,12 @@ typed child request to the `may` App containing:
 - stable semantic correlation key; and
 - the source resume condition.
 
-May may deduplicate, clarify, reject, defer under explicit policy, or respond.
-Telegram creates a human-facing notification by rendering the persisted
-Conversation response.
-The source App/task waits on the exact May child result or an exact human
-Condition; it never waits on a notification event.
+The shared `/todo` projection discovers `owner: human` and `owner: human:<role>`
+Conditions without giving the domain App direct transport access. Telegram
+renders that Task and action using native layout. If a May child is used, May
+may deduplicate, clarify, reject, defer under explicit policy, or respond. The
+source App/task waits on the exact May child result or exact human Condition;
+it never waits on a notification event.
 
 Historical `escalation.*` and `message.created` event pairs remain traceable as
 read-only evidence. They do not own new attention work or resume sessions.
@@ -221,6 +225,7 @@ Telegram exposes the same small Task meanings as Console:
 
 - `/apps [app]`;
 - `/tasks [all] [history]`;
+- `/todo [all]`;
 - `/task <ref>`;
 - `/watch [ref]` and `/unwatch`;
 - `/cancel [ref]`; and
@@ -241,6 +246,14 @@ While watched, ordinary text remains a May Conversation turn with exact
 directly to an execution session. Semantic Task events wake one coalesced exact
 read. Passive Conversation synchronization reads bounded messages only. Idle
 watch has no poller, timer, workflow, session, or model call.
+
+`/todo` returns at most 50 Tasks with explicit open human-owned Conditions;
+`/todo all` crosses App scope. Reconciliation and cancellation events trigger
+one coalesced App-scoped reread for active chat/topic surfaces. Executor
+progress refreshes an exact watch only and does not rescan `/todo`. A new or
+changed off-watch action produces one compact notification, records exact Task
+references in shared Conversation, and remains independent of provider
+delivery status.
 
 The adapter validates the exact target and records the control result. A
 human-requested read result that may shape the next turn is appended as a
@@ -311,6 +324,8 @@ Telegram integration tests prove:
 - Task controls target exact identities and never list-position/session guesses;
 - focused watch feedback reaches May with exact canonical Task context;
 - idle watch performs no polling and coalesces concurrent wakes;
+- `/todo` membership comes only from open human-owned Conditions, remains
+  bounded, and clears without delivery acknowledgement;
 - secrets never enter prompts, facts, traces, or outbound diagnostics;
 - persisted output is readable from Console even if Telegram delivery fails;
 - restart reconstructs the same Conversation projection; and

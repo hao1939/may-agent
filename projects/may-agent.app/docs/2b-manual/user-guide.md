@@ -95,6 +95,7 @@ not to the bounded agent run named `may`.
 | `/apps [app]`         | List Apps or select the current App                       |
 | `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps or recent terminal Tasks |
 | `/tasks more`         | Continue the exact prior Task list when another page exists |
+| `/todo [all]`         | Show Tasks with an explicit open human-owned Condition      |
 | `/task <ref>`         | Read one exact Task                                       |
 | `/watch [ref]`        | Watch or show one Task                                    |
 | `/unwatch`            | Leave the watch without changing the Task                 |
@@ -106,6 +107,12 @@ Bare text always goes through May with the selected App as context. While
 watching, Console also attaches the exact Task identity so the text becomes
 natural Task feedback through May; it never steers an execution session
 directly.
+
+Use `/todo` for decisions needed by the selected App and `/todo all` for the
+bounded cross-App view. The prompt count and off-watch notifications update
+from Task events without polling. `/watch <ref>` opens one action for live
+progress and natural feedback; satisfying its Condition removes it from
+`/todo` without a delivery acknowledgement.
 
 ## Agents
 
