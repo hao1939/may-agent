@@ -83,6 +83,7 @@ export function createAppTaskCapability(options: {
             status: task.status,
             summary: task.summary,
             response: task.response,
+            result: task.result,
             evidence: task.evidence,
           }
         : null;

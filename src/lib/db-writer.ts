@@ -27,6 +27,7 @@ import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
+import type { TaskBinding } from "./persistence.js";
 
 /** Keep coordination rows small; full large bodies live in event-bodies/. */
 const INLINE_EVENT_DATA_BYTES = 4_096;
@@ -71,6 +72,18 @@ function eventOwner(event: Record<string, unknown>, fallback?: unknown): string 
 function eventUrgency(event: Record<string, unknown>): string {
   const urgency = isCanonicalEventEnvelope(event) ? event.urgency : eventPayload(event).urgency;
   return typeof urgency === "string" ? urgency : "normal";
+}
+
+function taskBinding(value: unknown): TaskBinding | undefined {
+  if (!isRecord(value)) return undefined;
+  const appId = typeof value.appId === "string" ? value.appId.trim() : "";
+  const taskId = typeof value.taskId === "string" ? value.taskId.trim() : "";
+  const attemptId = typeof value.attemptId === "string" ? value.attemptId.trim() : "";
+  const generation = value.generation;
+  if (!appId || !taskId || !attemptId || !Number.isInteger(generation) || Number(generation) < 1) {
+    return undefined;
+  }
+  return { appId, taskId, attemptId, generation: Number(generation) };
 }
 
 function eventTtlMs(event: Record<string, unknown>): number | null {
@@ -474,6 +487,7 @@ export class DbWriter {
           parentSessionId: payload.parentSessionId as string | undefined,
           workflowRunId: payload.workflowRunId as string | undefined,
           projectId: payload.projectId as string | undefined,
+          taskBinding: taskBinding(payload.taskBinding),
           requestId: payload.requestId as string | undefined,
           stepLabel: payload.stepLabel as string | undefined,
           startedAt: Date.now(),

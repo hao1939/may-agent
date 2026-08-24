@@ -250,7 +250,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!text) return;
     const channel = source ?? "human";
     const lower = text.toLowerCase();
-    if (lower === "cancel all") {
+    if (lower === "/cancel all") {
       bus.emit({
         type: "session.cancel_all.requested",
         source: channel,
@@ -259,14 +259,19 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       });
       return;
     }
-    if (lower === "reload" || lower === "restart" || lower === "close") {
+    if (lower === "/reload" || lower === "/restart" || lower === "/close") {
       const type =
-        lower === "reload"
+        lower === "/reload"
           ? "runtime.reload.requested"
-          : lower === "restart"
+          : lower === "/restart"
             ? "runtime.restart.requested"
             : "runtime.shutdown.requested";
-      bus.emit({ type, source: channel, owner: "agent:may", data: { reason: `human requested ${lower}` } } as any);
+      bus.emit({
+        type,
+        source: channel,
+        owner: "agent:may",
+        data: { reason: `human requested ${lower.slice(1)}` },
+      } as any);
       return;
     }
     admitMayInput(text, channel);

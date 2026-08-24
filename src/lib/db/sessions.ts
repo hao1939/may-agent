@@ -1,6 +1,7 @@
 import { getDb } from "./connection.js";
 import { withSqliteBusyRetry } from "./busy-retry.js";
 import { describeText, sessionMetaRef, type ArtifactDescriptor } from "../artifacts.js";
+import type { TaskBinding } from "../persistence.js";
 
 export interface SessionDbEntry {
   sessionId: string;
@@ -13,6 +14,7 @@ export interface SessionDbEntry {
   requestId?: string;
   workflowRunId?: string;
   projectId?: string;
+  taskBinding?: TaskBinding;
   stepLabel?: string;
   startedAt: number;
   endedAt?: number;
@@ -38,8 +40,8 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   withSqliteBusyRetry(`upsert session ${entry.sessionId}`, () =>
     db.run(
       `INSERT INTO sessions
-        (sessionId, agent, task, task_ref, task_sha256, task_bytes, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, stepLabel, startedAt, endedAt, error, outcome, opCount, lastActivityAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (sessionId, agent, task, task_ref, task_sha256, task_bytes, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, app_id, task_id, task_generation, attempt_id, stepLabel, startedAt, endedAt, error, outcome, opCount, lastActivityAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(sessionId) DO UPDATE SET
          agent = excluded.agent,
          task = CASE WHEN excluded.task != '' THEN excluded.task ELSE sessions.task END,
@@ -53,6 +55,10 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
          requestId = COALESCE(excluded.requestId, sessions.requestId),
          workflowRunId = COALESCE(excluded.workflowRunId, sessions.workflowRunId),
          projectId = COALESCE(excluded.projectId, sessions.projectId),
+         app_id = COALESCE(excluded.app_id, sessions.app_id),
+         task_id = COALESCE(excluded.task_id, sessions.task_id),
+         task_generation = COALESCE(excluded.task_generation, sessions.task_generation),
+         attempt_id = COALESCE(excluded.attempt_id, sessions.attempt_id),
          stepLabel = COALESCE(excluded.stepLabel, sessions.stepLabel),
          startedAt = COALESCE(excluded.startedAt, sessions.startedAt),
          endedAt = COALESCE(excluded.endedAt, sessions.endedAt),
@@ -79,6 +85,10 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
         entry.requestId ?? null,
         entry.workflowRunId ?? null,
         entry.projectId ?? null,
+        entry.taskBinding?.appId ?? null,
+        entry.taskBinding?.taskId ?? null,
+        entry.taskBinding?.generation ?? null,
+        entry.taskBinding?.attemptId ?? null,
         entry.stepLabel ?? null,
         entry.startedAt,
         entry.endedAt ?? null,

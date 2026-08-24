@@ -910,7 +910,7 @@ function handleEvent(event) {
             setWatchedTask(task);
             printLine(
               snapshot.rendered || !snapshot.seenBefore
-                ? `[watch] Watching ${task.ref}. Bare text is Task feedback through May.`
+                ? `[watch] Watching ${task.ref}. May receives bare text with this Task in context.`
                 : `[watch] Watching ${task.ref}; there is no new progress since it was last shown.`,
             );
           }
@@ -935,7 +935,7 @@ function handleEvent(event) {
               }${
                 previous && autoFollowKey(previous) !== autoFollowKey(task)
                   ? ` Stopped following ${previous.ref}.`
-                  : " Bare text is feedback through May."
+                  : " May receives bare text with this Task in context."
               }`,
             );
           }
@@ -1127,7 +1127,7 @@ function printHelp() {
       "  /cancel [ref]",
       "  /reload, /restart, /shell, /exit",
       "",
-      "Bare text goes to May in the selected App context. While watching, it is feedback for that Task.",
+      "Bare text goes to May in the selected App context. While watching, that Task is additional context.",
     ].join("\n"),
   );
 }

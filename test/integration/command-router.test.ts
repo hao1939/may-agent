@@ -48,6 +48,21 @@ describe("command router integration", () => {
     h.router.close();
   });
 
+  it("reserves deterministic controls for explicit slash commands", () => {
+    const h = harness();
+
+    h.router.handleInput("restart", "console");
+    h.router.handleInput("/restart", "console");
+
+    expect(
+      h.emitted
+        .filter((event) => event.type === "app.input.requested")
+        .map((event) => (event as any).data.input.data.message),
+    ).toEqual(["restart"]);
+    expect(h.emitted.filter((event) => event.type === "runtime.restart.requested")).toHaveLength(1);
+    h.router.close();
+  });
+
   it("resumes cold sessions only through an explicit steer event", () => {
     const resumed: unknown[] = [];
     const h = harness({

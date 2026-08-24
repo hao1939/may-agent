@@ -53,10 +53,9 @@ export {
   discoverAgentSkills,
   formatBoundedSkillCatalog,
   invokeCatalogSkill,
-  matchSkillActivationRule,
   parseExplicitSkill,
 } from "./skills.js";
-export type { MaySkill, MaySkillScope, SkillActivationRule, SkillCatalog } from "./skills.js";
+export type { MaySkill, MaySkillScope, SkillCatalog } from "./skills.js";
 export type { WorkflowTool } from "./workflow-tool.js";
 export { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 export type {

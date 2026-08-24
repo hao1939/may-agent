@@ -172,6 +172,7 @@ export type TaskCompletionReceipt = {
   handler: string;
   summary: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence: string[];
   acceptanceBasis: AppTaskAcceptanceBasis;
   failureFingerprints: string[];
@@ -434,6 +435,13 @@ function serializeCanonicalTaskState(state: Record<string, unknown>): string {
   return `{\n  "project_lifecycle": ${JSON.stringify(lifecycle)},\n  ${serializedRest.slice(1)}`;
 }
 
+export class ResourceTaskMutationStaleError extends Error {
+  constructor() {
+    super("Resource-backed task mutation was rejected by a stale fence");
+    this.name = "ResourceTaskMutationStaleError";
+  }
+}
+
 export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?: SaveTaskStateOptions): void {
   const runtimePaths = projectRuntimePaths(config.stateAppDir ?? config.appDir);
   if (config.statePath !== runtimePaths.taskStatePath) {
@@ -446,7 +454,7 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
       throw new Error("Resource-backed task state requires an exact resourceMutation");
     }
     if (!config.resourceStore.commit(options.resourceMutation)) {
-      throw new Error("Resource-backed task mutation was rejected by a stale fence");
+      throw new ResourceTaskMutationStaleError();
     }
     tree.updated_at = new Date().toISOString();
     const resourceCache = taskStateReadCaches.get(config);
@@ -797,6 +805,7 @@ function compactHistoricalReceipt(receipt: TaskCompletionReceipt): void {
       receipt.outcome.length > 512 ||
       receipt.summary.length > 512 ||
       (receipt.response?.length ?? 0) > 512 ||
+      (receipt.result !== undefined && JSON.stringify(receipt.result).length > 512) ||
       (Object.keys(input).length > 0 && JSON.stringify(input).length > 512) ||
       (failureFingerprints.length > 0 && JSON.stringify(failureFingerprints).length > 512);
     if (!needsPayloadCompaction) return;
@@ -804,6 +813,7 @@ function compactHistoricalReceipt(receipt: TaskCompletionReceipt): void {
       outcome: receipt.outcome,
       summary: receipt.summary,
       response: receipt.response,
+      result: receipt.result,
       input,
       failureFingerprints,
     };
@@ -811,6 +821,7 @@ function compactHistoricalReceipt(receipt: TaskCompletionReceipt): void {
     receipt.outcome = receipt.outcome.slice(0, 512);
     receipt.summary = receipt.summary.slice(0, 512);
     if (receipt.response !== undefined) receipt.response = receipt.response.slice(0, 512);
+    delete receipt.result;
     receipt.input = {};
     receipt.failureFingerprints = [];
   }

@@ -26,7 +26,9 @@ describe("canonical database schema", () => {
       expect(indexes.some(({ name }) => name === "idx_events_task_executor_progress")).toBe(true);
       expect(indexes.some(({ name }) => name === "idx_events_idempotency")).toBe(true);
       const sessionIndexes = db.prepare("PRAGMA index_list(sessions)").all() as Array<{ name: string }>;
+      const sessionColumns = db.prepare("PRAGMA table_info(sessions)").all() as Array<{ name: string }>;
       const workflowIndexes = db.prepare("PRAGMA index_list(workflow_runs)").all() as Array<{ name: string }>;
+      const workflowColumns = db.prepare("PRAGMA table_info(workflow_runs)").all() as Array<{ name: string }>;
       const inboxColumns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name: string }>;
       const inboxIndexes = db.prepare("PRAGMA index_list(app_inbox_items)").all() as Array<{ name: string }>;
       const deliveryColumns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{ name: string }>;
@@ -41,8 +43,16 @@ describe("canonical database schema", () => {
         name: string;
       }>;
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent_started")).toBe(true);
+      expect(sessionIndexes.some(({ name }) => name === "idx_sess_task_binding")).toBe(true);
+      expect(sessionColumns.map(({ name }) => name)).toEqual(
+        expect.arrayContaining(["app_id", "task_id", "task_generation", "attempt_id"]),
+      );
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent")).toBe(false);
       expect(workflowIndexes.some(({ name }) => name === "idx_wfr_project_started")).toBe(true);
+      expect(workflowIndexes.some(({ name }) => name === "idx_wfr_task_binding")).toBe(true);
+      expect(workflowColumns.map(({ name }) => name)).toEqual(
+        expect.arrayContaining(["app_id", "task_id", "task_generation", "attempt_id"]),
+      );
       expect(workflowIndexes.some(({ name }) => name === "idx_wfr_project")).toBe(false);
       expect(inboxColumns.some(({ name }) => name === "lease_generation")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "available_at")).toBe(true);

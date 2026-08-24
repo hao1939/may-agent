@@ -108,21 +108,22 @@ describe("validateAgentConfig", () => {
     expect(errors.some((e) => e.field === "tools" && e.message.includes("fly-to-moon"))).toBe(true);
   });
 
-  it("validates deterministic skill activation rules", () => {
-    const config: AgentConfig = {
+  it("rejects keyword-based skill activation rules", () => {
+    const config = {
       name: "test",
       description: "test",
       domain: "test",
       model: "claude-opus-4-6",
       tools: ["coding"],
       skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents" }],
-    };
-    expect(validateAgentConfig(config, fakeModels, AGENTS_ROOT)).toEqual([]);
-
-    config.skillActivationRules = [{ skill: "Bad Skill", pattern: "[" }];
+    } as AgentConfig & { skillActivationRules: unknown[] };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    expect(errors.map((error) => error.field)).toContain("skillActivationRules[0].skill");
-    expect(errors.map((error) => error.field)).toContain("skillActivationRules[0].pattern");
+    expect(errors).toContainEqual(
+      expect.objectContaining({
+        field: "skillActivationRules",
+        message: expect.stringContaining("model choose from the skill catalog"),
+      }),
+    );
   });
 
   it("validates all existing agent.json files", () => {

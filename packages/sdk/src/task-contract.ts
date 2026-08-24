@@ -11,6 +11,7 @@ import type {
 } from "./task.js";
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
+export const MAX_TASK_RESULT_BYTES = 16 * 1024;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
@@ -109,6 +110,7 @@ export const conditionSchema = Type.Object(
 const resultFields = {
   summary: nonEmptyStringSchema,
   response: Type.Optional(nonEmptyStringSchema),
+  result: Type.Optional(objectSchema),
   evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
@@ -486,11 +488,12 @@ export function admitTaskReconcileResult(
     if (!options.allowNeedsAgent) return { ok: false, error: "a resolved agent cannot return needs-agent" };
     if (
       output.response !== undefined ||
+      output.result !== undefined ||
       output.actions !== undefined ||
       output.conditions !== undefined ||
       output.dependencies !== undefined
     ) {
-      return { ok: false, error: "needs-agent cannot include response, actions, Conditions, or dependencies" };
+      return { ok: false, error: "needs-agent cannot include response, result, actions, Conditions, or dependencies" };
     }
     const canonicalOutput = output.state === "needs-owner" ? { ...output, state: "needs-agent" } : output;
     if (!Check(taskReconcileResultSchema, canonicalOutput)) {
@@ -511,6 +514,17 @@ export function admitTaskReconcileResult(
   const admittedOutput = output as Record<string, unknown>;
   const response = optionalString(admittedOutput, "response");
   if (!response.ok) return { ok: false, error: "response must be a non-empty string" };
+  const result = admittedOutput.result;
+  if (result !== undefined && !isRecord(result)) {
+    return { ok: false, error: "result must be an object" };
+  }
+  if (
+    result !== undefined &&
+    new TextEncoder().encode(JSON.stringify(result)).byteLength >
+      MAX_TASK_RESULT_BYTES
+  ) {
+    return { ok: false, error: `result exceeds the ${MAX_TASK_RESULT_BYTES}-byte limit` };
+  }
   if (output.state === "waiting" && response.value) {
     return { ok: false, error: "waiting cannot include response; put operational progress in summary" };
   }
@@ -582,6 +596,7 @@ export function admitTaskReconcileResult(
       state: output.state,
       summary: output.summary.trim(),
       ...(response.value ? { response: response.value } : {}),
+      ...(result ? { result: structuredClone(result) } : {}),
       evidence,
       actions,
       ...(conditions.length > 0 ? { conditions } : {}),

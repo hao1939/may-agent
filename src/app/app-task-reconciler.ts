@@ -218,7 +218,7 @@ function taskTriggerPriority(event: Record<string, unknown>, taskAgent: string):
     source === "human" ||
     source === "web-ui" ||
     source.startsWith("telegram") ||
-    reason.startsWith("retry-")
+    reason === "retry-candidate-verification"
   ) {
     return 3;
   }
@@ -3893,6 +3893,7 @@ export function completeAppTask(
   input: {
     summary: string;
     response?: string;
+    result?: Record<string, unknown>;
     evidence?: string[];
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
@@ -4026,6 +4027,7 @@ export function completeAppTask(
         currentAttemptId: undefined,
         summary: input.summary,
         response: input.response,
+        result: input.result ? structuredClone(input.result) : undefined,
         evidence: [...(input.evidence ?? [])],
         conditionIds: [],
       });
@@ -4059,6 +4061,7 @@ export function completeAppTask(
           handler: claim.handler,
           summary: input.summary,
           ...(input.response ? { response: input.response } : {}),
+          ...(input.result ? { result: structuredClone(input.result) } : {}),
           evidence: [...(input.evidence ?? [])],
           acceptanceBasis: structuredClone(acceptanceBasis),
           failureFingerprints,
@@ -4093,6 +4096,8 @@ export function deferAppTask(
   input: {
     disposition: "waiting";
     summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
     evidence?: string[];
     actions?: AppTaskAction[];
     conditions?: AppTaskConditionSpec[];
@@ -4181,6 +4186,8 @@ export function deferAppTask(
       observedGeneration: claim.generation,
       currentAttemptId: undefined,
       summary: input.summary,
+      response: input.response,
+      result: input.result ? structuredClone(input.result) : undefined,
       evidence: [...(input.evidence ?? [])],
       ...(!conditions?.length ? { conditionIds: [] } : {}),
     });

@@ -344,6 +344,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           status: "done",
           summary: result.summary,
           ...(result.response ? { response: result.response } : {}),
+          ...(result.result ? { result: result.result } : {}),
           ...(result.evidence ? { evidence: result.evidence } : {}),
         },
       });

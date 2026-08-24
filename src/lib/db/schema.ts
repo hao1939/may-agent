@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS sessions (
   requestId       TEXT,
   workflowRunId   TEXT,
   projectId       TEXT,
+  app_id          TEXT,
+  task_id         TEXT,
+  task_generation INTEGER,
+  attempt_id      TEXT,
   stepLabel       TEXT,
   startedAt       INTEGER NOT NULL,
   endedAt         INTEGER,
@@ -33,6 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_sess_status ON sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sess_parent ON sessions(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId);
 CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId);
+CREATE INDEX IF NOT EXISTS idx_sess_task_binding ON sessions(app_id, task_id, task_generation, attempt_id);
 CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 CREATE INDEX IF NOT EXISTS idx_sess_ended ON sessions(endedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_sess_activity ON sessions(lastActivityAt);
@@ -540,6 +545,10 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   parentSessionId TEXT,
   parentWorkflowRunId TEXT,
   projectId TEXT,
+  app_id TEXT,
+  task_id TEXT,
+  task_generation INTEGER,
+  attempt_id TEXT,
   depth INTEGER DEFAULT 1,
   status TEXT DEFAULT 'running',
   startedAt INTEGER NOT NULL,
@@ -556,6 +565,7 @@ CREATE INDEX IF NOT EXISTS idx_wfr_status_started ON workflow_runs(status, start
 CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent_workflow ON workflow_runs(parentWorkflowRunId, startedAt);
 CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, startedAt DESC);
+CREATE INDEX IF NOT EXISTS idx_wfr_task_binding ON workflow_runs(app_id, task_id, task_generation, attempt_id);
 `;
 
 export function applyDbSchema(db: SqliteDb): void {
@@ -572,6 +582,7 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppInboxWaitKinds(db);
+    ensureExistingTaskBindingColumns(db);
     // Trigger definitions are not replaced by CREATE TRIGGER IF NOT EXISTS.
     // Recreate this retention fence so existing databases gain every new durable
     // reference added to the canonical schema.
@@ -588,6 +599,7 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppEventAdmissionColumns(db);
+    ensureExistingTaskBindingColumns(db);
     db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
       ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
@@ -784,6 +796,22 @@ const EVENT_COLUMNS: Array<[string, string]> = [
   ["idempotency_hash", "TEXT"],
   ["ingress_source", "TEXT NOT NULL DEFAULT ''"],
 ];
+
+const TASK_BINDING_COLUMNS: Array<[string, string]> = [
+  ["app_id", "TEXT"],
+  ["task_id", "TEXT"],
+  ["task_generation", "INTEGER"],
+  ["attempt_id", "TEXT"],
+];
+
+function ensureExistingTaskBindingColumns(db: SqliteDb): void {
+  for (const table of ["sessions", "workflow_runs"]) {
+    if (!tableExists(db, table)) continue;
+    for (const [column, definition] of TASK_BINDING_COLUMNS) {
+      ensureColumn(db, table, column, definition);
+    }
+  }
+}
 
 function ensureExistingEventsTableColumns(db: SqliteDb): void {
   if (!tableExists(db, "events")) return;

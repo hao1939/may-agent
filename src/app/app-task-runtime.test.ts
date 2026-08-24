@@ -23,6 +23,7 @@ import {
   consumePersistedTerminalAgentResult,
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   finishCanonicalAgentResidueGuard,
+  hasDeployReceiptWake,
   installAppTaskRuntimes,
   normalizeTaskHandlerResult,
   planCanonicalAgentResidueCleanup,
@@ -241,6 +242,33 @@ describe("canonical direct-agent residue cleanup", () => {
 });
 
 describe("App Task agent prompt context", () => {
+  it("recognizes deploy context only from the exact typed receipt wake", () => {
+    const events = (reason: string) =>
+      ({
+        items: [
+          {
+            eventId: 1,
+            observedAt: "2026-08-25T00:00:00.000Z",
+            event: {
+              type: "runtime.deploy.observed",
+              data: { reason },
+            },
+          },
+        ],
+        throughEventId: 1,
+        truncated: false,
+      }) as any;
+
+    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(
+      true,
+    );
+    expect(
+      hasDeployReceiptWake(
+        events("please inspect the restart-aware deploy receipt"),
+      ),
+    ).toBe(false);
+  });
+
   it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
     const protocol = appTaskAgentProtocol("may");
 
@@ -1057,6 +1085,7 @@ describe("canonical App task runtime", () => {
               status: task.status,
               summary: task.summary,
               response: task.response,
+              result: task.result,
               evidence: task.evidence,
             }
           : null;
@@ -1264,6 +1293,7 @@ describe("canonical App task runtime", () => {
       completeAppTask(evaluationConfig, resumedTarget, {
         summary: "Independent review completed",
         response: "The dependency result is ready for the parent.",
+        result: { disposition: "accepted", score: 0.92 },
         evidence: ["review:accepted"],
       });
       bus.emit({
@@ -1283,6 +1313,7 @@ describe("canonical App task runtime", () => {
         result: {
           summary: "Independent review completed",
           response: "The dependency result is ready for the parent.",
+          result: { disposition: "accepted", score: 0.92 },
           evidence: ["review:accepted"],
         },
       });
@@ -1303,6 +1334,7 @@ describe("canonical App task runtime", () => {
           status: "done",
           summary: "Independent review completed",
           response: "The dependency result is ready for the parent.",
+          result: { disposition: "accepted", score: 0.92 },
           evidence: ["review:accepted"],
         },
       });

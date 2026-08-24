@@ -35,17 +35,6 @@ describe("createWorkflowHandler", () => {
     timestamp: 123,
   };
 
-  function triggerFromTask(task: string): unknown {
-    const fence = "```";
-    const marker = `## Trigger Event\n${fence}json\n`;
-    const start = task.indexOf(marker);
-    if (start < 0) throw new Error("Trigger Event block missing");
-    const jsonStart = start + marker.length;
-    const jsonEnd = task.indexOf(`\n${fence}`, jsonStart);
-    if (jsonEnd < 0) throw new Error("Trigger Event block unterminated");
-    return JSON.parse(task.slice(jsonStart, jsonEnd));
-  }
-
   it("dispatches a workflow with source, project, and trigger context", async () => {
     const { ctx, calls, emitted } = context();
     const handler = createWorkflowHandler({
@@ -61,11 +50,10 @@ describe("createWorkflowHandler", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({
       workflow: "goal-driver",
-      opts: { source: "scout", projectId: "p1" },
+      opts: { source: "scout", projectId: "p1", input: { event } },
     });
     expect(calls[0].task).toContain("review the comment");
-    expect(calls[0].task).toContain("## Trigger Event");
-    expect(calls[0].task).toContain("project.commented");
+    expect(calls[0].task).not.toContain("project.commented");
     expect(emitted).toContainEqual({
       type: "handler.workflow_dispatched",
       data: {
@@ -105,8 +93,7 @@ describe("createWorkflowHandler", () => {
     await handler(completedEvent);
 
     expect(calls).toHaveLength(1);
-    expect(triggerFromTask(calls[0].task)).toEqual(completedEvent);
-    expect(triggerFromTask(calls[0].task)).not.toHaveProperty("sessionId");
+    expect(calls[0].opts).toMatchObject({ input: { event: completedEvent } });
     expect(emitted).toContainEqual({
       type: "handler.workflow_dispatched",
       data: {
