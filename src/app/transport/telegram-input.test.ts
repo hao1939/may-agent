@@ -133,8 +133,9 @@ describe("Telegram May input", () => {
           json: async () => ({
             ok: true,
             result: [
-              { update_id: 1, message: { message_id: 501, chat: { id: 123 }, text: "/tasks evaluation" } },
-              { update_id: 2, message: { message_id: 502, chat: { id: 123 }, text: "/tasks more" } },
+              { update_id: 1, message: { message_id: 500, chat: { id: 123 }, text: "/apps evaluation" } },
+              { update_id: 2, message: { message_id: 501, chat: { id: 123 }, text: "/tasks" } },
+              { update_id: 3, message: { message_id: 502, chat: { id: 123 }, text: "/tasks more" } },
             ],
           }),
         } as Response;
@@ -168,6 +169,16 @@ describe("Telegram May input", () => {
       interfaceAgent: "may",
       persistDir: root,
       humanTasks: {
+        listApps: () => [
+          {
+            id: "evaluation",
+            owner: "evaluator",
+            activeTasks: 1,
+            attentionTasks: 0,
+            runningTasks: 0,
+            waitingTasks: 1,
+          },
+        ],
         listTasks(options: Record<string, unknown>) {
           listCalls.push(options);
           return options.cursor
@@ -177,14 +188,15 @@ describe("Telegram May input", () => {
       } as any,
     });
     try {
-      await waitFor(() => sent.length === 2);
+      await waitFor(() => sent.length === 3);
       expect(listCalls).toEqual([
         { appId: "evaluation", includeDone: false, limit: 10 },
         { appId: "evaluation", includeDone: false, limit: 10, cursor: "cursor-2" },
       ]);
-      expect(sent[0]).toContain("11111111");
-      expect(sent[0]).toContain("/tasks more");
-      expect(sent[1]).toContain("22222222");
+      expect(sent[0]).toContain("Selected App: evaluation");
+      expect(sent[1]).toContain("11111111");
+      expect(sent[1]).toContain("/tasks more");
+      expect(sent[2]).toContain("22222222");
     } finally {
       bot.close();
       closeDb(root);
@@ -383,6 +395,7 @@ describe("Telegram May input", () => {
           (event) =>
             event.type === "conversation.message.created" &&
             event.data?.text === "Prioritize exact evidence" &&
+            event.data?.context?.focusedApp === "evaluation" &&
             event.data?.context?.focusedTask?.taskId === "review/docs",
         ),
       );

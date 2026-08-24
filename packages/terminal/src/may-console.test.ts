@@ -261,10 +261,13 @@ describe("May Console", () => {
     expect(output).not.toContain("focused work");
 
     child.stdin.write("/apps evaluation\n");
-    await waitFor(() => output.includes("App evaluation:") && output.includes("Reviews project behavior"));
-    child.stdin.write("/tasks evaluation\n");
+    await waitFor(() => output.includes("Selected App: evaluation") && output.includes("Reviews project behavior"));
+    child.stdin.write("/tasks\n");
     await waitFor(
-      () => output.includes("Active Tasks:") && output.includes("8f12ac90") && output.includes("Review the docs"),
+      () =>
+        output.includes("Active Tasks for evaluation:") &&
+        output.includes("8f12ac90") &&
+        output.includes("Review the docs"),
     );
     expect(
       frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.limit === 10),
@@ -298,7 +301,10 @@ describe("May Console", () => {
         data: {
           text: "please keep the compatibility alias",
           conversationId: "may:primary",
-          context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } },
+          context: {
+            focusedApp: "evaluation",
+            focusedTask: { appId: "evaluation", taskId: "review/docs" },
+          },
           metadata: { channel: "may-console", channelThreadId: "local-terminal" },
         },
       },
@@ -311,7 +317,7 @@ describe("May Console", () => {
           frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
       ),
     ).toBe(true);
-    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[task 8f12ac90]> "));
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90]> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);

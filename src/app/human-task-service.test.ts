@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
+import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,
@@ -259,6 +260,58 @@ describe("Human Task service", () => {
       updatedAt: 40,
     });
     expect(service.listTasks().items.find((task) => task.taskId === "review")?.progress).toBeUndefined();
+  });
+
+  test("shows exact Task dependencies instead of internal App request ids", () => {
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "conversation/one", phase: "waiting", updatedAt: 20 });
+    insertTask(db, { appId: "evaluation", taskId: "review/docs", phase: "running", updatedAt: 30 });
+    const request = createAppInboxItem(db, {
+      id: "appdep_child",
+      appId: "evaluation",
+      source: { kind: "app", id: "may" },
+      input: { kind: "probe", data: {} },
+      now: 10,
+    });
+    const claim = claimNextAppInboxItem(db, "evaluation", "worker", 1_000, 11);
+    if (!claim) throw new Error("expected child request claim");
+    expect(request.item.id).toBe("appdep_child");
+    expect(waitAppInboxClaim(db, claim, { kind: "task", id: "review/docs" }, { now: 12 })).toBe(true);
+
+    const parent = db
+      .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'may' AND task_id = 'conversation/one'")
+      .get() as { resource_json: string };
+    const parentResource = JSON.parse(parent.resource_json);
+    parentResource.status.conditionIds = ["app-request:appdep_child"];
+    db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = 'may' AND task_id = 'conversation/one'").run(
+      JSON.stringify(parentResource),
+    );
+    const condition = {
+      metadata: { id: "app-request:appdep_child", generation: 1, resourceVersion: 1 },
+      spec: {
+        type: "app.dependency.completed",
+        subject: "id:appdep_child",
+        expected: { field: "status", equals: "done" },
+      },
+      status: { observedGeneration: 1, state: "unknown" },
+    };
+    db.prepare(
+      "INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES ('may', ?, 'unknown', ?)",
+    ).run(condition.metadata.id, JSON.stringify(condition));
+    db.prepare(
+      "INSERT INTO app_task_condition_routes(app_id, task_id, condition_id) VALUES ('may', 'conversation/one', ?)",
+    ).run(condition.metadata.id);
+
+    const service = new HumanTaskService(db, registry("may", "evaluation"));
+    expect(service.getTask({ appId: "may", taskId: "conversation/one" })?.waitingOn).toEqual([
+      expect.objectContaining({
+        kind: "task",
+        appId: "evaluation",
+        taskId: "review/docs",
+        status: "running",
+        outcome: "Handle review/docs",
+      }),
+    ]);
   });
 
   test("lets a terminal Task result replace passive executor progress", () => {
