@@ -252,6 +252,13 @@ describe("Human Task service", () => {
       stage: "intermediate",
       message: "Inspecting the current behavior",
     });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "review",
+      timestamp: 50,
+      stage: "turn-completed",
+      status: "completed",
+    });
     const service = new HumanTaskService(db, registry("alpha"));
 
     expect(service.getTask({ appId: "alpha", taskId: "review" })?.progress).toEqual({

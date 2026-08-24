@@ -114,6 +114,16 @@ describe("Telegram May input", () => {
         },
       }),
     ).toContain("Progress (2026-08-22 01:03:04 UTC):\nInspecting exact evidence");
+    expect(
+      renderTelegramTask({
+        ...task,
+        progress: {
+          stage: "turn-started",
+          status: "inProgress",
+          updatedAt: Date.UTC(2026, 7, 22, 1, 3, 5),
+        },
+      }),
+    ).not.toContain("turn started");
   });
 
   it("continues the prior Task query when Telegram requests the next page", async () => {

@@ -108,6 +108,7 @@ function latestTaskProgress(db: SqliteDb, appId: string, taskId: string): HumanT
          FROM events
          WHERE event_type = 'project.task.executor.progress'
            AND project_id = ? AND task_id = ?
+           AND length(trim(coalesce(json_extract(data, '$.message'), ''))) > 0
          ORDER BY id DESC
          LIMIT 1`,
       )
