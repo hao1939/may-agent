@@ -1831,6 +1831,7 @@ function schemaStringLiterals(value: unknown): string[] {
 type AppInputContract = {
   kind: string;
   requiredData: string[];
+  dataTypes: Record<string, string>;
   fixedData: Record<string, string | number | boolean | null>;
 };
 
@@ -1845,7 +1846,9 @@ function schemaRequiredPaths(value: unknown, prefix = "", depth = 0): string[] {
     node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
       ? (node.properties as Record<string, unknown>)
       : {};
-  const required = new Set(Array.isArray(node.required) ? node.required.filter((key): key is string => typeof key === "string") : []);
+  const required = new Set(
+    Array.isArray(node.required) ? node.required.filter((key): key is string => typeof key === "string") : [],
+  );
   for (const key of required) {
     const path = prefix ? `${prefix}.${key}` : key;
     combined.push(path, ...schemaRequiredPaths(properties[key], path, depth + 1));
@@ -1853,15 +1856,17 @@ function schemaRequiredPaths(value: unknown, prefix = "", depth = 0): string[] {
   return [...new Set(combined)].sort().slice(0, 16);
 }
 
-function schemaFixedValues(
-  value: unknown,
-  prefix = "",
-  depth = 0,
-): Record<string, string | number | boolean | null> {
+function schemaFixedValues(value: unknown, prefix = "", depth = 0): Record<string, string | number | boolean | null> {
   if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return {};
   const node = value as Record<string, unknown>;
   const fixed: Record<string, string | number | boolean | null> = {};
-  if (prefix && (typeof node.const === "string" || typeof node.const === "number" || typeof node.const === "boolean" || node.const === null)) {
+  if (
+    prefix &&
+    (typeof node.const === "string" ||
+      typeof node.const === "number" ||
+      typeof node.const === "boolean" ||
+      node.const === null)
+  ) {
     fixed[prefix] = node.const as string | number | boolean | null;
   }
   for (const key of ["allOf"] as const) {
@@ -1876,7 +1881,58 @@ function schemaFixedValues(
     const path = prefix ? `${prefix}.${key}` : key;
     Object.assign(fixed, schemaFixedValues(property, path, depth + 1));
   }
-  return Object.fromEntries(Object.entries(fixed).sort(([left], [right]) => left.localeCompare(right)).slice(0, 12));
+  return Object.fromEntries(
+    Object.entries(fixed)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .slice(0, 12),
+  );
+}
+
+function schemaValueType(value: unknown, depth = 0): string {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return "unknown";
+  const node = value as Record<string, unknown>;
+  if (node.type === "array") {
+    const itemType = schemaValueType(node.items, depth + 1);
+    return itemType.includes("|") ? `(${itemType})[]` : `${itemType}[]`;
+  }
+  if (typeof node.type === "string") return node.type;
+  if (Array.isArray(node.type)) {
+    const types = node.type.filter((entry): entry is string => typeof entry === "string");
+    if (types.length) return [...new Set(types)].sort().join("|");
+  }
+  const variants = ["anyOf", "oneOf"].flatMap((key) => {
+    const entries = node[key];
+    return Array.isArray(entries) ? entries.map((entry) => schemaValueType(entry, depth + 1)) : [];
+  });
+  const concrete = [...new Set(variants.filter((entry) => entry !== "unknown"))].sort();
+  if (concrete.length) return concrete.join("|");
+  if (node.properties || node.additionalProperties || node.allOf) return "object";
+  if (node.const === null) return "null";
+  if (["string", "number", "boolean"].includes(typeof node.const)) return typeof node.const;
+  return "unknown";
+}
+
+function schemaDataTypes(value: unknown, prefix = "", depth = 0): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return {};
+  const node = value as Record<string, unknown>;
+  const types: Record<string, string> = {};
+  if (Array.isArray(node.allOf)) {
+    for (const entry of node.allOf) Object.assign(types, schemaDataTypes(entry, prefix, depth));
+  }
+  const properties =
+    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
+      ? (node.properties as Record<string, unknown>)
+      : {};
+  for (const [key, property] of Object.entries(properties)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    types[path] = schemaValueType(property, depth + 1);
+    Object.assign(types, schemaDataTypes(property, path, depth + 1));
+  }
+  return Object.fromEntries(
+    Object.entries(types)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .slice(0, 24),
+  );
 }
 
 function appInputContracts(schema: unknown): AppInputContract[] {
@@ -1890,6 +1946,7 @@ function appInputContracts(schema: unknown): AppInputContract[] {
   const own = kinds.map((kind) => ({
     kind,
     requiredData: schemaRequiredPaths(properties.data),
+    dataTypes: schemaDataTypes(properties.data),
     fixedData: schemaFixedValues(properties.data),
   }));
   const nested = ["anyOf", "oneOf"].flatMap((key) => {
@@ -1947,7 +2004,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
     "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
     "For another App outcome, return a stable dependency { id, appId, input }. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
-    "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
+    "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
     "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Completed receipts are immutable.",
     "After first acceptance-critical evidence, checkpoint a concise summary, next step, and exact artifact/session paths. Refresh only when those facts change, then finish promptly.",
@@ -2143,7 +2200,7 @@ function appTaskCliProtocol(appId: string): string {
     'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response only for a caller-facing converged result.',
     "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
     "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise complete one bounded useful step now.",
-    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
+    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");
