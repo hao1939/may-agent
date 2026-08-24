@@ -19,7 +19,10 @@ import {
   type EventBus,
 } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
-import { listHumanAppInboxItemsWaitingOnTask } from "./app-inbox-store.js";
+import {
+  listHumanAppInboxItemsWaitingOnAppRequest,
+  listHumanAppInboxItemsWaitingOnTask,
+} from "./app-inbox-store.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
   completeAppEventAdmissionPlan,
@@ -282,6 +285,36 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     onConversationChanged: notifyConversationUpdated,
+    onRequestTaskAttached(item, taskId) {
+      if (item.source.kind !== "app") return;
+      for (const parent of listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id)) {
+        const parentTaskId = parent.waitingOn?.kind === "task" ? parent.waitingOn.id : undefined;
+        if (!parent.conversationId || !parentTaskId) continue;
+        options.bus.emit({
+          type: "conversation.message.created",
+          source: "app-inbox",
+          owner: `app:${parent.appId}`,
+          data: {
+            appId: parent.appId,
+            conversationId: parent.conversationId,
+            author: { kind: "agent", id: parent.appId },
+            text: `Assigned to ${item.appId}.`,
+            metadata: {
+              channel: parent.channel,
+              channelTargetId: parent.channelTargetId,
+              channelThreadId: parent.channelThreadId,
+              requestId: parent.id,
+              taskRefs: [
+                { appId: parent.appId, taskId: parentTaskId },
+                { appId: item.appId, taskId },
+              ],
+              followTask: { appId: item.appId, taskId },
+            },
+            idempotencyKey: `conversation-task-assigned:${parent.id}:${item.id}:${item.appId}:${taskId}`,
+          },
+        });
+      }
+    },
     onRequestCompleted(item, result) {
       if (item.source.kind !== "app") return;
       options.bus.emit({
