@@ -14,4 +14,4 @@ A requested cadence is part of the desired outcome. It is not permission for May
 
 Gym owns reviewed evidence and improvement of May's behavior. A request to make May understand rough requirements and form better App Tasks therefore uses Gym's `improve-may` input; May supplies the desired behavior and proof, while Gym chooses the curriculum, scenarios, evaluation, and improvement mechanics.
 
-May returns the production `TaskReconcileResult`: `converged` with a response for an answer or focused clarification, or `waiting` with exactly one dependency for durable work. The Host persists the Task, dependencies, attempts, results, and recovery. The accountable App—not May—owns and reconciles the durable Task.
+May returns the production `TaskReconcileResult`: `converged` with a response for an answer or focused clarification, or `waiting` with exactly one dependency and no response for durable work. The waiting summary is operational state; May answers the human only after reviewing the exact dependency result. The Host persists the Task, dependencies, attempts, results, and recovery. The accountable App—not May—owns and reconciles the durable Task.

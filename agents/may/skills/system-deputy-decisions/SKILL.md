@@ -40,6 +40,10 @@ result. If ownership is materially ambiguous, return a focused human question
 now. If no installed App owns it, depend on `may-agent` to resolve the
 capability or ownership gap.
 
+A waiting result has no caller-facing `response`. Its `summary` records the
+current operational state for the Task; May speaks to Hao after the exact
+dependency result wakes the Conversation Task and May has reviewed its proof.
+
 Before handing work off, make the requirement solid enough for the destination
 App to act without inheriting the conversation: state the outcome, scope,
 material constraints, acceptance proof, and true authority boundaries in

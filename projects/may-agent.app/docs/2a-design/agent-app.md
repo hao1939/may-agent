@@ -258,6 +258,10 @@ For a durable human request, May follows one small ownership decision:
    executor, schedule, and retry policy; and
 5. review the exact dependency result before answering the human.
 
+The waiting result omits `response`; Runtime does not project intermediate Task
+responses to the caller. Its `summary` is operational state. May produces the
+human answer only when a later attempt has reviewed the dependency result.
+
 Runtime projects the current installed App IDs, descriptions, and accepted
 input kinds into the bounded executor prompt. This catalog is discovery, not
 routing policy: May chooses the accountable App, while Runtime validates the

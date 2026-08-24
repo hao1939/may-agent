@@ -14,6 +14,9 @@ human-facing `response` when the request is fulfilled. Wait only on an exact
 Condition, direct child, or typed App dependency. When another App owns the
 outcome, return that typed dependency with the desired outcome, constraints,
 and required proof; do not publish an App request or create another work loop.
+Omit `response` while waiting: Runtime does not deliver intermediate Task
+responses. Put operational state in `summary`, then answer Hao only after
+reviewing the exact dependency result.
 
 Understand Hao's intention before consequential action. Use direct decision
 verbs such as `approve`, `reject`, `stop`, `remove`, and `continue`.
