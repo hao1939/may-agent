@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const net = require("node:net");
-const { createHash, randomUUID } = require("node:crypto");
+const { randomUUID } = require("node:crypto");
 const path = require("node:path");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
@@ -52,11 +52,12 @@ const pendingAppReads = [];
 const pendingTaskListReads = [];
 const pendingTaskReads = [];
 let nextTaskPage = null;
+let nextTodoPage = null;
 const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const shownTaskRevisions = new Map();
-let shownTodoRevisions = new Map();
+let shownTodoActions = new Map();
 
 function rememberCompletion(set, value, limit) {
   if (set.has(value)) set.delete(value);
@@ -96,10 +97,10 @@ function completeInput(line) {
       : command === "/tasks"
         ? ["all", "history"]
         : command === "/todo"
-          ? ["all"]
-        : command === "/task" || command === "/watch" || command === "/cancel"
-          ? [...knownTaskRefs]
-          : [];
+          ? ["all", "more"]
+          : command === "/task" || command === "/watch" || command === "/cancel"
+            ? [...knownTaskRefs]
+            : [];
   const matches = choices.filter((choice) => choice.startsWith(current));
   return [matches.length ? matches : choices, current];
 }
@@ -134,7 +135,8 @@ function selectAppContext(appId) {
   if (!next || next === selectedApp) return false;
   selectedApp = next;
   todoCount = 0;
-  shownTodoRevisions = new Map();
+  shownTodoActions = new Map();
+  nextTodoPage = null;
   if (connected) {
     subscribe();
     requestTodoRefresh();
@@ -485,13 +487,8 @@ function elapsedText(value) {
   return `${Math.floor(hours / 24)}d`;
 }
 
-function todoRevision(task) {
-  return JSON.stringify({
-    resourceVersion: task?.resourceVersion,
-    requestedAction: humanActionText(task),
-    since: task?.humanAction?.since,
-    status: task?.status,
-  });
+function todoActionSignature(task) {
+  return humanActionText(task);
 }
 
 function renderTodos(page, pending) {
@@ -502,11 +499,15 @@ function renderTodos(page, pending) {
   if (tasks.length === 0) lines.push("  Nothing needs your action.");
   for (const task of tasks) {
     if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
+    const since = Number(task?.humanAction?.since);
     lines.push(
-      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${humanActionText(task)} · ${elapsedText(task?.humanAction?.since)}`,
+      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${humanActionText(task)}${Number.isFinite(since) ? ` · ${elapsedText(since)}` : ""}`,
     );
   }
-  if (total > tasks.length) lines.push(`  ${total - tasks.length} more action(s) are not shown.`);
+  nextTodoPage = page?.nextCursor ? { appId: pending?.appId || null, cursor: page.nextCursor } : null;
+  if (total > tasks.length) {
+    lines.push(`  ${total - tasks.length} more action(s) are not shown.${nextTodoPage ? " Run /todo more." : ""}`);
+  }
   lines.push("");
   presentView(pending?.command || "/todo", lines.join("\n"), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
@@ -515,8 +516,8 @@ function renderTodos(page, pending) {
 
 function applyTodoRefresh(page) {
   const tasks = Array.isArray(page?.items) ? page.items : [];
-  const next = new Map(tasks.map((task) => [taskPresentationKey(task), todoRevision(task)]));
-  const changed = tasks.filter((task) => shownTodoRevisions.get(taskPresentationKey(task)) !== todoRevision(task));
+  const next = new Map(tasks.map((task) => [taskPresentationKey(task), todoActionSignature(task)]));
+  const changed = tasks.filter((task) => shownTodoActions.get(taskPresentationKey(task)) !== todoActionSignature(task));
   todoCount = Number.isSafeInteger(page?.total) ? page.total : tasks.length;
 
   const unwatched = changed.filter(
@@ -528,17 +529,12 @@ function applyTodoRefresh(page) {
       todoCount === 1 && unwatched.length === 1
         ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /watch ${first.ref} to respond.`
         : `[todo] ${todoCount} Tasks need you in ${selectedApp}. Run /todo.`;
-    const identity = tasks
-      .map((task) => `${task.appId}:${task.taskId}:${task.resourceVersion}:${todoRevision(task)}`)
-      .sort()
-      .concat(`total:${todoCount}`)
-      .join("\n");
     presentView("/todo notification", text, {
       taskRefs: tasks.map(taskIdentity).filter(Boolean),
-      idempotencyKey: `todo-notification:${createHash("sha256").update(identity).digest("hex")}`,
+      idempotencyKey: `todo-notification:${source}:${selectedApp}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
     });
   }
-  shownTodoRevisions = next;
+  shownTodoActions = next;
   refreshPrompt();
 }
 
@@ -1100,7 +1096,7 @@ function printHelp() {
       "Commands:",
       "  /apps [app]                 List or select an App",
       "  /tasks [all] [history], /tasks more",
-      "  /todo [all]                 Show Tasks that need your action",
+      "  /todo [all], /todo more     Show Tasks that need your action",
       "  /task <ref>",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
@@ -1149,15 +1145,22 @@ function handleCommand(input) {
     }
     case "todo": {
       const tokens = restParts.map((part) => part.toLowerCase());
-      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all")) {
-        printLine("Usage: /todo [all]");
+      const more = tokens.length === 1 && tokens[0] === "more";
+      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all" && !more)) {
+        printLine("Usage: /todo [all], or /todo more");
         return;
       }
+      if (more && !nextTodoPage) {
+        printLine("[todo] No next page. Run /todo first.");
+        return;
+      }
+      if (!more) nextTodoPage = null;
       requestTasks({
         kind: "todo-command",
-        appId: tokens.includes("all") ? null : selectedApp,
+        appId: more ? nextTodoPage.appId : tokens.includes("all") ? null : selectedApp,
         humanActionOnly: true,
         limit: todoPageSize,
+        ...(more ? { cursor: nextTodoPage.cursor } : {}),
         command: input,
       });
       return;

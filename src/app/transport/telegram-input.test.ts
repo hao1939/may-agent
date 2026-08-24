@@ -119,6 +119,14 @@ describe("Telegram May input", () => {
       ),
     ).toContain("Actions needed for evaluation:\n• 8f12ac90 · evaluation");
     expect(
+      renderTelegramTodos(
+        [{ ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } }],
+        2,
+        "evaluation",
+        true,
+      ),
+    ).toContain("1 more action(s) are not shown. Use /todo more.");
+    expect(
       renderTelegramTask({
         ...task,
         progress: {
@@ -146,6 +154,7 @@ describe("Telegram May input", () => {
     const priorToken = process.env.TELEGRAM_BOT_TOKEN;
     const priorChat = process.env.TELEGRAM_CHAT_ID;
     const listCalls: Array<Record<string, unknown>> = [];
+    const todoCalls: Array<Record<string, unknown>> = [];
     const sent: string[] = [];
     let updatePolls = 0;
     globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
@@ -158,8 +167,10 @@ describe("Telegram May input", () => {
             ok: true,
             result: [
               { update_id: 1, message: { message_id: 500, chat: { id: 123 }, text: "/apps evaluation" } },
-              { update_id: 2, message: { message_id: 501, chat: { id: 123 }, text: "/tasks" } },
+              { update_id: 2, message: { message_id: 501, chat: { id: 123 }, text: "/tasks all" } },
               { update_id: 3, message: { message_id: 502, chat: { id: 123 }, text: "/tasks more" } },
+              { update_id: 4, message: { message_id: 503, chat: { id: 123 }, text: "/todo all" } },
+              { update_id: 5, message: { message_id: 504, chat: { id: 123 }, text: "/todo more" } },
             ],
           }),
         } as Response;
@@ -204,7 +215,17 @@ describe("Telegram May input", () => {
           },
         ],
         listTasks(options: Record<string, unknown>) {
-          if (options.humanActionOnly) return { items: [], total: 0 };
+          if (options.humanActionOnly) {
+            todoCalls.push(options);
+            if (options.appId === "may") return { items: [], total: 0 };
+            const item = {
+              ...task(options.cursor ? "44444444" : "33333333", options.cursor ? "todo-second" : "todo-first"),
+              humanAction: { requestedAction: options.cursor ? "Approve the second page." : "Approve the first page." },
+            };
+            return options.cursor
+              ? { items: [item], total: 2 }
+              : { items: [item], total: 2, nextCursor: "todo-cursor-2" };
+          }
           listCalls.push(options);
           return options.cursor
             ? { items: [task("22222222", "second")] }
@@ -213,15 +234,83 @@ describe("Telegram May input", () => {
       } as any,
     });
     try {
-      await waitFor(() => sent.length === 3);
+      await waitFor(() => sent.some((text) => text.includes("Approve the second page.")));
       expect(listCalls).toEqual([
-        { appId: "evaluation", includeDone: false, limit: 10 },
-        { appId: "evaluation", includeDone: false, limit: 10, cursor: "cursor-2" },
+        { includeDone: false, limit: 10 },
+        { includeDone: false, limit: 10, cursor: "cursor-2" },
       ]);
-      expect(sent[0]).toContain("Selected App: evaluation");
-      expect(sent[1]).toContain("11111111");
-      expect(sent[1]).toContain("/tasks more");
-      expect(sent[2]).toContain("22222222");
+      expect(sent).toContainEqual(expect.stringContaining("Selected App: evaluation"));
+      expect(sent).toContainEqual(expect.stringContaining("11111111"));
+      expect(sent).toContainEqual(expect.stringContaining("/tasks more"));
+      expect(sent).toContainEqual(expect.stringContaining("22222222"));
+      expect(todoCalls).toContainEqual({
+        humanActionOnly: true,
+        limit: 50,
+        cursor: "todo-cursor-2",
+      });
+      expect(sent).toContainEqual(expect.stringContaining("Use /todo more."));
+    } finally {
+      bot.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
+  });
+
+  it("activates a configured base chat for human-action alerts after restart", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-startup-todo-"));
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    const sent: string[] = [];
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const method = String(url).split("/").at(-1) ?? "";
+      if (method === "getMe") {
+        return { json: async () => ({ ok: true, result: { username: "may", first_name: "May" } }) } as Response;
+      }
+      if (method === "getUpdates") return await new Promise<Response>(() => {});
+      if (method === "sendMessage") {
+        const body = JSON.parse(String(init?.body));
+        sent.push(body.text);
+        return { json: async () => ({ ok: true, result: { message_id: 901 } }) } as Response;
+      }
+      throw new Error(`Unexpected Telegram method ${method}`);
+    }) as typeof fetch;
+    process.env.TELEGRAM_BOT_TOKEN = "test-token";
+    process.env.TELEGRAM_CHAT_ID = "123";
+
+    const bus = new EventBus();
+    const bot = attachTelegramBot({
+      bus,
+      interfaceAgent: "may",
+      persistDir: root,
+      humanTasks: {
+        listTasks: () => ({
+          items: [
+            {
+              appId: "may",
+              taskId: "approval/startup",
+              ref: "aabbccdd",
+              status: "waiting",
+              generation: 1,
+              resourceVersion: 1,
+              outcome: "Approve startup action",
+              updatedAt: 1,
+              terminal: false,
+              cancellable: true,
+              humanAction: { requestedAction: "Approve the startup action." },
+            },
+          ],
+          total: 1,
+        }),
+      } as any,
+    });
+    try {
+      await waitFor(() => sent.some((text) => text.includes("Approve the startup action.")));
     } finally {
       bot.close();
       closeDb(root);
@@ -355,6 +444,16 @@ describe("Telegram May input", () => {
             event.data?.metadata?.taskRefs?.[0]?.taskId === "deploy/current",
         ),
       );
+
+      resourceVersion = 3;
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "app-task:evaluation",
+        owner: "app:evaluation",
+        data: { project: "evaluation", taskId: "deploy/current" },
+      } as any);
+      await Bun.sleep(30);
+      expect(sent.filter((text) => text.includes("request one more canary"))).toHaveLength(1);
     } finally {
       bot.close();
       unsubscribe();

@@ -266,9 +266,9 @@ describe("Human Task service", () => {
       requestedAction: "Choose approve or reject for task:approval.",
       since: Date.parse("2026-08-20T01:02:03.000Z"),
     });
-    expect(service.getTask({ appId: "beta", taskId: "input" })?.humanAction?.requestedAction).toBe(
-      "Provide the rollout window.",
-    );
+    expect(service.getTask({ appId: "beta", taskId: "input" })?.humanAction).toEqual({
+      requestedAction: "Provide the rollout window.",
+    });
     expect(service.getTask({ appId: "alpha", taskId: "external" })?.humanAction).toBeUndefined();
 
     db.prepare(
