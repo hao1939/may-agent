@@ -1160,6 +1160,7 @@ export function admitTaskAppDependencies(input: {
   });
   const matchedExisting = new Set<string>();
   const matches = new Map<string, (typeof existing)[number]>();
+  const requestLineagePrefix = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:`;
 
   for (const dependency of input.dependencies) {
     const direct = existing.filter(
@@ -1173,7 +1174,31 @@ export function admitTaskAppDependencies(input: {
         item.targetTaskId === dependency.taskId &&
         isDeepStrictEqual(item.input, dependency.input),
     );
-    const candidates = direct.length > 0 ? direct : exact;
+    const detachedRequestId = dependency.id.replace(/^app-request:/, "");
+    const detachedItem =
+      direct.length === 0 && exact.length === 0 && input.opts.persistDir
+        ? getAppInboxItem(getDb(input.opts.persistDir), detachedRequestId)
+        : null;
+    const detached =
+      detachedItem &&
+      detachedItem.status !== "done" &&
+      detachedItem.source.kind === "app" &&
+      detachedItem.source.id === input.descriptor.id &&
+      detachedItem.idempotencyKey?.startsWith(requestLineagePrefix)
+        ? [
+            {
+              requestId: detachedItem.id,
+              item: detachedItem,
+              condition: {
+                id: `app-request:${detachedItem.id}`,
+                type: "app.dependency.completed",
+                subject: `id:${detachedItem.id}`,
+                expected: { field: "status", equals: "done" },
+              } satisfies AppTaskConditionSpec,
+            },
+          ]
+        : [];
+    const candidates = direct.length > 0 ? direct : exact.length > 0 ? exact : detached;
     if (candidates.length > 1) {
       throw new Error(`App dependency ${dependency.id} ambiguously matches multiple open requests`);
     }
