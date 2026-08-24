@@ -2249,8 +2249,12 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
 function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
-  // wake; leaving this row changed would make safety recovery retry a no-op.
-  config.resourceStore?.setRecoveryState(taskId, { ready: false, changed: false });
+  // wake; leaving any recovery signal set would make safety recovery retry a no-op.
+  config.resourceStore?.setRecoveryState(taskId, {
+    ready: false,
+    changed: false,
+    nextCheckAt: null,
+  });
 }
 
 function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {
