@@ -126,6 +126,9 @@ that Task automatically after reading the message; it does not infer ownership
 from prose, Task order, or session activity. A newer assignment or explicit
 `/watch` replaces the local watch. Selecting another App or `/unwatch` ends it
 without changing the Task.
+The follow notice and exact Task card retain the requesting parent Task link, so
+switching presentation focus never obscures which human commitment the owner
+Task serves.
 
 Only one read may be in flight. Further wakes set one dirty bit, resulting in
 at most one additional read. There is no polling timer. Completion or

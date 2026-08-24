@@ -144,6 +144,11 @@ Conditions, never internal request IDs. A human can also `/watch` another Task o
 continue talking naturally. While watching, feedback is routed as typed input to
 that exact owner Task. It wakes waiting work for one reconsideration and does not
 create a sibling Task.
+Several human turns may target the same Task, but they do not become several
+owners of its output. Waiting status is unique by Conversation, Task, and
+semantic revision; assignment is unique by Conversation, parent Task, and owner
+Task. The Task emits each public transition once regardless of how many admitted
+human inputs are still correlated with it.
 The first waiting status is shown as soon as May accepts the dependency: what
 is known, which Task owns the next step, and what it is actually waiting for.
 Later distinct waiting summaries may update it; unchanged summaries are
@@ -177,6 +182,10 @@ While watching, bare text still goes through May. The adapter attaches:
 
 May therefore receives natural human language plus an exact Task identity. May
 uses that identity only when the message is feedback for the unfinished Task.
+The executor also receives the Task's accepted open Conditions and live App
+request identities. It must reconsider the existing Task and the human's actual
+concern first, preserve a still-relevant wait, and create different work only
+when the current Task cannot fulfill the outcome.
 Fresh feedback wakes a waiting or attention Task once. Unrelated text and text
 without an exact focus do not globally wake every blocked Task.
 May then interprets the feedback and sends typed input to the owning App and
@@ -233,6 +242,9 @@ Human reads do not invoke a model and do not reconstruct Conversation history:
 
 Lease renewals, tool chunks, transcript text, queue movement, and delivery
 events do not wake human Task watches. Slow adapters never block Task commit.
+Stale-result fencing, previous-runtime recovery, and socket reconnect details
+remain attempt diagnostics or transient adapter notices. They never replace the
+Task's semantic summary, progress, or accepted Conditions.
 
 ## Adapter responsibilities
 

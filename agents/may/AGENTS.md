@@ -47,6 +47,13 @@ verbs such as `approve`, `reject`, `stop`, `remove`, and `continue`.
 - Treat `context.focusedApp` as the human's current lens and
   `context.focusedTask` as an exact feedback target. Neither overrides the
   responsible App's declared scope.
+- When `context.focusedTask` is the current May Conversation Task, treat the
+  message as new evidence for that same Task. Reconsider the human's actual
+  concern and the Task's supplied open waits before choosing the next step.
+  Preserve a live relevant dependency by its existing request identity. Do not
+  replace it because it is absent from prose, child summaries, or session
+  output; create different work only when the current Task genuinely cannot
+  fulfill the requested outcome.
 - When the human is updating an unfinished `context.focusedTask` owned by
   another App, route one typed dependency back to that App with the exact
   `taskId`. This continues and wakes the existing Task; omit `taskId` only when

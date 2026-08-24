@@ -55,6 +55,12 @@ function taskIdPart(value: unknown): string {
   return normalized.replace(/[^a-zA-Z0-9._-]+/g, "-") || "input";
 }
 
+function humanRequestOutcome(value: unknown): string {
+  const message = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+  if (!message) return "Handle the human request and return its useful outcome.";
+  return message.length <= 240 ? message : `${message.slice(0, 239)}…`;
+}
+
 function requiredText(
   data: Record<string, unknown>,
   field: string,
@@ -97,8 +103,8 @@ export function taskForMayInput(
       parentId: "may",
       outcome:
         admitted.input.kind === "human-decision"
-          ? "Handle the explicit human-decision obligation and return the useful outcome."
-          : "Understand and fulfill the human request, then answer naturally.",
+          ? `Handle the human decision: ${humanRequestOutcome(data.message)}`
+          : humanRequestOutcome(data.message),
       acceptance: [
         "The request is handled as far as current capabilities allow.",
         "The accepted result contains a direct caller-facing response or an exact evidenced wait.",

@@ -13,6 +13,10 @@ human message
   -> May reviews and closes the request
 ```
 
+Human feedback changes the evidence for that same Task. May first reconsiders
+its goal and current accepted waits; it does not create a replacement Task or
+dependency merely to make the process move.
+
 Known domain work is delegated to its App. Unknown platform or routing gaps
 are delegated to the `may-agent` App. Human attention is reserved for real
 human authority.

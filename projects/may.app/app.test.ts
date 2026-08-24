@@ -71,6 +71,7 @@ describe("canonical May conversation App", () => {
         parentId: "may",
         agent: "may",
         category: "conversation",
+        outcome: "Review the latest state",
       },
     });
     expect(
@@ -88,8 +89,24 @@ describe("canonical May conversation App", () => {
       ),
     ).toMatchObject({
       kind: "desired",
-      intent: { id: "decision/evaluation-session-1-rollout" },
+      intent: {
+        id: "decision/evaluation-session-1-rollout",
+        outcome: "Handle the human decision: Approve rollout",
+      },
     });
+  });
+
+  test("keeps task outcomes concise and human-readable", () => {
+    const attachment = taskForMayInput({
+      id: "long-request",
+      source: { kind: "human", id: "operator" },
+      input: { kind: "message", data: { message: `  Review\n${"the current state ".repeat(30)}` } },
+    });
+    expect(attachment.kind).toBe("desired");
+    if (attachment.kind !== "desired") return;
+    expect(attachment.intent.outcome).not.toContain("\n");
+    expect(attachment.intent.outcome.length).toBeLessThanOrEqual(240);
+    expect(attachment.intent.outcome).toStartWith("Review the current state");
   });
 
   test("accepts ordinary human messages through the same App schema", () => {

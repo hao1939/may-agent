@@ -174,6 +174,10 @@ signal, not another message or a delivery guarantee. Console and Telegram
 respond by reading the Conversation and rendering stable message IDs they have
 not already shown. Adapters do not forward content to one another, and
 rendering the same message on another surface does not append a duplicate.
+Multiple human messages may feed one focused Task. Public Task status and
+assignment messages are projected once from the Task transition, not once from
+each correlated input request. Adapter read coalescing cannot substitute for
+this semantic write-side identity.
 
 The ordinary human interface reads Apps and Tasks through `/apps`, `/tasks`,
 and `/task <ref>`. When a requested view may shape the next turn, the adapter

@@ -22,9 +22,13 @@ proof work, but wait before consequential mutation.
    evaluation owner to run the candidate against the frozen baseline on the
    narrowest sample that can show the intended improvement and catch material
    regressions.
-4. **Make the dependency concrete.** The typed App request should name the evaluation
-   owner, baseline, candidate, sample/canary scope, success criteria, regression
-   criteria, and expected evidence artifact or return path.
+4. **Make the dependency concrete once.** First inspect the current Task's
+   supplied open waits. If a live evaluation request already owns this proof,
+   preserve that exact request and reconsider whether its proof is still
+   necessary. Create a typed App request only when no suitable live request
+   exists. It should name the evaluation owner, baseline, candidate,
+   sample/canary scope, success criteria, regression criteria, and expected
+   evidence artifact or return path.
 5. **Return a rollout proposal before adoption.** If the candidate shows clear
    gain with no material regression, bring Hao a proposal with the evidence,
    scope, staged rollout plan, risks, monitoring, and rollback.
@@ -48,9 +52,11 @@ fields before finishing:
 - `next_action`: explicitly include the frozen baseline, the exact candidate,
   the bounded baseline-vs-candidate comparison, and a proof-backed rollout
   proposal returned before adoption.
-- `dependencies`: include exactly one typed Gym dependency that requests
-  the representative sample, success evidence for the intended improvement, and
-  regression evidence for material safety risks.
+- `dependencies`: preserve the exact live Gym request when one already owns the
+  proof. Otherwise include one typed Gym dependency requesting the
+  representative sample, success evidence for the intended improvement, and
+  regression evidence for material safety risks. Never create a replacement
+  merely because the existing wait was omitted from prose or child summaries.
 - `constraints`: literally state `reject broad rollout until Hao approval` and
   `rollback is Git revert`.
 - `response_to_hao`: explicitly tell Hao May will gather evidence, bring back a
