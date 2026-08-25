@@ -275,7 +275,7 @@ describe("App Task agent prompt context", () => {
     const protocol = appTaskAgentProtocol("may");
 
     expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(4 * 1_024);
-    expect(protocol).toContain("bounded agent for one Task attempt owned by App may");
+    expect(protocol).toContain("agent pursuing one Task goal owned by App may");
     expect(protocol).not.toContain("accountable owner");
     expect(protocol).toContain("Finish exactly once with finish().result");
     expect(protocol).toContain("Return state waiting only for an exact observable Condition");
@@ -2849,6 +2849,84 @@ describe("canonical App task runtime", () => {
       summary: "Replacement Codex adapter completed the Task",
       evidence: ["test:replacement-codex"],
     });
+  });
+
+  it("retries the same Task after an executor process failure", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        "codex-goal": async (attempt) => {
+          calls += 1;
+          expect(attempt.task.id).toBe("work/resume-codex-goal");
+          if (calls === 1) throw new Error("temporary Codex process failure");
+          return {
+            state: "converged",
+            summary: "The same Task resumed and completed",
+            evidence: ["test:same-task-resumed"],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:resume-codex-goal",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/resume-codex-goal",
+          parentId: "operations",
+          outcome: "Finish one goal despite a process restart",
+          acceptance: ["The same Task reaches an accepted result"],
+          mode: "achieve",
+          agent: "sample-owner",
+          executor: "codex-goal",
+        },
+      },
+      idempotencyKey: "attach:resume-codex-goal",
+      request: {
+        id: "request-resume-codex-goal",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const deadline = Date.now() + 3_000;
+    while (!readTaskState(config).receipts?.["work/resume-codex-goal"] && Date.now() < deadline) {
+      await Bun.sleep(5);
+    }
+
+    const tree = readTaskState(config);
+    expect(calls).toBe(2);
+    expect(tree.receipts?.["work/resume-codex-goal"]).toMatchObject({
+      summary: "The same Task resumed and completed",
+      evidence: ["test:same-task-resumed"],
+    });
+    expect(
+      Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "work/resume-codex-goal"),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ state: "interrupted" }),
+        expect.objectContaining({ state: "completed" }),
+      ]),
+    );
   });
 
   it("coalesces an exact-task event storm into bounded fresh reconciliations", async () => {
