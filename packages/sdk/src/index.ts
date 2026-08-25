@@ -17,6 +17,7 @@ export type {
   AppAction,
   AppDefinition,
   AppRequestDecision,
+  AppRequestFollowUp,
   AppRequestDependency,
   AppRequestDependencyObservation,
   AppRequestOpenRequest,

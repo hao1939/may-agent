@@ -2126,9 +2126,9 @@ function assertInstalledAppDependency(
   sourceAppId: string,
   dependency: TaskAppDependency,
 ): void {
-  if (dependency.appId === sourceAppId) {
+  if (dependency.appId === sourceAppId && !dependency.taskId) {
     throw new Error(
-      `App dependency ${dependency.id} cannot target its owning App ${sourceAppId}; use a direct child or advance the current Task`,
+      `App dependency ${dependency.id} cannot create sibling work in its owning App ${sourceAppId}; create a direct child or name an exact existing Task`,
     );
   }
   const registryConfigured = Boolean(opts.appRegistrySnapshot || opts.appRegistry);
@@ -3348,6 +3348,7 @@ async function reconcileTask(input: {
             acceptance: intent.acceptance,
             input: intent.input ?? {},
             summary: primaryHandlerResult.summary,
+            ...(primaryHandlerResult.response ? { response: primaryHandlerResult.response } : {}),
             ...(primaryHandlerResult.result ? { result: primaryHandlerResult.result } : {}),
             evidence: primaryHandlerResult.evidence,
             acceptanceBasis,

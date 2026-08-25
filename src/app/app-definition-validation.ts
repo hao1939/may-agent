@@ -216,14 +216,23 @@ export function validateAppDefinition(definition: unknown): string[] {
     if (!requests) errors.push(`App ${appId} requests must be an object`);
     else {
       if (requests.mode !== "agent") errors.push(`App ${appId} requests mode must be agent`);
+      if (
+        requests.inputKinds !== undefined &&
+        (!Array.isArray(requests.inputKinds) ||
+          requests.inputKinds.length === 0 ||
+          requests.inputKinds.some((kind) => !nonEmpty(kind)) ||
+          new Set(requests.inputKinds).size !== requests.inputKinds.length)
+      ) {
+        errors.push(`App ${appId} requests inputKinds must contain unique non-empty strings`);
+      }
       if (requests.conversationId !== undefined && !nonEmpty(requests.conversationId)) {
         errors.push(`App ${appId} requests conversationId must be a non-empty string`);
       }
     }
   }
 
-  if (app.requests !== undefined && app.task !== undefined) {
-    errors.push(`App ${appId} cannot resolve the same inbox through both direct requests and Tasks`);
+  if (app.requests !== undefined && app.task !== undefined && record(app.requests)?.inputKinds === undefined) {
+    errors.push(`App ${appId} with both requests and task must declare requests.inputKinds`);
   }
 
   return errors;
