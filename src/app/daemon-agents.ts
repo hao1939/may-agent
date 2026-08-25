@@ -175,9 +175,10 @@ export async function prepareDaemonAgents(opts: {
       startAfter,
     };
 
-    // Startup recovery retires previous execution attempts and queues their
-    // Tasks behind the normal Host capacity gate.
-    const appResult = await installAppTaskRuntimes(appTaskOptions, { includeFreshLeases: true });
+    // Publish definitions and gated controllers now. Recovery is activated
+    // only after the control socket opens, so startup cannot create task
+    // workspaces while every human interface is still unavailable.
+    const appResult = await installAppTaskRuntimes(appTaskOptions, { deferRecovery: true });
     if (appResult.installed.length > 0) {
       opts.bus.emit({
         type: "info",

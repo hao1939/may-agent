@@ -32,12 +32,14 @@ import {
   projectAppTaskWaitPromptContext,
   projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
+  recoverInstalledAppTasks,
   rejectConvergedDirectAgentResidue,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
+  markAppTaskAttention,
   observeAppTaskIntent,
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
@@ -2089,6 +2091,88 @@ describe("canonical App task runtime", () => {
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
     expect(readTaskState(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
+  });
+
+  it("does not create task worktrees while startup installs and recovers work", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, ".state");
+    execFileSync("git", ["init", "-b", "main", f.appDir], { stdio: "ignore" });
+    execFileSync("git", ["-C", f.appDir, "config", "user.email", "test@example.com"]);
+    execFileSync("git", ["-C", f.appDir, "config", "user.name", "Test"]);
+    execFileSync("git", ["-C", f.appDir, "add", "."]);
+    execFileSync("git", ["-C", f.appDir, "commit", "-m", "baseline"], { stdio: "ignore" });
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/retry-workspace",
+        parentId: "operations",
+        outcome: "Retry a task workspace only after startup is ready",
+        acceptance: ["No task worktree exists before explicit recovery"],
+        mode: "achieve",
+        agent: "sample-owner",
+        executor: "codex",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/retry-workspace",
+      appAgent: "sample-owner",
+      handler: "executor:codex",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected workspace claim");
+    markAppTaskAttention(config, claim, {
+      summary: "workspace preparation failed",
+      reason: "WorkspacePreparationFailed",
+    });
+    activateTaskResources(config, persistDir);
+
+    let openControllerGate = () => {};
+    const controllerGate = new Promise<void>((resolve) => {
+      openControllerGate = resolve;
+    });
+    const worktreeRoot = join(f.root, "worktrees", "sample");
+    await installAppTaskRuntimes(
+      {
+        ...options(f, bus),
+        persistDir,
+        startAfter: controllerGate,
+        appRegistrySnapshot: {
+          id: "boot:deferred-recovery",
+          generation: 1,
+          entries: [
+            {
+              appDir: f.appDir,
+              definition: {
+                ...definition(),
+                workspace: { kind: "git", localPath: ".", branch: "main" },
+              },
+            },
+          ],
+        },
+      },
+      { deferRecovery: true },
+    );
+
+    expect(existsSync(worktreeRoot)).toBe(false);
+    expect(readTaskState(config).resources?.["work/retry-workspace"]?.status.phase).toBe("attention");
+
+    await recoverInstalledAppTasks(bus);
+
+    expect(existsSync(worktreeRoot)).toBe(false);
+    expect(readTaskState(config).resources?.["work/retry-workspace"]?.status).toMatchObject({
+      phase: "pending",
+      observedGeneration: 0,
+    });
+    openControllerGate();
+    await closeInstalledAppTaskRuntimes(bus);
   });
 
   it("releases a fresh previous-runtime attempt and requeues it through bounded task capacity", async () => {

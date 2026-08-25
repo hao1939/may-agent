@@ -4254,15 +4254,13 @@ function recoverInterruptedAppTasks(
  * generic stale-session resumption so task-owned sessions are reconciled by
  * their durable task state first.
  */
-export function recoverInstalledAppTasks(bus: EventBus): void {
+export async function recoverInstalledAppTasks(bus: EventBus): Promise<void> {
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
-  recoverInterruptedAppTasks(
-    opts,
-    appRouterDescriptorsByBus.get(bus) ?? [],
-    appTaskControllersByBus.get(bus) ?? new Map(),
-    true,
-  );
+  const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
+  const controllers = appTaskControllersByBus.get(bus) ?? new Map();
+  recoverInterruptedAppTasks(opts, descriptors, controllers, true);
+  await requeueRepairedAppTaskHandlers(opts, descriptors, controllers);
 }
 
 async function requeueRepairedAppTaskHandlers(
@@ -4278,7 +4276,6 @@ async function requeueRepairedAppTaskHandlers(
     const attentionTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
     for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.agent, attentionTaskIds)) {
       if (descriptor.app.workspace?.kind !== "git") continue;
-      let baseBranch = descriptor.app.workspace.branch ?? "dev";
       if (candidate.workflow) {
         const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
         const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
@@ -4289,22 +4286,6 @@ async function requeueRepairedAppTaskHandlers(
         ) {
           continue;
         }
-        baseBranch =
-          typeof definition.workspace === "object"
-            ? definition.workspace.baseBranch
-            : (descriptor.app.workspace.branch ?? "dev");
-      }
-      try {
-        await prepareAppTaskWorkspace({
-          repoDir: descriptor.projectDir,
-          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-          taskId: candidate.taskId,
-          generation: candidate.generation,
-          baseBranch,
-          previous: candidate.previous,
-        });
-      } catch {
-        continue;
       }
       if (!releaseWorkspacePreparationFailedAppTask(config, candidate.taskId, candidate.generation)) continue;
       enqueueAppTask(controller, config, candidate.taskId);
@@ -4317,7 +4298,7 @@ async function requeueRepairedAppTaskHandlers(
           project: descriptor.id,
           taskId: candidate.taskId,
           handler: candidate.workflow ? `workflow:${candidate.workflow}` : `executor:${candidate.executor}`,
-          reason: "task-workspace-preparation-succeeded-after-app-reload",
+          reason: "task-workspace-preparation-retry-after-app-reload",
         },
       } as unknown as AgentEvent);
     }
@@ -4580,7 +4561,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
 async function commitAppTaskRuntimeDescriptors(
   opts: AppTaskRuntimeOptions,
   prepared: AppTaskRuntimeDescriptor[],
-  recovery: { includeFreshLeases: boolean },
+  recovery: { includeFreshLeases: boolean; deferred: boolean },
 ): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
@@ -4619,15 +4600,17 @@ async function commitAppTaskRuntimeDescriptors(
       if (binding) binding.opts = { ...binding.opts, agentDefinitions };
     }
   }
-  recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
-  await requeueRepairedAppTaskHandlers(opts, installed, controllers);
+  if (!recovery.deferred) {
+    recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
+    await requeueRepairedAppTaskHandlers(opts, installed, controllers);
+  }
 
   return { installed };
 }
 
 export async function installAppTaskRuntimes(
   opts: AppTaskRuntimeOptions,
-  recovery: { includeFreshLeases?: boolean } = {},
+  recovery: { includeFreshLeases?: boolean; deferRecovery?: boolean } = {},
 ): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
@@ -4644,6 +4627,7 @@ export async function installAppTaskRuntimes(
       prepared,
       {
         includeFreshLeases: recovery.includeFreshLeases === true,
+        deferred: recovery.deferRecovery === true,
       },
     );
   } catch (error) {
@@ -4653,6 +4637,7 @@ export async function installAppTaskRuntimes(
     try {
       await commitAppTaskRuntimeDescriptors({ ...opts, afterCommit: undefined }, previous, {
         includeFreshLeases: false,
+        deferred: false,
       });
     } catch (rollbackError) {
       throw new AggregateError(

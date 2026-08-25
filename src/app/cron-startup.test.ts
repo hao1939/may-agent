@@ -114,7 +114,8 @@ describe("cron startup recovery", () => {
   });
 
   it("does not resume any background project session while its task tree is paused", () => {
-    const appDir = mkdtempSync(join(tmpdir(), "may-paused-app-"));
+    const projectsRoot = mkdtempSync(join(tmpdir(), "may-paused-projects-"));
+    const appDir = join(projectsRoot, "sample.app");
     try {
       const treeDir = join(appDir, ".state", "tasks");
       mkdirSync(treeDir, { recursive: true });
@@ -124,7 +125,7 @@ describe("cron startup recovery", () => {
       );
 
       for (const source of ["workflow:project-planner", "workflow:focus-plan"]) {
-        expect(shouldResumeStartupSession("session-1", session(appDir, source))).toEqual({
+        expect(shouldResumeStartupSession("session-1", session(appDir, source), projectsRoot)).toEqual({
           resume: false,
           reason: expect.stringContaining("Project sample is paused"),
         });
@@ -134,7 +135,7 @@ describe("cron startup recovery", () => {
         reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
       });
     } finally {
-      rmSync(appDir, { recursive: true, force: true });
+      rmSync(projectsRoot, { recursive: true, force: true });
     }
   });
 
