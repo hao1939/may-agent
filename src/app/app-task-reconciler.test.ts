@@ -33,6 +33,7 @@ import {
   appTaskQueueEntries,
   AppTaskActionStaleError,
   repairPreviousRuntimeRecoveryAttention,
+  repairUnadmittedAppDependencyWaits,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   expiredAgentSessionAppTaskAttempt,
@@ -2926,6 +2927,50 @@ describe("App task reconciler state", () => {
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
     expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
+  });
+
+  it("requeues an orphaned App dependency wait and leaves admitted waits alone", () => {
+    const { config } = fixture();
+    const makeWaiting = (taskId: string, requestId: string) => {
+      const taskIntent = { ...intent(), id: taskId };
+      const claim = declareAndClaimTask(config, {
+        intent: taskIntent,
+        appAgent: "app-owner",
+        handler: "agent:app-owner",
+      });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+      deferAppTask(config, claim, {
+        disposition: "waiting",
+        summary: `waiting for ${requestId}`,
+        conditions: [
+          {
+            id: `app-request:${requestId}`,
+            type: "app.dependency.completed",
+            subject: `id:${requestId}`,
+            expected: { field: "status", equals: "done" },
+          },
+        ],
+      });
+    };
+    makeWaiting("work/orphaned", "missing-request");
+    makeWaiting("work/admitted", "accepted-request");
+
+    expect(repairUnadmittedAppDependencyWaits(config, (requestId) => requestId === "accepted-request")).toEqual([
+      expect.objectContaining({ taskId: "work/orphaned", disposition: "requeued" }),
+    ]);
+
+    const repaired = readTaskState(config);
+    expect(repaired.resources?.["work/orphaned"]?.status).toMatchObject({
+      phase: "pending",
+      conditionIds: [],
+      summary: "App dependency request missing-request was not admitted; retrying the same Task from current evidence",
+    });
+    expect(repaired.conditions?.["app-request:missing-request"]).toBeUndefined();
+    expect(repaired.resources?.["work/admitted"]?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: ["app-request:accepted-request"],
+    });
+    expect(repairUnadmittedAppDependencyWaits(config, (requestId) => requestId === "accepted-request")).toEqual([]);
   });
 
   it("claims running tasks whose current attempt record is missing", () => {

@@ -525,6 +525,10 @@ export class HumanTaskService {
          FROM app_tasks
          WHERE phase IN ('pending', 'running', 'waiting', 'attention')
            AND NOT EXISTS (
+             SELECT 1 FROM app_task_receipts r
+             WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
+           )
+           AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c
              WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
            )
@@ -586,6 +590,9 @@ export class HumanTaskService {
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
          WHERE t.phase IN (${livePhases.map(() => "?").join(", ")})
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_receipts r WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
+           )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
            )${appId ? " AND t.app_id = ?" : ""}${humanActionOnly ? ` AND ${OPEN_HUMAN_CONDITION_SQL}` : ""}`,
@@ -661,6 +668,10 @@ export class HumanTaskService {
                 `SELECT COUNT(*) AS count
                  FROM app_tasks t
                  WHERE t.phase IN ('pending', 'running', 'waiting', 'attention')
+                   AND NOT EXISTS (
+                     SELECT 1 FROM app_task_receipts r
+                     WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
+                   )
                    AND NOT EXISTS (
                      SELECT 1 FROM app_task_cancellations c
                      WHERE c.app_id = t.app_id AND c.task_id = t.task_id

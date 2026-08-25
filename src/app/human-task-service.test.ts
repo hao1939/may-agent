@@ -475,6 +475,19 @@ describe("Human Task service", () => {
     expect(detail?.evidence).toEqual(["full evidence"]);
   });
 
+  test("does not project a stale live row as active after its completion receipt exists", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30 });
+    insertReceipt(db, "alpha", "completed-but-stale", 40);
+    const service = new HumanTaskService(db, registry("alpha"));
+
+    expect(service.listTasks().items).toEqual([]);
+    expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
+    expect(service.listTasks({ includeDone: true }).items).toEqual([
+      expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
+    ]);
+  });
+
   test("persists Task-level cancellation, fences the attempt, and removes it from active work", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "work", phase: "running", updatedAt: 10 });
