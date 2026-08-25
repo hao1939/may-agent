@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase } from "../lib/db.js";
+import { applyDbSchema } from "../lib/db/schema.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { claimObservedAppTask } from "./app-task-reconciler.js";
 import { HumanTaskService } from "./human-task-service.js";
@@ -54,6 +55,7 @@ describe("Task cancellation fence", () => {
     store.activate("revision-1");
     store.setProjectLifecycle("active");
     const db = openDatabase(dbPath);
+    applyDbSchema(db);
     const retainedEvent = db
       .prepare("SELECT event_json FROM app_task_events WHERE app_id = 'sample' AND task_id = 'work'")
       .get();

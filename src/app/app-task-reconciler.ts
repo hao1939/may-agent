@@ -2438,7 +2438,7 @@ export function listWorkspacePreparationFailedAppTasks(
   });
 }
 
-/** Release attention after workspace preparation succeeds for this generation. */
+/** Release workspace attention so bounded task execution can retry this generation. */
 export function releaseWorkspacePreparationFailedAppTask(
   config: TaskStateConfig,
   taskId: string,
@@ -2458,7 +2458,7 @@ export function releaseWorkspacePreparationFailedAppTask(
       phase: "pending",
       observedGeneration: Math.max(0, generation - 1),
       currentAttemptId: undefined,
-      summary: "Task workspace preparation succeeded after app reload; retrying current task generation",
+      summary: "Task workspace preparation is retrying after app reload",
       conditionIds: [],
     });
     syncTaskProjection(task, resource, attempt.owner);
