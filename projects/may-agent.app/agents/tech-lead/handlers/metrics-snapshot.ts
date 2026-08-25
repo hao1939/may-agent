@@ -712,6 +712,7 @@ const STRUCTURALLY_PINNED_ALLOWLIST = new Set([
   "capability.status-reality-mismatch-count", // desired 0; multi-signal composite
   "infra.bus.subscriber-failed-count-1h", // desired 0; failure counter
   "infra.messages.delivery-rate", // desired 1.0; high-reliability gauge
+  "infra.persist.db-size-mb", // allocated-page capacity changes only when SQLite grows or shrinks the file
 ]);
 
 function listEnabledHeartbeatAgents(
