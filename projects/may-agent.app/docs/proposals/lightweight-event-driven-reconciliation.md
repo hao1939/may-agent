@@ -151,6 +151,13 @@ result in the same fenced transaction. Otherwise the durable next-attempt batch
 remains authoritative. Changing executor changes how one attempt runs, not
 Task identity, fencing, recovery, or acceptance.
 
+The same rule applies to all previously accepted Task state. Claiming an
+attempt records execution state but leaves the accepted observed generation,
+summary, result, evidence, and Conditions intact. Failure releases the attempt
+and restores that exact baseline. It does not turn accepted waits into
+unobserved desired state. Consequently a retry receives the same dependency
+request IDs and cannot create replacements merely because validation failed.
+
 ## Recovery is insurance
 
 Events are the ordinary wake mechanism. Recovery covers lost in-memory hints

@@ -184,6 +184,28 @@ interrupted, rejected, or stale result observes nothing. Compatibility may
 exist only in retained Host persistence; App code reads the ordered `events`
 batch and uses its final item when it needs the most recent event.
 
+### Accepted Task state and attempt state
+
+The latest admitted result is the Task's accepted state: observed generation,
+summary, result, evidence, and open Conditions. Starting an attempt adds only
+temporary execution state (`running`, attempt identity, lease, and diagnostics).
+It does not make the accepted result unobserved and does not detach an accepted
+Condition.
+
+Admission is the single commit point. A valid current result may replace the
+accepted state and consume its presented Events in one fenced transaction. If
+result validation, dependency admission, execution, or the process fails, the
+Host removes the temporary attempt state and restores the same accepted Task
+state and Event batch. The next attempt therefore sees the same open waits and
+cannot manufacture replacement dependencies merely because the previous
+attempt failed.
+
+Invalid model output is corrected before the attempt exits whenever the
+executor supports another turn. Model-facing schemas expose only canonical
+fields. In particular, task changes may select `agent`; the retained storage
+alias `owner` is not part of model output. Compatibility normalization remains
+inside the Host boundary for older App code.
+
 `read` contains exact bounded projections. Ordinary resources use one
 collection shape: bounded summary pages from `list` plus explicit detail from
 `get`. Large desired input and exact Conditions cross the boundary only for the
@@ -356,6 +378,13 @@ fails before publication. The completion Event is part of a later
 and evidence. `taskId` attaches the typed input to that Task's existing lineage
 and wakes it once; omitting it uses the target App's normal new-work resolver.
 There is no imperative `delegate()` capability.
+
+Retry does not create a new dependency declaration. A rejected attempt retains
+the previous Condition links, so the next attempt receives their durable
+request IDs. As a final safety fence, Runtime must also reject a new request
+when an unresolved request from the same parent Task generation and target App
+still exists but its Condition link is temporarily unavailable. Recovery
+reattaches or reports that request; it never silently publishes a sibling.
 
 Apps may supply pure task-change validation and bounded verification policy.
 They do not save task state, acquire locks, edit projections, or manufacture

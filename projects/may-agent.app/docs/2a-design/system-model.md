@@ -370,6 +370,19 @@ the same idempotent command; if the child finished before the Condition was
 installed, persisted-event replay closes the race. No App polls another App's
 store or owns a second loop.
 
+The accepted Task state survives every unsuccessful attempt. Claiming work may
+record a running attempt and lease, but it does not lower the accepted observed
+generation or unlink an open Condition. A rejected, interrupted, stale, or
+crashed attempt removes only its temporary execution state and replays the same
+Events. Only admission of a valid fenced result may replace summary, result,
+evidence, Conditions, or the Event checkpoint.
+
+This is also the dependency deduplication boundary. Retry sees the same durable
+request IDs rather than newly generated local names. If a Condition link is
+temporarily missing while its correlated App request is still unresolved,
+Runtime treats the request ledger as a recovery fence: it reattaches or reports
+the request and does not publish replacement work.
+
 The parent must construct input accepted by the target App's declared schema.
 It cannot wrap arbitrary structured fields in a generic `message` input unless
 that target schema explicitly declares `message`. Schema rejection creates no
