@@ -65,7 +65,7 @@ import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths
 import type { TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
-import { getAppInboxItem } from "./app-inbox-store.js";
+import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "./app-inbox-store.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
@@ -1165,6 +1165,30 @@ export function admitTaskAppDependencies(input: {
   const matchedExisting = new Set<string>();
   const matches = new Map<string, (typeof existing)[number]>();
   const requestLineagePrefix = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:`;
+  const detachedOpenByApp = new Map<string, ReturnType<typeof listOpenAppInboxItemsByIdempotencyPrefix>>();
+  const detachedOpenFor = (appId: string) => {
+    const cached = detachedOpenByApp.get(appId);
+    if (cached) return cached;
+    const items = input.opts.persistDir
+      ? listOpenAppInboxItemsByIdempotencyPrefix(getDb(input.opts.persistDir), {
+          appId,
+          sourceAppId: input.descriptor.id,
+          prefix: requestLineagePrefix,
+        })
+      : [];
+    detachedOpenByApp.set(appId, items);
+    return items;
+  };
+  const detachedMatch = (item: ReturnType<typeof detachedOpenFor>[number]) => ({
+    requestId: item.id,
+    item,
+    condition: {
+      id: `app-request:${item.id}`,
+      type: "app.dependency.completed",
+      subject: `id:${item.id}`,
+      expected: { field: "status", equals: "done" },
+    } satisfies AppTaskConditionSpec,
+  });
 
   for (const dependency of input.dependencies) {
     const direct = existing.filter(
@@ -1183,26 +1207,25 @@ export function admitTaskAppDependencies(input: {
       direct.length === 0 && exact.length === 0 && input.opts.persistDir
         ? getAppInboxItem(getDb(input.opts.persistDir), detachedRequestId)
         : null;
-    const detached =
+    const detachedById =
       detachedItem &&
       detachedItem.status !== "done" &&
       detachedItem.source.kind === "app" &&
       detachedItem.source.id === input.descriptor.id &&
       detachedItem.idempotencyKey?.startsWith(requestLineagePrefix)
-        ? [
-            {
-              requestId: detachedItem.id,
-              item: detachedItem,
-              condition: {
-                id: `app-request:${detachedItem.id}`,
-                type: "app.dependency.completed",
-                subject: `id:${detachedItem.id}`,
-                expected: { field: "status", equals: "done" },
-              } satisfies AppTaskConditionSpec,
-            },
-          ]
+        ? [detachedMatch(detachedItem)]
         : [];
-    const candidates = direct.length > 0 ? direct : exact.length > 0 ? exact : detached;
+    const detachedByMeaning =
+      direct.length === 0 && exact.length === 0 && detachedById.length === 0
+        ? detachedOpenFor(dependency.appId)
+            .filter(
+              (item) =>
+                item.targetTaskId === dependency.taskId && isDeepStrictEqual(item.input, dependency.input),
+            )
+            .map(detachedMatch)
+        : [];
+    const candidates =
+      direct.length > 0 ? direct : exact.length > 0 ? exact : detachedById.length > 0 ? detachedById : detachedByMeaning;
     if (candidates.length > 1) {
       throw new Error(`App dependency ${dependency.id} ambiguously matches multiple open requests`);
     }
@@ -1249,6 +1272,12 @@ export function admitTaskAppDependencies(input: {
     if (unredeclaredSameApp.length > 0) {
       throw new Error(
         `App dependency ${dependency.id} would replace open request ${unredeclaredSameApp[0]!.requestId}; redeclare that durable request before adding distinct ${dependency.appId} work`,
+      );
+    }
+    const detachedOpen = detachedOpenFor(dependency.appId).find((item) => !matchedExisting.has(item.id));
+    if (detachedOpen) {
+      throw new Error(
+        `App dependency ${dependency.id} would replace unlinked open request ${detachedOpen.id}; redeclare that durable request before adding distinct ${dependency.appId} work`,
       );
     }
   }
@@ -3473,7 +3502,7 @@ async function reconcileTask(input: {
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
     if (!primaryResult.unavailable && !agentHandoff) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
-      const retry = releaseStaleAppTaskResult(config, primary, summary, primaryHandlerResult.summary);
+      const retry = releaseStaleAppTaskResult(config, primary, summary);
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
@@ -3539,7 +3568,7 @@ async function reconcileTask(input: {
         error instanceof Error ? error.message : String(error)
       }`;
       try {
-        const retry = persistResult(() => releaseStaleAppTaskResult(failedConfig, failedClaim, summary, summary));
+        const retry = persistResult(() => releaseStaleAppTaskResult(failedConfig, failedClaim, summary));
         if (retry.status === "released") {
           emitTaskReconciliationEvent(
             opts,

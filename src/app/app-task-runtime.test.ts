@@ -8,7 +8,7 @@ import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
-import { claimAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
+import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./app-registry.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import {
@@ -44,6 +44,7 @@ import {
   observeAppTaskIntent,
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
+  releaseStaleAppTaskResult,
   taskReconciliationConfig,
 } from "./app-task-reconciler.js";
 import { readTaskState, saveTaskState } from "./app-task-store.js";
@@ -1403,11 +1404,19 @@ describe("canonical App task runtime", () => {
       dependencies: [{ id: "review", appId: "evaluation", input: { kind: "deep-scan", data: { reason: "original" } } }],
     });
     const requestId = first[0]!.subject.slice("id:".length);
+    const requestedEvent = emitted.find(
+      (event) =>
+        event.type === "app.input.requested" &&
+        (event.data as { requestId?: string } | undefined)?.requestId === requestId,
+    );
+    const idempotencyKey = (requestedEvent?.data as { idempotencyKey?: string } | undefined)?.idempotencyKey;
+    if (!idempotencyKey) throw new Error("expected emitted App request lineage key");
     createAppInboxItem(getDb(persistDir), {
       id: requestId,
       appId: "evaluation",
       source: { kind: "app", id: "sample" },
       input: { kind: "deep-scan", data: { reason: "original" } },
+      idempotencyKey,
     });
     const emittedBeforeConflict = emitted.length;
 
@@ -1427,6 +1436,156 @@ describe("canonical App task runtime", () => {
       }),
     ).toThrow(`would replace open request ${requestId}`);
     expect(emitted).toHaveLength(emittedBeforeConflict);
+
+    expect(() =>
+      admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor,
+        claim,
+        existingConditions: [],
+        dependencies: [
+          {
+            id: "replacement-after-lost-link",
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "changed again" } },
+          },
+        ],
+      }),
+    ).toThrow(`would replace unlinked open request ${requestId}`);
+    expect(emitted).toHaveLength(emittedBeforeConflict);
+  });
+
+  it("preserves one accepted App request across a rejected attempt and its retry", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const emitted: AgentEvent[] = [];
+    bus.subscribe((event) => {
+      emitted.push(event);
+      if (event.type === "app.input.requested") {
+        return { accepted: true, by: "test-app-inbox", route: "direct" };
+      }
+    });
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const intent = {
+      id: "work/rejected-attempt-retry",
+      parentId: "operations",
+      outcome: "Use one independent review",
+      acceptance: ["The review result is considered"],
+      mode: "achieve" as const,
+    };
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
+    const initial = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "test",
+    });
+    if (initial.kind !== "claimed") throw new Error("expected initial claim");
+    const descriptor = {
+      id: "sample",
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      app: definition(),
+      reconciliationPaused: false,
+    };
+    const dependency = {
+      id: "review",
+      appId: "evaluation",
+      input: { kind: "deep-scan", data: { reason: "one durable review" } },
+    };
+    const conditions = admitTaskAppDependencies({
+      opts: { ...options(f, bus), persistDir },
+      descriptor,
+      claim: initial,
+      dependencies: [dependency],
+    });
+    const requestId = conditions[0]!.subject.slice("id:".length);
+    const requestedEvent = emitted.find(
+      (event) => event.type === "app.input.requested" && event.data.requestId === requestId,
+    );
+    const idempotencyKey = requestedEvent?.data.idempotencyKey;
+    if (typeof idempotencyKey !== "string") throw new Error("expected emitted App request lineage key");
+    createAppInboxItem(getDb(persistDir), {
+      id: requestId,
+      appId: "evaluation",
+      source: { kind: "app", id: "sample" },
+      input: dependency.input,
+      idempotencyKey,
+    });
+    expect(
+      deferAppTask(config, initial, {
+        disposition: "waiting",
+        summary: "Waiting for the independent review",
+        evidence: ["review request accepted"],
+        conditions,
+      }),
+    ).toMatchObject({ status: "applied" });
+
+    observeAppTaskIntent(config, {
+      intent,
+      appAgent: "sample-owner",
+      trigger: {
+        type: "app.task.requested",
+        source: "human",
+        target: { project: "sample", taskId: intent.id },
+        data: { message: "Why is this still waiting?" },
+      },
+    });
+    const rejected = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "feedback",
+    });
+    if (rejected.kind !== "claimed") throw new Error("expected feedback claim");
+    expect(releaseStaleAppTaskResult(config, rejected, "invalid handler result")).toMatchObject({
+      status: "released",
+    });
+
+    const retry = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "retry",
+    });
+    if (retry.kind !== "claimed") throw new Error("expected retry claim");
+    expect(readTaskState(config).resources?.[intent.id]?.status).toMatchObject({
+      phase: "running",
+      observedGeneration: 1,
+      conditionIds: [`app-request:${requestId}`],
+    });
+    expect(projectAppTaskWaitPromptContext({ ...options(f, bus), persistDir }, descriptor, intent.id)).toMatchObject({
+      open: [
+        {
+          conditionId: `app-request:${requestId}`,
+          dependency: { requestId, appId: "evaluation", status: "pending" },
+        },
+      ],
+    });
+
+    const emittedBeforeRetry = emitted.length;
+    expect(
+      admitTaskAppDependencies({
+        opts: { ...options(f, bus), persistDir },
+        descriptor,
+        claim: retry,
+        existingConditions: [],
+        dependencies: [dependency],
+      }),
+    ).toEqual(conditions);
+    expect(emitted).toHaveLength(emittedBeforeRetry);
+    expect(
+      listAppInboxItems(getDb(persistDir), { appId: "evaluation" }).filter(
+        (item) => item.source.kind === "app" && item.source.id === "sample",
+      ),
+    ).toHaveLength(1);
   });
 
   it("reuses a create-work request when the agent reports its resolved Task", () => {
