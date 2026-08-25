@@ -80,7 +80,14 @@ import {
   trackAppTaskConditionEventForTasks,
   trackAppTaskConditionEvents,
 } from "./app-task-condition-tracker.js";
-import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
+import {
+  childEventTrace,
+  EVENT_DELIVERY_RESULT,
+  EVENT_ROW_ID,
+  type AgentEvent,
+  type DeliveryResult,
+  type EventBus,
+} from "./event-bus.js";
 import {
   acknowledgeAppTaskRecoveryAttention,
   assertAppTaskEffectFresh,
@@ -106,6 +113,7 @@ import {
   releaseHandlerExecutionFailedAppTask,
   releaseHandlerUnavailableAppTask,
   repairPreviousRuntimeRecoveryAttention,
+  repairUnadmittedAppDependencyWaits,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   expiredAgentSessionAppTaskAttempt,
@@ -1281,7 +1289,7 @@ export function admitTaskAppDependencies(input: {
       .slice(0, 24);
     const requestId = `appdep_${identity}`;
     const idempotencyKey = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:${dependency.id}:${identity}`;
-    input.opts.bus.emit({
+    const requested = input.opts.bus.emit({
       type: "app.input.requested",
       source: `app-task:${input.descriptor.id}`,
       owner: `app:${dependency.appId}`,
@@ -1294,6 +1302,12 @@ export function admitTaskAppDependencies(input: {
         idempotencyKey,
       },
     });
+    const delivery = requested[EVENT_DELIVERY_RESULT];
+    if (!delivery) {
+      throw new Error(
+        `App dependency ${dependency.id} was not accepted by installed App ${dependency.appId}; the Task remains runnable`,
+      );
+    }
     admitted.set(dependency.id, {
       id: `app-request:${requestId}`,
       type: "app.dependency.completed",
@@ -4137,6 +4151,7 @@ function recoverInterruptedAppTasks(
     const config = appTaskConfig(descriptor);
     const runningRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["running"], 512);
     const attentionRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
+    const waitingRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       if (recovery.sessionId) {
         interruptSupersededAgentSession(
@@ -4200,6 +4215,19 @@ function recoverInterruptedAppTasks(
     }
     const missingAttemptRepairs = repairRunningAppTasksWithoutAttempt(config, runningRecoveryTaskIds);
     for (const repair of missingAttemptRepairs) {
+      if (controller && !descriptor.reconciliationPaused) {
+        enqueueAppTask(controller, config, repair.taskId);
+      }
+    }
+    const appDb = opts.persistDir ? getDb(opts.persistDir) : undefined;
+    const dependencyRepairs = appDb
+      ? repairUnadmittedAppDependencyWaits(
+          config,
+          (requestId) => Boolean(getAppInboxItem(appDb, requestId)),
+          waitingRecoveryTaskIds,
+        )
+      : [];
+    for (const repair of dependencyRepairs) {
       if (controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, repair.taskId);
       }

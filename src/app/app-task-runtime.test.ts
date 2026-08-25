@@ -1351,7 +1351,12 @@ describe("canonical App task runtime", () => {
     const bus = eventBus();
     const persistDir = join(f.root, "state");
     const emitted: Array<Record<string, unknown>> = [];
-    bus.subscribe((event) => emitted.push(event as unknown as Record<string, unknown>));
+    bus.subscribe((event) => {
+      emitted.push(event as unknown as Record<string, unknown>);
+      if (event.type === "app.input.requested") {
+        return { accepted: true, by: "test-app-inbox", route: "direct" };
+      }
+    });
     const config = taskReconciliationConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
@@ -1419,6 +1424,11 @@ describe("canonical App task runtime", () => {
   it("reuses a create-work request when the agent reports its resolved Task", () => {
     const f = fixture();
     const bus = eventBus();
+    bus.subscribe((event) =>
+      event.type === "app.input.requested"
+        ? { accepted: true, by: "test-app-inbox", route: "direct" }
+        : undefined,
+    );
     const persistDir = join(f.root, "state");
     const config = taskReconciliationConfig({
       appDir: f.appDir,
@@ -1577,6 +1587,9 @@ describe("canonical App task runtime", () => {
     const emitted: Array<Record<string, unknown>> = [];
     bus.subscribe((event) => {
       emitted.push(event as unknown as Record<string, unknown>);
+      if (event.type === "app.input.requested") {
+        return { accepted: true, by: "test-app-inbox", route: "direct" };
+      }
     });
     const config = taskReconciliationConfig({
       appDir: f.appDir,
@@ -1644,6 +1657,60 @@ describe("canonical App task runtime", () => {
         expected: { field: "status", equals: "done" },
       },
     ]);
+  });
+
+  it("keeps the source Task runnable when the destination App does not accept its dependency request", () => {
+    const f = fixture();
+    const bus = eventBus();
+    const emitted: AgentEvent[] = [];
+    bus.subscribe((event) => emitted.push(event));
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "work/unaccepted-dependency",
+        parentId: "operations",
+        outcome: "Obtain one accepted independent review",
+        acceptance: ["The destination App accepts real work"],
+        mode: "achieve",
+      },
+      appAgent: "sample-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/unaccepted-dependency",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      admitTaskAppDependencies({
+        opts: options(f, bus),
+        descriptor: {
+          id: "sample",
+          appDir: f.appDir,
+          projectDir: f.appDir,
+          agent: "sample-owner",
+          app: definition(),
+          reconciliationPaused: false,
+        },
+        claim,
+        dependencies: [
+          {
+            id: "review",
+            appId: "evaluation",
+            input: { kind: "deep-scan", data: { reason: "sample-review" } },
+          },
+        ],
+      }),
+    ).toThrow("was not accepted by installed App evaluation; the Task remains runnable");
+    expect(emitted.some((event) => event.type === "app.input.requested")).toBe(true);
+    expect(readTaskState(config).conditions).toBeUndefined();
   });
 
   it("projects the exact ordered claimed event batch into workflow context", () => {

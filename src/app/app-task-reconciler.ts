@@ -1413,6 +1413,64 @@ export function repairPreviousRuntimeRecoveryAttention(
   });
 }
 
+/**
+ * Release waits created by older runtimes before the destination App had
+ * durably admitted the request. Such a request can never complete, so the
+ * same Task must be judged again from its current evidence.
+ */
+export function repairUnadmittedAppDependencyWaits(
+  config: TaskStateConfig,
+  isAdmitted: (requestId: string) => boolean,
+  candidateTaskIds?: Iterable<string>,
+): AppTaskRecoveryRepair[] {
+  return withTaskStateLock(config, () => {
+    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
+    const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
+    const repairs: AppTaskRecoveryRepair[] = [];
+    const mutationScope = emptyResourceMutationScope();
+    for (const resource of Object.values(tree.resources ?? {})) {
+      if (resource.status.phase !== "waiting") continue;
+      const task = tree.tasks[resource.metadata.id];
+      if (!task) continue;
+      const missingRequestId = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
+        const condition = tree.conditions?.[conditionId];
+        if (
+          !isAppTaskCondition(condition) ||
+          condition.status.state === "true" ||
+          condition.spec.type !== "app.dependency.completed" ||
+          !condition.spec.subject.startsWith("id:")
+        ) {
+          return [];
+        }
+        const requestId = condition.spec.subject.slice("id:".length).trim();
+        return requestId && !isAdmitted(requestId) ? [requestId] : [];
+      })[0];
+      if (!missingRequestId) continue;
+
+      trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
+      const summary = `App dependency request ${missingRequestId} was not admitted; retrying the same Task from current evidence`;
+      unlinkTaskConditions(tree, task);
+      touchResource(resource, {
+        phase: "pending",
+        observedGeneration: Math.max(0, resource.metadata.generation - 1),
+        currentAttemptId: undefined,
+        summary,
+        conditionIds: [],
+      });
+      syncTaskProjection(task, resource, resolvedAgent(tree, resourceIntent(resource), config.worker));
+      repairs.push({ taskId: resource.metadata.id, disposition: "requeued", summary });
+    }
+    if (repairs.length > 0) {
+      refreshActiveTaskProjection(tree);
+      if (!config.resourceStore) pruneTaskAttempts(tree);
+      saveTaskState(config, tree, {
+        resourceMutation: finishResourceMutationScope(mutationScope, tree),
+      });
+    }
+    return repairs;
+  });
+}
+
 export function repairRunningAppTasksWithoutAttempt(
   config: TaskStateConfig,
   candidateTaskIds?: Iterable<string>,
