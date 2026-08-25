@@ -514,10 +514,11 @@ export function admitTaskReconcileResult(
   const admittedOutput = output as Record<string, unknown>;
   const response = optionalString(admittedOutput, "response");
   if (!response.ok) return { ok: false, error: "response must be a non-empty string" };
-  const result = admittedOutput.result;
-  if (result !== undefined && !isRecord(result)) {
+  const rawResult = admittedOutput.result;
+  if (rawResult !== undefined && !isRecord(rawResult)) {
     return { ok: false, error: "result must be an object" };
   }
+  const result = rawResult as Record<string, unknown> | undefined;
   if (
     result !== undefined &&
     new TextEncoder().encode(JSON.stringify(result)).byteLength >
