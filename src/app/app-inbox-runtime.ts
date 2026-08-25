@@ -23,6 +23,7 @@ import {
   AppInboxHost,
   type AppInboxReconcileResult,
   type AppRequestResolver,
+  type AppRequestTaskController,
   type AppTaskAttacher,
 } from "./app-inbox-host.js";
 import {
@@ -73,6 +74,7 @@ export type StartAppInboxRuntimeOptions = {
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
   resolveRequest?: AppRequestResolver;
+  controlTask?: AppRequestTaskController;
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -333,6 +335,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     apps: loaded.map((entry) => entry.definition),
     attachTask,
     resolveRequest: options.resolveRequest,
+    controlTask: options.controlTask,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);

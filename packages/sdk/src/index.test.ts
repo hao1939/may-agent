@@ -22,6 +22,8 @@ const expectedRootExports = [
   "AppRequestDependency",
   "AppRequestDependencyObservation",
   "AppRequestPolicy",
+  "AppRequestTaskControl",
+  "AppRequestTaskObservation",
   "AppRequestTopicDecision",
   "AppResult",
   "AppSchedule",
