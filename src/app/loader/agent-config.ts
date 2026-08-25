@@ -17,6 +17,8 @@ export interface AgentConfig {
   delegateDeny?: { agents: string[]; hint: string };
   /** @deprecated Volatile context should be injected at session time, not in system prompt. */
   context_files?: string[];
+  /** @deprecated Ignored compatibility field from pre-catalog snapshots. */
+  skillActivationRules?: unknown;
 }
 
 export interface ValidationError {
@@ -55,15 +57,6 @@ export function validateAgentConfig(
         }
       }
     }
-  }
-
-  if ("skillActivationRules" in config) {
-    errors.push({
-      agent: name,
-      field: "skillActivationRules",
-      message:
-        '"skillActivationRules" is unsupported; let the model choose from the skill catalog or select a skill explicitly',
-    });
   }
 
   return errors;

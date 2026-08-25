@@ -108,7 +108,7 @@ describe("validateAgentConfig", () => {
     expect(errors.some((e) => e.field === "tools" && e.message.includes("fly-to-moon"))).toBe(true);
   });
 
-  it("rejects keyword-based skill activation rules", () => {
+  it("ignores retired keyword activation data from an older immutable snapshot", () => {
     const config = {
       name: "test",
       description: "test",
@@ -116,14 +116,9 @@ describe("validateAgentConfig", () => {
       model: "claude-opus-4-6",
       tools: ["coding"],
       skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents" }],
-    } as AgentConfig & { skillActivationRules: unknown[] };
+    } as AgentConfig;
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    expect(errors).toContainEqual(
-      expect.objectContaining({
-        field: "skillActivationRules",
-        message: expect.stringContaining("model choose from the skill catalog"),
-      }),
-    );
+    expect(errors).toEqual([]);
   });
 
   it("validates all existing agent.json files", () => {
