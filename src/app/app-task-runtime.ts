@@ -55,12 +55,7 @@ import {
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
-import {
-  cacheTaskStateReads,
-  readTaskState,
-  ResourceTaskMutationStaleError,
-  type TaskTree,
-} from "./app-task-store.js";
+import { cacheTaskStateReads, readTaskState, ResourceTaskMutationStaleError, type TaskTree } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
@@ -123,6 +118,7 @@ import {
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
   releaseStaleAppTaskResult,
+  retryFailedAppTask,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
   taskReconciliationConfig,
@@ -1219,13 +1215,18 @@ export function admitTaskAppDependencies(input: {
       direct.length === 0 && exact.length === 0 && detachedById.length === 0
         ? detachedOpenFor(dependency.appId)
             .filter(
-              (item) =>
-                item.targetTaskId === dependency.taskId && isDeepStrictEqual(item.input, dependency.input),
+              (item) => item.targetTaskId === dependency.taskId && isDeepStrictEqual(item.input, dependency.input),
             )
             .map(detachedMatch)
         : [];
     const candidates =
-      direct.length > 0 ? direct : exact.length > 0 ? exact : detachedById.length > 0 ? detachedById : detachedByMeaning;
+      direct.length > 0
+        ? direct
+        : exact.length > 0
+          ? exact
+          : detachedById.length > 0
+            ? detachedById
+            : detachedByMeaning;
     if (candidates.length > 1) {
       throw new Error(`App dependency ${dependency.id} ambiguously matches multiple open requests`);
     }
@@ -2730,10 +2731,7 @@ function recoverStaleTaskActionResult(
   claim: AppTaskClaim,
   error: unknown,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
-  if (
-    !isAppTaskActionStaleError(error) &&
-    !(error instanceof ResourceTaskMutationStaleError)
-  ) {
+  if (!isAppTaskActionStaleError(error) && !(error instanceof ResourceTaskMutationStaleError)) {
     return null;
   }
   const recovery = releaseStaleAppTaskResult(
@@ -3350,9 +3348,7 @@ async function reconcileTask(input: {
             acceptance: intent.acceptance,
             input: intent.input ?? {},
             summary: primaryHandlerResult.summary,
-            ...(primaryHandlerResult.result
-              ? { result: primaryHandlerResult.result }
-              : {}),
+            ...(primaryHandlerResult.result ? { result: primaryHandlerResult.result } : {}),
             evidence: primaryHandlerResult.evidence,
             acceptanceBasis,
             actionsApplied: apply.actionsApplied,
@@ -3457,12 +3453,8 @@ async function reconcileTask(input: {
             : {}),
           input: intent.input ?? {},
           summary: primaryHandlerResult.summary,
-          ...(primaryHandlerResult.response
-            ? { response: primaryHandlerResult.response }
-            : {}),
-          ...(primaryHandlerResult.result
-            ? { result: primaryHandlerResult.result }
-            : {}),
+          ...(primaryHandlerResult.response ? { response: primaryHandlerResult.response } : {}),
+          ...(primaryHandlerResult.result ? { result: primaryHandlerResult.result } : {}),
           evidence: primaryHandlerResult.evidence,
           actionsApplied: apply.actionsApplied,
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
@@ -3986,6 +3978,34 @@ export async function closeInstalledAppTaskRuntimes(bus: EventBus): Promise<void
     appRouterDescriptorsByBus.get(bus)?.splice(0);
     appRouterOptionsByBus.delete(bus);
   }
+}
+
+export function retryLoadedFailedAppTask(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  expectedGeneration: number;
+}): ReturnType<typeof retryFailedAppTask> & { queued: boolean } {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const taskId = input.taskId.trim();
+  if (!appId || !taskId) throw new Error("App Task retry requires exact appId and taskId");
+  if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration < 1) {
+    throw new Error("App Task retry requires a positive integer expectedGeneration");
+  }
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
+  if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
+  const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
+  if (!controller || descriptor.reconciliationPaused) {
+    throw new Error(`App ${appId} task reconciliation is unavailable`);
+  }
+  const config = appTaskConfig(descriptor);
+  const receipt = retryFailedAppTask(config, {
+    appId,
+    taskId,
+    expectedGeneration: input.expectedGeneration,
+  });
+  const queued = enqueueAppTask(controller, config, taskId, { front: true, promote: true });
+  return { ...receipt, queued };
 }
 
 function enqueueAppTask(

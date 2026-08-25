@@ -1,4 +1,11 @@
-import type { AppDependencyObservation, TaskDetail, TaskIntent, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk";
+import type {
+  AppDependencyObservation,
+  TaskDetail,
+  TaskIntent,
+  TaskListOptions,
+  TaskPage,
+  TaskView,
+} from "@may-agent/sdk";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
@@ -12,6 +19,7 @@ import {
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
+  retryLoadedFailedAppTask,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
 
@@ -41,6 +49,11 @@ export type AppTaskCapability = {
   }): Promise<AppDependencyObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   get(input: { appId: string; taskId: string }): TaskDetail | null;
+  retry(input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+  }): ReturnType<typeof retryLoadedFailedAppTask>;
   publishGeneration(input: {
     snapshot: AppRegistrySnapshot;
     definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
@@ -95,5 +108,7 @@ export function createAppTaskCapability(options: {
         ...(taskOptions ? { options: taskOptions } : {}),
       }),
     get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
+    retry: ({ appId, taskId, expectedGeneration }) =>
+      retryLoadedFailedAppTask({ bus: options.bus, appId, taskId, expectedGeneration }),
   };
 }

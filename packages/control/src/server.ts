@@ -48,6 +48,7 @@ export interface AttachControlSocketOptions {
   ) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
+  retryAppTask?: (input: { appId: string; taskId: string; expectedGeneration: number }) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   listApps?: (appId?: string) => unknown;
   listTasks?: (options?: {
@@ -213,6 +214,7 @@ export interface ControlSocketCoreOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
+  retryAppTask?: AttachControlSocketOptions["retryAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
@@ -239,6 +241,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getAppConversation,
     listAppTasks,
     getAppTask,
+    retryAppTask,
     resolveAppTask,
     listApps,
     listTasks,
@@ -787,6 +790,49 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "app.task.retry") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
+          const expectedGeneration = frame.expectedGeneration;
+          if (
+            !appId ||
+            !taskId ||
+            typeof expectedGeneration !== "number" ||
+            !Number.isSafeInteger(expectedGeneration) ||
+            expectedGeneration < 1 ||
+            !retryAppTask
+          ) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId
+                ? "appId is required"
+                : !taskId
+                  ? "taskId is required"
+                  : typeof expectedGeneration !== "number" ||
+                      !Number.isSafeInteger(expectedGeneration) ||
+                      expectedGeneration < 1
+                    ? "expectedGeneration must be a positive integer"
+                    : "App Task retry is unavailable",
+            });
+            continue;
+          }
+          try {
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              receipt: retryAppTask({ appId, taskId, expectedGeneration }),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "app.task.resolve") {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           const event = frame.event;
@@ -1034,6 +1080,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
+    retryAppTask: opts.retryAppTask,
     resolveAppTask: opts.resolveAppTask,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
