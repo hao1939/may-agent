@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppEvent, TaskAttempt } from "@may-agent/sdk";
-import { codexGoalPocInternals, createCodexGoalPocExecutor, type CodexGoalClient } from "./codex-goal-poc-executor.js";
+import { codexGoalExecutorInternals, createCodexGoalExecutor, type CodexGoalClient } from "./codex-goal-executor.js";
 import type {
   AppServerNotification,
   CodexGoalObservation,
@@ -147,13 +147,13 @@ class FakeClient implements CodexGoalClient {
   }
 }
 
-describe("codex-goal-poc Task executor", () => {
+describe("codex-goal Task executor", () => {
   it("loads the selected App agent role and real Task observations into the packet", () => {
     const root = fixtureRoot();
     const agentDir = join(root, "agents", "evaluator");
     mkdirSync(agentDir, { recursive: true });
     writeFileSync(join(agentDir, "AGENTS.md"), "Judge from exact evidence.\n");
-    const packet = codexGoalPocInternals.packetFor(
+    const packet = codexGoalExecutorInternals.packetFor(
       attempt({
         cwd: root,
         declaredOutputPaths: ["reports/review.md"],
@@ -186,7 +186,7 @@ describe("codex-goal-poc Task executor", () => {
     const root = fixtureRoot();
     const stateFile = join(root, "bindings.json");
     const clients = [new FakeClient("thread-1"), new FakeClient("unused")];
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile,
       createClient: () => clients.shift()!,
       checkIntervalMs: 1,
@@ -203,7 +203,7 @@ describe("codex-goal-poc Task executor", () => {
     expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
       version: 1,
       bindings: {
-        [codexGoalPocInternals.bindingKey(attempt())]: {
+        [codexGoalExecutorInternals.bindingKey(attempt())]: {
           appId: "evaluation",
           generation: 1,
           threadId: "thread-1",
@@ -221,7 +221,7 @@ describe("codex-goal-poc Task executor", () => {
     );
     expect(clients).toHaveLength(0);
     expect(
-      JSON.parse(readFileSync(stateFile, "utf8")).bindings[codexGoalPocInternals.bindingKey(attempt())],
+      JSON.parse(readFileSync(stateFile, "utf8")).bindings[codexGoalExecutorInternals.bindingKey(attempt())],
     ).toMatchObject({
       threadId: "thread-1",
       generation: 2,
@@ -280,7 +280,7 @@ describe("codex-goal-poc Task executor", () => {
         ],
       },
     });
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
       checkIntervalMs: 1,
@@ -337,7 +337,7 @@ describe("codex-goal-poc Task executor", () => {
         ],
       },
     });
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
       checkIntervalMs: 1,
@@ -365,7 +365,7 @@ describe("codex-goal-poc Task executor", () => {
     });
     const resumed = new FakeClient("unused");
     const clients = [limited, resumed];
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile,
       createClient: () => clients.shift()!,
       checkIntervalMs: 1,
@@ -384,7 +384,7 @@ describe("codex-goal-poc Task executor", () => {
     expect(resumed.calls).toContain("resume:thread-limited");
     expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
       bindings: {
-        [codexGoalPocInternals.bindingKey(attempt())]: {
+        [codexGoalExecutorInternals.bindingKey(attempt())]: {
           threadId: "thread-limited",
           attempts: 2,
         },
@@ -404,7 +404,7 @@ describe("codex-goal-poc Task executor", () => {
         goal: { threadId: client.threadId, objective: "review", status: "complete" },
       };
     };
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
       checkIntervalMs: 1,
@@ -424,7 +424,7 @@ describe("codex-goal-poc Task executor", () => {
     const client = new FakeClient("thread-stale");
     let clockReads = 0;
     client.waitForGoal = async () => new Promise<CodexGoalObservation>(() => undefined);
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile,
       createClient: () => client,
       checkIntervalMs: 1,
@@ -438,7 +438,7 @@ describe("codex-goal-poc Task executor", () => {
     expect(client.calls).toContain("terminal-turn");
     expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
       bindings: {
-        [codexGoalPocInternals.bindingKey(attempt())]: {
+        [codexGoalExecutorInternals.bindingKey(attempt())]: {
           threadId: "thread-stale",
           staleInterrupts: 1,
         },
@@ -481,7 +481,7 @@ describe("codex-goal-poc Task executor", () => {
         goal: { threadId: "thread-progress", objective: "review", status: "complete" },
       };
     };
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
       checkIntervalMs: 1,
@@ -518,7 +518,7 @@ describe("codex-goal-poc Task executor", () => {
         goal: { threadId: "thread-degraded", objective: "review", status: "complete" },
       };
     };
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
       checkIntervalMs: 1,
@@ -590,7 +590,7 @@ describe("codex-goal-poc Task executor", () => {
         ],
       },
     });
-    const executor = createCodexGoalPocExecutor({
+    const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
       checkIntervalMs: 1,
