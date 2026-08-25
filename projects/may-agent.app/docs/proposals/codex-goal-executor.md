@@ -364,17 +364,17 @@ policy. Reuse its process and protocol discipline, not its one-shot lifecycle.
 
 ## Resumable adapter
 
-The resumable adapter is not wired to the one-shot `codex` executor name.
-
-The protocol and policy implementation is isolated under
-`projects/may-agent/scripts/poc/codex-goal-*.ts`. Only the explicitly named
-`codex-goal` adapter imports it. `codex-goal-poc` remains a compatibility alias
-for already-durable trial Tasks; the default managed agent and one-shot
-`codex`/`claude` executors remain unchanged.
+The stable implementation lives in
+`projects/may-agent/src/app/codex-goal-*.ts` and is selected only by the
+`codex-goal` executor name. `codex-goal-poc` remains a compatibility alias for
+already-durable trial Tasks. The default managed agent and one-shot
+`codex`/`claude` executors remain unchanged. Protocol drift checks, resource
+measurement, and manual smoke commands remain under `scripts/poc`; Runtime
+does not import them.
 The focused fixture command is:
 
 ```bash
-bun test scripts/poc/codex-goal-*.test.ts
+bun test src/app/codex-goal-*.test.ts scripts/poc/codex-goal-*.test.ts
 ```
 
 ### Stage A: protocol fixture
@@ -390,11 +390,11 @@ Use an injected fake app-server process to prove:
 - malformed/oversized line handling;
 - request timeout, process exit, and late notification races.
 
-The liveness proof is a pure level-triggered decision function. It owns no
-timer: a Task event or nearest due deadline evaluates current Task pause,
-Codex goal/turn status, last protocol activity, and bounded nudge count. The
-only actions are observe, reactivate, steer once, interrupt, or report an exact
-wait.
+The executor watches protocol activity while the same attempt is running. A
+Task event is steered immediately. One bounded quiet check nudges a silent
+turn; a later hard check interrupts it and returns an execution failure so
+Runtime resumes the same Task and persisted thread. There is no second
+liveness policy or Task state machine.
 
 ### Stage B: real read-only smoke
 
@@ -417,7 +417,7 @@ In a disposable Git worktree only:
 - simulate a silent process, nudge once, interrupt at the hard threshold, and
   prove the Task is requeued with bounded backoff.
 
-## PoC acceptance gates
+## Acceptance gates
 
 Do not start production migration until all are true:
 
@@ -467,7 +467,7 @@ failure coupling.
 - The design does not promise exactly-once execution.
 - Native-agent promotion is not based on imitation or output-text similarity alone.
 
-## PoC observations so far
+## Implementation evidence
 
 The existing `codex` and `claude` executors remain unchanged. The new behavior
 is registered as explicit executor name `codex-goal`; the former
@@ -477,13 +477,11 @@ is registered as explicit executor name `codex-goal`; the former
   handwritten protocol subset was checked against the schema emitted by that
   binary. Checked-in generated types and version-drift detection remain a
   production gate.
-- Twenty-eight protocol/policy fixtures pass for initialize, start, goal,
-  authoritative goal turn, steering precondition, completion, resume,
-  interrupt, fail-closed server requests, process failure, malformed JSON,
-  bounded lines, the pure liveness policy, process-tree RSS accounting, exact
-  JSON parsing, real SDK Task result admission, hard-stale action ordering,
-  bounded backoff, Task-generation fencing, shutdown escalation, request-timeout
-  cleanup, and canonical packet parity.
+- Focused fixtures cover initialize, start, goal, authoritative goal turn,
+  steering, completion, resume, interruption, fail-closed server requests,
+  process failure, malformed JSON, bounded lines, process-tree RSS accounting,
+  exact JSON parsing, real SDK Task result admission, Task-generation fencing,
+  shutdown escalation, request-timeout cleanup, and canonical packet parity.
 - A real read-only goal automatically created a turn. Live steering was
   accepted and persisted in that turn, and the final answer incorporated it.
 - A goal may reach `complete` before its active turn and final answer complete;
