@@ -207,15 +207,16 @@ standing Task that intentionally does not terminate.
 
 ### 8. Topic selection can fail after aging out of the recent view
 
-Conversation reads return only the twelve most recent Topics. Console and
-Telegram retain the complete selected Topic object and later send its ID with a
-new human Turn. The Host validates that ID only against the same bounded recent
-projection. A valid selected Topic can therefore age out and make the new Turn
-fail as unavailable.
+This gap is implemented in the current candidate. Conversation reads now expose
+opaque Topic pagination, exact Topic/ref reads, bounded exact Topic messages,
+and exact reply-to-Topic resolution. Console and Telegram can select an old
+Topic without relying on the recent projection. Natural old-discussion
+references use a scoped read-only Conversation lookup whose candidates remain
+an LLM decision, not a keyword router.
 
-Proposed direction:
+Retained direction:
 
-- adapters retain only `selectedTopicId`;
+- the selected Topic ID is authoritative; adapters may cache its presentation;
 - exact selected Topic membership is read from canonical Topic storage;
 - recent lists remain bounded; and
 - presentation stays separate between Console and Telegram.

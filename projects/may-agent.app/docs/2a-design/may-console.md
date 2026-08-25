@@ -33,7 +33,7 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 | Command                  | Meaning                                               |
 | ------------------------ | ----------------------------------------------------- |
 | `/apps [app]`            | List Apps or select one App                           |
-| `/topics`                | List recent Conversation Topics                       |
+| `/topics`, `/topics more` | List Conversation Topics page by page                |
 | `/topic [ref\|clear]`   | Show, follow, or leave one Topic                      |
 | `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps/history |
 | `/todo [all]`            | Show Tasks that explicitly need human action         |
@@ -47,7 +47,7 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 | `/shell`                 | Leave Console for an interactive shell                |
 | `/exit`                  | Close only this adapter                               |
 
-Command, App, recent Topic references, and recently rendered Task references
+Command, App, Topic references, and recently rendered Task references
 support tab completion. Completion uses bounded local caches; it never asks a
 model to interpret a command.
 

@@ -316,27 +316,64 @@ want?” One compact question may include tightly related unknowns when doing so
 avoids another turn. Clarification remains ordinary Conversation text; there is
 no intent-draft resource, clarification Condition, or extra lifecycle.
 
+Clarification may naturally take more than one Turn. A partial answer preserves
+the facts it established in the same Topic; May asks only about a remaining
+material ambiguity. A correction replaces the earlier assumption for the work
+that has not yet been accepted. “Use your judgment” authorizes May to apply its
+recommended safe reversible default. If the human asks a question in return,
+May answers it and returns to the unresolved choice only when that choice is
+still necessary. It never repeats an answered question or asks the human to
+choose App-owned implementation details.
+
+This conversational clarification is distinct from an exact human decision
+required by work already in progress. In that case the owning Task exposes a
+human-owned Condition with a concrete requested action, and May routes the
+answer as typed input to that same Task. Topic history explains the exchange;
+the Condition and Task remain authoritative for the work.
+
 ### Understanding boundary
 
 Understanding is one bounded LLM decision over structured, Host-authored
-context. Code supplies the current message, bounded visible Conversation,
-recent Topic candidates and their exact Task links, focused Task identity and
-observation, canonical snapshots for Tasks represented by recent command/tool
-views, unfinished human requests already associated with those Topics and their
-exact delegated inputs, accepted child results, durable preferences, and
+context. The current human-visible scope is presented first: current message,
+selected App, focused Task, selected Topic, reply target, and the command view
+the human actually saw. A focused Task observation includes its identity,
+owner, goal, acceptance, admitted input, current state, progress or result,
+exact waits, and evidence; a status-and-summary projection is not sufficient
+for an ownership decision.
+
+Code then supplies the bounded visible Conversation, the immediately preceding
+proposal or answer, recent Topic candidates and their exact Task links,
+canonical snapshots for Tasks represented by recent command/tool views,
+unfinished human requests already associated with those Topics and their exact
+delegated inputs, accepted child results, durable preferences, and compact
 installed App input contracts. The LLM decides what the human means and returns
-one schema-validated request decision:
+one schema-validated request decision with four small parts:
 
-- `response` plus no dependencies for an answer or compact clarification; or
-- `continueRequestId` plus a plain response when the turn merely confirms or
-  follows one exact unfinished request and needs no new Task input; or
-- one or more typed dependencies plus no response for delegated work,
-  including `taskId` only when continuing an exact existing Task; or
-- `response` plus a narrow cancellation of an exact Task already supplied in
-  human context.
+- an optional plain-language message for an answer, clarification, or useful
+  immediate explanation;
+- no work, one exact existing Task target, or genuinely new typed App work;
+- optional narrow human-authorized controls for exact Tasks already supplied
+  in context; and
+- no Topic, one new plain-language Topic, or one exact existing Topic.
 
-The same decision selects `none`, a new Topic with a plain title, or one exact
-existing Topic. Code validates that identity; it never picks a Topic by keyword.
+A message without work completes the Turn. A message with work is shown once
+immediately while the request remains open for the final result. Continuing an
+existing Task includes its exact `taskId`; creating new work omits it. May does
+not need another request-continuation identity because Topic and Task identities
+already say what is continuing.
+
+Code validates every identity and typed input; it never picks a Topic or Task by
+keyword.
+
+Recent context is not the limit of human memory. An exact old Topic selected by
+an adapter, named by stable reference, or reached through a reply is loaded
+directly. For a natural reference to an older discussion outside the bounded
+set, May may perform a bounded read-only Topic lookup and inspect likely exact
+candidates before its final decision. The model chooses the lookup and judges
+meaning; storage code only returns bounded Conversation evidence. Lookup does
+not wake work, select an owner, or create a Task. If several candidates would
+lead to materially different actions, May asks one compact question with the
+likely interpretation rather than guessing.
 
 For delegated work, May puts its concrete interpretation in the typed input's
 `outcome` and acceptance. The destination App preserves those fields as the
@@ -365,6 +402,13 @@ When a turn carries a focused Task or follows a Topic, the Host includes that
 exact context. May still decides whether the human is asking about it, steering
 it, or starting something new. Relevant feedback becomes typed input to the
 existing owner Task; unrelated text does not mutate it.
+
+The visible scope is the default subject of ordinary pronouns and unqualified
+scope. "Do it" normally refers to the preceding proposal; "all tasks" while
+working in a Gym cleanup Topic normally refers to that bounded Gym concern.
+Only the human's meaning—not a keyword or the mere presence of focus—may widen
+ownership or create new work. A completed historical Task stays immutable;
+May may use its Topic as context and create a distinct follow-up when needed.
 
 An earlier request remains visible during the short handoff before its
 destination Task is attached. A confirming follow-up continues that request;

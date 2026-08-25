@@ -55,12 +55,30 @@ Adapters may render these resources differently. Console uses aligned text and
 tab completion. Telegram uses compact messages and may add native buttons.
 The Host resolves Apps and Task references and revalidates canonical identity.
 
-Each surface may also follow one recent Topic. `/topics` lists its short
-reference, plain title, and linked Task count. `/topic <ref>` selects it and
-shows recent related turns plus linked Task references; `/topic` shows the
-current selection and `/topic clear` leaves it. The selection only adds the
-exact Topic ID to later human messages. It never starts, stops, or owns work.
-Switching Topic ends an unrelated local Task watch, but the Task continues.
+Each surface may also follow one Topic. `/topics` lists the newest page of short
+references, plain titles, and linked Task counts; `/topics more` reads older
+pages. `/topic <ref>` resolves that exact Topic from indexed storage even when
+it is old, selects it, and shows bounded related turns plus linked Task
+references. `/topic` shows the current selection and `/topic clear` leaves it.
+The selection only adds the exact Topic ID to later human messages. It never
+starts, stops, or owns work. Switching Topic ends an unrelated local Task watch,
+but the Task continues.
+
+Older Topics remain addressable by stable reference and paged history rather
+than being copied into every May prompt. Selecting an older Topic or replying
+to one of its messages supplies the exact identity, so the Host loads its
+bounded turns and current canonical Task links. When ordinary text refers to an
+older discussion without an exact identity, May may use bounded read-only Topic
+lookup and then choose the relevant exact Topic. Adapters do not guess by
+keywords, silently change their selected Topic, or treat lookup as work.
+
+Clarifying questions and answers use the same Conversation on every surface.
+An adapter preserves reply coordinates and Topic identity when available, but
+does not parse the answer or maintain a questionnaire. May interprets a full or
+partial answer from the shared ordered Turns. If the question came from an
+exact Task's human-owned Condition, the rendered question carries that Task
+identity so May can return the answer to the same work even when the human
+responds from another surface.
 
 Each adapter surface keeps one selected App, initially `may`. `/apps` lists
 Apps and `/apps <app>` changes that local selection. `/tasks` reads active

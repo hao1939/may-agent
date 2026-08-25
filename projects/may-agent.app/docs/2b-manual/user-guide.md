@@ -94,7 +94,8 @@ agent run named `may`.
 | Command               | Action                                                    |
 | --------------------- | --------------------------------------------------------- |
 | `/apps [app]`         | List Apps or select the current App                       |
-| `/topics`             | List recent Topics and their linked Task count            |
+| `/topics`             | List Topics and their linked Task count                    |
+| `/topics more`        | Continue to the next older Topic page                      |
 | `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
 | `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps or recent terminal Tasks |
 | `/tasks more`         | Continue the exact prior Task list when another page exists |
