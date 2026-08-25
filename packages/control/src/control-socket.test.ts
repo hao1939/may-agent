@@ -522,6 +522,46 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("returns an action receipt for an exact generation-fenced App Task retry", async () => {
+    const receipt = {
+      receiptId: "retry-1",
+      action: "app.task.retry",
+      disposition: "requeued",
+      appId: "evaluation",
+      taskId: "review/docs",
+      generation: 2,
+      previousResourceVersion: 7,
+      resourceVersion: 8,
+      previousAttemptId: "attempt-1",
+      acceptedAt: "2026-08-25T13:00:00.000Z",
+      queued: true,
+    };
+    const core = createCore({
+      retryAppTask: (input) => {
+        expect(input).toEqual({ appId: "evaluation", taskId: "review/docs", expectedGeneration: 2 });
+        return receipt;
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.retry",
+        appId: "evaluation",
+        taskId: "review/docs",
+        expectedGeneration: 2,
+      }),
+    ).resolves.toEqual({ type: "ok", command: "app.task.retry", receipt });
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.retry",
+        appId: "evaluation",
+        taskId: "review/docs",
+        expectedGeneration: 0,
+      }),
+    ).rejects.toThrow("expectedGeneration must be a positive integer");
+    expect(core.emitted).toEqual([]);
+  });
+
   it("resolves an installed App Task without emitting an event", async () => {
     const observation = {
       snapshot: { id: "boot-1:3", generation: 3 },

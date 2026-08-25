@@ -36,6 +36,7 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "app.conversation.get",
   "app.tasks.list",
   "app.task.get",
+  "app.task.retry",
   "app.task.resolve",
   "apps.list",
   "tasks.list",
@@ -57,6 +58,7 @@ export type SocketFrame =
         | "app.conversation.get"
         | "app.tasks.list"
         | "app.task.get"
+        | "app.task.retry"
         | "app.task.resolve"
         | "apps.list"
         | "tasks.list"
@@ -112,6 +114,7 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "app.conversation.get"
         | "app.tasks.list"
         | "app.task.get"
+        | "app.task.retry"
         | "app.task.resolve"
         | "apps.list"
         | "tasks.list"

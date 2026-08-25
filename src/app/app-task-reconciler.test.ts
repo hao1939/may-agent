@@ -44,6 +44,7 @@ import {
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
   releaseStaleAppTaskResult,
+  retryFailedAppTask,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
   renewAppTaskAttemptLease,
@@ -4270,6 +4271,94 @@ describe("App task reconciler state", () => {
       status: "applied",
       actionsApplied: ["created runtime/owner-review/follow-up"],
     });
+  });
+
+  it("requeues only the exact failed attention generation and retains immutable attempt evidence", () => {
+    const { config } = fixture();
+    const failed = declareAndClaimTask(config, {
+      intent: {
+        id: "reviewed-failure",
+        parentId: "operations",
+        outcome: "Retry retained reviewed input",
+        acceptance: ["The same identity completes"],
+        mode: "achieve",
+      },
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+      trigger: { type: "project.comment.created", eventId: 811, data: { comment: "retained input" } },
+    });
+    if (failed.kind !== "claimed") throw new Error("expected failed claim");
+    markAppTaskAttention(config, failed, {
+      summary: "operator review required",
+      reason: "retained-input-review",
+      evidence: ["failure-log:811"],
+    });
+    const before = readTaskState(config);
+    const attemptsBefore = structuredClone(before.attempts);
+    const taskIdsBefore = Object.keys(before.tasks);
+
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: failed.taskId,
+        expectedGeneration: failed.generation + 1,
+      }),
+    ).toThrow("generation changed");
+    const receipt = retryFailedAppTask(config, {
+      appId: "sample",
+      taskId: failed.taskId,
+      expectedGeneration: failed.generation,
+    });
+
+    expect(receipt).toMatchObject({
+      action: "app.task.retry",
+      disposition: "requeued",
+      appId: "sample",
+      taskId: failed.taskId,
+      generation: failed.generation,
+      previousAttemptId: failed.attemptId,
+    });
+    expect(receipt.resourceVersion).toBeGreaterThan(receipt.previousResourceVersion);
+    const after = readTaskState(config);
+    expect(Object.keys(after.tasks)).toEqual(taskIdsBefore);
+    expect(after.attempts).toEqual(attemptsBefore);
+    expect(after.resources?.[failed.taskId]).toMatchObject({
+      metadata: { id: failed.taskId, generation: failed.generation },
+      status: { phase: "pending", evidence: ["failure-log:811"] },
+    });
+    expect(readAppTaskTrigger(config, failed.taskId)).toMatchObject({
+      type: "project.comment.created",
+      eventId: 811,
+    });
+  });
+
+  it("rejects retry controls for non-attention tasks and attention without a failed attempt", () => {
+    const { config } = fixture();
+    const running = declareAndClaimTask(config, {
+      intent: intent(),
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (running.kind !== "claimed") throw new Error("expected running claim");
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: running.taskId,
+        expectedGeneration: running.generation,
+      }),
+    ).toThrow("expected attention");
+
+    const tree = readTaskState(config);
+    tree.resources![running.taskId].status.phase = "attention";
+    tree.tasks[running.taskId].state = "review";
+    saveTaskState(config, tree);
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: running.taskId,
+        expectedGeneration: running.generation,
+      }),
+    ).toThrow("no completed failed attempt");
   });
 
   it("lets a controller retry a known transient attention task without changing its generation", () => {

@@ -440,6 +440,7 @@ export async function runAppRuntime(opts: {
       });
     },
     getAppTask: (appId, taskId) => appTasks.get({ appId, taskId }),
+    retryAppTask: ({ appId, taskId, expectedGeneration }) => appTasks.retry({ appId, taskId, expectedGeneration }),
     resolveAppTask: (appId, event) =>
       appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
     listApps: (appId) => humanTasks.listApps(appId),

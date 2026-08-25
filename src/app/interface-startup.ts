@@ -22,6 +22,7 @@ export interface InterfaceStartupOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
+  retryAppTask?: AttachControlSocketOptions["retryAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
@@ -81,6 +82,7 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         getAppConversation: options.getAppConversation,
         listAppTasks: options.listAppTasks,
         getAppTask: options.getAppTask,
+        retryAppTask: options.retryAppTask,
         resolveAppTask: options.resolveAppTask,
         listApps: options.listApps,
         listTasks: options.listTasks,
