@@ -249,14 +249,26 @@ describe("may-agent task routing", () => {
     });
   });
 
-  it("maps addressed input directly to its stable task", () => {
+  it("maps an addressed owner review to request-specific achieve work", () => {
     expect(
       taskForMayAgentInput(
-        admittedInput({ kind: "owner-review", data: { reason: "manual" } }),
+        admittedInput({
+          kind: "owner-review",
+          data: {
+            reason: "manual",
+            outcome: "Resolve this addressed review.",
+            acceptance: ["Return terminal proof."],
+          },
+        }),
       ),
     ).toMatchObject({
       kind: "desired",
-      intent: { id: OWNER_REVIEW_TASK_ID },
+      intent: {
+        id: "app-request/request-1",
+        mode: "achieve",
+        outcome: "Resolve this addressed review.",
+        acceptance: ["Return terminal proof."],
+      },
     });
   });
 

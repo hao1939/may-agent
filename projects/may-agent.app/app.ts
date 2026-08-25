@@ -436,12 +436,35 @@ export function taskForHostOperationsInput(
       `Unsupported Host Operations input kind: ${admitted.input.kind}`,
     );
   }
-  const intent = resolved.id
-    ? resolved
-    : {
-        ...resolved,
-        id: `app-request/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
-      };
+  const requestTaskId = `app-request/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`;
+  const intent =
+    admitted.input.kind === "owner-review"
+      ? {
+          ...resolved,
+          id: requestTaskId,
+          outcome:
+            stringValue(record(admitted.input.data).outcome) ||
+            "Review and resolve the addressed Host Operations request.",
+          acceptance: Array.isArray(record(admitted.input.data).acceptance)
+            ? (record(admitted.input.data).acceptance as unknown[]).filter(
+                (item): item is string =>
+                  typeof item === "string" && item.trim().length > 0,
+              )
+            : [
+                "Return a terminal, evidence-backed platform disposition through the supported control plane.",
+              ],
+          mode: "achieve" as const,
+          input: {
+            kind: admitted.input.kind,
+            data: record(admitted.input.data),
+          },
+        }
+      : resolved.id
+        ? resolved
+        : {
+            ...resolved,
+            id: requestTaskId,
+          };
   return { kind: "desired", intent };
 }
 
