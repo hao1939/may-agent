@@ -499,9 +499,7 @@ export function listAppConversationMessages(
     )
     .all(appId, conversationId, limit)
     .map(rowToItem);
-  const targetedTaskIds = new Set(
-    conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])),
-  );
+  const targetedTaskIds = new Set(conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])));
   const projectedTaskResults = new Set<string>();
   for (const item of conversationRows) {
     const text = conversationText(item.input);
@@ -784,6 +782,40 @@ export function listAppInboxChildren(db: SqliteDb, parentId: string): AppInboxIt
   return db
     .prepare("SELECT * FROM app_inbox_items WHERE parent_id = ? ORDER BY created_at, id")
     .all(requiredText(parentId, "parent request id"))
+    .map(rowToItem);
+}
+
+/** Unfinished human requests already associated with the visible Conversation Topics. */
+export function listOpenConversationTopicRequests(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  topicIds: string[],
+  excludeRequestId: string,
+  limit = 8,
+): AppInboxItem[] {
+  const topics = [...new Set(topicIds.map((topicId) => requiredText(topicId, "topic id")))];
+  if (topics.length === 0) return [];
+  if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 32) {
+    throw new Error("Open Conversation request limit must be an integer from 1 to 32");
+  }
+  return db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       WHERE app_id = ? AND conversation_id = ?
+         AND source_kind = 'human' AND status != 'done'
+         AND continues_request_id IS NULL AND id != ?
+         AND topic_id IN (${topics.map(() => "?").join(", ")})
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(
+      requiredText(appId, "appId"),
+      requiredText(conversationId, "conversationId"),
+      requiredText(excludeRequestId, "excludeRequestId"),
+      ...topics,
+      limit,
+    )
     .map(rowToItem);
 }
 

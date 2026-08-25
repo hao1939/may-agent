@@ -53,7 +53,10 @@ describe("App inbox runtime", () => {
               type: "object",
               additionalProperties: false,
               required: ["value"],
-              properties: { value: { type: "string" } }
+              properties: {
+                value: { type: "string" },
+                outcome: { type: "string" }
+              }
             }
           }
         },
@@ -366,7 +369,13 @@ describe("App inbox runtime", () => {
       data: {
         appId: "evaluation",
         requestId: "owner-request",
-        input: { kind: "probe", data: { value: "docs" } },
+        input: {
+          kind: "probe",
+          data: {
+            value: "docs",
+            outcome: "Review the approved documentation scope and return verified results.",
+          },
+        },
         source: { kind: "app", id: "may" },
         idempotencyKey: "owner-request",
       },
@@ -378,7 +387,7 @@ describe("App inbox runtime", () => {
       data: {
         appId: "may",
         conversationId: "may:primary",
-        text: "Assigned to evaluation.",
+        text: "Assigned to evaluation: Review the approved documentation scope and return verified results.",
         metadata: {
           channel: "may-console",
           requestId: "human-turn",
