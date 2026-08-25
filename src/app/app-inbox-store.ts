@@ -279,6 +279,34 @@ export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   return delivery ? { ...item, delivery } : item;
 }
 
+/** Unfinished requests created by one exact parent Task generation. */
+export function listOpenAppInboxItemsByIdempotencyPrefix(
+  db: SqliteDb,
+  input: { appId: string; sourceAppId: string; prefix: string; limit?: number },
+): AppInboxItem[] {
+  const appId = requiredText(input.appId, "appId");
+  const sourceAppId = requiredText(input.sourceAppId, "sourceAppId");
+  const prefix = requiredText(input.prefix, "prefix");
+  const limit = input.limit ?? 64;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 256) {
+    throw new Error("App inbox lineage query limit must be an integer from 1 to 256");
+  }
+  return db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       WHERE app_id = ?
+         AND status != 'done'
+         AND source_kind = 'app'
+         AND source_id = ?
+         AND idempotency_key >= ?
+         AND idempotency_key < ?
+       ORDER BY idempotency_key, id
+       LIMIT ?`,
+    )
+    .all(appId, sourceAppId, prefix, `${prefix}\uffff`, limit)
+    .map(rowToItem);
+}
+
 export function getAppInboxDelivery(db: SqliteDb, itemId: string): AppInboxDelivery | null {
   const row = db
     .prepare(

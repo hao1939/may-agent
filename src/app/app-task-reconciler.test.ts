@@ -4138,6 +4138,23 @@ describe("App task reconciler state", () => {
       phase: "pending",
       summary: "Waiting for the existing owner proof",
       conditionIds: ["app-request:existing-proof"],
+      observedGeneration: 1,
+    });
+    expect(readTaskState(config).attempts?.[feedback.attemptId]).toMatchObject({
+      state: "interrupted",
+      summary: "newer feedback superseded this attempt",
+    });
+
+    const retry = claimObservedAppTask(config, {
+      taskId: taskIntent.id,
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (retry.kind !== "claimed") throw new Error("expected retry claim");
+    expect(readTaskState(config).resources?.[taskIntent.id]?.status).toMatchObject({
+      phase: "running",
+      conditionIds: ["app-request:existing-proof"],
+      observedGeneration: 1,
     });
   });
 
