@@ -16,7 +16,12 @@ import {
   EventBus,
 } from "./event-bus.js";
 import { AppRegistry } from "./app-registry.js";
-import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
+import {
+  claimNextAppInboxItem,
+  createAppInboxItem,
+  readAppConversationResource,
+  waitAppInboxClaim,
+} from "./app-inbox-store.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
   const registry = new AppRegistry(projectsRoot);
@@ -227,7 +232,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("continues an exact May Task when a human replies from that focused Task", async () => {
+  it("continues an exact focused Task when a human replies to it", async () => {
     mkdirSync(join(root, "may.app"), { recursive: true });
     writeFileSync(
       join(root, "may.app", "app.js"),
@@ -627,6 +632,80 @@ describe("App inbox runtime", () => {
     const row = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = 'evaluation'").get() as { id: string };
     expect(runtime.host.get(row.id)?.input).toEqual({ kind: "probe", data: { value: "changed" } });
     expect(task.attached).toEqual([`probe/${row.id}`]);
+  });
+
+  it("projects a subscribed direct request into its default Conversation without a wrapper Task", async () => {
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may",
+        version: 1,
+        owner: "may",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["kind", "data"],
+          properties: {
+            kind: { const: "human-decision" },
+            data: { type: "object", required: ["message"], properties: { message: { type: "string" } } }
+          }
+        },
+        requests: { mode: "agent", conversationId: "may:primary" },
+        subscriptions: [{
+          id: "evaluation-decision",
+          event: { type: "evaluation.human_decision.requested", project: "may" },
+          toInput(event) { return { kind: "human-decision", data: event.data }; }
+        }]
+      };\n`,
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const updates: string[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "conversation.updated") updates.push(String((event.data as any)?.conversationId));
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      resolveRequest: async ({ request }) => {
+        expect(request.conversation?.id).toBe("may:primary");
+        return {
+          summary: "Hao must decide.",
+          response: "Please approve the production rollout.",
+          topic: { kind: "none" },
+        };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "evaluation.human_decision.requested",
+      source: "evaluation",
+      owner: "app:may",
+      target: { appId: "may", project: "may" },
+      data: { message: "Please approve the production rollout." },
+    });
+    await waitUntil(() => {
+      const row = db.prepare("SELECT status FROM app_inbox_items WHERE app_id = 'may'").get() as
+        | { status: string }
+        | undefined;
+      return row?.status === "done";
+    });
+
+    expect(task.attached).toEqual([]);
+    expect(db.prepare("SELECT conversation_id FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
+      conversation_id: "may:primary",
+    });
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
+      expect.objectContaining({
+        author: { kind: "agent", id: "may" },
+        text: "Please approve the production rollout.",
+      }),
+    ]);
+    expect(updates).toContain("may:primary");
   });
 
   it("keeps unrelated event storms independent of the number of loaded Task Apps", async () => {

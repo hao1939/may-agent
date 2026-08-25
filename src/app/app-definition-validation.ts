@@ -211,6 +211,21 @@ export function validateAppDefinition(definition: unknown): string[] {
     }
   }
 
+  if (app.requests !== undefined) {
+    const requests = record(app.requests);
+    if (!requests) errors.push(`App ${appId} requests must be an object`);
+    else {
+      if (requests.mode !== "agent") errors.push(`App ${appId} requests mode must be agent`);
+      if (requests.conversationId !== undefined && !nonEmpty(requests.conversationId)) {
+        errors.push(`App ${appId} requests conversationId must be a non-empty string`);
+      }
+    }
+  }
+
+  if (app.requests !== undefined && app.task !== undefined) {
+    errors.push(`App ${appId} cannot resolve the same inbox through both direct requests and Tasks`);
+  }
+
   return errors;
 }
 

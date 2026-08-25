@@ -12,6 +12,7 @@ import { AppRegistry } from "./app-registry.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
+import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { readAppConversationResource } from "./app-inbox-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
@@ -247,6 +248,7 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     maxConcurrentRequests: configuredHostConcurrency,
     attachTask: appTasks.attach,
+    resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry }),
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
