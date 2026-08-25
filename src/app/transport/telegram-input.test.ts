@@ -138,6 +138,7 @@ describe("Telegram May input", () => {
     ).toContain("evaluation — 1 active · 1 running");
     expect(renderTelegramTasks([task], false)).toContain("8f12ac90 · evaluation · working");
     expect(renderTelegramTasks([task], false)).toContain("no action from you");
+    expect(renderTelegramTasks([{ ...task, updatedAt: Date.now() }], false)).not.toContain("just now ago");
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
     expect(renderTelegramTask(task)).toContain("Goal\nReview the docs");
     expect(renderTelegramTask(task)).toContain("State\nworking. An attempt is working on it now.");
