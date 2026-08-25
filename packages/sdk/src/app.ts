@@ -74,6 +74,13 @@ export type AppRequestDependencyObservation = AppDependencyObservation & {
   taskId?: string;
 };
 
+/** Current canonical state for one exact Task shown in recent human context. */
+export type AppRequestTaskObservation = {
+  appId: string;
+  ref?: string;
+  task: AppDependencyObservation;
+};
+
 export type AppConversationTopic = {
   id: string;
   title: string;
@@ -142,6 +149,8 @@ export type AppRequest<TData = unknown> = {
     appId: string;
     task: AppDependencyObservation;
   };
+  /** Current canonical snapshots for exact Tasks represented by recent command/tool views. */
+  referencedTasks?: AppRequestTaskObservation[];
   /** Bounded exact conversation evidence; it never owns or schedules work. */
   conversation?: AppConversationResource;
 };
@@ -168,6 +177,14 @@ export type AppRequestDependency = {
 export type AppRequestTopicDecision =
   { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };
 
+/** A narrow human-authorized operation on an exact Task already present in request context. */
+export type AppRequestTaskControl = {
+  kind: "cancel";
+  appId: string;
+  taskId: string;
+  reason: string;
+};
+
 /** One bounded conversational decision. Code applies it; the model decides meaning. */
 export type AppRequestDecision = {
   summary: string;
@@ -175,6 +192,7 @@ export type AppRequestDecision = {
   evidence?: string[];
   topic: AppRequestTopicDecision;
   dependencies?: AppRequestDependency[];
+  taskControls?: AppRequestTaskControl[];
 };
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
@@ -198,6 +216,20 @@ export const appRequestAgentResultSchema = Type.Object(
             appId: nonEmptyStringSchema,
             taskId: Type.Optional(nonEmptyStringSchema),
             input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
+          },
+          { additionalProperties: false },
+        ),
+        { maxItems: 8 },
+      ),
+    ),
+    taskControls: Type.Optional(
+      Type.Array(
+        Type.Object(
+          {
+            kind: Type.Literal("cancel"),
+            appId: nonEmptyStringSchema,
+            taskId: nonEmptyStringSchema,
+            reason: nonEmptyStringSchema,
           },
           { additionalProperties: false },
         ),

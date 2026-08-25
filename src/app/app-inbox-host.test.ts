@@ -938,6 +938,168 @@ describe("App inbox host", () => {
     });
   });
 
+  it("resolves exact Tasks from recent command views into bounded canonical request context", async () => {
+    let request: AppRequest | undefined;
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may],
+      readDependency: async ({ appId, dependency }) => ({
+        ...dependency,
+        status: "waiting",
+        summary: `${appId}/${dependency.id} is still waiting`,
+      }),
+      resolveRequest: async (input) => {
+        request = input.request;
+        return { summary: "Explained current state", response: "It is still waiting.", topic: { kind: "none" } };
+      },
+    });
+    db.prepare(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (?, 'conversation.message.created', ?, 'app:may', ?, ?)`,
+    ).run(
+      10,
+      "may-console",
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "command", id: "may-console" },
+        text: "Active Tasks for may: legacy wrapper",
+        metadata: {
+          channel: "may-console",
+          command: "/tasks",
+          taskRefs: [{ appId: "may", taskId: "conversation/legacy" }],
+        },
+      }),
+      10,
+    );
+    host.admit({
+      id: "turn-reference",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 11,
+      source: { kind: "human", id: "message-reference" },
+      input: { kind: "probe", data: { value: "why is it still there?" } },
+    });
+
+    await host.reconcileOnce("may");
+
+    expect(request?.referencedTasks).toEqual([
+      {
+        appId: "may",
+        ref: expect.stringMatching(/^[0-9a-f]{8}$/),
+        task: {
+          kind: "task",
+          id: "conversation/legacy",
+          status: "waiting",
+          summary: "may/conversation/legacy is still waiting",
+        },
+      },
+    ]);
+  });
+
+  it("lets a direct human May turn cancel one exact referenced Task through the Host capability", async () => {
+    const controls: unknown[] = [];
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may],
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
+      resolveRequest: async () => ({
+        summary: "Removed the obsolete legacy Task.",
+        response: "The stale legacy Task has been removed.",
+        topic: { kind: "none" },
+        taskControls: [
+          { kind: "cancel", appId: "may", taskId: "conversation/legacy", reason: "obsolete legacy wrapper" },
+        ],
+      }),
+      controlTask: async (input) => {
+        controls.push(input);
+      },
+    });
+    db.prepare(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (?, 'conversation.message.created', ?, 'app:may', ?, ?)`,
+    ).run(
+      20,
+      "may-console",
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "command", id: "may-console" },
+        text: "Task legacy wrapper is waiting",
+        metadata: { taskRefs: [{ appId: "may", taskId: "conversation/legacy" }] },
+      }),
+      20,
+    );
+    host.admit({
+      id: "turn-cancel",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 21,
+      source: { kind: "human", id: "message-cancel" },
+      input: { kind: "probe", data: { value: "please remove it" } },
+    });
+
+    await host.reconcileOnce("may");
+
+    expect(controls).toEqual([
+      {
+        requestId: "turn-cancel",
+        control: { kind: "cancel", appId: "may", taskId: "conversation/legacy", reason: "obsolete legacy wrapper" },
+      },
+    ]);
+    expect(host.get("turn-cancel")).toMatchObject({
+      status: "done",
+      result: { response: "The stale legacy Task has been removed." },
+    });
+  });
+
+  it("rejects conversational Task control when the exact Task is absent from human context", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may],
+      retryAfterMs: 0,
+      resolveRequest: async () => ({
+        summary: "Tried an unavailable control.",
+        response: "Removed it.",
+        topic: { kind: "none" },
+        taskControls: [{ kind: "cancel", appId: "may", taskId: "invented", reason: "not in context" }],
+      }),
+      controlTask: async () => undefined,
+    });
+    host.admit({
+      id: "turn-invalid-control",
+      appId: "may",
+      source: { kind: "human", id: "message-invalid-control" },
+      input: { kind: "probe", data: { value: "remove it" } },
+    });
+
+    const result = await host.reconcileOnce("may");
+
+    expect(result.errors).toEqual([expect.stringContaining("cannot control unavailable Task may/invented")]);
+    expect(host.get("turn-invalid-control")?.status).toBe("pending");
+  });
+
   it("bounds owner Conversation context by bytes instead of retained message count", () => {
     const conversation: AppConversationResource = {
       id: "may:primary",

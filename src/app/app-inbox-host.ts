@@ -11,6 +11,7 @@ import {
   type AppRequest,
   type AppRequestDecision,
   type AppRequestDependencyObservation,
+  type AppRequestTaskControl,
   type AppResult,
   type AppTaskAttachment,
   type EventSelector,
@@ -69,6 +70,8 @@ export type AppRequestResolver = (input: {
   request: Readonly<AppRequest>;
 }) => Promise<AppRequestDecision>;
 
+export type AppRequestTaskController = (input: { requestId: string; control: AppRequestTaskControl }) => Promise<void>;
+
 export type AppActionDescription = {
   id: string;
   description: string;
@@ -116,6 +119,7 @@ export type AppInboxHostOptions = {
   readDependency?: AppDependencyReader;
   attachTask?: AppTaskAttacher;
   resolveRequest?: AppRequestResolver;
+  controlTask?: AppRequestTaskController;
   workerId?: string;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -157,6 +161,7 @@ const TERMINAL_TASK_INPUT_STATUSES = new Set<AppDependencyObservation["status"]>
 export const APP_REQUEST_CONVERSATION_MAX_BYTES = 12 * 1_024;
 const APP_REQUEST_MESSAGE_BYTES = 7_500;
 const APP_REQUEST_MESSAGE_TEXT_BYTES = 2_000;
+const APP_REQUEST_REFERENCED_TASK_MAX = 8;
 
 function encodedBytes(value: unknown): number {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
@@ -172,6 +177,39 @@ function focusedTaskIdentity(input: AppInput): { appId: string; taskId: string }
   const appId = typeof value.appId === "string" ? value.appId.trim().replace(/\.app$/, "") : "";
   const taskId = typeof value.taskId === "string" ? value.taskId.trim() : "";
   return appId && taskId ? { appId, taskId } : null;
+}
+
+function referencedTaskIdentities(
+  conversation: AppConversationResource,
+): Array<{ appId: string; taskId: string; ref?: string }> {
+  const seen = new Set<string>();
+  const result: Array<{ appId: string; taskId: string; ref?: string }> = [];
+  for (const message of [...conversation.messages].reverse()) {
+    for (const task of message.metadata?.taskRefs ?? []) {
+      const key = `${task.appId}\0${task.taskId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(task);
+      if (result.length >= APP_REQUEST_REFERENCED_TASK_MAX) return result;
+    }
+  }
+  return result;
+}
+
+function requestTaskIdentityKeys(request: Readonly<AppRequest>): Set<string> {
+  const identities = new Set<string>();
+  if (request.focusedTask) {
+    identities.add(`${request.focusedTask.appId}\0${request.focusedTask.task.id}`);
+  }
+  for (const referenced of request.referencedTasks ?? []) {
+    identities.add(`${referenced.appId}\0${referenced.task.id}`);
+  }
+  const currentTopicId = request.conversation?.current?.topicId;
+  const currentTopic = request.conversation?.topics?.find((topic) => topic.id === currentTopicId);
+  for (const task of currentTopic?.taskRefs ?? []) {
+    identities.add(`${task.appId}\0${task.taskId}`);
+  }
+  return identities;
 }
 
 function boundedUtf8Text(value: string, maxBytes: number): string {
@@ -282,6 +320,7 @@ export class AppInboxHost {
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
   readonly #resolveRequest?: AppRequestResolver;
+  readonly #controlTask?: AppRequestTaskController;
   readonly #workerId: string;
   readonly #leaseMs: number;
   readonly #retryAfterMs: number;
@@ -297,6 +336,7 @@ export class AppInboxHost {
     this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
     this.#resolveRequest = options.resolveRequest;
+    this.#controlTask = options.controlTask;
     this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
     this.#leaseMs = options.leaseMs ?? 60_000;
     this.#retryAfterMs = options.retryAfterMs ?? 1_000;
@@ -728,7 +768,7 @@ export class AppInboxHost {
     }
     if (item.conversationId) {
       const conversation = readAppConversationResource(this.#db, item.appId, item.conversationId, { limit: 40 });
-      request.conversation = boundedAppRequestConversation(
+      const boundedConversation = boundedAppRequestConversation(
         {
           ...conversation,
           current: {
@@ -739,6 +779,28 @@ export class AppInboxHost {
         },
         item.id,
       );
+      request.conversation = boundedConversation;
+      const referencedTasks = referencedTaskIdentities(boundedConversation);
+      if (referencedTasks.length > 0) {
+        request.referencedTasks = await Promise.all(
+          referencedTasks.map(async (identity) => {
+            let observation: AppDependencyObservation | null = null;
+            try {
+              observation = await this.#observeDependency(identity.appId, {
+                kind: "task",
+                id: identity.taskId,
+              });
+            } catch {
+              // A rendered reference remains useful identity even when its App is no longer readable.
+            }
+            return {
+              appId: identity.appId,
+              ...(identity.ref ? { ref: identity.ref } : {}),
+              task: observation ?? { kind: "task" as const, id: identity.taskId, status: "unknown" as const },
+            };
+          }),
+        );
+      }
     }
     const childRequests = listAppInboxChildren(this.#db, item.id);
     if (childRequests.length > 0) {
@@ -892,11 +954,35 @@ export class AppInboxHost {
       throw new Error(`App ${app.id} returned an invalid request decision: ${first?.message ?? "schema mismatch"}`);
     }
     const dependencies = decision.dependencies ?? [];
+    const taskControls = decision.taskControls ?? [];
     if (decision.response && dependencies.length > 0) {
       throw new Error(`App ${app.id} request decision cannot answer and delegate at the same time`);
     }
-    if (!decision.response && dependencies.length === 0) {
+    if (taskControls.length > 0 && dependencies.length > 0) {
+      throw new Error(`App ${app.id} request decision cannot control and delegate at the same time`);
+    }
+    if (!decision.response && dependencies.length === 0 && taskControls.length === 0) {
       throw new Error(`App ${app.id} request decision must answer or delegate exact App work`);
+    }
+    if (taskControls.length > 0 && !decision.response) {
+      throw new Error(`App ${app.id} request decision must explain an applied Task control to the human`);
+    }
+    if (taskControls.length > 0 && request.source.kind !== "human") {
+      throw new Error(`App ${app.id} request decision cannot control Tasks without a direct human turn`);
+    }
+    const availableTaskIdentities = requestTaskIdentityKeys(request);
+    const controlledTaskIdentities = new Set<string>();
+    for (const control of taskControls) {
+      const appId = control.appId.trim().replace(/\.app$/, "");
+      const taskId = control.taskId.trim();
+      const identity = `${appId}\0${taskId}`;
+      if (!availableTaskIdentities.has(identity)) {
+        throw new Error(`App ${app.id} request decision cannot control unavailable Task ${appId}/${taskId}`);
+      }
+      if (controlledTaskIdentities.has(identity)) {
+        throw new Error(`App ${app.id} request decision repeats Task control ${appId}/${taskId}`);
+      }
+      controlledTaskIdentities.add(identity);
     }
     const dependencyIds = new Set<string>();
     const reviewedCompletedChildren = new Set(
@@ -922,6 +1008,12 @@ export class AppInboxHost {
     const topicId = this.#applyTopicDecision(app, claim, request, decision);
     if (dependencies.length > 0 && !topicId) {
       throw new Error(`Delegated App request ${request.id} requires a Topic`);
+    }
+    if (taskControls.length > 0) {
+      if (!this.#controlTask) throw new Error("Human Task control is not configured");
+      for (const control of taskControls) {
+        await this.#controlTask({ requestId: request.id, control });
+      }
     }
     if (dependencies.length === 0) {
       return this.#completeRequest(claim, {

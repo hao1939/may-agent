@@ -249,6 +249,14 @@ export async function runAppRuntime(opts: {
     maxConcurrentRequests: configuredHostConcurrency,
     attachTask: appTasks.attach,
     resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry }),
+    controlTask: async ({ control }) => {
+      if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);
+      humanTasks.cancelTask({
+        appId: control.appId,
+        taskId: control.taskId,
+        reason: control.reason,
+      });
+    },
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
