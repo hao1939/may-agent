@@ -11,6 +11,7 @@ import {
   type AppRequest,
   type AppRequestDecision,
   type AppRequestDependencyObservation,
+  type AppRequestFollowUp,
   type AppRequestOpenRequest,
   type AppRequestTaskControl,
   type AppResult,
@@ -138,6 +139,8 @@ export type AppInboxHostOptions = {
   onRequestDelegated?: (item: AppInboxItem) => void;
   /** Immediate conversational text emitted once while delegated work continues. */
   onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
+  /** Durable handoff from one bounded conversational turn to App-owned follow-up work. */
+  onRequestFollowUp?: (item: AppInboxItem, followUp: AppRequestFollowUp, topicId: string) => void;
 };
 
 type RegisteredApp = AppDefinition;
@@ -372,6 +375,7 @@ export class AppInboxHost {
   readonly #onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
   readonly #onRequestDelegated?: (item: AppInboxItem) => void;
   readonly #onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
+  readonly #onRequestFollowUp?: (item: AppInboxItem, followUp: AppRequestFollowUp, topicId: string) => void;
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
@@ -389,6 +393,7 @@ export class AppInboxHost {
     this.#onRequestTaskAttached = options.onRequestTaskAttached;
     this.#onRequestDelegated = options.onRequestDelegated;
     this.#onRequestMessage = options.onRequestMessage;
+    this.#onRequestFollowUp = options.onRequestFollowUp;
     if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
@@ -739,7 +744,10 @@ export class AppInboxHost {
           request.dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(request.dependency.status)
             ? request.dependency
             : undefined;
-        const changedConversation = app.requests
+        const directRequest =
+          app.requests &&
+          (app.requests.inputKinds === undefined || app.requests.inputKinds.includes(claim.item.input.kind));
+        const changedConversation = directRequest
           ? await this.#resolveDirectRequest(app, claim, request)
           : terminalTaskDependency
             ? this.#completeRequest(claim, {
@@ -1033,11 +1041,18 @@ export class AppInboxHost {
     }
     const dependencies = decision.dependencies ?? [];
     const taskControls = decision.taskControls ?? [];
+    const followUp = decision.followUp;
+    if (followUp && (dependencies.length > 0 || taskControls.length > 0)) {
+      throw new Error(`App ${app.id} request decision cannot combine follow-up with direct Task effects`);
+    }
     if (taskControls.length > 0 && dependencies.length > 0) {
       throw new Error(`App ${app.id} request decision cannot control and delegate at the same time`);
     }
-    if (!decision.response && dependencies.length === 0 && taskControls.length === 0) {
+    if (!decision.response && !followUp && dependencies.length === 0 && taskControls.length === 0) {
       throw new Error(`App ${app.id} request decision must answer or delegate exact App work`);
+    }
+    if (followUp && !decision.response) {
+      throw new Error(`App ${app.id} request decision must explain its durable follow-up to the human`);
     }
     if (taskControls.length > 0 && !decision.response) {
       throw new Error(`App ${app.id} request decision must explain an applied Task control to the human`);
@@ -1066,6 +1081,23 @@ export class AppInboxHost {
         throw new Error(`App ${app.id} request decision repeats Task control ${appId}/${taskId}`);
       }
       controlledTaskIdentities.add(identity);
+    }
+    if (followUp?.task) {
+      const appId = followUp.task.appId.trim().replace(/\.app$/, "");
+      const taskId = followUp.task.taskId.trim();
+      if (!availableTaskIdentities.has(`${appId}\0${taskId}`)) {
+        throw new Error(`App ${app.id} request decision cannot follow unavailable Task ${appId}/${taskId}`);
+      }
+    }
+    if (followUp) {
+      const target = this.#requiredApp(followUp.appId);
+      if (!target.task || !target.tasks) {
+        throw new Error(`App follow-up targets non-Task App ${target.id}`);
+      }
+      validateInput(target, followUp.input);
+      if (followUp.task && followUp.task.appId.trim().replace(/\.app$/, "") !== target.id) {
+        throw new Error(`App follow-up Task owner must match target App ${target.id}`);
+      }
     }
     const dependencyIds = new Set<string>();
     const reviewedCompletedChildren = new Set(
@@ -1108,7 +1140,7 @@ export class AppInboxHost {
       }
     }
     const topicId = this.#applyTopicDecision(app, claim, request, decision);
-    if (dependencies.length > 0 && !topicId) {
+    if ((dependencies.length > 0 || followUp) && !topicId) {
       throw new Error(`Delegated App request ${request.id} requires a Topic`);
     }
     if (taskControls.length > 0) {
@@ -1116,6 +1148,15 @@ export class AppInboxHost {
       for (const control of taskControls) {
         await this.#controlTask({ requestId: request.id, control });
       }
+    }
+    if (followUp) {
+      if (!this.#onRequestFollowUp) throw new Error("App follow-up event publication is not configured");
+      this.#onRequestFollowUp(claim.item, followUp, topicId!);
+      return this.#completeRequest(claim, {
+        summary: decision.summary,
+        response: decision.response,
+        evidence: decision.evidence,
+      });
     }
     if (dependencies.length === 0) {
       return this.#completeRequest(claim, {

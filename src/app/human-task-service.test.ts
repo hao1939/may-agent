@@ -52,6 +52,7 @@ function insertTask(
     mode?: "achieve" | "maintain";
     ready?: boolean;
     acceptance?: string[];
+    category?: string;
   },
 ): void {
   const resource = {
@@ -62,6 +63,7 @@ function insertTask(
       acceptance: input.acceptance ?? ["done"],
       mode: input.mode ?? "achieve",
       owner: `${input.appId}-owner`,
+      ...(input.category ? { category: input.category } : {}),
     },
     status: {
       observedGeneration: 2,
@@ -77,6 +79,22 @@ function insertTask(
      ) VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, ?, ?, ?)`,
   ).run(input.appId, input.taskId, input.phase, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource));
 }
+
+test("hides internal maintenance Tasks from ordinary human lists and App counts", () => {
+  const db = database();
+  insertTask(db, { appId: "may", taskId: "conversation/follow-up", phase: "waiting", updatedAt: 2, category: "internal" });
+  insertTask(db, { appId: "may", taskId: "goal/review", phase: "running", updatedAt: 1 });
+  const service = new HumanTaskService(db, registry("may"));
+
+  expect(service.listTasks({ appId: "may" }).items.map((task) => task.taskId)).toEqual(["goal/review"]);
+  expect(service.listApps("may")).toEqual([
+    expect.objectContaining({ id: "may", activeTasks: 1, runningTasks: 1, waitingTasks: 0 }),
+  ]);
+  expect(service.getTask({ appId: "may", taskId: "conversation/follow-up" })).toMatchObject({
+    taskId: "conversation/follow-up",
+    status: "waiting",
+  });
+});
 
 function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt: number): void {
   db.prepare(

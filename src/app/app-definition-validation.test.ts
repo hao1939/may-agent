@@ -147,7 +147,7 @@ describe("canonical App definition validation", () => {
     ).toContain("App missing-task-policy task requires a tasks policy");
   });
 
-  it("accepts direct conversational requests and rejects a second Task path", () => {
+  it("accepts direct conversational requests and requires explicit kinds beside a Task path", () => {
     expect(
       validateAppDefinition({
         id: "may",
@@ -176,6 +176,17 @@ describe("canonical App definition validation", () => {
         task: () => ({ kind: "existing", taskId: "conversation/duplicate" }),
         tasks: {},
       }),
-    ).toContain("App ambiguous-may cannot resolve the same inbox through both direct requests and Tasks");
+    ).toContain("App ambiguous-may with both requests and task must declare requests.inputKinds");
+    expect(
+      validateAppDefinition({
+        id: "split-may",
+        version: 1,
+        agent: "may",
+        inputSchema,
+        requests: { mode: "agent", inputKinds: ["probe"] },
+        task: () => ({ kind: "existing", taskId: "goal/current" }),
+        tasks: {},
+      }),
+    ).toEqual([]);
   });
 });
