@@ -11,6 +11,7 @@ import {
   type AppRequest,
   type AppRequestDecision,
   type AppRequestDependencyObservation,
+  type AppRequestOpenRequest,
   type AppRequestTaskControl,
   type AppResult,
   type AppTaskAttachment,
@@ -23,11 +24,13 @@ import {
   associateAppInboxClaimTopic,
   claimNextAppInboxItem,
   completeAppInboxClaim,
+  completeAppInboxContinuation,
   createConversationTopic,
   createAppInboxItem,
   getAppInboxItem,
   linkConversationTopicTask,
   listAppInboxChildren,
+  listOpenConversationTopicRequests,
   listAppInboxTaskDependencyKeys,
   readAppConversationResource,
   releaseAppInboxClaim,
@@ -162,6 +165,8 @@ export const APP_REQUEST_CONVERSATION_MAX_BYTES = 12 * 1_024;
 const APP_REQUEST_MESSAGE_BYTES = 7_500;
 const APP_REQUEST_MESSAGE_TEXT_BYTES = 2_000;
 const APP_REQUEST_REFERENCED_TASK_MAX = 8;
+const APP_REQUEST_OPEN_REQUEST_MAX_BYTES = 8_000;
+const APP_REQUEST_RECONSIDERATION_MAX = 2;
 
 function encodedBytes(value: unknown): number {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
@@ -210,6 +215,22 @@ function requestTaskIdentityKeys(request: Readonly<AppRequest>): Set<string> {
     identities.add(`${task.appId}\0${task.taskId}`);
   }
   return identities;
+}
+
+function openRequestFingerprint(request: Readonly<AppRequest>, topicId: string): string {
+  return JSON.stringify(
+    (request.openRequests ?? [])
+      .filter((open) => open.topicId === topicId)
+      .map((open) => ({
+        requestId: open.requestId,
+        dependencies: open.dependencies.map((dependency) => ({
+          requestId: dependency.requestId,
+          appId: dependency.appId,
+          taskId: dependency.taskId,
+        })),
+      }))
+      .sort((left, right) => left.requestId.localeCompare(right.requestId)),
+  );
 }
 
 function boundedUtf8Text(value: string, maxBytes: number): string {
@@ -780,6 +801,35 @@ export class AppInboxHost {
         item.id,
       );
       request.conversation = boundedConversation;
+      const openRequests = listOpenConversationTopicRequests(
+        this.#db,
+        item.appId,
+        item.conversationId,
+        boundedConversation.topics?.map((topic) => topic.id) ?? [],
+        item.id,
+      );
+      if (openRequests.length > 0) {
+        const observed: AppRequestOpenRequest[] = [];
+        for (const open of openRequests) {
+          const full: AppRequestOpenRequest = {
+            requestId: open.id,
+            topicId: open.topicId!,
+            dependencies: await Promise.all(
+              listAppInboxChildren(this.#db, open.id).map((child) => this.#requestDependencyObservation(child)),
+            ),
+          };
+          const candidate =
+            encodedBytes([...observed, full]) <= APP_REQUEST_OPEN_REQUEST_MAX_BYTES
+              ? full
+              : {
+                  ...full,
+                  dependencies: full.dependencies.map(({ input: _input, ...dependency }) => dependency),
+                };
+          if (encodedBytes([...observed, candidate]) > APP_REQUEST_OPEN_REQUEST_MAX_BYTES) continue;
+          observed.push(candidate);
+        }
+        if (observed.length > 0) request.openRequests = observed;
+      }
       const referencedTasks = referencedTaskIdentities(boundedConversation);
       if (referencedTasks.length > 0) {
         request.referencedTasks = await Promise.all(
@@ -804,41 +854,7 @@ export class AppInboxHost {
     }
     const childRequests = listAppInboxChildren(this.#db, item.id);
     if (childRequests.length > 0) {
-      request.dependencies = await Promise.all(
-        childRequests.map(async (child): Promise<AppRequestDependencyObservation> => {
-          if (child.waitingOn?.kind === "task") {
-            const observed = (await this.#observeDependency(child.appId, {
-              kind: "task",
-              id: child.waitingOn.id,
-            })) ?? { kind: "task" as const, id: child.waitingOn.id, status: "unknown" as const };
-            return {
-              ...observed,
-              requestId: child.id,
-              appId: child.appId,
-              taskId: child.waitingOn.id,
-            };
-          }
-          return {
-            kind: "app",
-            id: child.id,
-            requestId: child.id,
-            appId: child.appId,
-            ...(child.targetTaskId ? { taskId: child.targetTaskId } : {}),
-            status:
-              child.status === "done"
-                ? "done"
-                : child.status === "pending"
-                  ? "pending"
-                  : child.lease
-                    ? "running"
-                    : "waiting",
-            summary: child.result?.summary,
-            response: child.result?.response,
-            result: child.result?.result,
-            evidence: child.result?.evidence,
-          };
-        }),
-      );
+      request.dependencies = await Promise.all(childRequests.map((child) => this.#requestDependencyObservation(child)));
     }
     const waitingOn = item.waitingOn;
     if (!waitingOn) return deepFreeze(request);
@@ -878,6 +894,36 @@ export class AppInboxHost {
     const observed = await this.#observeDependency(item.appId, dependency);
     request.dependency = observed ?? { ...dependency, status: "unknown" };
     return deepFreeze(request);
+  }
+
+  async #requestDependencyObservation(child: AppInboxItem): Promise<AppRequestDependencyObservation> {
+    if (child.waitingOn?.kind === "task") {
+      const observed = (await this.#observeDependency(child.appId, {
+        kind: "task",
+        id: child.waitingOn.id,
+      })) ?? { kind: "task" as const, id: child.waitingOn.id, status: "unknown" as const };
+      return {
+        ...observed,
+        requestId: child.id,
+        appId: child.appId,
+        taskId: child.waitingOn.id,
+        input: child.input,
+      };
+    }
+    return {
+      kind: "app",
+      id: child.id,
+      requestId: child.id,
+      appId: child.appId,
+      ...(child.targetTaskId ? { taskId: child.targetTaskId } : {}),
+      status:
+        child.status === "done" ? "done" : child.status === "pending" ? "pending" : child.lease ? "running" : "waiting",
+      summary: child.result?.summary,
+      response: child.result?.response,
+      result: child.result?.result,
+      evidence: child.result?.evidence,
+      input: child.input,
+    };
   }
 
   async #observeDependency(
@@ -946,6 +992,7 @@ export class AppInboxHost {
     app: RegisteredApp,
     claim: AppInboxClaim,
     request: Readonly<AppRequest>,
+    reconsiderations = 0,
   ): Promise<string | undefined> {
     if (!this.#resolveRequest) throw new Error("Direct App request resolution is not configured");
     const decision = await this.#resolveRequest({ app, request });
@@ -955,14 +1002,21 @@ export class AppInboxHost {
     }
     const dependencies = decision.dependencies ?? [];
     const taskControls = decision.taskControls ?? [];
+    const continueRequestId = decision.continueRequestId?.trim();
     if (decision.response && dependencies.length > 0) {
       throw new Error(`App ${app.id} request decision cannot answer and delegate at the same time`);
+    }
+    if (continueRequestId && (dependencies.length > 0 || taskControls.length > 0)) {
+      throw new Error(`App ${app.id} request decision cannot continue and create or control work at the same time`);
     }
     if (taskControls.length > 0 && dependencies.length > 0) {
       throw new Error(`App ${app.id} request decision cannot control and delegate at the same time`);
     }
     if (!decision.response && dependencies.length === 0 && taskControls.length === 0) {
       throw new Error(`App ${app.id} request decision must answer or delegate exact App work`);
+    }
+    if (continueRequestId && !decision.response) {
+      throw new Error(`App ${app.id} request continuation must answer the current human turn`);
     }
     if (taskControls.length > 0 && !decision.response) {
       throw new Error(`App ${app.id} request decision must explain an applied Task control to the human`);
@@ -1005,6 +1059,42 @@ export class AppInboxHost {
       }
     }
 
+    const continuation = continueRequestId
+      ? request.openRequests?.find((open) => open.requestId === continueRequestId)
+      : undefined;
+    if (continueRequestId && request.source.kind !== "human") {
+      throw new Error(`App ${app.id} cannot continue a human request from non-human input`);
+    }
+    if (continueRequestId && !continuation) {
+      throw new Error(`App ${app.id} selected unavailable open request ${continueRequestId}`);
+    }
+    if (
+      continuation &&
+      claim.item.topicId !== continuation.topicId &&
+      (decision.topic.kind !== "existing" || decision.topic.id !== continuation.topicId)
+    ) {
+      throw new Error(`App ${app.id} request continuation must preserve Topic ${continuation.topicId}`);
+    }
+
+    const existingTopicId = claim.item.topicId ?? (decision.topic.kind === "existing" ? decision.topic.id : undefined);
+    if (existingTopicId && dependencies.some((dependency) => !dependency.taskId)) {
+      const freshRequest = await this.#authorRequest(claim.item);
+      if (openRequestFingerprint(freshRequest, existingTopicId) !== openRequestFingerprint(request, existingTopicId)) {
+        if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
+          throw new Error(
+            `Conversation work changed repeatedly while App ${app.id} was deciding; retry with fresh context`,
+          );
+        }
+        return this.#resolveDirectRequest(app, claim, freshRequest, reconsiderations + 1);
+      }
+    }
+    if (continueRequestId && getAppInboxItem(this.#db, continueRequestId)?.status === "done") {
+      if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
+        throw new Error(`Open request ${continueRequestId} completed repeatedly while App ${app.id} was deciding`);
+      }
+      return this.#resolveDirectRequest(app, claim, await this.#authorRequest(claim.item), reconsiderations + 1);
+    }
+
     const topicId = this.#applyTopicDecision(app, claim, request, decision);
     if (dependencies.length > 0 && !topicId) {
       throw new Error(`Delegated App request ${request.id} requires a Topic`);
@@ -1014,6 +1104,9 @@ export class AppInboxHost {
       for (const control of taskControls) {
         await this.#controlTask({ requestId: request.id, control });
       }
+    }
+    if (continueRequestId) {
+      return this.#completeContinuation(claim, continueRequestId, decision.response!);
     }
     if (dependencies.length === 0) {
       return this.#completeRequest(claim, {
@@ -1060,6 +1153,29 @@ export class AppInboxHost {
     );
     if (unreviewedCompletedChildExists) {
       wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: appRequestChildrenWaitId(request.id) }, this.#now());
+    }
+    return claim.item.conversationId;
+  }
+
+  #completeContinuation(claim: AppInboxClaim, requestId: string, response: string): string | undefined {
+    const result: AppResult = {
+      summary: `Continued request ${requestId}`,
+      response,
+    };
+    let completed = false;
+    withTransaction(this.#db, () => {
+      if (!completeAppInboxContinuation(this.#db, claim, requestId, response, this.#now())) {
+        throw new Error("claim is stale");
+      }
+      completed = true;
+      wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
+    });
+    if (completed && this.#onRequestCompleted) {
+      try {
+        this.#onRequestCompleted(claim.item, result);
+      } catch {
+        // The continuation is authoritative; an optional notification cannot undo it.
+      }
     }
     return claim.item.conversationId;
   }

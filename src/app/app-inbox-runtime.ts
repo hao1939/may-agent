@@ -68,6 +68,17 @@ export type AppInboxRuntime = {
 const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 
+function assignmentText(item: AppInboxItem): string {
+  const data = item.input.data;
+  const outcome =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>).outcome
+      : undefined;
+  return typeof outcome === "string" && outcome.trim()
+    ? `Assigned to ${item.appId}: ${outcome.trim()}`
+    : `Assigned to ${item.appId}.`;
+}
+
 export type StartAppInboxRuntimeOptions = {
   registry: AppRegistry;
   db: SqliteDb;
@@ -361,7 +372,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             appId: directParent.appId,
             conversationId: directParent.conversationId,
             author: { kind: "agent", id: directParent.appId },
-            text: `Assigned to ${item.appId}.`,
+            text: assignmentText(item),
             metadata: {
               channel: directParent.channel,
               channelTargetId: directParent.channelTargetId,
@@ -387,7 +398,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             appId: parent.appId,
             conversationId: parent.conversationId,
             author: { kind: "agent", id: parent.appId },
-            text: `Assigned to ${item.appId}.`,
+            text: assignmentText(item),
             metadata: {
               channel: parent.channel,
               channelTargetId: parent.channelTargetId,
