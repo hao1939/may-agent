@@ -172,7 +172,8 @@ not permission to force work into the wrong owner.
 
 When May assigns asynchronous work, the Conversation Topic links to the real
 destination App Tasks. When a destination App durably attaches the request, one
-assignment message names that exact owner Task and carries a canonical
+assignment message names the owner App, repeats the concrete requested outcome,
+names that exact owner Task, and carries a canonical
 `followTask` presentation hint. Console automatically
 follows that owner Task; it never guesses from prose, the newest session, or the
 last Task reference. Exact Task detail shows linked App Task references and typed

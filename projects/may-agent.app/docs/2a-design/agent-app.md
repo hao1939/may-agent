@@ -284,11 +284,15 @@ For a durable human request, May follows one small ownership decision:
 4. when the human means to question, steer, approve, cancel, or otherwise
    change existing work, address or continue that exact Task instead of
    creating sibling work;
-5. otherwise choose the installed App whose declared responsibility fits the
+5. when a short reply approves or rejects May's immediately preceding
+   proposal, apply it to that proposal as a whole: preserve each action and
+   boundary, and represent advice to leave valid work alone as a constraint
+   rather than new work;
+6. otherwise choose the installed App whose declared responsibility fits the
    clear outcome and whose input schema accepts the typed request; and
-6. link the turn to one lightweight Topic and one or more exact destination
+7. link the turn to one lightweight Topic and one or more exact destination
    Tasks when durable work is needed; and
-7. review the exact dependency results against the human's intention before
+8. review the exact dependency results against the human's intention before
    answering, steering the same Task when a result is incomplete.
 
 May is the human's deputy, not an intent classifier or forwarding router. A
@@ -318,11 +322,14 @@ Understanding is one bounded LLM decision over structured, Host-authored
 context. Code supplies the current message, bounded visible Conversation,
 recent Topic candidates and their exact Task links, focused Task identity and
 observation, canonical snapshots for Tasks represented by recent command/tool
-views, accepted child results, durable preferences, and installed App input
-contracts. The LLM decides what the human means and returns one
-schema-validated request decision:
+views, unfinished human requests already associated with those Topics and their
+exact delegated inputs, accepted child results, durable preferences, and
+installed App input contracts. The LLM decides what the human means and returns
+one schema-validated request decision:
 
 - `response` plus no dependencies for an answer or compact clarification; or
+- `continueRequestId` plus a plain response when the turn merely confirms or
+  follows one exact unfinished request and needs no new Task input; or
 - one or more typed dependencies plus no response for delegated work,
   including `taskId` only when continuing an exact existing Task; or
 - `response` plus a narrow cancellation of an exact Task already supplied in
@@ -330,6 +337,12 @@ schema-validated request decision:
 
 The same decision selects `none`, a new Topic with a plain title, or one exact
 existing Topic. Code validates that identity; it never picks a Topic by keyword.
+
+For delegated work, May puts its concrete interpretation in the typed input's
+`outcome` and acceptance. The destination App preserves those fields as the
+Task goal. The assignment message repeats that outcome with the exact Task
+reference, so the human can correct a misunderstanding immediately. It does not
+show a generic “assigned” receipt while hiding what May understood.
 
 Code validates schemas, canonical identities, App availability, authority
 boundaries, idempotency, and stale-result fences. It does not duplicate the LLM
@@ -352,6 +365,14 @@ When a turn carries a focused Task or follows a Topic, the Host includes that
 exact context. May still decides whether the human is asking about it, steering
 it, or starting something new. Relevant feedback becomes typed input to the
 existing owner Task; unrelated text does not mutate it.
+
+An earlier request remains visible during the short handoff before its
+destination Task is attached. A confirming follow-up continues that request;
+it does not create a sibling Task. If the open Topic work changes while May is
+deciding, the Host discards a decision that would create untargeted work and
+asks May to reconsider the current exact context. This is an identity and
+freshness fence, not semantic deduplication: May still decides whether the goal
+is the same, and one Topic may legitimately link several distinct Tasks.
 
 When May delegates, Runtime creates deterministic child App requests and keeps
 the original May request open. Destination Task events wake those child
