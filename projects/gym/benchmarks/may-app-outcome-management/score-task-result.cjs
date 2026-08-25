@@ -128,7 +128,7 @@ function scoreTaskResult(workDir, scenarioDir) {
   add(
     "may-does-not-manage-task-tree",
     !result.actions?.length,
-    "May advances its current Conversation Task and does not attach or mutate another App Task",
+    "May decides its current request and does not attach or mutate another App Task",
     "ownership",
   );
   add(

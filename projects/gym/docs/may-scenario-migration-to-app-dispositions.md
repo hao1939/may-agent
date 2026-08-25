@@ -6,17 +6,20 @@ awaits human review.
 
 ## Contract
 
-May owns the Conversation Task. Apps own durable domain Tasks. One May attempt
-returns the production `TaskReconcileResult`:
+May owns the Conversation. A Host request remembers which human turn May still
+owes an answer; it is correlation, not a Task. Apps own durable domain Tasks.
+One May attempt returns the production `TaskReconcileResult` shape as its
+validated decision contract; the type name does not create a May Task:
 
 - `converged` with `response` — answer, clarify, reject, or close the request;
 - `waiting` with exactly one typed App dependency and no `response` — ask one
   accountable App to own the next durable outcome.
 
-`summary` records useful task state; it is not a delivery receipt or a second
-human response. May never mutates another App's Task or chooses its workflow,
-schedule, retry policy, session, or wake path. Runtime persists and recovers the
-request, task, dependency, attempts, and accepted result.
+`summary` records useful request state; it is not a delivery receipt or a
+second human response. May never mutates another App's Task or chooses its
+workflow, schedule, retry policy, session, or wake path. Runtime persists and
+recovers the request, dependency, attempts, and accepted result. The
+destination App attaches durable work to its own Task.
 
 Plain language is the default across responses, questions, summaries,
 dependency descriptions, progress, failures, and design explanations. Exact
@@ -70,10 +73,10 @@ missing proof, stopping standing work, paraphrase transfer, restart recovery,
 concurrent requests, exact approval, and secret handling.
 
 The scorer admits the actual `task-result.json` through the production SDK,
-checks the Task state and typed dependency, rejects cross-App Task mutation and
-App-internal workflow/schedule/retry/session/wake choices, and verifies required
-scenario meaning. Representative communication cases add calibrated semantic
-judges for plain-language quality. Hao approved the seven visible communication
-cases on 2026-08-25 for bounded training. Other development cases remain
-`draft`, and transfer truth remains withheld until separate exact review.
-Promotion cannot use unapproved cases.
+checks May's request decision and typed dependency, rejects cross-App Task
+mutation and App-internal workflow/schedule/retry/session/wake choices, and
+verifies required scenario meaning. Representative communication cases add
+calibrated semantic judges for plain-language quality. Hao approved the seven
+visible communication cases on 2026-08-25 for bounded training. Other
+development cases remain `draft`, and transfer truth remains withheld until
+separate exact review. Promotion cannot use unapproved cases.

@@ -4,7 +4,7 @@
 Evaluation reconciliation, with the former PoC name retained as an alias
 
 **Scope:** use Codex as a strong, resumable Task executor now while preserving
-May's Task authority and creating comparable evidence for improving the native
+App Task authority and creating comparable evidence for improving the native
 May agent.
 
 ## Decision under review
@@ -21,8 +21,8 @@ App owns one Task goal
 
 Codex is a replaceable executor, not another App, Task owner, scheduler, or
 completion authority. A Codex thread supplies working-memory continuity for the
-same May Task. Its goal mirrors the Task outcome so Codex can work effectively,
-but only the App verifier may say that the May Task is fulfilled.
+same App Task. Its goal mirrors the Task outcome so Codex can work effectively,
+but only the owning App may say that the Task is fulfilled.
 
 Use Codex app-server over local stdio for this integration. Official OpenAI
 documentation recommends the Codex SDK for ordinary CI automation and
@@ -48,15 +48,15 @@ The names are deliberately explicit:
 
 | Record            | Meaning                                                         | Authority         |
 | ----------------- | --------------------------------------------------------------- | ----------------- |
-| May Task          | Durable desired outcome, acceptance, events, and observed state | App and Host      |
+| App Task          | Durable desired outcome, acceptance, events, and observed state | App and Host      |
 | Reconcile attempt | One fenced execution of the Task goal                            | Host              |
 | Codex thread      | Resumable executor context for the same Task                    | Executor evidence |
 | Codex thread goal | Mirror of the current Task outcome and budget                   | Executor hint     |
 | Codex turn        | One internal reasoning/action turn inside one reconcile attempt | Executor          |
 
-The Codex thread ID is an execution attachment to the May Task. It never
+The Codex thread ID is an execution attachment to the App Task. It never
 becomes a second task ID. Codex goal status is useful evidence, but it cannot
-close, pause, or block the May Task by itself.
+close, pause, or block the App Task by itself.
 
 A terminal Codex goal update is not even the native turn boundary: Codex may
 mark the goal complete before its final assistant output and
@@ -73,7 +73,7 @@ the first goal-created turn is the final one.
 1. `(appId, taskId)` remains the only durable work identity.
 2. The App remains the only owner of outcome and acceptance semantics.
 3. Runtime fences every attempt by Task generation and accepts the final result.
-4. A Codex thread is bound to at most one live May Task.
+4. A Codex thread is bound to at most one live App Task.
 5. A Task has at most one active attempt and therefore at most one active Codex turn.
 6. Every external event is persisted against the Task before best-effort live steering.
 7. Missing or unincorporated live steering is repaired by the next Task
@@ -294,7 +294,7 @@ timer regardless of state.
 | Still silent past the hard threshold                         | Interrupt the turn, retain evidence, and requeue with backoff                |
 | Codex reports blocked                                        | Accept an exact wait; otherwise ask it to continue on the same goal           |
 | Usage or token budget is exhausted                           | Exact time/quota Condition when observable; otherwise attention              |
-| Human explicitly pauses the May Task                         | Do not wake or override it                                                   |
+| Human explicitly pauses the App Task                         | Do not wake or override it                                                   |
 
 The adapter records `lastActivityAt`, active turn ID, bounded nudge count, and
 process health as attempt diagnostics. These do not become another desired
@@ -302,7 +302,7 @@ state machine. Thresholds must be measured in the PoC; production defaults are
 not chosen in this proposal.
 
 Codex `paused`, `blocked`, `usageLimited`, `budgetLimited`, and `complete` goal
-statuses are observations. They never directly map to May Task completion.
+statuses are observations. They never directly map to App Task completion.
 For example, Codex `complete` still requires App verification; Codex `paused`
 without a May Condition causes another bounded reconcile rather than permanent
 waiting.
@@ -421,7 +421,7 @@ In a disposable Git worktree only:
 
 Do not start production migration until all are true:
 
-1. One May Task maps to one resumable Codex thread without duplicate task state.
+1. One App Task maps to one resumable Codex thread without duplicate task state.
 2. A new Task event reaches an active turn or is provably replayed next attempt.
 3. Restart resumes the same thread and the May generation fence rejects stale output.
 4. Soft nudge and hard interrupt are bounded and cannot create an event storm.
@@ -538,7 +538,7 @@ is registered as explicit executor name `codex-goal`; the former
   the authoritative final item, rather than reconstructing it from deltas.
 - The hard-stale controller nudges once, interrupts the exact turn, waits for
   authoritative terminal status, and only then requeues with exponential
-  backoff capped at 60 seconds. A human-paused May Task performs no protocol
+  backoff capped at 60 seconds. A human-paused App Task performs no protocol
   action.
 - A real Task-store fixture advances the Task specification to a new
   generation after admitting valid Codex JSON. Applying that old admitted

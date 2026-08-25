@@ -10,9 +10,9 @@ Its human name is **Host Operations App**. Its stable technical App ID remains
   normal portable repo.
 - `app.ts` is the single canonical Host Operations App manifest: addressed
   input, event schedules, task subscriptions, actions, and task policy.
-- `../may.app/app.ts` is the separate May App (`appId: may`): it owns human
-  Conversation Tasks, answers directly, or requests typed work from the
-  responsible App.
+- `../may.app/app.ts` is the separate May App (`appId: may`): it owns the
+  Conversation, answers human requests directly, or requests typed work from
+  the responsible App. It does not create a Task merely to track a request.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
 - Host Task resources are the sole mutable work authority. Retained

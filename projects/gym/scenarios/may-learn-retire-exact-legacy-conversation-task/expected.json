@@ -1,4 +1,10 @@
 {
+  "approval_case": {
+    "title": "Remove one exact obsolete May wrapper",
+    "situation": "An old pre-cutover May Conversation Task is still visible even though current human turns use Host requests and Topics. The exact Task is in the human's canonical context, is safe to cancel, and an unrelated Host Operations repair must not be treated as its dependency.",
+    "hao_request": "Why not just fix it? Remove that stale task.",
+    "correct_behavior": "Cancel the exact obsolete legacy Conversation Task through the Host's typed Task control and tell Hao plainly that it was removed. Do not edit persistence, create another Task, or claim that the unrelated Host Operations repair is its dependency."
+  },
   "human_answer": "Cancel the exact obsolete legacy Conversation Task through the Host's typed Task control and tell Hao plainly that it was removed. Do not edit persistence, create another Task, or claim that the unrelated Host Operations repair is its dependency.",
   "exact": { "needs_clarification": false },
   "delegations": { "min": 0, "max": 0 },

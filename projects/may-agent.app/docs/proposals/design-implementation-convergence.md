@@ -186,22 +186,24 @@ Proposed direction:
   migration; and
 - do not introduce another cleanup worker.
 
-### 7. Pre-cutover May wrapper Tasks remain live
+### 7. Pre-cutover May wrapper Tasks are retired
 
-At review time the live store contained six nonterminal
-`may/conversation/app_*` Tasks: one waiting and five requiring attention. The
-current May App correctly uses `requests: { mode: "agent" }`, so new human Turns
-do not need these wrappers.
+At review time the live store contained six old `may/conversation/app_*` Task
+rows: one appeared waiting and five required attention. The current May App
+uses `requests: { mode: "agent" }`, so new human Turns do not create these
+wrappers.
 
-One old wrapper can wait forever when its finite human request is attached to a
-standing maintain Task that intentionally never terminates.
+As of 2026-08-25, all six rows have exact typed cancellation records and are
+absent from the active Task view. The last stale wrapper was cancelled through
+the same validated human Task control used by the adapters; May did not edit
+persistence or create another cleanup Task. A production soak then proved that
+direct answers and rejected unknown Task references created no wrapper or
+delegation residue.
 
-Proposed direction:
-
-- perform one bounded, reviewed migration or cancellation of pre-cutover
-  wrappers;
-- never attach a finite human request to a standing maintain Task; and
-- do not create a permanent legacy-wrapper janitor or broadly clean the DB.
+The retained rows remain historical evidence. No database deletion, permanent
+legacy-wrapper janitor, or broad cleanup is needed. Finite human requests must
+continue to use Host request correlation and must never be attached to a
+standing Task that intentionally does not terminate.
 
 ### 8. Topic selection can fail after aging out of the recent view
 

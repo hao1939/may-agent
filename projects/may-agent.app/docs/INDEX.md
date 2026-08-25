@@ -121,7 +121,7 @@ Active reviews are:
   — rebuild the Host from a small EventHub/task loop, make emitted events
   visible immediately, foreground human work, and remove history-sized cost.
 - [codex-goal-executor.md](proposals/codex-goal-executor.md)
-  — prove a resumable, steerable Codex executor while one May Task remains the
+  — prove a resumable, steerable Codex executor while one App Task remains the
   only durable goal and native May learns behind the same attempt contract.
 
 Earlier reviewed drafts were resolved as follows:

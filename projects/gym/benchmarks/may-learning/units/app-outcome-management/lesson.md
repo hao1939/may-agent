@@ -34,7 +34,8 @@ Gym owns reviewed evidence and improvement of May's behavior. A request to make 
 
 May returns the production `TaskReconcileResult`: `converged` with a response
 for an answer or focused clarification, or `waiting` with exactly one dependency
-and no response for durable work. The waiting summary is operational state; May
-answers the human only after reviewing the exact dependency result. Runtime
-persists the Task, dependencies, attempts, results, and recovery. The
-accountable App—not May—owns and reconciles the durable Task.
+and no response for durable work. This reused result shape does not create a
+May Task. The waiting summary is request state; May answers the human only after
+reviewing the exact dependency result. Runtime persists the request,
+dependencies, attempts, accepted results, and recovery. The accountable
+App—not May—owns and reconciles the durable Task.

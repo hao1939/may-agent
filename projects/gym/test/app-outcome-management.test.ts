@@ -174,6 +174,26 @@ describe("May App outcome management", () => {
     }
   });
 
+  test("treats May work as a persisted request rather than a Conversation Task", () => {
+    for (const scenario of [...development, ...release]) {
+      const task = readFileSync(
+        resolve(gymRoot, "scenarios", scenario, "task.md"),
+        "utf8",
+      );
+      expect(task).toMatch(/persisted (request|reply)/);
+      expect(task).not.toContain("Conversation Task");
+    }
+
+    for (const relativePath of [
+      "benchmarks/may-learning/units/app-outcome-management/lesson.md",
+      "benchmarks/may-learning/units/app-outcome-management/practice.md",
+    ]) {
+      const guidance = readFileSync(resolve(gymRoot, relativePath), "utf8");
+      expect(guidance).not.toContain("May Task result");
+      expect(guidance).not.toContain("persisted Task");
+    }
+  });
+
   for (const scenario of [...development, ...release]) {
     test(`${scenario} uses the production Task-result boundary`, () => {
       const scenarioDir = resolve(gymRoot, "scenarios", scenario);

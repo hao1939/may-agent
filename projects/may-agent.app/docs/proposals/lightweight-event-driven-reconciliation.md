@@ -19,9 +19,10 @@ event arrives
   -> release execution resources
 ```
 
-May is a small App that understands human intent and reconciles
-Conversation Tasks. The Host supplies persistence, wake-up, bounded execution,
-recovery, and delivery. Every App supplies meaning.
+May is a small App that understands human intent and handles recoverable human
+requests. It answers directly or asks the responsible App to own a durable
+Task. The Host supplies persistence, wake-up, bounded execution, recovery, and
+delivery. Every App supplies meaning.
 
 The governing semantic-decision rule is:
 

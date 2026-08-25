@@ -293,6 +293,7 @@ describe("May learning registry", () => {
       "may-learn-choose-durable-execution-owner",
       "may-learn-separate-agent-capability-from-app-autonomy",
       "may-learn-reconcile-stable-task-resource",
+      "may-learn-retire-exact-legacy-conversation-task",
       "may-learn-route-project-app-request",
       "may-learn-diagnose-unconsumed-event",
       "may-learn-replan-stalled-human-task",

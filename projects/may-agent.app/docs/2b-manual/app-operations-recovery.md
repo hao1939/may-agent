@@ -133,8 +133,8 @@ without confirming that `/proc/<pid>/cmdline` is the running daemon.
 ## Runtime deployment target
 
 A correlated Runtime deployment must name an existing **Host Operations App**
-Task with `appId: may-agent`. A May App (`appId: may`) Conversation Task is not
-deployment authority even when May created or routed the request. Before
+Task with `appId: may-agent`. A May human request is not deployment authority,
+even when May routed the request. Before
 building or restarting, the deploy preflight reads that exact `{appId, taskId}`
 from the Host database (`$STATE_DIR/may.db`, normally `/app/.state/may.db`) and
 verifies that `app_task_store_meta.authority` is `resources`. The read is
