@@ -354,43 +354,50 @@ describe("codex-goal Task executor", () => {
     expect(client.calls.at(-1)).toBe("stop");
   });
 
-  it("retries the same Task and thread after a Codex usage limit", async () => {
-    const root = fixtureRoot();
-    const stateFile = join(root, "bindings.json");
-    const limited = new FakeClient("thread-limited");
-    limited.waitForGoal = async () => ({
-      threadId: limited.threadId,
-      turnId: "turn-1",
-      goal: { threadId: limited.threadId, objective: "review", status: "usageLimited" },
-    });
-    const resumed = new FakeClient("unused");
-    const clients = [limited, resumed];
-    const executor = createCodexGoalExecutor({
-      stateFile,
-      createClient: () => clients.shift()!,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
-    });
+  for (const limitStatus of ["usageLimited", "budgetLimited"] as const) {
+    it(`treats ${limitStatus} as an execution failure and retries the same Task and thread`, async () => {
+      const root = fixtureRoot();
+      const stateFile = join(root, "bindings.json");
+      const limited = new FakeClient(`thread-${limitStatus}`);
+      limited.waitForGoal = async () => ({
+        threadId: limited.threadId,
+        turnId: "turn-1",
+        goal: { threadId: limited.threadId, objective: "review", status: limitStatus },
+      });
+      const resumed = new FakeClient("unused");
+      const clients = [limited, resumed];
+      const executor = createCodexGoalExecutor({
+        stateFile,
+        createClient: () => clients.shift()!,
+        checkIntervalMs: 1,
+        softStaleAfterMs: 1_000,
+        hardStaleAfterMs: 2_000,
+      });
 
-    await expect(executor(attempt())).rejects.toThrow("Codex stopped the current turn because it is usageLimited");
-    expect(limited.calls).toContain("terminal-turn");
-    expect(limited.calls).not.toContain("read");
+      await expect(executor(attempt())).rejects.toThrow(
+        `Codex stopped the current turn because it is ${limitStatus}`,
+      );
+      expect(limited.calls).toContain("terminal-turn");
+      expect(limited.calls).not.toContain("read");
 
-    await expect(executor(attempt({ attemptId: "r_2_retry" }))).resolves.toMatchObject({
-      state: "converged",
-      evidence: ["projects/may-agent/src/app/app-task-runtime.ts:2025", "codex-thread:thread-limited"],
-    });
-    expect(resumed.calls).toContain("resume:thread-limited");
-    expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
-      bindings: {
-        [codexGoalExecutorInternals.bindingKey(attempt())]: {
-          threadId: "thread-limited",
-          attempts: 2,
+      await expect(executor(attempt({ attemptId: "r_2_retry" }))).resolves.toMatchObject({
+        state: "converged",
+        evidence: [
+          "projects/may-agent/src/app/app-task-runtime.ts:2025",
+          `codex-thread:thread-${limitStatus}`,
+        ],
+      });
+      expect(resumed.calls).toContain(`resume:thread-${limitStatus}`);
+      expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
+        bindings: {
+          [codexGoalExecutorInternals.bindingKey(attempt())]: {
+            threadId: `thread-${limitStatus}`,
+            attempts: 2,
+          },
         },
-      },
+      });
     });
-  });
+  }
 
   it("nudges a quiet active turn without ending the Task attempt", async () => {
     const root = fixtureRoot();
