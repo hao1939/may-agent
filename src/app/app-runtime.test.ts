@@ -14,13 +14,16 @@ describe("app runtime startup order", () => {
     expect(admission).toBeLessThan(cronStartup);
   });
 
-  it("starts the durable App inbox before opening external ingress", () => {
+  it("installs durable App routes before ingress but defers recovered work until interfaces are ready", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     const appInbox = source.indexOf("await startAppInboxRuntime({");
     const externalIngress = source.indexOf("await startInterfaceRuntime(");
+    const recoveredWork = source.indexOf("await appInboxRuntime.start()");
 
     expect(appInbox).toBeGreaterThan(-1);
     expect(appInbox).toBeLessThan(externalIngress);
+    expect(source).toContain("deferStart: true");
+    expect(recoveredWork).toBeGreaterThan(externalIngress);
     expect(source).not.toContain("appInboxRuntime = CRON_ENABLED");
   });
 

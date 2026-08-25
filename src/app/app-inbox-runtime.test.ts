@@ -422,6 +422,46 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("keeps recovered and newly admitted work idle until explicitly started", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    createAppInboxItem(db, {
+      id: "recovered-request",
+      appId: "evaluation",
+      source: { kind: "system", id: "previous-runtime" },
+      input: { kind: "probe", data: { value: "recovered" } },
+      now: 1,
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      scanIntervalMs: 10_000,
+      deferStart: true,
+    });
+
+    bus.emit({
+      type: "app.input.requested",
+      source: "test",
+      owner: "app:evaluation",
+      data: {
+        appId: "evaluation",
+        requestId: "live-request",
+        input: { kind: "probe", data: { value: "live" } },
+        source: { kind: "system", id: "test" },
+      },
+    });
+    await Bun.sleep(20);
+    expect(task.attached).toEqual([]);
+    expect(runtime.host.get("recovered-request")?.status).toBe("pending");
+    expect(runtime.host.get("live-request")?.status).toBe("pending");
+
+    await runtime.start();
+    await waitUntil(() => task.attached.length === 2);
+    expect(task.attached.sort()).toEqual(["probe/live-request", "probe/recovered-request"]);
+  });
+
   it("uses Host capacity for concurrent requests from the same App", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);

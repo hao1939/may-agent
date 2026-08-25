@@ -47,6 +47,8 @@ export type AppRegistryReloadPreparation = (input: {
 
 export type AppInboxRuntime = {
   host: AppInboxHost;
+  /** Begin recovery, schedules, and request execution after interfaces are ready. */
+  start(): Promise<void>;
   close(): void;
   scanNow(): void;
   reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
@@ -86,6 +88,8 @@ export type StartAppInboxRuntimeOptions = {
   observerContext?: (appId: string, appDir: string) => ObserverContext;
   /** State root used to restore an oversized event body while resuming a frozen plan. */
   persistDir?: string;
+  /** Construct durable routing without starting recovered work yet. */
+  deferStart?: boolean;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -360,6 +364,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("App request concurrency must be a positive safe integer");
   }
   let closed = false;
+  let started = false;
+  let startPromise: Promise<void> | null = null;
   const now = options.now ?? Date.now;
   const observerRuntime = createAppObserverRuntime({
     bus: options.bus,
@@ -410,7 +416,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const armPump = (): void => {
-    if (closed || pumpHandle) return;
+    if (closed || !started || pumpHandle) return;
     pumpHandle = setImmediate(() => {
       pumpHandle = null;
       pump();
@@ -501,6 +507,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const scanNow = () => {
+    if (closed || !started) return;
     const currentTime = now();
     for (const { definition } of loaded) {
       for (const configuredSchedule of definition.schedules ?? []) {
@@ -1023,16 +1030,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     unsubscribe();
     throw new Error("App inbox scanIntervalMs must be positive");
   }
-  await recoverTaskDependencies();
-  // One bounded startup pass repairs work interrupted by the previous process.
-  // Subsequent recovery observes the normal cooldown.
-  recoverAdmissionPlans(true);
-  const timer = setInterval(scanNow, scanIntervalMs);
-  timer.unref?.();
-  scanNow();
-
-  return {
+  let timer: ReturnType<typeof setInterval> | null = null;
+  const runtime: AppInboxRuntime = {
     host,
+    start() {
+      if (closed) return Promise.resolve();
+      if (startPromise) return startPromise;
+      startPromise = (async () => {
+        await recoverTaskDependencies();
+        if (closed) return;
+        started = true;
+        // One bounded startup pass repairs work interrupted by the previous
+        // process. Subsequent recovery observes the normal cooldown.
+        recoverAdmissionPlans(true);
+        timer = setInterval(scanNow, scanIntervalMs);
+        timer.unref?.();
+        scanNow();
+        armPump();
+      })();
+      return startPromise;
+    },
     scanNow,
     async reload(prepare, projectsRoot) {
       const previousDefinitions = loaded.map((entry) => entry.definition);
@@ -1072,7 +1089,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     close() {
       if (closed) return;
       closed = true;
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
+      timer = null;
       if (pumpHandle) clearImmediate(pumpHandle);
       pumpHandle = null;
       if (admissionRecoveryHandle) clearImmediate(admissionRecoveryHandle);
@@ -1084,4 +1102,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       dirty.clear();
     },
   };
+  if (!options.deferStart) await runtime.start();
+  return runtime;
 }
