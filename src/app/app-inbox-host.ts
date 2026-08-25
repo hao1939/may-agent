@@ -32,6 +32,7 @@ import {
   releaseAppInboxClaim,
   renewAppInboxClaim,
   waitAppInboxClaim,
+  wakeAppInboxItem,
   wakeAppInboxItemsWaitingOn,
   wakeAppInboxItemsWaitingOnApp,
   type AppInboxClaim,
@@ -556,7 +557,20 @@ export class AppInboxHost {
     return appIds;
   }
 
-  /** Re-observe task waits so attention or missing tasks cannot wait forever. */
+  #replacementTaskAttachment(
+    app: Readonly<AppDefinition>,
+    item: Readonly<AppInboxItem>,
+    currentTaskId: string,
+  ): AppTaskAttachment | null {
+    if (item.targetTaskId || !app.task) return null;
+    const resolved = app.task({ id: item.id, source: item.source, input: item.input });
+    if (resolved?.kind !== "desired" || resolved.intent.mode !== "achieve" || resolved.intent.id === currentTaskId) {
+      return null;
+    }
+    return resolved;
+  }
+
+  /** Re-observe task waits so attention, missing tasks, or repaired App policy cannot wait forever. */
   async recoverTaskDependencies(): Promise<AppInboxTaskRecoveryResult> {
     const outcome: AppInboxTaskRecoveryResult = {
       linked: 0,
@@ -586,7 +600,28 @@ export class AppInboxHost {
             ...taskDependency,
             status: "unknown" as const,
           };
-          if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
+          if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) {
+            const app = this.#requiredApp(appId);
+            const rows = this.#db
+              .prepare(
+                `SELECT id FROM app_inbox_items
+                 WHERE app_id = ? AND status = 'handling' AND lease_owner IS NULL
+                   AND waiting_on_kind = 'task' AND waiting_on_id = ?
+                 ORDER BY created_at, id`,
+              )
+              .all(appId, taskId) as Array<{ id?: unknown }>;
+            for (const row of rows) {
+              if (typeof row.id !== "string") continue;
+              const item = getAppInboxItem(this.#db, row.id);
+              if (!item || !this.#replacementTaskAttachment(app, item, taskId)) continue;
+              if (wakeAppInboxItem(this.#db, item.id, this.#now())) {
+                outcome.linked += 1;
+                outcome.woken += 1;
+                wokenApps.add(appId);
+              }
+            }
+            continue;
+          }
           const woken = wakeAppInboxItemsWaitingOnApp(this.#db, appId, taskDependency, this.#now());
           if (woken > 0) {
             outcome.woken += woken;
@@ -1001,11 +1036,14 @@ export class AppInboxHost {
       }
     }
 
+    const currentTaskId = request.dependency?.kind === "task" ? request.dependency.id : undefined;
+    const repairedAttachment = currentTaskId ? this.#replacementTaskAttachment(app, claim.item, currentTaskId) : null;
     const attachment = claim.item.targetTaskId
       ? ({ kind: "existing", taskId: claim.item.targetTaskId } as const)
-      : request.dependency?.kind === "task"
-        ? ({ kind: "existing", taskId: request.dependency.id } as const)
-        : app.task({ id: request.id, source: request.source, input: request.input });
+      : (repairedAttachment ??
+        (currentTaskId
+          ? ({ kind: "existing", taskId: currentTaskId } as const)
+          : app.task({ id: request.id, source: request.source, input: request.input })));
     if (!attachment || typeof attachment !== "object") {
       throw new Error(`App ${app.id} task resolver returned no Task attachment`);
     }
