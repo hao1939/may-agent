@@ -5,17 +5,19 @@
 and a compatibility execution tool, using the same persistent worker records,
 classified failures, expected-output validation, and native process runner.
 
-**Active review:** [Resumable Codex Goal Executor](../proposals/codex-goal-executor.md)
-is proving app-server goals, automatic continuation, live Task steering, and
-restart resume. The production `codex` adapter described here remains the
-one-shot implementation until that proposal's gates pass.
+Tasks that select `codex-goal` use the
+[persistent Codex goal executor](../proposals/codex-goal-executor.md): Codex
+keeps working toward the Task goal, receives live Task events, and resumes the
+same thread after process failure. The older `codex` executor remains a
+one-shot compatibility adapter.
 
 Direct execution sessions can delegate bounded coding work to native coding
 agents such as Codex CLI and Claude Code. These tools are not terminal tabs,
 project owners, App requests, or tasks. They are worker runtimes behind the
 event system.
 
-A Task may select `executor: "codex"` or `executor: "claude"`; Runtime then
+A Task may select `executor: "codex-goal"`, `executor: "codex"`, or
+`executor: "claude"`; Runtime then
 awaits the native result inside that exact fenced attempt and admits it through
 the ordinary `TaskReconcileResult` boundary. An owner may still call
 `run_cli_agent` for a bounded second opinion, but that compatibility tool

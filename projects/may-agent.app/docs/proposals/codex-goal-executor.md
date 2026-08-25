@@ -49,7 +49,7 @@ The names are deliberately explicit:
 | Record            | Meaning                                                         | Authority         |
 | ----------------- | --------------------------------------------------------------- | ----------------- |
 | May Task          | Durable desired outcome, acceptance, events, and observed state | App and Host      |
-| Reconcile attempt | One fenced, bounded chance to advance the Task                  | Host              |
+| Reconcile attempt | One fenced execution of the Task goal                            | Host              |
 | Codex thread      | Resumable executor context for the same Task                    | Executor evidence |
 | Codex thread goal | Mirror of the current Task outcome and budget                   | Executor hint     |
 | Codex turn        | One internal reasoning/action turn inside one reconcile attempt | Executor          |
@@ -174,10 +174,10 @@ claim current Task generation
   -> observe the authoritative goal-created turn
   -> stream bounded activity evidence
   -> steer the active turn when a new Task event arrives
-  -> let Codex perform automatic bounded continuation while the goal is active
+  -> let Codex continue automatically while the goal is active
   -> receive terminal goal status and authoritative turn/completed
   -> normalize final output
-  -> return converged, progress, or exact waiting
+  -> return converged or exact waiting
   -> stop app-server process and release the Task attempt
 ```
 
@@ -201,15 +201,15 @@ admitted result proceeds to normal App verification.
 If parsing or admission fails:
 
 1. do not run the App verifier or mutate Task status;
-2. record one bounded admission finding as executor evidence;
-3. release the current attempt so normal retry/backoff applies; and
-4. resume the same thread on a later attempt with that finding in the canonical
-   packet, while preserving durable workspace effects.
+2. send the exact admission problem back to the same thread; and
+3. keep the same Task attempt active while Codex corrects its output on the
+   next automatic turn.
 
 Do not silently translate Codex's `complete` into May's `converged`, and do not
-hide an unbounded correction loop inside one attempt. If a terminal Codex goal
-must be replaced to request correction, use the remaining May-owned budget;
-Codex's reset usage counter cannot reset the Task budget.
+accept malformed output as progress. A process failure ends the attempt;
+ordinary Runtime recovery then resumes the same Task and thread. A usage or
+budget limit is also an execution failure. Runtime must not invent a timed
+wait for it.
 
 ## Event bridge
 
