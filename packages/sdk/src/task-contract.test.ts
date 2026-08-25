@@ -170,21 +170,30 @@ describe("project task handler contract", () => {
   });
 
   it("accepts canonical agent selection and normalizes it for retained Host state", () => {
+    const canonicalOutput = {
+      state: "converged" as const,
+      summary: "Selected a specialist",
+      evidence: [] as string[],
+      actions: [
+        {
+          kind: "create-task" as const,
+          id: "work/specialist",
+          outcome: "Run specialist work",
+          acceptance: ["Specialist work completes"],
+          agent: "specialist",
+        },
+      ],
+    };
+    expect(Check(taskAgentResultSchema, canonicalOutput)).toBe(true);
+    expect(
+      Check(taskAgentResultSchema, {
+        ...canonicalOutput,
+        actions: [{ ...canonicalOutput.actions[0], owner: "may-agent" }],
+      }),
+    ).toBe(false);
+
     const admitted = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Selected a specialist",
-        evidence: [],
-        actions: [
-          {
-            kind: "create-task",
-            id: "work/specialist",
-            outcome: "Run specialist work",
-            acceptance: ["Specialist work completes"],
-            agent: "specialist",
-          },
-        ],
-      },
+      canonicalOutput,
       workflowOptions,
     );
 

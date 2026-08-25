@@ -2941,7 +2941,6 @@ export function claimObservedAppTask(
     }
     touchResource(resource, {
       phase: "running",
-      observedGeneration: generation - 1,
       currentAttemptId: attemptId,
     });
     syncTaskProjection(task, resource, agent);
@@ -3019,7 +3018,6 @@ export function releaseStaleAppTaskResult(
   config: TaskStateConfig,
   claim: AppTaskClaim,
   summary = "Stale reconciliation result was rejected; retrying from current task evidence",
-  statusSummary?: string,
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config, { taskIds: [claim.taskId] });
@@ -3040,9 +3038,13 @@ export function releaseStaleAppTaskResult(
     attempt.failureReason = "stale-reconciliation-result";
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
-      ...(statusSummary ? { summary: statusSummary } : {}),
+      // An open Condition belongs to the latest accepted result. Older
+      // runtimes marked a running attempt unobserved; repair that retained
+      // execution state instead of letting the retry detach accepted waits.
+      ...(resource.status.conditionIds?.length
+        ? { observedGeneration: resource.metadata.generation }
+        : {}),
     });
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
