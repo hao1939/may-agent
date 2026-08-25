@@ -519,6 +519,9 @@ describe("AppTaskResourceStore", () => {
     expect(dueAt).toBeGreaterThanOrEqual(before + 60_000);
     expect(dueAt).toBeLessThanOrEqual(Date.now() + 60_000);
     expect(store.readConditionRoutes("example.completed")).toEqual([expect.objectContaining({ taskIds: ["normal"] })]);
+    expect(store.readConditionRoutesForAllApps("example.completed")).toEqual([
+      expect.objectContaining({ appId: "example", taskIds: ["normal"] }),
+    ]);
     expect(store.readTaskConditions("normal")).toEqual([
       expect.objectContaining({
         metadata: expect.objectContaining({ id: "example:later" }),

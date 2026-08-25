@@ -10,6 +10,7 @@ import {
   getLoadedAppTaskView,
   listLoadedAppTaskViews,
   previewLoadedCanonicalAppTaskEvent,
+  previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
@@ -31,6 +32,9 @@ export type AppTaskCapability = {
     event: Parameters<typeof previewLoadedCanonicalAppTaskEvent>[0]["event"];
     targetedTaskId?: string;
   }): string[];
+  previewEventRoutes(input: {
+    event: Parameters<typeof previewLoadedCanonicalAppTaskEventRoutes>[0]["event"];
+  }): Array<{ appId: string; taskIds: string[] }>;
   readDependency(input: {
     appDir: string;
     dependency: { kind: "task"; id: string };
@@ -61,6 +65,7 @@ export function createAppTaskCapability(options: {
     attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
+    previewEventRoutes: (input) => previewLoadedCanonicalAppTaskEventRoutes({ ...input, bus: options.bus }),
     async publishGeneration({ snapshot, definitionSource, publish }) {
       if (!options.runtime) {
         publish();

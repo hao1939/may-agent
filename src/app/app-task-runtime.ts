@@ -77,6 +77,7 @@ import { HostCapacity } from "./host-capacity.js";
 import type { AppTaskQueueOptions } from "./app-task-queue.js";
 import {
   matchingAppTaskConditionTaskIds,
+  matchesAppTaskCondition,
   trackAppTaskConditionEventForTasks,
   trackAppTaskConditionEvents,
 } from "./app-task-condition-tracker.js";
@@ -3701,6 +3702,39 @@ export function previewLoadedCanonicalAppTaskEvent(input: {
   if (!descriptor?.app.tasks) return [];
   const allowed = input.targetedTaskId ? [input.targetedTaskId] : undefined;
   return matchingAppTaskConditionTaskIds(appTaskConfig(descriptor), canonicalTaskEvent(input.event), allowed);
+}
+
+/** Read-only event-type-first Condition preflight across loaded Task Apps. */
+export function previewLoadedCanonicalAppTaskEventRoutes(input: {
+  bus: EventBus;
+  event: AgentEvent;
+}): Array<{ appId: string; taskIds: string[] }> {
+  const descriptors = (appRouterDescriptorsByBus.get(input.bus) ?? []).filter((descriptor) => descriptor.app.tasks);
+  if (descriptors.length === 0) return [];
+  const event = canonicalTaskEvent(input.event);
+  const matchesByApp = new Map<string, Set<string>>();
+  const resourceDescriptors = descriptors.filter(
+    (descriptor): descriptor is AppTaskRuntimeDescriptor & { resourceStore: AppTaskResourceStore } =>
+      Boolean(descriptor.resourceStore),
+  );
+  if (resourceDescriptors.length > 0) {
+    const loadedResourceApps = new Set(resourceDescriptors.map((descriptor) => descriptor.id));
+    for (const route of resourceDescriptors[0]!.resourceStore.readConditionRoutesForAllApps(String(event.type ?? ""))) {
+      if (!loadedResourceApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
+      const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
+      for (const taskId of route.taskIds) taskIds.add(taskId);
+      matchesByApp.set(route.appId, taskIds);
+    }
+  }
+  // Transitional JSON-backed Apps retain their existing projection lookup.
+  for (const descriptor of descriptors) {
+    if (descriptor.resourceStore) continue;
+    const taskIds = matchingAppTaskConditionTaskIds(appTaskConfig(descriptor), event);
+    if (taskIds.length > 0) matchesByApp.set(descriptor.id, new Set(taskIds));
+  }
+  return [...matchesByApp]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([appId, taskIds]) => ({ appId, taskIds: [...taskIds].sort() }));
 }
 
 function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {

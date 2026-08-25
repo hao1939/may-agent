@@ -233,6 +233,14 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
   return stableEquals(actual, condition.spec.expected);
 }
 
+/** Shared matcher for per-App and global indexed Condition routes. */
+export function matchesAppTaskCondition(
+  condition: unknown,
+  event: Record<string, unknown>,
+): condition is AppTaskCondition {
+  return isCondition(condition) && condition.status.state !== "true" && matches(condition, event);
+}
+
 function observation(event: Record<string, unknown>): Record<string, unknown> {
   return {
     eventType: event.type,
@@ -364,9 +372,7 @@ function saveConditionMutation(
             ]
           : [],
       ),
-      conditions: [...changedConditionIds].flatMap((id) =>
-        tree.conditions?.[id] ? [tree.conditions[id]] : [],
-      ),
+      conditions: [...changedConditionIds].flatMap((id) => (tree.conditions?.[id] ? [tree.conditions[id]] : [])),
     },
   });
 }
@@ -430,7 +436,7 @@ export function matchingAppTaskConditionTaskIds(
   }
   const matched = new Set<string>();
   for (const { condition, taskIds } of routes ?? []) {
-    if (!isCondition(condition) || condition.status.state === "true" || !matches(condition, event)) continue;
+    if (!matchesAppTaskCondition(condition, event)) continue;
     for (const taskId of taskIds) {
       if (allowed && !allowed.has(taskId)) continue;
       matched.add(taskId);
