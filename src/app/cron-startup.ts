@@ -33,6 +33,7 @@ function currentProjectLifecycle(appDir: string): string | null {
 export function shouldResumeStartupSession(
   _sessionId: string,
   session: PersistedSession,
+  projectsRoot = "/app/projects",
 ): { resume: true } | { resume: false; reason?: string } {
   if (session.recoveryOwner === LEGACY_APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
@@ -55,7 +56,7 @@ export function shouldResumeStartupSession(
   }
   if (!session.projectId) return { resume: true };
 
-  const appDir = `/app/projects/${session.projectId}.app`;
+  const appDir = `${projectsRoot}/${session.projectId}.app`;
   if (currentProjectLifecycle(appDir) === "paused") {
     return {
       resume: false,
@@ -69,7 +70,7 @@ export function shouldResumeStartupSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts } = options;
 
-  recoverInstalledAppTasks(bus);
+  await recoverInstalledAppTasks(bus);
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
     shouldResume: shouldResumeStartupSession,
