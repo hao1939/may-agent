@@ -275,6 +275,9 @@ export async function runAppRuntime(opts: {
         },
       };
     },
+    // Durable routes are installed now, but recovered work waits until the
+    // control socket and other human interfaces are available.
+    deferStart: true,
   });
   markStartupPhase("inbox");
   if (appInboxRuntime.host.appIds().length > 0) {
@@ -492,6 +495,9 @@ export async function runAppRuntime(opts: {
       bus,
       loaderOpts,
     });
+  }
+  await appInboxRuntime.start();
+  if (CRON_ENABLED) {
     // App work is asynchronous, but it must not compete with state recovery,
     // session fencing, or opening the human interfaces during daemon startup.
     startAppTaskControllers();
