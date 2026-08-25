@@ -3,13 +3,15 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/requests.js";
-import { createAppInboxItem } from "../app-inbox-store.js";
+import { createAppInboxItem, createConversationTopic } from "../app-inbox-store.js";
 import { EVENT_ROW_ID, EventBus } from "../event-bus.js";
 import {
   attachTelegramBot as attachTelegramBotRuntime,
   renderTelegramApps,
   renderTelegramTask,
   renderTelegramTasks,
+  renderTelegramTopic,
+  renderTelegramTopics,
   renderTelegramTodos,
   telegramMayInputEvent,
 } from "./telegram.js";
@@ -59,6 +61,7 @@ describe("Telegram May input", () => {
         topicId: 7,
         conversationId: "telegram:chat:123:topic:7:agent:may",
         replyToMessageId: 499,
+        conversationTopicId: "topic_0df0c0edbf95b5bbc5c87598",
         context: { quotedText: "Earlier question" },
       }),
     ).toEqual({
@@ -70,10 +73,39 @@ describe("Telegram May input", () => {
         text: "Please inspect this",
         context: { quotedText: "Earlier question" },
         replyTo: "telegram:123:499",
-        metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 502 },
+        metadata: {
+          channel: "telegram",
+          channelTargetId: "123",
+          channelThreadId: "7",
+          channelMessageId: 502,
+          topicId: "topic_0df0c0edbf95b5bbc5c87598",
+        },
       },
       idempotencyKey: "telegram:123:502",
     });
+  });
+
+  it("renders recent Topics and one selected Topic without turning it into work", () => {
+    const topic = {
+      id: "topic_0df0c0edbf95b5bbc5c87598",
+      title: "Review the design",
+      openedBy: "human",
+      originMessageId: "human-history",
+      taskRefs: [{ appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" }],
+    };
+    expect(renderTelegramTopics([topic], topic.id)).toContain("✓ 0df0c0ed · Review the design · 1 Task");
+    expect(
+      renderTelegramTopic(topic, [
+        {
+          id: "human-history",
+          sequence: 1,
+          author: { kind: "human", id: "human-history" },
+          text: "Please review the design",
+          metadata: { topicId: topic.id },
+          createdAt: 1,
+        },
+      ]),
+    ).toContain("You: Please review the design");
   });
 
   it("renders the same Task resources with Telegram-friendly cards", () => {
@@ -705,6 +737,103 @@ describe("Telegram May input", () => {
       await waitFor(() => cancelCalls.length === 1);
       expect(cancelCalls[0]).toEqual({ ref: "8f12ac90", reason: "human requested cancellation from Telegram" });
       expect(sent).toContain("No Task is watched.");
+    } finally {
+      bot.close();
+      unsubscribe();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
+  });
+
+  it("follows a Topic and attaches the exact Topic to later human messages", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-topic-"));
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    const sent: string[] = [];
+    const observed: any[] = [];
+    let updatePolls = 0;
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const method = String(url).split("/").at(-1) ?? "";
+      if (method === "getMe")
+        return { json: async () => ({ ok: true, result: { username: "may", first_name: "May" } }) } as Response;
+      if (method === "getUpdates" && updatePolls++ === 0) {
+        return {
+          json: async () => ({
+            ok: true,
+            result: [
+              { update_id: 1, message: { message_id: 501, chat: { id: 123 }, text: "/topics" } },
+              { update_id: 2, message: { message_id: 502, chat: { id: 123 }, text: "/topic 0df0c0ed" } },
+              { update_id: 3, message: { message_id: 503, chat: { id: 123 }, text: "What changed?" } },
+              { update_id: 4, message: { message_id: 504, chat: { id: 123 }, text: "/topic" } },
+              { update_id: 5, message: { message_id: 505, chat: { id: 123 }, text: "/topic clear" } },
+              { update_id: 6, message: { message_id: 506, chat: { id: 123 }, text: "Start a separate subject" } },
+            ],
+          }),
+        } as Response;
+      }
+      if (method === "getUpdates") return await new Promise<Response>(() => {});
+      if (method === "sendMessage") {
+        const body = JSON.parse(String(init?.body));
+        sent.push(body.text);
+        return { json: async () => ({ ok: true, result: { message_id: 900 + sent.length } }) } as Response;
+      }
+      throw new Error(`Unexpected Telegram method ${method}`);
+    }) as typeof fetch;
+    process.env.TELEGRAM_BOT_TOKEN = "test-token";
+    process.env.TELEGRAM_CHAT_ID = "123";
+
+    const db = getDb(root);
+    const topicId = "topic_0df0c0edbf95b5bbc5c87598";
+    createConversationTopic(db, {
+      id: topicId,
+      appId: "may",
+      conversationId: "may:primary",
+      title: "Review the design",
+      openedBy: "human",
+      originMessageId: "human-history",
+      now: 1,
+    });
+    createAppInboxItem(db, {
+      id: "human-history",
+      appId: "may",
+      topicId,
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      channel: "may-console",
+      source: { kind: "human", id: "human-history" },
+      input: { kind: "message", data: { message: "Please review the design" } },
+      now: 1,
+    });
+
+    const bus = new EventBus();
+    const unsubscribe = bus.subscribe((event) => observed.push(event));
+    const bot = attachTelegramBot({ bus, interfaceAgent: "may", persistDir: root, humanTasks: {} as any });
+    try {
+      await waitFor(() => sent.some((text) => text.includes("Recent Topics:")));
+      await waitFor(() => sent.some((text) => text.includes("Following 0df0c0ed · Review the design")));
+      await waitFor(() =>
+        observed.some(
+          (event) =>
+            event.type === "conversation.message.created" &&
+            event.data?.text === "What changed?" &&
+            event.data?.metadata?.topicId === topicId,
+        ),
+      );
+      await waitFor(() => sent.some((text) => text.includes("Stopped following Topic 0df0c0ed")));
+      await waitFor(() =>
+        observed.some(
+          (event) =>
+            event.type === "conversation.message.created" &&
+            event.data?.text === "Start a separate subject" &&
+            event.data?.metadata?.topicId === undefined,
+        ),
+      );
     } finally {
       bot.close();
       unsubscribe();
