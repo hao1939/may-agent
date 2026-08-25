@@ -191,6 +191,129 @@ describe("App inbox host", () => {
     expect(readAppConversationResource(db, "may", "may:primary").topics).toEqual([]);
   });
 
+  it("finishes the frontend request after one durable follow-up handoff", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent", inputKinds: ["probe"] },
+      task: (input) => desiredTask(input.id),
+      tasks: {},
+    });
+    const handoffs: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [may, app("evaluation")],
+      resolveRequest: async () => ({
+        summary: "The review needs durable work.",
+        response: "I’ll keep this review moving and bring the result back here.",
+        topic: { kind: "new", title: "Review the design" },
+        followUp: {
+          outcome: "Review the design",
+          acceptance: ["Return evidence-backed suggestions"],
+          appId: "evaluation",
+          input: { kind: "probe", data: { value: "review-design" } },
+        },
+      }),
+      onRequestFollowUp: (item, followUp, topicId) => handoffs.push({ item: item.id, followUp, topicId }),
+    });
+    host.admit({
+      id: "turn-review",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-review" },
+      input: { kind: "probe", data: { value: "review the design" } },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(host.get("turn-review")).toMatchObject({
+      status: "done",
+      result: { response: expect.stringContaining("keep this review moving") },
+    });
+    expect(listAppInboxChildren(db, "turn-review")).toEqual([]);
+    expect(handoffs).toEqual([
+      expect.objectContaining({
+        item: "turn-review",
+        followUp: expect.objectContaining({ appId: "evaluation", outcome: "Review the design" }),
+        topicId: expect.stringMatching(/^topic_/),
+      }),
+    ]);
+  });
+
+  it("uses a focused Task as evidence for advice without mutating it", async () => {
+    const conversationalInput = Type.Object({
+      kind: Type.Literal("probe"),
+      data: Type.Object({
+        value: Type.String(),
+        context: Type.Object({
+          focusedTask: Type.Object({ appId: Type.String(), taskId: Type.String() }),
+        }),
+      }),
+    });
+    const attachments: AppTaskAttachment[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          id: "may",
+          version: 1,
+          agent: "may",
+          inputSchema: conversationalInput,
+          requests: { mode: "agent" },
+        }),
+      ],
+      readDependency: async ({ appId, dependency }) => ({
+        ...dependency,
+        status: "waiting",
+        summary: `${appId} is waiting for a build result`,
+      }),
+      resolveRequest: async ({ request }) => {
+        expect(request.focusedTask).toEqual({
+          appId: "evaluation",
+          task: {
+            kind: "task",
+            id: "review/docs",
+            status: "waiting",
+            summary: "evaluation is waiting for a build result",
+          },
+        });
+        return {
+          summary: "The wait is supported by a live build.",
+          response: "Yes. This wait makes sense because the required build is still running.",
+          topic: { kind: "none" },
+        };
+      },
+      attachTask: async ({ attachment }) => {
+        attachments.push(attachment);
+        return { taskId: "unexpected" };
+      },
+    });
+    host.admit({
+      id: "turn-ask-about-task",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-ask-about-task" },
+      input: {
+        kind: "probe",
+        data: {
+          value: "does this wait make sense?",
+          context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } },
+        },
+      },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(host.get("turn-ask-about-task")).toMatchObject({
+      status: "done",
+      result: { response: expect.stringContaining("wait makes sense") },
+    });
+    expect(listAppInboxChildren(db, "turn-ask-about-task")).toEqual([]);
+    expect(attachments).toEqual([]);
+  });
+
   it("puts an event request and its direct answer in the App's default Conversation", async () => {
     const changed: string[] = [];
     const may = defineApp({
@@ -375,6 +498,72 @@ describe("App inbox host", () => {
       status: "handling",
       waitingOn: { kind: "app", id: "children:turn-explain-and-work" },
     });
+  });
+
+  it("answers a mixed request now and steers the exact focused Task", async () => {
+    const conversationalInput = Type.Object({
+      kind: Type.Literal("probe"),
+      data: Type.Object({
+        value: Type.String(),
+        context: Type.Object({
+          focusedTask: Type.Object({ appId: Type.String(), taskId: Type.String() }),
+        }),
+      }),
+    });
+    const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
+    const messages: string[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          id: "may",
+          version: 1,
+          agent: "may",
+          inputSchema: conversationalInput,
+          requests: { mode: "agent" },
+        }),
+        app("evaluation"),
+      ],
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
+      resolveRequest: async () => ({
+        summary: "The wait lacks a live blocker, so the existing Task should reconsider it.",
+        response: "The wait does not make sense. I’m asking the same Evaluation Task to re-check it now.",
+        topic: { kind: "new", title: "Review the invalid wait" },
+        dependencies: [
+          {
+            id: "reconsider-wait",
+            appId: "evaluation",
+            taskId: "review/docs",
+            input: { kind: "probe", data: { value: "Reconsider the wait from current evidence." } },
+          },
+        ],
+      }),
+      attachTask: async ({ appId, attachment }) => {
+        attachments.push({ appId, attachment });
+        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      },
+      onRequestMessage: (_item, text) => messages.push(text),
+    });
+    host.admit({
+      id: "turn-challenge-wait",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-challenge-wait" },
+      input: {
+        kind: "probe",
+        data: {
+          value: "does this wait make sense? if not, fix it",
+          context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } },
+        },
+      },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(messages).toEqual(["The wait does not make sense. I’m asking the same Evaluation Task to re-check it now."]);
+    expect(listAppInboxChildren(db, "turn-challenge-wait")).toHaveLength(1);
+    await host.reconcileOnce("evaluation");
+    expect(attachments).toEqual([{ appId: "evaluation", attachment: { kind: "existing", taskId: "review/docs" } }]);
   });
 
   it("reviews each completed child once while other delegated work keeps running", async () => {

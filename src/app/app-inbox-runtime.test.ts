@@ -18,8 +18,10 @@ import {
 import { AppRegistry } from "./app-registry.js";
 import {
   claimNextAppInboxItem,
+  createConversationTopic,
   createAppInboxItem,
   readAppConversationResource,
+  readConversationTopic,
   waitAppInboxClaim,
 } from "./app-inbox-store.js";
 
@@ -233,6 +235,169 @@ describe("App inbox runtime", () => {
       targetTaskId: "probe/current",
       waitingOn: { kind: "task", id: "probe/current" },
     });
+  });
+
+  it("hands one bounded May turn to one standing follow-up Task event", async () => {
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may", version: 1, agent: "may",
+        inputSchema: { anyOf: [
+          { type: "object", additionalProperties: false, required: ["kind", "data"], properties: {
+            kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
+              message: { type: "string" }
+            } }
+          } },
+          { type: "object", additionalProperties: false, required: ["kind", "data"], properties: {
+            kind: { const: "goal" }, data: { type: "object", required: ["outcome", "acceptance"], properties: {
+              outcome: { type: "string" }, acceptance: { type: "array", items: { type: "string" } }
+            } }
+          } }
+        ] },
+        requests: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
+        task(input) { return { kind: "desired", intent: {
+          id: "goal/" + input.id, parentId: "may", outcome: input.input.data.outcome,
+          acceptance: input.input.data.acceptance, mode: "achieve", agent: "may"
+        } }; },
+        tasks: {
+          subscriptions: [{ type: "app.follow-up.requested", project: "may" }],
+          resolve(event) { return event.type === "app.follow-up.requested" ? {
+            id: "conversation/follow-up", parentId: "may", outcome: "Follow conversation work",
+            acceptance: ["Every follow-up is linked and reported"], mode: "maintain", agent: "may",
+            category: "internal"
+          } : null; }
+        }
+      };\n`,
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const taskAdmissions: Array<Record<string, any>> = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      resolveRequest: async () => ({
+        summary: "The review needs durable work.",
+        response: "I’ll keep the review moving and return the result here.",
+        topic: { kind: "new", title: "Review the design" },
+        followUp: {
+          outcome: "Review the design",
+          acceptance: ["Return evidence-backed suggestions"],
+          appId: "evaluation",
+          input: { kind: "probe", data: { value: "review-design" } },
+        },
+      }),
+      admitTaskEvent: (input: any) => {
+        taskAdmissions.push(input);
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "conversation.message.created",
+      source: "may-console",
+      owner: "app:may",
+      target: { appId: "may" },
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "human", id: "human-review" },
+        text: "Review the design",
+      },
+    });
+
+    await waitUntil(() => {
+      const row = db
+        .prepare("SELECT status FROM app_inbox_items WHERE app_id = 'may' AND source_id = 'human-review'")
+        .get() as { status?: string } | null;
+      return taskAdmissions.length === 1 && row?.status === "done";
+    });
+    expect(taskAdmissions[0]).toMatchObject({
+      appId: "may",
+      intent: { id: "conversation/follow-up", mode: "maintain", category: "internal" },
+      event: { type: "app.follow-up.requested" },
+    });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
+      count: 1,
+    });
+  });
+
+  it("projects a standing Task result into Conversation and links its exact work", async () => {
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may", version: 1, agent: "may",
+        inputSchema: { type: "object", required: ["kind", "data"], properties: {
+          kind: { const: "message" }, data: { type: "object" }
+        } },
+        requests: { mode: "agent", conversationId: "may:primary" }
+      };\n`,
+    );
+    createConversationTopic(db, {
+      id: "topic-review",
+      appId: "may",
+      conversationId: "may:primary",
+      title: "Review the design",
+      openedBy: "human",
+      originMessageId: "message-review",
+      now: 1,
+    });
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const messages: Array<Record<string, any>> = [];
+    bus.subscribe((event) => {
+      if (event.type === "conversation.message.created" && event.source === "app-task-follow-up") {
+        messages.push(event as unknown as Record<string, any>);
+      }
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      resolveRequest: async () => ({ summary: "unused", response: "unused", topic: { kind: "none" } }),
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "project.task.reconciled",
+      source: "app-task:may:task-reconciler",
+      owner: "agent:may",
+      data: {
+        project: "may",
+        taskId: "conversation/follow-up",
+        generation: 3,
+        disposition: "waiting",
+        summary: "The design review is running.",
+        result: {
+          conversation: {
+            conversationId: "may:primary",
+            topicId: "topic-review",
+            followUpId: "turn-review",
+            text: "The design review is running in Evaluation Task 1234abcd.",
+            taskRefs: [{ appId: "evaluation", taskId: "review/design" }],
+          },
+        },
+      },
+    });
+
+    await waitUntil(() => messages.length === 1);
+    expect(messages[0]?.data).toMatchObject({
+      appId: "may",
+      conversationId: "may:primary",
+      author: { kind: "agent", id: "may" },
+      metadata: {
+        topicId: "topic-review",
+        taskRefs: [{ appId: "evaluation", taskId: "review/design" }],
+      },
+    });
+    expect(readConversationTopic(db, "may", "may:primary", "topic-review")?.taskRefs).toEqual([
+      expect.objectContaining({ appId: "evaluation", taskId: "review/design" }),
+    ]);
   });
 
   it("continues an exact focused Task when a human replies to it", async () => {

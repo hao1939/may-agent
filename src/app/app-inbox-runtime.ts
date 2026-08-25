@@ -27,8 +27,10 @@ import {
   type AppTaskAttacher,
 } from "./app-inbox-host.js";
 import {
+  linkConversationTopicTask,
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
+  readConversationTopic,
   type AppInboxItem,
 } from "./app-inbox-store.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
@@ -382,6 +384,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         },
       });
     },
+    onRequestFollowUp(item, followUp, topicId) {
+      if (!item.conversationId) {
+        throw new Error(`App follow-up ${item.id} requires a Conversation`);
+      }
+      options.bus.emit({
+        type: "app.follow-up.requested",
+        source: "app-inbox",
+        owner: `app:${item.appId}`,
+        target: { appId: item.appId, project: item.appId },
+        data: {
+          appId: item.appId,
+          conversationId: item.conversationId,
+          topicId,
+          requestId: item.id,
+          sourceMessageId: item.source.id,
+          followUp,
+        },
+        idempotencyKey: `may-follow-up:${item.id}`,
+      } as unknown as AgentEvent);
+    },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
       const directParent = item.parentId ? host.get(item.parentId) : null;
@@ -451,6 +473,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           ...(result.response ? { response: result.response } : {}),
           ...(result.result ? { result: result.result } : {}),
           ...(result.evidence ? { evidence: result.evidence } : {}),
+          ...(item.waitingOn?.kind === "task" ? { taskId: item.waitingOn.id, appId: item.appId } : {}),
         },
       });
     },
@@ -953,6 +976,47 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
       const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
       const summary = typeof data.summary === "string" ? data.summary.trim() : "";
+      const conversationResult = record(record(data.result).conversation);
+      const conversationId =
+        typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";
+      const topicId = typeof conversationResult.topicId === "string" ? conversationResult.topicId.trim() : "";
+      const followUpId =
+        typeof conversationResult.followUpId === "string" ? conversationResult.followUpId.trim() : "";
+      const text = typeof conversationResult.text === "string" ? conversationResult.text.trim() : "";
+      const taskRefs = Array.isArray(conversationResult.taskRefs)
+        ? conversationResult.taskRefs.flatMap((value) => {
+            const item = record(value);
+            const refAppId = typeof item.appId === "string" ? item.appId.trim().replace(/\.app$/, "") : "";
+            const refTaskId = typeof item.taskId === "string" ? item.taskId.trim() : "";
+            return refAppId && refTaskId ? [{ appId: refAppId, taskId: refTaskId }] : [];
+          }).slice(0, 100)
+        : [];
+      if (appId && conversationId && topicId && followUpId && text) {
+        const topic = readConversationTopic(options.db, appId, conversationId, topicId);
+        if (topic) {
+          for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
+          options.bus.emit({
+            type: "conversation.message.created",
+            source: "app-task-follow-up",
+            owner: `app:${appId}`,
+            data: {
+              appId,
+              conversationId,
+              author: { kind: "agent", id: appId },
+              text,
+              metadata: {
+                topicId,
+                taskRefs,
+                ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
+              },
+              idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
+                .update(text)
+                .digest("hex")
+                .slice(0, 16)}`,
+            },
+          });
+        }
+      }
       if (appId === "may" && taskId && disposition === "waiting") {
         const statusIdentity = `${data.generation ?? "?"}:${createHash("sha256")
           .update(`${disposition}\0${summary}`)

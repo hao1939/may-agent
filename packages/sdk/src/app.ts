@@ -203,13 +203,31 @@ export type AppRequestTaskControl = {
   reason: string;
 };
 
+/** Durable intent handed from a bounded conversational turn to App-owned work. */
+export type AppRequestFollowUp = {
+  outcome: string;
+  constraints?: string[];
+  acceptance: string[];
+  /** App selected from the installed catalog; use the current App only when it is the best owner. */
+  appId: string;
+  /** Typed input accepted by that App. */
+  input: AppInput;
+  /** Continue this exact unfinished Task when the conversation already resolved it. */
+  task?: { appId: string; taskId: string };
+};
+
 /** One bounded conversational decision. Code applies it; the model decides meaning. */
 export type AppRequestDecision = {
   summary: string;
-  /** Plain-language text shown now; it may accompany work that continues to a later final result. */
+  /**
+   * Plain-language answer shown now. With no effects it completes the turn;
+   * it may also accompany exact durable work that continues to a later result.
+   */
   response?: string;
   evidence?: string[];
   topic: AppRequestTopicDecision;
+  /** Persist one event for the App's standing follow-up Task; the request then completes. */
+  followUp?: AppRequestFollowUp;
   /** Exact existing Task input or genuinely new App work selected by the model. */
   dependencies?: AppRequestDependency[];
   taskControls?: AppRequestTaskControl[];
@@ -228,6 +246,27 @@ export const appRequestAgentResultSchema = Type.Object(
       Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
       Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
     ]),
+    followUp: Type.Optional(
+      Type.Object(
+        {
+          outcome: nonEmptyStringSchema,
+          constraints: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
+          acceptance: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+          appId: nonEmptyStringSchema,
+          input: Type.Object(
+            { kind: nonEmptyStringSchema, data: Type.Unknown() },
+            { additionalProperties: false },
+          ),
+          task: Type.Optional(
+            Type.Object(
+              { appId: nonEmptyStringSchema, taskId: nonEmptyStringSchema },
+              { additionalProperties: false },
+            ),
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     dependencies: Type.Optional(
       Type.Array(
         Type.Object(
@@ -323,6 +362,8 @@ export type AppTaskPolicy = {
 /** Direct bounded handling for conversational input; it creates no App Task. */
 export type AppRequestPolicy = {
   mode: "agent";
+  /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */
+  inputKinds?: string[];
   /** Conversation used for event/API requests that do not arrive through a conversation adapter. */
   conversationId?: string;
 };
