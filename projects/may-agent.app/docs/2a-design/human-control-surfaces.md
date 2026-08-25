@@ -23,7 +23,7 @@ Telegram ─┘                                │
 The ordinary human objects are:
 
 - an App, which owns a responsibility;
-- a Task, which is durable work reconciled by an App; and
+- a Task, which is durable work reconciled by an App;
 - a Topic, which links related turns to exact App Tasks; and
 - a Conversation message, which is how a human talks with May.
 
@@ -37,21 +37,30 @@ or an attempt selected by an App.
 
 Every human adapter exposes the same small meanings:
 
-| Meaning             | Console form              | Telegram form                         |
-| ------------------- | ------------------------- | ------------------------------------- |
-| list or select App  | `/apps [app]`             | native `/apps [app]`                  |
-| list Tasks          | `/tasks [all] [history]`, then `/tasks more` | native `/tasks [all] [history]`, then `/tasks more` |
-| show human actions  | `/todo [all]`, `/todo more` | native `/todo [all]`, `/todo more`   |
-| read one Task       | `/task <ref>`             | native `/task <ref>`                  |
-| watch one Task      | `/watch [ref]`            | `/watch [ref]`, later buttons allowed |
-| stop watching       | `/unwatch`                | `/unwatch`                            |
-| cancel one Task     | `/cancel [ref]`           | `/cancel [ref]`                       |
-| reload definitions  | `/reload`                 | native `/reload`                      |
-| talk or give feedback | bare text               | ordinary message                      |
+| Meaning                | Console form                                   | Telegram form                                         |
+| ---------------------- | ---------------------------------------------- | ----------------------------------------------------- |
+| list or select App     | `/apps [app]`                                  | native `/apps [app]`                                  |
+| list Topics            | `/topics`                                      | native `/topics`                                      |
+| show or follow Topic   | `/topic [ref\|clear]`                         | native `/topic [ref\|clear]`                         |
+| list Tasks             | `/tasks [all] [history]`, then `/tasks more`   | native `/tasks [all] [history]`, then `/tasks more`   |
+| show human actions     | `/todo [all]`, `/todo more`                    | native `/todo [all]`, `/todo more`                    |
+| read one Task          | `/task <ref>`                                  | native `/task <ref>`                                  |
+| watch one Task         | `/watch [ref]`                                 | `/watch [ref]`, later buttons allowed                 |
+| stop watching          | `/unwatch`                                     | `/unwatch`                                            |
+| cancel one Task        | `/cancel [ref]`                                | `/cancel [ref]`                                       |
+| reload definitions     | `/reload`                                      | native `/reload`                                      |
+| talk or give feedback  | bare text                                      | ordinary message                                      |
 
 Adapters may render these resources differently. Console uses aligned text and
 tab completion. Telegram uses compact messages and may add native buttons.
 The Host resolves Apps and Task references and revalidates canonical identity.
+
+Each surface may also follow one recent Topic. `/topics` lists its short
+reference, plain title, and linked Task count. `/topic <ref>` selects it and
+shows recent related turns plus linked Task references; `/topic` shows the
+current selection and `/topic clear` leaves it. The selection only adds the
+exact Topic ID to later human messages. It never starts, stops, or owns work.
+Switching Topic ends an unrelated local Task watch, but the Task continues.
 
 Each adapter surface keeps one selected App, initially `may`. `/apps` lists
 Apps and `/apps <app>` changes that local selection. `/tasks` reads active

@@ -130,9 +130,11 @@ After durable admission or a persisted May response, the Host emits
 Console and Telegram re-read the Conversation and independently render stable
 message IDs they have not shown. They never forward content to each other.
 
-`/apps`, `/tasks`, `/task`, and `/todo` remain resource reads. When a rendered
-view may shape the next turn, the adapter appends a concise command-authored
-message with exact identities. Formatting stays adapter-local.
+`/apps`, `/topics`, `/topic`, `/tasks`, `/task`, and `/todo` remain resource
+reads. Each surface may follow one Topic and attach its exact ID to later human
+Turns; this adapter-local selection creates no work. When a rendered view may
+shape the next turn, the adapter appends a concise command-authored message
+with exact identities. Formatting stays adapter-local.
 
 ## Presentation
 

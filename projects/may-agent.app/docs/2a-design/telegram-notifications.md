@@ -226,6 +226,7 @@ trace or conversation.
 Telegram exposes the same small Task meanings as Console:
 
 - `/apps [app]`;
+- `/topics` and `/topic [ref|clear]`;
 - `/tasks [all] [history]`;
 - `/todo [all]` and `/todo more`;
 - `/task <ref>`;
@@ -243,6 +244,9 @@ Ordinary help does not expose Host request history, session listing, steering,
 or session cancellation.
 
 One chat/topic selects one App (initially `may`) and watches at most one Task.
+It may also follow one Conversation Topic. The selected Topic ID is attached to
+later ordinary messages; the Telegram chat thread remains only a provider
+coordinate. Topic selection does not create or control a Task.
 While watched, ordinary text remains a May Conversation turn with exact
 `context.focusedApp` and `context.focusedTask`; focus supplies context and does
 not force feedback or mutation. Text is never sent directly to an execution

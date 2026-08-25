@@ -64,35 +64,38 @@ For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 
 ## Human Requests
 
-Console, Web, Telegram, and control-socket text all admit one durable request
-linked to one May App (`appId: may`) Task. Each reconciliation attempt is a
-bounded job session; the task, not the session, owns eventual handling and
-restart recovery.
+Console, Web, Telegram, and control-socket text all add one durable human Turn
+to May's Conversation and admit one recoverable May request. The request
+remembers which Turn needs an answer; it is not executable work and does not
+create a May Task.
 
 ```
 may> implement a retry mechanism for failed API calls
       ↓
-  one May request/task -> first-attempt answer or child App task
+  one May request -> direct answer or responsible App Task
 
 may> now add tests for it
       ↓
-  a new May App request with bounded conversation context
+  a new May request with bounded Conversation and Topic context
 ```
 
-Conversation context can relate the requests, but it never substitutes for a
-durable dependency. Long-running work must be represented by the current task,
-a child task, or an exact dependency before the current attempt ends.
+May may group related Turns under a Topic. A Topic remembers what you are
+discussing and links the responsible App Tasks; it has no status or execution
+loop. Long-running work is always represented by an exact Task owned by the App
+that can do it.
 
 May may answer directly or send typed input to the responsible App. The target
 App then owns its own Task. For example, Runtime deployment work belongs to the
-Host Operations App (`appId: may-agent`), not to the May Conversation Task and
-not to the bounded agent run named `may`.
+Host Operations App (`appId: may-agent`), not to May and not to the bounded
+agent run named `may`.
 
 ### May Console controls
 
 | Command               | Action                                                    |
 | --------------------- | --------------------------------------------------------- |
 | `/apps [app]`         | List Apps or select the current App                       |
+| `/topics`             | List recent Topics and their linked Task count            |
+| `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
 | `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps or recent terminal Tasks |
 | `/tasks more`         | Continue the exact prior Task list when another page exists |
 | `/todo [all]`         | Show Tasks with an explicit open human-owned Condition      |
@@ -108,6 +111,11 @@ Bare text always goes through May with the selected App as context. While
 watching, Console also attaches the exact Task identity as context. May decides
 whether the human is asking about it, changing it, or starting another topic;
 Console never steers an execution session directly.
+
+Use `/topic <ref>` when you want later turns to continue one subject. The
+prompt shows the short Topic reference, and `/topic` gives a compact catch-up
+with its related Turns and Tasks. Use `/topic clear` to leave it. Following a
+Topic changes context only; use `/task` or `/watch` for live work state.
 
 Use `/todo` for decisions needed by the selected App, `/todo all` for the
 cross-App view, and `/todo more` when another page exists. The prompt count and

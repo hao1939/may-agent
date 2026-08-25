@@ -30,24 +30,26 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 
 ## Commands
 
-| Command                | Meaning                                               |
-| ---------------------- | ----------------------------------------------------- |
-| `/apps [app]`          | List Apps or select one App                           |
+| Command                  | Meaning                                               |
+| ------------------------ | ----------------------------------------------------- |
+| `/apps [app]`            | List Apps or select one App                           |
+| `/topics`                | List recent Conversation Topics                       |
+| `/topic [ref\|clear]`   | Show, follow, or leave one Topic                      |
 | `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps/history |
-| `/todo [all]`          | Show Tasks that explicitly need human action         |
-| `/todo more`           | Continue the current human-action page                |
-| `/task <ref>`          | Read one exact Task                                   |
-| `/watch [ref]`         | Watch a Task or show the current watched Task         |
-| `/unwatch`             | Stop watching without changing the Task               |
-| `/cancel [ref]`        | Cancel the named or currently watched Task            |
-| `/help`                | Show the ordinary interface                           |
-| `/reload`, `/restart`  | Typed Runtime controls                                |
-| `/shell`               | Leave Console for an interactive shell                |
-| `/exit`                | Close only this adapter                               |
+| `/todo [all]`            | Show Tasks that explicitly need human action         |
+| `/todo more`             | Continue the current human-action page                |
+| `/task <ref>`            | Read one exact Task                                   |
+| `/watch [ref]`           | Watch a Task or show the current watched Task         |
+| `/unwatch`               | Stop watching without changing the Task               |
+| `/cancel [ref]`          | Cancel the named or currently watched Task            |
+| `/help`                  | Show the ordinary interface                           |
+| `/reload`, `/restart`    | Typed Runtime controls                                |
+| `/shell`                 | Leave Console for an interactive shell                |
+| `/exit`                  | Close only this adapter                               |
 
-Command, App, and recently rendered Task references support tab completion.
-Completion uses bounded local caches; it never asks a model to interpret a
-command.
+Command, App, recent Topic references, and recently rendered Task references
+support tab completion. Completion uses bounded local caches; it never asks a
+model to interpret a command.
 
 Host request history, session listing, steering, and session cancellation are
 not ordinary Console commands. Diagnostic raw/session output remains behind
@@ -72,6 +74,11 @@ the selection read before interpreting that next input. The normal prompt is:
 ```text
 you[may]>
 ```
+
+Following a Topic adds its short reference to the prompt, for example
+`you[may · 0df0c0ed]>`. Later bare text carries the exact Topic ID. Topic
+selection is local context, not work; Task progress remains under `/task` and
+`/watch`.
 
 When the selected App has open human actions, the prompt includes their
 authoritative count, such as `you[evaluation · 2 todo]>`.
