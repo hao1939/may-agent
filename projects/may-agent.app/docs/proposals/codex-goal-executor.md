@@ -433,7 +433,7 @@ Do not start production migration until all are true:
 8. The public result contract remains `converged` or exact `waiting`; internal
    progress does not end execution.
 9. App verification remains the only completion authority.
-10. Current one-shot `codex` behavior remains unchanged while the PoC is enabled.
+10. The legacy one-shot `codex` adapter remains separate from `codex-goal`.
 
 Resource gates are intentionally not assigned optimistic thresholds from one
 sample. Compare one-shot Codex and goal mode at 1, 2, and 4 concurrent attempts
