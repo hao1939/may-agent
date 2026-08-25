@@ -8,7 +8,7 @@ import type {
   AppServerNotification,
   CodexGoalObservation,
   CodexTurnCompletion,
-} from "../../scripts/poc/codex-goal-client.js";
+} from "./codex-goal-client.js";
 
 const roots: string[] = [];
 
@@ -38,7 +38,7 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
       acceptance: ["Cite exact current evidence"],
       mode: "achieve",
       agent: "evaluator",
-      executor: "codex-goal-poc",
+      executor: "codex-goal",
       input: { targetProject: "may-agent.app", readOnly: true },
       conditions: [],
     },

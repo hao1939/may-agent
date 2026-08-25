@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import { CodexGoalPocClient } from "./codex-goal-client.js";
-import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
+import { CodexGoalAppServerClient } from "../../src/app/codex-goal-client.js";
+import { admitCodexGoalTaskResult } from "../../src/app/codex-goal-result.js";
 import { sampleProcessTreeRssKiB } from "./codex-goal-resources.js";
 
 function argument(name: string): string | undefined {
@@ -25,7 +25,7 @@ if (sandboxArg !== "read-only" && sandboxArg !== "workspace-write" && sandboxArg
 const sandbox = sandboxArg;
 
 const startedAtMs = performance.now();
-const client = CodexGoalPocClient.spawn({ cwd });
+const client = CodexGoalAppServerClient.spawn({ cwd });
 const activity: Array<{ at: string; method: string }> = [];
 let firstActivityAtMs: number | null = null;
 let peakProcessTreeRssKiB: number | null = null;

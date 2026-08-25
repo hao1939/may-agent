@@ -12,7 +12,7 @@ const intent = taskIntentForInput({
   kind: "codex-goal-trial",
   data: { targetProject: "evaluation.app", focus },
 });
-if (!intent || intent.executor !== "codex-goal-poc") throw new Error("evaluation.app did not produce the trial Task");
+if (!intent || intent.executor !== "codex-goal") throw new Error("evaluation.app did not produce the Codex goal Task");
 
 const root = join(tmpdir(), `may-codex-goal-app-trial-${process.pid}`);
 rmSync(root, { recursive: true, force: true });
