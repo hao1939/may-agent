@@ -5,11 +5,30 @@
 and a compatibility execution tool, using the same persistent worker records,
 classified failures, expected-output validation, and native process runner.
 
-Tasks that select `codex-goal` use the
-[persistent Codex goal executor](../proposals/codex-goal-executor.md): Codex
-keeps working toward the Task goal, receives live Task events, and resumes the
-same thread after process failure. The older `codex` executor remains a
-one-shot compatibility adapter.
+Tasks that select `codex-goal` use the persistent Codex goal executor described
+here. Codex keeps working toward the Task goal, receives live Task events, and
+resumes the same thread after process failure. The older `codex` executor
+remains a one-shot compatibility adapter. The earlier
+[executor proposal](../proposals/codex-goal-executor.md) records evaluation
+history but does not override this accepted design.
+
+## Accepted Codex Goal Boundaries
+
+The correction boundary is the current fenced Task attempt: malformed output or
+a result-admission rejection is sent back to the same Codex thread, and Codex
+continues on its next automatic turn without ending that attempt. A native
+process failure ends the attempt; ordinary Runtime recovery retries the same
+Task and resumes its persisted thread. These two boundaries preserve one Task
+identity while avoiding a second correction lifecycle.
+
+Usage or budget exhaustion is an execution failure, not a Task wait. The
+executor throws the classified failure, Runtime releases and requeues the same
+Task under bounded retry policy, and a later attempt resumes the persisted
+thread. The executor must not return a `time.after` Condition, use
+`reviewAfterMs` as evidence, or claim that elapsed time proves capacity is
+available. If a future provider exposes a durable quota-reset observation, a
+separate accepted design may define an exact provider-backed Condition; until
+then no usage-limit Condition is valid.
 
 Direct execution sessions can delegate bounded coding work to native coding
 agents such as Codex CLI and Claude Code. These tools are not terminal tabs,

@@ -1,13 +1,13 @@
 # Resumable Codex Goal Executor
 
-**Status:** Evaluation canary; production executor name enabled for open-ended
-Evaluation reconciliation, with the former PoC name retained as an alias
+**Status:** Historical evaluation proposal; the accepted behavior and current
+correction/wait boundaries are authoritative in
+[`native-coding-workers.md`](../2a-design/native-coding-workers.md).
 
-**Scope:** use Codex as a strong, resumable Task executor now while preserving
-App Task authority and creating comparable evidence for improving the native
-May agent.
+**Scope:** records the evidence and reasoning used to introduce Codex as a
+resumable Task executor while preserving App Task authority.
 
-## Decision under review
+## Accepted decision
 
 Keep one durable work model:
 
