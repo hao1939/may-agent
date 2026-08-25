@@ -125,6 +125,14 @@ executor lifecycle stages, queue movement, and delivery bookkeeping. A passive
 executor progress event wakes the human surface only when it carries a useful
 human-readable message.
 
+`/tasks` uses plain, compact rows: Task reference, App, state, last-change age,
+concrete goal, and whether the human must act. `/task <ref>` puts the useful
+answers first: `Goal`, `State`, `Current`, `Expected result`, and `You`. When no
+open human-owned Condition exists, `You` explicitly says
+`Nothing needed right now.` Task ID and diagnostic session appear last. Console
+derives this from the shared Task view and does not invent a second status
+model.
+
 ## Watch
 
 Console subscribes to one exact canonical Task identity. A semantic Task event

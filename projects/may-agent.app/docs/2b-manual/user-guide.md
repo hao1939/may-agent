@@ -107,6 +107,11 @@ agent run named `may`.
 | `/reload`, `/restart` | Reload definitions or restart the Runtime                 |
 | `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
 
+`/tasks` shows each Task's plain state, concrete goal, and whether it needs you.
+Use `/task <ref>` for the goal, current progress or wait, expected result, exact
+human action (or `Nothing needed right now`), and last update time. Technical
+IDs and sessions are shown only as secondary details.
+
 Bare text always goes through May with the selected App as context. While
 watching, Console also attaches the exact Task identity as context. May decides
 whether the human is asking about it, changing it, or starting another topic;

@@ -580,6 +580,50 @@ describe("Gym task reconciliation", () => {
     expect(distinct.intent.id).not.toBe(first.intent.id);
   });
 
+  test("preserves a structured owner request as the concrete Task goal", () => {
+    const input: AppInput = {
+      kind: "owner-review",
+      data: {
+        outcome: "Cancel only Gym Tasks proven to be duplicates.",
+        acceptance: [
+          "List the identity evidence for each candidate.",
+          "Report the cancelled and retained Task ids.",
+          "Leave uncertain candidates unchanged.",
+        ],
+        constraints: ["Do not cancel by similar title alone."],
+      },
+    };
+
+    const task = taskForGymInput(admitted(input, "owner request/structured"));
+    expect(task).toMatchObject({
+      kind: "desired",
+      intent: {
+        outcome: "Cancel only Gym Tasks proven to be duplicates.",
+        acceptance: [
+          "List the identity evidence for each candidate.",
+          "Report the cancelled and retained Task ids.",
+          "Leave uncertain candidates unchanged.",
+        ],
+        input: { requestId: "owner request/structured", admittedInput: input },
+      },
+    });
+  });
+
+  test("keeps the safe owner-review fallback for an unstructured comment", () => {
+    const input: AppInput = {
+      kind: "owner-review",
+      data: { comment: "Please take a look at the current backlog." },
+    };
+    const task = taskForGymInput(admitted(input, "owner request/comment"));
+    if (task.kind !== "desired")
+      throw new Error("owner review did not produce a Task");
+
+    expect(task.intent.outcome).toBe(
+      "Review one request for the Gym project and organize the smallest useful next step from its exact admitted evidence.",
+    );
+    expect(task.intent.acceptance).toHaveLength(3);
+  });
+
   test("rejects malformed and unsupported inputs at the declared admission schema", () => {
     expect(
       Check(gymApp.inputSchema, {

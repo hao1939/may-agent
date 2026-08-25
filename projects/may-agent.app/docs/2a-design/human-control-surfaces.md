@@ -106,6 +106,31 @@ returns ten compact cards at a time and `/tasks more` continues the same opaque
 cursor. Exact outcome, progress, result, and evidence stay available through
 `/task <ref>`.
 
+Apps must author `spec.outcome` as the concrete goal a human can recognize and
+`spec.acceptance` as the observable result that finishes it. The human surface
+does not recover a hidden goal from arbitrary App input and does not ask a model
+to rewrite generic Task text.
+
+Each compact Task row shows the stable reference, owning App, a plain state
+(`queued`, `working`, `waiting`, `needs review`, `done`, or `cancelled`), how
+recently it changed, its goal, and either `needs you` or `no action from you`.
+`attention` alone means App review or recovery; only an open human-owned
+Condition means `needs you`.
+
+An exact Task view answers five questions directly from the existing resource:
+
+1. `Goal` — what the Task is for (`spec.outcome`);
+2. `State` — what its phase, readiness, and current attempt mean in plain
+   language;
+3. `Current` — its newest useful progress, result, or exact wait;
+4. `Expected result` — how completion is judged (`spec.acceptance`); and
+5. `You` — the requested human action, or `Nothing needed right now.`
+
+The exact updated time follows those answers. Canonical Task ID and diagnostic
+session remain available last as secondary details. This is one bounded read
+projection of Task truth: it adds no presentation record, lifecycle, polling,
+delivery acknowledgement, or model turn.
+
 ## Human actions
 
 Human attention is a derived Task view, not another inbox. A live Task appears

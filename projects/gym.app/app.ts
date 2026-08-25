@@ -136,6 +136,16 @@ function mayImprovementIntent(): TaskIntent {
 }
 
 function gymOwnerReviewIntent(input: AppInput, requestId: string): TaskIntent {
+  const data = params(input.data);
+  const requestedOutcome =
+    typeof data.outcome === "string" && data.outcome.trim()
+      ? data.outcome.trim()
+      : "";
+  const requestedAcceptance = Array.isArray(data.acceptance)
+    ? data.acceptance.flatMap((value) =>
+        typeof value === "string" && value.trim() ? [value.trim()] : [],
+      )
+    : [];
   const readableRequestId = requestId
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -148,12 +158,16 @@ function gymOwnerReviewIntent(input: AppInput, requestId: string): TaskIntent {
     id: `owner-review/${readableRequestId || "request"}-${requestDigest}`,
     parentId: "review-proposals",
     outcome:
+      requestedOutcome ||
       "Review one request for the Gym project and organize the smallest useful next step from its exact admitted evidence.",
-    acceptance: [
-      "Interpret the exact requested outcome before selecting work; a free-form comment is intent, not an instruction to run the normal May campaign.",
-      "Answer, record an evidence-backed no-op, or propose bounded durable follow-up without changing benchmark truth.",
-      "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
-    ],
+    acceptance:
+      requestedAcceptance.length > 0
+        ? requestedAcceptance
+        : [
+            "Interpret the exact requested outcome before selecting work; a free-form comment is intent, not an instruction to run the normal May campaign.",
+            "Answer, record an evidence-backed no-op, or propose bounded durable follow-up without changing benchmark truth.",
+            "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
+          ],
     mode: "achieve",
     agent: "gym",
     input: {
