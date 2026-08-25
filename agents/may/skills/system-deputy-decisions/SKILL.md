@@ -35,17 +35,18 @@ typed App dependency or declared App action, never by addressing its default
 agent. Use the installed App catalog rather than guessing: compare the desired
 outcome with each declared responsibility and accepted input contract, then
 follow that contract's required paths, field shapes, and fixed values. If one
-App clearly owns it, return one `waiting` Task result with a stable typed
-`dependency`; Runtime admits it and the same Task later reviews its exact
-result. If ownership remains materially ambiguous after checking current
+App clearly owns it, return one stable typed `dependency`; Runtime admits it
+and the correlated May request later reviews its exact result. When acting as
+another App's Task executor, use that Task's waiting-result contract instead.
+If ownership remains materially ambiguous after checking current
 context and safe defaults, state the likely owner and recommendation and ask
 for the smallest human decision now. If no installed App owns it, depend on
 `may-agent` to resolve the
 capability or ownership gap.
 
-A waiting result has no caller-facing `response`. Its `summary` records the
-current operational state for the Task; May speaks to Hao after the exact
-dependency result wakes the Conversation Task and May has reviewed its proof.
+A delegated May decision has no caller-facing `response`. May speaks to Hao
+after the exact dependency result wakes the correlated request and May has
+reviewed its proof.
 
 Before handing work off, make the requirement solid enough for the destination
 App to act without inheriting the conversation: state the outcome, scope,

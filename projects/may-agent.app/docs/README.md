@@ -16,8 +16,9 @@ bounded attempts, and recovers unfinished work. An attempt may use an agent or
 workflow, but neither becomes another work owner.
 
 For May, the ordinary model is simply: a human talks to **May** (`app:may`),
-which keeps that Conversation Task alive until it answers or routes typed work
-to the responsible App. Execution diagnostics may name the bounded executor,
+which answers directly or links the Conversation Topic to typed work in the
+responsible App. The correlated request remains open until May returns the
+reviewed result; it is not a Task. Execution diagnostics may name the bounded executor,
 for example `agent:may`; that executor owns no Task. The **Host Operations
 App** (`app:may-agent`) owns Tasks that change the Host. There is no separate
 architectural component called “May agent.”

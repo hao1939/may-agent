@@ -18,7 +18,7 @@ The May Host runs Apps. Preserve this mental model:
 
 For human interaction, preserve the more specific shape:
 
-`human -> May (app:may) -> Conversation Task -> response or typed App dependency`
+`human -> May request -> response, or Topic -> typed App Task dependencies -> reviewed response`
 
 For project-directed interaction, preserve:
 
@@ -99,7 +99,8 @@ doc with evidence, or call out the mismatch.
    `project.json`, bounded canonical task views, agent `AGENTS.md`, workflows,
    metrics, and recent traces as needed. Do not make raw task persistence an
    App or agent contract.
-3. Preserve the loop:
+3. Preserve the loops:
+   `human event -> May request -> answer or App Task result -> answer`, and
    `event -> Task -> bounded attempt -> accepted result or exact wait`.
 4. Make the smallest change that keeps the loop closed. Prefer existing
    conventions, app-local workflows, SDK helpers, bounded task projections,
@@ -163,7 +164,7 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 ### Human-rooted traces
 
 - Treat a human `conversation.message.created` on `Conversation may:primary` as
-  both shared durable context and the input for one May Conversation Task.
+  both shared durable context and the input for one May request, not a Task.
   Do not add `human.input.received`, a second `app.input.requested`, or a mutable
   current-session lifecycle for the same turn.
 - Understand human intention inside that May request. A question, request for
@@ -183,9 +184,9 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   context nor work.
 - Treat every human message as its own request. Reply anchors and channel IDs
   add context; they never reopen an older request or select a session.
-- A session is one replaceable attempt. Carry the exact May Task and correlated
-  request through tools, bounded agent calls, workflows, CLI analysis, and
-  outbound presentation. Closure belongs to the accepted App result, not
+- A session is one replaceable attempt. Carry the exact May request, Topic, and
+  destination Task identities through bounded calls and outbound presentation.
+  Closure belongs to the accepted response and App results, not
   `session.idle`, `session.end`, or adapter delivery state.
 
 ### Project-intent traces

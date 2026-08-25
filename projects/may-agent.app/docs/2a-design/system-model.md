@@ -90,16 +90,17 @@ detail.
 
 ```text
 human talks to May (`app:may`)
-  -> May owns the Conversation Task
-  -> May understands the desired outcome and material constraints
-  -> May answers now or selects one accountable installed App
-  -> that App owns and reconciles the durable Task
+  -> May understands the turn in its Conversation Topic
+  -> May answers now, clarifies, or selects accountable installed Apps
+  -> those Apps own and reconcile the durable Tasks
+  -> May reviews their results and answers the human
 ```
 
 May is the App; “May App” is only the precise name used when contrasting May
 with another App or with the Host. That is the complete ordinary mental model.
-The Host may run a bounded executor such as `agent:may` while reconciling the
-Conversation Task, but the executor is not another service or owner.
+The Host may run a bounded executor such as `agent:may` to decide one turn, but
+the executor is not another service or owner. The request remembers who is owed
+an answer; a Topic only links related turns and App Tasks.
 
 May is the human's deputy rather than a forwarding layer. It uses Conversation,
 preferences, and focused resources to understand the intention; answers or
@@ -111,7 +112,7 @@ The names describe different responsibilities:
 
 | Name                                      | Meaning                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **May** (`app:may`)                       | The human-facing assistant and App that owns Conversation Tasks and routing.                     |
+| **May** (`app:may`)                       | The human-facing deputy that understands turns, links Topics, routes Tasks, and returns results. |
 | **Agent** (for example `agent:may`)       | A named reasoning profile for one bounded attempt. It owns no durable work.                      |
 | **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
 | **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
@@ -143,16 +144,17 @@ workflow, or executor adapter. None owns the Task.
 
 For example:
 
-- ordinary conversation belongs to `app:may`; `agent:may` may perform an
-  attempt for its Conversation Task;
+- ordinary conversation belongs to `app:may`; `agent:may` may make one bounded
+  decision for the current turn;
 - AKS review belongs to `app:aks-rp-e2e`; an AKS reviewer agent or workflow may
   perform the next attempt; and
 - changing the Host belongs to `app:may-agent`; May may route the request but
   neither May nor the selected agent owns that Host Operations Task.
 
-May owns the obligation across retries and restarts; an attempt handler only
-attempts it. The handler can change, fail, or be replaced without changing the
-Conversation Task. Durable Task identity remains namespaced by its App.
+The Host request preserves the obligation to answer across retries and
+restarts. Destination Apps preserve durable goals in their Tasks. The May
+executor can change, fail, or be replaced without creating a May wrapper Task.
+Durable Task identity remains namespaced by its owning App.
 
 The public SDK calls the execution selection `agent`. The Host accepts the old
 `owner` spelling at one migration boundary and still stores it in retained Task
@@ -299,6 +301,8 @@ a new attempt, but it keeps the same request and task identities.
 | Record      | Meaning                                              | Owner                    |
 | ----------- | ---------------------------------------------------- | ------------------------ |
 | Event       | Durable new information that may create or wake work | Host                     |
+| Conversation| Ordered human, May, command, and tool messages       | May/Host projection      |
+| Topic       | Related turns linked to exact App Tasks              | May/Host linkage         |
 | App request | One caller still owed a correlated result            | Host                     |
 | Task        | One desired outcome reconciled by an App             | Host storage, App policy |
 | Attempt     | One bounded agent or workflow execution              | Host                     |
@@ -318,11 +322,16 @@ context from durable messages and accepted results; it is not another database,
 work list, or owner. Adapters observe its updates and render independently, so
 their delivery state never gates a human request's semantic completion.
 
+A Topic is equally small: `id`, plain title, who opened it, its origin message,
+and links to exact App Tasks. Active or finished meaning is derived from the
+unanswered request and linked Task resources. A Topic has no status, progress,
+queue, retry, scheduler, or result of its own.
+
 ## Events and time
 
 - Every state-changing input first becomes one event.
 - A human `conversation.message.created` event adds shared May Conversation
-  context and creates one fenced May App request.
+  context and creates one fenced May App request, not a May Task.
 - An addressed `app.input.requested` event creates one durable App request.
 - A declared subscription translates a fact into typed input and then one task.
 - An exact task target wakes only that task.
@@ -338,9 +347,11 @@ an owner or starts an agent because an event was not handled.
 
 A task result may request a typed child App outcome with a stable local ID,
 target App, and typed input. Runtime derives one deterministic child request
-ID, publishes that request durably, and installs an exact completion Condition
-on the parent. The child App resolves its input to its own Task. Its accepted
-result returns as an ordinary Event containing summary, optional structured
+ID and asks the destination App to admit it. Only synchronous durable
+admission installs an exact completion Condition on the parent; rejection or
+unhandled delivery leaves the same parent runnable. The child App resolves its
+input to its own Task. Its accepted result returns as an ordinary Event
+containing summary, optional structured
 result, response, and evidence;
 the parent reconciles again and decides its own outcome.
 

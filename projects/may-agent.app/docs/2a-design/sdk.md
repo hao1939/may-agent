@@ -70,6 +70,7 @@ defineApp({
   observers,
   actions,
   workspace,
+  requests,
   tasks,
 });
 ```
@@ -87,12 +88,22 @@ The Runtime persists the link before waking the task. The App never handles the
 Host request record, delivery state, claim, lease, channel, or retry metadata.
 
 The resolver must not call an agent, inspect mutable context, or guess semantic
-references. When free-form input such as human feedback needs judgment, it
-creates a stable input task first. That task's ordinary reconciliation may then
-return a typed revision, wake, or dependency for the referenced work. Exact
-structured task references may wake their task directly.
+references. Exact structured task references may wake their task directly.
 
-This rule has no fast-path exception. A simple input resolves to a task whose
+A conversational App may instead declare `requests: { mode: "agent" }`. The
+Host supplies the bounded Conversation, Topic candidates, exact focused Task,
+accepted child results, and installed App contracts to one structured agent
+decision. It answers or returns typed destination dependencies without creating
+a tracking Task. An App cannot apply both `requests` and `task` to the same
+inbox.
+
+If the App also receives addressed events or API requests outside a channel
+adapter, it may declare one default Conversation, for example
+`requests: { mode: "agent", conversationId: "may:primary" }`. The Host places
+those requests and their accepted responses in that same Conversation using the
+origin event identity. The non-human input is not presented as a human Turn.
+
+For Task-owning Apps, this rule has no fast-path exception. A simple input resolves to a task whose
 first bounded attempt can converge immediately. A hard input resolves to a task
 that may require later attempts, Conditions, child tasks, or agent judgment.
 

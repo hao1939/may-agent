@@ -55,10 +55,11 @@ user request once, and if the retry is still empty leaves the session `idle`
 with a visible error on the `session.idle` event.
 
 This persistent-chat policy applies to direct agent chat. Ordinary May Console
-and Telegram input publishes one human `conversation.message.created`: one
-linked May request correlates one May task, and each reconciliation attempt uses
-a bounded job session. A restart may replace that session without replacing or
-replaying the opening event, request, or task. See [Human Control
+and Telegram input publishes one human `conversation.message.created`: one May
+request correlates the turn, and one bounded session makes each May decision.
+Durable destination work belongs to its App Tasks. A restart may replace that
+session without replacing or replaying the opening event, request, Topic, or
+destination Tasks. See [Human Control
 Surfaces](human-control-surfaces.md).
 
 ## Chat Turn Causality

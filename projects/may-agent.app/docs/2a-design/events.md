@@ -205,7 +205,9 @@ The human message is both shared Conversation context and the fenced ingress
 for one request. Agent, tool, and command authors add context but no work;
 `transient: true` adds neither durable context nor work. This special route
 does not replace generic `app.input.requested` for schedules, App actions,
-delegation, or non-conversation callers.
+delegation, or non-conversation callers. A conversational App may name one
+default Conversation for addressed event/API requests. Their accepted responses
+enter that Conversation, but their inputs are not presented as human Turns.
 
 ## Delivery acceptance
 
@@ -237,14 +239,14 @@ Requests and delivery operations carry their own durable correlation instead of
 opening event pairs:
 
 ```text
-May request -> May task -> child App request/task -> child result
-            -> May review -> persisted result -> request completion
-                                      -> Conversation update
-                                      -> adapters render independently
+May request -> Topic link -> child App request/task -> child result
+            -> May review -> persisted response -> request completion
+                                          -> Conversation update
+                                          -> adapters render independently
 ```
 
-An App task waits on the exact child App task, task, or session identity. A task
-waits on exact Conditions. A persisted May result completes the linked caller
+An App Task waits on exact child work or Conditions. A May request waits on its
+exact child App requests without becoming a Task. A persisted May response completes the linked caller
 request and enters Conversation; channel adapters may render it independently.
 Events provide causal evidence and wakes along those relationships; they do
 not recreate the relationships as opener/closer pairs.
@@ -262,7 +264,7 @@ for audit but cannot replace inbox/task/delivery completion.
 conversation.message.created target.appId=may
   conversationId=may:primary
   author.kind=human
-  -> linked May request and task
+  -> linked May request (not a Task)
   -> first-attempt result or child App task dependency
   -> May result review
   -> May request done
@@ -272,8 +274,8 @@ conversation.message.created target.appId=may
 
 The Conversation is a bounded read model reconstructed from messages, admitted
 requests, dependencies, and persisted results. It is not another database or
-work owner. Each admitted human turn has its own request identity linked to the
-task that owns the App work. Reply anchors and channel coordinates add context;
+work owner. Each admitted human turn has its own request identity; when durable
+work is needed, its Topic links the real destination Tasks. Reply anchors and channel coordinates add context;
 they do not decide which unfinished task owns the response. Adapter delivery
 attempts and receipts are operational evidence only and never gate Conversation
 content or May work.

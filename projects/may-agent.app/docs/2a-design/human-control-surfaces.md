@@ -24,12 +24,14 @@ The ordinary human objects are:
 
 - an App, which owns a responsibility;
 - a Task, which is durable work reconciled by an App; and
+- a Topic, which links related turns to exact App Tasks; and
 - a Conversation message, which is how a human talks with May.
 
 A Host request correlates one caller with its eventual result. A session is a
 replaceable execution attempt. Neither is the ordinary human control target.
-The May App owns Conversation Tasks; the Host Operations App (`may-agent`) owns
-platform Tasks. An agent run named `may` is only an attempt used by either App.
+May creates no generic Conversation Task. The Host Operations App (`may-agent`)
+owns platform Tasks. An agent run named `may` is only a bounded turn decision
+or an attempt selected by an App.
 
 ## Shared resource interface
 
@@ -134,10 +136,10 @@ Bare text always goes to May with `context.focusedApp`. A watch additionally
 adds `context.focusedTask`. The selected App is a useful conversational lens,
 not permission to force work into the wrong owner.
 
-When May assigns asynchronous work, the Conversation shows the stable May Task
-reference and its useful current wait. When the destination App durably attaches
-the request, one assignment message names both the May Task and exact owner Task
-and carries a canonical `followTask` presentation hint. Console automatically
+When May assigns asynchronous work, the Conversation Topic links to the real
+destination App Tasks. When a destination App durably attaches the request, one
+assignment message names that exact owner Task and carries a canonical
+`followTask` presentation hint. Console automatically
 follows that owner Task; it never guesses from prose, the newest session, or the
 last Task reference. Exact Task detail shows linked App Task references and typed
 Conditions, never internal request IDs. A human can also `/watch` another Task or
@@ -147,14 +149,10 @@ when the understood intention concerns it. Relevant feedback wakes waiting work
 for one reconsideration and does not create a sibling Task; an answerable
 question or unrelated topic does not mutate it.
 Several human turns may target the same Task, but they do not become several
-owners of its output. Waiting status is unique by Conversation, Task, and
-semantic revision; assignment is unique by Conversation, parent Task, and owner
-Task. The Task emits each public transition once regardless of how many admitted
-human inputs are still correlated with it.
-The first waiting status is shown as soon as May accepts the dependency: what
-is known, which Task owns the next step, and what it is actually waiting for.
-Later distinct waiting summaries may update it; unchanged summaries are
-deduplicated. This is visible observation, not a transport receipt.
+owners of its output. Assignment is unique by Conversation, Topic, and owner
+Task. The Task emits each public transition once regardless of how many human
+requests or surfaces refer to it. Its canonical view supplies progress, waits,
+and results; Topic never copies them.
 
 Runtime reload is deterministic control, not App work. The request is accepted
 synchronously, the Runtime performs one reload, and one correlated

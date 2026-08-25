@@ -456,7 +456,7 @@ polling loop. Provider observation time and monotonic source revision, when
 available, prevent known older facts from replacing newer Condition state.
 
 Human approval or action uses a human-owned Condition on the exact source Task,
-or an explicit May task dependency when conversational mediation is required.
+or a typed May conversational request when mediation is required.
 The reply satisfies or updates exact evidence for the next attempt; it does not
 itself prove the Task outcome.
 

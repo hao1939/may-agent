@@ -17,15 +17,15 @@ escalation lifecycle, or completion rule.
 human Telegram message
   -> normalize chat/topic/message/reply identity
   -> Conversation may:primary
-  -> one fenced May request linked to one May task
-  -> first-attempt answer or typed child App task dependency
+  -> one fenced May request and optional Topic
+  -> direct answer or typed child App Task dependencies
   -> May review
   -> persisted result in Conversation
   -> Telegram independently renders unseen messages
 ```
 
-The May task owns the work; the Host request correlates the human turn and
-result. The Conversation provides shared durable context across Telegram and
+Destination App Tasks own work; the Host request correlates the human turn and
+May's response. Topics link related turns to those Tasks. The Conversation provides shared durable context across Telegram and
 Console. Telegram chat/topic/message IDs, traces, sessions, notification rows,
 and reply anchors are delivery or context evidence only.
 
@@ -142,13 +142,13 @@ loss cannot lose, duplicate, or complete the May request.
 
 ## Answers And Cross-App Dependencies
 
-May's task may converge in one attempt or request one typed child outcome from
-the accountable App. In the latter case:
+May may answer in one decision or request typed child outcomes from accountable
+Apps. In the latter case:
 
 - the child request is persisted before it is woken;
-- the parent May task waits on that exact child task ID;
+- the May request remains correlated with the exact child request and Task;
 - the child App reconciles its task;
-- the child result wakes the parent task through the canonical dependency path; and
+- the child result wakes the May request through the canonical dependency path; and
 - May reviews the result before producing the human-facing response.
 
 An agent message, owner label, `escalation.created` event, or source-session

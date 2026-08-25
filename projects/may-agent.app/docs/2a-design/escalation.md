@@ -32,7 +32,7 @@ original outcome. Runtime request records correlate the dependency and result.
 | Bounded execution cannot continue safely                    | Return `blocked` evidence; owning boundary decides next state |
 | Known external fact will change later                       | Persist an exact task Condition                               |
 | Another App must decide or act                              | Create a typed cross-App task dependency                      |
-| Human approval or private judgment is required              | Create a May task dependency or exact human Condition         |
+| Human approval or private judgment is required              | Exact human Condition or May conversational request           |
 | Agent attempt was incomplete                                | Honest execution result; not escalation by itself             |
 
 The current owner, not the Host, decides that a blocker crosses an
