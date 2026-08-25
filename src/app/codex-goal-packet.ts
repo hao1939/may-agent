@@ -45,7 +45,7 @@ export type CanonicalTaskAttemptPacket = {
   };
 };
 
-/** One semantic projection which every executor renderer must consume whole. */
+/** Copy the one semantic projection every executor renderer consumes whole. */
 export function buildCanonicalTaskAttemptPacket(input: CanonicalTaskAttemptPacket): CanonicalTaskAttemptPacket {
   return structuredClone(input);
 }

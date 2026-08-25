@@ -8,18 +8,18 @@ import {
   type TaskReconcileResult,
 } from "@may-agent/sdk";
 import {
-  CodexGoalPocClient,
+  CodexGoalAppServerClient,
   type AppServerNotification,
   type CodexGoalObservation,
   type CodexTurnCompletion,
-} from "../../scripts/poc/codex-goal-client.js";
-import { buildCanonicalTaskAttemptPacket, renderCodexGoalTaskAttempt } from "../../scripts/poc/codex-goal-packet.js";
-import { admitCodexGoalTaskResult } from "../../scripts/poc/codex-goal-result.js";
+} from "./codex-goal-client.js";
+import { buildCanonicalTaskAttemptPacket, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
+import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
 import {
   CodexGoalProgressPublisher,
   DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS,
   type CodexGoalProgressStats,
-} from "../../scripts/poc/codex-goal-progress.js";
+} from "./codex-goal-progress.js";
 
 type Binding = {
   appId: string;
@@ -232,7 +232,8 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     const existing = readBindings(options.stateFile).bindings[key];
     const rendered = renderCodexGoalTaskAttempt(packetFor(attempt));
     const client =
-      options.createClient?.(attempt.cwd) ?? CodexGoalPocClient.spawn({ cwd: attempt.cwd, command: options.command });
+      options.createClient?.(attempt.cwd) ??
+      CodexGoalAppServerClient.spawn({ cwd: attempt.cwd, command: options.command });
     let threadId = existing?.threadId ?? "";
     let turnId: string | null = null;
     const live = { goalStatus: "active" as CodexGoalObservation["goal"]["status"] };

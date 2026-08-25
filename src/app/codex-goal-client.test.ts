@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { CodexGoalPocClient, type AppServerProcess } from "./codex-goal-client.js";
+import { CodexGoalAppServerClient, type AppServerProcess } from "./codex-goal-client.js";
 
 class FakeAppServerProcess extends EventEmitter implements AppServerProcess {
   pid = undefined;
@@ -53,10 +53,10 @@ async function waitForWrite(process: FakeAppServerProcess, method: string): Prom
   throw new Error(`Did not observe ${method}`);
 }
 
-describe("CodexGoalPocClient", () => {
+describe("CodexGoalAppServerClient", () => {
   it("initializes, starts a thread, sets a goal, steers, and accepts authoritative completion", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
 
     const initialized = client.initialize();
     const initialize = await waitForWrite(process, "initialize");
@@ -104,7 +104,7 @@ describe("CodexGoalPocClient", () => {
 
   it("resumes a persisted thread and interrupts the exact active turn", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
 
     const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work" });
     const resume = await waitForWrite(process, "thread/resume");
@@ -120,7 +120,7 @@ describe("CodexGoalPocClient", () => {
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
     const activeTurn = client.waitForActiveTurn("thread-1", 1_000);
     process.notify("turn/started", {
       threadId: "thread-1",
@@ -143,7 +143,7 @@ describe("CodexGoalPocClient", () => {
 
   it("fails pending work when app-server exits", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
     const pending = client.getGoal("thread-1");
     await waitForWrite(process, "thread/goal/get");
     process.stderr.write("protocol stopped");
@@ -153,7 +153,7 @@ describe("CodexGoalPocClient", () => {
 
   it("fails closed on server requests", async () => {
     const process = new FakeAppServerProcess();
-    new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
     process.stdout.write(
       `${JSON.stringify({ id: 77, method: "item/commandExecution/requestApproval", params: {} })}\n`,
     );
@@ -165,21 +165,21 @@ describe("CodexGoalPocClient", () => {
 
   it("fails the connection on malformed protocol JSON", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
     process.stdout.write("{not-json}\n");
     await expect(client.getGoal("thread-1")).rejects.toThrow("invalid JSON");
   });
 
   it("bounds an unterminated protocol line", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
     process.stdout.write("x".repeat(4 * 1024 * 1024 + 1));
     await expect(client.getGoal("thread-1")).rejects.toThrow("protocol line exceeded");
   });
 
   it("stops through normal stdin shutdown without signaling", async () => {
     const process = new FakeAppServerProcess({ closeOnStdinEnd: true, closeOnSignal: null });
-    const client = new CodexGoalPocClient(process, { terminateAfterMs: 5, killAfterMs: 15 });
+    const client = new CodexGoalAppServerClient(process, { terminateAfterMs: 5, killAfterMs: 15 });
     await client.stop();
     expect(process.signals).toEqual([]);
     await client.stop();
@@ -187,19 +187,19 @@ describe("CodexGoalPocClient", () => {
 
   it("falls back to SIGTERM and then SIGKILL when required", async () => {
     const termProcess = new FakeAppServerProcess({ closeOnSignal: "SIGTERM" });
-    const termClient = new CodexGoalPocClient(termProcess, { terminateAfterMs: 5, killAfterMs: 20 });
+    const termClient = new CodexGoalAppServerClient(termProcess, { terminateAfterMs: 5, killAfterMs: 20 });
     await termClient.stop();
     expect(termProcess.signals).toEqual(["SIGTERM"]);
 
     const killProcess = new FakeAppServerProcess({ closeOnSignal: "SIGKILL" });
-    const killClient = new CodexGoalPocClient(killProcess, { terminateAfterMs: 5, killAfterMs: 15 });
+    const killClient = new CodexGoalAppServerClient(killProcess, { terminateAfterMs: 5, killAfterMs: 15 });
     await killClient.stop();
     expect(killProcess.signals).toEqual(["SIGTERM", "SIGKILL"]);
   });
 
   it("returns immediately when the process already closed", async () => {
     const process = new FakeAppServerProcess({ closeOnSignal: null });
-    const client = new CodexGoalPocClient(process, { terminateAfterMs: 5, killAfterMs: 15 });
+    const client = new CodexGoalAppServerClient(process, { terminateAfterMs: 5, killAfterMs: 15 });
     process.emit("close", 0, null);
     await client.stop();
     expect(process.signals).toEqual([]);
@@ -207,7 +207,11 @@ describe("CodexGoalPocClient", () => {
 
   it("removes timed-out requests and ignores their late responses", async () => {
     const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
-    const client = new CodexGoalPocClient(process, { requestTimeoutMs: 5, terminateAfterMs: 5, killAfterMs: 15 });
+    const client = new CodexGoalAppServerClient(process, {
+      requestTimeoutMs: 5,
+      terminateAfterMs: 5,
+      killAfterMs: 15,
+    });
     const timedOut = client.getGoal("thread-1");
     const first = await waitForWrite(process, "thread/goal/get");
     await expect(timedOut).rejects.toThrow("request thread/goal/get timed out");

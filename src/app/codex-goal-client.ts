@@ -75,14 +75,8 @@ function textInput(text: string): JsonRecord {
   return { type: "text", text, text_elements: [] };
 }
 
-/**
- * Isolated proof-of-concept JSONL client for Codex app-server.
- *
- * It is intentionally not imported by the production Task runtime. The PoC
- * proves protocol, resume, goal, steering, interruption, and process ownership
- * before the current `codex` executor is changed.
- */
-export class CodexGoalPocClient {
+/** JSONL client for the Codex app-server protocol used by the Task executor. */
+export class CodexGoalAppServerClient {
   private readonly process: AppServerProcess;
   private readonly requestTimeoutMs: number;
   private readonly terminateAfterMs: number;
@@ -170,14 +164,14 @@ export class CodexGoalPocClient {
     args?: string[];
     env?: NodeJS.ProcessEnv;
     requestTimeoutMs?: number;
-  }): CodexGoalPocClient {
+  }): CodexGoalAppServerClient {
     const child = spawn(options.command ?? "codex", options.args ?? ["app-server"], {
       cwd: options.cwd,
       env: options.env ?? process.env,
       detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],
     });
-    return new CodexGoalPocClient(child as AppServerProcess, {
+    return new CodexGoalAppServerClient(child as AppServerProcess, {
       requestTimeoutMs: options.requestTimeoutMs,
     });
   }
@@ -185,9 +179,9 @@ export class CodexGoalPocClient {
   async initialize(): Promise<void> {
     await this.request("initialize", {
       clientInfo: {
-        name: "may_agent_codex_goal_poc",
-        title: "May Agent Codex Goal PoC",
-        version: "0.1.0",
+        name: "may_agent_codex_goal",
+        title: "May Agent Codex Goal",
+        version: "1.0.0",
       },
     });
     this.notify("initialized", {});
