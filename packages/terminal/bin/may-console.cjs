@@ -29,6 +29,7 @@ let watchedTaskDirty = false;
 let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 let conversationReady = false;
+let lastRenderedMayMessageId = null;
 let appSelectionInFlight = false;
 let todoCount = 0;
 let todoReadInFlight = false;
@@ -54,6 +55,7 @@ const pendingTaskListReads = [];
 const pendingTaskReads = [];
 let nextTaskPage = null;
 let nextTodoPage = null;
+let nextTopicPage = null;
 const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
@@ -98,6 +100,8 @@ function completeInput(line) {
   const choices =
     command === "/apps"
       ? [...knownAppIds]
+      : command === "/topics"
+        ? ["more"]
       : command === "/topic"
         ? ["clear", ...knownTopicRefs]
       : command === "/tasks"
@@ -232,6 +236,7 @@ function mayInputFrame(message) {
         conversationId,
         author: { kind: "human", id: messageId },
         text: message,
+        ...(lastRenderedMayMessageId ? { replyTo: lastRenderedMayMessageId } : {}),
         context: {
           focusedApp: selectedApp,
           ...(watchedTask ? { focusedTask: { appId: watchedTask.appId, taskId: watchedTask.taskId } } : {}),
@@ -257,18 +262,22 @@ function requestConversation(kind = "startup", options = {}) {
   }
   if (kind === "sync") conversationSyncDirty = false;
   pendingConversationReads.push({ kind, ...options });
-  const sent = sendConversationRead();
+  const sent = sendConversationRead(pendingConversationReads.at(-1));
   if (!readWillComplete(sent)) pendingConversationReads.pop();
   return sent || !closing;
 }
 
-function sendConversationRead() {
+function sendConversationRead(pending = {}) {
   return sendFrame(
     {
       type: "app.conversation.get",
       appId: "may",
       conversationId,
       limit: 30,
+      topicLimit: 12,
+      ...(pending.kind === "topic" && pending.ref ? { topicId: pending.ref } : {}),
+      ...(pending.kind === "topic" && pending.current && selectedTopic ? { topicId: selectedTopic.id } : {}),
+      ...(pending.kind === "topics" && pending.cursor ? { topicCursor: pending.cursor } : {}),
     },
     { silent: true },
   );
@@ -450,7 +459,7 @@ function topicMessageLine(message) {
 
 function renderTopics(conversation, pending) {
   const topics = Array.isArray(conversation?.topics) ? conversation.topics : [];
-  const lines = ["", "Recent Topics:"];
+  const lines = ["", pending?.cursor ? "Older Topics:" : "Recent Topics:"];
   if (topics.length === 0) lines.push("  Nothing found.");
   for (const topic of topics) {
     const ref = topicRef(topic);
@@ -459,6 +468,10 @@ function renderTopics(conversation, pending) {
     const tasks = Array.isArray(topic.taskRefs) ? topic.taskRefs : [];
     lines.push(` ${marker} ${ref}  ${String(topic.title || "Topic")}${tasks.length ? ` · ${tasks.length} Task${tasks.length === 1 ? "" : "s"}` : ""}`);
   }
+  nextTopicPage = conversation?.nextTopicCursor
+    ? { kind: "topics", cursor: conversation.nextTopicCursor, command: "/topics more" }
+    : null;
+  if (nextTopicPage) lines.push("  More Topics are available; run /topics more.");
   lines.push("", "Use /topic <ref> to continue one Topic. Task progress remains under /task and /watch.", "");
   presentView(pending?.command || "/topics", lines.join("\n"));
 }
@@ -472,8 +485,8 @@ function renderTopic(conversation, pending) {
     presentView(
       pending?.command || "/topic",
       selectedTopic && pending?.current
-        ? `Current Topic ${topicRef(selectedTopic)} is not available in the recent Topic window.`
-        : `Topic ${pending?.ref || ""} was not found. Run /topics to list recent Topics.`,
+        ? `Current Topic ${topicRef(selectedTopic)} is no longer available.`
+        : `Topic ${pending?.ref || ""} was not found. Run /topics to list Topics.`,
     );
     return;
   }
@@ -902,6 +915,7 @@ function renderConversation(messages) {
     );
     printConversationText(speaker, taskRefs.length > 0 ? `${text}\n\n${taskRefs.join("\n")}` : text);
     rememberRenderedConversationMessage(id);
+    if (kind === "agent") lastRenderedMayMessageId = id;
     const followTask = message.metadata?.followTask;
     if (
       kind === "agent" &&
@@ -1243,7 +1257,7 @@ function connectSocket() {
       { silent: true },
     );
     if (pendingConversationReads.length > 0) {
-      for (const _pending of pendingConversationReads) sendConversationRead();
+      for (const pending of pendingConversationReads) sendConversationRead(pending);
     } else {
       requestConversation();
     }
@@ -1313,7 +1327,7 @@ function printHelp() {
     [
       "Commands:",
       "  /apps [app]                 List or select an App",
-      "  /topics                     List recent Topics",
+      "  /topics, /topics more       List Topics",
       "  /topic [ref|clear]          Show, follow, or leave a Topic",
       "  /tasks [all] [history], /tasks more",
       "  /todo [all], /todo more     Show Tasks that need your action",
@@ -1345,10 +1359,19 @@ function handleCommand(input) {
       if (!requestApps(rest || null, input, Boolean(rest))) appSelectionInFlight = false;
       return;
     case "topics":
-      if (restParts.length > 0) {
-        printLine("Usage: /topics");
+      if (restParts.length > 1 || (restParts.length === 1 && restParts[0].toLowerCase() !== "more")) {
+        printLine("Usage: /topics, or /topics more");
         return;
       }
+      if (restParts[0]?.toLowerCase() === "more") {
+        if (!nextTopicPage) {
+          printLine("[topics] No next page. Run /topics first.");
+          return;
+        }
+        requestConversation("topics", nextTopicPage);
+        return;
+      }
+      nextTopicPage = null;
       requestConversation("topics", { command: input });
       return;
     case "topic":

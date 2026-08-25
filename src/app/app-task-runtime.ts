@@ -62,7 +62,7 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
-import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
+import type { TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
 import { getAppInboxItem } from "./app-inbox-store.js";
@@ -4075,7 +4075,7 @@ export function attachLoadedAppTask(input: {
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
-export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskView | null {
+export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskDetail | null {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => resolve(candidate.appDir) === normalizedAppDir,
@@ -4104,7 +4104,7 @@ export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; op
   );
 }
 
-export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; taskId: string }): TaskView | null {
+export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; taskId: string }): TaskDetail | null {
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
   );

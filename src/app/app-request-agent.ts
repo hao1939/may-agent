@@ -1,34 +1,82 @@
 import {
+  Type,
   appRequestAgentResultSchema,
   type AppDefinition,
   type AppRequest,
   type AppRequestDecision,
 } from "@may-agent/sdk";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "../lib/index.js";
+import type { SqliteDb } from "../lib/db.js";
 import type { AppRegistry } from "./app-registry.js";
 import { appDependencyCatalog } from "./app-task-runtime.js";
+import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./app-inbox-store.js";
 import type { AppRequestResolver } from "./app-inbox-host.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
+
+function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): AgentTool | null {
+  const conversation = request.conversation;
+  if (!conversation) return null;
+  const result = (value: unknown): AgentToolResult<unknown> => ({
+    content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+    details: undefined,
+  });
+  return {
+    name: "conversation_context",
+    label: "Conversation Context",
+    description:
+      "Find bounded historical Topic candidates or read one exact Topic in this Conversation. This is read-only retrieval: inspect the evidence and decide its meaning yourself; the tool never selects work or changes context.",
+    parameters: Type.Union([
+      Type.Object(
+        {
+          action: Type.Literal("find"),
+          query: Type.String({ minLength: 1, maxLength: 200 }),
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
+        },
+        { additionalProperties: false },
+      ),
+      Type.Object(
+        { action: Type.Literal("read"), topicId: Type.String({ minLength: 1 }) },
+        { additionalProperties: false },
+      ),
+    ]),
+    execute: async (_toolCallId, raw) => {
+      const input = raw as { action: "find"; query: string; limit?: number } | { action: "read"; topicId: string };
+      if (input.action === "find") {
+        return result({
+          candidates: findConversationTopics(db, conversation.owner, conversation.id, input.query, input.limit ?? 8),
+        });
+      }
+      const topic = readConversationTopic(db, conversation.owner, conversation.id, input.topicId);
+      if (!topic) return result({ topic: null });
+      const exact = readAppConversationResource(db, conversation.owner, conversation.id, {
+        limit: 40,
+        topicId: topic.id,
+      });
+      return result({
+        topic,
+        messages: exact.messages.filter((message) => message.metadata?.topicId === topic.id),
+      });
+    },
+  };
+}
 
 function requestPrompt(app: Readonly<AppDefinition>, request: Readonly<AppRequest>, registry: AppRegistry): string {
   const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
   return [
     `You are ${app.agent ?? app.owner}, the conversational agent for App ${app.id}.`,
-    "Understand this request or human turn and make one structured decision. The request remembers who is owed an answer; it is not a Task.",
-    "Code has collected the exact bounded context. You decide meaning; do not use keyword matching or invent another tracking mechanism.",
-    "Answer directly when no durable App work is needed. Ask one compact, high-quality clarification only when missing information materially changes outcome, owner, risk, proof, or authority.",
-    "Use a Topic only to group related human/agent turns and link exact App Tasks. A Topic has no status, retry, progress, or execution lifecycle.",
-    "Select an existing Topic when the turn continues it. Create a short plain-language Topic for a new durable interest or clarification. Use none for unrelated small talk or a self-contained answer.",
-    "When durable work is needed, return one or more typed dependencies and no response. Continue an exact unfinished Task with taskId; omit taskId only for genuinely new work.",
-    "Existing dependencies are already accepted work for this request. Preserve a still-relevant dependency with the same id and exact input. Do not replace or duplicate it merely because it is waiting.",
-    "Open requests are earlier unfinished human turns from the visible Topics and their exact delegated work. Decide whether the current turn continues one of them. If it merely confirms or follows the same goal and needs no new Task input, return its requestId as continueRequestId with a plain response; do not create sibling work. If it materially steers an attached Task, delegate typed input to that exact taskId instead.",
-    "Resolve a short approval or rejection against the immediately preceding agent proposal. Preserve every approved action and boundary: executable items become the exact delegated outcome, while guidance such as leaving valid work running remains a constraint rather than invented work. Put the interpretation in the dependency outcome and decision summary so the human can verify it from the assignment.",
-    "Referenced Tasks are current canonical snapshots of exact Tasks shown in recent command/tool views. Focus and referenced identity outrank rendered prose. Never invent a wait, ownership link, or dependency that is absent from these snapshots.",
-    "When the human clearly asks to cancel one exact Task already supplied as focused, referenced, or linked by the current Topic, return a cancel taskControl plus a plain response. Do not use Task control for feedback or continuation; delegate typed input with that exact taskId instead.",
-    "A legacy may/conversation Task is retained pre-cutover state, not the current Conversation mechanism. Do not create a sibling to clean it up or claim it waits for unrelated work. Cancel it only when the human clearly asks and exact canonical context is supplied.",
-    "When dependency results fulfill the request, answer the human in plain language. Do not mention inboxes, delivery confirmation, runtime correlation, or other Host mechanics.",
-    "Choose dependency appId and input.kind only from Installed Apps. Satisfy requiredData and fixedData, use the listed dataTypes, and leave Task shape, executor, workflow, retry, and schedule to that App.",
+    "Understand the human's meaning in the exact bounded context collected by code, then make one structured decision. Do not infer intent with keywords or invent another tracking mechanism.",
+    "Treat the selected App, focused Task, selected or replied Topic, and last rendered view as the current subject, not as automatic authority to mutate it.",
+    "Answer directly when no durable work is needed. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
+    "Continue an exact unfinished Task with taskId whenever its owner and goal can fulfill the intent. Omit taskId only for genuinely new work whose outcome or accountable owner changed. Never create a sibling merely because work is pending or waiting.",
+    "A response may accompany dependencies: use it for a useful immediate explanation or clarification of what will happen while the exact work continues. The final result comes after the work finishes.",
+    "Resolve short confirmations, corrections, and pronouns against the visible Conversation, especially the immediately preceding proposal or question. Preserve constraints already established in the same Topic.",
+    "If the human naturally refers to an older discussion that is absent from visible context, use conversation_context to find bounded candidates and read the likely exact Topic. Ask only when the remaining candidates would lead to materially different actions.",
+    "Use a Topic only for related Conversation context and exact Task links. Select an existing Topic when continuing it, create a short plain-language Topic for a new durable interest or clarification, and use none for a self-contained answer.",
+    "Only cancel a Task when the human clearly asks and that exact Task is present in focused, referenced, or current-Topic context. Other feedback is typed input to the existing Task.",
+    "Choose dependency appId and input.kind only from Installed Apps, satisfy its input contract, and leave Task mechanics to that App.",
+    "Use plain language in every human-facing response. Explain outcomes and needed choices, not Host bookkeeping or delivery mechanics.",
     "Finish exactly once with finish().result matching the supplied schema.",
     "",
     "## Request and context",
@@ -46,12 +94,15 @@ function requestPrompt(app: Readonly<AppDefinition>, request: Readonly<AppReques
 export function createAppRequestAgentResolver(options: {
   manager: SubagentManager;
   registry: AppRegistry;
+  db: SqliteDb;
 }): AppRequestResolver {
   return async ({ app, request }) => {
     const agent = (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "");
     if (!agent) throw new Error(`App ${app.id} has no conversational agent`);
-    const definition = options.manager.getAgentDefinition(agent);
-    if (!definition) throw new Error(`Agent ${agent} is not registered`);
+    const registered = options.manager.getAgentDefinition(agent);
+    if (!registered) throw new Error(`Agent ${agent} is not registered`);
+    const contextTool = conversationContextTool(options.db, request);
+    const definition = contextTool ? { ...registered, tools: [...registered.tools, contextTool] } : registered;
     const execution = await options.manager.callAgentDefinition(
       definition,
       requestPrompt(app, request, options.registry),

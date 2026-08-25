@@ -25,6 +25,7 @@ export type {
   AppRequestTaskObservation,
   AppRequestTopicDecision,
   AppConversationTopic,
+  AppConversationTopicPage,
   AppDependencyObservation,
   AppConversationResource,
   AppConversationMessage,

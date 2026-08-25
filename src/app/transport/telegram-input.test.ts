@@ -61,6 +61,7 @@ describe("Telegram May input", () => {
         topicId: 7,
         conversationId: "telegram:chat:123:topic:7:agent:may",
         replyToMessageId: 499,
+        replyToSourceId: "result:request-499",
         conversationTopicId: "topic_0df0c0edbf95b5bbc5c87598",
         context: { quotedText: "Earlier question" },
       }),
@@ -72,7 +73,7 @@ describe("Telegram May input", () => {
         author: { kind: "human", id: "telegram:123:502" },
         text: "Please inspect this",
         context: { quotedText: "Earlier question" },
-        replyTo: "telegram:123:499",
+        replyTo: "result:request-499",
         metadata: {
           channel: "telegram",
           channelTargetId: "123",

@@ -1,7 +1,7 @@
 import { Type, type Static, type TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
-import type { ObserverContext } from "./workflow.js";
+import type { ObserverContext, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
@@ -65,7 +65,7 @@ export type AppDependencyObservation = {
   response?: string;
   result?: Record<string, unknown>;
   evidence?: string[];
-};
+} & Partial<Omit<TaskDetail, "id" | "status" | "summary" | "response" | "result" | "evidence">>;
 
 /** One exact delegated App request observed while a conversational App reviews its request. */
 export type AppRequestDependencyObservation = AppDependencyObservation & {
@@ -96,6 +96,11 @@ export type AppConversationTopic = {
   openedBy: string;
   originMessageId: string;
   taskRefs: Array<{ appId: string; taskId: string; ref?: string }>;
+};
+
+export type AppConversationTopicPage = {
+  items: AppConversationTopic[];
+  nextCursor?: string;
 };
 
 export type AppConversationMessage = {
@@ -138,6 +143,8 @@ export type AppConversationResource = {
   };
   /** Recent lightweight contexts. Their Task state remains authoritative elsewhere. */
   topics?: AppConversationTopic[];
+  /** Opaque cursor for the next older Topic page. */
+  nextTopicCursor?: string;
   /** Durable messages only, in the order shared by every human surface. */
   messages: AppConversationMessage[];
 };
@@ -199,11 +206,11 @@ export type AppRequestTaskControl = {
 /** One bounded conversational decision. Code applies it; the model decides meaning. */
 export type AppRequestDecision = {
   summary: string;
+  /** Plain-language text shown now; it may accompany work that continues to a later final result. */
   response?: string;
   evidence?: string[];
   topic: AppRequestTopicDecision;
-  /** This human turn continues an exact unfinished request and needs no sibling App work. */
-  continueRequestId?: string;
+  /** Exact existing Task input or genuinely new App work selected by the model. */
   dependencies?: AppRequestDependency[];
   taskControls?: AppRequestTaskControl[];
 };
@@ -221,7 +228,6 @@ export const appRequestAgentResultSchema = Type.Object(
       Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
       Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
     ]),
-    continueRequestId: Type.Optional(nonEmptyStringSchema),
     dependencies: Type.Optional(
       Type.Array(
         Type.Object(

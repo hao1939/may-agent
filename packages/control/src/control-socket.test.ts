@@ -457,7 +457,7 @@ describe("control socket protocol", () => {
         expect({ appId, conversationId, options }).toEqual({
           appId: "may",
           conversationId: "may:primary",
-          options: { limit: 30 },
+          options: { limit: 30, topicId: "0df0c0ed", topicLimit: 12, topicCursor: "older-page" },
         });
         return conversation;
       },
@@ -469,6 +469,9 @@ describe("control socket protocol", () => {
         appId: "may",
         conversationId: "may:primary",
         limit: 30,
+        topicId: "0df0c0ed",
+        topicLimit: 12,
+        topicCursor: "older-page",
       }),
     ).resolves.toMatchObject({
       type: "ok",
