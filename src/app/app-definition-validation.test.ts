@@ -146,4 +146,36 @@ describe("canonical App definition validation", () => {
       }),
     ).toContain("App missing-task-policy task requires a tasks policy");
   });
+
+  it("accepts direct conversational requests and rejects a second Task path", () => {
+    expect(
+      validateAppDefinition({
+        id: "may",
+        version: 1,
+        agent: "may",
+        inputSchema,
+        requests: { mode: "agent", conversationId: "may:primary" },
+      }),
+    ).toEqual([]);
+    expect(
+      validateAppDefinition({
+        id: "invalid-may",
+        version: 1,
+        agent: "may",
+        inputSchema,
+        requests: { mode: "agent", conversationId: "  " },
+      }),
+    ).toContain("App invalid-may requests conversationId must be a non-empty string");
+    expect(
+      validateAppDefinition({
+        id: "ambiguous-may",
+        version: 1,
+        agent: "may",
+        inputSchema,
+        requests: { mode: "agent" },
+        task: () => ({ kind: "existing", taskId: "conversation/duplicate" }),
+        tasks: {},
+      }),
+    ).toContain("App ambiguous-may cannot resolve the same inbox through both direct requests and Tasks");
+  });
 });

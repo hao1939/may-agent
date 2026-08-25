@@ -1,4 +1,4 @@
-import type { Static, TSchema } from "typebox";
+import { Type, type Static, type TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
 import type { ObserverContext } from "./workflow.js";
@@ -67,6 +67,21 @@ export type AppDependencyObservation = {
   evidence?: string[];
 };
 
+/** One exact delegated App request observed while a conversational App reviews its request. */
+export type AppRequestDependencyObservation = AppDependencyObservation & {
+  requestId: string;
+  appId: string;
+  taskId?: string;
+};
+
+export type AppConversationTopic = {
+  id: string;
+  title: string;
+  openedBy: string;
+  originMessageId: string;
+  taskRefs: Array<{ appId: string; taskId: string; ref?: string }>;
+};
+
 export type AppConversationMessage = {
   id: string;
   sequence: number;
@@ -83,6 +98,8 @@ export type AppConversationMessage = {
     channelMessageId?: number;
     requestId?: string;
     command?: string;
+    /** Human-facing context that links this turn to exact App work. */
+    topicId?: string;
     /** Ordered canonical Tasks represented by this rendered command/tool view. */
     taskRefs?: Array<{ appId: string; taskId: string; ref?: string }>;
     /** Exact unfinished owner Task an adapter may follow automatically. */
@@ -101,7 +118,10 @@ export type AppConversationResource = {
   current?: {
     messageId: string;
     replyTo?: string;
+    topicId?: string;
   };
+  /** Recent lightweight contexts. Their Task state remains authoritative elsewhere. */
+  topics?: AppConversationTopic[];
   /** Durable messages only, in the order shared by every human surface. */
   messages: AppConversationMessage[];
 };
@@ -113,6 +133,8 @@ export type AppRequest<TData = unknown> = {
   parentId?: string;
   input: AppInput<TData>;
   dependency?: AppDependencyObservation;
+  /** Exact child App work previously delegated for this request. */
+  dependencies?: AppRequestDependencyObservation[];
   /** Exact bounded observation for the human's focused Task, when supplied. */
   focusedTask?: {
     appId: string;
@@ -131,6 +153,58 @@ export type AppTaskInput<TData = unknown> = {
 };
 
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
+
+export type AppRequestDependency = {
+  /** Stable name within this conversational request. */
+  id: string;
+  appId: string;
+  /** Continue this exact unfinished Task instead of creating a sibling. */
+  taskId?: string;
+  input: AppInput;
+};
+
+export type AppRequestTopicDecision =
+  { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };
+
+/** One bounded conversational decision. Code applies it; the model decides meaning. */
+export type AppRequestDecision = {
+  summary: string;
+  response?: string;
+  evidence?: string[];
+  topic: AppRequestTopicDecision;
+  dependencies?: AppRequestDependency[];
+};
+
+const nonEmptyStringSchema = Type.String({ minLength: 1 });
+
+/** Structured output required from an App's direct conversational agent. */
+export const appRequestAgentResultSchema = Type.Object(
+  {
+    summary: nonEmptyStringSchema,
+    response: Type.Optional(nonEmptyStringSchema),
+    evidence: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
+    topic: Type.Union([
+      Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
+      Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
+      Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
+    ]),
+    dependencies: Type.Optional(
+      Type.Array(
+        Type.Object(
+          {
+            id: nonEmptyStringSchema,
+            appId: nonEmptyStringSchema,
+            taskId: Type.Optional(nonEmptyStringSchema),
+            input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
+          },
+          { additionalProperties: false },
+        ),
+        { maxItems: 8 },
+      ),
+    ),
+  },
+  { additionalProperties: false },
+);
 
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */
@@ -192,6 +266,13 @@ export type AppTaskPolicy = {
   maxConcurrent?: number;
 };
 
+/** Direct bounded handling for conversational input; it creates no App Task. */
+export type AppRequestPolicy = {
+  mode: "agent";
+  /** Conversation used for event/API requests that do not arrive through a conversation adapter. */
+  conversationId?: string;
+};
+
 /** Minimal declaration used by the App host. Domain payloads remain App-owned. */
 type AppDefinitionBase<TInputSchema extends TSchema> = {
   id: string;
@@ -200,6 +281,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
   inputSchema: TInputSchema;
   /** Pure mapping from admitted input to the one existing or desired Task that owns it. */
   task?: (input: Readonly<AppTaskInput>) => AppTaskAttachment;
+  requests?: AppRequestPolicy;
   subscriptions?: AppEventSubscription[];
   /**
    * Reviewed facts that intentionally create no inbox item or task. The host

@@ -11,7 +11,7 @@ import {
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { readAppConversationResource } from "./app-inbox-store.js";
+import { listAppInboxChildren, readAppConversationResource } from "./app-inbox-store.js";
 import { APP_REQUEST_CONVERSATION_MAX_BYTES, AppInboxHost, boundedAppRequestConversation } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -144,6 +144,316 @@ describe("App inbox host", () => {
       },
     ]);
     expect(host.get("one")?.waitingOn).toEqual({ kind: "task", id: "probe/one" });
+  });
+
+  it("answers a human turn directly without creating a May Task", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const attachments: AppTaskAttachment[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [may],
+      resolveRequest: async () => ({
+        summary: "Greeted Hao.",
+        response: "Hello!",
+        topic: { kind: "none" },
+      }),
+      attachTask: async ({ attachment }) => {
+        attachments.push(attachment);
+        return { taskId: "unexpected" };
+      },
+    });
+    host.admit({
+      id: "turn-hello",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-hello" },
+      input: { kind: "probe", data: { value: "hello" } },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(host.get("turn-hello")).toMatchObject({
+      status: "done",
+      result: { summary: "Greeted Hao.", response: "Hello!" },
+    });
+    expect(attachments).toEqual([]);
+    expect(readAppConversationResource(db, "may", "may:primary").topics).toEqual([]);
+  });
+
+  it("puts an event request and its direct answer in the App's default Conversation", async () => {
+    const changed: string[] = [];
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent", conversationId: "may:primary" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may],
+      resolveRequest: async ({ request }) => {
+        expect(request.source.kind).toBe("system");
+        expect(request.conversation?.id).toBe("may:primary");
+        return {
+          summary: "The decision needs Hao.",
+          response: "Please approve the production rollout.",
+          topic: { kind: "none" },
+        };
+      },
+      onConversationChanged: (appId, conversationId) => changed.push(`${appId}/${conversationId}`),
+    });
+    const admitted = host.admit({
+      id: "evaluation-decision",
+      appId: "may",
+      source: { kind: "system", id: "event:77" },
+      input: { kind: "probe", data: { value: "approve production rollout" } },
+      originEventId: 77,
+    });
+
+    expect(admitted.item).toMatchObject({ conversationId: "may:primary", conversationSequence: 77 });
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
+      expect.objectContaining({
+        id: "result:evaluation-decision",
+        sequence: 77,
+        author: { kind: "agent", id: "may" },
+        text: "Please approve the production rollout.",
+      }),
+    ]);
+    expect(changed).toEqual(["may/may:primary"]);
+  });
+
+  it("links one Topic to real App Tasks and reviews their results without a May wrapper Task", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const worker = app("worker");
+    const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
+    const delegated: string[] = [];
+    let workerDone = false;
+    let mayCalls = 0;
+    const host = new AppInboxHost({
+      db,
+      apps: [may, worker],
+      resolveRequest: async ({ request }) => {
+        mayCalls += 1;
+        if (request.dependencies?.[0]?.status === "done") {
+          return {
+            summary: "The review is complete.",
+            response: request.dependencies[0].response ?? "The review passed.",
+            topic: { kind: "existing", id: request.conversation!.topics![0]!.id },
+          };
+        }
+        return {
+          summary: "The worker owns the review.",
+          topic: { kind: "new", title: "Review the design" },
+          dependencies: [
+            {
+              id: "design-review",
+              appId: "worker",
+              input: { kind: "probe", data: { value: "review the design" } },
+            },
+          ],
+        };
+      },
+      attachTask: async ({ appId, attachment }) => {
+        attachments.push({ appId, attachment });
+        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      },
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: workerDone ? "done" : "running",
+        ...(workerDone ? { summary: "Review passed", response: "The design review passed." } : {}),
+      }),
+      onRequestDelegated: (item) => delegated.push(item.appId),
+    });
+    host.admit({
+      id: "turn-review",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-review" },
+      input: { kind: "probe", data: { value: "review the design" } },
+    });
+
+    await host.reconcileOnce("may");
+    const children = listAppInboxChildren(db, "turn-review");
+    expect(children).toHaveLength(1);
+    expect(delegated).toEqual(["worker"]);
+    expect(children[0]).toMatchObject({ appId: "worker", status: "pending", topicId: expect.any(String) });
+    expect(host.get("turn-review")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "app", id: "children:turn-review" },
+    });
+    expect(attachments).toEqual([]);
+
+    await host.reconcileOnce("worker");
+    const topic = readAppConversationResource(db, "may", "may:primary").topics![0]!;
+    const workerTaskId = topic.taskRefs[0]!.taskId;
+    expect(topic).toMatchObject({
+      title: "Review the design",
+      openedBy: "human",
+      originMessageId: "message-review",
+      taskRefs: [{ appId: "worker", taskId: expect.any(String) }],
+    });
+    expect(attachments).toHaveLength(1);
+    expect(attachments[0]!.appId).toBe("worker");
+
+    workerDone = true;
+    expect(host.wake({ kind: "task", id: workerTaskId })).toBe(1);
+    await host.reconcileOnce("worker");
+    await host.reconcileOnce("may");
+
+    expect(host.get("turn-review")).toMatchObject({
+      status: "done",
+      topicId: topic.id,
+      result: { response: "The design review passed." },
+    });
+    expect(mayCalls).toBe(2);
+    expect(attachments.every((entry) => entry.appId !== "may")).toBeTrue();
+  });
+
+  it("reviews each completed child once while other delegated work keeps running", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const completedTasks = new Set<string>();
+    let mayCalls = 0;
+    const host = new AppInboxHost({
+      db,
+      apps: [may, app("worker")],
+      resolveRequest: async ({ request }) => {
+        mayCalls += 1;
+        const topic = request.conversation?.topics?.[0];
+        return {
+          summary: "Both checks must finish.",
+          topic: topic ? { kind: "existing", id: topic.id } : { kind: "new", title: "Run both checks" },
+          dependencies: [
+            { id: "first", appId: "worker", input: { kind: "probe", data: { value: "first" } } },
+            { id: "second", appId: "worker", input: { kind: "probe", data: { value: "second" } } },
+          ],
+        };
+      },
+      attachTask: async ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      }),
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: completedTasks.has(dependency.id) ? "done" : "running",
+        ...(completedTasks.has(dependency.id) ? { summary: `${dependency.id} finished` } : {}),
+      }),
+    });
+    host.admit({
+      id: "turn-two-checks",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-two-checks" },
+      input: { kind: "probe", data: { value: "run two checks" } },
+    });
+
+    await host.reconcileOnce("may");
+    await host.reconcileOnce("worker");
+    await host.reconcileOnce("worker");
+    const [first, second] = listAppInboxChildren(db, "turn-two-checks");
+    expect(first?.waitingOn?.kind).toBe("task");
+    expect(second?.waitingOn?.kind).toBe("task");
+
+    completedTasks.add(first!.waitingOn!.id);
+    expect(host.wake({ kind: "task", id: first!.waitingOn!.id })).toBe(1);
+    await host.reconcileOnce("worker");
+    await host.reconcileOnce("may");
+
+    expect(host.get("turn-two-checks")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "app", id: "children:turn-two-checks" },
+      availableAt: undefined,
+    });
+    expect(host.readyCount("may")).toBe(0);
+    expect(host.get(second!.id)?.status).toBe("handling");
+    expect(mayCalls).toBe(2);
+  });
+
+  it("lets a later natural turn reuse a Topic and steer its exact unfinished Task", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const worker = app("worker");
+    const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
+    let first = true;
+    const host = new AppInboxHost({
+      db,
+      apps: [may, worker],
+      resolveRequest: async ({ request }) => {
+        const existing = request.conversation?.topics?.[0];
+        const dependency = first
+          ? {
+              id: "initial",
+              appId: "worker",
+              input: { kind: "probe", data: { value: "start" } },
+            }
+          : {
+              id: "feedback",
+              appId: "worker",
+              taskId: existing!.taskRefs[0]!.taskId,
+              input: { kind: "probe", data: { value: "focus on simplicity" } },
+            };
+        first = false;
+        return {
+          summary: "Worker owns the request.",
+          topic: existing ? { kind: "existing", id: existing.id } : { kind: "new", title: "Improve design" },
+          dependencies: [dependency],
+        };
+      },
+      attachTask: async ({ appId, attachment }) => {
+        attachments.push({ appId, attachment });
+        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      },
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "running" }),
+    });
+    for (const [id, sequence, value] of [
+      ["turn-1", 1, "improve the design"],
+      ["turn-2", 2, "keep it simple"],
+    ] as const) {
+      host.admit({
+        id,
+        appId: "may",
+        conversationId: "may:primary",
+        conversationSequence: sequence,
+        source: { kind: "human", id: `message-${sequence}` },
+        input: { kind: "probe", data: { value } },
+      });
+      await host.reconcileOnce("may");
+      await host.reconcileOnce("worker");
+    }
+
+    const topic = readAppConversationResource(db, "may", "may:primary").topics![0]!;
+    expect(topic.taskRefs).toHaveLength(1);
+    expect(attachments).toHaveLength(2);
+    expect(attachments[1]).toEqual({
+      appId: "worker",
+      attachment: { kind: "existing", taskId: topic.taskRefs[0]!.taskId },
+    });
+    expect(host.get("turn-2")?.topicId).toBe(topic.id);
   });
 
   it("attaches typed follow-up input to one exact existing Task", async () => {
