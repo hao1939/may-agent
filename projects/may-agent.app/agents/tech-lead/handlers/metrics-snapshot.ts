@@ -1590,16 +1590,26 @@ export const create: HandlerModule["create"] = (
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
-           -- Task-bound project session recovery interruptions are already
-           -- owned by the app task reconciler and evaluator-aftermath records
-           -- them as structured skips when appropriate. Counting those rows as
-           -- missing evaluator triage turns a recovery handoff into false
-           -- failed-triage debt.
-           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
+           -- Task-bound recovery handoffs are owned by the Task reconciler,
+           -- not evaluator aftermath. Preserve the historical literal while
+           -- matching the current runtime contract emitted by cron-startup.
+           AND COALESCE(s.error, '') NOT IN (
+             'Task-bound project session recovery is owned by the app task reconciler',
+             'Task-bound execution is recovered through its Task, not by resuming the old session'
+           )
            -- Runtime recovery may interrupt orphaned task sessions from a
-           -- previous process after safely handing ownership back to the task
-           -- app. Those rows should not create evaluator failed-triage debt.
+           -- previous process after safely handing ownership back to the Task.
+           -- Preserve the historical owner-session spelling for old rows.
            AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
+           -- A terminal successful result can retain Cancelled as cleanup
+           -- residue after the outcome has already been committed. COALESCE
+           -- keeps unrelated terminal rows with nullable outcome/error eligible.
+           AND NOT (
+             s.status = 'done'
+             AND COALESCE(s.outcome, '') = 'done'
+             AND COALESCE(s.error, '') = 'Cancelled'
+           )
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
            AND NOT (s.status = 'interrupted' AND s.error IS NULL)
          GROUP BY s.sessionId`,
@@ -1646,8 +1656,17 @@ export const create: HandlerModule["create"] = (
          FROM sessions s
          WHERE s.status IN ('done', 'error', 'interrupted')
            AND s.agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
+           AND COALESCE(s.error, '') NOT IN (
+             'Task-bound project session recovery is owned by the app task reconciler',
+             'Task-bound execution is recovered through its Task, not by resuming the old session'
+           )
            AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
+           AND NOT (
+             s.status = 'done'
+             AND COALESCE(s.outcome, '') = 'done'
+             AND COALESCE(s.error, '') = 'Cancelled'
+           )
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?`,
         threeH,
@@ -1659,8 +1678,17 @@ export const create: HandlerModule["create"] = (
          JOIN evaluations e ON e.sessionId = s.sessionId
          WHERE s.status IN ('done', 'error', 'interrupted')
            AND s.agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
+           AND COALESCE(s.error, '') NOT IN (
+             'Task-bound project session recovery is owned by the app task reconciler',
+             'Task-bound execution is recovered through its Task, not by resuming the old session'
+           )
            AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
+           AND NOT (
+             s.status = 'done'
+             AND COALESCE(s.outcome, '') = 'done'
+             AND COALESCE(s.error, '') = 'Cancelled'
+           )
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?`,
         threeH,

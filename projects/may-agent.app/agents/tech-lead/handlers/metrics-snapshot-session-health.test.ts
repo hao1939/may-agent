@@ -120,6 +120,43 @@ describe("metrics-snapshot session health metrics", () => {
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
+        "s_current_task_reconciler_handoff",
+        "app-ops",
+        "task",
+        "interrupted",
+        ended - 43_000,
+        ended,
+        "Task-bound execution is recovered through its Task, not by resuming the old session",
+      ],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        "s_current_orphan_runtime_recovery_handoff",
+        "app-ops",
+        "task",
+        "interrupted",
+        ended - 42_000,
+        ended,
+        "Recovered task runtime/owner-review interrupted an orphaned agent session from a previous runtime",
+      ],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, outcome, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        "s_done_cancelled_residue",
+        "app-ops",
+        "task",
+        "done",
+        ended - 41_000,
+        ended,
+        "done",
+        "Cancelled",
+      ],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
         "s_self",
         "evaluator",
         "task",
