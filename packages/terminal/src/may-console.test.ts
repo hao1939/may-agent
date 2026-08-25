@@ -222,6 +222,8 @@ describe("May Console", () => {
                   ref: "8f12ac90",
                   status: taskTerminal ? "done" : "running",
                   outcome: "Review the docs",
+                  acceptance: ["Report the exact findings.", "Show the verification evidence."],
+                  statusDetail: taskTerminal ? "Completed." : "An attempt is working on it now.",
                   summary: taskTerminal ? "Review complete" : "Reviewing current behavior",
                   response: taskTerminal ? "The design and implementation now align." : undefined,
                   updatedAt: Date.UTC(2026, 7, 17, 9, 0, 0),
@@ -372,9 +374,13 @@ describe("May Console", () => {
     child.stdin.write("/task 8f12ac90\n");
     await waitFor(
       () =>
-        output.includes("Task 8f12ac90:") &&
-        output.includes("Progress:") &&
-        output.includes("Reviewing current behavior"),
+        output.includes("Task 8f12ac90 · evaluation") &&
+        output.includes("Goal\n  Review the docs") &&
+        output.includes("State\n  working. An attempt is working on it now.") &&
+        output.includes("Current") &&
+        output.includes("Reviewing current behavior") &&
+        output.includes("Expected result\n  - Report the exact findings.\n  - Show the verification evidence.") &&
+        output.includes("You\n  Nothing needed right now."),
     );
 
     const taskReadsBeforeReconnect = frames.filter(
@@ -532,7 +538,7 @@ describe("May Console", () => {
       })}\n`,
     );
     await waitFor(
-      () => output.includes("Progress (2026-08-17 09:03:04 UTC):") && output.includes("Inspecting exact evidence"),
+      () => output.includes("Current · 2026-08-17 09:03:04 UTC") && output.includes("Inspecting exact evidence"),
     );
     client?.write(
       `${JSON.stringify({

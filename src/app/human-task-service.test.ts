@@ -44,14 +44,22 @@ function registry(...ids: string[]) {
 
 function insertTask(
   db: SqliteDb,
-  input: { appId: string; taskId: string; phase: string; updatedAt: number; mode?: "achieve" | "maintain" },
+  input: {
+    appId: string;
+    taskId: string;
+    phase: string;
+    updatedAt: number;
+    mode?: "achieve" | "maintain";
+    ready?: boolean;
+    acceptance?: string[];
+  },
 ): void {
   const resource = {
     metadata: { id: input.taskId, generation: 2, resourceVersion: 3 },
     spec: {
       parentId: "root",
       outcome: `Handle ${input.taskId}`,
-      acceptance: ["done"],
+      acceptance: input.acceptance ?? ["done"],
       mode: input.mode ?? "achieve",
       owner: `${input.appId}-owner`,
     },
@@ -66,8 +74,8 @@ function insertTask(
     `INSERT INTO app_tasks(
        app_id, task_id, generation, resource_version, observed_generation, phase, lane,
        changed, ready, updated_at, resource_json
-     ) VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, 0, ?, ?)`,
-  ).run(input.appId, input.taskId, input.phase, input.updatedAt, JSON.stringify(resource));
+     ) VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, ?, ?, ?)`,
+  ).run(input.appId, input.taskId, input.phase, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource));
 }
 
 function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt: number): void {
@@ -298,6 +306,48 @@ describe("Human Task service", () => {
     expect(service.listTasks({ includeDone: true, limit: 2, cursor: first.nextCursor }).items).toEqual([
       expect.objectContaining({ appId: "alpha", taskId: "old", status: "waiting" }),
     ]);
+  });
+
+  test("explains queued state and keeps exact acceptance criteria in detail only", () => {
+    const db = database();
+    insertTask(db, {
+      appId: "gym",
+      taskId: "deduplicate",
+      phase: "pending",
+      updatedAt: 10,
+      ready: true,
+      acceptance: ["List the identity evidence.", "Cancel only proven duplicates."],
+    });
+    const service = new HumanTaskService(db, registry("gym"));
+
+    expect(service.getTask({ appId: "gym", taskId: "deduplicate" })).toMatchObject({
+      status: "pending",
+      statusDetail: "Accepted and ready to start; no attempt is running.",
+      acceptance: ["List the identity evidence.", "Cancel only proven duplicates."],
+    });
+    const card = service.listTasks().items[0]!;
+    expect(card.statusDetail).toBe("Accepted and ready to start; no attempt is running.");
+    expect(card.acceptance).toBeUndefined();
+  });
+
+  test("marks normal Task lists only when an open human-owned Condition needs action", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "review", phase: "attention", updatedAt: 20 });
+    insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 10 });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "approval",
+      conditionId: "human-approval",
+      owner: "human",
+      requestedAction: "Approve or reject the rollout.",
+    });
+    const service = new HumanTaskService(db, registry("alpha"));
+
+    const tasks = service.listTasks().items;
+    expect(tasks.find((task) => task.taskId === "review")?.humanAction).toBeUndefined();
+    expect(tasks.find((task) => task.taskId === "approval")?.humanAction).toEqual({
+      requestedAction: "Approve or reject the rollout.",
+    });
   });
 
   test("resolves exact detail by stable ref and preserves terminal results", () => {

@@ -34,6 +34,10 @@ export type HumanTaskView = {
   generation: number;
   resourceVersion: number;
   outcome: string;
+  /** Exact completion criteria. Detail reads only; compact lists omit them. */
+  acceptance?: string[];
+  /** Plain explanation of the current lifecycle state. */
+  statusDetail?: string;
   summary?: string;
   response?: string;
   evidence?: string[];
@@ -89,6 +93,7 @@ type TaskRow = {
   updated_at?: number;
   payload?: string;
   terminal?: number;
+  ready?: number | null;
   attempt_json?: string | null;
   human_conditions_json?: string | null;
 };
@@ -200,12 +205,34 @@ function boundedUtf8Text(value: string, maxBytes: number): string {
 }
 
 function listCard(view: HumanTaskView): HumanTaskView {
-  const { response: _response, evidence: _evidence, ...card } = view;
+  const { acceptance: _acceptance, response: _response, evidence: _evidence, ...card } = view;
   return {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
     ...(view.summary ? { summary: boundedUtf8Text(view.summary, HUMAN_TASK_LIST_TEXT_MAX_BYTES) } : {}),
   };
+}
+
+function taskStatusDetail(
+  status: HumanTaskStatus,
+  input: { ready?: number | null; attempt?: AppTaskAttempt | null } = {},
+): string {
+  switch (status) {
+    case "pending":
+      return input.ready === 1
+        ? "Accepted and ready to start; no attempt is running."
+        : "Accepted and waiting to become runnable.";
+    case "running":
+      return input.attempt?.state === "running" ? "An attempt is working on it now." : "The App is working on it.";
+    case "waiting":
+      return "Waiting for the facts or work shown below.";
+    case "attention":
+      return "The App needs review or recovery.";
+    case "done":
+      return "Completed.";
+    case "cancelled":
+      return "Cancelled.";
+  }
 }
 
 const OPEN_HUMAN_CONDITION_SQL = `EXISTS (
@@ -310,6 +337,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       generation: cancellation.generation,
       resourceVersion: cancellation.resourceVersion,
       outcome: cancellation.outcome,
+      statusDetail: taskStatusDetail("cancelled"),
       summary: cancellation.summary,
       updatedAt: row.updated_at ?? Date.parse(cancellation.cancelledAt),
       terminal: true,
@@ -328,6 +356,8 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       generation: receipt.metadata.generation,
       resourceVersion: receipt.metadata.resourceVersion,
       outcome: receipt.outcome,
+      ...(Array.isArray(receipt.acceptance) ? { acceptance: [...receipt.acceptance] } : {}),
+      statusDetail: taskStatusDetail("done"),
       summary: receipt.summary,
       ...(receipt.response ? { response: receipt.response } : {}),
       ...(receipt.evidence ? { evidence: [...receipt.evidence] } : {}),
@@ -340,14 +370,17 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   const resource = parseJson<AppTaskResource>(row.payload);
   if (!resource) return null;
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
+  const status = taskStatus(row.phase, false);
   const view: HumanTaskView = {
     appId,
     taskId,
     ref,
-    status: taskStatus(row.phase, false),
+    status,
     generation: resource.metadata.generation,
     resourceVersion: resource.metadata.resourceVersion,
     outcome: resource.spec.outcome,
+    acceptance: [...resource.spec.acceptance],
+    statusDetail: taskStatusDetail(status, { ready: row.ready, attempt }),
     ...(resource.status.summary ? { summary: resource.status.summary } : {}),
     ...(resource.status.response ? { response: resource.status.response } : {}),
     ...(resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
@@ -374,19 +407,19 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
   return db
     .prepare(
       `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-         a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
+         t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
          ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
        WHERE t.app_id = ? AND t.task_id = ?
        UNION ALL
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-         r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
+         r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
        UNION ALL
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-         c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
+         c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
        ORDER BY terminal DESC LIMIT 1`,
@@ -584,8 +617,7 @@ export class HumanTaskService {
     if (includeLive && livePhases.length > 0) {
       parts.push(
         `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-           a.attempt_json,
-           ${humanActionOnly ? HUMAN_CONDITIONS_SQL : "NULL"} AS human_conditions_json
+           t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
@@ -602,7 +634,7 @@ export class HumanTaskService {
     if (includeDone) {
       parts.push(
         `SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-           r.receipt_json AS payload, 1 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
+           r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
          FROM app_task_receipts r
          WHERE NOT EXISTS (
            SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
@@ -613,7 +645,7 @@ export class HumanTaskService {
     if (includeCancelled) {
       parts.push(
         `SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-           c.cancellation_json AS payload, 2 AS terminal, NULL AS attempt_json, NULL AS human_conditions_json
+           c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
          FROM app_task_cancellations c${appId ? " WHERE c.app_id = ?" : ""}`,
       );
       if (appId) values.push(appId);
@@ -658,7 +690,9 @@ export class HumanTaskService {
       if (!identity) return [];
       const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
       const view = ref ? projectTask(row, ref, false) : null;
-      return view ? [humanActionOnly && row.terminal === 0 ? withHumanAction(view, humanConditions(row)) : view] : [];
+      if (!view) return [];
+      const conditions = row.terminal === 0 ? humanConditions(row) : [];
+      return [conditions.length > 0 ? withHumanAction(view, conditions) : view];
     });
     const total = humanActionOnly
       ? Number(
