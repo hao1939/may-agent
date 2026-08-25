@@ -665,9 +665,11 @@ export class AppInboxHost {
   }
 
   async #authorRequest(item: AppInboxItem): Promise<AppRequest> {
+    const parent = item.parentId ? getAppInboxItem(this.#db, item.parentId) : null;
     const request: AppRequest = {
       id: item.id,
       source: item.source,
+      ...(item.source.kind === "human" || parent?.source.kind === "human" ? { humanRequested: true } : {}),
       parentId: item.parentId,
       input: item.input,
     };

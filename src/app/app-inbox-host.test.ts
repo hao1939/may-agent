@@ -240,6 +240,7 @@ describe("App inbox host", () => {
     });
     const worker = app("worker");
     const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
+    const attachedRequests: Readonly<AppRequest>[] = [];
     const delegated: string[] = [];
     let workerDone = false;
     let mayCalls = 0;
@@ -267,8 +268,9 @@ describe("App inbox host", () => {
           ],
         };
       },
-      attachTask: async ({ appId, attachment }) => {
+      attachTask: async ({ appId, attachment, request }) => {
         attachments.push({ appId, attachment });
+        attachedRequests.push(request);
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
       },
       readDependency: async ({ dependency }) => ({
@@ -309,6 +311,7 @@ describe("App inbox host", () => {
     });
     expect(attachments).toHaveLength(1);
     expect(attachments[0]!.appId).toBe("worker");
+    expect(attachedRequests[0]?.humanRequested).toBe(true);
 
     workerDone = true;
     expect(host.wake({ kind: "task", id: workerTaskId })).toBe(1);
