@@ -33,7 +33,11 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 /** Test-fixture compatibility only; production workflows receive typed context. */
-function fencedObject(task: string, header: string, useLast = false): Record<string, unknown> {
+function fencedObject(
+  task: string,
+  header: string,
+  useLast = false,
+): Record<string, unknown> {
   const headerIndex = useLast ? task.lastIndexOf(header) : task.indexOf(header);
   if (headerIndex < 0) return {};
   const fenceStart = task.indexOf("```json", headerIndex + header.length);

@@ -324,31 +324,58 @@ export function resolveGymTask(
     case "gym.regression.requested": {
       const requestId = String(details.requestId ?? "").trim();
       if (!requestId) return null;
+      const executionRequestId = String(
+        details.executionRequestId ?? requestId,
+      ).trim();
+      if (!executionRequestId) return null;
+      const comparisonShaped = [
+        "outcome",
+        "scope",
+        "acceptanceProof",
+        "baseline",
+        "candidate",
+        "comparisonArtifact",
+        "requiredProof",
+        "sampleScope",
+      ].some((key) => Object.hasOwn(details, key));
       return {
-        id: taskIdentity("regression-run", requestId),
+        id: taskIdentity("regression-run", executionRequestId),
         parentId: "regression-assurance",
-        outcome:
-          "Run the requested standalone Gym benchmark and preserve its result or operational failure for review.",
-        acceptance: [
-          "The requested benchmark produces a durable outcome pointer and any review-worthy result emits one review request.",
-        ],
+        outcome: comparisonShaped
+          ? "Compare the exact requested frozen baseline and candidate without substituting a standalone benchmark."
+          : "Run the requested standalone Gym benchmark and preserve its result or operational failure for review.",
+        acceptance: comparisonShaped
+          ? [
+              "The complete comparison envelope remains correlated by request id through a content-hashed terminal approve, reject, or hold artifact.",
+              "Malformed or incomplete comparison input fails closed before any standalone benchmark process is launched.",
+            ]
+          : [
+              "The requested benchmark produces a durable outcome pointer and any review-worthy result emits one review request.",
+            ],
         mode: "achieve",
         workflow: "regression-run",
         input: selected(details, [
+          "acceptanceProof",
           "agent",
           "baseline",
           "benchmark",
           "candidate",
           "constraints",
+          "executionRequestId",
+          "outcome",
           "reason",
           "requestId",
+          "reviewAndFailureBranch",
           "requiredProof",
           "returnPath",
           "sampleScope",
           "scenario",
+          "scope",
           "trials",
         ]),
-        outputs: [".state/runs", ".state/failures"],
+        outputs: comparisonShaped
+          ? [".state/proofs", ".state/runs"]
+          : [".state/runs", ".state/failures"],
         priority: "P1",
       };
     }
@@ -422,7 +449,26 @@ function gymTaskIntentForInput(
   input: AppInput,
   requestId: string,
 ): TaskIntent | null {
-  const data = { ...params(input.data), requestId };
+  const supplied = params(input.data);
+  const comparisonShaped = [
+    "outcome",
+    "scope",
+    "acceptanceProof",
+    "baseline",
+    "candidate",
+    "comparisonArtifact",
+    "requiredProof",
+    "sampleScope",
+  ].some((key) => Object.hasOwn(supplied, key));
+  const sourceRequestId = String(supplied.requestId ?? "").trim();
+  const data =
+    input.kind === "run-regression" && comparisonShaped
+      ? {
+          ...supplied,
+          requestId: sourceRequestId,
+          executionRequestId: requestId,
+        }
+      : { ...supplied, requestId };
   switch (input.kind) {
     case "owner-review":
       return gymOwnerReviewIntent(input, requestId);

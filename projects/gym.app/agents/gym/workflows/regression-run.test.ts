@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { canonicalGymTestContext } from "./lib/test-context";
 import {
+  canonicalJson,
   regressionEmissionLocalKey,
   runRegression,
   type ProcessRunner,
@@ -261,4 +263,230 @@ test("regression process failure becomes durable review work", async () => {
     benchmark: "may-alignment",
     evidence: { exitCode: 2, stderr: "adapter unavailable" },
   });
+});
+
+function comparisonFixture() {
+  const root = mkdtempSync(join(tmpdir(), "gym-comparison-"));
+  const projectsRoot = join(root, "projects");
+  const evidenceDir = join(projectsRoot, "may-agent", "evidence", "comparison");
+  mkdirSync(evidenceDir, { recursive: true });
+  const expectedLifecycleTypes = [
+    "project.task.reconcile.started",
+    "project.task.reconcile.profiled",
+    "project.task.reconciled",
+    "project.task.reconcile.skipped",
+  ];
+  const baseline =
+    "SELECT * FROM events WHERE event_type NOT IN ('existing.signal');\n";
+  const candidate = `SELECT * FROM events WHERE event_type NOT IN ('existing.signal',${expectedLifecycleTypes.map((type) => `'${type}'`).join(",")});\n`;
+  const digest = (value: string) =>
+    createHash("sha256").update(value).digest("hex");
+  const comparison = JSON.stringify({
+    frozenBaseline: {
+      path: "evidence/comparison/baseline.sql",
+      sha256: digest(baseline),
+    },
+    exactCandidate: {
+      path: "evidence/comparison/candidate.sql",
+      sha256: digest(candidate),
+      onlyAddedExclusions: expectedLifecycleTypes,
+    },
+    dominantPopulation: {
+      rows: expectedLifecycleTypes.map((eventType) => ({
+        eventType,
+        count: 1,
+      })),
+    },
+    retainedUnhandledPopulation: [{ eventType: "metric.breach", count: 1 }],
+  });
+  writeFileSync(join(evidenceDir, "baseline.sql"), baseline);
+  writeFileSync(join(evidenceDir, "candidate.sql"), candidate);
+  writeFileSync(join(evidenceDir, "comparison.json"), comparison);
+  const data = {
+    outcome: "Compare frozen baseline and candidate exactly.",
+    scope: {
+      baseline: {
+        path: "evidence/comparison/baseline.sql",
+        sha256: digest(baseline),
+      },
+      candidate: {
+        path: "evidence/comparison/candidate.sql",
+        sha256: digest(candidate),
+      },
+      comparisonArtifact: {
+        path: "evidence/comparison/comparison.json",
+        sha256: digest(comparison),
+      },
+      expectedLifecycleTypes,
+      negativeControls: ["subscriber failures", "actionable alerts"],
+    },
+    constraints: ["evaluation only"],
+    acceptanceProof: ["content-hashed terminal artifact"],
+    requestId: "appdep_exact_comparison",
+  };
+  return { projectsRoot, data };
+}
+
+test("comparison path preserves source and execution identities and writes a content-addressed HOLD proof without process launch", async () => {
+  const { projectsRoot, data } = comparisonFixture();
+  const replayData = {
+    ...data,
+    executionRequestId: "appdep_corrected_replay_1",
+  };
+  const emitted: Array<Record<string, unknown>> = [];
+  let processCalls = 0;
+  const ctx = canonicalGymTestContext({
+    task: task({ type: "gym.regression.requested", data: replayData }),
+    projectsRoot,
+    emit: taskOwnedEventCollector(emitted),
+  });
+  const result = await runRegression(ctx, async () => {
+    processCalls++;
+    return { exitCode: 0, stdout: "", stderr: "" };
+  });
+
+  expect(processCalls).toBe(0);
+  expect(result).toMatchObject({
+    status: "done",
+    output: { state: "converged", result: { disposition: "hold" } },
+  });
+  expect(emitted).toHaveLength(1);
+  expect(emitted[0]).toMatchObject({
+    type: "gym.regression.completed",
+    data: {
+      kind: "exact-comparison",
+      requestId: data.requestId,
+      executionRequestId: replayData.executionRequestId,
+      disposition: "hold",
+    },
+  });
+  const eventData = emitted[0]!.data as Record<string, unknown>;
+  const artifactText = readFileSync(String(eventData.artifactPath), "utf8");
+  expect(createHash("sha256").update(artifactText).digest("hex")).toBe(
+    eventData.artifactSha256,
+  );
+  expect(JSON.parse(artifactText)).toMatchObject({
+    disposition: "hold",
+    request: data,
+    correlation: {
+      sourceRequestId: data.requestId,
+      appRequestId: replayData.executionRequestId,
+    },
+    comparison: {
+      identityCorrelation: true,
+      exactNarrowDelta: true,
+      lifecycleCoverage: true,
+      negativeControlCoverage: false,
+    },
+    negativeEvidence: {
+      eventId: 6053212,
+      runId: "may-alignment-test-20260824T213516Z-97905d9c",
+      acceptedAsComparison: false,
+    },
+  });
+});
+
+test("comparison redelivery is deterministic and never launches generic May alignment", async () => {
+  const { projectsRoot, data } = comparisonFixture();
+  const paths: string[] = [];
+  for (let delivery = 0; delivery < 2; delivery++) {
+    const emitted: Array<Record<string, unknown>> = [];
+    const ctx = canonicalGymTestContext({
+      task: task({ type: "gym.regression.requested", data }),
+      projectsRoot,
+      emit: taskOwnedEventCollector(emitted),
+    });
+    await runRegression(ctx, async () => {
+      throw new Error("comparison must not spawn a process");
+    });
+    paths.push(
+      String((emitted[0]!.data as Record<string, unknown>).artifactPath),
+    );
+  }
+  expect(paths[1]).toBe(paths[0]);
+});
+
+test("comparison-shaped incomplete, malformed, alias, paraphrase, and opposite controls fail closed", async () => {
+  const { projectsRoot, data } = comparisonFixture();
+  const controls: Array<Record<string, unknown>> = [
+    { ...data, outcome: "" },
+    { ...data, constraints: [] },
+    { ...data, acceptanceProof: "proof" },
+    { ...data, requestId: "" },
+    { ...data, scope: { ...data.scope, baseline: { path: "x" } } },
+    { ...data, scope: { ...data.scope, candidate: "candidate alias" } },
+    { ...data, scope: { ...data.scope, comparisonArtifact: null } },
+    { baseline: data.scope.baseline, candidate: data.scope.candidate },
+    { requiredProof: ["paraphrased comparison"] },
+    {
+      ...data,
+      scope: {
+        ...data.scope,
+        baseline: { ...data.scope.baseline, path: "../escape.sql" },
+      },
+    },
+  ];
+  for (const malformed of controls) {
+    let called = false;
+    const ctx = canonicalGymTestContext({
+      task: task({ type: "gym.regression.requested", data: malformed }),
+      projectsRoot,
+    });
+    const result = await runRegression(ctx, async () => {
+      called = true;
+      return { exitCode: 0, stdout: "", stderr: "" };
+    });
+    expect(result.status).toBe("blocked");
+    expect(called).toBe(false);
+  }
+});
+
+test("opposite baseline and candidate control is rejected without process launch", async () => {
+  const { projectsRoot, data } = comparisonFixture();
+  let called = false;
+  const opposite = {
+    ...data,
+    scope: {
+      ...data.scope,
+      baseline: data.scope.candidate,
+      candidate: data.scope.baseline,
+    },
+  };
+  const result = await runRegression(
+    canonicalGymTestContext({
+      task: task({ type: "gym.regression.requested", data: opposite }),
+      projectsRoot,
+    }),
+    async () => {
+      called = true;
+      return { exitCode: 0, stdout: "", stderr: "" };
+    },
+  );
+  expect(result).toMatchObject({
+    status: "done",
+    output: { result: { disposition: "reject" } },
+  });
+  expect(called).toBe(false);
+});
+
+test("unrelated ordinary regression retains its distinct command and canonical JSON is key-order stable", async () => {
+  const root = mkdtempSync(join(tmpdir(), "gym-ordinary-control-"));
+  const projectsRoot = join(root, "projects");
+  let command: string[] = [];
+  const ctx = canonicalGymTestContext({
+    task: task({
+      type: "gym.regression.requested",
+      data: { requestId: "ordinary", benchmark: "custom", trials: 1 },
+    }),
+    projectsRoot,
+  });
+  await runRegression(ctx, async (observed) => {
+    command = observed;
+    return { exitCode: 2, stdout: "", stderr: "ordinary-control" };
+  });
+  expect(command).toContain("custom");
+  expect(command).not.toContain("may-alignment");
+  expect(canonicalJson({ z: 1, a: [2, 3] })).toBe(
+    canonicalJson({ a: [2, 3], z: 1 }),
+  );
 });

@@ -360,7 +360,7 @@ describe("Gym task reconciliation", () => {
     ).toBeNull();
   });
 
-  test("binds the frozen comparison and correlation fields into the regression run", () => {
+  test("fails closed at binding when a comparison-shaped request omits its immutable source request id", () => {
     const requestId = "appdep_42bceb440b8fcd47cf81241f";
     const data = {
       agent: "may",
@@ -395,18 +395,99 @@ describe("Gym task reconciliation", () => {
     expect(attachment).toMatchObject({
       kind: "desired",
       intent: {
-        workflow: "regression-run",
-        input: { ...data, requestId },
+        outcome: "Interpret and handle admitted Gym input run-regression.",
+        input: { kind: "run-regression", data },
       },
     });
     if (attachment.kind !== "desired") {
-      throw new Error("run-regression did not produce a desired task");
+      throw new Error("run-regression did not produce a defensive task");
     }
-    expect(attachment.intent.input).toEqual({ ...data, requestId });
-    expect(attachment.intent.input).toHaveProperty(
-      "returnPath",
-      data.returnPath,
+    expect(attachment.intent.workflow).toBeUndefined();
+  });
+
+  test("preserves the complete exact comparison envelope value-for-value through admission and reconciliation", () => {
+    const requestId = "appdep_888d7fd7b82c4939d83dae2b";
+    const data = {
+      outcome:
+        "Compare the frozen baseline with the exact candidate and return immutable proof establishing whether the candidate narrowly treats only the four expected task-reconciler lifecycle observations as expected while preserving genuine failure and unrelated unhandled-signal visibility; if supported, produce a staged rollout proposal for May review before any adoption.",
+      scope: {
+        baseline: {
+          path: "evidence/unhandled-signal-taxonomy-20260824/baseline.sql",
+          sha256:
+            "64dc0a6b713612b751e1aa530e81d18e34a42c98227cc34bdb2472d6bc23925b",
+        },
+        candidate: {
+          path: "evidence/unhandled-signal-taxonomy-20260824/candidate.sql",
+          sha256:
+            "e1a5bfc3192d1d61c5c75b76e7b50c5b1518aced0ca88b9c4d4c7a880297e98d",
+        },
+        comparisonArtifact: {
+          path: "evidence/unhandled-signal-taxonomy-20260824/comparison.json",
+          sha256:
+            "d51f47bda3786eb40619b6c718c633dad171be9378bb3d879ea3737d7b0b324f",
+        },
+        expectedLifecycleTypes: [
+          "project.task.reconcile.started",
+          "project.task.reconcile.profiled",
+          "project.task.reconciled",
+          "project.task.reconcile.skipped",
+        ],
+        negativeControls: [
+          "malformed task results",
+          "task reconciliation failures",
+          "subscriber failures",
+          "unknown-source signals",
+          "conversation delivery failures",
+          "actionable alerts",
+        ],
+      },
+      constraints: [
+        "Evaluation only: do not mutate benchmark truth, production metrics, deployments, reloads, restarts, or schedules.",
+        "Reject any broad rollout until Hao explicitly approves.",
+        "Any material regression stops the rollout proposal.",
+        "Rollback for any later approved adoption is Git revert.",
+      ],
+      acceptanceProof: [
+        "Representative task-reconciler lifecycle rows from every named positive event type and every named negative-control family are compared.",
+        "Proof shows only the four exact lifecycle types are expected observations and all material failures and unrelated unhandled signals remain visible.",
+        "The comparison result is immutable and content-hashed.",
+        "If adoption is supported, the proposal names exact scope, evidence, risks, staged monitoring, Hao's explicit approval gate, and Git-revert rollback.",
+        "Do not claim alert 4602 resolved during evaluation; after a separately approved adoption, closure requires a complete rolling hour at or below 5, non-null resolved_at, no recurrence in that window, and a subsequent project.ops_health.observed with no stale open alert.",
+      ],
+      reviewAndFailureBranch:
+        "May will review the exact Gym result. Missing representative coverage, weak immutability, hidden material signals, or any regression causes May to reject rollout and replan the proof with Gym; only a proof-supported proposal is brought to Hao for approval.",
+    };
+
+    const executionRequestId = "appdep_corrected_replay_1";
+    const attachment = taskForGymInput(
+      admitted(
+        { kind: "run-regression", data: { ...data, requestId } },
+        executionRequestId,
+      ),
     );
+    if (attachment.kind !== "desired") {
+      throw new Error("comparison request did not produce a desired task");
+    }
+    expect(attachment.intent).toMatchObject({
+      workflow: "regression-run",
+      outcome: expect.stringContaining("Compare the exact requested frozen"),
+      outputs: [".state/proofs", ".state/runs"],
+    });
+    expect(attachment.intent.id).toContain(executionRequestId);
+    expect(attachment.intent.input).toEqual({
+      ...data,
+      requestId,
+      executionRequestId,
+    });
+    expect(
+      resolveGymTask(
+        event("gym.regression.requested", {
+          ...data,
+          requestId,
+          executionRequestId,
+        }),
+      )?.input,
+    ).toEqual({ ...data, requestId, executionRequestId });
   });
 
   test("rejects comparison aliases before they can reach the regression run", () => {
