@@ -19,7 +19,6 @@ import {
   acknowledgeAppTaskRecoveryAttention,
   listHandlerExecutionFailedAppTasks,
   listHandlerUnavailableAppTasks,
-  listWorkspacePreparationFailedAppTasks,
   markAppTaskAttention,
   observeAppTaskIntent,
   listRunnableAppTaskQueueEntries,
@@ -40,7 +39,6 @@ import {
   terminalAgentSessionAppTaskClaim,
   releaseHandlerExecutionFailedAppTask,
   releaseHandlerUnavailableAppTask,
-  releaseWorkspacePreparationFailedAppTask,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
@@ -754,76 +752,6 @@ describe("App task reconciler state", () => {
       "work/pending",
       "work/unavailable",
     ]);
-  });
-
-  it("lists and releases only structured workspace preparation failures for the current generation", () => {
-    const { config } = fixture();
-    const workspaceIntent = {
-      ...intent(),
-      id: "work/workspace-failed",
-      outcome: "Resume a task workspace",
-      workflow: "workspace-worker",
-    };
-    observeAppTaskIntent(config, { intent: workspaceIntent, appAgent: "app-owner" });
-    const claim = claimObservedAppTask(config, {
-      taskId: workspaceIntent.id,
-      appAgent: "app-owner",
-      handler: "workflow:workspace-worker",
-      reason: "task-controller",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected workspace claim");
-    recordAppTaskAttemptWorkspace(config, claim, {
-      kind: "task-worktree",
-      path: "/tmp/workspace-failed",
-      baseRef: "origin/dev",
-      baseCommit: "base",
-      branch: "task/workspace-failed",
-      headCommit: "head",
-      disposition: "active",
-    });
-    markAppTaskAttention(config, claim, {
-      summary: "workspace preparation failed",
-      reason: "WorkspacePreparationFailed",
-    });
-
-    const cliIntent = {
-      ...intent(),
-      id: "work/cli-workspace-failed",
-      outcome: "Resume a CLI task workspace",
-      workflow: undefined,
-      executor: "codex" as const,
-    };
-    observeAppTaskIntent(config, { intent: cliIntent, appAgent: "app-owner" });
-    const cliClaim = claimObservedAppTask(config, {
-      taskId: cliIntent.id,
-      appAgent: "app-owner",
-      handler: "cli:codex",
-      reason: "task-controller",
-    });
-    if (cliClaim.kind !== "claimed") throw new Error("expected CLI workspace claim");
-    markAppTaskAttention(config, cliClaim, {
-      summary: "CLI workspace preparation failed",
-      reason: "WorkspacePreparationFailed",
-    });
-
-    expect(listWorkspacePreparationFailedAppTasks(config, "app-owner")).toEqual([
-      {
-        taskId: "work/cli-workspace-failed",
-        generation: 1,
-        agent: "branch-owner",
-        executor: "codex",
-      },
-      {
-        taskId: "work/workspace-failed",
-        generation: 1,
-        agent: "branch-owner",
-        workflow: "workspace-worker",
-        previous: expect.objectContaining({ path: "/tmp/workspace-failed" }),
-      },
-    ]);
-    expect(releaseWorkspacePreparationFailedAppTask(config, workspaceIntent.id, 2)).toBe(false);
-    expect(releaseWorkspacePreparationFailedAppTask(config, workspaceIntent.id, 1)).toBe(true);
-    expect(readTaskState(config).resources?.[workspaceIntent.id].status.phase).toBe("pending");
   });
 
   it("separates desired-state observation from attempt claiming", () => {
