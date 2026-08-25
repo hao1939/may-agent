@@ -588,7 +588,7 @@ function renderTasks(page, pending) {
     if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
     const result = taskResult(task);
     lines.push(
-      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${String(task.status || "?").padEnd(9)} ${String(task.outcome || task.taskId || "Task")}`,
+      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${taskStatusLabel(task).padEnd(12)} · ${elapsedText(task.updatedAt)} ago  ${String(task.outcome || task.taskId || "Task")} · ${task.humanAction ? "needs you" : "no action from you"}`,
     );
     if (task.terminal && result) lines.push(...result.split("\n").map((line) => `    ${line}`));
   }
@@ -604,6 +604,46 @@ function renderTasks(page, pending) {
   presentView(pending?.command || "/tasks", lines.join("\n"), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
   });
+}
+
+function taskStatusLabel(task) {
+  switch (task?.status) {
+    case "pending":
+      return "queued";
+    case "running":
+      return "working";
+    case "waiting":
+      return "waiting";
+    case "attention":
+      return task?.humanAction ? "needs you" : "needs review";
+    case "done":
+      return "done";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return String(task?.status || "unknown");
+  }
+}
+
+function currentTaskText(task) {
+  const observed = task.terminal ? taskResult(task) : taskProgress(task) || taskResult(task);
+  if (observed) return observed;
+  switch (task?.status) {
+    case "pending":
+      return "No attempt has started yet.";
+    case "running":
+      return "Work is active; no detailed progress has been reported yet.";
+    case "waiting":
+      return "No new progress has been reported while the Task waits.";
+    case "attention":
+      return "No recovery update has been reported yet.";
+    case "done":
+      return "No result summary was recorded.";
+    case "cancelled":
+      return "The Task will not continue.";
+    default:
+      return "No current update has been reported.";
+  }
 }
 
 function humanActionText(task) {
@@ -683,44 +723,44 @@ function renderTask(task, command, options = {}) {
   }
   if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
   if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
-  const lines = [
+  const lines = ["", `Task ${task.ref} · ${task.appId}`, "", "Goal", `  ${task.outcome}`, "", "State"];
+  lines.push(`  ${taskStatusLabel(task)}. ${task.statusDetail || ""}`.trimEnd());
+  const currentHeading =
+    !task.terminal && Number.isSafeInteger(task.progress?.updatedAt)
+      ? `Current · ${formatWorkTime(task.progress.updatedAt)}`
+      : "Current";
+  lines.push(
     "",
-    `Task ${task.ref}:`,
-    `  App: ${task.appId}`,
-    `  ID: ${task.taskId}`,
-    `  Status: ${task.status}`,
-    `  Outcome: ${task.outcome}`,
-    `  Updated: ${formatWorkTime(task.updatedAt)}`,
-  ];
-  if (task.requestedBy) {
-    lines.push(
-      `  Requested by: ${task.requestedBy.ref} · ${task.requestedBy.appId} · ${task.requestedBy.status} — ${task.requestedBy.outcome}`,
-    );
-  }
-  if (task.humanAction) {
-    lines.push(`  Action needed: ${humanActionText(task)}`);
-  }
-  const observedProgress = task.terminal ? "" : taskProgress(task);
-  const result = observedProgress || taskResult(task);
-  if (result)
-    lines.push(
-      task.terminal
-        ? "  Result:"
-        : observedProgress && Number.isSafeInteger(task.progress?.updatedAt)
-          ? `  Progress (${formatWorkTime(task.progress.updatedAt)}):`
-          : "  Progress:",
-      ...result.split("\n").map((line) => `    ${line}`),
-    );
+    currentHeading,
+    ...currentTaskText(task)
+      .split("\n")
+      .map((line) => `  ${line}`),
+  );
   for (const wait of Array.isArray(task.waitingOn) ? task.waitingOn : []) {
     if (wait?.kind === "task") {
-      lines.push(`  Waiting on: ${wait.ref} · ${wait.appId} · ${wait.status} — ${wait.outcome}`);
+      lines.push(`  Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)} — ${wait.outcome}`);
     } else if (wait?.kind === "app") {
-      lines.push(`  Waiting on: App ${wait.appId} · ${wait.status}`);
+      lines.push(`  Waiting on App ${wait.appId} · ${taskStatusLabel(wait)}`);
     } else if (wait?.kind === "condition") {
-      lines.push(`  Waiting for: ${wait.type} — ${wait.subject}`);
+      lines.push(`  Waiting for ${wait.type} — ${wait.subject}`);
     }
   }
-  if (task.execution?.sessionId) lines.push(`  Diagnostic session: ${task.execution.sessionId}`);
+  lines.push("", "Expected result");
+  const acceptance = Array.isArray(task.acceptance)
+    ? task.acceptance.filter((item) => typeof item === "string" && item.trim())
+    : [];
+  if (acceptance.length > 0) lines.push(...acceptance.map((item) => `  - ${item.trim()}`));
+  else lines.push("  No separate completion criteria were recorded.");
+  lines.push("", "You", `  ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`);
+  if (task.requestedBy) {
+    lines.push(
+      "",
+      "Related",
+      `  Requested by ${task.requestedBy.ref} · ${task.requestedBy.appId} — ${task.requestedBy.outcome}`,
+    );
+  }
+  lines.push("", "Updated", `  ${formatWorkTime(task.updatedAt)}`, "", "Details", `  ID: ${task.taskId}`);
+  if (task.execution?.sessionId) lines.push(`  Session: ${task.execution.sessionId}`);
   lines.push("");
   if (options.transient) printLine(lines.join("\n"));
   else presentView(command, lines.join("\n"), { taskRefs: representedTaskIdentities(task) });
@@ -733,7 +773,9 @@ function taskPresentationKey(task) {
 function taskPresentationRevision(task) {
   return JSON.stringify({
     status: task?.status,
+    statusDetail: task?.statusDetail,
     outcome: task?.outcome,
+    acceptance: task?.acceptance,
     updatedAt: task?.updatedAt,
     summary: task?.summary,
     response: task?.response,
@@ -742,6 +784,7 @@ function taskPresentationRevision(task) {
     waitingOn: task?.waitingOn,
     requestedBy: task?.requestedBy,
     execution: task?.execution,
+    humanAction: task?.humanAction,
     terminal: task?.terminal,
   });
 }

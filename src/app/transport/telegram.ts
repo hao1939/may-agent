@@ -130,12 +130,50 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
     ...tasks.flatMap((task) => {
       const result = task.response?.trim() || task.summary?.trim();
       return [
-        `• ${task.ref} · ${task.appId} · ${task.status}\n  ${task.outcome}`,
+        `• ${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${elapsedText(task.updatedAt)} ago\n  ${task.outcome} · ${task.humanAction ? "needs you" : "no action from you"}`,
         ...(task.terminal && result ? [`  ${result}`] : []),
       ];
     }),
     ...(hasMore ? ["More Tasks are available; use /tasks more for the next page."] : []),
   ].join("\n");
+}
+
+function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): string {
+  switch (task.status) {
+    case "pending":
+      return "queued";
+    case "running":
+      return "working";
+    case "waiting":
+      return "waiting";
+    case "attention":
+      return task.humanAction ? "needs you" : "needs review";
+    case "done":
+      return "done";
+    case "cancelled":
+      return "cancelled";
+  }
+}
+
+function currentTaskText(task: HumanTaskView): string {
+  const observed = task.terminal
+    ? task.response?.trim() || task.summary?.trim()
+    : task.progress?.message?.trim() || task.response?.trim() || task.summary?.trim();
+  if (observed) return observed;
+  switch (task.status) {
+    case "pending":
+      return "No attempt has started yet.";
+    case "running":
+      return "Work is active; no detailed progress has been reported yet.";
+    case "waiting":
+      return "No new progress has been reported while the Task waits.";
+    case "attention":
+      return "No recovery update has been reported yet.";
+    case "done":
+      return "No result summary was recorded.";
+    case "cancelled":
+      return "The Task will not continue.";
+  }
 }
 
 function humanActionText(task: HumanTaskView): string {
@@ -171,37 +209,39 @@ export function renderTelegramTodos(
 }
 
 export function renderTelegramTask(task: HumanTaskView): string {
-  const observedProgress = task.terminal ? "" : task.progress?.message?.trim();
-  const result = observedProgress || task.response?.trim() || task.summary?.trim();
+  const acceptance = (task.acceptance ?? []).filter((item) => item.trim());
+  const currentHeading =
+    !task.terminal && task.progress ? `Current · ${formatWorkTime(task.progress.updatedAt)}` : "Current";
   return [
-    `Task ${task.ref}`,
-    `App: ${task.appId}`,
-    `ID: ${task.taskId}`,
-    `Status: ${task.status}`,
-    `Outcome: ${task.outcome}`,
-    `Updated: ${formatWorkTime(task.updatedAt)}`,
-    ...(task.requestedBy
-      ? [
-          `Requested by: ${task.requestedBy.ref} · ${task.requestedBy.appId} · ${task.requestedBy.status}\n${task.requestedBy.outcome}`,
-        ]
-      : []),
-    ...(task.humanAction ? [`Action needed: ${humanActionText(task)}`] : []),
-    ...(result
-      ? [
-          task.terminal
-            ? `Result:\n${result}`
-            : observedProgress && task.progress
-              ? `Progress (${formatWorkTime(task.progress.updatedAt)}):\n${result}`
-              : `Progress:\n${result}`,
-        ]
-      : []),
+    `Task ${task.ref} · ${task.appId}`,
+    "",
+    `Goal\n${task.outcome}`,
+    "",
+    `State\n${taskStatusLabel(task)}. ${task.statusDetail ?? ""}`.trimEnd(),
+    "",
+    `${currentHeading}\n${currentTaskText(task)}`,
     ...(task.waitingOn ?? []).map((wait) =>
       wait.kind === "task"
-        ? `Waiting on: ${wait.ref} · ${wait.appId} · ${wait.status}\n${wait.outcome}`
+        ? `Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)}\n${wait.outcome}`
         : wait.kind === "app"
-          ? `Waiting on: App ${wait.appId} · ${wait.status}`
-          : `Waiting for: ${wait.type}\n${wait.subject}`,
+          ? `Waiting on App ${wait.appId} · ${wait.status}`
+          : `Waiting for ${wait.type}\n${wait.subject}`,
     ),
+    "",
+    "Expected result",
+    ...(acceptance.length > 0
+      ? acceptance.map((item) => `• ${item}`)
+      : ["No separate completion criteria were recorded."]),
+    "",
+    `You\n${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`,
+    ...(task.requestedBy
+      ? ["", `Related\nRequested by ${task.requestedBy.ref} · ${task.requestedBy.appId}\n${task.requestedBy.outcome}`]
+      : []),
+    "",
+    `Updated\n${formatWorkTime(task.updatedAt)}`,
+    "",
+    `Details\nID: ${task.taskId}`,
+    ...(task.execution?.sessionId ? [`Session: ${task.execution.sessionId}`] : []),
   ].join("\n");
 }
 

@@ -117,6 +117,8 @@ describe("Telegram May input", () => {
       generation: 1,
       resourceVersion: 2,
       outcome: "Review the docs",
+      acceptance: ["Report the exact findings."],
+      statusDetail: "An attempt is working on it now.",
       summary: "Reviewing current behavior",
       updatedAt: Date.UTC(2026, 7, 22, 1, 2, 3),
       terminal: false,
@@ -134,9 +136,14 @@ describe("Telegram May input", () => {
         },
       ]),
     ).toContain("evaluation — 1 active · 1 running");
-    expect(renderTelegramTasks([task], false)).toContain("8f12ac90 · evaluation · running");
+    expect(renderTelegramTasks([task], false)).toContain("8f12ac90 · evaluation · working");
+    expect(renderTelegramTasks([task], false)).toContain("no action from you");
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
-    expect(renderTelegramTask(task)).toContain("Progress:\nReviewing current behavior");
+    expect(renderTelegramTask(task)).toContain("Goal\nReview the docs");
+    expect(renderTelegramTask(task)).toContain("State\nworking. An attempt is working on it now.");
+    expect(renderTelegramTask(task)).toContain("Current\nReviewing current behavior");
+    expect(renderTelegramTask(task)).toContain("Expected result\n• Report the exact findings.");
+    expect(renderTelegramTask(task)).toContain("You\nNothing needed right now.");
     expect(
       renderTelegramTask({
         ...task,
@@ -148,7 +155,7 @@ describe("Telegram May input", () => {
           outcome: "Review the systemic gap",
         },
       }),
-    ).toContain("Requested by: 4a7af065 · may · waiting\nReview the systemic gap");
+    ).toContain("Related\nRequested by 4a7af065 · may\nReview the systemic gap");
     expect(
       renderTelegramTodos(
         [
@@ -179,7 +186,7 @@ describe("Telegram May input", () => {
           updatedAt: Date.UTC(2026, 7, 22, 1, 3, 4),
         },
       }),
-    ).toContain("Progress (2026-08-22 01:03:04 UTC):\nInspecting exact evidence");
+    ).toContain("Current · 2026-08-22 01:03:04 UTC\nInspecting exact evidence");
     expect(
       renderTelegramTask({
         ...task,
@@ -730,7 +737,7 @@ describe("Telegram May input", () => {
         owner: "app:evaluation",
         data: { appId: "evaluation", taskId: "review/docs" },
       } as any);
-      await waitFor(() => sent.some((text) => text.includes("Result:\nThe review is complete.")));
+      await waitFor(() => sent.some((text) => text.includes("Current\nThe review is complete.")));
 
       releaseFollowup();
       await waitFor(() => sent.some((text) => text.includes("No Task is watched")));
