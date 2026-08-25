@@ -250,6 +250,7 @@ export async function runAppRuntime(opts: {
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
+    previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),
     readDependency: (input) =>
       appTasks.readDependency({
         appDir: input.appDir,

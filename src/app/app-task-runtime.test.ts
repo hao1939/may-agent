@@ -28,6 +28,7 @@ import {
   normalizeTaskHandlerResult,
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
+  previewLoadedCanonicalAppTaskEventRoutes,
   projectAppTaskChildPromptContext,
   projectAppTaskWaitPromptContext,
   projectAppTaskReconciliationEvents,
@@ -1096,6 +1097,13 @@ describe("canonical App task runtime", () => {
         const taskIds = previewLoadedCanonicalAppTaskEvent({ bus, appId, event, targetedTaskId });
         if (event.type === "app.dependency.completed") conditionPreviews.push(taskIds);
         return taskIds;
+      },
+      previewTaskEventRoutes: ({ event }) => {
+        const routes = previewLoadedCanonicalAppTaskEventRoutes({ bus, event });
+        if (event.type === "app.dependency.completed") {
+          conditionPreviews.push(routes.flatMap((route) => route.taskIds));
+        }
+        return routes;
       },
       admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
         admitLoadedCanonicalAppTaskEvent({ bus, appId, event, intent, targetedTaskId, conditionTaskIds }),

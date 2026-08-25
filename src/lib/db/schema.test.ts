@@ -42,6 +42,7 @@ describe("canonical database schema", () => {
       const conditionRouteIndexes = db.prepare("PRAGMA index_list(app_task_condition_routes)").all() as Array<{
         name: string;
       }>;
+      const conditionIndexes = db.prepare("PRAGMA index_list(app_task_conditions)").all() as Array<{ name: string }>;
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent_started")).toBe(true);
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_task_binding")).toBe(true);
       expect(sessionColumns.map(({ name }) => name)).toEqual(
@@ -88,6 +89,7 @@ describe("canonical database schema", () => {
       expect(admissionPlanColumns.some(({ name }) => name === "registry_snapshot_id")).toBe(true);
       expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
       expect(conditionRouteIndexes.some(({ name }) => name === "idx_app_task_condition_routes_task")).toBe(true);
+      expect(conditionIndexes.some(({ name }) => name === "idx_app_task_conditions_type_app")).toBe(true);
       expect(trigger.sql).toContain("OLD.session_id");
       expect(trigger.sql).toContain("i.origin_event_id = OLD.id");
       expect(trigger.sql).not.toContain("json_extract");

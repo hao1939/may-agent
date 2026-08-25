@@ -97,6 +97,32 @@ describe("App inbox host", () => {
     });
   });
 
+  it("atomically replaces exact inbox subscription routes", () => {
+    const routed: string[] = [];
+    const subscribed = (eventType: string) =>
+      defineApp({
+        ...app(),
+        subscriptions: [
+          {
+            id: eventType,
+            event: eventType,
+            toInput: (event) => {
+              routed.push(event.type);
+              return { kind: "probe", data: { value: event.type } };
+            },
+          },
+        ],
+      });
+    const host = new AppInboxHost({ db, apps: [subscribed("old.event")] });
+
+    expect(host.subscriptionInputs({ type: "old.event", data: {} })).toHaveLength(1);
+    expect(host.subscriptionInputs({ type: "unrelated.event", data: {} })).toEqual([]);
+    host.replaceApps([subscribed("new.event")]);
+    expect(host.subscriptionInputs({ type: "old.event", data: {} })).toEqual([]);
+    expect(host.subscriptionInputs({ type: "new.event", data: {} })).toHaveLength(1);
+    expect(routed).toEqual(["old.event", "new.event"]);
+  });
+
   it("resolves every admitted input to exactly one durable Task", async () => {
     const attachments: Array<{ appId: string; idempotencyKey: string; attachment: AppTaskAttachment }> = [];
     const host = new AppInboxHost({

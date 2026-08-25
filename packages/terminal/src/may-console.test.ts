@@ -32,6 +32,7 @@ describe("May Console", () => {
     const remoteConversationMessages: Array<Record<string, any>> = [];
     let taskTerminal = false;
     let humanActionActive = false;
+    let dropNextTaskCommandRead = false;
     let taskProgress: { stage: string; message: string; updatedAt: number } | undefined;
     let client: Socket | null = null;
     let inputBuffer = "";
@@ -116,6 +117,11 @@ describe("May Console", () => {
               })}\n`,
             );
           } else if (frame.type === "tasks.list") {
+            if (dropNextTaskCommandRead && !frame.humanActionOnly) {
+              dropNextTaskCommandRead = false;
+              socket.destroy();
+              continue;
+            }
             if (frame.humanActionOnly) {
               const task = frame.cursor
                 ? {
@@ -343,6 +349,20 @@ describe("May Console", () => {
         output.includes("Task 8f12ac90:") &&
         output.includes("Progress:") &&
         output.includes("Reviewing current behavior"),
+    );
+
+    const taskReadsBeforeReconnect = frames.filter(
+      (frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly,
+    ).length;
+    const taskViewsBeforeReconnect = output.split("Active Tasks for evaluation:").length - 1;
+    dropNextTaskCommandRead = true;
+    child.stdin.write("/tasks\n");
+    await waitFor(
+      () =>
+        frames.filter((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly)
+          .length >=
+          taskReadsBeforeReconnect + 2 &&
+        output.split("Active Tasks for evaluation:").length - 1 === taskViewsBeforeReconnect + 1,
     );
 
     humanActionActive = true;
