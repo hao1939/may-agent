@@ -113,6 +113,10 @@ current-design list.
 
 Active reviews are:
 
+- [design-implementation-convergence.md](proposals/design-implementation-convergence.md)
+  — converge the complete Host, Runtime, App, executor, metrics, Conversation,
+  adapter, and documentation implementation on the accepted simple event-driven
+  Task model without another rewrite.
 - [lightweight-event-driven-reconciliation.md](proposals/lightweight-event-driven-reconciliation.md)
   — rebuild the Host from a small EventHub/task loop, make emitted events
   visible immediately, foreground human work, and remove history-sized cost.

@@ -425,6 +425,13 @@ storage or invoke an agent. The generic Condition tracker atomically updates
 the Condition, stores the triggering event, and returns the affected task IDs
 to enqueue.
 
+A Task may wait only when something outside the current attempt can produce the
+named observation: an existing Task or submitted operation, an external fact
+source, or a human decision. “Deploy this change” is unfinished work, not a
+`deployment.completed` Condition. The owning App must perform or durably submit
+that work first. A self-owned requested action is rejected by the App boundary;
+without a real external wait, the same Task remains runnable.
+
 ## Event input and checkpoints
 
 Each task retains ordered links to actionable events until an accepted

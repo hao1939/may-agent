@@ -317,13 +317,16 @@ no intent-draft resource, clarification Condition, or extra lifecycle.
 Understanding is one bounded LLM decision over structured, Host-authored
 context. Code supplies the current message, bounded visible Conversation,
 recent Topic candidates and their exact Task links, focused Task identity and
-observation, accepted child results, durable preferences, and installed App
-input contracts. The LLM decides what the human means and returns one
+observation, canonical snapshots for Tasks represented by recent command/tool
+views, accepted child results, durable preferences, and installed App input
+contracts. The LLM decides what the human means and returns one
 schema-validated request decision:
 
 - `response` plus no dependencies for an answer or compact clarification; or
 - one or more typed dependencies plus no response for delegated work,
-  including `taskId` only when continuing an exact existing Task.
+  including `taskId` only when continuing an exact existing Task; or
+- `response` plus a narrow cancellation of an exact Task already supplied in
+  human context.
 
 The same decision selects `none`, a new Topic with a plain title, or one exact
 existing Topic. Code validates that identity; it never picks a Topic by keyword.
@@ -332,7 +335,9 @@ Code validates schemas, canonical identities, App availability, authority
 boundaries, idempotency, and stale-result fences. It does not duplicate the LLM
 with keyword routing, a second intent classifier, or a clarification state
 machine. Conversely, the LLM cannot invent Apps, bypass typed input, retarget a
-Task implicitly, or make stale effects authoritative.
+Task implicitly, control a Task absent from canonical context, or make stale
+effects authoritative. The Host applies cancellation through the existing
+human Task service; May never receives the Host database.
 
 The same boundary applies after admission. Code may parse explicit commands,
 typed event and resource fields, declared artifact formats, provider error
@@ -375,6 +380,12 @@ The **Host Operations App** (stable `appId: may-agent`) is a different App. It
 owns platform/runtime Tasks such as a correlated Host deployment. May may route
 a human request to it, but the resulting Task belongs to `may-agent`; an agent
 execution named `may` remains only a replaceable attempt.
+
+The boundary is about responsibility, not ceremony. May answers, clarifies,
+delegates genuine domain work, and applies a human's exact supported Task
+control. Host Operations is not an intermediary for cancellation, feedback, or
+other routine control. It receives work only when the desired outcome really
+changes Host code, configuration, deployment, or platform policy.
 
 ## Events and subscriptions
 

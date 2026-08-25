@@ -62,13 +62,17 @@ Code collects bounded structured context:
 - the current turn and recent Conversation;
 - recent Topic candidates and their exact Task links;
 - an exact focused Task observation when one was supplied;
+- current canonical snapshots for exact Tasks represented by recent command or
+  tool views;
 - accepted child App results for this request; and
 - installed App descriptions and typed input contracts.
 
 The LLM decides meaning. It returns exactly one schema-validated choice:
 
-1. a direct response or compact clarification, with no dependency; or
-2. one or more typed App dependencies, with no response.
+1. a direct response or compact clarification, with no dependency;
+2. one or more typed App dependencies, with no response; or
+3. a plain response plus narrow human-authorized control of one exact Task
+   already present in the supplied context.
 
 The same decision chooses no Topic, creates a short new Topic, or selects one
 exact candidate. Code validates identities and schemas, applies the decision,
@@ -105,6 +109,14 @@ immutable; May decides whether a later turn is a distinct new outcome.
 One Topic may link several destination Tasks. The May request wakes as child
 results change and May reviews the full exact set. Repeating the human prompt,
 creating a May wrapper Task, or creating a Topic work loop is not recovery.
+
+Cancellation is different from domain feedback. When the human clearly asks
+to remove one exact cancellable Task already present in focused, command-view,
+or current-Topic context, May may return a typed cancellation with its answer.
+The Host applies the same validated Task operation used by Console and
+Telegram. May never edits persistence or assigns routine Task control to Host
+Operations. Feedback, steering, and resumed work remain typed input to the
+existing owner Task.
 
 When a destination Task is attached, Runtime appends one idempotent assignment
 message with its exact Task reference and a `followTask` presentation hint.
@@ -159,10 +171,12 @@ with exact identities. Formatting stays adapter-local.
    routing.
 7. Relevant feedback continues an exact unfinished Task; unrelated text does
    not mutate it.
-8. Destination Task results wake May's correlated request for review.
-9. Each request retains its own response, even when Tasks are shared.
-10. Adapter delivery never gates semantic completion.
-11. Restart reconstructs Conversation, Topics, pending requests, and Task links
+8. May controls only an exact Task supplied in canonical human context; Host
+   validation and persistence remain authoritative.
+9. Destination Task results wake May's correlated request for review.
+10. Each request retains its own response, even when Tasks are shared.
+11. Adapter delivery never gates semantic completion.
+12. Restart reconstructs Conversation, Topics, pending requests, and Task links
     from durable state.
-12. Cross-surface synchronization reads shared Conversation truth; adapter
+13. Cross-surface synchronization reads shared Conversation truth; adapter
     cursors remain presentation state.

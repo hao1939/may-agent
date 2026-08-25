@@ -79,6 +79,13 @@
       "approved_by": "hao",
       "approved_at": "2026-08-03T19:35:00+08:00"
     },
+    "may-learn-retire-exact-legacy-conversation-task": {
+      "status": "approved",
+      "source": "direct-human-correction",
+      "rationale": "Hao approved keeping May and Host Operations separate while allowing May to cancel an exact referenced obsolete Task through typed Host control, without direct persistence mutation or replacement work.",
+      "approved_by": "hao",
+      "approved_at": "2026-08-25T16:00:00+08:00"
+    },
     "may-align-current-architecture-app-agent-replay": {
       "status": "draft",
       "review_status": "ready",

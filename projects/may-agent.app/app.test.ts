@@ -10,6 +10,7 @@ import app, {
   resolveMayAgentTask,
   taskForMayAgentInput,
   taskInputForEvent,
+  validateHostOperationsCondition,
 } from "./app.ts";
 
 function event(
@@ -51,6 +52,39 @@ describe("Host Operations App", () => {
     expect(app).not.toHaveProperty("onEvent");
     expect(app).not.toHaveProperty("budget");
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
+  });
+
+  it("does not turn unfinished Host Operations work into a self-owned wait", () => {
+    expect(
+      validateHostOperationsCondition({
+        id: "deploy-later",
+        type: "deployment.completed",
+        subject: "deployment:runtime-repair",
+        expected: { health: "healthy" },
+        owner: "may-agent",
+        requestedAction: "Deploy the repair and prove it live.",
+      }),
+    ).toContain("perform or durably submit that work first");
+    expect(
+      validateHostOperationsCondition({
+        id: "agent-does-it-later",
+        type: "runtime.capability",
+        subject: "runtime:repair",
+        expected: { available: true },
+        owner: "agent:may",
+        requestedAction: "Implement the capability later.",
+      }),
+    ).toContain("perform or durably submit that work first");
+    expect(
+      validateHostOperationsCondition({
+        id: "approval",
+        type: "human-decision",
+        subject: "human-decision:runtime-repair",
+        expected: { anyOf: ["approve", "reject"] },
+        owner: "human:Hao",
+        requestedAction: "Approve or reject the repair.",
+      }),
+    ).toBeNull();
   });
 
   it("leaves cross-App started, skipped, and ambiguous task facts visible", () => {

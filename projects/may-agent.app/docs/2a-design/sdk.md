@@ -92,10 +92,13 @@ references. Exact structured task references may wake their task directly.
 
 A conversational App may instead declare `requests: { mode: "agent" }`. The
 Host supplies the bounded Conversation, Topic candidates, exact focused Task,
+canonical snapshots for Tasks represented by recent command/tool views,
 accepted child results, and installed App contracts to one structured agent
-decision. It answers or returns typed destination dependencies without creating
-a tracking Task. An App cannot apply both `requests` and `task` to the same
-inbox.
+decision. It answers, returns typed destination dependencies, or requests a
+narrow human-authorized cancellation of an exact supplied Task without
+creating a tracking Task. The Host applies that control through its Task API;
+the App receives no persistence capability. An App cannot apply both `requests`
+and `task` to the same inbox.
 
 If the App also receives addressed events or API requests outside a channel
 adapter, it may declare one default Conversation, for example

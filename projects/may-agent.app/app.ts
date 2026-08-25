@@ -5,6 +5,7 @@ import {
   type AppInput,
   type AppTaskAttachment,
   type AppTaskInput,
+  type Condition,
   type TaskIntent,
 } from "@may-agent/sdk";
 
@@ -26,6 +27,14 @@ export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
 export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
 export const PLATFORM_METRIC_INTERVAL_MS = 300_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
+
+export function validateHostOperationsCondition(condition: Condition): string | null {
+  const owner = condition.owner?.trim().replace(/^(?:app|agent):/, "");
+  if ((owner === projectId || owner === hostOperationsAgent) && condition.requestedAction?.trim()) {
+    return "cannot wait for unfinished work assigned back to Host Operations; perform or durably submit that work first";
+  }
+  return null;
+}
 
 export const platformInputSchema = Type.Union([
   Type.Object(
@@ -568,6 +577,7 @@ const app = defineApp({
       "metric.stalled",
     ],
     resolve: resolveHostOperationsTask,
+    validateCondition: validateHostOperationsCondition,
     maxConcurrent: 2,
   },
 });

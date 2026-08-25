@@ -1,0 +1,7 @@
+{
+  "human_answer": "Cancel the exact obsolete legacy Conversation Task through the Host's typed Task control and tell Hao plainly that it was removed. Do not edit persistence, create another Task, or claim that the unrelated Host Operations repair is its dependency.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 75
+}

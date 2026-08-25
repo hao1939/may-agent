@@ -1,0 +1,23 @@
+{
+  "name": "may-learn-retire-exact-legacy-conversation-task",
+  "description": "May uses exact canonical Task context to remove one obsolete legacy Conversation wrapper without inventing another Task or dependency.",
+  "categories": ["deputy-learning", "system-operations", "conversation"],
+  "tags": ["may-agent", "task-control", "legacy", "plain-language"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "exact-legacy-task-control",
+    "source_signals": ["hao-correction-20260825-stale-may-wrapper"]
+  }
+}
