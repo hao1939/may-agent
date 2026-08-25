@@ -77,12 +77,22 @@ describe("May Console", () => {
                   id: "may:primary",
                   owner: "may",
                   version: 2,
+                  topics: [
+                    {
+                      id: "topic_0df0c0edbf95b5bbc5c87598",
+                      title: "Review the design",
+                      openedBy: "human",
+                      originMessageId: "human-history",
+                      taskRefs: [{ appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" }],
+                    },
+                  ],
                   messages: [
                     {
                       id: "human-history",
                       sequence: 1,
                       author: { kind: "human", id: "human-history" },
                       text: "Earlier question",
+                      metadata: { topicId: "topic_0df0c0edbf95b5bbc5c87598" },
                       createdAt: 1,
                     },
                     {
@@ -90,6 +100,7 @@ describe("May Console", () => {
                       sequence: 2,
                       author: { kind: "agent", id: "may" },
                       text: "Earlier answer",
+                      metadata: { topicId: "topic_0df0c0edbf95b5bbc5c87598" },
                       createdAt: 2,
                     },
                     ...remoteConversationMessages,
@@ -321,6 +332,21 @@ describe("May Console", () => {
     });
     expect(output).not.toContain("focused work");
 
+    child.stdin.write("/topics\n");
+    await waitFor(
+      () =>
+        output.includes("Recent Topics:") &&
+        output.includes("0df0c0ed  Review the design · 1 Task") &&
+        output.includes("Task progress remains under /task and /watch."),
+    );
+    child.stdin.write("/topic 0df0c0ed\n");
+    await waitFor(
+      () =>
+        output.includes("Following 0df0c0ed: Review the design") &&
+        output.includes("8f12ac90 · evaluation") &&
+        output.includes("you[may · 0df0c0ed]>"),
+    );
+
     // A human may paste the context switch and the next command together.
     // The Console must preserve that input order even though both reads are
     // asynchronous on the control socket.
@@ -372,7 +398,7 @@ describe("May Console", () => {
     await waitFor(
       () =>
         output.includes("[todo] 2 Tasks need you in evaluation. Run /todo.") &&
-        output.includes("you[evaluation · 2 todo]>"),
+        output.includes("you[evaluation · 0df0c0ed · 2 todo]>"),
     );
     const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
     client?.write(
@@ -480,6 +506,7 @@ describe("May Console", () => {
         },
       },
     });
+    expect(input.event.data.metadata.topicId).toBe("topic_0df0c0edbf95b5bbc5c87598");
     expect(
       frames.some(
         (frame) =>
@@ -488,7 +515,7 @@ describe("May Console", () => {
           frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
       ),
     ).toBe(true);
-    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90]> "));
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90 · 0df0c0ed]> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);
@@ -610,6 +637,15 @@ describe("May Console", () => {
       () => frames.filter((frame) => frame.type === "app.conversation.get").length === beforeConsoleSync + 1,
     );
     await waitFor(() => output.includes("\nyou> Message sent from another Console\n\n"));
+
+    child.stdin.write("/topic\n");
+    await waitFor(() => output.includes("Topic 0df0c0ed: Review the design"));
+    child.stdin.write("/topic clear\n");
+    await waitFor(
+      () =>
+        output.includes("Stopped following Topic 0df0c0ed. Its Tasks continue unchanged.") &&
+        output.includes("you[may]>"),
+    );
 
     child.stdin.write("/reload\n");
     await waitFor(() =>
