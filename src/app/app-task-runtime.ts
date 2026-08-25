@@ -4023,6 +4023,7 @@ export function attachLoadedAppTask(input: {
   const idempotencyKey = input.idempotencyKey.trim();
   if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");
   const config = appTaskConfig(descriptor);
+  const humanRequested = input.request.source.kind === "human" || input.request.humanRequested === true;
 
   let intent: AppTaskIntent;
   if (input.attachment.kind === "existing") {
@@ -4046,7 +4047,7 @@ export function attachLoadedAppTask(input: {
     admissionKey: idempotencyKey,
     trigger: {
       type: "app.task.requested",
-      source: input.request.source.kind === "human" ? "human" : `app-inbox:${input.appId}`,
+      source: humanRequested ? "human" : `app-inbox:${input.appId}`,
       owner: `agent:${descriptor.agent}`,
       target: { project: descriptor.id, taskId: intent.id },
       idempotencyKey,
@@ -4062,7 +4063,7 @@ export function attachLoadedAppTask(input: {
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
-      lane: input.request.source.kind === "human" ? "human" : "normal",
+      lane: humanRequested ? "human" : "normal",
     });
   }
   return {

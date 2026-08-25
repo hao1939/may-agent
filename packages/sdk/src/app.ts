@@ -130,6 +130,8 @@ export type AppConversationResource = {
 export type AppRequest<TData = unknown> = {
   id: string;
   source: AppInputSource;
+  /** True when this request is direct work on behalf of a human turn. */
+  humanRequested?: true;
   parentId?: string;
   input: AppInput<TData>;
   dependency?: AppDependencyObservation;
