@@ -64,14 +64,15 @@ The ordinary interaction model has four nouns:
 human or caller
   -> Host event and request
   -> App task
-  -> event-driven bounded reconciliation attempts
+  -> event-driven execution until completion or an exact wait
   -> accepted result
   -> Host projection to the caller
 ```
 
 The request remains the caller-facing identity. The task is the App-facing work
-identity. Simple work converges in one attempt; hard or recurring work uses the
-same loop for as many bounded attempts as needed. A request may attach to an
+identity. The selected executor keeps working while it can make safe progress;
+internal model turns do not end the attempt. Crashes and restarts resume the
+same Task. A request may attach to an
 existing stable task, and a task may outlive any one caller request.
 
 Two common words are deliberately not resources:

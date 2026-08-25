@@ -14,9 +14,9 @@ Keep one durable work model:
 ```text
 App owns one Task goal
   -> Host wakes and fences one reconciliation attempt
-  -> selected executor performs one bounded step
+  -> selected executor keeps working until the goal is done or truly waiting
   -> events carry facts, findings, progress, approval, and steering
-  -> Host admits one result and runs the same Task again when needed
+  -> Host admits one result or resumes the same Task after an execution failure
 ```
 
 Codex is a replaceable executor, not another App, Task owner, scheduler, or
@@ -52,7 +52,7 @@ The names are deliberately explicit:
 | Reconcile attempt | One fenced, bounded chance to advance the Task                  | Host              |
 | Codex thread      | Resumable executor context for the same Task                    | Executor evidence |
 | Codex thread goal | Mirror of the current Task outcome and budget                   | Executor hint     |
-| Codex turn        | One bounded reasoning/action step inside one reconcile attempt  | Executor          |
+| Codex turn        | One internal reasoning/action turn inside one reconcile attempt | Executor          |
 
 The Codex thread ID is an execution attachment to the May Task. It never
 becomes a second task ID. Codex goal status is useful evidence, but it cannot
@@ -82,37 +82,12 @@ the first goal-created turn is the final one.
 9. Restart may repeat work; workspace changes and event publication must remain idempotent.
 10. Changing `codex` to the native May executor does not change App code or Task semantics.
 
-## A possible result needed at the bounded edge
+## Result boundary
 
-The current direct executor result can converge or wait for an exact external
-fact, but it cannot say that one bounded attempt made useful progress and more
-work is immediately available. A resumable executor needs that result without
-inventing a hidden loop.
-
-The PoC evaluates whether the public contract needs one additional state:
-
-```ts
-type TaskReconcileResult = {
-  state: "converged" | "progress" | "waiting" | "needs-agent";
-  summary: string;
-  evidence: string[];
-  // existing optional fields
-};
-```
-
-If retained, `progress` means:
-
-- this attempt ended and released its capacity;
-- useful, durable progress or a finding is named in evidence;
-- the outcome is not yet verified;
-- no external Condition is required; and
-- Runtime leaves the same Task pending and fairly requeues it.
-
-It is not a sleep, success claim, retry after an unchanged failure, or permission
-to spin. Repeated `progress` with unchanged evidence backs off and becomes
-visible attention. Codex automatic continuation may make this unnecessary for
-ordinary turn boundaries; the PoC keeps it internal and adds no SDK state until
-a hard attempt/token boundary proves it necessary.
+No additional Task result state is needed. Codex automatic continuation keeps
+the execution active across internal turns. The adapter returns only
+`converged` or an exact `waiting` result. If the process fails, the Host retries
+the same Task and resumes its bound Codex thread.
 
 ## Canonical attempt input
 
@@ -317,7 +292,7 @@ timer regardless of state.
 | Process exits or connection fails                            | End attempt as retryable failure; lease recovery requeues                    |
 | Active turn has no protocol activity past the soft threshold | Send one diagnostic/nudge steering event                                     |
 | Still silent past the hard threshold                         | Interrupt the turn, retain evidence, and requeue with backoff                |
-| Codex reports blocked                                        | Convert only an exact external need to a Task Condition; otherwise attention |
+| Codex reports blocked                                        | Accept an exact wait; otherwise ask it to continue on the same goal           |
 | Usage or token budget is exhausted                           | Exact time/quota Condition when observable; otherwise attention              |
 | Human explicitly pauses the May Task                         | Do not wake or override it                                                   |
 
@@ -455,8 +430,8 @@ Do not start production migration until all are true:
    uncatchable Host `SIGKILL` requires external process supervision or startup orphan repair because no in-process
    adapter can run cleanup after it.
 7. The canonical packet gives native May and Codex equivalent role/task context.
-8. The contract decision either proves `progress` unnecessary or proves that it
-   fairly requeues without busy-looping or holding capacity.
+8. The public result contract remains `converged` or exact `waiting`; internal
+   progress does not end execution.
 9. App verification remains the only completion authority.
 10. Current one-shot `codex` behavior remains unchanged while the PoC is enabled.
 
@@ -476,8 +451,8 @@ failure coupling.
    persistence, metric, and delivery workflows remain workflows.
 4. **Resource proof:** measure resume, steering, recovery, memory, latency, and
    event volume under controlled failure.
-5. **Contract decision:** accept or reject `progress`, `AbortSignal`, and the
-   minimal thread-binding storage based on evidence.
+5. **Contract decision — complete:** no `progress` state; retain the minimal
+   thread binding needed to resume the same Task.
 6. **Learning:** sample accepted attempts into Evaluation/Gym and run native May shadows.
 7. **Promotion:** switch proven categories to native May without changing Apps
    or Task semantics.
@@ -528,10 +503,10 @@ is registered as explicit executor name `codex-goal`; the former
   SDK admission boundary correctly rejects it because May accepts only
   `converged`, `waiting`, or (where allowed) `needs-agent`. JSON parsing alone
   is therefore proven insufficient.
-- A later attempt resumed the same thread, consumed the admission correction,
-  returned `state: "converged"`, passed real SDK admission, and left the file at
-  the same five bytes. This proves bounded cross-attempt correction without
-  repeating the workspace effect.
+- The adapter now keeps the same Task attempt and thread active when Codex
+  returns invalid output, sends the admission correction into the next
+  automatic turn, and accepts only the corrected result. Process failure still
+  resumes the same thread through ordinary Task recovery.
 - One small real read-only run initialized in 341 ms, observed first protocol
   activity in 342 ms, completed in 23.8 s, peaked at 194,124 KiB for the
   app-server process tree, and produced 200 notifications / 131,774 protocol

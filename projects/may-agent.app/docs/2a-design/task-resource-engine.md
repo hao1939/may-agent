@@ -45,7 +45,7 @@ App input declares, revises, attaches to, or wakes TaskIntent
   -> Host persists canonical task state
   -> queue receives (appId, taskId)
   -> worker rereads and claims the current generation
-  -> one selected attempt handler performs one bounded attempt
+  -> one selected handler works until it returns an accepted result or exact wait
   -> Host validates and atomically applies one result
   -> task converges, waits on exact evidence, or becomes visible attention
 ```
@@ -79,9 +79,11 @@ type TaskExecutor = (attempt: {
 ```
 
 An executor reads current Task state and its bounded unobserved event batch,
-does one useful bounded attempt, optionally publishes retry-safe progress or
-findings, and returns one result. `onEvent` is an optional low-latency view of
-new durable Task input such as feedback, approval, steering, or cancellation.
+keeps working while safe progress is available, optionally publishes retry-safe
+progress or findings, and returns only when it has one accepted result or an
+exact external wait. Internal model turns are not Task attempts. `onEvent` is
+an optional low-latency view of new durable Task input such as feedback,
+approval, steering, or cancellation.
 The listener's attempt-local `accept` consumes the exact input only with an
 admitted result; the next attempt still receives it if the executor cannot
 incorporate it live. Before the result can publish a dependency, merge a task
@@ -311,9 +313,9 @@ task.agent ?? nearest explicit ancestor agent ?? app.agent
 ```
 
 An unresolved or unrunnable agent moves the task to `attention`. If the task
-names a workflow, that exact workflow is the selected handler. An unavailable,
-failed, timed-out, or invalid workflow does not silently fall back to the
-agent.
+names a workflow, that exact workflow is the selected handler. An unavailable
+workflow moves the Task to attention. A failed, timed-out, or invalid execution
+retries the same Task; it does not silently fall back to another executor.
 
 A workflow may explicitly return `needs-agent` after exhausting its bounded,
 safe moves. That creates at most one sequential agent attempt for the same
@@ -348,9 +350,10 @@ Unknown fields are rejected. `needs-agent` is workflow-only. `waiting` requires
 at least one open exact Condition or live direct child after actions are
 applied. A waiting result may retain the App's current typed judgment in
 `result`; a later attempt reads that object instead of rebuilding state from
-summary or evidence prose. A thrown exception, timeout, unavailable runtime, invalid result,
-rejected action batch, or failed verifier is a failed attempt—not a domain
-result.
+summary or evidence prose. A thrown exception, timeout, invalid result,
+rejected action batch, or failed verifier is not a domain result. Runtime keeps
+the same Task pending and retries it with current evidence. A missing executor
+or configuration that cannot run is visible attention.
 
 Creating follow-up work does not complete the current task. Required
 decomposition creates direct children and returns `waiting`; independent later
@@ -464,8 +467,8 @@ Phases are:
 - `pending`: desired state needs another attempt;
 - `running`: one current attempt owns the generation;
 - `waiting`: exact Conditions or live direct children remain;
-- `attention`: mechanics or result admission could not produce an applicable
-  result and App review is required; and
+- `attention`: the Task cannot run safely without a configuration or domain
+  decision; and
 - `converged`: a live `maintain` task currently satisfies desired state.
 
 An `achieve` task is finite. Acceptance writes a compact receipt, removes it

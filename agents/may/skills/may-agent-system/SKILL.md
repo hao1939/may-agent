@@ -259,6 +259,9 @@ Keep domain projects portable and App policy separate from Host mechanics.
   invoke that agent once. Do not add workflow maps or agent-entry wrappers.
 - Treat the App as the semantic owner. Executors apply a bounded attempt;
   Runtime owns claims, retries, validation, and atomic Task mutation.
+- Keep one executor call active while it can still make progress. Internal
+  model turns are not Task attempts. Return only an accepted result or an exact
+  external wait; a crash or restart retries the same Task automatically.
 - Give each independent standing responsibility one stable task identity.
   Timers, semantic events, child transitions, and external observations wake
   that resource; they do not create timestamped work records or scan the task

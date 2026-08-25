@@ -57,7 +57,7 @@ addressed input, semantic fact, Condition observation, or resync
   -> app resolves or wakes one stable task
   -> controller queues only the task ID
   -> worker claims the latest canonical generation
-  -> selected executor runs one bounded attempt
+  -> selected executor works until it returns an accepted result or exact wait
   -> runtime validates and atomically applies one result
   -> achieve receipt, maintain convergence, exact Condition wait, or attention
 ```
@@ -69,28 +69,30 @@ experiments, but once work is owned by an App it uses the App task reconciler.
 ## The task loop
 
 A task says what should be true. A wake means "check it now." The selected
-executor reads current facts, compares them with the task outcome, and does
-the next safe piece of work. It keeps the same task moving until one of these is
-true:
+executor reads current facts, compares them with the task outcome, and keeps
+working while safe progress is available. It keeps the same task moving until
+one of these is true:
 
 1. the outcome is satisfied now;
 2. it must wait for one exact external fact or live direct child; or
 3. it cannot continue safely and needs visible attention.
 
-One attempt is bounded; the task loop is durable. Immediate work returns to the
-same queue. An external wait records a Condition and releases capacity. The
-observed fact later wakes the same task. No workflow or agent session remains
-open while waiting.
+An executor call may use many internal model turns. Those turns are not Task
+attempts, and useful intermediate progress does not end the call. A process
+failure or restart ends the attempt; Runtime retries the same Task, and a
+resumable executor keeps its working context. An external wait records a
+Condition and releases capacity. The observed fact later wakes the same task.
+No workflow or agent session remains open while waiting.
 
 ```text
 timer, event, or observed Condition
   -> wake one stable task ID
   -> read the target and current facts
-  -> do the next bounded work
-  -> safe work remains and a durable wake exists: pending
-     satisfied: converged
+  -> keep working while safe progress is available
+  -> satisfied: converged
      exact fact or child needed: waiting
-     cannot continue safely: attention
+     execution failed: retry the same task
+     judgment or configuration is required: attention
 ```
 
 If a maintain workflow records another wake while it is running, that wake wins
@@ -122,8 +124,8 @@ ticks.
 
 ## App, agent, and workflow
 
-The App owns the durable outcome. An agent or workflow performs one bounded
-attempt toward it. Neither executor owns the Task or its retry loop.
+The App owns the durable outcome. An agent or workflow works on it within one
+fenced execution. Neither executor owns the Task or its recovery.
 
 ```text
 no workflow binding     -> selected agent handles novel or one-off work
