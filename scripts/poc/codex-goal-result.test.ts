@@ -54,7 +54,7 @@ describe("admitCodexGoalTaskResult", () => {
     }
   });
 
-  it("recovers on a later attempt only after a corrected result is admitted", () => {
+  it("admits only the corrected result", () => {
     const first = admitCodexGoalTaskResult(
       JSON.stringify({ state: "complete", summary: "Wrong state", evidence: [] }),
       options,
