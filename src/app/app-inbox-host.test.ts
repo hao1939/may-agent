@@ -795,6 +795,57 @@ describe("App inbox host", () => {
     expect(host.get("aks-1")?.availableAt).toBeUndefined();
   });
 
+  it("revisits a nonterminal dependency when repaired App policy assigns request-specific achieve work", async () => {
+    const legacy = defineApp({
+      ...app("may-agent"),
+      task: () => ({ kind: "existing" as const, taskId: "runtime/platform-owner-review" }),
+    });
+    const legacyHost = new AppInboxHost({
+      db,
+      apps: [legacy],
+      attachTask: async ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      }),
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
+    });
+    admit(legacyHost, "addressed-review", "may-agent");
+    await legacyHost.reconcileOnce("may-agent");
+    expect(legacyHost.get("addressed-review")?.waitingOn).toEqual({
+      kind: "task",
+      id: "runtime/platform-owner-review",
+    });
+
+    const attachments: AppTaskAttachment[] = [];
+    const repairedHost = new AppInboxHost({
+      db,
+      apps: [app("may-agent")],
+      attachTask: async ({ attachment }) => {
+        attachments.push(attachment);
+        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      },
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
+    });
+
+    expect(await repairedHost.recoverTaskDependencies()).toEqual({
+      linked: 1,
+      woken: 1,
+      wokenAppIds: ["may-agent"],
+      errors: [],
+    });
+    await repairedHost.reconcileOnce("may-agent");
+
+    expect(attachments).toEqual([
+      expect.objectContaining({
+        kind: "desired",
+        intent: expect.objectContaining({ id: "probe/addressed-review", mode: "achieve" }),
+      }),
+    ]);
+    expect(repairedHost.get("addressed-review")?.waitingOn).toEqual({
+      kind: "task",
+      id: "probe/addressed-review",
+    });
+  });
+
   it("passes bounded Conversation context to the Task Event", async () => {
     let request: unknown;
     const host = new AppInboxHost({
