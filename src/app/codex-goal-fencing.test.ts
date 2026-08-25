@@ -7,7 +7,7 @@ import {
   completeAppTask,
   observeAppTaskIntent,
   taskReconciliationConfig,
-} from "../../src/app/app-task-reconciler.js";
+} from "./app-task-reconciler.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
 
 const roots: string[] = [];
@@ -49,7 +49,7 @@ describe("Codex goal Task generation fencing", () => {
     const claim = claimObservedAppTask(config, {
       taskId: observed.taskId,
       appAgent: "app-owner",
-      handler: "agent:codex-goal-poc",
+      handler: "agent:codex-goal",
     });
     if (claim.kind !== "claimed") throw new Error(`expected claim, got ${claim.kind}`);
 

@@ -73,7 +73,7 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
   });
 }
 
-describe("canonical Codex goal attempt packet", () => {
+describe("Codex goal Task packet", () => {
   it("gives native May and Codex the same semantic fields", () => {
     const canonical = packet();
     const nativeInput = renderNativeTaskAttempt(canonical);

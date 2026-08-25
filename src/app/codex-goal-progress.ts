@@ -1,3 +1,4 @@
+// Projects bounded Codex observations onto Task-owned progress events.
 import { createHash } from "node:crypto";
 import type { AppEvent, TaskEventReceipt } from "@may-agent/sdk";
 import type { AppServerNotification } from "./codex-goal-client.js";

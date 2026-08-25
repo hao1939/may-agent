@@ -14,7 +14,7 @@ function completed(item: Record<string, unknown>): AppServerNotification {
   };
 }
 
-describe("Codex goal progress projection", () => {
+describe("Codex goal Task progress", () => {
   it("publishes bounded commentary and plans but never duplicates the final answer", () => {
     const longCommentary = `checking ${"x".repeat(MAX_CODEX_GOAL_PROGRESS_MESSAGE_CHARS + 50)}`;
     const commentary = projectCodexGoalProgress(

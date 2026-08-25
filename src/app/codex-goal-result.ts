@@ -10,13 +10,7 @@ function boundedError(error: string): string {
   return `${error.slice(0, MAX_ADMISSION_ERROR_CHARS - 3)}...`;
 }
 
-/**
- * PoC boundary between one terminal Codex goal turn and May Task admission.
- *
- * Codex goal status and valid JSON are only executor evidence. The candidate
- * must still pass the production SDK's semantic Task-result admission before
- * Runtime or an App may use it.
- */
+/** Boundary between one terminal Codex goal turn and May Task admission. */
 export function admitCodexGoalTaskResult(
   finalAnswer: string | null,
   options: TaskReconcileAdmissionOptions,
