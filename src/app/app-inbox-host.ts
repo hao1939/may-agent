@@ -24,7 +24,6 @@ import {
   associateAppInboxClaimTopic,
   claimNextAppInboxItem,
   completeAppInboxClaim,
-  completeAppInboxContinuation,
   createConversationTopic,
   createAppInboxItem,
   getAppInboxItem,
@@ -33,6 +32,8 @@ import {
   listOpenConversationTopicRequests,
   listAppInboxTaskDependencyKeys,
   readAppConversationResource,
+  readConversationMessageTopicId,
+  readConversationTopic,
   releaseAppInboxClaim,
   renewAppInboxClaim,
   waitAppInboxClaim,
@@ -135,6 +136,8 @@ export type AppInboxHostOptions = {
   onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
   /** Wake-only hint after a direct request durably delegates to another App. */
   onRequestDelegated?: (item: AppInboxItem) => void;
+  /** Immediate conversational text emitted once while delegated work continues. */
+  onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
 };
 
 type RegisteredApp = AppDefinition;
@@ -214,6 +217,14 @@ function requestTaskIdentityKeys(request: Readonly<AppRequest>): Set<string> {
   for (const task of currentTopic?.taskRefs ?? []) {
     identities.add(`${task.appId}\0${task.taskId}`);
   }
+  for (const dependency of request.dependencies ?? []) {
+    if (dependency.taskId) identities.add(`${dependency.appId}\0${dependency.taskId}`);
+  }
+  for (const open of request.openRequests ?? []) {
+    for (const dependency of open.dependencies) {
+      if (dependency.taskId) identities.add(`${dependency.appId}\0${dependency.taskId}`);
+    }
+  }
   return identities;
 }
 
@@ -253,17 +264,27 @@ export function boundedAppRequestConversation(
   currentRequestId: string,
 ): AppConversationResource {
   const messages: AppConversationResource["messages"] = [];
-  for (const item of [...conversation.messages]
-    .filter((candidate) => candidate.metadata?.requestId !== currentRequestId)
-    .reverse()) {
+  const available = conversation.messages.filter((candidate) => candidate.metadata?.requestId !== currentRequestId);
+  const currentTopicId = conversation.current?.topicId;
+  const repliedMessageId = conversation.current?.replyTo;
+  const priority = available.filter(
+    (candidate) =>
+      candidate.id === repliedMessageId || (currentTopicId !== undefined && candidate.metadata?.topicId === currentTopicId),
+  );
+  const remaining = available.filter((candidate) => !priority.includes(candidate));
+  for (const item of [...priority].reverse().concat([...remaining].reverse())) {
     const projected = {
       ...item,
       text: boundedUtf8Text(item.text, APP_REQUEST_MESSAGE_TEXT_BYTES),
     };
-    const candidate = [projected, ...messages];
+    const candidate = [...messages, projected];
     if (encodedBytes(candidate) > APP_REQUEST_MESSAGE_BYTES) continue;
-    messages.unshift(projected);
+    messages.push(projected);
   }
+  messages.sort(
+    (left, right) =>
+      left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id),
+  );
 
   const result: AppConversationResource = {
     ...conversation,
@@ -350,6 +371,7 @@ export class AppInboxHost {
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
   readonly #onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
   readonly #onRequestDelegated?: (item: AppInboxItem) => void;
+  readonly #onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
@@ -366,6 +388,7 @@ export class AppInboxHost {
     this.#onRequestCompleted = options.onRequestCompleted;
     this.#onRequestTaskAttached = options.onRequestTaskAttached;
     this.#onRequestDelegated = options.onRequestDelegated;
+    this.#onRequestMessage = options.onRequestMessage;
     if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
@@ -788,14 +811,22 @@ export class AppInboxHost {
       };
     }
     if (item.conversationId) {
-      const conversation = readAppConversationResource(this.#db, item.appId, item.conversationId, { limit: 40 });
+      const contextTopicId =
+        item.topicId ??
+        (item.replyToSourceId
+          ? readConversationMessageTopicId(this.#db, item.appId, item.conversationId, item.replyToSourceId) ?? undefined
+          : undefined);
+      const conversation = readAppConversationResource(this.#db, item.appId, item.conversationId, {
+        limit: 40,
+        ...(contextTopicId ? { topicId: contextTopicId } : {}),
+      });
       const boundedConversation = boundedAppRequestConversation(
         {
           ...conversation,
           current: {
             messageId: item.source.id,
             ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
-            ...(item.topicId ? { topicId: item.topicId } : {}),
+            ...(contextTopicId ? { topicId: contextTopicId } : {}),
           },
         },
         item.id,
@@ -1002,21 +1033,11 @@ export class AppInboxHost {
     }
     const dependencies = decision.dependencies ?? [];
     const taskControls = decision.taskControls ?? [];
-    const continueRequestId = decision.continueRequestId?.trim();
-    if (decision.response && dependencies.length > 0) {
-      throw new Error(`App ${app.id} request decision cannot answer and delegate at the same time`);
-    }
-    if (continueRequestId && (dependencies.length > 0 || taskControls.length > 0)) {
-      throw new Error(`App ${app.id} request decision cannot continue and create or control work at the same time`);
-    }
     if (taskControls.length > 0 && dependencies.length > 0) {
       throw new Error(`App ${app.id} request decision cannot control and delegate at the same time`);
     }
     if (!decision.response && dependencies.length === 0 && taskControls.length === 0) {
       throw new Error(`App ${app.id} request decision must answer or delegate exact App work`);
-    }
-    if (continueRequestId && !decision.response) {
-      throw new Error(`App ${app.id} request continuation must answer the current human turn`);
     }
     if (taskControls.length > 0 && !decision.response) {
       throw new Error(`App ${app.id} request decision must explain an applied Task control to the human`);
@@ -1025,6 +1046,14 @@ export class AppInboxHost {
       throw new Error(`App ${app.id} request decision cannot control Tasks without a direct human turn`);
     }
     const availableTaskIdentities = requestTaskIdentityKeys(request);
+    if (decision.topic.kind === "existing") {
+      const conversation = request.conversation;
+      const topic = conversation
+        ? readConversationTopic(this.#db, app.id, conversation.id, decision.topic.id)
+        : null;
+      if (!topic) throw new Error(`App ${app.id} selected unavailable Topic ${decision.topic.id}`);
+      for (const task of topic.taskRefs) availableTaskIdentities.add(`${task.appId}\0${task.taskId}`);
+    }
     const controlledTaskIdentities = new Set<string>();
     for (const control of taskControls) {
       const appId = control.appId.trim().replace(/\.app$/, "");
@@ -1054,26 +1083,16 @@ export class AppInboxHost {
         throw new Error(`App request dependency ${dependency.id} targets non-Task App ${target.id}`);
       }
       validateInput(target, dependency.input);
+      if (dependency.taskId) {
+        const taskId = dependency.taskId.trim();
+        const identity = `${target.id}\0${taskId}`;
+        if (!availableTaskIdentities.has(identity)) {
+          throw new Error(`App ${app.id} request decision cannot continue unavailable Task ${target.id}/${taskId}`);
+        }
+      }
       if (target.id === app.id) {
         throw new Error(`Direct App request ${request.id} cannot delegate back to ${app.id}`);
       }
-    }
-
-    const continuation = continueRequestId
-      ? request.openRequests?.find((open) => open.requestId === continueRequestId)
-      : undefined;
-    if (continueRequestId && request.source.kind !== "human") {
-      throw new Error(`App ${app.id} cannot continue a human request from non-human input`);
-    }
-    if (continueRequestId && !continuation) {
-      throw new Error(`App ${app.id} selected unavailable open request ${continueRequestId}`);
-    }
-    if (
-      continuation &&
-      claim.item.topicId !== continuation.topicId &&
-      (decision.topic.kind !== "existing" || decision.topic.id !== continuation.topicId)
-    ) {
-      throw new Error(`App ${app.id} request continuation must preserve Topic ${continuation.topicId}`);
     }
 
     const existingTopicId = claim.item.topicId ?? (decision.topic.kind === "existing" ? decision.topic.id : undefined);
@@ -1088,13 +1107,6 @@ export class AppInboxHost {
         return this.#resolveDirectRequest(app, claim, freshRequest, reconsiderations + 1);
       }
     }
-    if (continueRequestId && getAppInboxItem(this.#db, continueRequestId)?.status === "done") {
-      if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
-        throw new Error(`Open request ${continueRequestId} completed repeatedly while App ${app.id} was deciding`);
-      }
-      return this.#resolveDirectRequest(app, claim, await this.#authorRequest(claim.item), reconsiderations + 1);
-    }
-
     const topicId = this.#applyTopicDecision(app, claim, request, decision);
     if (dependencies.length > 0 && !topicId) {
       throw new Error(`Delegated App request ${request.id} requires a Topic`);
@@ -1105,15 +1117,21 @@ export class AppInboxHost {
         await this.#controlTask({ requestId: request.id, control });
       }
     }
-    if (continueRequestId) {
-      return this.#completeContinuation(claim, continueRequestId, decision.response!);
-    }
     if (dependencies.length === 0) {
       return this.#completeRequest(claim, {
         summary: decision.summary,
         response: decision.response,
         evidence: decision.evidence,
       });
+    }
+
+    if (decision.response && topicId && this.#onRequestMessage) {
+      try {
+        this.#onRequestMessage(claim.item, decision.response, topicId);
+      } catch {
+        // Durable work remains authoritative. The idempotent Conversation
+        // message can be recovered independently without duplicating work.
+      }
     }
 
     for (const dependency of dependencies) {
@@ -1157,29 +1175,6 @@ export class AppInboxHost {
     return claim.item.conversationId;
   }
 
-  #completeContinuation(claim: AppInboxClaim, requestId: string, response: string): string | undefined {
-    const result: AppResult = {
-      summary: `Continued request ${requestId}`,
-      response,
-    };
-    let completed = false;
-    withTransaction(this.#db, () => {
-      if (!completeAppInboxContinuation(this.#db, claim, requestId, response, this.#now())) {
-        throw new Error("claim is stale");
-      }
-      completed = true;
-      wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
-    });
-    if (completed && this.#onRequestCompleted) {
-      try {
-        this.#onRequestCompleted(claim.item, result);
-      } catch {
-        // The continuation is authoritative; an optional notification cannot undo it.
-      }
-    }
-    return claim.item.conversationId;
-  }
-
   #applyTopicDecision(
     app: RegisteredApp,
     claim: AppInboxClaim,
@@ -1188,7 +1183,7 @@ export class AppInboxHost {
   ): string | undefined {
     const conversation = request.conversation;
     if (claim.item.topicId) {
-      if (!conversation?.topics?.some((candidate) => candidate.id === claim.item.topicId)) {
+      if (!conversation || !readConversationTopic(this.#db, app.id, conversation.id, claim.item.topicId)) {
         throw new Error(`App ${app.id} request ${request.id} has unavailable Topic ${claim.item.topicId}`);
       }
       if (!associateAppInboxClaimTopic(this.#db, claim, claim.item.topicId, this.#now())) {
@@ -1201,7 +1196,7 @@ export class AppInboxHost {
     let topicId: string;
     if (decision.topic.kind === "existing") {
       const selectedTopicId = decision.topic.id;
-      const topic = conversation.topics?.find((candidate) => candidate.id === selectedTopicId);
+      const topic = readConversationTopic(this.#db, app.id, conversation.id, selectedTopicId);
       if (!topic) throw new Error(`App ${app.id} selected unavailable Topic ${selectedTopicId}`);
       topicId = topic.id;
     } else {

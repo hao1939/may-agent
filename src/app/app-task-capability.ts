@@ -1,4 +1,4 @@
-import type { AppDependencyObservation, TaskIntent, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk";
+import type { AppDependencyObservation, TaskDetail, TaskIntent, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
@@ -40,7 +40,7 @@ export type AppTaskCapability = {
     dependency: { kind: "task"; id: string };
   }): Promise<AppDependencyObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
-  get(input: { appId: string; taskId: string }): TaskView | null;
+  get(input: { appId: string; taskId: string }): TaskDetail | null;
   publishGeneration(input: {
     snapshot: AppRegistrySnapshot;
     definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
@@ -84,12 +84,7 @@ export function createAppTaskCapability(options: {
       return task
         ? {
             kind: "task",
-            id: task.id,
-            status: task.status,
-            summary: task.summary,
-            response: task.response,
-            result: task.result,
-            evidence: task.evidence,
+            ...task,
           }
         : null;
     },

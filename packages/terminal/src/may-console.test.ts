@@ -504,6 +504,7 @@ describe("May Console", () => {
         data: {
           text: "please keep the compatibility alias",
           conversationId: "may:primary",
+          replyTo: "assignment-1",
           context: {
             focusedApp: "evaluation",
             focusedTask: { appId: "evaluation", taskId: "review/docs" },

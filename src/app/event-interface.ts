@@ -105,6 +105,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
         }
         optionalTextField(metadata, "requestId", "conversation.message.created data.metadata.requestId");
         optionalTextField(metadata, "command", "conversation.message.created data.metadata.command");
+        optionalTextField(metadata, "topicId", "conversation.message.created data.metadata.topicId");
         if (metadata.followTask !== undefined) {
           const followTask = record(
             metadata.followTask,

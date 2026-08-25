@@ -41,7 +41,11 @@ export interface AttachControlSocketOptions {
     eventId: number;
     eventType: string;
   };
-  getAppConversation?: (appId: string, conversationId: string, options?: { limit?: number }) => unknown;
+  getAppConversation?: (
+    appId: string,
+    conversationId: string,
+    options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
+  ) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
@@ -677,6 +681,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           const conversationId = typeof frame.conversationId === "string" ? frame.conversationId.trim() : "";
           const limit = frame.limit === undefined ? undefined : Number(frame.limit);
+          const topicId = typeof frame.topicId === "string" ? frame.topicId.trim() : "";
+          const topicCursor = typeof frame.topicCursor === "string" ? frame.topicCursor.trim() : "";
+          const topicLimit = frame.topicLimit === undefined ? undefined : Number(frame.topicLimit);
           if (!appId || !conversationId || !getAppConversation) {
             writeFrame(socket, {
               type: "error",
@@ -695,7 +702,12 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               conversationId,
-              conversation: getAppConversation(appId, conversationId, { limit }),
+              conversation: getAppConversation(appId, conversationId, {
+                limit,
+                ...(topicId ? { topicId } : {}),
+                ...(topicCursor ? { topicCursor } : {}),
+                ...(topicLimit === undefined ? {} : { topicLimit }),
+              }),
             });
           } catch (error) {
             writeFrame(socket, {

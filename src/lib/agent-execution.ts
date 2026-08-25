@@ -63,6 +63,7 @@ const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_w
 
 const DEPUTY_TOOL_ALLOWLIST = new Set([
   "agents",
+  "conversation_context",
   "finish",
   "message",
   "query_db",

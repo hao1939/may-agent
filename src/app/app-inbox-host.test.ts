@@ -11,7 +11,12 @@ import {
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { listAppInboxChildren, readAppConversationResource } from "./app-inbox-store.js";
+import {
+  createConversationTopic,
+  linkConversationTopicTask,
+  listAppInboxChildren,
+  readAppConversationResource,
+} from "./app-inbox-store.js";
 import { APP_REQUEST_CONVERSATION_MAX_BYTES, AppInboxHost, boundedAppRequestConversation } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -327,6 +332,51 @@ describe("App inbox host", () => {
     expect(attachments.every((entry) => entry.appId !== "may")).toBeTrue();
   });
 
+  it("emits one immediate explanation while delegated work continues", async () => {
+    const messages: unknown[] = [];
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may, app("worker")],
+      resolveRequest: async () => ({
+        summary: "Started the exact review.",
+        response: "I’ll check the existing evidence first and report the result here.",
+        topic: { kind: "new", title: "Review the evidence" },
+        dependencies: [
+          { id: "review", appId: "worker", input: { kind: "probe", data: { value: "review evidence" } } },
+        ],
+      }),
+      onRequestMessage: (item, text, topicId) => messages.push({ item: item.id, text, topicId }),
+    });
+    host.admit({
+      id: "turn-explain-and-work",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-explain-and-work" },
+      input: { kind: "probe", data: { value: "review it and tell me what you are doing" } },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(messages).toEqual([
+      {
+        item: "turn-explain-and-work",
+        text: "I’ll check the existing evidence first and report the result here.",
+        topicId: expect.stringMatching(/^topic_/),
+      },
+    ]);
+    expect(host.get("turn-explain-and-work")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "app", id: "children:turn-explain-and-work" },
+    });
+  });
+
   it("reviews each completed child once while other delegated work keeps running", async () => {
     const may = defineApp({
       id: "may",
@@ -508,7 +558,6 @@ describe("App inbox host", () => {
             summary: "The existing review already covers this follow-up.",
             response: "It is already underway; I will return the recommendations here.",
             topic: { kind: "existing", id: topicId },
-            continueRequestId: open.requestId,
           };
         }
         if (request.id === "review-one") {
@@ -571,7 +620,6 @@ describe("App inbox host", () => {
     expect(listAppInboxChildren(db, "review-two")).toHaveLength(0);
     expect(host.get("review-two")).toMatchObject({
       status: "done",
-      continuesRequestId: "review-one",
       result: { response: "It is already underway; I will return the recommendations here." },
     });
     expect(attachments).toHaveLength(1);
@@ -1217,6 +1265,98 @@ describe("App inbox host", () => {
 
     expect(result.errors).toEqual([expect.stringContaining("cannot control unavailable Task may/invented")]);
     expect(host.get("turn-invalid-control")?.status).toBe("pending");
+  });
+
+  it("rejects an existing Task target that was not supplied in exact request context", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may, app("worker")],
+      retryAfterMs: 0,
+      resolveRequest: async () => ({
+        summary: "Tried an unavailable continuation.",
+        topic: { kind: "new", title: "Unavailable work" },
+        dependencies: [
+          {
+            id: "continue-invented",
+            appId: "worker",
+            taskId: "probe/invented",
+            input: { kind: "probe", data: { value: "continue it" } },
+          },
+        ],
+      }),
+    });
+    host.admit({
+      id: "turn-invalid-target",
+      appId: "may",
+      source: { kind: "human", id: "message-invalid-target" },
+      input: { kind: "probe", data: { value: "continue it" } },
+    });
+
+    const result = await host.reconcileOnce("may");
+
+    expect(result.errors).toEqual([
+      expect.stringContaining("cannot continue unavailable Task worker/probe/invented"),
+    ]);
+    expect(host.get("turn-invalid-target")?.status).toBe("pending");
+  });
+
+  it("accepts an exact Task linked by a canonically selected old Topic", async () => {
+    for (let index = 0; index < 13; index += 1) {
+      createConversationTopic(db, {
+        id: `topic_${index.toString(16).padStart(8, "0")}abcdef0123456789`,
+        appId: "may",
+        conversationId: "may:primary",
+        title: `Topic ${index}`,
+        openedBy: "human",
+        originMessageId: `message-${index}`,
+        now: index,
+      });
+    }
+    const oldTopicId = "topic_00000000abcdef0123456789";
+    linkConversationTopicTask(db, oldTopicId, "worker", "probe/old-review", 1);
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent" },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [may, app("worker")],
+      resolveRequest: async () => ({
+        summary: "Continued the old review.",
+        topic: { kind: "existing", id: "00000000" },
+        dependencies: [
+          {
+            id: "continue-old-review",
+            appId: "worker",
+            taskId: "probe/old-review",
+            input: { kind: "probe", data: { value: "include Telegram" } },
+          },
+        ],
+      }),
+    });
+    host.admit({
+      id: "turn-old-topic",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 20,
+      source: { kind: "human", id: "message-old-topic" },
+      input: { kind: "probe", data: { value: "continue the old review" } },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(listAppInboxChildren(db, "turn-old-topic")).toMatchObject([
+      { appId: "worker", targetTaskId: "probe/old-review", topicId: oldTopicId },
+    ]);
   });
 
   it("bounds owner Conversation context by bytes instead of retained message count", () => {

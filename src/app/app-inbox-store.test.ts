@@ -9,7 +9,9 @@ import {
   claimAppInboxItem,
   claimNextAppInboxItem,
   completeAppInboxClaim,
+  createConversationTopic,
   createAppInboxItem,
+  findConversationTopics,
   getAppInboxItem,
   listAppInboxAssociatedSessionClaims,
   listAppInboxHealth,
@@ -19,6 +21,9 @@ import {
   listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
   readAppConversationResource,
+  listConversationTopicPage,
+  readConversationMessageTopicId,
+  readConversationTopic,
   renewAppInboxClaim,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
@@ -247,6 +252,52 @@ describe("App inbox store", () => {
       expect.objectContaining({ id: "event:23", text: "current Console view" }),
     ]);
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 3 });
+  });
+
+  it("pages Topics and resolves an exact old Topic and its message outside the recent window", () => {
+    for (let index = 0; index < 15; index += 1) {
+      const ref = index.toString(16).padStart(8, "0");
+      createConversationTopic(db, {
+        id: `topic_${ref}abcdef0123456789`,
+        appId: "may",
+        conversationId: "may:primary",
+        title: `Topic ${index}`,
+        openedBy: "human",
+        originMessageId: `human:${index}`,
+        now: 100 + index,
+      });
+    }
+    createAppInboxItem(db, {
+      id: "old-topic-turn",
+      appId: "may",
+      topicId: "topic_00000000abcdef0123456789",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "human:old-topic" },
+      input: { kind: "message", data: { message: "the old terminal design" } },
+      now: 1,
+    });
+
+    const first = listConversationTopicPage(db, "may", "may:primary", { limit: 5 });
+    const second = listConversationTopicPage(db, "may", "may:primary", {
+      limit: 5,
+      cursor: first.nextCursor,
+    });
+
+    expect(first.items.map((topic) => topic.title)).toEqual(["Topic 14", "Topic 13", "Topic 12", "Topic 11", "Topic 10"]);
+    expect(second.items.map((topic) => topic.title)).toEqual(["Topic 9", "Topic 8", "Topic 7", "Topic 6", "Topic 5"]);
+    expect(readConversationTopic(db, "may", "may:primary", "00000000")?.title).toBe("Topic 0");
+    expect(findConversationTopics(db, "may", "may:primary", "terminal design")).toMatchObject([
+      { title: "Topic 0" },
+    ]);
+    expect(readConversationMessageTopicId(db, "may", "may:primary", "human:old-topic")).toBe(
+      "topic_00000000abcdef0123456789",
+    );
+    const exact = readAppConversationResource(db, "may", "may:primary", { topicId: "00000000" });
+    expect(exact.topics?.[0]).toMatchObject({ title: "Topic 0" });
+    expect(exact.messages).toContainEqual(
+      expect.objectContaining({ id: "human:old-topic", text: "the old terminal design" }),
+    );
   });
 
   it("reconstructs the same Conversation resource after reopening durable state", () => {

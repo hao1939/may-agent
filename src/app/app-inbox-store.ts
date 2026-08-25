@@ -4,6 +4,7 @@ import type {
   AppConversationMessage,
   AppConversationResource,
   AppConversationTopic,
+  AppConversationTopicPage,
   AppInput,
   AppInputSource,
   AppResult,
@@ -482,9 +483,11 @@ export function listAppConversationMessages(
   appId: string,
   conversationId: string,
   limit = 50,
+  topicId?: string,
 ): AppConversationMessage[] {
   requiredText(appId, "appId");
   requiredText(conversationId, "conversationId");
+  const exactTopicId = topicId === undefined ? undefined : requiredText(topicId, "topicId");
   if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 200) {
     throw new Error("Conversation message limit must be an integer from 1 to 200");
   }
@@ -493,11 +496,11 @@ export function listAppConversationMessages(
   const conversationRows = db
     .prepare(
       `SELECT * FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ?
+       WHERE app_id = ? AND conversation_id = ?${exactTopicId ? " AND topic_id = ?" : ""}
        ORDER BY created_at DESC, id DESC
        LIMIT ?`,
     )
-    .all(appId, conversationId, limit)
+    .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit)
     .map(rowToItem);
   const targetedTaskIds = new Set(conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])));
   const projectedTaskResults = new Set<string>();
@@ -565,10 +568,11 @@ export function listAppConversationMessages(
          AND json_extract(data, '$.appId') = ?
          AND json_extract(data, '$.conversationId') = ?
          AND json_extract(data, '$.author.kind') IN ('agent', 'tool')
+         ${exactTopicId ? "AND json_extract(data, '$.metadata.topicId') = ?" : ""}
        ORDER BY id DESC
        LIMIT ?`,
     )
-    .all(appId, conversationId, limit) as ConversationEventRow[];
+    .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
   const commandRows = db
     .prepare(
       `SELECT id, data, timestamp FROM (
@@ -585,12 +589,13 @@ export function listAppConversationMessages(
            AND json_extract(data, '$.appId') = ?
            AND json_extract(data, '$.conversationId') = ?
            AND json_extract(data, '$.author.kind') = 'command'
+           ${exactTopicId ? "AND json_extract(data, '$.metadata.topicId') = ?" : ""}
        )
        WHERE surface_rank = 1
        ORDER BY id DESC
        LIMIT ?`,
     )
-    .all(appId, conversationId, limit) as ConversationEventRow[];
+    .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
   eventRows.push(...commandRows);
   for (const row of eventRows) {
     const message = conversationEventMessage(row);
@@ -643,15 +648,31 @@ export function readAppConversationResource(
   db: SqliteDb,
   appId: string,
   conversationId: string,
-  options: { limit?: number } = {},
+  options: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string } = {},
 ): AppConversationResource {
   const limit = options.limit ?? 50;
-  const messages = listAppConversationMessages(db, appId, conversationId, limit);
+  const page = listConversationTopicPage(db, appId, conversationId, {
+    limit: options.topicLimit ?? 12,
+    ...(options.topicCursor ? { cursor: options.topicCursor } : {}),
+  });
+  const exactTopic = options.topicId ? readConversationTopic(db, appId, conversationId, options.topicId) : null;
+  const topics = exactTopic && !page.items.some((topic) => topic.id === exactTopic.id) ? [exactTopic, ...page.items] : page.items;
+  const recentMessages = listAppConversationMessages(db, appId, conversationId, limit);
+  const messages = exactTopic
+    ? [...new Map(
+        [...recentMessages, ...listAppConversationMessages(db, appId, conversationId, Math.min(limit, 40), exactTopic.id)]
+          .map((message) => [message.id, message]),
+      ).values()].sort(
+        (left, right) =>
+          left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id),
+      )
+    : recentMessages;
   return {
     id: conversationId,
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
-    topics: listConversationTopics(db, appId, conversationId, 12),
+    topics,
+    ...(page.nextCursor ? { nextTopicCursor: page.nextCursor } : {}),
     messages,
   };
 }
@@ -662,20 +683,40 @@ export function listConversationTopics(
   conversationId: string,
   limit = 12,
 ): AppConversationTopic[] {
-  requiredText(appId, "topic appId");
-  requiredText(conversationId, "topic conversationId");
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-    throw new Error("Conversation topic limit must be an integer from 1 to 100");
+  return listConversationTopicPage(db, appId, conversationId, { limit }).items;
+}
+
+type ConversationTopicRow = {
+  id: string;
+  title: string;
+  opened_by: string;
+  origin_message_id: string;
+  created_at: number;
+};
+
+function encodeConversationTopicCursor(row: Pick<ConversationTopicRow, "created_at" | "id">): string {
+  return Buffer.from(JSON.stringify([row.created_at, row.id]), "utf8").toString("base64url");
+}
+
+function decodeConversationTopicCursor(cursor: string): [number, string] {
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as unknown;
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length !== 2 ||
+      !Number.isSafeInteger(parsed[0]) ||
+      typeof parsed[1] !== "string" ||
+      !parsed[1]
+    ) {
+      throw new Error("invalid cursor");
+    }
+    return [parsed[0], parsed[1]];
+  } catch {
+    throw new Error("Invalid Conversation Topic cursor");
   }
-  const rows = db
-    .prepare(
-      `SELECT id, title, opened_by, origin_message_id
-       FROM conversation_topics
-       WHERE app_id = ? AND conversation_id = ?
-       ORDER BY created_at DESC, id DESC
-       LIMIT ?`,
-    )
-    .all(appId, conversationId, limit) as Array<Record<string, unknown>>;
+}
+
+function hydrateConversationTopics(db: SqliteDb, rows: ConversationTopicRow[]): AppConversationTopic[] {
   const taskRows = rows.length
     ? (db
         .prepare(
@@ -691,26 +732,172 @@ export function listConversationTopics(
     taskId: requiredText(row.task_id, "topic task id"),
   }));
   const refs = displayTaskReferences(db, identities);
-  return rows.map((row) => {
-    const topicId = requiredText(row.id, "topic id");
-    return {
-      id: topicId,
-      title: requiredText(row.title, "topic title"),
-      openedBy: requiredText(row.opened_by, "topic opened_by"),
-      originMessageId: requiredText(row.origin_message_id, "topic origin_message_id"),
-      taskRefs: taskRows
-        .filter((task) => task.topic_id === topicId)
-        .map((task) => {
-          const taskAppId = requiredText(task.app_id, "topic task app id");
-          const taskId = requiredText(task.task_id, "topic task id");
-          return {
-            appId: taskAppId,
-            taskId,
-            ref: refs.get(`${taskAppId}\0${taskId}`),
-          };
-        }),
-    };
+  return rows.map((row) => ({
+    id: requiredText(row.id, "topic id"),
+    title: requiredText(row.title, "topic title"),
+    openedBy: requiredText(row.opened_by, "topic opened_by"),
+    originMessageId: requiredText(row.origin_message_id, "topic origin_message_id"),
+    taskRefs: taskRows
+      .filter((task) => task.topic_id === row.id)
+      .map((task) => {
+        const taskAppId = requiredText(task.app_id, "topic task app id");
+        const taskId = requiredText(task.task_id, "topic task id");
+        return {
+          appId: taskAppId,
+          taskId,
+          ref: refs.get(`${taskAppId}\0${taskId}`),
+        };
+      }),
+  }));
+}
+
+export function listConversationTopicPage(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  options: { limit?: number; cursor?: string } = {},
+): AppConversationTopicPage {
+  requiredText(appId, "topic appId");
+  requiredText(conversationId, "topic conversationId");
+  const limit = options.limit ?? 12;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    throw new Error("Conversation topic limit must be an integer from 1 to 100");
+  }
+  const cursor = options.cursor ? decodeConversationTopicCursor(options.cursor) : null;
+  const rows = db
+    .prepare(
+      `SELECT id, title, opened_by, origin_message_id, created_at
+       FROM conversation_topics
+       WHERE app_id = ? AND conversation_id = ?
+         ${cursor ? "AND (created_at < ? OR (created_at = ? AND id < ?))" : ""}
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(
+      appId,
+      conversationId,
+      ...(cursor ? [cursor[0], cursor[0], cursor[1]] : []),
+      limit + 1,
+    ) as ConversationTopicRow[];
+  const pageRows = rows.slice(0, limit);
+  return {
+    items: hydrateConversationTopics(db, pageRows),
+    ...(rows.length > limit && pageRows.length > 0
+      ? { nextCursor: encodeConversationTopicCursor(pageRows[pageRows.length - 1]!) }
+      : {}),
+  };
+}
+
+/** Resolve one exact Topic or unique stable short reference without scanning recent history. */
+export function readConversationTopic(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  idOrRef: string,
+): AppConversationTopic | null {
+  const normalized = requiredText(idOrRef, "topic id or ref").toLowerCase();
+  const exact = db
+    .prepare(
+      `SELECT id, title, opened_by, origin_message_id, created_at
+       FROM conversation_topics
+       WHERE app_id = ? AND conversation_id = ? AND lower(id) IN (?, ?)
+       LIMIT 1`,
+    )
+    .get(appId, conversationId, normalized, `topic_${normalized}`) as ConversationTopicRow | undefined;
+  if (exact) return hydrateConversationTopics(db, [exact])[0] ?? null;
+  const matches = db
+    .prepare(
+      `SELECT id, title, opened_by, origin_message_id, created_at
+       FROM conversation_topics
+       WHERE app_id = ? AND conversation_id = ?
+         AND substr(lower(CASE WHEN id LIKE 'topic_%' THEN substr(id, 7) ELSE id END), 1, 8) = ?
+       ORDER BY created_at DESC, id DESC
+       LIMIT 2`,
+    )
+    .all(appId, conversationId, normalized) as ConversationTopicRow[];
+  if (matches.length > 1) throw new Error(`Conversation Topic ref ${idOrRef} is ambiguous`);
+  return matches.length === 1 ? (hydrateConversationTopics(db, matches)[0] ?? null) : null;
+}
+
+/**
+ * Bounded read-only retrieval for an LLM-chosen historical Topic query.
+ * Matching only returns candidates; it never selects a Topic or changes work.
+ */
+export function findConversationTopics(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  query: string,
+  limit = 8,
+): AppConversationTopic[] {
+  const text = requiredText(query, "Conversation Topic query").slice(0, 200).toLowerCase();
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20) {
+    throw new Error("Conversation Topic search limit must be an integer from 1 to 20");
+  }
+  const terms = [...new Set(text.split(/\s+/).filter(Boolean))].slice(0, 6);
+  const escapeLike = (value: string) => value.replace(/[\\%_]/g, "\\$&");
+  const clauses = terms.map(
+    () => `(
+      lower(t.title) LIKE ? ESCAPE '\\'
+      OR EXISTS (
+        SELECT 1 FROM app_inbox_items i
+        WHERE i.app_id = t.app_id AND i.conversation_id = t.conversation_id AND i.topic_id = t.id
+          AND lower(i.input_data) LIKE ? ESCAPE '\\'
+      )
+      OR EXISTS (
+        SELECT 1 FROM events e
+        WHERE e.event_type = 'conversation.message.created'
+          AND json_extract(e.data, '$.appId') = t.app_id
+          AND json_extract(e.data, '$.conversationId') = t.conversation_id
+          AND json_extract(e.data, '$.metadata.topicId') = t.id
+          AND lower(json_extract(e.data, '$.text')) LIKE ? ESCAPE '\\'
+      )
+    )`,
+  );
+  const params = terms.flatMap((term) => {
+    const pattern = `%${escapeLike(term)}%`;
+    return [pattern, pattern, pattern];
   });
+  const rows = db
+    .prepare(
+      `SELECT t.id, t.title, t.opened_by, t.origin_message_id, t.created_at
+       FROM conversation_topics t
+       WHERE t.app_id = ? AND t.conversation_id = ? AND ${clauses.join(" AND ")}
+       ORDER BY t.created_at DESC, t.id DESC
+       LIMIT ?`,
+    )
+    .all(appId, conversationId, ...params, limit) as ConversationTopicRow[];
+  return hydrateConversationTopics(db, rows);
+}
+
+/** Resolve the Topic attached to an exact durable Conversation message. */
+export function readConversationMessageTopicId(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  messageId: string,
+): string | null {
+  const id = requiredText(messageId, "conversation message id");
+  const inbox = db
+    .prepare(
+      `SELECT topic_id FROM app_inbox_items
+       WHERE app_id = ? AND conversation_id = ? AND (source_id = ? OR 'result:' || id = ?)
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+    .get(appId, conversationId, id, id) as { topic_id?: unknown } | undefined;
+  if (typeof inbox?.topic_id === "string" && inbox.topic_id.trim()) return inbox.topic_id.trim();
+  const eventId = id.startsWith("event:") ? Number(id.slice("event:".length)) : NaN;
+  if (!Number.isSafeInteger(eventId)) return null;
+  const event = db.prepare("SELECT data FROM events WHERE id = ?").get(eventId) as { data?: unknown } | undefined;
+  if (typeof event?.data !== "string") return null;
+  try {
+    const data = JSON.parse(event.data) as { appId?: unknown; conversationId?: unknown; metadata?: { topicId?: unknown } };
+    return data.appId === appId && data.conversationId === conversationId && typeof data.metadata?.topicId === "string"
+      ? data.metadata.topicId.trim() || null
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export function createConversationTopic(db: SqliteDb, input: CreateConversationTopic): AppConversationTopic {

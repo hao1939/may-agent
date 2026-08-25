@@ -233,6 +233,7 @@ export type SystemEvent =
           channelMessageId?: number;
           requestId?: string;
           command?: string;
+          topicId?: string;
           taskRefs?: Array<{ appId: string; taskId: string }>;
           /** Presentation hint for one exact owner Task; never inferred from text. */
           followTask?: { appId: string; taskId: string };
