@@ -232,6 +232,17 @@ describe("codex-goal-poc Task executor", () => {
   it("never admits a final answer from an older turn", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-stale-answer");
+    let turn = 0;
+    client.waitForActiveTurn = async () => `turn-${++turn}`;
+    client.waitForGoal = async () => ({
+      threadId: client.threadId,
+      turnId: `turn-${turn}`,
+      goal: { threadId: client.threadId, objective: "review", status: "complete" },
+    });
+    client.waitForTurn = async () => ({
+      threadId: client.threadId,
+      turn: { id: `turn-${turn}`, status: "completed" },
+    });
     client.readThread = async () => ({
       thread: {
         turns: [
@@ -249,7 +260,23 @@ describe("codex-goal-poc Task executor", () => {
               },
             ],
           },
-          { id: "turn-1", items: [] },
+          {
+            id: `turn-${turn}`,
+            items:
+              turn === 1
+                ? []
+                : [
+                    {
+                      type: "agentMessage",
+                      phase: "final_answer",
+                      text: JSON.stringify({
+                        state: "converged",
+                        summary: "Current-turn evidence was admitted.",
+                        evidence: ["current-turn"],
+                      }),
+                    },
+                  ],
+          },
         ],
       },
     });
@@ -261,15 +288,53 @@ describe("codex-goal-poc Task executor", () => {
       hardStaleAfterMs: 2_000,
     });
 
-    await expect(executor(attempt())).rejects.toThrow("no final answer");
+    await expect(executor(attempt())).resolves.toMatchObject({
+      state: "converged",
+      evidence: ["current-turn", "codex-thread:thread-stale-answer"],
+    });
+    expect(client.calls.filter((call) => call === "goal:thread-stale-answer")).toHaveLength(2);
   });
 
-  it("rejects a terminal Codex answer that is not a valid May Task result", async () => {
+  it("corrects invalid output in the same Task attempt and Codex thread", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-invalid");
+    let turn = 0;
+    const corrections: string[] = [];
+    client.waitForActiveTurn = async () => `turn-${++turn}`;
+    client.waitForGoal = async () => ({
+      threadId: client.threadId,
+      turnId: `turn-${turn}`,
+      goal: { threadId: client.threadId, objective: "review", status: "complete" },
+    });
+    client.waitForTurn = async () => ({
+      threadId: client.threadId,
+      turn: { id: `turn-${turn}`, status: "completed" },
+    });
+    client.steer = async (input) => {
+      corrections.push(input.message);
+      return input.turnId;
+    };
     client.readThread = async () => ({
       thread: {
-        turns: [{ id: "turn-1", items: [{ type: "agentMessage", phase: "final_answer", text: "not json" }] }],
+        turns: [
+          {
+            id: `turn-${turn}`,
+            items: [
+              {
+                type: "agentMessage",
+                phase: "final_answer",
+                text:
+                  turn === 1
+                    ? "not json"
+                    : JSON.stringify({
+                        state: "converged",
+                        summary: "Corrected output satisfies the Task contract.",
+                        evidence: ["same-thread-correction"],
+                      }),
+              },
+            ],
+          },
+        ],
       },
     });
     const executor = createCodexGoalPocExecutor({
@@ -279,7 +344,13 @@ describe("codex-goal-poc Task executor", () => {
       softStaleAfterMs: 1_000,
       hardStaleAfterMs: 2_000,
     });
-    await expect(executor(attempt())).rejects.toThrow("not exact JSON");
+    await expect(executor(attempt())).resolves.toMatchObject({
+      state: "converged",
+      evidence: ["same-thread-correction", "codex-thread:thread-invalid"],
+    });
+    expect(corrections).toHaveLength(1);
+    expect(corrections[0]).toContain("not exact JSON");
+    expect(client.calls.filter((call) => call === "goal:thread-invalid")).toHaveLength(2);
     expect(client.calls.at(-1)).toBe("stop");
   });
 

@@ -58,14 +58,16 @@ export function renderCodexGoalTaskAttempt(packet: CanonicalTaskAttemptPacket): 
   goalObjective: string;
   developerInstructions: string;
 } {
-  const prefix = `Advance May Task ${packet.identity.appId}/${packet.identity.taskId} generation ${packet.identity.generation}: `;
+  const prefix = `Achieve May Task ${packet.identity.appId}/${packet.identity.taskId} generation ${packet.identity.generation}: `;
   const outcomeChars = Math.max(0, MAX_CODEX_GOAL_OBJECTIVE_CHARS - prefix.length);
   const goalObjective = `${prefix}${packet.desired.outcome.slice(0, outcomeChars)}`;
   return {
     goalObjective,
     developerInstructions: [
-      "You are a replaceable executor for one fenced May Task attempt.",
+      "You are the replaceable executor pursuing one fenced May Task goal.",
       "Use every field in the canonical packet. The May Task and its App remain the completion authority.",
+      "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
+      "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
       "",
       CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(packet),

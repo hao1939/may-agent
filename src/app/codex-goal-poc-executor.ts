@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
-  taskReconcileResultSchema,
+  taskAgentResultSchema,
   type AppEvent,
   type TaskAttempt,
   type TaskExecutor,
@@ -15,7 +15,6 @@ import {
 } from "../../scripts/poc/codex-goal-client.js";
 import { buildCanonicalTaskAttemptPacket, renderCodexGoalTaskAttempt } from "../../scripts/poc/codex-goal-packet.js";
 import { admitCodexGoalTaskResult } from "../../scripts/poc/codex-goal-result.js";
-import { boundedStaleBackoffMs } from "../../scripts/poc/codex-goal-attempt.js";
 import {
   CodexGoalProgressPublisher,
   DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS,
@@ -219,7 +218,7 @@ function packetFor(attempt: TaskAttempt) {
       agent: attempt.task.agent ?? "codex",
       instructions: [
         selectedAgentInstructions(attempt),
-        "Work only on this bounded Task attempt. The workspace is read-only; cite exact evidence and do not mutate files or external systems.",
+        "Keep working on this Task goal until its acceptance is supported or an exact external wait is identified. The workspace is read-only; cite exact evidence and do not mutate files or external systems.",
         "Progress commentary may become a durable Task event, so summarize without secret values, raw command output, tool payloads, or diffs.",
       ].join("\n\n"),
       capabilities: ["read-workspace", "publish-task-event", "receive-task-event"],
@@ -227,7 +226,7 @@ function packetFor(attempt: TaskAttempt) {
     events: attempt.events,
     observations: { children: attempt.children, dependencies: [] },
     workspace: { cwd: attempt.cwd, declaredOutputPaths: attempt.declaredOutputPaths },
-    contract: { resultSchema: structuredClone(taskReconcileResultSchema) as unknown as Record<string, unknown> },
+    contract: { resultSchema: structuredClone(taskAgentResultSchema) as unknown as Record<string, unknown> },
     limits: {
       deadlineAt: new Date(Date.now() + DEFAULT_TURN_TIMEOUT_MS).toISOString(),
       remainingTaskTokens: null,
@@ -259,6 +258,9 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
     let threadId = existing?.threadId ?? "";
     let turnId: string | null = null;
     const live = { goalStatus: "active" as CodexGoalObservation["goal"]["status"] };
+    const updateGoalStatus = (status: CodexGoalObservation["goal"]["status"]) => {
+      live.goalStatus = status;
+    };
     let lastActivityAtMs = now();
     let nudgeCount = 0;
     let stopped = false;
@@ -323,7 +325,7 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
       if (notification.method === "thread/goal/updated") {
         const status = notification.params?.goal;
         if (status && typeof status === "object" && typeof (status as { status?: unknown }).status === "string") {
-          live.goalStatus = (status as { status: CodexGoalObservation["goal"]["status"] }).status;
+          updateGoalStatus((status as { status: CodexGoalObservation["goal"]["status"] }).status);
         }
       }
     });
@@ -365,106 +367,99 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
       };
       writeBinding(options.stateFile, key, persisted);
 
-      await client.setGoal({ threadId, objective: rendered.goalObjective, status: "active" });
-      turnId = await client.waitForActiveTurn(threadId, Math.min(turnTimeoutMs, 30_000));
-      await deliverPendingEvents(turnId);
+      let correction: string | null = null;
+      while (true) {
+        nudgeCount = 0;
+        await client.setGoal({ threadId, objective: rendered.goalObjective, status: "active" });
+        updateGoalStatus("active");
+        lastActivityAtMs = now();
+        turnId = await client.waitForActiveTurn(threadId, Math.min(turnTimeoutMs, 30_000));
+        if (correction) await client.steer({ threadId, turnId, message: correction });
+        correction = null;
+        await deliverPendingEvents(turnId);
 
-      const terminalGoalPromise = client
-        .waitForGoal(threadId, (observation) => observation.goal.status !== "active", turnTimeoutMs)
-        .then(
-          (goal) => ({ kind: "goal" as const, goal }),
-          (error: unknown) => ({ kind: "error" as const, error }),
-        );
-      let terminalGoal: CodexGoalObservation | null = null;
-      while (!terminalGoal) {
-        const outcome = await Promise.race([
-          terminalGoalPromise,
-          new Promise<{ kind: "tick" }>((resolve) => {
-            const timer = setTimeout(() => resolve({ kind: "tick" }), checkIntervalMs);
-            timer.unref?.();
-          }),
-        ]);
-        if (outcome.kind === "goal") {
-          terminalGoal = outcome.goal;
-          live.goalStatus = terminalGoal.goal.status;
-          break;
-        }
-        if (outcome.kind === "error") throw outcome.error;
-        const silentForMs = Math.max(0, now() - lastActivityAtMs);
-        if (
-          live.goalStatus === "blocked" ||
-          live.goalStatus === "usageLimited" ||
-          live.goalStatus === "budgetLimited"
-        ) {
-          return finish(
-            waitingResult({
-              attempt,
-              threadId,
-              reason: `Codex goal reported ${live.goalStatus}; the May Task remains pending`,
-              reviewAfterMs: 60_000,
-            }),
+        const terminalGoalPromise = client
+          .waitForGoal(threadId, (observation) => observation.goal.status !== "active", turnTimeoutMs)
+          .then(
+            (goal) => ({ kind: "goal" as const, goal }),
+            (error: unknown) => ({ kind: "error" as const, error }),
           );
-        }
-        if (silentForMs >= hardStaleAfterMs) {
-          await client.interrupt({ threadId, turnId });
-          await client.waitForTurn(turnId, 30_000);
-          persisted.staleInterrupts += 1;
-          persisted.updatedAt = new Date(now()).toISOString();
-          writeBinding(options.stateFile, key, persisted);
-          return finish(
-            waitingResult({
-              attempt,
-              threadId,
-              reason: "Codex goal crossed the hard stale threshold and its exact turn was interrupted",
-              reviewAfterMs: boundedStaleBackoffMs(persisted.staleInterrupts - 1),
+        let terminalGoal: CodexGoalObservation | null = null;
+        while (!terminalGoal) {
+          const outcome = await Promise.race([
+            terminalGoalPromise,
+            new Promise<{ kind: "tick" }>((resolve) => {
+              const timer = setTimeout(() => resolve({ kind: "tick" }), checkIntervalMs);
+              timer.unref?.();
             }),
-          );
+          ]);
+          if (outcome.kind === "goal") {
+            terminalGoal = outcome.goal;
+            updateGoalStatus(terminalGoal.goal.status);
+            break;
+          }
+          if (outcome.kind === "error") throw outcome.error;
+          const silentForMs = Math.max(0, now() - lastActivityAtMs);
+          if (live.goalStatus === "usageLimited" || live.goalStatus === "budgetLimited") {
+            return finish(
+              waitingResult({
+                attempt,
+                threadId,
+                reason: `Codex cannot continue because it is ${live.goalStatus}`,
+                reviewAfterMs: 60_000,
+              }),
+            );
+          }
+          if (silentForMs >= hardStaleAfterMs) {
+            await client.interrupt({ threadId, turnId });
+            await client.waitForTurn(turnId, 30_000);
+            persisted.staleInterrupts += 1;
+            persisted.updatedAt = new Date(now()).toISOString();
+            writeBinding(options.stateFile, key, persisted);
+            throw new Error("Codex stopped responding and its turn was interrupted");
+          }
+          if (silentForMs >= softStaleAfterMs && nudgeCount === 0) {
+            await client.steer({
+              threadId,
+              turnId,
+              message: "Continue toward the Task goal. If something external is required, return the exact waiting condition.",
+            });
+            nudgeCount = 1;
+            lastActivityAtMs = now();
+          }
         }
-        if (silentForMs >= softStaleAfterMs && nudgeCount === 0) {
-          await client.steer({
-            threadId,
-            turnId,
-            message: "Report concrete progress now, or return a valid waiting Task result with the blocking condition.",
-          });
-          nudgeCount = 1;
-          lastActivityAtMs = now();
-        }
-      }
 
-      if (live.goalStatus !== "complete") {
-        return finish(
-          waitingResult({
-            attempt,
-            threadId,
-            reason: `Codex goal stopped in ${live.goalStatus}; the May Task remains pending`,
-            reviewAfterMs: 60_000,
-          }),
-        );
+        const completedTurnId = terminalGoal.turnId ?? turnId;
+        const completion = await client.waitForTurn(completedTurnId, turnTimeoutMs);
+        if (completion.turn.status !== "completed") {
+          throw new Error(`Codex goal turn ended ${completion.turn.status}`);
+        }
+        const answer = finalAnswer(await client.readThread(threadId, true), completedTurnId);
+        const admitted = admitCodexGoalTaskResult(answer, {
+          allowNeedsAgent: false,
+          defaultParentId: attempt.task.parentId,
+        });
+        if (admitted.kind === "retry") {
+          if (live.goalStatus === "usageLimited" || live.goalStatus === "budgetLimited") {
+            return finish(
+              waitingResult({
+                attempt,
+                threadId,
+                reason: `Codex cannot continue because it is ${live.goalStatus}`,
+                reviewAfterMs: 60_000,
+              }),
+            );
+          }
+          correction = admitted.nextAttemptContext;
+          continue;
+        }
+        liveInputOpen = false;
+        unsubscribeEvent();
+        await Promise.allSettled([...steering]);
+        pendingEvents.length = 0;
+        for (const accept of incorporatedLiveEvents) accept();
+        return finish(appendEvidence(admitted.result, `codex-thread:${threadId}`));
       }
-      const completedTurnId = terminalGoal.turnId ?? turnId;
-      const completion = await client.waitForTurn(completedTurnId, turnTimeoutMs);
-      if (completion.turn.status !== "completed") {
-        throw new Error(`Codex goal turn ended ${completion.turn.status}`);
-      }
-      liveInputOpen = false;
-      unsubscribeEvent();
-      await Promise.allSettled([...steering]);
-      pendingEvents.length = 0;
-      const answer = finalAnswer(await client.readThread(threadId, true), completedTurnId);
-      const admitted = admitCodexGoalTaskResult(answer, {
-        allowNeedsAgent: true,
-        defaultParentId: attempt.task.parentId,
-      });
-      if (admitted.kind === "retry") throw new Error(admitted.reason);
-      for (const accept of incorporatedLiveEvents) accept();
-      return finish(
-        appendEvidence(
-          {
-            ...admitted.result,
-          },
-          `codex-thread:${threadId}`,
-        ),
-      );
     } finally {
       stopped = true;
       unsubscribeEvent();
