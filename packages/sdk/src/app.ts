@@ -72,6 +72,15 @@ export type AppRequestDependencyObservation = AppDependencyObservation & {
   requestId: string;
   appId: string;
   taskId?: string;
+  /** Exact admitted input when it fits the bounded decision context. */
+  input?: AppInput;
+};
+
+/** Earlier unfinished human request and its exact delegated work in this Conversation Topic. */
+export type AppRequestOpenRequest = {
+  requestId: string;
+  topicId: string;
+  dependencies: AppRequestDependencyObservation[];
 };
 
 /** Current canonical state for one exact Task shown in recent human context. */
@@ -144,6 +153,8 @@ export type AppRequest<TData = unknown> = {
   dependency?: AppDependencyObservation;
   /** Exact child App work previously delegated for this request. */
   dependencies?: AppRequestDependencyObservation[];
+  /** Bounded unfinished requests from the visible Topics; context only, never another work resource. */
+  openRequests?: AppRequestOpenRequest[];
   /** Exact bounded observation for the human's focused Task, when supplied. */
   focusedTask?: {
     appId: string;
@@ -191,6 +202,8 @@ export type AppRequestDecision = {
   response?: string;
   evidence?: string[];
   topic: AppRequestTopicDecision;
+  /** This human turn continues an exact unfinished request and needs no sibling App work. */
+  continueRequestId?: string;
   dependencies?: AppRequestDependency[];
   taskControls?: AppRequestTaskControl[];
 };
@@ -208,6 +221,7 @@ export const appRequestAgentResultSchema = Type.Object(
       Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
       Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
     ]),
+    continueRequestId: Type.Optional(nonEmptyStringSchema),
     dependencies: Type.Optional(
       Type.Array(
         Type.Object(

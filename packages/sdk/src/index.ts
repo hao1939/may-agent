@@ -19,6 +19,7 @@ export type {
   AppRequestDecision,
   AppRequestDependency,
   AppRequestDependencyObservation,
+  AppRequestOpenRequest,
   AppRequestPolicy,
   AppRequestTaskControl,
   AppRequestTaskObservation,
