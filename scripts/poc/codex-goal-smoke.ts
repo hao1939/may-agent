@@ -87,7 +87,7 @@ async function main(): Promise<void> {
     const binding = existingThreadId
       ? await client.resumeThread({ threadId: existingThreadId, cwd, sandbox })
       : await client.startThread({ cwd, sandbox });
-    const objective = `${goal}\n\nCurrent bounded attempt:\n${prompt}`;
+    const objective = `${goal}\n\nCurrent Task context:\n${prompt}`;
     if (startPausedMs > 0) {
       await client.setGoal({ threadId: binding.threadId, objective, status: "paused" });
       await Bun.sleep(startPausedMs);

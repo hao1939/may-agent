@@ -155,28 +155,6 @@ function eventMessage(event: AppEvent<Record<string, unknown>>): string {
   ].join("\n");
 }
 
-function waitingResult(input: {
-  attempt: TaskAttempt;
-  threadId: string;
-  reason: string;
-  reviewAfterMs: number;
-}): TaskReconcileResult {
-  return {
-    state: "waiting",
-    summary: input.reason,
-    evidence: [`codex-thread:${input.threadId}`],
-    conditions: [
-      {
-        id: `codex-goal-review-${input.attempt.task.generation}`,
-        type: "time.after",
-        subject: `codex-thread:${input.threadId}`,
-        expected: true,
-        reviewAfterMs: input.reviewAfterMs,
-      },
-    ],
-  };
-}
-
 function appendEvidence(result: TaskReconcileResult, ...additional: string[]): TaskReconcileResult {
   const unique = additional.filter(
     (item, index) => item && !result.evidence.includes(item) && additional.indexOf(item) === index,
@@ -400,16 +378,6 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
           }
           if (outcome.kind === "error") throw outcome.error;
           const silentForMs = Math.max(0, now() - lastActivityAtMs);
-          if (live.goalStatus === "usageLimited" || live.goalStatus === "budgetLimited") {
-            return finish(
-              waitingResult({
-                attempt,
-                threadId,
-                reason: `Codex cannot continue because it is ${live.goalStatus}`,
-                reviewAfterMs: 60_000,
-              }),
-            );
-          }
           if (silentForMs >= hardStaleAfterMs) {
             await client.interrupt({ threadId, turnId });
             await client.waitForTurn(turnId, 30_000);
@@ -431,6 +399,9 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
 
         const completedTurnId = terminalGoal.turnId ?? turnId;
         const completion = await client.waitForTurn(completedTurnId, turnTimeoutMs);
+        if (live.goalStatus === "usageLimited" || live.goalStatus === "budgetLimited") {
+          throw new Error(`Codex stopped the current turn because it is ${live.goalStatus}`);
+        }
         if (completion.turn.status !== "completed") {
           throw new Error(`Codex goal turn ended ${completion.turn.status}`);
         }
@@ -440,16 +411,6 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
           defaultParentId: attempt.task.parentId,
         });
         if (admitted.kind === "retry") {
-          if (live.goalStatus === "usageLimited" || live.goalStatus === "budgetLimited") {
-            return finish(
-              waitingResult({
-                attempt,
-                threadId,
-                reason: `Codex cannot continue because it is ${live.goalStatus}`,
-                reviewAfterMs: 60_000,
-              }),
-            );
-          }
           correction = admitted.nextAttemptContext;
           continue;
         }
