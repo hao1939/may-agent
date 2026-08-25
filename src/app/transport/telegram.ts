@@ -21,7 +21,7 @@ import type { AppConversationMessage, AppConversationTopic } from "@may-agent/sd
 import type { EventInput, EventReceipt } from "../event-interface.js";
 import { type EventBus } from "../event-bus.js";
 import { getDb } from "../../lib/requests.js";
-import { storeNotificationMessage } from "../../lib/db/notifications.js";
+import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
 import { readAppConversationResource } from "../app-inbox-store.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
@@ -89,16 +89,21 @@ function resolveConversationTopic(topics: AppConversationTopic[], ref: string): 
   return matches.length === 1 ? matches[0] : undefined;
 }
 
-export function renderTelegramTopics(topics: AppConversationTopic[], selectedTopicId?: string): string {
-  if (topics.length === 0) return "No recent Topics.";
+export function renderTelegramTopics(
+  topics: AppConversationTopic[],
+  selectedTopicId?: string,
+  options: { older?: boolean; hasMore?: boolean } = {},
+): string {
+  if (topics.length === 0) return options.older ? "No older Topics." : "No recent Topics.";
   return [
-    "Recent Topics:",
+    options.older ? "Older Topics:" : "Recent Topics:",
     ...topics.map(
       (topic) =>
         `• ${topic.id === selectedTopicId ? "✓ " : ""}${topicReference(topic)} · ${topic.title}${
           topic.taskRefs.length ? ` · ${topic.taskRefs.length} Task${topic.taskRefs.length === 1 ? "" : "s"}` : ""
         }`,
     ),
+    ...(options.hasMore ? ["More Topics are available; use /topics more."] : []),
     "",
     "Use /topic <ref> to continue one Topic. Task progress remains under /task and /watch.",
   ].join("\n");
@@ -294,6 +299,7 @@ export function telegramMayInputEvent(input: {
   topicId?: string | number;
   conversationTopicId?: string;
   replyToMessageId?: number;
+  replyToSourceId?: string;
   context?: Record<string, unknown>;
 }): EventInput {
   const sourceId = `telegram:${input.chatId}:${input.messageId}`;
@@ -305,9 +311,11 @@ export function telegramMayInputEvent(input: {
       author: { kind: "human", id: sourceId },
       text: input.message,
       ...(input.context ? { context: input.context } : {}),
-      ...(input.replyToMessageId === undefined
-        ? {}
-        : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
+      ...(input.replyToSourceId
+        ? { replyTo: input.replyToSourceId }
+        : input.replyToMessageId === undefined
+          ? {}
+          : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
       metadata: {
         channel: "telegram",
         channelTargetId: input.chatId,
@@ -366,6 +374,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const dirtyTodos = new Set<string>();
   const scheduledTodos = new Set<string>();
   const nextTaskPageBySurface = new Map<string, { appId?: string; includeDone: boolean; cursor: string }>();
+  const nextTopicPageBySurface = new Map<string, string>();
+  const lastRenderedMayMessageBySurface = new Map<string, string>();
   const pendingReloads = new Map<
     string,
     { chatId: string; topicId?: number; conversationId: string; command: string }
@@ -428,6 +438,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         }),
       });
       if (!delivered) return;
+      if (message.author.kind === "agent") {
+        lastRenderedMayMessageBySurface.set(
+          surfaceKey(targetChatId, threadId && /^[1-9]\d*$/.test(threadId) ? Number(threadId) : undefined),
+          message.id,
+        );
+      }
       rememberRenderedConversationMessage(message.id);
     }
   }
@@ -667,6 +683,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     topicId?: string | number,
     conversationId?: string,
     replyToMsgId?: number,
+    replyToSourceId?: string,
     conversationTopicId?: string,
   ): void {
     if (!channelMessageId || !chatId || !conversationId) return;
@@ -679,6 +696,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         topicId,
         conversationTopicId,
         replyToMessageId: replyToMsgId,
+        replyToSourceId,
         context: {
           ...(context ?? {}),
         },
@@ -740,7 +758,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let inputContext: Record<string, unknown> | undefined;
     const replyToMsg = msg.reply_to_message;
     const replyToMsgId = replyToMsg?.message_id;
+    let replyToSourceId: string | undefined;
     if (replyToMsgId) {
+      try {
+        const notification = getNotificationMessage(persistDir, replyToMsgId);
+        const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
+        replyToSourceId =
+          typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
+            ? data.conversationMessageId.trim()
+            : `telegram:${chatIdStr}:${replyToMsgId}`;
+      } catch {
+        replyToSourceId = `telegram:${chatIdStr}:${replyToMsgId}`;
+      }
       const quotedText = telegramMessageText(replyToMsg).slice(0, 2_000);
       inputContext = {
         reply: {
@@ -774,6 +803,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       topicId,
       conversationId,
       replyToMsgId,
+      replyToSourceId ?? lastRenderedMayMessageBySurface.get(surface),
       conversationTopic?.id,
     );
   }
@@ -861,12 +891,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (command === "/topics") {
-      if (rest.length > 0) await deliverCommandView("Use: /topics");
+      const more = rest.length === 1 && rest[0]?.toLowerCase() === "more";
+      if (rest.length > 1 || (rest.length === 1 && !more)) await deliverCommandView("Use: /topics, or /topics more");
       else {
+        const cursor = more ? nextTopicPageBySurface.get(surface) : undefined;
+        if (more && !cursor) {
+          await deliverCommandView("No next page. Use /topics first.");
+          return true;
+        }
         const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
           limit: 30,
+          ...(cursor ? { topicCursor: cursor } : {}),
         });
-        await deliverCommandView(renderTelegramTopics(conversation.topics ?? [], selectedTopics.get(surface)?.id));
+        if (conversation.nextTopicCursor) nextTopicPageBySurface.set(surface, conversation.nextTopicCursor);
+        else nextTopicPageBySurface.delete(surface);
+        await deliverCommandView(
+          renderTelegramTopics(conversation.topics ?? [], selectedTopics.get(surface)?.id, {
+            older: more,
+            hasMore: Boolean(conversation.nextTopicCursor),
+          }),
+        );
       }
       return true;
     }
@@ -886,8 +930,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         );
         return true;
       }
+      const exactTopicId = rest[0] ?? selectedTopics.get(surface)?.id;
       const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
         limit: 30,
+        ...(exactTopicId ? { topicId: exactTopicId } : {}),
       });
       const selectedTopic = selectedTopics.get(surface);
       const topic = rest[0]
@@ -1083,7 +1129,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           "Send any message to interact with May.\n\n" +
           "*Commands:*\n" +
           "/apps \[app\] — List or select an App\n" +
-          "/topics — List recent Topics\n" +
+          "/topics — List Topics; use /topics more for older pages\n" +
           "/topic \[ref\|clear\] — Show, follow, or leave a Topic\n" +
           "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
           "/todo \[all\], /todo more — Show Tasks that need your action\n" +

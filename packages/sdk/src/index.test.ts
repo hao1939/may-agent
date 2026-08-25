@@ -8,6 +8,7 @@ const expectedRootExports = [
   "AppConversationMessage",
   "AppConversationResource",
   "AppConversationTopic",
+  "AppConversationTopicPage",
   "AppDefinition",
   "AppDependencyObservation",
   "AppEvent",

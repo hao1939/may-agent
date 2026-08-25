@@ -360,6 +360,28 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     onRequestDelegated(item) {
       schedule(item.appId);
     },
+    onRequestMessage(item, text, topicId) {
+      if (!item.conversationId) return;
+      options.bus.emit({
+        type: "conversation.message.created",
+        source: "app-inbox",
+        owner: `app:${item.appId}`,
+        data: {
+          appId: item.appId,
+          conversationId: item.conversationId,
+          author: { kind: "agent", id: item.appId },
+          text,
+          metadata: {
+            channel: item.channel,
+            channelTargetId: item.channelTargetId,
+            channelThreadId: item.channelThreadId,
+            requestId: item.id,
+            topicId,
+          },
+          idempotencyKey: `conversation-request-message:${item.conversationId}:${item.id}`,
+        },
+      });
+    },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
       const directParent = item.parentId ? host.get(item.parentId) : null;

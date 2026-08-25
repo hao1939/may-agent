@@ -248,7 +248,7 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     maxConcurrentRequests: configuredHostConcurrency,
     attachTask: appTasks.attach,
-    resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry }),
+    resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
     controlTask: async ({ control }) => {
       if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);
       humanTasks.cancelTask({

@@ -2006,7 +2006,13 @@ describe("canonical App task runtime", () => {
         appDir: f.appDir,
         dependency: { kind: "task", id: "work/resource-dependency" },
       }),
-    ).toMatchObject({ id: "work/resource-dependency", status: "pending" });
+    ).toMatchObject({
+      id: "work/resource-dependency",
+      status: "pending",
+      outcome: "Read one resource-backed dependency",
+      acceptance: ["Dependency reads do not parse legacy state"],
+      conditions: [],
+    });
     expect(existsSync(legacyConfig.statePath)).toBeFalse();
   });
 
