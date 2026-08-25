@@ -107,6 +107,69 @@ describe("evaluation event projection", () => {
     });
   });
 
+  test("projects canonical deep LLM facts as non-heuristic", () => {
+    const { root, bus } = setup();
+    bus.emit({
+      type: "evaluation.recorded",
+      source: "app-task:evaluation",
+      owner: "agent:evaluator",
+      data: {
+        source: "evaluator-deep-eval",
+        evaluationMethod: "llm",
+        evaluatedByHeuristic: false,
+        evaluation: {
+          sessionId: "s_deep_projection",
+          agent: "may",
+          quality: 0.96,
+          efficiency: 0.95,
+          productiveCalls: 3,
+          wastedCalls: 0,
+          verdict: "good",
+          issues: [],
+          createdAt: 1_700_000_000_001,
+        },
+      },
+      target: {
+        appId: "evaluation",
+        project: "evaluation",
+        sessionId: "s_deep_projection",
+      },
+    } as any);
+
+    expect(
+      getDb(root)
+        .prepare("SELECT evaluatedByHeuristic FROM evaluations WHERE sessionId = ?")
+        .get("s_deep_projection"),
+    ).toEqual({ evaluatedByHeuristic: 0 });
+  });
+
+  test("rejects malformed heuristic markers rather than silently classifying them", () => {
+    const { root, bus } = setup();
+    for (const evaluatedByHeuristic of [0, "false", null, {}]) {
+      expect(() =>
+        bus.emit({
+          type: "evaluation.recorded",
+          source: "app-task:evaluation",
+          owner: "agent:evaluator",
+          data: {
+            source: "evaluator-deep-eval",
+            evaluationMethod: "llm",
+            evaluatedByHeuristic,
+            evaluation: {
+              sessionId: `s_bad_marker_${String(evaluatedByHeuristic)}`,
+              agent: "may",
+              quality: 0.9,
+              efficiency: 0.8,
+              verdict: "good",
+              issues: [],
+            },
+          },
+        } as any),
+      ).toThrow("evaluation.recorded requires a valid sessionId");
+    }
+    expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM evaluations").get()).toEqual({ count: 0 });
+  });
+
   test("rejects malformed facts before they can masquerade as evaluations", () => {
     const { root, bus } = setup();
     expect(() =>

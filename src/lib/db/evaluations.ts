@@ -22,6 +22,7 @@ export type EvaluationProjection = {
   verdict: string;
   issues: string[];
   overall: Record<string, unknown>;
+  evaluatedByHeuristic: boolean;
   createdAt: number;
   skipped: boolean;
 };
@@ -68,6 +69,7 @@ export function evaluationProjectionFromEventData(data: unknown): EvaluationProj
   const wastedCalls = optionalCount(evaluation.wastedCalls);
   const issues = optionalTextList(evaluation.issues);
   const signals = optionalTextList(evaluation.signals);
+  const evaluatedByHeuristic = envelope.evaluatedByHeuristic === undefined ? true : envelope.evaluatedByHeuristic;
   const rawCreatedAt = evaluation.createdAt;
   const createdAt = rawCreatedAt === undefined ? Date.now() : finiteNumber(rawCreatedAt);
   if (
@@ -80,6 +82,7 @@ export function evaluationProjectionFromEventData(data: unknown): EvaluationProj
     wastedCalls === null ||
     issues === null ||
     signals === null ||
+    typeof evaluatedByHeuristic !== "boolean" ||
     createdAt === null ||
     !Number.isSafeInteger(createdAt) ||
     createdAt <= 0 ||
@@ -105,6 +108,7 @@ export function evaluationProjectionFromEventData(data: unknown): EvaluationProj
     verdict,
     issues,
     overall,
+    evaluatedByHeuristic,
     createdAt,
     skipped: verdict === "skipped",
   };
@@ -117,7 +121,7 @@ export function upsertEvaluationProjection(db: SqliteDb, projection: EvaluationP
        sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
        verdict, issues, overall, usage, failureChains,
        evaluatedByHeuristic, skippedByJs, createdAt
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 1, ?, ?)
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
      ON CONFLICT(sessionId) DO UPDATE SET
        agent = excluded.agent,
        quality = excluded.quality,
@@ -141,6 +145,7 @@ export function upsertEvaluationProjection(db: SqliteDb, projection: EvaluationP
       JSON.stringify(projection.issues),
       JSON.stringify(projection.overall),
       JSON.stringify([]),
+      projection.evaluatedByHeuristic ? 1 : 0,
       projection.skipped ? 1 : 0,
       projection.createdAt,
     ],
