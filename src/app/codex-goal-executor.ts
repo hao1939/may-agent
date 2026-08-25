@@ -67,7 +67,7 @@ export type CodexGoalClient = {
   stop(): Promise<void>;
 };
 
-export type CodexGoalPocExecutorOptions = {
+export type CodexGoalExecutorOptions = {
   stateFile: string;
   executorName?: string;
   command?: string;
@@ -213,7 +213,7 @@ function packetFor(attempt: TaskAttempt) {
   });
 }
 
-export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions): TaskExecutor {
+export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): TaskExecutor {
   const now = options.now ?? Date.now;
   const softStaleAfterMs = options.softStaleAfterMs ?? DEFAULT_SOFT_STALE_MS;
   const hardStaleAfterMs = options.hardStaleAfterMs ?? DEFAULT_HARD_STALE_MS;
@@ -432,7 +432,7 @@ export function createCodexGoalPocExecutor(options: CodexGoalPocExecutorOptions)
   };
 }
 
-export const codexGoalPocInternals = {
+export const codexGoalExecutorInternals = {
   appendEvidence,
   bindingKey,
   finalAnswer,

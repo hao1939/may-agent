@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { AppEvent, TaskAttempt } from "@may-agent/sdk";
 import { taskIntentForInput } from "../../../evaluation.app/app.ts";
-import { createCodexGoalPocExecutor } from "../../src/app/codex-goal-poc-executor.js";
+import { createCodexGoalExecutor } from "../../src/app/codex-goal-executor.js";
 
 const focus =
   process.argv.slice(2).join(" ").trim() ||
@@ -53,7 +53,7 @@ const attempt: TaskAttempt = {
 };
 
 try {
-  const result = await createCodexGoalPocExecutor({ stateFile: join(root, "bindings.json") })(attempt);
+  const result = await createCodexGoalExecutor({ stateFile: join(root, "bindings.json") })(attempt);
   process.stdout.write(
     `${JSON.stringify(
       {
