@@ -90,7 +90,6 @@ import {
   deferAppTask,
   listHandlerExecutionFailedAppTasks,
   listHandlerUnavailableAppTasks,
-  listWorkspacePreparationFailedAppTasks,
   markAppTaskAttention,
   pendingAppTaskRecoveryAttention,
   listAppTaskIntents,
@@ -106,7 +105,6 @@ import {
   recordAppTaskTrigger,
   releaseHandlerExecutionFailedAppTask,
   releaseHandlerUnavailableAppTask,
-  releaseWorkspacePreparationFailedAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
@@ -4260,10 +4258,10 @@ export async function recoverInstalledAppTasks(bus: EventBus): Promise<void> {
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);
-  await requeueRepairedAppTaskHandlers(opts, descriptors, controllers);
+  await requeueAvailableAppTaskHandlers(opts, descriptors, controllers);
 }
 
-async function requeueRepairedAppTaskHandlers(
+async function requeueAvailableAppTaskHandlers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
   controllers: Map<string, AppTaskController>,
@@ -4274,34 +4272,6 @@ async function requeueRepairedAppTaskHandlers(
     if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
     const config = appTaskConfig(descriptor);
     const attentionTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
-    for (const candidate of listWorkspacePreparationFailedAppTasks(config, descriptor.agent, attentionTaskIds)) {
-      if (descriptor.app.workspace?.kind !== "git") continue;
-      if (candidate.workflow) {
-        const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
-        const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
-        if (
-          !definition.available ||
-          (definition.workspace !== "task" &&
-            !(typeof definition.workspace === "object" && definition.workspace.kind === "task"))
-        ) {
-          continue;
-        }
-      }
-      if (!releaseWorkspacePreparationFailedAppTask(config, candidate.taskId, candidate.generation)) continue;
-      enqueueAppTask(controller, config, candidate.taskId);
-      opts.bus.emit({
-        type: "project.task.handler.recovered",
-        source: `app-task:${descriptor.id}:task-recovery`,
-        owner: `agent:${candidate.agent}`,
-        target: { appId: descriptor.id },
-        data: {
-          project: descriptor.id,
-          taskId: candidate.taskId,
-          handler: candidate.workflow ? `workflow:${candidate.workflow}` : `executor:${candidate.executor}`,
-          reason: "task-workspace-preparation-retry-after-app-reload",
-        },
-      } as unknown as AgentEvent);
-    }
     for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.agent, attentionTaskIds)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
       const key = `${paths.workflowDir}\0${candidate.workflow}`;
@@ -4602,7 +4572,7 @@ async function commitAppTaskRuntimeDescriptors(
   }
   if (!recovery.deferred) {
     recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
-    await requeueRepairedAppTaskHandlers(opts, installed, controllers);
+    await requeueAvailableAppTaskHandlers(opts, installed, controllers);
   }
 
   return { installed };

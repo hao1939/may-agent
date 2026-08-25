@@ -2168,8 +2168,8 @@ describe("canonical App task runtime", () => {
 
     expect(existsSync(worktreeRoot)).toBe(false);
     expect(readTaskState(config).resources?.["work/retry-workspace"]?.status).toMatchObject({
-      phase: "pending",
-      observedGeneration: 0,
+      phase: "attention",
+      observedGeneration: 1,
     });
     openControllerGate();
     await closeInstalledAppTaskRuntimes(bus);
