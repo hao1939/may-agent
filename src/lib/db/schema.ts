@@ -304,6 +304,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   app_id              TEXT NOT NULL,
   parent_id           TEXT,
   target_task_id      TEXT,
+  topic_id            TEXT,
   continues_request_id TEXT,
   conversation_id     TEXT,
   conversation_seq    INTEGER,
@@ -365,6 +366,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_idempotency
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_conversation_sequence
   ON app_inbox_items(app_id, conversation_id, conversation_seq)
   WHERE conversation_id IS NOT NULL AND conversation_seq IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS conversation_topics (
+  id                TEXT PRIMARY KEY,
+  app_id            TEXT NOT NULL,
+  conversation_id   TEXT NOT NULL,
+  title             TEXT NOT NULL,
+  opened_by         TEXT NOT NULL,
+  origin_message_id TEXT NOT NULL,
+  created_at        INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_topics_conversation
+  ON conversation_topics(app_id, conversation_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS conversation_topic_tasks (
+  topic_id   TEXT NOT NULL,
+  app_id     TEXT NOT NULL,
+  task_id    TEXT NOT NULL,
+  linked_at  INTEGER NOT NULL,
+  PRIMARY KEY(topic_id, app_id, task_id),
+  FOREIGN KEY(topic_id) REFERENCES conversation_topics(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_topic_tasks_task
+  ON conversation_topic_tasks(app_id, task_id);
 
 CREATE TABLE IF NOT EXISTS app_event_admission_plans (
   event_id              INTEGER PRIMARY KEY,
@@ -734,6 +758,7 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["continues_request_id", "TEXT"],
   ["target_task_id", "TEXT"],
+  ["topic_id", "TEXT"],
   ["channel", "TEXT"],
   ["channel_target_id", "TEXT"],
   ["channel_thread_id", "TEXT"],

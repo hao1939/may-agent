@@ -63,6 +63,7 @@ describe("canonical database schema", () => {
       expect(inboxColumns.some(({ name }) => name === "channel_message_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "reply_to_source_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "origin_event_id")).toBe(true);
+      expect(inboxColumns.some(({ name }) => name === "topic_id")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_idempotency")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_origin_event")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
@@ -90,6 +91,8 @@ describe("canonical database schema", () => {
       expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
       expect(conditionRouteIndexes.some(({ name }) => name === "idx_app_task_condition_routes_task")).toBe(true);
       expect(conditionIndexes.some(({ name }) => name === "idx_app_task_conditions_type_app")).toBe(true);
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'conversation_topics'").get()).not.toBeNull();
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'conversation_topic_tasks'").get()).not.toBeNull();
       expect(trigger.sql).toContain("OLD.session_id");
       expect(trigger.sql).toContain("i.origin_event_id = OLD.id");
       expect(trigger.sql).not.toContain("json_extract");

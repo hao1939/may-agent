@@ -2074,7 +2074,14 @@ export function appTaskDependencyCatalog(
   opts: AppTaskRuntimeOptions,
   sourceAppId: string,
 ): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
-  return configuredRegistryEntries(opts)
+  return appDependencyCatalog(configuredRegistryEntries(opts), sourceAppId);
+}
+
+export function appDependencyCatalog(
+  entries: AppRegistrySnapshot["entries"],
+  sourceAppId: string,
+): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
+  return entries
     .filter(({ definition }) => definition.id !== sourceAppId && definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,

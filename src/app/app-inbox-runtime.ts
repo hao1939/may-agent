@@ -19,7 +19,12 @@ import {
   type DeliveryResult,
   type EventBus,
 } from "./event-bus.js";
-import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
+import {
+  AppInboxHost,
+  type AppInboxReconcileResult,
+  type AppRequestResolver,
+  type AppTaskAttacher,
+} from "./app-inbox-host.js";
 import {
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
@@ -67,6 +72,7 @@ export type StartAppInboxRuntimeOptions = {
   db: SqliteDb;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
+  resolveRequest?: AppRequestResolver;
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -313,10 +319,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     for (const item of items) {
       if (!item.conversationId || item.waitingOn?.kind !== "task") continue;
       const key = `${item.conversationId}\0${item.appId}\0${item.waitingOn.id}`;
-      // Prefer the request that created the Conversation Task. Later focused
-      // human turns are inputs to that same Task, not additional owners of its
-      // public output stream. Oldest-first order is the fallback for Tasks that
-      // were already present before this Conversation.
+      // Prefer the request that first linked this Conversation to the Task.
+      // Later focused human turns steer the same Task; they are not additional
+      // owners of its public output stream. Oldest-first order is the fallback
+      // for Tasks that predate this Conversation.
       const current = selected.get(key);
       if (!current || (current.targetTaskId && !item.targetTaskId)) selected.set(key, item);
     }
@@ -326,6 +332,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
     attachTask,
+    resolveRequest: options.resolveRequest,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
@@ -336,11 +343,37 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     onConversationChanged: notifyConversationUpdated,
+    onRequestDelegated(item) {
+      schedule(item.appId);
+    },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
-      for (const parent of oneItemPerConversationTask(
-        listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id),
-      )) {
+      const directParent = item.parentId ? host.get(item.parentId) : null;
+      if (directParent?.conversationId) {
+        options.bus.emit({
+          type: "conversation.message.created",
+          source: "app-inbox",
+          owner: `app:${directParent.appId}`,
+          data: {
+            appId: directParent.appId,
+            conversationId: directParent.conversationId,
+            author: { kind: "agent", id: directParent.appId },
+            text: `Assigned to ${item.appId}.`,
+            metadata: {
+              channel: directParent.channel,
+              channelTargetId: directParent.channelTargetId,
+              channelThreadId: directParent.channelThreadId,
+              requestId: directParent.id,
+              ...(item.topicId ? { topicId: item.topicId } : {}),
+              taskRefs: [{ appId: item.appId, taskId }],
+              followTask: { appId: item.appId, taskId },
+            },
+            idempotencyKey: `conversation-task-assigned:${directParent.conversationId}:${directParent.id}:${item.appId}:${taskId}`,
+          },
+        });
+        return;
+      }
+      for (const parent of oneItemPerConversationTask(listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id))) {
         const parentTaskId = parent.waitingOn?.kind === "task" ? parent.waitingOn.id : undefined;
         if (!parent.conversationId || !parentTaskId) continue;
         options.bus.emit({
@@ -802,7 +835,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
           channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
           replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
-        idempotencyKey:
+          idempotencyKey:
             typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
               ? data.idempotencyKey.trim()
               : eventIdentity(event),
@@ -842,8 +875,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
         channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
         replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
-          idempotencyKey:
-          typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
+        idempotencyKey:
+          typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
+            ? data.idempotencyKey.trim()
+            : identity,
       });
       schedule(admitted.item.appId);
       return {

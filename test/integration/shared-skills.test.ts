@@ -97,8 +97,9 @@ describe("shared system skills", () => {
     const mayAgents = readSkill("agents/may/AGENTS.md");
     const mayContext = readSkill("agents/may/context.md");
     expect(mayAgents).toContain("Apps own durable work");
-    expect(mayContext).toContain("May Task");
-    expect(mayContext).toContain("typed App dependency");
+    expect(mayContext).toContain("May request remembers who is owed an answer");
+    expect(mayContext).toContain("responsible App Task(s)");
+    expect(mayContext).not.toContain("May Task");
     expect(mayContext).not.toContain("project.feedback.created");
     expect(mayAgents).not.toContain("persistent-task");
     expect(mayAgents).not.toContain("project.task.assigned");

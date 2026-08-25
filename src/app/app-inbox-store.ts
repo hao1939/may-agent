@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import type {
   AppConversationMessage,
   AppConversationResource,
+  AppConversationTopic,
   AppInput,
   AppInputSource,
   AppResult,
@@ -45,6 +46,7 @@ export type AppInboxItem = {
   parentId?: string;
   /** Exact existing Task that this typed input continues. */
   targetTaskId?: string;
+  topicId?: string;
   /** Human feedback linked to an existing root request, not separate work. */
   continuesRequestId?: string;
   conversationId?: string;
@@ -78,6 +80,7 @@ export type CreateAppInboxItem = {
   appId: string;
   parentId?: string;
   targetTaskId?: string;
+  topicId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -109,6 +112,16 @@ export type AppInboxQuery = {
   status?: AppInboxStatus;
   idempotencyKey?: string;
   limit?: number;
+};
+
+export type CreateConversationTopic = {
+  id: string;
+  appId: string;
+  conversationId: string;
+  title: string;
+  openedBy: string;
+  originMessageId: string;
+  now?: number;
 };
 
 export type AppInboxHealth = {
@@ -169,6 +182,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     appId: requiredText(row.app_id, "app_id"),
     parentId: optionalText(row.parent_id),
     targetTaskId: optionalText(row.target_task_id),
+    topicId: optionalText(row.topic_id),
     continuesRequestId: optionalText(row.continues_request_id),
     conversationId: optionalText(row.conversation_id),
     conversationSequence: optionalNumber(row.conversation_seq),
@@ -230,6 +244,7 @@ function validateCreate(input: CreateAppInboxItem): void {
   requiredText(input.source.id, "source.id");
   requiredText(input.input.kind, "input.kind");
   if (input.targetTaskId !== undefined) requiredText(input.targetTaskId, "targetTaskId");
+  if (input.topicId !== undefined) requiredText(input.topicId, "topicId");
   if (!(["human", "app", "system"] as const).includes(input.source.kind)) {
     throw new Error(`Invalid App inbox source kind: ${input.source.kind}`);
   }
@@ -441,12 +456,13 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
             ...(typeof metadata.command === "string" && metadata.command.trim()
               ? { command: metadata.command.trim() }
               : {}),
+            ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
+              ? { topicId: metadata.topicId.trim() }
+              : {}),
             ...(followTask ? { followTask } : {}),
             ...(Array.isArray(metadata.taskRefs)
               ? {
-                  taskRefs: metadata.taskRefs
-                    .flatMap((value) => conversationTaskIdentity(value) ?? [])
-                    .slice(0, 100),
+                  taskRefs: metadata.taskRefs.flatMap((value) => conversationTaskIdentity(value) ?? []).slice(0, 100),
                 }
               : {}),
           },
@@ -474,23 +490,23 @@ export function listAppConversationMessages(
   }
 
   const messages: AppConversationMessage[] = [];
-  const humanRows = db
+  const conversationRows = db
     .prepare(
       `SELECT * FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
+       WHERE app_id = ? AND conversation_id = ?
        ORDER BY created_at DESC, id DESC
        LIMIT ?`,
     )
     .all(appId, conversationId, limit)
     .map(rowToItem);
   const targetedTaskIds = new Set(
-    humanRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])),
+    conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])),
   );
   const projectedTaskResults = new Set<string>();
-  for (const item of humanRows) {
+  for (const item of conversationRows) {
     const text = conversationText(item.input);
     const sequence = item.originEventId ?? item.conversationSequence ?? item.createdAt;
-    if (text) {
+    if (item.source.kind === "human" && text) {
       messages.push({
         id: item.source.id,
         sequence,
@@ -503,6 +519,7 @@ export function listAppConversationMessages(
           ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
           ...(item.channelMessageId ? { channelMessageId: item.channelMessageId } : {}),
           requestId: item.id,
+          ...(item.topicId ? { topicId: item.topicId } : {}),
         },
         createdAt: item.createdAt,
       });
@@ -515,7 +532,7 @@ export function listAppConversationMessages(
       (taskId) => taskId === item.id || taskId.endsWith(`/${item.id}`),
     );
     const resultTaskId =
-      item.waitingOn?.kind === "task" ? item.waitingOn.id : item.targetTaskId ?? inferredCreatedTaskId;
+      item.waitingOn?.kind === "task" ? item.waitingOn.id : (item.targetTaskId ?? inferredCreatedTaskId);
     const resultIdentity = resultTaskId ? `${resultTaskId}\0${resultText}` : `request:${item.id}`;
     // Several human turns may feed one Task, but its accepted result has one
     // public owner in the Conversation. Rows are newest-first, so the result
@@ -533,6 +550,7 @@ export function listAppConversationMessages(
         ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
         ...(item.channelMessageId ? { channelMessageId: item.channelMessageId } : {}),
         requestId: item.id,
+        ...(item.topicId ? { topicId: item.topicId } : {}),
       },
       createdAt: item.completedAt ?? item.updatedAt,
     });
@@ -611,9 +629,8 @@ export function listAppConversationMessages(
                   followTask: {
                     ...message.metadata.followTask,
                     ref:
-                      taskRefs.get(
-                        `${message.metadata.followTask.appId}\0${message.metadata.followTask.taskId}`,
-                      ) ?? message.metadata.followTask.ref,
+                      taskRefs.get(`${message.metadata.followTask.appId}\0${message.metadata.followTask.taskId}`) ??
+                      message.metadata.followTask.ref,
                   },
                 }
               : {}),
@@ -636,8 +653,138 @@ export function readAppConversationResource(
     id: conversationId,
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
+    topics: listConversationTopics(db, appId, conversationId, 12),
     messages,
   };
+}
+
+export function listConversationTopics(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  limit = 12,
+): AppConversationTopic[] {
+  requiredText(appId, "topic appId");
+  requiredText(conversationId, "topic conversationId");
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    throw new Error("Conversation topic limit must be an integer from 1 to 100");
+  }
+  const rows = db
+    .prepare(
+      `SELECT id, title, opened_by, origin_message_id
+       FROM conversation_topics
+       WHERE app_id = ? AND conversation_id = ?
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(appId, conversationId, limit) as Array<Record<string, unknown>>;
+  const taskRows = rows.length
+    ? (db
+        .prepare(
+          `SELECT topic_id, app_id, task_id
+           FROM conversation_topic_tasks
+           WHERE topic_id IN (${rows.map(() => "?").join(",")})
+           ORDER BY linked_at, app_id, task_id`,
+        )
+        .all(...rows.map((row) => requiredText(row.id, "topic id"))) as Array<Record<string, unknown>>)
+    : [];
+  const identities = taskRows.map((row) => ({
+    appId: requiredText(row.app_id, "topic task app id"),
+    taskId: requiredText(row.task_id, "topic task id"),
+  }));
+  const refs = displayTaskReferences(db, identities);
+  return rows.map((row) => {
+    const topicId = requiredText(row.id, "topic id");
+    return {
+      id: topicId,
+      title: requiredText(row.title, "topic title"),
+      openedBy: requiredText(row.opened_by, "topic opened_by"),
+      originMessageId: requiredText(row.origin_message_id, "topic origin_message_id"),
+      taskRefs: taskRows
+        .filter((task) => task.topic_id === topicId)
+        .map((task) => {
+          const taskAppId = requiredText(task.app_id, "topic task app id");
+          const taskId = requiredText(task.task_id, "topic task id");
+          return {
+            appId: taskAppId,
+            taskId,
+            ref: refs.get(`${taskAppId}\0${taskId}`),
+          };
+        }),
+    };
+  });
+}
+
+export function createConversationTopic(db: SqliteDb, input: CreateConversationTopic): AppConversationTopic {
+  const id = requiredText(input.id, "topic id");
+  const appId = requiredText(input.appId, "topic appId");
+  const conversationId = requiredText(input.conversationId, "topic conversationId");
+  const title = requiredText(input.title, "topic title");
+  const openedBy = requiredText(input.openedBy, "topic openedBy");
+  const originMessageId = requiredText(input.originMessageId, "topic originMessageId");
+  db.run(
+    `INSERT OR IGNORE INTO conversation_topics
+       (id, app_id, conversation_id, title, opened_by, origin_message_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, appId, conversationId, title, openedBy, originMessageId, input.now ?? Date.now()],
+  );
+  const row = db.prepare("SELECT * FROM conversation_topics WHERE id = ?").get(id);
+  if (
+    !row ||
+    row.app_id !== appId ||
+    row.conversation_id !== conversationId ||
+    row.title !== title ||
+    row.opened_by !== openedBy ||
+    row.origin_message_id !== originMessageId
+  ) {
+    throw new Error(`Conversation topic ${id} conflicts with an existing topic`);
+  }
+  return { id, title, openedBy, originMessageId, taskRefs: [] };
+}
+
+export function associateAppInboxClaimTopic(
+  db: SqliteDb,
+  claim: AppInboxClaim,
+  topicId: string,
+  now = Date.now(),
+): boolean {
+  const id = requiredText(topicId, "topic id");
+  return (
+    db.run(
+      `UPDATE app_inbox_items
+       SET topic_id = ?, changed_at = ?, updated_at = ?
+       WHERE id = ? AND status = 'handling'
+         AND lease_generation = ? AND lease_owner = ?
+         AND (topic_id IS NULL OR topic_id = ?)`,
+      [id, now, now, claim.item.id, claim.generation, claim.owner, id],
+    ).changes === 1
+  );
+}
+
+export function linkConversationTopicTask(
+  db: SqliteDb,
+  topicId: string,
+  appId: string,
+  taskId: string,
+  now = Date.now(),
+): void {
+  db.run(
+    `INSERT OR IGNORE INTO conversation_topic_tasks (topic_id, app_id, task_id, linked_at)
+     VALUES (?, ?, ?, ?)`,
+    [
+      requiredText(topicId, "topic id"),
+      requiredText(appId, "topic task appId"),
+      requiredText(taskId, "topic taskId"),
+      now,
+    ],
+  );
+}
+
+export function listAppInboxChildren(db: SqliteDb, parentId: string): AppInboxItem[] {
+  return db
+    .prepare("SELECT * FROM app_inbox_items WHERE parent_id = ? ORDER BY created_at, id")
+    .all(requiredText(parentId, "parent request id"))
+    .map(rowToItem);
 }
 
 /**
@@ -807,16 +954,17 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   const id = input.id ?? `app_${randomUUID()}`;
   const result = db.run(
     `INSERT OR IGNORE INTO app_inbox_items (
-       id, app_id, parent_id, target_task_id, conversation_id, conversation_seq,
+       id, app_id, parent_id, target_task_id, topic_id, conversation_id, conversation_seq,
        channel, channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id,
        source_kind, source_id, input_kind, input_data, status,
        available_at, origin_event_id, idempotency_key, created_at, changed_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
       input.parentId ?? null,
       input.targetTaskId ?? null,
+      input.topicId ?? null,
       input.conversationId ?? null,
       input.conversationSequence ?? null,
       input.channel ?? null,
@@ -856,6 +1004,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   if (
     item.parentId !== input.parentId ||
     item.targetTaskId !== input.targetTaskId ||
+    item.topicId !== input.topicId ||
     item.source.kind !== input.source.kind ||
     item.source.id !== input.source.id ||
     !isDeepStrictEqual(item.input, input.input)

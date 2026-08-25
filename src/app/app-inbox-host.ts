@@ -1,5 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
+  appRequestAgentResultSchema,
   matchesEventSelector,
   type AppDependencyObservation,
   type AppConversationResource,
@@ -8,6 +9,8 @@ import {
   type AppInput,
   type AppInputSource,
   type AppRequest,
+  type AppRequestDecision,
+  type AppRequestDependencyObservation,
   type AppResult,
   type AppTaskAttachment,
   type EventSelector,
@@ -16,12 +19,16 @@ import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
 import { assertValidAppDefinition } from "./app-definition-validation.js";
 import {
+  associateAppInboxClaimTopic,
   claimNextAppInboxItem,
   completeAppInboxClaim,
+  createConversationTopic,
   createAppInboxItem,
   getAppInboxItem,
-  readAppConversationResource,
+  linkConversationTopicTask,
+  listAppInboxChildren,
   listAppInboxTaskDependencyKeys,
+  readAppConversationResource,
   releaseAppInboxClaim,
   renewAppInboxClaim,
   waitAppInboxClaim,
@@ -55,6 +62,11 @@ export type AppTaskAttacher = (input: {
    */
   isComplete?: () => Promise<boolean>;
 }>;
+
+export type AppRequestResolver = (input: {
+  app: Readonly<AppDefinition>;
+  request: Readonly<AppRequest>;
+}) => Promise<AppRequestDecision>;
 
 export type AppActionDescription = {
   id: string;
@@ -102,6 +114,7 @@ export type AppInboxHostOptions = {
   apps: AppDefinition[];
   readDependency?: AppDependencyReader;
   attachTask?: AppTaskAttacher;
+  resolveRequest?: AppRequestResolver;
   workerId?: string;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -112,6 +125,8 @@ export type AppInboxHostOptions = {
   onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
   /** Notification after one request is durably attached to its exact Task. */
   onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
+  /** Wake-only hint after a direct request durably delegates to another App. */
+  onRequestDelegated?: (item: AppInboxItem) => void;
 };
 
 type RegisteredApp = AppDefinition;
@@ -243,12 +258,29 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+function stableId(prefix: string, ...parts: string[]): string {
+  return `${prefix}_${createHash("sha256").update(parts.join("\0")).digest("hex").slice(0, 24)}`;
+}
+
+export function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
+  return stableId("topic", appId, conversationId, originMessageId);
+}
+
+export function stableChildRequestId(parentRequestId: string, dependencyId: string): string {
+  return stableId("appreq", parentRequestId, dependencyId);
+}
+
+export function appRequestChildrenWaitId(requestId: string): string {
+  return `children:${requiredText(requestId, "App request id")}`;
+}
+
 export class AppInboxHost {
   readonly #db: SqliteDb;
   #apps: Map<string, RegisteredApp>;
   #subscriptionsByEventType: Map<string, RegisteredSubscription[]>;
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
+  readonly #resolveRequest?: AppRequestResolver;
   readonly #workerId: string;
   readonly #leaseMs: number;
   readonly #retryAfterMs: number;
@@ -256,12 +288,14 @@ export class AppInboxHost {
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
   readonly #onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
+  readonly #onRequestDelegated?: (item: AppInboxItem) => void;
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
     this.#db = options.db;
     this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
+    this.#resolveRequest = options.resolveRequest;
     this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
     this.#leaseMs = options.leaseMs ?? 60_000;
     this.#retryAfterMs = options.retryAfterMs ?? 1_000;
@@ -269,6 +303,7 @@ export class AppInboxHost {
     this.#onConversationChanged = options.onConversationChanged;
     this.#onRequestCompleted = options.onRequestCompleted;
     this.#onRequestTaskAttached = options.onRequestTaskAttached;
+    this.#onRequestDelegated = options.onRequestDelegated;
     if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
@@ -429,7 +464,16 @@ export class AppInboxHost {
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
     const app = this.#requiredApp(input.appId);
     validateInput(app, input.input);
-    return createAppInboxItem(this.#db, { ...input, now: this.#now() });
+    const defaultConversationId = app.requests?.conversationId?.trim();
+    const useDefaultConversation =
+      input.conversationId === undefined && defaultConversationId !== undefined && input.originEventId !== undefined;
+    return createAppInboxItem(this.#db, {
+      ...input,
+      ...(useDefaultConversation
+        ? { conversationId: defaultConversationId, conversationSequence: input.originEventId }
+        : {}),
+      now: this.#now(),
+    });
   }
 
   get(id: string): AppInboxItem | null {
@@ -576,18 +620,20 @@ export class AppInboxHost {
           request.dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(request.dependency.status)
             ? request.dependency
             : undefined;
-        const changedConversation = terminalTaskDependency
-          ? this.#completeRequest(claim, {
-              summary:
-                terminalTaskDependency.summary ??
-                (terminalTaskDependency.status === "done"
-                  ? `${request.input.kind} completed`
-                  : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
-              response: terminalTaskDependency.response,
-              result: terminalTaskDependency.result,
-              evidence: terminalTaskDependency.evidence,
-            })
-          : await this.#attachRequestTask(app, claim, request);
+        const changedConversation = app.requests
+          ? await this.#resolveDirectRequest(app, claim, request)
+          : terminalTaskDependency
+            ? this.#completeRequest(claim, {
+                summary:
+                  terminalTaskDependency.summary ??
+                  (terminalTaskDependency.status === "done"
+                    ? `${request.input.kind} completed`
+                    : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
+                response: terminalTaskDependency.response,
+                result: terminalTaskDependency.result,
+                evidence: terminalTaskDependency.evidence,
+              })
+            : await this.#attachRequestTask(app, claim, request);
         if (changedConversation) conversationIds.add(changedConversation);
         outcome.admitted = 1;
       } catch (error) {
@@ -599,7 +645,7 @@ export class AppInboxHost {
           })
         ) {
           outcome.released = 1;
-          if (claim.item.source.kind === "human" && claim.item.conversationId) {
+          if (claim.item.conversationId) {
             conversationIds.add(claim.item.conversationId);
           }
         }
@@ -651,13 +697,56 @@ export class AppInboxHost {
           current: {
             messageId: item.source.id,
             ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),
+            ...(item.topicId ? { topicId: item.topicId } : {}),
           },
         },
         item.id,
       );
     }
+    const childRequests = listAppInboxChildren(this.#db, item.id);
+    if (childRequests.length > 0) {
+      request.dependencies = await Promise.all(
+        childRequests.map(async (child): Promise<AppRequestDependencyObservation> => {
+          if (child.waitingOn?.kind === "task") {
+            const observed = (await this.#observeDependency(child.appId, {
+              kind: "task",
+              id: child.waitingOn.id,
+            })) ?? { kind: "task" as const, id: child.waitingOn.id, status: "unknown" as const };
+            return {
+              ...observed,
+              requestId: child.id,
+              appId: child.appId,
+              taskId: child.waitingOn.id,
+            };
+          }
+          return {
+            kind: "app",
+            id: child.id,
+            requestId: child.id,
+            appId: child.appId,
+            ...(child.targetTaskId ? { taskId: child.targetTaskId } : {}),
+            status:
+              child.status === "done"
+                ? "done"
+                : child.status === "pending"
+                  ? "pending"
+                  : child.lease
+                    ? "running"
+                    : "waiting",
+            summary: child.result?.summary,
+            response: child.result?.response,
+            result: child.result?.result,
+            evidence: child.result?.evidence,
+          };
+        }),
+      );
+    }
     const waitingOn = item.waitingOn;
     if (!waitingOn) return deepFreeze(request);
+
+    if (waitingOn.kind === "app" && waitingOn.id === appRequestChildrenWaitId(item.id)) {
+      return deepFreeze(request);
+    }
 
     if (waitingOn.kind === "app") {
       const child = getAppInboxItem(this.#db, waitingOn.id);
@@ -716,7 +805,7 @@ export class AppInboxHost {
     if (!this.#onConversationChanged) return;
     const conversations = new Map<string, string>();
     for (const item of items) {
-      if (item.source.kind === "human" && item.conversationId) conversations.set(item.conversationId, item.appId);
+      if (item.conversationId) conversations.set(item.conversationId, item.appId);
     }
     for (const [conversationId, appId] of conversations) {
       try {
@@ -735,6 +824,13 @@ export class AppInboxHost {
       if (!rowCompleted) throw new Error("claim is stale");
       completed = true;
       wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
+      if (claim.item.parentId) {
+        wakeAppInboxItemsWaitingOn(
+          this.#db,
+          { kind: "app", id: appRequestChildrenWaitId(claim.item.parentId) },
+          this.#now(),
+        );
+      }
     });
     if (completed && this.#onRequestCompleted) {
       try {
@@ -744,7 +840,141 @@ export class AppInboxHost {
         // exact request identity; a wake notification cannot undo completion.
       }
     }
-    return claim.item.source.kind === "human" ? claim.item.conversationId : undefined;
+    return claim.item.conversationId;
+  }
+
+  async #resolveDirectRequest(
+    app: RegisteredApp,
+    claim: AppInboxClaim,
+    request: Readonly<AppRequest>,
+  ): Promise<string | undefined> {
+    if (!this.#resolveRequest) throw new Error("Direct App request resolution is not configured");
+    const decision = await this.#resolveRequest({ app, request });
+    if (!Check(appRequestAgentResultSchema, decision)) {
+      const first = [...Errors(appRequestAgentResultSchema, decision)][0];
+      throw new Error(`App ${app.id} returned an invalid request decision: ${first?.message ?? "schema mismatch"}`);
+    }
+    const dependencies = decision.dependencies ?? [];
+    if (decision.response && dependencies.length > 0) {
+      throw new Error(`App ${app.id} request decision cannot answer and delegate at the same time`);
+    }
+    if (!decision.response && dependencies.length === 0) {
+      throw new Error(`App ${app.id} request decision must answer or delegate exact App work`);
+    }
+    const dependencyIds = new Set<string>();
+    const reviewedCompletedChildren = new Set(
+      (request.dependencies ?? [])
+        .filter((dependency) => dependency.status === "done")
+        .map((dependency) => dependency.requestId),
+    );
+    for (const dependency of dependencies) {
+      if (dependencyIds.has(dependency.id)) {
+        throw new Error(`App ${app.id} request decision repeats dependency ${dependency.id}`);
+      }
+      dependencyIds.add(dependency.id);
+      const target = this.#requiredApp(dependency.appId);
+      if (!target.task || !target.tasks) {
+        throw new Error(`App request dependency ${dependency.id} targets non-Task App ${target.id}`);
+      }
+      validateInput(target, dependency.input);
+      if (target.id === app.id) {
+        throw new Error(`Direct App request ${request.id} cannot delegate back to ${app.id}`);
+      }
+    }
+
+    const topicId = this.#applyTopicDecision(app, claim, request, decision);
+    if (dependencies.length > 0 && !topicId) {
+      throw new Error(`Delegated App request ${request.id} requires a Topic`);
+    }
+    if (dependencies.length === 0) {
+      return this.#completeRequest(claim, {
+        summary: decision.summary,
+        response: decision.response,
+        evidence: decision.evidence,
+      });
+    }
+
+    for (const dependency of dependencies) {
+      const childId = stableChildRequestId(request.id, dependency.id);
+      const delegated = createAppInboxItem(this.#db, {
+        id: childId,
+        appId: dependency.appId,
+        parentId: request.id,
+        targetTaskId: dependency.taskId,
+        topicId,
+        source: { kind: "app", id: app.id },
+        input: dependency.input,
+        idempotencyKey: `delegate:${request.id}:${dependency.id}`,
+        now: this.#now(),
+      });
+      if (delegated.item.status !== "done" && this.#onRequestDelegated) {
+        try {
+          this.#onRequestDelegated(delegated.item);
+        } catch {
+          // The durable child request is authoritative; the normal ready scan
+          // recovers a missed wake without duplicating work.
+        }
+      }
+    }
+    if (
+      !waitAppInboxClaim(
+        this.#db,
+        claim,
+        { kind: "app", id: appRequestChildrenWaitId(request.id) },
+        { now: this.#now() },
+      )
+    ) {
+      throw new Error("claim is stale");
+    }
+    const unreviewedCompletedChildExists = listAppInboxChildren(this.#db, request.id).some(
+      (child) => child.status === "done" && !reviewedCompletedChildren.has(child.id),
+    );
+    if (unreviewedCompletedChildExists) {
+      wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: appRequestChildrenWaitId(request.id) }, this.#now());
+    }
+    return claim.item.conversationId;
+  }
+
+  #applyTopicDecision(
+    app: RegisteredApp,
+    claim: AppInboxClaim,
+    request: Readonly<AppRequest>,
+    decision: AppRequestDecision,
+  ): string | undefined {
+    const conversation = request.conversation;
+    if (claim.item.topicId) {
+      if (!conversation?.topics?.some((candidate) => candidate.id === claim.item.topicId)) {
+        throw new Error(`App ${app.id} request ${request.id} has unavailable Topic ${claim.item.topicId}`);
+      }
+      if (!associateAppInboxClaimTopic(this.#db, claim, claim.item.topicId, this.#now())) {
+        throw new Error("claim is stale");
+      }
+      return claim.item.topicId;
+    }
+    if (decision.topic.kind === "none") return undefined;
+    if (!conversation) throw new Error(`App ${app.id} cannot assign a Topic without a Conversation`);
+    let topicId: string;
+    if (decision.topic.kind === "existing") {
+      const selectedTopicId = decision.topic.id;
+      const topic = conversation.topics?.find((candidate) => candidate.id === selectedTopicId);
+      if (!topic) throw new Error(`App ${app.id} selected unavailable Topic ${selectedTopicId}`);
+      topicId = topic.id;
+    } else {
+      topicId = stableTopicId(app.id, conversation.id, request.source.id);
+      createConversationTopic(this.#db, {
+        id: topicId,
+        appId: app.id,
+        conversationId: conversation.id,
+        title: decision.topic.title,
+        openedBy: request.source.kind,
+        originMessageId: conversation.current?.messageId ?? request.source.id,
+        now: this.#now(),
+      });
+    }
+    if (!associateAppInboxClaimTopic(this.#db, claim, topicId, this.#now())) {
+      throw new Error("claim is stale");
+    }
+    return topicId;
   }
 
   async #attachRequestTask(
@@ -790,6 +1020,9 @@ export class AppInboxHost {
     const taskId = requiredText(attached.taskId, "Attached task id");
     const waiting = waitAppInboxClaim(this.#db, claim, { kind: "task", id: taskId }, { now: this.#now() });
     if (!waiting) throw new Error("claim is stale");
+    if (claim.item.topicId) {
+      linkConversationTopicTask(this.#db, claim.item.topicId, app.id, taskId, this.#now());
+    }
     if (this.#onRequestTaskAttached) {
       try {
         this.#onRequestTaskAttached(claim.item, taskId);
@@ -808,6 +1041,6 @@ export class AppInboxHost {
         // completion-before-link check must not undo the exact Task wait.
       }
     }
-    return claim.item.source.kind === "human" ? claim.item.conversationId : undefined;
+    return claim.item.conversationId;
   }
 }
