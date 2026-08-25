@@ -588,7 +588,7 @@ function renderTasks(page, pending) {
     if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
     const result = taskResult(task);
     lines.push(
-      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${taskStatusLabel(task).padEnd(12)} · ${elapsedText(task.updatedAt)} ago  ${String(task.outcome || task.taskId || "Task")} · ${task.humanAction ? "needs you" : "no action from you"}`,
+      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${taskStatusLabel(task).padEnd(12)} · ${updatedAgeText(task.updatedAt)}  ${String(task.outcome || task.taskId || "Task")} · ${task.humanAction ? "needs you" : "no action from you"}`,
     );
     if (task.terminal && result) lines.push(...result.split("\n").map((line) => `    ${line}`));
   }
@@ -663,6 +663,11 @@ function elapsedText(value) {
   const hours = Math.floor(minutes / 60);
   if (hours < 48) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
+}
+
+function updatedAgeText(value) {
+  const age = elapsedText(value);
+  return age === "just now" ? age : `${age} ago`;
 }
 
 function todoActionSignature(task) {

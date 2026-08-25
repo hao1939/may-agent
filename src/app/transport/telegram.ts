@@ -130,7 +130,7 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
     ...tasks.flatMap((task) => {
       const result = task.response?.trim() || task.summary?.trim();
       return [
-        `• ${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${elapsedText(task.updatedAt)} ago\n  ${task.outcome} · ${task.humanAction ? "needs you" : "no action from you"}`,
+        `• ${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${updatedAgeText(task.updatedAt)}\n  ${task.outcome} · ${task.humanAction ? "needs you" : "no action from you"}`,
         ...(task.terminal && result ? [`  ${result}`] : []),
       ];
     }),
@@ -186,6 +186,11 @@ function elapsedText(value: number): string {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   return hours < 48 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
+}
+
+function updatedAgeText(value: number): string {
+  const age = elapsedText(value);
+  return age === "just now" ? age : `${age} ago`;
 }
 
 export function renderTelegramTodos(
