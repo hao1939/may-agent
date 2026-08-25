@@ -5,6 +5,7 @@ import {
   type AppEvent,
   type AppInput,
   type AppInputSource,
+  type EventSelector,
   type ObserverContext,
   type TaskIntent,
 } from "@may-agent/sdk";
@@ -38,6 +39,7 @@ import {
 } from "./app-event-admission-store.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
+import type { LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -74,6 +76,8 @@ export type StartAppInboxRuntimeOptions = {
     conditionTaskIds?: string[];
   }) => DeliveryResult | undefined;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
+  /** One event-type-first Condition lookup across all loaded Task Apps. */
+  previewTaskEventRoutes?: (input: { event: AgentEvent }) => Array<{ appId: string; taskIds: string[] }>;
   readDependency?: (input: {
     appId: string;
     appDir: string;
@@ -91,6 +95,26 @@ export type StartAppInboxRuntimeOptions = {
   /** Construct durable routing without starting recovered work yet. */
   deferStart?: boolean;
 };
+
+function eventSelectorType(selector: EventSelector): string {
+  return typeof selector === "string" ? selector : selector.type;
+}
+
+function indexAppEventSelectors(
+  entries: readonly Readonly<LoadedAppDefinition>[],
+  select: (definition: LoadedAppDefinition["definition"]) => readonly EventSelector[] | undefined,
+): Map<string, LoadedAppDefinition[]> {
+  const indexed = new Map<string, Map<string, LoadedAppDefinition>>();
+  for (const entry of entries) {
+    for (const selector of select(entry.definition) ?? []) {
+      const eventType = eventSelectorType(selector);
+      const routes = indexed.get(eventType) ?? new Map<string, LoadedAppDefinition>();
+      routes.set(entry.definition.id, { appDir: entry.appDir, definition: entry.definition });
+      indexed.set(eventType, routes);
+    }
+  }
+  return new Map([...indexed].map(([eventType, routes]) => [eventType, [...routes.values()]]));
+}
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -257,6 +281,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("Canonical App observers require an observer context factory");
   }
   let appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
+  let loadedById = new Map(loaded.map((entry) => [entry.definition.id, entry]));
+  let taskSubscriptionsByEventType = indexAppEventSelectors(loaded, (definition) => definition.tasks?.subscriptions);
+  let observationsByEventType = indexAppEventSelectors(loaded, (definition) => definition.observations);
+  const replaceRouteIndexes = (entries: LoadedAppDefinition[]): void => {
+    loadedById = new Map(entries.map((entry) => [entry.definition.id, entry]));
+    taskSubscriptionsByEventType = indexAppEventSelectors(entries, (definition) => definition.tasks?.subscriptions);
+    observationsByEventType = indexAppEventSelectors(entries, (definition) => definition.observations);
+  };
   const attachTask: AppTaskAttacher | undefined = options.attachTask
     ? async (input) => {
         const appDir = appDirById.get(input.appId);
@@ -901,7 +933,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity in registry generation ${routeGeneration}`,
           );
         }
-        const entry = loaded.find(({ definition }) => definition.id === exactTarget.appId);
+        const entry = loadedById.get(exactTarget.appId);
         const tasks = entry?.definition.tasks;
         if (!entry) {
           throw new Error(
@@ -948,7 +980,24 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         throw new Error(`Canonical App ${duplicateInboxApp} has multiple inbox routes for event ${identity}`);
       }
 
-      const taskAdmissions = loaded.flatMap(({ definition, appDir }) => {
+      const conditionTaskIdsByApp = new Map<string, Set<string>>();
+      for (const match of options.previewTaskEventRoutes?.({ event }) ?? []) {
+        if (!loadedById.get(match.appId)?.definition.tasks) continue;
+        const taskIds = conditionTaskIdsByApp.get(match.appId) ?? new Set<string>();
+        for (const taskId of match.taskIds) taskIds.add(taskId);
+        conditionTaskIdsByApp.set(match.appId, taskIds);
+      }
+      const taskCandidates = new Map(
+        (options.previewTaskEventRoutes
+          ? taskSubscriptionsByEventType.get(canonical.type) ?? []
+          : loaded
+        ).map((entry) => [entry.definition.id, entry]),
+      );
+      for (const appId of conditionTaskIdsByApp.keys()) {
+        const entry = loadedById.get(appId);
+        if (entry) taskCandidates.set(appId, entry);
+      }
+      const taskAdmissions = [...taskCandidates.values()].flatMap(({ definition, appDir }) => {
         const tasks = definition.tasks;
         if (!tasks) return [];
         const subscriptionMatched = Boolean(
@@ -965,7 +1014,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             );
           }
         }
-        const conditionTaskIds = options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
+        const conditionTaskIds = options.previewTaskEventRoutes
+          ? [...(conditionTaskIdsByApp.get(definition.id) ?? [])].sort()
+          : options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
         return intent || conditionTaskIds.length > 0
           ? [{ appId: definition.id, appDir, intent, conditionTaskIds }]
           : [];
@@ -1006,7 +1057,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         return admitAdmissionPlan(plan, event);
       }
 
-      const observationApps = loaded
+      const observationApps = (observationsByEventType.get(canonical.type) ?? [])
         .filter(({ definition }) =>
           definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
         )
@@ -1052,8 +1103,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
     scanNow,
     async reload(prepare, projectsRoot) {
-      const previousDefinitions = loaded.map((entry) => entry.definition);
-      const next = await options.registry.reload(async (snapshot) => {
+      const previousLoaded = loaded;
+      const previousSnapshot = registrySnapshot;
+      await options.registry.reload(async (snapshot) => {
         if (
           snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
           !options.observerContext
@@ -1063,23 +1115,33 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         let committed = false;
         const commit = () => {
           if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
-          host.replaceApps(snapshot.entries.map((entry) => entry.definition));
           committed = true;
+          const entries = snapshot.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
+          host.replaceApps(entries.map((entry) => entry.definition));
+          loaded = entries;
+          registrySnapshot = snapshot;
+          appDirById = new Map(entries.map((entry) => [entry.definition.id, entry.appDir]));
+          replaceRouteIndexes(entries);
+          observerRuntime.replace(entries);
+          refreshScheduleActivations();
         };
         try {
           if (prepare) await prepare({ snapshot, commit });
           else commit();
           if (!committed) throw new Error(`App registry generation ${snapshot.generation} was not committed`);
         } catch (error) {
-          if (committed) host.replaceApps(previousDefinitions);
+          if (committed) {
+            host.replaceApps(previousLoaded.map((entry) => entry.definition));
+            loaded = previousLoaded;
+            registrySnapshot = previousSnapshot;
+            appDirById = new Map(previousLoaded.map((entry) => [entry.definition.id, entry.appDir]));
+            replaceRouteIndexes(previousLoaded);
+            observerRuntime.replace(previousLoaded);
+            refreshScheduleActivations();
+          }
           throw error;
         }
       }, projectsRoot);
-      loaded = next;
-      registrySnapshot = options.registry.snapshot();
-      observerRuntime.replace(next);
-      appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
-      refreshScheduleActivations();
       // App definitions may have made a previously unavailable frozen route
       // admissible. Retry one bounded slice immediately after the reload.
       recoverAdmissionPlans(true);

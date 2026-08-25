@@ -307,9 +307,7 @@ describe("App inbox runtime", () => {
       now: 1,
     });
     const humanClaim = claimNextAppInboxItem(db, "may", "test", 10_000, 2)!;
-    expect(waitAppInboxClaim(db, humanClaim, { kind: "task", id: "conversation/human-turn" }, { now: 3 })).toBe(
-      true,
-    );
+    expect(waitAppInboxClaim(db, humanClaim, { kind: "task", id: "conversation/human-turn" }, { now: 3 })).toBe(true);
     createAppInboxItem(db, {
       id: "human-follow-up",
       appId: "may",
@@ -322,9 +320,9 @@ describe("App inbox runtime", () => {
       now: 4,
     });
     const followUpClaim = claimNextAppInboxItem(db, "may", "test", 10_000, 5)!;
-    expect(
-      waitAppInboxClaim(db, followUpClaim, { kind: "task", id: "conversation/human-turn" }, { now: 6 }),
-    ).toBe(true);
+    expect(waitAppInboxClaim(db, followUpClaim, { kind: "task", id: "conversation/human-turn" }, { now: 6 })).toBe(
+      true,
+    );
     db.prepare(
       `INSERT INTO app_tasks(
          app_id, task_id, generation, resource_version, observed_generation, phase,
@@ -631,6 +629,138 @@ describe("App inbox runtime", () => {
     expect(task.attached).toEqual([`probe/${row.id}`]);
   });
 
+  it("keeps unrelated event storms independent of the number of loaded Task Apps", async () => {
+    for (let index = 0; index < 64; index += 1) {
+      const appId = `route-${index}`;
+      mkdirSync(join(root, `${appId}.app`), { recursive: true });
+      writeFileSync(
+        join(root, `${appId}.app`, "app.js"),
+        `export default {
+          id: ${JSON.stringify(appId)}, version: 1, owner: ${JSON.stringify(appId)},
+          inputSchema: { type: "object" },
+          tasks: {
+            subscriptions: [${JSON.stringify(`route.event.${index}`)}],
+            resolve(event) { return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"], mode: "achieve" }; }
+          }
+        };\n`,
+      );
+    }
+    const bus = persistentBus();
+    let exactPreviews = 0;
+    let bulkPreviews = 0;
+    let admissions = 0;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      previewTaskEvent: () => {
+        exactPreviews += 1;
+        return [];
+      },
+      previewTaskEventRoutes: () => {
+        bulkPreviews += 1;
+        return [];
+      },
+      admitTaskEvent: () => {
+        admissions += 1;
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    const startedAt = performance.now();
+    for (let index = 0; index < 2_000; index += 1) {
+      bus.emit({ type: "tool_result", source: "storm", data: { index } });
+    }
+    const elapsedMs = performance.now() - startedAt;
+
+    expect(exactPreviews).toBe(0);
+    expect(bulkPreviews).toBe(2_000);
+    expect(admissions).toBe(0);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_event_admission_plans").get()).toEqual({ count: 0 });
+    expect(elapsedMs).toBeLessThan(1_500);
+  });
+
+  it("runs only the Task resolver indexed for an event type", async () => {
+    for (const [appId, eventType, throws] of [
+      ["matching", "route.matched", false],
+      ["irrelevant", "route.other", true],
+    ] as const) {
+      mkdirSync(join(root, `${appId}.app`), { recursive: true });
+      writeFileSync(
+        join(root, `${appId}.app`, "app.js"),
+        `export default {
+          id: ${JSON.stringify(appId)}, version: 1, owner: ${JSON.stringify(appId)},
+          inputSchema: { type: "object" },
+          tasks: {
+            subscriptions: [${JSON.stringify(eventType)}],
+            resolve(event) {
+              ${throws ? 'throw new Error("irrelevant resolver ran")' : ""};
+              return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"], mode: "achieve" };
+            }
+          }
+        };\n`,
+      );
+    }
+    const bus = persistentBus();
+    const admitted: string[] = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      previewTaskEventRoutes: () => [],
+      admitTaskEvent: ({ appId }) => {
+        admitted.push(appId);
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({ type: "route.matched", source: "test", data: {} });
+    await waitUntil(() => admitted.length === 1);
+    expect(admitted).toEqual(["matching"]);
+  });
+
+  it("publishes replacement Task route indexes with the registry generation", async () => {
+    const appDir = join(root, "routing.app");
+    mkdirSync(appDir, { recursive: true });
+    const writeRoute = (eventType: string) =>
+      writeFileSync(
+        join(appDir, "app.js"),
+        `export default {
+          id: "routing", version: 1, owner: "routing",
+          inputSchema: { type: "object" },
+          tasks: {
+            subscriptions: [${JSON.stringify(eventType)}],
+            resolve(event) { return { id: "routing/task", parentId: "routing", outcome: event.type, acceptance: ["done"], mode: "achieve" }; }
+          }
+        };\n`,
+      );
+    writeRoute("route.old");
+    const bus = persistentBus();
+    const admitted: string[] = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      previewTaskEventRoutes: () => [],
+      admitTaskEvent: ({ event }) => {
+        admitted.push(event.type);
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      scanIntervalMs: 10_000,
+    });
+    bus.emit({ type: "route.old", source: "test", data: {} });
+    await waitUntil(() => admitted.length === 1);
+
+    writeRoute("route.new");
+    await runtime.reload();
+    bus.emit({ type: "route.old", source: "test", data: {} });
+    bus.emit({ type: "route.new", source: "test", data: {} });
+    await waitUntil(() => admitted.length === 2);
+    expect(admitted).toEqual(["route.old", "route.new"]);
+  });
+
   it("accepts an App event only after its exact Task link is durable", async () => {
     const bus = persistentBus();
     let admitted = 0;
@@ -642,7 +772,7 @@ describe("App inbox runtime", () => {
         admitted += 1;
         return { accepted: true, by: "test-task", route: "direct" };
       },
-      previewTaskEvent: () => ["waiting-task"],
+      previewTaskEventRoutes: () => [{ appId: "evaluation", taskIds: ["waiting-task"] }],
       scanIntervalMs: 10_000,
     });
 
@@ -865,9 +995,7 @@ describe("App inbox runtime", () => {
       now: 2,
     });
     const followUpClaim = claimNextAppInboxItem(db, "may", "test", 10_000, 3)!;
-    expect(waitAppInboxClaim(db, followUpClaim, { kind: "task", id: "conversation/turn-1" }, { now: 4 })).toBe(
-      true,
-    );
+    expect(waitAppInboxClaim(db, followUpClaim, { kind: "task", id: "conversation/turn-1" }, { now: 4 })).toBe(true);
 
     bus.emit({
       type: "project.task.reconciled",

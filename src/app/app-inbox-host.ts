@@ -10,6 +10,7 @@ import {
   type AppRequest,
   type AppResult,
   type AppTaskAttachment,
+  type EventSelector,
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
@@ -114,6 +115,14 @@ export type AppInboxHostOptions = {
 };
 
 type RegisteredApp = AppDefinition;
+type RegisteredSubscription = {
+  app: RegisteredApp;
+  subscription: NonNullable<AppDefinition["subscriptions"]>[number];
+};
+
+function eventSelectorType(selector: EventSelector): string {
+  return typeof selector === "string" ? selector : selector.type;
+}
 
 const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["status"]>([
   "attention",
@@ -236,7 +245,8 @@ function deepFreeze<T>(value: T): T {
 
 export class AppInboxHost {
   readonly #db: SqliteDb;
-  readonly #apps: Map<string, RegisteredApp>;
+  #apps: Map<string, RegisteredApp>;
+  #subscriptionsByEventType: Map<string, RegisteredSubscription[]>;
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
   readonly #workerId: string;
@@ -264,6 +274,7 @@ export class AppInboxHost {
       throw new Error("App host retryAfterMs must be finite and non-negative");
     }
     this.#apps = new Map();
+    this.#subscriptionsByEventType = new Map();
     this.replaceApps(options.apps);
   }
 
@@ -304,10 +315,17 @@ export class AppInboxHost {
   /** Atomically replace the live App definitions after a validated reload. */
   replaceApps(definitions: AppDefinition[]): void {
     const next = new Map<string, RegisteredApp>();
+    const nextSubscriptions = new Map<string, RegisteredSubscription[]>();
     for (const definition of definitions) {
       const app = validateAppDefinition(definition);
       if (next.has(app.id)) throw new Error(`Duplicate App id: ${app.id}`);
       next.set(app.id, app);
+      for (const subscription of app.subscriptions ?? []) {
+        const eventType = eventSelectorType(subscription.event);
+        const routes = nextSubscriptions.get(eventType) ?? [];
+        routes.push({ app, subscription });
+        nextSubscriptions.set(eventType, routes);
+      }
     }
     const pendingAdmissions = this.#db
       .prepare(
@@ -361,8 +379,8 @@ export class AppInboxHost {
         .get(id);
       if (unfinished) throw new Error(`Cannot remove App ${id} while it owns unfinished inbox items`);
     }
-    this.#apps.clear();
-    for (const [id, app] of next) this.#apps.set(id, app);
+    this.#apps = next;
+    this.#subscriptionsByEventType = nextSubscriptions;
   }
 
   acceptsInput(appId: string, input: AppInput): boolean {
@@ -388,14 +406,12 @@ export class AppInboxHost {
     input: AppInput;
   }> {
     const matches: Array<{ appId: string; subscriptionId: string; input: AppInput }> = [];
-    for (const app of this.#apps.values()) {
-      for (const subscription of app.subscriptions ?? []) {
-        if (!matchesEventSelector(subscription.event, event)) continue;
-        const input = subscription.toInput(event);
-        if (input === null) continue;
-        validateInput(app, input);
-        matches.push({ appId: app.id, subscriptionId: subscription.id, input });
-      }
+    for (const { app, subscription } of this.#subscriptionsByEventType.get(event.type) ?? []) {
+      if (!matchesEventSelector(subscription.event, event)) continue;
+      const input = subscription.toInput(event);
+      if (input === null) continue;
+      validateInput(app, input);
+      matches.push({ appId: app.id, subscriptionId: subscription.id, input });
     }
     return matches;
   }

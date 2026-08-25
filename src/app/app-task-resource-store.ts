@@ -542,6 +542,44 @@ export class AppTaskResourceStore {
     return [...routes.values()];
   }
 
+  /** One event-type-first lookup across all resource-backed Apps. */
+  readConditionRoutesForAllApps(
+    eventType: string,
+  ): Array<{ appId: string; condition: AppTaskCondition; taskIds: string[] }> {
+    const rows = this.db
+      .prepare(
+        `SELECT c.app_id, c.condition_id, c.condition_json, linked.task_id
+         FROM app_task_conditions c INDEXED BY idx_app_task_conditions_type_app
+         JOIN app_task_condition_routes linked
+           ON linked.app_id = c.app_id AND linked.condition_id = c.condition_id
+         JOIN app_tasks task
+           ON task.app_id = linked.app_id AND task.task_id = linked.task_id
+         WHERE json_extract(c.condition_json, '$.spec.type') = ?
+           AND c.state <> 'true'
+           AND task.phase IN ('waiting', 'running')
+         ORDER BY c.app_id, c.condition_id, linked.task_id`,
+      )
+      .all(eventType) as Array<{
+      app_id?: string;
+      condition_id?: string;
+      condition_json?: string;
+      task_id?: string;
+    }>;
+    const routes = new Map<string, { appId: string; condition: AppTaskCondition; taskIds: string[] }>();
+    for (const row of rows) {
+      if (!row.app_id || !row.condition_id || !row.condition_json || !row.task_id) continue;
+      const key = `${row.app_id}\0${row.condition_id}`;
+      const route = routes.get(key) ?? {
+        appId: row.app_id,
+        condition: parseJson<AppTaskCondition>(row.condition_json),
+        taskIds: [],
+      };
+      route.taskIds.push(row.task_id);
+      routes.set(key, route);
+    }
+    return [...routes.values()];
+  }
+
   readOpenConditionReplayScope(conditionIds?: Iterable<string>): { eventTypes: string[]; taskIds: string[] } {
     const ids = conditionIds ? [...new Set([...conditionIds].map((id) => id.trim()).filter(Boolean))] : [];
     const rows = this.db

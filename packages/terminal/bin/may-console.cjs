@@ -246,7 +246,13 @@ function requestConversation(kind = "startup") {
   }
   if (kind === "sync") conversationSyncDirty = false;
   pendingConversationReads.push({ kind });
-  const sent = sendFrame(
+  const sent = sendConversationRead();
+  if (!readWillComplete(sent)) pendingConversationReads.pop();
+  return sent || !closing;
+}
+
+function sendConversationRead() {
+  return sendFrame(
     {
       type: "app.conversation.get",
       appId: "may",
@@ -255,15 +261,25 @@ function requestConversation(kind = "startup") {
     },
     { silent: true },
   );
-  if (!sent) pendingConversationReads.pop();
-  return sent;
+}
+
+function readWillComplete(sent) {
+  if (sent) return true;
+  if (closing) return false;
+  scheduleReconnect();
+  return true;
 }
 
 function requestApps(appId = null, command = "/apps", select = false) {
-  pendingAppReads.push({ appId, command, select });
-  const sent = sendFrame({ type: "apps.list", ...(appId ? { appId } : {}) }, { silent: true });
-  if (!sent) pendingAppReads.pop();
-  return sent;
+  const pending = { appId, command, select };
+  pendingAppReads.push(pending);
+  const sent = sendAppRead(pending);
+  if (!readWillComplete(sent)) pendingAppReads.pop();
+  return sent || !closing;
+}
+
+function sendAppRead(pending) {
+  return sendFrame({ type: "apps.list", ...(pending.appId ? { appId: pending.appId } : {}) }, { silent: true });
 }
 
 function requestTasks(options = {}) {
@@ -274,21 +290,26 @@ function requestTasks(options = {}) {
     humanActionOnly: options.humanActionOnly === true,
     command: options.command || "/tasks",
     cursor: options.cursor || null,
+    limit: options.limit || taskPageSize,
   };
   pendingTaskListReads.push(pending);
-  const sent = sendFrame(
+  const sent = sendTaskListRead(pending);
+  if (!readWillComplete(sent)) pendingTaskListReads.pop();
+  return sent || !closing;
+}
+
+function sendTaskListRead(pending) {
+  return sendFrame(
     {
       type: "tasks.list",
       ...(pending.appId ? { appId: pending.appId } : {}),
       ...(pending.includeDone ? { includeDone: true } : {}),
       ...(pending.humanActionOnly ? { humanActionOnly: true } : {}),
       ...(pending.cursor ? { cursor: pending.cursor } : {}),
-      limit: options.limit || taskPageSize,
+      limit: pending.limit,
     },
     { silent: true },
   );
-  if (!sent) pendingTaskListReads.pop();
-  return sent;
 }
 
 function requestTodoRefresh() {
@@ -315,24 +336,29 @@ function requestTask(input) {
     command: input.command || `/task ${input.ref || ""}`.trim(),
     ...(input.appId ? { appId: input.appId } : {}),
     ...(input.taskId ? { taskId: input.taskId } : {}),
+    ...(input.ref ? { ref: input.ref } : {}),
     ...(input.assignedFrom ? { assignedFrom: input.assignedFrom } : {}),
   };
   pendingTaskReads.push(pending);
   if (pending.kind === "watch-refresh") watchedTaskReadInFlight = true;
-  const sent = sendFrame(
-    {
-      type: "task.get",
-      ...(input.ref ? { ref: input.ref } : {}),
-      ...(input.appId ? { appId: input.appId } : {}),
-      ...(input.taskId ? { taskId: input.taskId } : {}),
-    },
-    { silent: true },
-  );
-  if (!sent) {
+  const sent = sendTaskRead(pending);
+  if (!readWillComplete(sent)) {
     pendingTaskReads.pop();
     if (pending.kind === "watch-refresh") watchedTaskReadInFlight = false;
   }
-  return sent;
+  return sent || !closing;
+}
+
+function sendTaskRead(pending) {
+  return sendFrame(
+    {
+      type: "task.get",
+      ...(pending.ref ? { ref: pending.ref } : {}),
+      ...(pending.appId ? { appId: pending.appId } : {}),
+      ...(pending.taskId ? { taskId: pending.taskId } : {}),
+    },
+    { silent: true },
+  );
 }
 
 function appendConversationMessage({ author, text, transient = false, metadata = {}, idempotencyKey }) {
@@ -1054,11 +1080,20 @@ function connectSocket() {
       },
       { silent: true },
     );
-    requestConversation();
-    requestTodoRefresh();
-    watchedTaskReadInFlight = false;
-    refreshWatchedTask();
-    requestDesiredAutoFollow();
+    if (pendingConversationReads.length > 0) {
+      for (const _pending of pendingConversationReads) sendConversationRead();
+    } else {
+      requestConversation();
+    }
+    for (const pending of pendingAppReads) sendAppRead(pending);
+    for (const pending of pendingTaskListReads) sendTaskListRead(pending);
+    for (const pending of pendingTaskReads) sendTaskRead(pending);
+    if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh")) requestTodoRefresh();
+    if (!pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
+      watchedTaskReadInFlight = false;
+      refreshWatchedTask();
+    }
+    if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
     refreshPrompt();
   });
 
@@ -1089,16 +1124,12 @@ function connectSocket() {
     connected = false;
     conversationReady = false;
     socket = null;
-    pendingConversationReads.length = 0;
-    const interruptedSelection = pendingAppReads.find((pending) => pending.select);
-    pendingAppReads.length = 0;
-    if (interruptedSelection) pendingInputLines.unshift(interruptedSelection.command);
-    appSelectionInFlight = false;
-    pendingTaskListReads.length = 0;
-    todoReadInFlight = false;
-    todoReadDirty = false;
-    pendingTaskReads.length = 0;
-    watchedTaskReadInFlight = false;
+    // Reads are idempotent. Preserve and replay them after reconnect so a
+    // daemon restart cannot silently swallow /tasks, /task, /apps, or sync.
+    if (pendingConversationReads.length > 0) {
+      pendingConversationReads.splice(0, pendingConversationReads.length, { kind: "startup" });
+      conversationSyncDirty = false;
+    }
     if (closing) return;
     refreshPrompt();
     scheduleReconnect();

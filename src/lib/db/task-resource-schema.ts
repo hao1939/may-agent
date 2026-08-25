@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS app_task_conditions (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_conditions_event_type
   ON app_task_conditions(app_id, json_extract(condition_json, '$.spec.type'));
+CREATE INDEX IF NOT EXISTS idx_app_task_conditions_type_app
+  ON app_task_conditions(json_extract(condition_json, '$.spec.type'), app_id, condition_id);
 CREATE TABLE IF NOT EXISTS app_task_condition_routes (
   app_id TEXT NOT NULL, task_id TEXT NOT NULL, condition_id TEXT NOT NULL,
   PRIMARY KEY(app_id, condition_id, task_id),
