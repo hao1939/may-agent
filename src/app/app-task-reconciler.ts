@@ -2549,6 +2549,84 @@ export function listHandlerExecutionFailedAppTasks(
   });
 }
 
+export type AppTaskRetryReceipt = {
+  receiptId: string;
+  action: "app.task.retry";
+  disposition: "requeued";
+  appId: string;
+  taskId: string;
+  generation: number;
+  previousResourceVersion: number;
+  resourceVersion: number;
+  previousAttemptId: string;
+  acceptedAt: string;
+};
+
+/**
+ * Requeue one exact failed Task generation after an operator has reviewed its
+ * retained input. The failed attempt remains immutable operational evidence;
+ * its input batch is copied back to the pending trigger without replacing any
+ * newer evidence.
+ */
+export function retryFailedAppTask(
+  config: TaskStateConfig,
+  input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+  },
+): AppTaskRetryReceipt {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config, { taskIds: [input.taskId] });
+    const task = tree.tasks[input.taskId];
+    const resource = tree.resources?.[input.taskId];
+    if (!task || !resource) throw new Error(`Task ${input.appId}/${input.taskId} was not found`);
+    if (resource.metadata.generation !== input.expectedGeneration) {
+      throw new Error(
+        `Task ${input.appId}/${input.taskId} generation changed: expected ${input.expectedGeneration}, current ${resource.metadata.generation}`,
+      );
+    }
+    if (resource.status.phase !== "attention") {
+      throw new Error(
+        `Task ${input.appId}/${input.taskId} is not eligible for retry: phase is ${resource.status.phase}, expected attention`,
+      );
+    }
+    const attempt = latestTaskAttempt(tree, input.taskId, input.expectedGeneration);
+    if (!attempt || attempt.state !== "failed" || resource.status.currentAttemptId) {
+      throw new Error(
+        `Task ${input.appId}/${input.taskId} is not eligible for retry: its current generation has no completed failed attempt`,
+      );
+    }
+
+    const previousResourceVersion = resource.metadata.resourceVersion;
+    const acceptedAt = new Date().toISOString();
+    const mutationScope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
+    restoreAttemptEvents(tree, input.taskId, resource, attempt, acceptedAt);
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    saveTaskState(config, tree, {
+      resourceMutation: finishResourceMutationScope(mutationScope, tree),
+    });
+    return {
+      receiptId: randomUUID(),
+      action: "app.task.retry",
+      disposition: "requeued",
+      appId: input.appId,
+      taskId: input.taskId,
+      generation: input.expectedGeneration,
+      previousResourceVersion,
+      resourceVersion: resource.metadata.resourceVersion,
+      previousAttemptId: attempt.metadata.id,
+      acceptedAt,
+    };
+  });
+}
+
 /** Release one execution failure after structured evidence from a newer successful agent session. */
 export function releaseHandlerExecutionFailedAppTask(
   config: TaskStateConfig,
@@ -3042,9 +3120,7 @@ export function releaseStaleAppTaskResult(
       // An open Condition belongs to the latest accepted result. Older
       // runtimes marked a running attempt unobserved; repair that retained
       // execution state instead of letting the retry detach accepted waits.
-      ...(resource.status.conditionIds?.length
-        ? { observedGeneration: resource.metadata.generation }
-        : {}),
+      ...(resource.status.conditionIds?.length ? { observedGeneration: resource.metadata.generation } : {}),
     });
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
