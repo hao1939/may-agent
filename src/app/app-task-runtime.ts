@@ -2091,15 +2091,16 @@ function assertInstalledAppDependency(
   }
 }
 
-/** Compact bounded-agent rules; the finish tool schema enforces field-level detail. */
+/** Compact agent rules; the finish tool schema enforces field-level detail. */
 export function appTaskAgentProtocol(appId: string): string {
   return [
-    `You are the bounded agent for one Task attempt owned by App ${appId}.`,
-    "Perform the next bounded work needed by the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
-    "Finish exactly once with finish().result. The tool schema is authoritative. A successful session without result does not resolve the task.",
+    `You are the agent pursuing one Task goal owned by App ${appId}.`,
+    "Keep working through as many internal turns and tool calls as needed to satisfy the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
+    "Finish exactly once with finish().result only when the Task is complete or genuinely waiting for something external. The tool schema is authoritative. A successful session without result does not resolve the task.",
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
+    "Do not finish merely because one useful step or model turn ended.",
     "For App-defined machine-readable state or a domain decision, include result as an object; keep its human explanation in summary. A waiting Task may preserve a current decision there for its next reconciliation.",
-    "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise do the bounded work now or report supported attention through the runtime failure path.",
+    "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise keep working now.",
     "For another App outcome, return a stable dependency { id, appId, input }. To continue an exact existing Task in that App, also include taskId. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Required decomposition creates direct children and keeps this task waiting. A successor is independent work after this task already converged. dependsOn expresses execution order.",
@@ -2292,13 +2293,14 @@ async function executeTaskAgent(input: {
 
 function appTaskCliProtocol(appId: string): string {
   return [
-    `You are the bounded CLI executor for one Task attempt owned by App ${appId}.`,
-    "Perform the next concrete work needed by the Task. The Task resource, not this CLI process or native session, owns status and retries.",
+    `You are the CLI executor pursuing one Task goal owned by App ${appId}.`,
+    "Keep working through as many internal turns and tool calls as needed to satisfy the Task. The Task resource, not this CLI process or native session, owns durable status and recovery.",
     "Do not edit Host task storage. Use the supplied workspace and paths only.",
     "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
-    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response for a caller-facing answer or result for App-defined machine-readable state. A waiting Task may preserve a current decision in result.',
+    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response for a caller-facing answer or result for App-defined machine-readable state. A waiting Task may preserve current machine state in result.',
     "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
-    "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise complete one bounded useful step now.",
+    "Do not return merely because one useful step or process turn ended.",
+    "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise keep working now.",
     "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
@@ -3447,6 +3449,20 @@ async function reconcileTask(input: {
     await finalizeWorkspace("failed");
 
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
+    if (!primaryResult.unavailable && !agentHandoff) {
+      const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
+      const retry = releaseStaleAppTaskResult(config, primary, summary, primaryHandlerResult.summary);
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: primary.generation,
+        attemptId: primary.attemptId,
+        handler: primary.handler,
+        disposition: "retrying",
+        input: intent.input ?? {},
+        summary: primaryHandlerResult.summary,
+      });
+      if (retry.status === "missing") return [];
+      throw new Error(primaryHandlerResult.summary);
+    }
     let attention: ReturnType<typeof markAppTaskAttention>;
     try {
       attention = persistResult(() =>
@@ -3501,15 +3517,8 @@ async function reconcileTask(input: {
         error instanceof Error ? error.message : String(error)
       }`;
       try {
-        const attention = persistResult(() =>
-          markAppTaskAttention(failedConfig, failedClaim, {
-            summary,
-            evidence: [],
-            reason: "HandlerExecutionFailed",
-          }),
-        );
-        if (attention.status === "applied") {
-          emitAppTaskDependencyUpdated(opts, descriptor, failedClaim.taskId);
+        const retry = persistResult(() => releaseStaleAppTaskResult(failedConfig, failedClaim, summary, summary));
+        if (retry.status === "released") {
           emitTaskReconciliationEvent(
             opts,
             descriptor,
@@ -3520,7 +3529,7 @@ async function reconcileTask(input: {
               generation: failedClaim.generation,
               attemptId: failedClaim.attemptId,
               handler: failedClaim.handler,
-              disposition: "attention",
+              disposition: "retrying",
               summary,
             },
           );

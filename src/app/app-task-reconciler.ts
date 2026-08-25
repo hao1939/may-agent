@@ -2961,6 +2961,7 @@ export function releaseStaleAppTaskResult(
   config: TaskStateConfig,
   claim: AppTaskClaim,
   summary = "Stale reconciliation result was rejected; retrying from current task evidence",
+  statusSummary?: string,
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config, { taskIds: [claim.taskId] });
@@ -2975,6 +2976,7 @@ export function releaseStaleAppTaskResult(
       return { status: "superseded", taskId: claim.taskId };
     }
     const now = new Date().toISOString();
+    restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
     finishAttempt(tree, resource, "interrupted", summary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = "stale-reconciliation-result";
@@ -2982,6 +2984,7 @@ export function releaseStaleAppTaskResult(
       phase: "pending",
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
+      ...(statusSummary ? { summary: statusSummary } : {}),
     });
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
