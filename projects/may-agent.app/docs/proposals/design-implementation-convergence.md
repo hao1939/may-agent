@@ -126,6 +126,11 @@ snapshot now likewise queries the resource index and reads only the selected
 Task contexts; its focused fixture exercises that authority directly. Executor
 child context now reads the same bounded resource graph, including current
 children and their completion receipts, without an offline JSON alternative.
+The installed Task Runtime now has no generic `readTaskState` call: accepted
+waits, active attempts, prior workspaces, executor event fences, and persisted
+terminal-result recovery all read their exact resource rows or bounded resource
+contexts. Focused Runtime fixtures activate resource authority before invoking
+those paths.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
