@@ -150,8 +150,10 @@ Queue metadata for already-selected Task IDs also reads their exact resource
 contexts. Attempt workspace lineage and lease renewal now read the exact
 resource context and commit only their fenced attempt updates. A late terminal
 workflow result after Runtime restart now requeues its exact fenced attempt from
-the same bounded resource context. Broader recovery repairs remain in a later
-batch.
+the same bounded resource context. Previous-runtime attempt discovery now reads
+the indexed running Task IDs from resource authority, preserves current Runtime
+and fresh-lease fences, and retires a stale duplicate only through its matching
+completion receipt. Broader recovery repairs remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
