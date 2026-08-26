@@ -138,9 +138,10 @@ Startup recovery discovers unreported attention Tasks from the bounded resource
 context and acknowledges the exact reported attempt through a fenced resource
 mutation. A persisted terminal Agent result also reconstructs its exact current
 claim from resource context before applying the ordinary fenced result path.
-Expired Agent-session recovery now judges the exact resource attempt and its
-lease against observed session activity. Failed-execution discovery likewise
-reads only the bounded resource candidates selected by the recovery index.
+Expired Agent-session recovery now judges and releases the exact resource
+attempt and its lease against observed session activity. Failed-execution
+discovery likewise reads only the bounded resource candidates selected by the
+recovery index.
 Unavailable-workflow discovery uses the same indexed, bounded resource path,
 and release after a proved App reload reads and mutates that exact resource
 context.
