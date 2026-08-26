@@ -2572,7 +2572,8 @@ describe("App task reconciler state", () => {
   });
 
   it("releases only the exact expired agent attempt after its session is terminal", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -2587,6 +2588,7 @@ describe("App task reconciler state", () => {
     if (!resource || !attempt?.lease) throw new Error("expected leased attempt");
     attempt.lease.expiresAt = "2026-08-15T23:57:29.078Z";
     saveTaskState(config, stale);
+    const resourceConfig = resourceFixture(state, "release-expired-agent-session").config;
     const recovery = {
       taskId: claim.taskId,
       intent: claim.intent,
@@ -2603,13 +2605,21 @@ describe("App task reconciler state", () => {
 
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        config,
+        resourceConfig,
+        recovery,
+        "Fresh lease must preserve ownership",
+        Date.parse("2026-08-15T23:00:00.000Z"),
+      ),
+    ).toEqual({ released: false, sessionIds: [] });
+    expect(
+      releaseTerminalSessionExpiredAppTaskAttempt(
+        resourceConfig,
         recovery,
         "Synchronous caller disappeared during rollback",
         Date.parse("2026-08-16T01:00:00.000Z"),
       ),
     ).toEqual({ released: true, sessionIds: ["terminal-agent-session"] });
-    expect(readTaskState(config)).toMatchObject({
+    expect(resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] })).toMatchObject({
       resources: { [claim.taskId]: { status: { phase: "pending", observedGeneration: 0 } } },
       attempts: {
         [claim.attemptId]: {
@@ -2649,10 +2659,6 @@ describe("App task reconciler state", () => {
       terminalStatus: "done" as const,
     };
 
-    expect(releaseTerminalSessionExpiredAppTaskAttempt(config, recovery, "must remain live", Date.now())).toEqual({
-      released: false,
-      sessionIds: [],
-    });
     attempt.lease.expiresAt = "2020-01-01T00:00:00.000Z";
     saveTaskState(config, tree);
     const resourceConfig = resourceFixture(state, "expired-agent-session").config;
@@ -2667,7 +2673,7 @@ describe("App task reconciler state", () => {
     ).toMatchObject({ taskId: claim.taskId, sessionId: "live-agent-session" });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        config,
+        resourceConfig,
         recovery,
         "recent session activity must preserve ownership",
         activeAt,
@@ -2676,13 +2682,15 @@ describe("App task reconciler state", () => {
     ).toEqual({ released: false, sessionIds: [] });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        config,
+        resourceConfig,
         { ...recovery, attemptResourceVersion: recovery.attemptResourceVersion + 1 },
         "stale fence must fail",
         Date.now(),
       ),
     ).toEqual({ released: false, sessionIds: [] });
-    expect(readTaskState(config).resources?.[claim.taskId].status.phase).toBe("running");
+    expect(
+      resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).resources?.[claim.taskId].status.phase,
+    ).toBe("running");
   });
 
   it("requeues the same task when a late workflow result reaches its still-running attempt", () => {

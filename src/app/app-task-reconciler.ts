@@ -1266,14 +1266,14 @@ export function releaseInterruptedAppTaskAttempt(
  * to interrupt the exact attempt and requeue the same task generation.
  */
 export function releaseTerminalSessionExpiredAppTaskAttempt(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   recovery: AppTaskTerminalSessionRecovery,
   summary: string,
   nowMs = Date.now(),
   sessionActivity?: AttemptSessionActivity,
 ): { released: boolean; sessionIds: string[] } {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [recovery.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [recovery.taskId] });
     const task = tree.tasks[recovery.taskId];
     const resource = tree.resources?.[recovery.taskId];
     if (!task || !resource || resource.status.phase !== "running") {
