@@ -593,7 +593,8 @@ describe("App task reconciler state", () => {
     ).toEqual(workspace);
   });
   it("rejects a missing or completed parent instead of creating an orphan", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "missing-parent");
 
     expect(() =>
       observeAppTaskIntent(config, {
@@ -629,7 +630,8 @@ describe("App task reconciler state", () => {
   });
 
   it("accepts canonical Task agent selection and retains it in Host state", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "agent-selection");
     const agentIntent: AppTaskIntent = {
       ...intent(),
       id: "work/managed-agent",
@@ -651,7 +653,8 @@ describe("App task reconciler state", () => {
   });
 
   it("rejects conflicting or empty Task agent selection before persistence", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "invalid-agent-selection");
     expect(() =>
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: "work/conflict", agent: "one", owner: "two" },
@@ -792,7 +795,8 @@ describe("App task reconciler state", () => {
   });
 
   it("separates desired-state observation from attempt claiming", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "observe-and-claim");
     expect(
       observeAppTaskIntent(config, {
         intent: intent("maintain"),
@@ -1179,7 +1183,7 @@ describe("App task reconciler state", () => {
 
   it("persists the exact Condition observation as the next attempt trigger", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "condition-trigger");
     const waitingIntent = {
       ...intent(),
       id: "work/condition-trigger",
@@ -1216,7 +1220,7 @@ describe("App task reconciler state", () => {
     expect(wake?.taskId).toBe(waitingIntent.id);
 
     expect(readAppTaskTrigger(config, waitingIntent.id)).toEqual(event);
-    expect(appTaskQueueEntries(resourceFixture(state, "condition-queue").config, [waitingIntent.id])).toEqual([
+    expect(appTaskQueueEntries(config, [waitingIntent.id])).toEqual([
       {
         taskId: waitingIntent.id,
         options: { priority: "P0", lane: "normal" },
@@ -1292,7 +1296,8 @@ describe("App task reconciler state", () => {
   });
 
   it("claims the current canonical spec after a stale reader observed an older version", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "current-spec");
     const original = intent("maintain");
     observeAppTaskIntent(config, { intent: original, appAgent: "app-owner" });
     const staleCopy = readAppTaskIntent(config, original.id);
@@ -4288,7 +4293,8 @@ describe("App task reconciler state", () => {
   });
 
   it("applies handler actions atomically with reconciliation completion", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "atomic-actions");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -4666,7 +4672,8 @@ describe("App task reconciler state", () => {
   });
 
   it("repairs explicit agent and workflow bindings through an update action", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "repair-bindings");
     const observed = observeAppTaskIntent(config, {
       intent: {
         id: "categorized-task",
