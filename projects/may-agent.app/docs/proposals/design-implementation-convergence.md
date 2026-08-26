@@ -136,6 +136,9 @@ remains explicit fixture compatibility for a later bounded batch.
 Rejected stale reconciliation results are released from the exact resource
 context through their claim fences; that production path no longer reads or
 prunes JSON attempt state.
+Moving a failed attempt to attention now uses the same exact resource context,
+live-Event check, attempt fence, and optional parent wake, with no JSON attempt
+pruning branch.
 The externally visible effect fence also reads the exact resource context, so a
 generation change or newer unaccepted Event is checked without a JSON path.
 Startup recovery discovers unreported attention Tasks from the bounded resource
