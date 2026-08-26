@@ -3190,9 +3190,13 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
 }
 
 /** Keep one currently executing bounded workflow attempt current without weakening its claim fence. */
-export function renewAppTaskAttemptLease(config: TaskStateConfig, claim: AppTaskClaim, nowMs = Date.now()): boolean {
+export function renewAppTaskAttemptLease(
+  config: ResourceTaskStateConfig,
+  claim: AppTaskClaim,
+  nowMs = Date.now(),
+): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTask(tree, claim);
     if (!match) return false;
     match.attempt.metadata.resourceVersion += 1;

@@ -244,19 +244,25 @@ describe("App task reconciler state", () => {
   });
 
   it("renews only the current bounded workflow attempt lease", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const resourceConfig = resourceFixture(state, "attempt-lease").config;
 
-    const before = readTaskState(config).attempts?.[claim.attemptId];
+    const before = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).attempts?.[
+      claim.attemptId
+    ];
     const renewalAt = Date.parse(before?.lease?.lastActivityAt ?? "") + 500;
-    expect(renewAppTaskAttemptLease(config, claim, renewalAt)).toBe(true);
+    expect(renewAppTaskAttemptLease(resourceConfig, claim, renewalAt)).toBe(true);
 
-    const renewed = readTaskState(config).attempts?.[claim.attemptId];
+    const renewed = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).attempts?.[
+      claim.attemptId
+    ];
     expect(renewed?.lease).toMatchObject({
       id: before?.lease?.id,
       version: 2,
@@ -266,7 +272,7 @@ describe("App task reconciler state", () => {
     expect(Date.parse(renewed?.lease?.expiresAt ?? "")).toBeGreaterThan(Date.parse(before?.lease?.expiresAt ?? ""));
 
     const staleClaim = { ...claim, attemptId: `${claim.attemptId}-stale` };
-    expect(renewAppTaskAttemptLease(config, staleClaim, renewalAt)).toBe(false);
+    expect(renewAppTaskAttemptLease(resourceConfig, staleClaim, renewalAt)).toBe(false);
   });
 
   it("keeps an achieve task live when its handler revises the same task generation", () => {
