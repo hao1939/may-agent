@@ -158,9 +158,9 @@ RUN node /usr/local/share/ttyd/patch-ttyd-index.cjs \
 # Install CLI agent tools (claude-code, codex, pi) used as worker agents. They use
 # the configured model endpoint; keep versions pinned so image rebuilds do not
 # silently change agent behavior.
-ARG CLAUDE_CODE_VERSION=2.1.228
-ARG CODEX_VERSION=0.147.0
-ARG PI_CODING_AGENT_VERSION=0.84.1
+ARG CLAUDE_CODE_VERSION=2.1.246
+ARG CODEX_VERSION=0.149.1
+ARG PI_CODING_AGENT_VERSION=0.84.3
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} @earendil-works/pi-coding-agent@${PI_CODING_AGENT_VERSION} \
     && test "$(claude --version | awk '{print $1}')" = "${CLAUDE_CODE_VERSION}" \
     && test "$(codex --version | awk '{print $2}')" = "${CODEX_VERSION}" \
