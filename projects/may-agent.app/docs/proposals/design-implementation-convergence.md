@@ -132,6 +132,8 @@ terminal-result recovery all read their exact resource rows or bounded resource
 contexts. Focused Runtime fixtures activate resource authority before invoking
 those paths. The verifier's pending-wake read is resource-only too; the broader
 trigger API remains explicit fixture compatibility for a later bounded batch.
+The externally visible effect fence also reads the exact resource context, so a
+generation change or newer unaccepted Event is checked without a JSON path.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
