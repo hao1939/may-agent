@@ -650,6 +650,93 @@ describe("ops-health-review", () => {
     });
   });
 
+  it("does NOT wake the owner for unaccepted task reconciliation lifecycle telemetry", async () => {
+    const { db, emitted, ctx, close } = setup();
+    const now = Date.now();
+    const lifecycleTypes = [
+      "project.task.reconcile.profiled",
+      "project.task.reconcile.skipped",
+      "project.task.reconcile.started",
+      "project.task.reconciled",
+    ];
+    for (const eventType of lifecycleTypes) {
+      db.run(
+        `INSERT INTO events
+         (event_type, owner, source, data, timestamp, delivery_status, delivery_note)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          eventType,
+          "agent:tech-lead",
+          "app-task:may-agent:test",
+          JSON.stringify({ project: "may-agent", taskId: "test/task" }),
+          now - 5 * 60_000,
+          "unhandled",
+          "no responsible consumer accepted event before timeout",
+        ],
+      );
+    }
+
+    await execute(ctx);
+    close();
+
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+    ]);
+    expect(emitted[0].signalCount).toBe(0);
+  });
+
+  it("still wakes for genuine unaccepted domain events beside task reconciliation telemetry", async () => {
+    const { db, emitted, ctx, close } = setup();
+    const now = Date.now();
+    db.run(
+      `INSERT INTO events
+       (event_type, owner, source, data, timestamp, delivery_status, delivery_note)
+       VALUES (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "project.task.reconciled",
+        "agent:tech-lead",
+        "app-task:may-agent:test",
+        JSON.stringify({ project: "may-agent", taskId: "test/task" }),
+        now - 5 * 60_000,
+        "unhandled",
+        "no responsible consumer accepted event before timeout",
+        "project.problem.detected",
+        "agent:tech-lead",
+        "test",
+        JSON.stringify({
+          project: "may-agent",
+          problem: "domain delivery test",
+        }),
+        now - 5 * 60_000,
+        "unhandled",
+        "no responsible consumer accepted event before timeout",
+      ],
+    );
+
+    await execute(ctx);
+    close();
+
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+      "project.owner.requested",
+    ]);
+    expect(emitted[0]).toMatchObject({
+      signalCount: 1,
+      signals: [
+        {
+          kind: "event-delivery-unaccepted",
+          evidence: {
+            unhandled: [
+              expect.objectContaining({
+                eventType: "project.problem.detected",
+              }),
+            ],
+          },
+        },
+      ],
+    });
+  });
+
   it("does NOT wake the owner for unaccepted session lifecycle telemetry", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();

@@ -142,6 +142,13 @@ const TERMINAL_PIPELINE_RUN_STATUSES = new Set([
   "error",
 ]);
 
+const TASK_RECONCILIATION_LIFECYCLE_EVENT_TYPES = new Set([
+  "project.task.reconcile.profiled",
+  "project.task.reconcile.skipped",
+  "project.task.reconcile.started",
+  "project.task.reconciled",
+]);
+
 function isTerminalPipelineRunState(row: Row): boolean {
   if (stringValue(row.eventType ?? row.event_type) !== "pipeline-run.state") {
     return false;
@@ -199,9 +206,14 @@ function shouldSuppressEventDeliverySignal(
   row: Row,
 ): boolean {
   const eventType = stringValue(row.eventType ?? row.event_type);
-  return eventType === "session.start" || eventType === "session.end"
-    ? true
-    : hasAcceptedEquivalentPipelineRunLineage(ctx, row);
+  if (
+    eventType === "session.start" ||
+    eventType === "session.end" ||
+    TASK_RECONCILIATION_LIFECYCLE_EVENT_TYPES.has(eventType)
+  ) {
+    return true;
+  }
+  return hasAcceptedEquivalentPipelineRunLineage(ctx, row);
 }
 
 function groupEventSymptoms(rows: Row[]): Row[] {
