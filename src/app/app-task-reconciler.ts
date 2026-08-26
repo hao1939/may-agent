@@ -1325,13 +1325,13 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
 }
 
 export function releaseLateTerminalWorkflowAppTaskAttempt(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   binding: { taskId: string; generation: number },
   sessionId: string,
   summary: string,
 ): { released: boolean; taskId: string } {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [binding.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
     const task = tree.tasks[binding.taskId];
     const resource = tree.resources?.[binding.taskId];
     if (
