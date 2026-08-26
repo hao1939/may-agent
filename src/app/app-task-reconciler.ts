@@ -1566,9 +1566,9 @@ export function pendingAppTaskRecoveryAttention(
   });
 }
 
-export function acknowledgeAppTaskRecoveryAttention(config: TaskStateConfig, taskId: string): boolean {
+export function acknowledgeAppTaskRecoveryAttention(config: ResourceTaskStateConfig, taskId: string): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const attempt = Object.values(tree.attempts ?? {})
       .filter((candidate) => candidate.taskId === taskId)
       .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
