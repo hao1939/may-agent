@@ -164,8 +164,10 @@ JSON repair path. Running Tasks whose current attempt is missing or no longer
 running are likewise repaired from the indexed resource candidates and requeue
 the same Task through one fenced mutation. Exact Task-intent lookup now reads
 only the requested resource context as well; installed routing and focused
-resource fixtures no longer pass that ordinary read through JSON state.
-Broader recovery repairs remain in a later batch.
+resource fixtures no longer pass that ordinary read through JSON state. A
+workflow session is likewise attached only to its exact current attempt through
+the resource fence, without a JSON association path. Broader recovery repairs
+remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
