@@ -751,21 +751,8 @@ function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource,
   }
   delete tree.resources?.[taskId];
   delete tree.taskTriggers?.[taskId];
-  pruneTaskAttempts(tree);
   refreshActiveTaskProjection(tree);
   return [...sessionIds];
-}
-
-function pruneTaskAttempts(tree: TaskTree, limit = 1_000): void {
-  const entries = Object.entries(tree.attempts ?? {});
-  if (entries.length <= limit) return;
-  entries
-    .filter(([, attempt]) => attempt.state !== "running")
-    .sort(([, left], [, right]) =>
-      String(left.finishedAt ?? left.startedAt).localeCompare(String(right.finishedAt ?? right.startedAt)),
-    )
-    .slice(0, Math.max(0, entries.length - limit))
-    .forEach(([attemptId]) => delete tree.attempts?.[attemptId]);
 }
 
 type TaskReconciliationConfigInput = {
@@ -1314,7 +1301,6 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
     });
     syncTaskProjection(task, resource, attempt.owner);
     refreshActiveTaskProjection(tree);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -1361,7 +1347,6 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
     });
     syncTaskProjection(task, resource, attempt.owner);
     refreshActiveTaskProjection(tree);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -2305,11 +2290,11 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   return false;
 }
 
-function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string): void {
+function acknowledgeIndexedRecoveryWait(config: ResourceTaskStateConfig, taskId: string): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
   // wake; leaving any recovery signal set would make safety recovery retry a no-op.
-  config.resourceStore?.setRecoveryState(taskId, {
+  config.resourceStore.setRecoveryState(taskId, {
     ready: false,
     changed: false,
     nextCheckAt: null,
