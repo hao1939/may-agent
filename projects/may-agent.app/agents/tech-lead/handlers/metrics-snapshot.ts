@@ -228,17 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "evaluator.meaningful-review-rate-24h",
-    name: "Evaluator meaningful review rate (24h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0.9,
-    threshold: 0.7,
-    unit: "ratio",
-    alert_op: "<",
-    priority: "P2",
-  },
-  {
     id: "evaluator.triage-closure-rate-24h",
     name: "Evaluator triage closure rate (24h)",
     owner: "evaluator",
@@ -1423,37 +1412,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      const routedForReview = count(
-        `SELECT COUNT(*) as c
-         FROM events
-         WHERE event_type = 'evaluation.routed'
-           AND timestamp > ?
-           AND json_extract(data, '$.lane') IN ('needs_triage', 'success_candidate')`,
-        twentyFourH,
-      );
-      const reviewed = count(
-        "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.reviewed' AND timestamp > ?",
-        twentyFourH,
-      );
-      record(
-        "evaluator.meaningful-review-rate-24h",
-        routedForReview > 0
-          ? parseFloat(
-              (Math.min(reviewed, routedForReview) / routedForReview).toFixed(
-                4,
-              ),
-            )
-          : 1,
-        routedForReview,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator.meaningful-review-rate-24h: ${e}`,
       );
     }
 

@@ -74,6 +74,10 @@ The substantive 24-hour quality-failure ratio is also App-owned now. Its query
 retains the established issue families and denominator while removing the old
 second scan and unused session join from Host Operations.
 
+The meaningful-review ratio now lives with Evaluation's event semantics. One
+App query counts the two review-worthy lanes and completed reviews, preserves
+the routed denominator, and replaces two Host scans.
+
 Runtime also honors each source definition's `measureInterval` as a minimum
 normal cadence. This removes the prior behavior where a six-hour Scout command
 was executed and sampled on every five-minute wake; forced operational samples
@@ -165,6 +169,7 @@ archive. It is not a second design authority.
 | Evaluation 24-hour LLM activity metric                                                                                     | Evaluation declares the exact recent non-heuristic evaluation-count query; Runtime measures it on the shared Cron event, and the Host catalog plus handwritten measurement block no longer own that domain meaning                                                                                         |
 | Evaluation broad quality-rate metric                                                                                        | Evaluation declares the exact recent non-skipped quality-rate query and preserves its denominator; Runtime measures it on the shared Cron event, with no Host definition or handwritten calculation                                                                                                      |
 | Evaluation substantive quality metric                                                                                       | Evaluation declares the established substantive issue-family ratio and denominator in one source query; Runtime measures it on the shared Cron event, replacing two Host scans and an unused session join                                                                                               |
+| Evaluation meaningful-review metric                                                                                          | Evaluation declares the review-worthy route and completed-review ratio with its routed denominator; Runtime measures it on the shared Cron event, replacing two Host event scans                                                                                                                         |
 | Scout App test boundary                                                                                                   | The App check runs Scout-owned tests only. Cached third-party source repositories under the agent workspace remain inspectable evidence but are not treated as part of Scout App verification                                                                                                             |
 | Whole-system document scope                                                                                                | `system-model.md` retains the public nouns, May/App/agent boundary, one flow, record map, and governing rules; detailed persistence, dependency, recovery, presentation, and code contracts link to their owning subsystem documents instead of being restated                                            |
 | Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic, conversation-Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |

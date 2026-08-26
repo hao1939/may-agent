@@ -391,12 +391,7 @@ describe("metrics-snapshot session health metrics", () => {
           "SELECT current, target, threshold, priority FROM metrics WHERE id = ?",
         )
         .get(id) as any;
-    expect(metric("evaluator.meaningful-review-rate-24h")).toMatchObject({
-      current: 1,
-      target: 0.9,
-      threshold: 0.7,
-      priority: "P2",
-    });
+    expect(metric("evaluator.meaningful-review-rate-24h")).toBeNull();
     expect(metric("evaluator.triage-closure-rate-24h")).toMatchObject({
       current: 1,
       target: 0.9,

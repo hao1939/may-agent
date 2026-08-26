@@ -80,6 +80,28 @@ SELECT CASE
        END AS value,
        total AS sampleSize
 FROM counts`;
+export const MEANINGFUL_REVIEW_RATE_24H_METRIC_ID =
+  "evaluator.meaningful-review-rate-24h";
+export const MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY = `WITH counts AS (
+  SELECT COALESCE(SUM(
+           CASE
+             WHEN event_type = 'evaluation.routed'
+               AND json_extract(data, '$.lane') IN ('needs_triage', 'success_candidate')
+             THEN 1
+             ELSE 0
+           END
+         ), 0) AS routed,
+         COALESCE(SUM(CASE WHEN event_type = 'evaluation.reviewed' THEN 1 ELSE 0 END), 0) AS reviewed
+  FROM events
+  WHERE timestamp > (strftime('%s','now') * 1000 - 86400000)
+    AND event_type IN ('evaluation.routed', 'evaluation.reviewed')
+)
+SELECT CASE
+         WHEN routed = 0 THEN 1
+         ELSE ROUND(1.0 * MIN(reviewed, routed) / routed, 4)
+       END AS value,
+       routed AS sampleSize
+FROM counts`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -676,6 +698,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: MEANINGFUL_REVIEW_RATE_24H_METRIC_ID,
+    name: "Evaluator meaningful review rate (24h)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 0.9,
+    threshold: 0.7,
+    unit: "ratio",
+    priority: "P2" as const,
+    status: "active",
+    source: "evaluation routing and review events",
+    sourceQuery: MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: "<" as const,
+    speed: "fast",
+    description:
+      "Share of recent needs-triage and success-candidate routes covered by evaluation review events, capped at the routed count.",
+  },
   {
     id: SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
     name: "Substantive evaluator quality failures (24h)",
