@@ -2236,12 +2236,12 @@ function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false)
 
 /** Persist a wake observation for an existing task without resubmitting desired state. */
 export function recordAppTaskTrigger(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   taskId: string,
   event: Record<string, unknown>,
 ): { kind: "recorded" | "waiting" | "missing" } {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     const task = tree.tasks[taskId];
     if (!resource || !task) return { kind: "missing" };

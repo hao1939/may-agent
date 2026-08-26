@@ -352,7 +352,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps a maintain task pending when a durable wake arrives during its attempt", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "maintain-wake-during-attempt");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -386,7 +387,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps an achieve task live until events that arrived during the attempt are reconciled", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "achieve-wake-during-attempt");
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
@@ -438,7 +440,8 @@ describe("App task reconciler state", () => {
   });
 
   it("consumes only live events incorporated into the accepted result", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "accepted-live-events");
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
@@ -463,7 +466,8 @@ describe("App task reconciler state", () => {
   });
 
   it("does not apply task actions across newer unaccepted evidence", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "unaccepted-live-events");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -506,7 +510,8 @@ describe("App task reconciler state", () => {
   });
 
   it("claims an ordered bounded event prefix without losing the remaining wakes", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "bounded-event-prefix");
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
