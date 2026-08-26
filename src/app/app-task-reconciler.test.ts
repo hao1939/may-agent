@@ -782,14 +782,11 @@ describe("App task reconciler state", () => {
       "work/pending",
     ]);
 
-    expect(releaseHandlerUnavailableAppTask(config, "work/unavailable")).toBe(true);
-    expect(listRunnableAppTaskIds(config)).toEqual([
-      "work/waiting",
-      "work/attention",
-      "categorized-task",
-      "work/pending",
-      "work/unavailable",
-    ]);
+    expect(releaseHandlerUnavailableAppTask(resourceConfig, "work/unavailable")).toBe(true);
+    expect(
+      resourceConfig.resourceStore.readTaskContext({ taskIds: ["work/unavailable"] }).resources?.["work/unavailable"]
+        ?.status.phase,
+    ).toBe("pending");
   });
 
   it("separates desired-state observation from attempt claiming", () => {
