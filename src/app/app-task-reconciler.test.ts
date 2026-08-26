@@ -1335,7 +1335,8 @@ describe("App task reconciler state", () => {
   });
 
   it("returns trigger snapshots that cannot mutate a long-lived cached task tree", () => {
-    const { config } = fixture();
+    const f = fixture();
+    const { config } = f;
     cacheTaskStateReads(config);
     const monitor = intent("maintain");
     observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
@@ -1344,8 +1345,9 @@ describe("App task reconciler state", () => {
       data: { metricId: "may.failure-rate" },
     });
 
+    const resource = resourceFixture(f, "test:pending-trigger");
     const trigger = readAppTaskTrigger(config, monitor.id);
-    const pending = readPendingAppTaskTrigger(config, monitor.id);
+    const pending = readPendingAppTaskTrigger(resource.config, monitor.id);
     if (!trigger || !pending) throw new Error("expected trigger snapshots");
     (trigger.data as Record<string, unknown>).metricId = "mutated-trigger";
     (pending.data as Record<string, unknown>).metricId = "mutated-pending";
@@ -1354,10 +1356,11 @@ describe("App task reconciler state", () => {
       type: "metric.breach",
       data: { metricId: "may.failure-rate" },
     });
-    expect(readPendingAppTaskTrigger(config, monitor.id)).toEqual({
+    expect(readPendingAppTaskTrigger(resource.config, monitor.id)).toEqual({
       type: "metric.breach",
       data: { metricId: "may.failure-rate" },
     });
+    resource.store.close();
   });
 
   it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
