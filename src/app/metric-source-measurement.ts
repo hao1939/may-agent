@@ -1,7 +1,7 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
-import { EVENT_ROW_ID, type AgentEvent, type EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
@@ -10,6 +10,26 @@ export const SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY = `SELECT COUNT(*) AS value
 FROM events
 WHERE event_type = 'subscriber.failed'
   AND timestamp >= (strftime('%s','now') * 1000 - 3600000)`;
+export const UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID = "event.unhandled-signal-count-1h";
+export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
+  "project.task.reconcile.profiled",
+  "project.task.reconcile.started",
+  "project.task.reconciled",
+  "project.task.reconcile.skipped",
+  "project.task.executor.progress",
+  "metric.breach",
+  "conversation.updated",
+  "gym.review.filtered",
+  "project.approval.resolved",
+  "project.ops_digest.created",
+  "project.ops_health.observed",
+] as const;
+const intentionalObservationSql = INTENTIONAL_OBSERVATION_EVENT_TYPES.map((type) => `'${type}'`).join(",");
+export const UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY = `SELECT COUNT(*) AS value
+FROM events
+WHERE delivery_status = 'unhandled'
+  AND timestamp >= (strftime('%s','now') * 1000 - 3600000)
+  AND event_type NOT IN (${intentionalObservationSql})`;
 export const STALE_ACTIVE_METRIC_ID = "metric.stale-active-count";
 export const STALE_ACTIVE_SOURCE_QUERY = `SELECT COUNT(*) AS value
 FROM metrics m
@@ -31,6 +51,7 @@ type SourceMetric = {
   id: string;
   source_query: string | null;
   source_command: string | null;
+  measure_interval: number | null;
 };
 
 type CommandSample = {
@@ -40,10 +61,11 @@ type CommandSample = {
   note?: string;
 };
 
-function sourceQueryValue(row: Record<string, unknown> | null): number | null {
+function sourceQuerySample(row: Record<string, unknown> | null): CommandSample | null {
   if (!row) return null;
-  const candidate = Object.prototype.hasOwnProperty.call(row, "value") ? row.value : Object.values(row)[0];
-  return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : null;
+  if (Object.prototype.hasOwnProperty.call(row, "value")) return commandSample(row);
+  const candidate = Object.values(row)[0];
+  return commandSample({ ...row, value: candidate });
 }
 
 function isReadOnlySourceQuery(query: string): boolean {
@@ -154,6 +176,8 @@ export async function measureSourceMetrics(options: {
   persistDir: string;
   triggerEventId?: number;
   measuredAt?: number;
+  isDue?: (metric: SourceMetric) => boolean;
+  onAttempt?: (metric: SourceMetric) => void;
 }): Promise<{ measured: string[]; skipped: string[] }> {
   const db = getDb(options.persistDir);
   const metrics = createMetricService({
@@ -165,7 +189,7 @@ export async function measureSourceMetrics(options: {
   });
   const rows = db
     .prepare(
-      `SELECT id, source_query, source_command
+      `SELECT id, source_query, source_command, measure_interval
        FROM metrics
        WHERE status = 'active'
          AND ((source_query IS NOT NULL AND trim(source_query) != '')
@@ -173,6 +197,7 @@ export async function measureSourceMetrics(options: {
        ORDER BY id`,
     )
     .all() as SourceMetric[];
+  const dueRows = options.isDue ? rows.filter(options.isDue) : rows;
   const measured: string[] = [];
   const skipped: string[] = [];
   const defaultMeasuredAt = options.measuredAt ?? Date.now();
@@ -180,9 +205,10 @@ export async function measureSourceMetrics(options: {
   const commandNote = options.triggerEventId
     ? `source-command; trigger-event:${options.triggerEventId}`
     : "source-command";
-  const batches = await executeBatches(rows);
+  const batches = await executeBatches(dueRows);
 
-  for (const row of rows) {
+  for (const row of dueRows) {
+    options.onAttempt?.(row);
     try {
       let sample: CommandSample | null = null;
       let measuredBy = "runtime:metric-source-query";
@@ -192,8 +218,7 @@ export async function measureSourceMetrics(options: {
           skipped.push(row.id);
           continue;
         }
-        const value = sourceQueryValue(db.prepare(row.source_query).get() as Record<string, unknown> | null);
-        if (value != null) sample = { value };
+        sample = sourceQuerySample(db.prepare(row.source_query).get() as Record<string, unknown> | null);
       } else if (row.source_command) {
         measuredBy = "runtime:metric-source-command";
         note = commandNote;
@@ -280,6 +305,47 @@ export function attachMetricSourceMeasurement(options: {
       ],
     );
   }
+  const unexpectedUnhandledSource = {
+    source: "rolling one-hour unexpected unhandled event count",
+    sourceQuery: UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
+    measureInterval: 300_000,
+    description:
+      "Counts unhandled events that are not declared observation-only task lifecycle, profiling, progress, metric, conversation, review, approval, or Host Operations report facts.",
+  };
+  const existingUnexpectedUnhandledMetric = db
+    .prepare("SELECT id FROM metrics WHERE id = ?")
+    .get(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID);
+  if (!existingUnexpectedUnhandledMetric) {
+    metricService.define({
+      id: UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
+      name: "Unexpected unhandled signal events (1h)",
+      owner: "may",
+      type: "health",
+      target: 0,
+      threshold: 5,
+      unit: "count",
+      priority: "P1",
+      status: "active",
+      ...unexpectedUnhandledSource,
+      alertOp: ">",
+      speed: "fast",
+    });
+  } else {
+    // Source semantics are canonical Runtime code. Preserve live alert
+    // calibration while repairing stale or historically hand-authored queries.
+    db.run(
+      `UPDATE metrics
+       SET source = ?, source_query = ?, measure_interval = ?, description = ?
+       WHERE id = ?`,
+      [
+        unexpectedUnhandledSource.source,
+        unexpectedUnhandledSource.sourceQuery,
+        unexpectedUnhandledSource.measureInterval,
+        unexpectedUnhandledSource.description,
+        UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
+      ],
+    );
+  }
   metricService.define({
     id: STALE_ACTIVE_METRIC_ID,
     name: "Stale cadence-bound active metrics",
@@ -299,10 +365,11 @@ export function attachMetricSourceMeasurement(options: {
       "Counts active metrics with an explicit positive measure interval that missed at least two expected samples, with a 15-minute minimum grace window.",
   });
 
-  let pending: { triggerEventId?: number; measuredAt: number } | undefined;
+  let pending: { triggerEventId?: number; measuredAt: number; forced: boolean } | undefined;
   let drain: Promise<void> | undefined;
+  const nextDueAt = new Map<string, number>();
 
-  const schedule = (request: { triggerEventId?: number; measuredAt: number }) => {
+  const schedule = (request: { triggerEventId?: number; measuredAt: number; forced: boolean }) => {
     // Metrics are observations. If snapshots arrive faster than their source
     // commands finish, one latest observation is sufficient.
     pending = request;
@@ -315,7 +382,18 @@ export function attachMetricSourceMeasurement(options: {
         while (pending) {
           const current = pending;
           pending = undefined;
-          await measureSourceMetrics({ ...options, ...current });
+          await measureSourceMetrics({
+            ...options,
+            ...current,
+            isDue: (metric) => current.forced || current.measuredAt >= (nextDueAt.get(metric.id) ?? 0),
+            onAttempt: (metric) => {
+              const interval = metric.measure_interval;
+              nextDueAt.set(
+                metric.id,
+                current.measuredAt + (typeof interval === "number" && interval > 0 ? interval : 0),
+              );
+            },
+          });
         }
       })
       .catch((error) => {
@@ -330,9 +408,11 @@ export function attachMetricSourceMeasurement(options: {
   options.bus.listen(
     (event): void => {
       const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+      const data = eventData(event);
       schedule({
         triggerEventId,
         measuredAt: Date.now(),
+        forced: (event as AgentEvent & { forced?: unknown }).forced === true || data.forced === true,
       });
     },
     { label: "metric-source-measurement", types: [METRIC_SOURCE_MEASUREMENT_EVENT] },

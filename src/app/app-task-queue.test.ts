@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { AppTaskQueue } from "././app-task-queue.js";
+import { AppTaskQueue } from "./app-task-queue.js";
 
 describe("AppTaskQueue", () => {
   it("deduplicates pending task wakes", () => {
@@ -9,139 +9,31 @@ describe("AppTaskQueue", () => {
     expect(queue.snapshot()).toEqual({ pending: ["task-a"], running: [], dirty: [] });
   });
 
-  it("promotes targeted pending work without duplicating it", () => {
+  it("promotes a targeted wake ahead of passive peers without duplicating it", () => {
     const queue = new AppTaskQueue(1);
-    queue.enqueue("old-a");
-    queue.enqueue("goal");
-    queue.enqueue("old-b");
+    for (let index = 0; index < 200; index++) queue.enqueue(`passive-${index}`, { priority: "P1" });
+    queue.enqueue("exact-task", { priority: "P1" });
 
-    expect(queue.enqueue("goal", { front: true })).toBe(true);
-    expect(queue.snapshot().pending).toEqual(["goal", "old-a", "old-b"]);
-    expect(queue.enqueue("goal", { front: true })).toBe(false);
-  });
-
-  it("promotes an already-front-queued exact wake ahead of passive replenishment without duplication", () => {
-    const queue = new AppTaskQueue(1);
-    for (let index = 0; index < 200; index++) {
-      queue.enqueue(`aftermath-${index}`, { front: true, priority: "P1" });
-    }
-    queue.enqueue("exact-task", { front: true, priority: "P1" });
-    expect(queue.enqueue("exact-task", { front: true, promote: true, priority: "P1" })).toBe(true);
-    for (let index = 200; index < 240; index++) {
-      queue.enqueue(`aftermath-${index}`, { front: true, priority: "P1" });
-    }
-
+    expect(queue.enqueue("exact-task", { promote: true, priority: "P1" })).toBe(true);
     expect(queue.snapshot().pending.filter((taskId) => taskId === "exact-task")).toHaveLength(1);
     expect(queue.take()).toBe("exact-task");
     queue.complete("exact-task");
-    expect(queue.take()).toBe("aftermath-0");
+    expect(queue.take()).toBe("passive-0");
   });
 
   it("preserves FIFO order among fresh exact promotions", () => {
     const queue = new AppTaskQueue(1);
-    queue.enqueue("passive-a", { front: true, priority: "P1" });
-    queue.enqueue("exact-a", { front: true, priority: "P1" });
-    queue.enqueue("passive-b", { front: true, priority: "P1" });
-    queue.enqueue("exact-b", { front: true, priority: "P1" });
+    queue.enqueue("passive-a", { priority: "P1" });
+    queue.enqueue("exact-a", { priority: "P1" });
+    queue.enqueue("passive-b", { priority: "P1" });
+    queue.enqueue("exact-b", { priority: "P1" });
 
     queue.enqueue("exact-a", { promote: true, priority: "P1" });
     queue.enqueue("exact-b", { promote: true, priority: "P1" });
     expect(queue.snapshot().pending).toEqual(["exact-a", "exact-b", "passive-a", "passive-b"]);
   });
 
-  it("preserves FIFO order within the front lane", () => {
-    const queue = new AppTaskQueue(1);
-    queue.enqueue("old-a");
-    queue.enqueue("urgent-a", { front: true });
-    queue.enqueue("old-b");
-    queue.enqueue("urgent-b", { front: true });
-    queue.enqueue("old-b", { front: true });
-
-    expect(queue.snapshot().pending).toEqual(["urgent-a", "urgent-b", "old-b", "old-a"]);
-    expect(queue.take()).toBe("urgent-a");
-    queue.complete("urgent-a");
-    expect(queue.take()).toBe("urgent-b");
-  });
-
-  it("orders front-lane wakes by priority and preserves FIFO within one priority", () => {
-    const queue = new AppTaskQueue(1);
-    queue.enqueue("old-p2-a", { front: true, priority: "P2" });
-    queue.enqueue("p0-terminal-wake", { front: true, priority: "P0" });
-    queue.enqueue("old-p2-b", { front: true, priority: "P2" });
-
-    for (const taskId of ["p0-terminal-wake", "old-p2-a", "old-p2-b"]) {
-      expect(queue.take()).toBe(taskId);
-      queue.complete(taskId);
-    }
-  });
-
-  it("ages front-lane wakes so replenished higher-priority continuations cannot starve them", () => {
-    const queue = new AppTaskQueue(1);
-    queue.enqueue("targeted-p2", { front: true, priority: "P2" });
-    for (let index = 0; index < 4; index++) {
-      queue.enqueue(`continuation-p1-${index}`, { front: true, priority: "P1" });
-    }
-
-    const taken: string[] = [];
-    for (let index = 0; index < 4; index++) {
-      const taskId = queue.take();
-      expect(taskId).not.toBeNull();
-      taken.push(taskId!);
-      queue.complete(taskId!);
-      queue.enqueue(`new-continuation-p1-${index}`, { front: true, priority: "P1" });
-    }
-
-    expect(taken).toEqual(["continuation-p1-0", "continuation-p1-1", "continuation-p1-2", "targeted-p2"]);
-  });
-
-  it("ages a targeted lower-priority wake behind a large same-priority backlog", () => {
-    const queue = new AppTaskQueue(1);
-    for (let index = 0; index < 12; index++) {
-      queue.enqueue(`older-p1-${index}`, { front: true, priority: "P1" });
-    }
-    queue.enqueue("targeted-p2", { front: true, priority: "P2" });
-
-    const taken: string[] = [];
-    for (let index = 0; index < 4; index++) {
-      const taskId = queue.take();
-      expect(taskId).not.toBeNull();
-      taken.push(taskId!);
-      queue.complete(taskId!);
-    }
-
-    expect(taken).toEqual(["older-p1-0", "older-p1-1", "older-p1-2", "targeted-p2"]);
-  });
-
-  it("keeps serving higher priority work between aged lower-priority heads", () => {
-    const queue = new AppTaskQueue(1);
-    for (let index = 0; index < 6; index++) queue.enqueue(`p1-${index}`, { front: true, priority: "P1" });
-    for (let index = 0; index < 4; index++) queue.enqueue(`p2-${index}`, { front: true, priority: "P2" });
-
-    const taken: string[] = [];
-    for (let index = 0; index < 8; index++) {
-      const taskId = queue.take()!;
-      taken.push(taskId);
-      queue.complete(taskId);
-    }
-
-    expect(taken).toEqual(["p1-0", "p1-1", "p1-2", "p2-0", "p1-3", "p1-4", "p1-5", "p2-1"]);
-  });
-
-  it("runs oldest ordinary work after a bounded urgent burst", () => {
-    const queue = new AppTaskQueue(1);
-    queue.enqueue("old-a");
-    queue.enqueue("old-b");
-    for (const taskId of ["urgent-a", "urgent-b", "urgent-c", "urgent-d", "urgent-e"]) {
-      queue.enqueue(taskId, { front: true });
-    }
-
-    for (const taskId of ["urgent-a", "urgent-b", "urgent-c", "old-a", "urgent-d"]) {
-      expect(queue.take()).toBe(taskId);
-      queue.complete(taskId);
-    }
-  });
-
-  it("orders ordinary work by priority and preserves FIFO within one priority", () => {
+  it("orders work by priority and preserves FIFO within one priority", () => {
     const queue = new AppTaskQueue(1);
     queue.enqueue("old-p2", { priority: "P2" });
     queue.enqueue("first-p0", { priority: "P0" });
@@ -154,9 +46,19 @@ describe("AppTaskQueue", () => {
     }
   });
 
+  it("does not let promotion override a higher persisted priority", () => {
+    const queue = new AppTaskQueue(1);
+    queue.enqueue("promoted-p2", { priority: "P2", promote: true });
+    queue.enqueue("ordinary-p0", { priority: "P0" });
+
+    expect(queue.take()).toBe("ordinary-p0");
+    queue.complete("ordinary-p0");
+    expect(queue.take()).toBe("promoted-p2");
+  });
+
   it("runs trusted human work before normal work regardless of App priority", () => {
     const queue = new AppTaskQueue(1);
-    queue.enqueue("normal-p0", { lane: "normal", front: true, priority: "P0" });
+    queue.enqueue("normal-p0", { lane: "normal", promote: true, priority: "P0" });
     queue.enqueue("human-p2", { lane: "human", priority: "P2" });
 
     expect(queue.nextLane()).toBe("human");
@@ -166,45 +68,12 @@ describe("AppTaskQueue", () => {
     expect(queue.take()).toBe("normal-p0");
   });
 
-  it("ages ordinary work so a replenished higher-priority lane cannot starve it", () => {
-    const queue = new AppTaskQueue(1);
-    queue.enqueue("compact-p1", { priority: "P1" });
-    for (let index = 0; index < 8; index++) {
-      queue.enqueue(`normalization-p0-${index}`, { priority: "P0" });
-    }
-
-    const taken: string[] = [];
-    for (let index = 0; index < 4; index++) {
-      const taskId = queue.take();
-      expect(taskId).not.toBeNull();
-      taken.push(taskId!);
-      queue.complete(taskId!);
-      queue.enqueue(`new-normalization-p0-${index}`, { priority: "P0" });
-    }
-
-    expect(taken).toEqual(["normalization-p0-0", "normalization-p0-1", "normalization-p0-2", "compact-p1"]);
-  });
-
-  it("runs prioritized ordinary work after the bounded continuation burst", () => {
-    const queue = new AppTaskQueue(1);
-    queue.enqueue("ordinary-p2", { priority: "P2" });
-    queue.enqueue("ordinary-p0", { priority: "P0" });
-    for (const taskId of ["wake-a", "wake-b", "wake-c", "wake-d"]) {
-      queue.enqueue(taskId, { front: true, priority: "P2" });
-    }
-
-    for (const taskId of ["wake-a", "wake-b", "wake-c", "ordinary-p0", "wake-d"]) {
-      expect(queue.take()).toBe(taskId);
-      queue.complete(taskId);
-    }
-  });
-
-  it("preserves front promotion for a wake received while running", () => {
+  it("preserves exact promotion for a wake received while running", () => {
     const queue = new AppTaskQueue(1);
     queue.enqueue("goal");
     expect(queue.take()).toBe("goal");
     queue.enqueue("old-a");
-    queue.enqueue("goal", { front: true });
+    queue.enqueue("goal", { promote: true });
 
     queue.complete("goal");
     expect(queue.snapshot().pending).toEqual(["goal", "old-a"]);
@@ -221,7 +90,7 @@ describe("AppTaskQueue", () => {
     expect(queue.take()).toBe("conversation");
   });
 
-  it("enforces app concurrency and preserves FIFO order", () => {
+  it("enforces App concurrency", () => {
     const queue = new AppTaskQueue(1);
     queue.enqueue("task-a");
     queue.enqueue("task-b");

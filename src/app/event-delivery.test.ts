@@ -275,6 +275,7 @@ describe("event delivery metadata", () => {
       const linkCols = db.prepare("PRAGMA table_info(event_trace_links)").all();
       const traceIndexes = db.prepare("PRAGMA index_list(event_traces)").all();
       const linkIndexes = db.prepare("PRAGMA index_list(event_trace_links)").all();
+      const pairIndexes = db.prepare("PRAGMA index_list(event_pair_runs)").all();
 
       expect(traceCols.map((row) => row.name)).toEqual(["event_id", "trace_id", "parent_event_id", "visibility"]);
       expect(linkCols.map((row) => row.name)).toEqual([
@@ -289,6 +290,7 @@ describe("event delivery metadata", () => {
       expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_parent");
       expect(linkIndexes.map((row) => row.name)).toContain("idx_event_trace_links_from");
       expect(linkIndexes.map((row) => row.name)).toContain("idx_event_trace_links_to");
+      expect(pairIndexes.map((row) => row.name)).toContain("idx_event_pair_close_event");
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -731,6 +733,71 @@ describe("event delivery metadata", () => {
         traceCount: 0,
         missingTraceCount: 1,
         ok: false,
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("audits May Conversation admission and result correlation without adapter delivery", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      bus.emit({
+        type: "conversation.message.created",
+        source: "console",
+        owner: "app:may",
+        data: {
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "human", id: "console:1" },
+          text: "Review this",
+        },
+      });
+
+      const db = getDb(root);
+      const event = db.prepare("SELECT id FROM events").get() as { id: number };
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        conversationHumanWithoutSingleRequestCount: 1,
+        mayResultWithoutConversationCount: 0,
+        semanticOk: false,
+      });
+
+      db.run(
+        `INSERT INTO app_inbox_items
+         (id, app_id, conversation_id, source_kind, source_id, input_kind,
+          input_data, status, origin_event_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "request-1",
+          "may",
+          "may:primary",
+          "human",
+          "console:1",
+          "message",
+          JSON.stringify({ message: "Review this" }),
+          "pending",
+          event.id,
+          1,
+          1,
+        ],
+      );
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        conversationHumanWithoutSingleRequestCount: 0,
+        mayResultWithoutConversationCount: 0,
+        semanticOk: true,
+      });
+
+      db.run(
+        "UPDATE app_inbox_items SET status = 'done', result = ?, conversation_id = NULL WHERE id = ?",
+        [JSON.stringify({ response: "Reviewed." }), "request-1"],
+      );
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        conversationHumanWithoutSingleRequestCount: 0,
+        mayResultWithoutConversationCount: 1,
+        semanticOk: false,
       });
     } finally {
       closeDb(root);

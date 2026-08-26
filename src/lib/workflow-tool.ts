@@ -73,6 +73,7 @@ import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { EventTrace } from "../app/event-bus.js";
 import type {
+  AppRead,
   ExecutionResult as AppExecutionResult,
   TaskReconciliationContext,
   WorkflowContext as AppWorkflowContext,
@@ -715,6 +716,8 @@ export interface RunWorkflowDirectOpts {
   /** Immutable definitions captured with the owning Task attempt. */
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
   runtimeCtx: RuntimeCtx;
+  /** Canonical App read capability captured with this execution. */
+  read?: AppRead;
   agentName: string;
   /** Exact source stored on agent sessions started by this workflow. */
   sessionSource?: string;
@@ -739,6 +742,8 @@ export interface RunWorkflowDirectOpts {
   reconciliation?: TaskReconciliationContext;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
+  /** Best-effort stop signal for the exact Task attempt owning this run. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -769,10 +774,12 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     onEvent: opts.onEvent,
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
+    read: opts.read,
     executionPaths: opts.executionPaths,
     ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
     ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
     executionTimeoutMs: opts.executionTimeoutMs,
+    signal: opts.signal,
   });
 
   const workflow = await runner.resolve(opts.workflowName);
@@ -843,6 +850,8 @@ export interface WorkflowToolOptions {
   recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
+  /** Canonical App read capability captured with this execution. */
+  read?: AppRead;
   /** Fenced App-authored event capability for a resource-backed Task attempt. */
   taskEmitter?: AppTaskEvents;
   /** Resolved app/domain paths supplied by the Host. */
@@ -853,6 +862,8 @@ export interface WorkflowToolOptions {
   reconciliation?: TaskReconciliationContext;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
+  /** Best-effort stop signal for the exact Task attempt owning this run. */
+  signal?: AbortSignal;
   /** Trace inherited from the event that started this workflow. */
   trace?: EventTrace;
   /** Resolve the active caller turn trace for long-lived chat sessions. */
@@ -1154,6 +1165,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     const executionTimeoutMs = workflow.executionTimeoutMs ?? opts.executionTimeoutMs;
     const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
     const assertExecutionActive = (): void => {
+      opts.signal?.throwIfAborted();
       if (executionExpired) throw new Error(executionTimeoutMessage);
     };
     const cancelActiveStepSessions = (): void => {
@@ -1480,11 +1492,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         sharedRoot: "",
         projectsRoot: "",
       } satisfies RuntimeCtx);
-    const appRead = createRuntimeAppRead({
-      getDb: runtimeCtx.getDb,
-      metrics: runtimeCtx.metrics,
-      ...(opts.executionPaths ? { executionPaths: opts.executionPaths } : {}),
-    });
+    const appRead =
+      opts.read ??
+      createRuntimeAppRead({
+        getDb: runtimeCtx.getDb,
+        metrics: runtimeCtx.metrics,
+        ...(opts.executionPaths ? { executionPaths: opts.executionPaths } : {}),
+      });
     const workflowLog = Object.assign((message: string) => runtimeCtx.log(message), {
       debug: (message: string) => runtimeCtx.log(`[debug] ${message}`),
       info: (message: string) => runtimeCtx.log(message),
@@ -1846,22 +1860,38 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     } as unknown as WorkflowContext & AppWorkflowContext;
 
     try {
+      opts.signal?.throwIfAborted();
       const execution = workflow.execute(ctx);
       let executionTimer: ReturnType<typeof setTimeout> | undefined;
-      const authoredResult = executionTimeoutMs
-        ? await Promise.race([
-            execution,
-            new Promise<never>((_, reject) => {
-              executionTimer = setTimeout(() => {
-                executionExpired = true;
-                cancelActiveStepSessions();
-                reject(new Error(executionTimeoutMessage));
-              }, executionTimeoutMs);
-            }),
-          ]).finally(() => {
-            if (executionTimer) clearTimeout(executionTimer);
-          })
-        : await execution;
+      let stopForAbort: (() => void) | undefined;
+      const stops: Array<Promise<never>> = [];
+      if (executionTimeoutMs) {
+        stops.push(
+          new Promise<never>((_, reject) => {
+            executionTimer = setTimeout(() => {
+              executionExpired = true;
+              cancelActiveStepSessions();
+              reject(new Error(executionTimeoutMessage));
+            }, executionTimeoutMs);
+          }),
+        );
+      }
+      if (opts.signal) {
+        stops.push(
+          new Promise<never>((_, reject) => {
+            stopForAbort = () => {
+              cancelActiveStepSessions();
+              reject(opts.signal?.reason ?? new Error(`Workflow "${workflow.name}" was cancelled`));
+            };
+            opts.signal!.addEventListener("abort", stopForAbort, { once: true });
+            if (opts.signal!.aborted) stopForAbort();
+          }),
+        );
+      }
+      const authoredResult = await Promise.race([execution, ...stops]).finally(() => {
+        if (executionTimer) clearTimeout(executionTimer);
+        if (stopForAbort) opts.signal?.removeEventListener("abort", stopForAbort);
+      });
       const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId);
 
       // ── Guard: workflow_done event ──────────────────────────────────

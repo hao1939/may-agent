@@ -403,7 +403,7 @@ describe("AppTaskController", () => {
     current.close();
   });
 
-  it("chooses the current front task only after shared capacity is available", async () => {
+  it("chooses the current exact wake only after shared capacity is available", async () => {
     const capacity = new HostCapacity(1);
     const started: string[] = [];
     let releaseBlocker: (() => void) | undefined;
@@ -432,7 +432,7 @@ describe("AppTaskController", () => {
     goal.enqueue("older-a");
     goal.enqueue("older-b");
     await waitUntil(() => capacity.snapshot().waiting === 1);
-    goal.enqueue("urgent-goal", { front: true });
+    goal.enqueue("urgent-goal", { promote: true });
 
     expect(goal.snapshot()).toMatchObject({
       pending: ["urgent-goal", "older-a", "older-b"],

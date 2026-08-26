@@ -10,9 +10,12 @@ import {
   attachMetricSourceMeasurement,
   batchableProjectMetricCommand,
   type MetricSourceMeasurementRuntime,
+  INTENTIONAL_OBSERVATION_EVENT_TYPES,
   STALE_ACTIVE_SOURCE_QUERY,
   SUBSCRIBER_FAILED_COUNT_METRIC_ID,
   SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
+  UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
+  UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
 } from "./metric-source-measurement.js";
 
 describe("source-command metric batching", () => {
@@ -72,6 +75,45 @@ describe("source-query metric measurement", () => {
       source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
       measure_interval: 300_000,
     });
+  });
+
+  it("restores the canonical unexpected-unhandled source while preserving alert calibration", () => {
+    const db = getDb(persistDir);
+    db.run(
+      `UPDATE metrics
+       SET owner = 'tech-lead', threshold = 9, priority = 'P2',
+           source_query = 'SELECT 999 AS value'
+       WHERE id = ?`,
+      [UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID],
+    );
+
+    attachMetricSourceMeasurement({ bus, persistDir });
+
+    expect(
+      db
+        .prepare("SELECT owner, threshold, priority, source_query, measure_interval FROM metrics WHERE id = ?")
+        .get(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID),
+    ).toEqual({
+      owner: "tech-lead",
+      threshold: 9,
+      priority: "P2",
+      source_query: UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
+      measure_interval: 300_000,
+    });
+  });
+
+  it("excludes declared observation telemetry but counts an unaccepted human message", () => {
+    const db = getDb(persistDir);
+    const insert = db.prepare(
+      `INSERT INTO events
+         (event_type, source, owner, data, timestamp, delivery_status)
+       VALUES (?, 'fixture', 'agent:may', '{}', ?, 'unhandled')`,
+    );
+    for (const type of INTENTIONAL_OBSERVATION_EVENT_TYPES) insert.run(type, Date.now());
+    insert.run("message.created", Date.now());
+    insert.run("project.task.reconciled", Date.now() - 3_600_001);
+
+    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 1 });
   });
 
   it("registers source measurement as passive observation, not synchronous acceptance", () => {
@@ -135,14 +177,14 @@ describe("source-query metric measurement", () => {
       type: "trigger.metrics-snapshot",
       source: "control-socket",
       owner: "agent:may",
-      data: { correlation: "subscriber-failed-source-golden-trace-1" },
+      data: { correlation: "subscriber-failed-source-golden-trace-1", forced: true },
     });
     await measurement.idle();
     const trigger = bus.emit({
       type: "trigger.metrics-snapshot",
       source: "control-socket",
       owner: "agent:may",
-      data: { correlation: "subscriber-failed-source-golden-trace-2" },
+      data: { correlation: "subscriber-failed-source-golden-trace-2", forced: true },
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
     await measurement.idle();
@@ -169,16 +211,17 @@ describe("source-query metric measurement", () => {
   it("turns a measurement trigger into a correlated stored sample and alert recovery", async () => {
     const db = getDb(persistDir);
     db.run(
-      `INSERT INTO metrics
-         (id, name, type, owner, current, threshold, priority, status, source_query, updated_at, alert_op)
-       VALUES (?, ?, 'gauge', 'may', 47, 5, 'P1', 'active', ?, ?, '>')`,
+      `UPDATE metrics
+       SET current = 47,
+           source_query = ?,
+           updated_at = ?
+       WHERE id = ?`,
       [
-        "event.unhandled-signal-count-1h",
-        "Unexpected unhandled signal events (1h)",
         `SELECT count(*) AS value FROM events
          WHERE delivery_status = 'unhandled'
            AND event_type != 'channel.delivery.completed'`,
         Date.now() - 60_000,
+        UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
       ],
     );
     db.run(
@@ -227,6 +270,44 @@ describe("source-query metric measurement", () => {
     expect(db.prepare("SELECT accepted_by, delivery_route FROM events WHERE id = ?").get(triggerEventId)).toEqual({
       accepted_by: null,
       delivery_route: null,
+    });
+  });
+
+  it("preserves evidence columns returned by a source query", async () => {
+    const db = getDb(persistDir);
+    db.run(
+      `INSERT INTO metrics
+         (id, name, type, owner, threshold, priority, status, source_query, measure_interval, updated_at, alert_op)
+       VALUES ('query.evidence', 'Query evidence', 'gauge', 'evaluator', 0.2, 'P3', 'active',
+               ?, 300000, 0, '<')`,
+      [
+        `SELECT 0.75 AS value,
+                8 AS sampleSize,
+                123456 AS measuredAt,
+                json_object('eligible', 8, 'evaluated', 6) AS note`,
+      ],
+    );
+
+    bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "control-socket",
+      owner: "agent:may",
+      data: {},
+    });
+    await measurement.idle();
+
+    expect(
+      db
+        .prepare(
+          "SELECT value, sample_size, measured_at, measured_by, note FROM metric_snapshots WHERE metric_id = 'query.evidence' ORDER BY id DESC LIMIT 1",
+        )
+        .get(),
+    ).toEqual({
+      value: 0.75,
+      sample_size: 8,
+      measured_at: 123456,
+      measured_by: "runtime:metric-source-query",
+      note: '{"eligible":8,"evaluated":6}',
     });
   });
 
@@ -295,6 +376,37 @@ describe("source-query metric measurement", () => {
       measured_by: "runtime:metric-source-command",
       note: JSON.stringify({ source: "fixture" }),
     });
+  });
+
+  it("uses measureInterval as a lightweight minimum cadence and allows an explicit forced sample", async () => {
+    const db = getDb(persistDir);
+    db.run(
+      `INSERT INTO metrics
+         (id, name, type, owner, threshold, priority, status, source_query, measure_interval, updated_at, alert_op)
+       VALUES ('slow.metric', 'Slow metric', 'gauge', 'scout', 0, 'P3', 'active',
+               'SELECT 4 AS value', 21600000, 0, '>')`,
+    );
+    const emit = (forced = false) =>
+      bus.emit({
+        type: "trigger.metrics-snapshot",
+        source: "control-socket",
+        owner: "agent:may",
+        data: { forced },
+      });
+
+    emit();
+    await measurement.idle();
+    emit();
+    await measurement.idle();
+    expect(
+      db.prepare("SELECT COUNT(*) AS count FROM metric_snapshots WHERE metric_id = 'slow.metric'").get(),
+    ).toEqual({ count: 1 });
+
+    emit(true);
+    await measurement.idle();
+    expect(
+      db.prepare("SELECT COUNT(*) AS count FROM metric_snapshots WHERE metric_id = 'slow.metric'").get(),
+    ).toEqual({ count: 2 });
   });
 
   it("does not begin source discovery on the event publication stack", async () => {
@@ -372,6 +484,7 @@ describe("source-query metric measurement", () => {
     );
 
     insertSnapshot.run(SUBSCRIBER_FAILED_COUNT_METRIC_ID, now - 60_000);
+    insertSnapshot.run(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID, now - 60_000);
     insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
     insertSnapshot.run("query.fresh", now - 60_000);
     insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);

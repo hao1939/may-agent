@@ -133,11 +133,19 @@ function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt:
 
 function insertProgress(
   db: SqliteDb,
-  input: { appId: string; taskId: string; timestamp: number; stage: string; message?: string; status?: string },
+  input: {
+    appId: string;
+    taskId: string;
+    attemptId?: string;
+    timestamp: number;
+    stage: string;
+    message?: string;
+    status?: string;
+  },
 ): void {
   db.prepare(
-    `INSERT INTO events(event_type, data, project_id, task_id, timestamp)
-     VALUES ('project.task.executor.progress', ?, ?, ?, ?)`,
+    `INSERT INTO events(event_type, data, project_id, task_id, attempt_id, timestamp)
+     VALUES ('project.task.executor.progress', ?, ?, ?, ?, ?)`,
   ).run(
     JSON.stringify({
       stage: input.stage,
@@ -146,7 +154,47 @@ function insertProgress(
     }),
     input.appId,
     input.taskId,
+    input.attemptId ?? null,
     input.timestamp,
+  );
+}
+
+function attachRunningAttempt(
+  db: SqliteDb,
+  input: { appId: string; taskId: string; attemptId: string; startedAt: number },
+): void {
+  const row = db
+    .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+    .get(input.appId, input.taskId) as { resource_json: string };
+  const resource = JSON.parse(row.resource_json);
+  resource.status.currentAttemptId = input.attemptId;
+  db.prepare(
+    `INSERT INTO app_task_attempts(
+       app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
+     ) VALUES (?, ?, ?, 2, 'running', ?, ?)`,
+  ).run(
+    input.appId,
+    input.attemptId,
+    input.taskId,
+    input.startedAt,
+    JSON.stringify({
+      metadata: { id: input.attemptId, resourceVersion: 1 },
+      taskId: input.taskId,
+      taskGeneration: 2,
+      specHash: "hash",
+      owner: `${input.appId}-owner`,
+      handler: `agent:${input.appId}-owner`,
+      runtimeId: "runtime",
+      state: "running",
+      reason: "test",
+      startedAt: new Date(input.startedAt).toISOString(),
+    }),
+  );
+  db.prepare("UPDATE app_tasks SET current_attempt_id = ?, resource_json = ? WHERE app_id = ? AND task_id = ?").run(
+    input.attemptId,
+    JSON.stringify(resource),
+    input.appId,
+    input.taskId,
   );
 }
 
@@ -401,9 +449,12 @@ describe("Human Task service", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "review", phase: "running", updatedAt: 10 });
     insertTask(db, { appId: "alpha", taskId: "other", phase: "running", updatedAt: 11 });
+    attachRunningAttempt(db, { appId: "alpha", taskId: "review", attemptId: "attempt-review", startedAt: 12 });
+    attachRunningAttempt(db, { appId: "alpha", taskId: "other", attemptId: "attempt-other", startedAt: 13 });
     insertProgress(db, {
       appId: "alpha",
       taskId: "review",
+      attemptId: "attempt-review",
       timestamp: 20,
       stage: "turn-started",
       status: "inProgress",
@@ -411,6 +462,7 @@ describe("Human Task service", () => {
     insertProgress(db, {
       appId: "alpha",
       taskId: "other",
+      attemptId: "attempt-other",
       timestamp: 30,
       stage: "intermediate",
       message: "Must not leak",
@@ -418,6 +470,7 @@ describe("Human Task service", () => {
     insertProgress(db, {
       appId: "alpha",
       taskId: "review",
+      attemptId: "attempt-review",
       timestamp: 40,
       stage: "intermediate",
       message: "Inspecting the current behavior",
@@ -425,6 +478,7 @@ describe("Human Task service", () => {
     insertProgress(db, {
       appId: "alpha",
       taskId: "review",
+      attemptId: "attempt-review",
       timestamp: 50,
       stage: "turn-completed",
       status: "completed",
@@ -437,6 +491,43 @@ describe("Human Task service", () => {
       updatedAt: 40,
     });
     expect(service.listTasks().items.find((task) => task.taskId === "review")?.progress).toBeUndefined();
+  });
+
+  test("projects progress only from the exact current attempt", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "review", phase: "running", updatedAt: 10 });
+    attachRunningAttempt(db, { appId: "alpha", taskId: "review", attemptId: "attempt-current", startedAt: 20 });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "review",
+      attemptId: "attempt-current",
+      timestamp: 30,
+      stage: "intermediate",
+      message: "Current attempt progress",
+    });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "review",
+      attemptId: "attempt-previous",
+      timestamp: 40,
+      stage: "intermediate",
+      message: "Newer row from the previous attempt",
+    });
+    insertProgress(db, {
+      appId: "alpha",
+      taskId: "review",
+      timestamp: 50,
+      stage: "intermediate",
+      message: "Unscoped progress must not appear current",
+    });
+
+    expect(new HumanTaskService(db, registry("alpha")).getTask({ appId: "alpha", taskId: "review" })?.progress).toEqual(
+      {
+        stage: "intermediate",
+        message: "Current attempt progress",
+        updatedAt: 30,
+      },
+    );
   });
 
   test("shows exact Task dependencies instead of internal App request ids", () => {
@@ -572,7 +663,8 @@ describe("Human Task service", () => {
       .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'alpha' AND task_id = 'maintained'")
       .get() as { resource_json: string };
     const resource = JSON.parse(row.resource_json);
-    resource.status.updatedAt = new Date(100).toISOString();
+    resource.status.updatedAt = new Date(300).toISOString();
+    resource.status.observedAttemptId = "attempt-previous";
     resource.status.summary = "The previous proposal is complete.";
     resource.status.response = "Adopt the previous proposal.";
     resource.status.evidence = ["previous proof"];
@@ -654,7 +746,14 @@ describe("Human Task service", () => {
     });
 
     expect(result).toMatchObject({ status: "cancelled", terminal: true, cancellable: false });
-    expect(cancelled).toEqual([{ appId: "alpha", taskId: "work", sessionId: "session-1", reason: "no longer needed" }]);
+    expect(cancelled).toEqual([
+      {
+        appId: "alpha",
+        taskId: "work",
+        attemptId: "attempt-1",
+        reason: "no longer needed",
+      },
+    ]);
     expect(service.listTasks().items).toEqual([]);
     expect(service.listTasks({ includeDone: true }).items).toEqual([
       expect.objectContaining({ taskId: "work", status: "cancelled" }),

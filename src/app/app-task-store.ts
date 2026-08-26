@@ -228,6 +228,9 @@ export type TaskStateConfig = {
   resourceStore?: AppTaskResourceStore;
 };
 
+/** Installed App runtimes always use the canonical resource authority. */
+export type ResourceTaskStateConfig = TaskStateConfig & { resourceStore: AppTaskResourceStore };
+
 type TaskStateReadCache = {
   ino?: number;
   mtimeMs?: number;

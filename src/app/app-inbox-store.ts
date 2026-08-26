@@ -14,31 +14,12 @@ import { displayTaskReferences } from "./task-reference-index.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
-export type AppInboxDeliveryStatus = "pending" | "sending" | "delivered" | "failed" | "uncertain";
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
 
 export type AppInboxTaskDependencyPage = {
   items: AppInboxTaskDependencyKey[];
   nextCursor?: AppInboxTaskDependencyKey;
-};
-
-export type AppInboxDelivery = {
-  itemId: string;
-  operationId: string;
-  kind: "progress" | "final";
-  text?: string;
-  sessionId: string;
-  requestId: string;
-  channel: string;
-  status: AppInboxDeliveryStatus;
-  externalMessageId?: string;
-  failureReason?: string;
-  receiptEventId?: number;
-  createdAt: number;
-  updatedAt: number;
-  attemptedAt?: number;
-  completedAt?: number;
 };
 
 export type AppInboxItem = {
@@ -63,7 +44,6 @@ export type AppInboxItem = {
   sessionId?: string;
   waitingOn?: { kind: AppInboxWaitKind; id: string };
   result?: AppResult;
-  delivery?: AppInboxDelivery;
   availableAt?: number;
   reviewAt?: number;
   lease?: { generation: number; owner: string; expiresAt: number };
@@ -103,11 +83,6 @@ export type AppInboxClaim = {
 };
 
 /** A claim durably associated with the exact agent session that was executing it. */
-export type AppInboxSessionClaim = {
-  claim: AppInboxClaim;
-  sessionId: string;
-};
-
 export type AppInboxQuery = {
   appId?: string;
   status?: AppInboxStatus;
@@ -133,7 +108,6 @@ export type AppInboxHealth = {
   done: number;
   ready: number;
   waitingOnDependency: number;
-  waitingOnDelivery: number;
   activeLeases: number;
   expiredLeases: number;
   oldestPendingAgeMs?: number;
@@ -220,26 +194,6 @@ function rowToItem(row: InboxRow): AppInboxItem {
   };
 }
 
-function rowToDelivery(row: InboxRow): AppInboxDelivery {
-  return {
-    itemId: requiredText(row.item_id, "delivery.item_id"),
-    operationId: requiredText(row.operation_id, "delivery.operation_id"),
-    kind: requiredText(row.kind, "delivery.kind") as AppInboxDelivery["kind"],
-    text: optionalText(row.text),
-    sessionId: requiredText(row.session_id, "delivery.session_id"),
-    requestId: requiredText(row.request_id, "delivery.request_id"),
-    channel: requiredText(row.channel, "delivery.channel"),
-    status: requiredText(row.status, "delivery.status") as AppInboxDeliveryStatus,
-    externalMessageId: optionalText(row.external_message_id),
-    failureReason: optionalText(row.failure_reason),
-    receiptEventId: optionalNumber(row.receipt_event_id),
-    createdAt: Number(row.created_at),
-    updatedAt: Number(row.updated_at),
-    attemptedAt: optionalNumber(row.attempted_at),
-    completedAt: optionalNumber(row.completed_at),
-  };
-}
-
 function validateCreate(input: CreateAppInboxItem): void {
   requiredText(input.appId, "appId");
   requiredText(input.source.id, "source.id");
@@ -273,10 +227,7 @@ function validateCreate(input: CreateAppInboxItem): void {
 
 export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
-  if (!row) return null;
-  const item = rowToItem(row);
-  const delivery = getAppInboxDelivery(db, item.id);
-  return delivery ? { ...item, delivery } : item;
+  return row ? rowToItem(row) : null;
 }
 
 /** Unfinished requests created by one exact parent Task generation. */
@@ -305,25 +256,6 @@ export function listOpenAppInboxItemsByIdempotencyPrefix(
     )
     .all(appId, sourceAppId, prefix, `${prefix}\uffff`, limit)
     .map(rowToItem);
-}
-
-export function getAppInboxDelivery(db: SqliteDb, itemId: string): AppInboxDelivery | null {
-  const row = db
-    .prepare(
-      `SELECT * FROM app_inbox_deliveries
-       WHERE item_id = ? AND kind = 'final'
-       ORDER BY created_at DESC, operation_id DESC
-       LIMIT 1`,
-    )
-    .get(itemId);
-  return row ? rowToDelivery(row) : null;
-}
-
-export function listAppInboxDeliveries(db: SqliteDb, itemId: string): AppInboxDelivery[] {
-  return db
-    .prepare("SELECT * FROM app_inbox_deliveries WHERE item_id = ? ORDER BY created_at, operation_id")
-    .all(requiredText(itemId, "itemId"))
-    .map(rowToDelivery);
 }
 
 export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppInboxItem[] {
@@ -357,11 +289,7 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
        LIMIT ?`,
     )
     .all(...params, limit)
-    .map((row) => {
-      const item = rowToItem(row);
-      const delivery = getAppInboxDelivery(db, item.id);
-      return delivery ? { ...item, delivery } : item;
-    });
+    .map(rowToItem);
 }
 
 /** Open App requests currently awaiting one exact Task. */
@@ -463,8 +391,9 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
       ? (rawMetadata as Record<string, unknown>)
       : undefined;
   const followTask = conversationTaskIdentity(metadata?.followTask);
+  const messageId = typeof data.messageId === "string" && data.messageId.trim() ? data.messageId.trim() : `event:${row.id}`;
   return {
-    id: `event:${row.id}`,
+    id: messageId,
     sequence: row.id,
     author: { kind: kind as AppConversationMessage["author"]["kind"], id: id.trim() },
     text: boundedConversationText(data.text),
@@ -538,15 +467,13 @@ export function listAppConversationMessages(
        LIMIT ?`,
     )
     .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
-  const eventMessages = eventRows.flatMap((row) => {
+  const eventMessagesById = new Map<string, AppConversationMessage>();
+  for (const row of eventRows) {
     const message = conversationEventMessage(row);
-    return message ? [message] : [];
-  });
-  const durablyPublishedRequestIds = new Set(
-    eventMessages.flatMap((message) =>
-      message.author.kind === "agent" && message.metadata?.requestId ? [message.metadata.requestId] : [],
-    ),
-  );
+    // Rows are newest-first. A later explicit revision is the canonical
+    // representation when a stable message identity was published again.
+    if (message && !eventMessagesById.has(message.id)) eventMessagesById.set(message.id, message);
+  }
   const conversationRows = db
     .prepare(
       `SELECT * FROM app_inbox_items
@@ -579,11 +506,6 @@ export function listAppConversationMessages(
         createdAt: item.createdAt,
       });
     }
-    // A request response explicitly appended to the Conversation is the
-    // canonical message. The inbox result remains durable execution state,
-    // but synthesizing it again would give one response two message identities
-    // and every adapter would correctly render both.
-    if (durablyPublishedRequestIds.has(item.id)) continue;
     const resultText = item.continuesRequestId
       ? item.result?.response?.trim()
       : item.result?.response?.trim() || item.result?.summary?.trim();
@@ -593,14 +515,18 @@ export function listAppConversationMessages(
     );
     const resultTaskId =
       item.waitingOn?.kind === "task" ? item.waitingOn.id : (item.targetTaskId ?? inferredCreatedTaskId);
-    const resultIdentity = resultTaskId ? `${resultTaskId}\0${resultText}` : `request:${item.id}`;
+    const resultIdentity = resultTaskId ?? `request:${item.id}`;
     // Several human turns may feed one Task, but its accepted result has one
     // public owner in the Conversation. Rows are newest-first, so the result
     // stays beside the feedback that most recently shaped that Task.
     if (projectedTaskResults.has(resultIdentity)) continue;
     projectedTaskResults.add(resultIdentity);
+    const resultMessageId = `result:${item.id}`;
+    // Explicit and compatibility projections share one semantic identity.
+    // Prefer the explicit Event when both happen to be inside this read.
+    if (eventMessagesById.has(resultMessageId)) continue;
     messages.push({
-      id: `result:${item.id}`,
+      id: resultMessageId,
       sequence,
       author: { kind: "agent", id: appId },
       text: boundedConversationText(resultText),
@@ -643,7 +569,7 @@ export function listAppConversationMessages(
        LIMIT ?`,
     )
     .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
-  messages.push(...eventMessages);
+  messages.push(...eventMessagesById.values());
   for (const row of commandRows) {
     const message = conversationEventMessage(row);
     if (message) messages.push(message);
@@ -1053,53 +979,6 @@ export function listOpenConversationTopicRequests(
     .map(rowToItem);
 }
 
-/**
- * Previous-runtime claims that reached owner-session admission before the
- * process stopped. The generation, owner, and session together are the fence
- * used when converting one of these claims into an explicit session wait.
- */
-export function listAppInboxAssociatedSessionClaims(db: SqliteDb): AppInboxSessionClaim[] {
-  const rows = db
-    .prepare(
-      `SELECT * FROM app_inbox_items
-       WHERE status = 'handling'
-         AND session_id IS NOT NULL
-         AND lease_owner IS NOT NULL
-         AND lease_expires_at IS NOT NULL
-       ORDER BY created_at, id`,
-    )
-    .all();
-
-  return rows.map((row) => {
-    const item = rowToItem(row);
-    if (!item.sessionId || !item.lease) throw new Error(`Invalid associated session claim ${item.id}`);
-    return {
-      claim: { item, generation: item.lease.generation, owner: item.lease.owner },
-      sessionId: item.sessionId,
-    };
-  });
-}
-
-/** Session waits are runtime recovery state, not an App authoring capability. */
-export function listAppInboxSessionWaits(db: SqliteDb): AppInboxItem[] {
-  return listAppInboxDependencyWaits(db, "session");
-}
-
-/** Durable waits that must be re-observed after events may have been missed offline. */
-export function listAppInboxDependencyWaits(db: SqliteDb, kind: AppInboxWaitKind): AppInboxItem[] {
-  return db
-    .prepare(
-      `SELECT * FROM app_inbox_items
-       WHERE status = 'handling'
-         AND lease_owner IS NULL
-         AND waiting_on_kind = ?
-         AND waiting_on_id IS NOT NULL
-       ORDER BY created_at, id`,
-    )
-    .all(kind)
-    .map(rowToItem);
-}
-
 /** One bounded page of distinct canonical Task dependencies awaiting review. */
 export function listAppInboxTaskDependencyKeys(
   db: SqliteDb,
@@ -1138,22 +1017,6 @@ export function listAppInboxTaskDependencyKeys(
   };
 }
 
-/** True when the App inbox is the explicit unfinished owner of this dependency. */
-export function hasAppInboxWait(db: SqliteDb, waitingOn: { kind: AppInboxWaitKind; id: string }): boolean {
-  const id = requiredText(waitingOn.id, "waitingOn.id");
-  const row = db
-    .prepare(
-      `SELECT 1 AS found
-       FROM app_inbox_items
-       WHERE status != 'done'
-         AND waiting_on_kind = ?
-         AND waiting_on_id = ?
-       LIMIT 1`,
-    )
-    .get(waitingOn.kind, id) as { found?: unknown } | undefined;
-  return row?.found === 1;
-}
-
 /** Current lifecycle health derived directly from the inbox authority, never event reconstruction. */
 export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: number } = {}): AppInboxHealth[] {
   const now = query.now ?? Date.now();
@@ -1173,14 +1036,6 @@ export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: 
               SUM(CASE WHEN status = 'handling' AND lease_owner IS NULL
                             AND waiting_on_kind IS NOT NULL AND waiting_on_id IS NOT NULL
                        THEN 1 ELSE 0 END) AS waiting_on_dependency,
-              SUM(CASE WHEN status = 'handling' AND result IS NOT NULL
-                            AND EXISTS (
-                              SELECT 1 FROM app_inbox_deliveries delivery
-                              WHERE delivery.item_id = app_inbox_items.id
-                                AND delivery.kind = 'final'
-                                AND delivery.status != 'delivered'
-                            )
-                       THEN 1 ELSE 0 END) AS waiting_on_delivery,
               SUM(CASE WHEN status = 'handling' AND lease_owner IS NOT NULL
                             AND lease_expires_at > ?
                        THEN 1 ELSE 0 END) AS active_leases,
@@ -1206,7 +1061,6 @@ export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: 
     done: Number(row.done),
     ready: Number(row.ready),
     waitingOnDependency: Number(row.waiting_on_dependency),
-    waitingOnDelivery: Number(row.waiting_on_delivery),
     activeLeases: Number(row.active_leases),
     expiredLeases: Number(row.expired_leases),
     oldestPendingAgeMs: age(row.oldest_pending_at),
@@ -1437,62 +1291,6 @@ export function claimNextAppInboxItem(
   return { item, generation: item.lease!.generation, owner };
 }
 
-/**
- * Fence one represented unfinished human request so the current May owner turn
- * can replace its mechanism without scheduling May a second time.
- */
-export function claimReferencedAppInboxWork(
-  db: SqliteDb,
-  current: AppInboxClaim,
-  requestId: string,
-  leaseMs: number,
-  now = Date.now(),
-): AppInboxClaim | null {
-  const targetId = requiredText(requestId, "continued request id");
-  const conversationId = requiredText(current.item.conversationId, "current conversation id");
-  if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
-  if (targetId === current.item.id) return null;
-  const row = db
-    .prepare(
-      `UPDATE app_inbox_items
-       SET status = 'handling', available_at = NULL, review_at = NULL,
-           conversation_id = COALESCE(conversation_id, ?),
-           session_id = (SELECT active.session_id FROM app_inbox_items active WHERE active.id = ?),
-           started_at = COALESCE(started_at, ?), changed_at = ?,
-           lease_generation = lease_generation + 1,
-           lease_owner = ?, lease_expires_at = ?, updated_at = ?
-       WHERE id = ?
-         AND app_id = ? AND (conversation_id = ? OR conversation_id IS NULL) AND source_kind = 'human'
-         AND continues_request_id IS NULL AND status != 'done'
-         AND (lease_owner IS NULL OR lease_expires_at <= ?)
-         AND EXISTS (
-           SELECT 1 FROM app_inbox_items active
-           WHERE active.id = ? AND active.status = 'handling'
-             AND active.lease_generation = ? AND active.lease_owner = ?
-         )
-       RETURNING *`,
-    )
-    .get(
-      conversationId,
-      current.item.id,
-      now,
-      now,
-      current.owner,
-      now + leaseMs,
-      now,
-      targetId,
-      current.item.appId,
-      conversationId,
-      now,
-      current.item.id,
-      current.generation,
-      current.owner,
-    );
-  if (!row) return null;
-  const item = rowToItem(row);
-  return { item, generation: item.lease!.generation, owner: current.owner };
-}
-
 export function renewAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, leaseMs: number, now = Date.now()): boolean {
   if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
   return (
@@ -1626,34 +1424,6 @@ export function completeAppInboxClaim(
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
       [JSON.stringify(result), now, now, now, claim.item.id, claim.generation, claim.owner],
-    ).changes === 1
-  );
-}
-
-/** Complete a human feedback turn as context linked to existing work. */
-export function completeAppInboxContinuation(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  requestId: string,
-  response: string | undefined,
-  now = Date.now(),
-): boolean {
-  const targetId = requiredText(requestId, "continued request id");
-  const normalizedResponse = response?.trim();
-  const result: AppResult = {
-    summary: `Continued request ${targetId}`,
-    ...(normalizedResponse ? { response: normalizedResponse } : {}),
-  };
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET status = 'done', continues_request_id = ?, result = ?, completed_at = ?, changed_at = ?, updated_at = ?,
-           waiting_on_kind = NULL, waiting_on_id = NULL,
-           review_at = NULL, available_at = NULL,
-           lease_owner = NULL, lease_expires_at = NULL
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?`,
-      [targetId, JSON.stringify(result), now, now, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }

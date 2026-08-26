@@ -47,6 +47,7 @@ describe("Task CLI executor adapter", () => {
       cwd: root,
       prompt: "perform the bounded task",
       timeoutMs: 1_000,
+      signal: new AbortController().signal,
     });
 
     expect(result).toMatchObject({
@@ -92,7 +93,44 @@ describe("Task CLI executor adapter", () => {
         cwd: root,
         prompt: "perform the bounded task",
         timeoutMs: 1_000,
+        signal: new AbortController().signal,
       }),
     ).resolves.toMatchObject({ status: "failed", summary: expect.stringContaining("invalid Task result") });
+  });
+
+  it("forwards attempt cancellation to the asynchronous CLI worker", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-cli-cancel-"));
+    const bus = new EventBus();
+    const controller = new AbortController();
+    const cancelled: Record<string, unknown>[] = [];
+    bus.subscribeDurableRoute((event) => {
+      const data = eventData(event) as Record<string, unknown>;
+      if (event.type === "cli.task.requested") {
+        queueMicrotask(() => controller.abort(new Error("no longer needed")));
+        return { accepted: true, by: "test-cli" };
+      }
+      if (event.type === "cli.task.cancelled") {
+        cancelled.push(data);
+        return { accepted: true, by: "test-cli" };
+      }
+    });
+
+    await expect(
+      executeTaskWithCli({
+        bus,
+        persistDir: root,
+        appId: "sample",
+        taskId: "task-1",
+        generation: 2,
+        attemptId: "attempt-cancel",
+        owner: "may",
+        tool: "codex",
+        cwd: root,
+        prompt: "perform the bounded task",
+        timeoutMs: 1_000,
+        signal: controller.signal,
+      }),
+    ).resolves.toMatchObject({ status: "failed", summary: "no longer needed" });
+    expect(cancelled).toEqual([expect.objectContaining({ reason: "no longer needed" })]);
   });
 });

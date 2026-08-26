@@ -78,6 +78,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       const appId = requiredTarget(input, "appId");
       if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
       requiredText(input.data.conversationId, "conversation.message.created data.conversationId");
+      optionalTextField(input.data, "messageId", "conversation.message.created data.messageId");
       requiredText(input.data.text, "conversation.message.created data.text");
       const author = record(input.data.author, "conversation.message.created data.author");
       const kind = requiredText(author.kind, "conversation.message.created data.author.kind");
@@ -566,17 +567,6 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
     }
   }
 
-  const deliveries = db
-    .prepare("SELECT operation_id, status FROM app_inbox_deliveries WHERE receipt_event_id = ? ORDER BY operation_id")
-    .all(eventId) as Array<{ operation_id?: unknown; status?: unknown }>;
-  for (const delivery of deliveries) {
-    if (typeof delivery.operation_id !== "string") continue;
-    addLink({
-      kind: "delivery",
-      id: delivery.operation_id,
-      ...(typeof delivery.status === "string" ? { state: delivery.status } : {}),
-    });
-  }
   return links;
 }
 

@@ -49,6 +49,35 @@ describe("App read projections", () => {
     await expect(read.appResult("missing")).resolves.toBeNull();
   });
 
+  it("uses the loaded Task reader without consulting a JSON execution path", async () => {
+    const taskRead = {
+      list: async () => ({
+        items: [{ id: "current", status: "pending" as const, generation: 1, outcome: "Use resource authority" }],
+      }),
+      outcomes: async () => ({
+        projection: "outcomes" as const,
+        manifestVersion: null,
+        sourceCount: 0,
+        outcomeCount: 0,
+        outcomes: [],
+      }),
+      get: async (taskId: string) =>
+        taskId === "current"
+          ? ({ id: taskId, status: "pending" as const, generation: 1, outcome: "Use resource authority" } as any)
+          : null,
+    };
+    const read = createRuntimeAppRead({
+      getDb: () => db,
+      metrics: { get: () => null } as any,
+      taskRead,
+      executionPaths: { appDir: join(root, "missing-app"), projectDir: root },
+    });
+
+    expect(read.tasks).toBe(taskRead);
+    await expect(read.tasks.get("current")).resolves.toMatchObject({ outcome: "Use resource authority" });
+    await expect(read.tasks.list()).resolves.toMatchObject({ items: [{ id: "current" }] });
+  });
+
   it("lists and gets only the current App's Tasks through one bounded collection", async () => {
     mkdirSync(join(root, "tasks"), { recursive: true });
     writeFileSync(

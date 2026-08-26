@@ -220,6 +220,8 @@ export type SystemEvent =
       data: {
         appId: string;
         conversationId: string;
+        /** Stable identity of this Conversation message, independent of its journal row. */
+        messageId?: string;
         author: { kind: "human" | "agent" | "tool" | "command"; id: string };
         text: string;
         /** Kept in the event journal for transport/observation, but excluded from conversation context. */
@@ -557,6 +559,15 @@ export type SystemEvent =
       };
     }
   | {
+      type: "cli.task.cancelled";
+      source: string;
+      owner: string;
+      data: {
+        taskId: string;
+        reason: string;
+      };
+    }
+  | {
       type: "cli.task.started";
       source: "cli-task-runner";
       owner: string;
@@ -575,6 +586,18 @@ export type SystemEvent =
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
         reuseSession?: boolean;
+      };
+    }
+  | {
+      type: "app.task.cancelled";
+      source: "human-task-service";
+      owner: "human:operator";
+      target: { appId: string; taskId: string };
+      data: {
+        appId: string;
+        taskId: string;
+        attemptId?: string;
+        reason: string;
       };
     }
   | {

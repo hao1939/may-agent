@@ -48,6 +48,8 @@ export type AppTaskResource = {
     /** Trusted Host origin used only for capacity scheduling. */
     lane?: "human" | "normal";
     currentAttemptId?: string;
+    /** Exact attempt that produced the accepted summary/result observation. */
+    observedAttemptId?: string;
     summary?: string;
     response?: string;
     result?: Record<string, unknown>;

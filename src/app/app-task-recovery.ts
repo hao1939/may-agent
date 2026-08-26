@@ -1,24 +1,14 @@
 import type { AppTaskLane } from "./app-task-queue.js";
-import type {
-  IndexedTaskCandidatePage,
-  IndexedTaskRecoveryCursor,
-} from "./app-task-resource-store.js";
+import type { IndexedTaskCandidatePage, IndexedTaskRecoveryCursor } from "./app-task-resource-store.js";
 
 export type IndexedTaskRecoverySource = {
-  listRecoveryCandidates(
-    now?: number,
-    limit?: number,
-    after?: IndexedTaskRecoveryCursor,
-  ): IndexedTaskCandidatePage;
+  listRecoveryCandidates(now?: number, limit?: number, after?: IndexedTaskRecoveryCursor): IndexedTaskCandidatePage;
   nextDueAt(): number | null;
 };
 
 export type AppTaskRecoverySchedulerOptions = {
   source: IndexedTaskRecoverySource;
-  enqueue(
-    taskId: string,
-    options: { lane: AppTaskLane; front: boolean; priority: "P0" | "P1" | "P2" | "P3" },
-  ): void;
+  enqueue(taskId: string, options: { lane: AppTaskLane }): void;
   safetyIntervalMs?: number;
   pageSize?: number;
   now?: () => number;
@@ -77,8 +67,6 @@ export class AppTaskRecoveryScheduler {
     for (const candidate of page.items) {
       this.options.enqueue(candidate.taskId, {
         lane: candidate.lane,
-        front: candidate.changed || candidate.ready,
-        priority: candidate.priority,
       });
     }
     return page.items.length;
@@ -97,13 +85,16 @@ export class AppTaskRecoveryScheduler {
     if (!force && this.dueTimer && this.dueAt === next) return;
     if (this.dueTimer) clearTimeout(this.dueTimer);
     this.dueAt = next;
-    this.dueTimer = setTimeout(() => {
-      this.dueTimer = undefined;
-      this.dueAt = undefined;
-      this.recover();
-      // Re-arming waits for the task transition or the safety query. A still-
-      // due row must not create a zero-delay timer loop.
-    }, Math.max(1, next - this.now()));
+    this.dueTimer = setTimeout(
+      () => {
+        this.dueTimer = undefined;
+        this.dueAt = undefined;
+        this.recover();
+        // Re-arming waits for the task transition or the safety query. A still-
+        // due row must not create a zero-delay timer loop.
+      },
+      Math.max(1, next - this.now()),
+    );
     this.dueTimer.unref?.();
   }
 }

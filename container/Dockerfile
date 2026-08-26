@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     gnupg2 \
     jq \
+    nginx-light \
     openssh-client \
     procps \
     socat \
@@ -185,7 +186,10 @@ COPY packages/webui/static/ /app/projects/platform/ui/
 
 # Copy supervisord config
 COPY container/supervisord.conf /etc/supervisord.conf
-RUN mkdir -p /app/.state/runtime-logs && chown -R mayagent:mayagent /app/.state/runtime-logs
+COPY container/may-agent-nginx.conf /etc/may-agent-nginx.conf
+RUN nginx -t -c /etc/may-agent-nginx.conf && \
+    mkdir -p /app/.state/runtime-logs && \
+    chown -R mayagent:mayagent /app/.state/runtime-logs
 
 # Copy entrypoints and helpers
 COPY container/entrypoint.sh container/start-chrome.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/setup-herdr-integrations.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
@@ -217,8 +221,5 @@ EXPOSE 6080
 
 # Web UI dashboard
 EXPOSE 8080
-
-# ttyd + Herdr terminal
-EXPOSE 7681
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

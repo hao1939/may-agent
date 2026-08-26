@@ -3,6 +3,8 @@ import type {
   TaskDetail,
   TaskIntent,
   TaskListOptions,
+  TaskOutcomePage,
+  TaskOutcomeProjection,
   TaskPage,
   TaskView,
 } from "@may-agent/sdk";
@@ -15,6 +17,7 @@ import {
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
   getLoadedAppTaskView,
+  listLoadedAppTaskOutcomeViews,
   listLoadedAppTaskViews,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
@@ -48,6 +51,7 @@ export type AppTaskCapability = {
     dependency: { kind: "task"; id: string };
   }): Promise<AppDependencyObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
+  outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string }): TaskDetail | null;
   retry(input: {
     appId: string;
@@ -106,6 +110,12 @@ export function createAppTaskCapability(options: {
         bus: options.bus,
         appId,
         ...(taskOptions ? { options: taskOptions } : {}),
+      }),
+    outcomes: ({ appId, projection }) =>
+      listLoadedAppTaskOutcomeViews({
+        bus: options.bus,
+        appId,
+        ...(projection ? { projection } : {}),
       }),
     get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
     retry: ({ appId, taskId, expectedGeneration }) =>

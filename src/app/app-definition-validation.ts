@@ -153,6 +153,31 @@ export function validateAppDefinition(definition: unknown): string[] {
     }
   }
 
+  if (app.metrics !== undefined) {
+    if (!Array.isArray(app.metrics)) errors.push(`App ${appId} metrics must be an array`);
+    else {
+      duplicateIds(app.metrics, `App ${appId} metric`, errors);
+      for (const value of app.metrics) {
+        const metric = record(value);
+        if (!metric) continue;
+        const hasQuery = metric.sourceQuery !== undefined;
+        const hasCommand = metric.sourceCommand !== undefined;
+        if (hasQuery && !nonEmpty(metric.sourceQuery)) {
+          errors.push(`App ${appId} metric ${String(metric.id)} sourceQuery must be non-empty`);
+        }
+        if (hasCommand && !nonEmpty(metric.sourceCommand)) {
+          errors.push(`App ${appId} metric ${String(metric.id)} sourceCommand must be non-empty`);
+        }
+        if (hasQuery && hasCommand) {
+          errors.push(`App ${appId} metric ${String(metric.id)} cannot declare both sourceQuery and sourceCommand`);
+        }
+        if (metric.measureInterval !== undefined && !positiveFinite(metric.measureInterval)) {
+          errors.push(`App ${appId} metric ${String(metric.id)} measureInterval must be positive`);
+        }
+      }
+    }
+  }
+
   if (app.actions !== undefined) {
     const actions = record(app.actions);
     if (!actions) errors.push(`App ${appId} actions must be an object`);

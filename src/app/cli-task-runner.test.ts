@@ -979,6 +979,73 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("terminates the active CLI process tree when its attempt is cancelled", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-cancel-"));
+    const persistDir = join(root, ".state");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    const signals: NodeJS.Signals[] = [];
+    bus.subscribe((event) => events.push(event));
+    const cancellableSpawn = (() => {
+      const child = new EventEmitter() as EventEmitter & {
+        stdout: PassThrough;
+        stderr: PassThrough;
+        pid: number;
+        kill: (signal: NodeJS.Signals) => boolean;
+      };
+      child.stdout = new PassThrough();
+      child.stderr = new PassThrough();
+      child.pid = 987_655;
+      child.kill = (signal) => {
+        signals.push(signal);
+        child.stdout.end();
+        child.stderr.end();
+        queueMicrotask(() => child.emit("close", null, signal));
+        return true;
+      };
+      return child;
+    }) as any;
+    attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: cancellableSpawn });
+    const taskDir = join(persistDir, "cli-tasks", "cancel-me");
+    mkdirSync(taskDir, { recursive: true });
+    const promptPath = join(taskDir, "prompt.md");
+    writeFileSync(promptPath, "keep working");
+
+    try {
+      bus.emit({
+        type: "cli.task.requested",
+        source: "test",
+        owner: "agent:may",
+        data: {
+          taskId: "cancel-me",
+          tool: "codex",
+          mode: "patch",
+          cwd: root,
+          promptPath,
+          resultPath: join(taskDir, "result.md"),
+          structuredResultPath: join(taskDir, "result.json"),
+          eventsPath: join(taskDir, "events.jsonl"),
+          timeoutMs: 10_000,
+          sourceOwner: "agent:may",
+        },
+      } as AgentEvent);
+      await waitFor(() => events.some((event) => event.type === "cli.task.started"));
+      bus.emit({
+        type: "cli.task.cancelled",
+        source: "test",
+        owner: "agent:may",
+        data: { taskId: "cancel-me", reason: "Task was cancelled" },
+      } as AgentEvent);
+      await waitFor(() => events.some((event) => event.type === "cli.task.failed"));
+
+      expect(signals).toContain("SIGTERM");
+      const failed = events.find((event) => event.type === "cli.task.failed") as any;
+      expect(failed.data.error).toBe("Task was cancelled");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("rejects protocol-only Codex output even when the process exits zero", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-incomplete-protocol-"));
     const persistDir = join(root, ".state");
