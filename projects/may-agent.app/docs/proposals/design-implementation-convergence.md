@@ -131,8 +131,11 @@ waits, active attempts, prior workspaces, executor event fences, and persisted
 terminal-result recovery all read their exact resource rows or bounded resource
 contexts. Focused Runtime fixtures activate resource authority before invoking
 those paths. The verifier's pending-wake read and the reconciler's exact trigger
-inspection and recording are resource-only too; desired-state observation
-remains explicit fixture compatibility for a later bounded batch.
+inspection and recording are resource-only too. Desired-state observation now
+requires resource authority, reads only the exact Task, parent, dependency,
+admission, and Condition routes involved, and commits through their resource
+fences. Its Runtime and Codex fixtures now begin under resource authority
+instead of mutating a whole JSON Task tree.
 Rejected stale reconciliation results are released from the exact resource
 context through their claim fences; that production path no longer reads or
 prunes JSON attempt state.
