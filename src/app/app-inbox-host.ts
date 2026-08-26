@@ -1027,6 +1027,16 @@ export class AppInboxHost {
     return claim.item.conversationId;
   }
 
+  #publishRequestMessage(item: AppInboxItem, text: string | undefined, topicId: string | undefined): void {
+    if (!text || !topicId || !this.#onRequestMessage) return;
+    try {
+      this.#onRequestMessage(item, text, topicId);
+    } catch {
+      // The accepted request result remains authoritative. Publication is
+      // idempotent, so recovery can project it without repeating the work.
+    }
+  }
+
   async #resolveDirectRequest(
     app: RegisteredApp,
     claim: AppInboxClaim,
@@ -1149,6 +1159,7 @@ export class AppInboxHost {
         await this.#controlTask({ requestId: request.id, control });
       }
     }
+    this.#publishRequestMessage(claim.item, decision.response, topicId);
     if (followUp) {
       if (!this.#onRequestFollowUp) throw new Error("App follow-up event publication is not configured");
       this.#onRequestFollowUp(claim.item, followUp, topicId!);
@@ -1164,15 +1175,6 @@ export class AppInboxHost {
         response: decision.response,
         evidence: decision.evidence,
       });
-    }
-
-    if (decision.response && topicId && this.#onRequestMessage) {
-      try {
-        this.#onRequestMessage(claim.item, decision.response, topicId);
-      } catch {
-        // Durable work remains authoritative. The idempotent Conversation
-        // message can be recovered independently without duplicating work.
-      }
     }
 
     for (const dependency of dependencies) {
