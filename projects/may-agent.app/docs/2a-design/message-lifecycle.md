@@ -102,6 +102,20 @@ Publishing the follow-up event completes the frontend turn. The human request
 does not remain open waiting for child work, and it does not become a generic
 Conversation Task.
 
+Speech and action remain visibly distinct. May's message explains what it
+understood, recommends, or intends. Once Runtime has durably admitted the
+follow-up to an exact Task, it appends one structured tool-authored activity to
+Conversation with that Task identity. The activity is evidence of what the
+system actually accepted; it is not another May reply. An adapter may use the
+identity to begin a local watch immediately.
+
+Only human-relevant semantic activity is presented by default: Task admission,
+meaningful progress, a real wait or human decision, recovery that changes the
+Task, and completion. Heartbeats, database writes, queue movement, duplicate
+wakes, transport receipts, and executor lifecycle chatter remain diagnostic.
+The current Task resource is always authoritative; activity is a presentation
+and correlation aid, not another work state.
+
 ### Natural conversation rules
 
 | Human situation | May's decision |

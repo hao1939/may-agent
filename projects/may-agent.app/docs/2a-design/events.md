@@ -244,6 +244,14 @@ Task event/result -> standing May Task -> Conversation update
                                       -> adapters render independently
 ```
 
+After the follow-up event is durably admitted, Runtime records one structured
+tool-authored Conversation activity containing the admitted Task identity. It
+is the human-visible admission receipt and lets an adapter watch canonical Task
+state immediately. It does not claim completion, replace Task state, or turn
+low-level Runtime events into Conversation messages. Meaningful progress is
+read from the Task after identity-only wakes; routine execution events remain
+outside ordinary conversation.
+
 An App Task waits on exact child work or Conditions. A May frontend request
 does not wait on destination work. May's conversation Task preserves that
 obligation, and a persisted May response enters Conversation independently of

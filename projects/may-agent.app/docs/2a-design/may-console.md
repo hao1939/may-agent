@@ -125,6 +125,15 @@ executor lifecycle stages, queue movement, and delivery bookkeeping. A passive
 executor progress event wakes the human surface only when it carries a useful
 human-readable message.
 
+When a conversational follow-up is durably admitted, Runtime adds one
+tool-authored Task activity to the shared Conversation. Console renders it as
+`[task]`, shows the exact Task reference, and automatically watches that Task.
+This is separate from `may>` speech: May explains the decision; `[task]` proves
+what was accepted. A downstream assignment may move the local watch from May's
+conversation Task to the responsible App Task. Watch refreshes stay transient
+and are coalesced by canonical Task revision, so internal event volume does not
+become terminal noise.
+
 `/tasks` uses plain, compact rows: Task reference, App, state, last-change age,
 concrete goal, and whether the human must act. `/task <ref>` puts the useful
 answers first: `Goal`, `State`, `Current`, `Expected result`, and `You`. When no

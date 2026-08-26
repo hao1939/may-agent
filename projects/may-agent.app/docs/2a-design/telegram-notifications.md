@@ -46,6 +46,12 @@ layout. It marks Telegram-origin messages as already rendered, so the adapter
 does not echo its own input or May reply. A mirrored Console message remains the
 same Conversation message; Telegram does not append a copy.
 
+A Runtime-authored Task admission activity is rendered as `Task activity`, not
+as May's speech. It includes the exact Task reference and proves that durable
+work was accepted. Telegram may keep its native watch interaction rather than
+copy Console's prompt behavior; subsequent watch updates still re-read the same
+canonical Task and suppress low-level event noise.
+
 It does not:
 
 - choose a project App, task, workflow, or owner;

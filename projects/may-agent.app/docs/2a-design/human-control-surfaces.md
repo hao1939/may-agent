@@ -114,6 +114,20 @@ Ordinary text publishes one durable `conversation.message.created` event for
 re-read the append-only Conversation, and render stable message IDs they have
 not shown on that surface.
 
+Conversation shows both sides of a durable promise without confusing them:
+
+- an agent-authored message says what May understood or decided; and
+- a tool-authored Task activity says what Runtime actually admitted, with an
+  exact `taskRefs`/`followTask` identity.
+
+The admission activity causes Console to follow the Task immediately. Later
+Task wakes make the adapter re-read canonical Task state; they do not append a
+message for every internal event. Adapters render meaningful states in their
+native style: queued, working with the latest useful progress, waiting with an
+exact blocker and resume condition, needs-human-action, or done with the
+result. A claim that work is active must come from Task/execution state, never
+from May's prose alone.
+
 An explicitly requested App or Task view is appended as a command-authored
 Conversation message only after it is shown successfully. Its bounded metadata
 contains ordered canonical `taskRefs`, so the next May turn receives the view
