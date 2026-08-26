@@ -25,6 +25,7 @@ import {
   finishCanonicalAgentResidueGuard,
   hasDeployReceiptWake,
   installAppTaskRuntimes,
+  mergeTaskConditions,
   normalizeTaskHandlerResult,
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
@@ -2841,6 +2842,122 @@ describe("canonical App task runtime", () => {
     ).toMatchObject({ id: "work/event", status: "pending" });
   });
 
+  it("discards a post-claim superseded attempt without a handler failure or retry loop", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const failures: AgentEvent[] = [];
+    const staleDispositions: AgentEvent[] = [];
+    let superseded = false;
+    let executorCalls = 0;
+
+    bus.subscribe((event) => {
+      if (event.type === "handler.failed") failures.push(event);
+      if (event.type === "project.task.reconciled" && event.data.disposition === "stale") {
+        staleDispositions.push(event);
+      }
+      if (
+        !superseded &&
+        event.type === "project.task.reconcile.started" &&
+        event.data.taskId === "work/post-claim-superseded"
+      ) {
+        superseded = true;
+        attachLoadedAppTask({
+          bus,
+          appDir: f.appDir,
+          appId: "sample",
+          attachment: {
+            kind: "desired",
+            intent: {
+              id: "work/post-claim-superseded",
+              parentId: "operations",
+              outcome: "Run only the replacement generation",
+              acceptance: ["The replacement executor returns once"],
+              mode: "achieve",
+              agent: "sample-owner",
+              executor: "race-proof",
+            },
+          },
+          idempotencyKey: "attach:post-claim-superseded:replacement",
+          request: {
+            id: "request-post-claim-superseded-replacement",
+            source: { kind: "human", id: "operator" },
+            input: { kind: "test", data: {} },
+          },
+        });
+      }
+    });
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        "race-proof": async () => {
+          executorCalls += 1;
+          return {
+            state: "converged",
+            summary: "The replacement generation completed",
+            evidence: ["test:post-claim-superseded"],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:post-claim-superseded",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/post-claim-superseded",
+          parentId: "operations",
+          outcome: "Run the original generation",
+          acceptance: ["The original executor returns"],
+          mode: "achieve",
+          agent: "sample-owner",
+          executor: "race-proof",
+        },
+      },
+      idempotencyKey: "attach:post-claim-superseded:original",
+      request: {
+        id: "request-post-claim-superseded-original",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "test", data: {} },
+      },
+    });
+
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const deadline = Date.now() + 2_000;
+    while (!readTaskState(config).receipts?.["work/post-claim-superseded"] && Date.now() < deadline) {
+      await Bun.sleep(5);
+    }
+
+    expect(superseded).toBeTrue();
+    expect(executorCalls).toBe(1);
+    expect(failures).toEqual([]);
+    expect(staleDispositions).toHaveLength(1);
+    expect(staleDispositions[0]?.data).toMatchObject({
+      taskId: "work/post-claim-superseded",
+      generation: 1,
+      disposition: "stale",
+      staleRecovery: "superseded",
+    });
+    expect(readTaskState(config).receipts?.["work/post-claim-superseded"]).toMatchObject({
+      metadata: { generation: 2 },
+      summary: "The replacement generation completed",
+    });
+  });
+
   it("atomically consumes live input incorporated by a registered executor", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -3803,5 +3920,36 @@ describe("canonical App task runtime", () => {
       resources: { [intent.id]: { status: { phase: "running" } } },
       attempts: { [claim.attemptId]: { state: "running", sessionId: "session-invalid-terminal" } },
     });
+  });
+});
+
+describe("Task Condition reconciliation authority", () => {
+  const canonical = {
+    id: "app-request:appdep_exact",
+    type: "app.dependency.completed",
+    subject: "id:appdep_exact",
+    expected: { field: "status", equals: "done" },
+  };
+
+  it("keeps one canonical App-dependency Condition across compatible model and dependency echoes", () => {
+    const modelEcho = { ...canonical, reviewAfterMs: 60_000 };
+    const dependencyEcho = structuredClone(canonical);
+    expect(
+      mergeTaskConditions([canonical, modelEcho, dependencyEcho], new Set([canonical.id])),
+    ).toEqual([canonical]);
+  });
+
+  it("rejects retargeting an authoritative App-dependency Condition", () => {
+    const retargeted = { ...canonical, subject: "id:different" };
+    expect(() => mergeTaskConditions([canonical, retargeted], new Set([canonical.id]))).toThrow(
+      "Task result conflicts with existing Condition app-request:appdep_exact",
+    );
+  });
+
+  it("rejects incompatible expected facts for an authoritative App-dependency Condition", () => {
+    const incompatible = { ...canonical, expected: { field: "status", equals: "attention" } };
+    expect(() => mergeTaskConditions([canonical, incompatible], new Set([canonical.id]))).toThrow(
+      "Task result conflicts with existing Condition app-request:appdep_exact",
+    );
   });
 });
