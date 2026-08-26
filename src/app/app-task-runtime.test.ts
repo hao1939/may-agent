@@ -810,6 +810,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       maxConcurrent: 1,
     });
+    const resourceStore = activateTaskResources(config, join(f.root, "state"));
     observeAppTaskIntent(config, {
       intent: {
         id: "work/stale-dependency",
@@ -831,7 +832,6 @@ describe("canonical App task runtime", () => {
       eventId: 42,
       data: { kind: "app", id: "earlier-review" },
     });
-    const resourceStore = activateTaskResources(config, join(f.root, "state"));
 
     const emitted: AgentEvent[] = [];
     bus.subscribe((event) => emitted.push(event));
