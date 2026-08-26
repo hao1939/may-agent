@@ -383,33 +383,6 @@ export function applyAppTaskConditionEvent(tree: TaskTree, event: Record<string,
   return [...wakes.values()];
 }
 
-/** Correlate semantic observations with durable Conditions in one state transaction. */
-export function trackAppTaskConditionEvents(
-  config: ResourceTaskStateConfig,
-  events: Iterable<Record<string, unknown>>,
-): AppTaskConditionWake[] {
-  return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readSnapshot();
-    const wakes = new Map<string, AppTaskConditionWake>();
-    const changedConditionIds = new Set<string>();
-    let changed = false;
-    for (const event of events) {
-      changed = applyConditionEvent(tree, event, wakes, undefined, changedConditionIds) || changed;
-    }
-
-    if (changed) saveConditionMutation(config, tree, wakes, changedConditionIds);
-    return [...wakes.values()];
-  });
-}
-
-/** Correlate one semantic observation with durable Conditions; never observes the domain source itself. */
-export function trackAppTaskConditionEvent(
-  config: ResourceTaskStateConfig,
-  event: Record<string, unknown>,
-): AppTaskConditionWake[] {
-  return trackAppTaskConditionEvents(config, [event]);
-}
-
 /** Read-only canonical-state preflight used before the App router chooses a route. */
 export function matchingAppTaskConditionTaskIds(
   config: ResourceTaskStateConfig,
