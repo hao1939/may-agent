@@ -1482,12 +1482,14 @@ export function repairUnadmittedAppDependencyWaits(
 }
 
 export function repairRunningAppTasksWithoutAttempt(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   candidateTaskIds?: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
     const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
+    const tree = candidates
+      ? config.resourceStore.readTaskContext({ taskIds: candidates })
+      : config.resourceStore.readSnapshot();
     const repairs: AppTaskRecoveryRepair[] = [];
     const mutationScope = emptyResourceMutationScope();
     const now = new Date().toISOString();
@@ -1526,7 +1528,6 @@ export function repairRunningAppTasksWithoutAttempt(
     }
     if (repairs.length > 0) {
       refreshActiveTaskProjection(tree);
-      if (!config.resourceStore) pruneTaskAttempts(tree);
       saveTaskState(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });

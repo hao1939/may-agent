@@ -2983,7 +2983,8 @@ describe("App task reconciler state", () => {
   });
 
   it("requeues running tasks whose current attempt record is missing", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -2994,16 +2995,17 @@ describe("App task reconciler state", () => {
     const orphaned = readTaskState(config);
     delete orphaned.attempts![claim.attemptId];
     saveTaskState(config, orphaned);
+    const resourceConfig = resourceFixture(state, "running-without-attempt").config;
 
-    expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
-    expect(repairRunningAppTasksWithoutAttempt(config)).toEqual([
+    expect(listRunnableAppTaskIds(resourceConfig)).toContain(claim.taskId);
+    expect(repairRunningAppTasksWithoutAttempt(resourceConfig, [claim.taskId])).toEqual([
       expect.objectContaining({
         taskId: claim.taskId,
         disposition: "requeued",
       }),
     ]);
 
-    const released = readTaskState(config);
+    const released = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(released.resources?.[claim.taskId]).toMatchObject({
       status: {
         phase: "pending",
@@ -3011,7 +3013,7 @@ describe("App task reconciler state", () => {
     });
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
-    expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
+    expect(listRunnableAppTaskIds(resourceConfig)).toContain(claim.taskId);
   });
 
   it("requeues an orphaned App dependency wait and leaves admitted waits alone", () => {
