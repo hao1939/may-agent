@@ -282,7 +282,6 @@ export async function runAppRuntime(opts: {
             outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
             get: async (taskId) => appTasks.get({ appId, taskId }),
           },
-          executionPaths: { appDir, projectDir },
         }),
         workspace: { appRoot: appDir, projectRoot: projectDir },
         log: {
