@@ -228,17 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "eval.llm-evals-24h",
-    name: "LLM-evaluated sessions (24h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 4,
-    threshold: 1,
-    unit: "count",
-    alert_op: "<",
-    priority: "P2",
-  },
-  {
     id: "evaluator.low-quality-rate-24h",
     name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",
     owner: "evaluator",
@@ -1456,25 +1445,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      record(
-        "eval.llm-evals-24h",
-        count(
-          `SELECT COUNT(*) as c
-           FROM evaluations
-           WHERE evaluatedByHeuristic = 0
-             AND createdAt > ?
-             AND agent NOT IN ('evaluator', 'judge')`,
-          twentyFourH,
-        ),
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring eval.llm-evals-24h: ${e}`,
       );
     }
 

@@ -59,11 +59,12 @@ Host catalog entry, and duplicate Host source executor are removed. Runtime is
 the only executor for persisted `sourceQuery` and `sourceCommand` definitions;
 Host Operations measures and evaluates only its built-ins.
 
-Evaluation now also owns the LLM-evaluation lag definition and its exact
-read-only query. Runtime samples it through that same source consumer and
-existing snapshot event; the central Host definition and measurement block are
-removed. Continue moving the remaining Evaluation metrics one exact meaning at
-a time rather than introducing a second catalog or a bulk compatibility layer.
+Evaluation now also owns the LLM-evaluation lag and trailing 24-hour activity
+definitions with their exact read-only queries. Runtime samples both through
+that same source consumer and existing snapshot event; their central Host
+definitions and measurement blocks are removed. Continue moving the remaining
+Evaluation metrics one exact meaning at a time rather than introducing a second
+catalog or a bulk compatibility layer.
 
 Runtime also honors each source definition's `measureInterval` as a minimum
 normal cadence. This removes the prior behavior where a six-hour Scout command
@@ -153,6 +154,7 @@ archive. It is not a second design authority.
 | First Scout metric-ownership slice                                                                                        | Host Operations no longer reactivates `scout.accepted-source-outputs-24h`, retires the invalid `scout.knowledge-practice-loaded` proxy, and leaves `scout.knowledge-preamble-coverage` plus the accepted-output replacement to Scout's existing six-hour library-health workflow                          |
 | Evaluation aftermath-coverage metric                                                                                     | Evaluation declares one evidence-bearing source query; Runtime measures it on the shared Cron event. Per-snapshot Tasks, agent aggregation, the Host catalog entry, and Host's duplicate generic source executor are removed                                                                                 |
 | Evaluation LLM-coverage-lag metric                                                                                        | Evaluation declares the exact non-heuristic-evaluation lag query; Runtime measures it on the shared Cron event, and the Host catalog plus handwritten measurement block no longer own that domain meaning                                                                                                  |
+| Evaluation 24-hour LLM activity metric                                                                                     | Evaluation declares the exact recent non-heuristic evaluation-count query; Runtime measures it on the shared Cron event, and the Host catalog plus handwritten measurement block no longer own that domain meaning                                                                                         |
 | Scout App test boundary                                                                                                   | The App check runs Scout-owned tests only. Cached third-party source repositories under the agent workspace remain inspectable evidence but are not treated as part of Scout App verification                                                                                                             |
 | Whole-system document scope                                                                                                | `system-model.md` retains the public nouns, May/App/agent boundary, one flow, record map, and governing rules; detailed persistence, dependency, recovery, presentation, and code contracts link to their owning subsystem documents instead of being restated                                            |
 | Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic, conversation-Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |

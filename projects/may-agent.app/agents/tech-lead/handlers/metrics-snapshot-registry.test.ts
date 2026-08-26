@@ -81,7 +81,7 @@ describe("metrics-snapshot registry and queries", () => {
     );
   });
 
-  it("leaves LLM evaluation lag definition and measurement to Evaluation", () => {
+  it("leaves LLM evaluation activity definitions and measurement to Evaluation", () => {
     const source = metricsSnapshotSource();
     const activeRegistry = source.slice(
       source.indexOf("const ALL_METRICS"),
@@ -89,9 +89,11 @@ describe("metrics-snapshot registry and queries", () => {
     );
 
     expect(activeRegistry).not.toContain('id: "eval.llm-coverage-lag-h"');
+    expect(activeRegistry).not.toContain('id: "eval.llm-evals-24h"');
     expect(source).not.toContain(
       'record("eval.llm-coverage-lag-h"',
     );
+    expect(source).not.toContain('record(\n        "eval.llm-evals-24h"');
   });
 
   it("keeps the stale trace-completeness metric retired", () => {

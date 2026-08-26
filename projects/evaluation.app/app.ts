@@ -25,6 +25,12 @@ export const LLM_COVERAGE_LAG_SOURCE_QUERY = `SELECT COALESCE(
 ) AS value
 FROM evaluations
 WHERE evaluatedByHeuristic = 0`;
+export const LLM_EVALUATIONS_24H_METRIC_ID = "eval.llm-evals-24h";
+export const LLM_EVALUATIONS_24H_SOURCE_QUERY = `SELECT COUNT(*) AS value
+FROM evaluations
+WHERE evaluatedByHeuristic = 0
+  AND createdAt > (strftime('%s','now') * 1000 - 86400000)
+  AND agent NOT IN ('evaluator', 'judge')`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -621,6 +627,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: LLM_EVALUATIONS_24H_METRIC_ID,
+    name: "LLM-evaluated sessions (24h)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 4,
+    threshold: 1,
+    unit: "count",
+    priority: "P2" as const,
+    status: "active",
+    source: "non-heuristic evaluations",
+    sourceQuery: LLM_EVALUATIONS_24H_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: "<" as const,
+    speed: "fast",
+    description:
+      "Count of durable non-heuristic evaluations for non-evaluator sessions in the trailing 24 hours.",
+  },
   {
     id: LLM_COVERAGE_LAG_METRIC_ID,
     name: "LLM evaluation lag (hours since last non-heuristic eval)",
