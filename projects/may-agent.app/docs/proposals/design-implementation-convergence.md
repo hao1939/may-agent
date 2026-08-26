@@ -123,7 +123,9 @@ the installed resource config, and its bounded Task/receipt read no longer
 accepts offline JSON state. An unused whole-App intent scan was removed instead
 of preserving another compatibility surface. The bounded App-wide live Task
 snapshot now likewise queries the resource index and reads only the selected
-Task contexts; its focused fixture exercises that authority directly.
+Task contexts; its focused fixture exercises that authority directly. Executor
+child context now reads the same bounded resource graph, including current
+children and their completion receipts, without an offline JSON alternative.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
