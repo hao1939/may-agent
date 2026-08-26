@@ -81,7 +81,6 @@ function taskChanged(resource: AppTaskResource, trigger: AppTaskTrigger | undefi
 export type IndexedTaskCandidate = {
   taskId: string;
   lane: "human" | "normal";
-  priority: "P0" | "P1" | "P2" | "P3";
   ready: boolean;
   changed: boolean;
   nextCheckAt: number | null;
@@ -892,8 +891,7 @@ export class AppTaskResourceStore {
           OR (CASE lane WHEN 'human' THEN 0 ELSE 1 END = ? AND updated_at = ? AND task_id > ?)
         )`
       : "";
-    const fields = `task_id, lane, ready, changed, next_check_at, lease_until, updated_at,
-      COALESCE(json_extract(resource_json, '$.spec.priority'), 'P2') AS priority`;
+    const fields = `task_id, lane, ready, changed, next_check_at, lease_until, updated_at`;
     const branchValues = (dueAt?: number): unknown[] => [
       this.appId,
       ...(dueAt === undefined ? [] : [dueAt]),
@@ -938,9 +936,6 @@ export class AppTaskResourceStore {
     const items: IndexedTaskCandidate[] = rows.map((row) => ({
       taskId: String(row.task_id),
       lane: row.lane === "human" ? "human" : "normal",
-      priority: ["P0", "P1", "P2", "P3"].includes(String(row.priority))
-        ? (String(row.priority) as "P0" | "P1" | "P2" | "P3")
-        : "P2",
       ready: row.ready === 1,
       changed: row.changed === 1,
       nextCheckAt: typeof row.next_check_at === "number" ? row.next_check_at : null,

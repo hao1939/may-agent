@@ -1,11 +1,11 @@
 import { Type } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk";
+import type { TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage, TaskView } from "@may-agent/sdk";
 import type { EventBus } from "./event-bus.js";
 
 const parameters = Type.Object(
   {
-    action: Type.Union([Type.Literal("list"), Type.Literal("get"), Type.Literal("publish")]),
+    action: Type.Union([Type.Literal("list"), Type.Literal("outcomes"), Type.Literal("get"), Type.Literal("publish")]),
     taskId: Type.Optional(Type.String({ minLength: 1 })),
     localKey: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
     eventType: Type.Optional(Type.String({ minLength: 3 })),
@@ -32,12 +32,13 @@ const parameters = Type.Object(
     ),
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
+    includeDone: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );
 
 type Params = {
-  action: "list" | "get" | "publish";
+  action: "list" | "outcomes" | "get" | "publish";
   taskId?: string;
   localKey?: string;
   eventType?: string;
@@ -46,6 +47,7 @@ type Params = {
   status?: TaskView["status"][];
   limit?: number;
   cursor?: string;
+  includeDone?: boolean;
 };
 
 function result(value: unknown): AgentToolResult<undefined> {
@@ -59,6 +61,11 @@ export function createAppTaskReadTool(options: {
   scope?: () => { appId: string; taskId?: string; generation?: number; attemptId?: string } | undefined;
   reader?: {
     list(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage | Promise<TaskPage>;
+    outcomes?(input: {
+      bus: EventBus;
+      appId: string;
+      projection?: TaskOutcomeProjection;
+    }): TaskOutcomePage | Promise<TaskOutcomePage>;
     get(input: { bus: EventBus; appId: string; taskId: string }): TaskView | null | Promise<TaskView | null>;
   };
   publisher?: {
@@ -109,6 +116,17 @@ export function createAppTaskReadTool(options: {
             ? await options.publisher.publish(publishInput)
             : (await import("./app-task-runtime.js")).publishLoadedAppTaskEvent(publishInput);
           return result({ eventId, type: eventType });
+        }
+        if (params.action === "outcomes") {
+          const projection = params.includeDone === undefined ? undefined : { includeDone: params.includeDone };
+          const value = options.reader?.outcomes
+            ? await options.reader.outcomes({ bus: options.bus, appId, projection })
+            : await (await import("./app-task-runtime.js")).listLoadedAppTaskOutcomeViews({
+                bus: options.bus,
+                appId,
+                projection,
+              });
+          return result(value);
         }
         if (params.action === "get") {
           const taskId = params.taskId?.trim();

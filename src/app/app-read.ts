@@ -4,6 +4,8 @@ import type {
   MetricView,
   TaskDetail,
   TaskListOptions,
+  TaskOutcomePage,
+  TaskOutcomeProjection,
   TaskPage,
   TaskView,
 } from "@may-agent/sdk/app";
@@ -13,10 +15,13 @@ import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";
 import { getAppInboxItem } from "./app-inbox-store.js";
+import { projectTaskOutcomes, readTaskOutcomeManifest } from "./task-outcome-projection.js";
 
 export type RuntimeAppReadOptions = {
   getDb(): SqliteDb;
   metrics: MetricService;
+  /** Canonical loaded-App Task reader. Installed Runtime contexts must supply it or taskStateConfig. */
+  taskRead?: AppRead["tasks"];
   executionPaths?: {
     appDir: string;
     projectDir: string;
@@ -205,6 +210,21 @@ export function listRuntimeTaskViews(
   };
 }
 
+export function listRuntimeTaskOutcomeViews(
+  opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
+  projection: TaskOutcomeProjection = {},
+): TaskOutcomePage {
+  if (!opts.executionPaths) return projectTaskOutcomes([], null, projection);
+  const items: TaskView[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = listRuntimeTaskViews(opts, { limit: 100, ...(cursor ? { cursor } : {}) });
+    items.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return projectTaskOutcomes(items, readTaskOutcomeManifest(opts.executionPaths.appDir), projection);
+}
+
 export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
   const result = getExecutionResultFromDb(opts.getDb(), id);
   if (!result) return null;
@@ -237,9 +257,12 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
     async appResult(itemId) {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;
     },
-    tasks: {
+    tasks: opts.taskRead ?? {
       async list(options) {
         return listRuntimeTaskViews(opts, options);
+      },
+      async outcomes(options) {
+        return listRuntimeTaskOutcomeViews(opts, options);
       },
       get: getTask,
     },

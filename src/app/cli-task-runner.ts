@@ -661,8 +661,9 @@ async function runCliAttempt(opts: {
   prompt: string;
   now: () => number;
   attempt: number;
+  signal: AbortSignal;
 }): Promise<CliAttemptResult> {
-  const { bus, spawnCommand, record, recordPath, prompt, now, attempt } = opts;
+  const { bus, spawnCommand, record, recordPath, prompt, now, attempt, signal } = opts;
   const native = commandFor(record, prompt);
   const { command, args } = sandboxedCommand(record, native.command, native.args);
   const collector = createCliOutputCollector(record.tool);
@@ -725,19 +726,30 @@ async function runCliAttempt(opts: {
   return await new Promise<CliAttemptResult>((resolveDone) => {
     let settled = false;
     let timedOut = false;
+    let aborted = false;
     let forceTimer: ReturnType<typeof setTimeout> | undefined;
-    const timeoutTimer = setTimeout(() => {
-      timedOut = true;
-      signalCliProcessTree(child, "SIGTERM");
+    const terminate = () => {
+      if (forceTimer) clearTimeout(forceTimer);
       forceTimer = setTimeout(() => {
         signalCliProcessTree(child, "SIGKILL");
       }, CLI_TERMINATION_GRACE_MS);
+      signalCliProcessTree(child, "SIGTERM");
+    };
+    const timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      terminate();
     }, record.timeoutMs);
+    const stopForAbort = () => {
+      if (settled || aborted) return;
+      aborted = true;
+      terminate();
+    };
     const finish = (result: Pick<CliAttemptResult, "exitCode" | "timedOut" | "error">): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutTimer);
       if (forceTimer) clearTimeout(forceTimer);
+      signal.removeEventListener("abort", stopForAbort);
       if (!eventsClosed) {
         eventsClosed = true;
         closeSync(eventsFd);
@@ -748,7 +760,11 @@ async function runCliAttempt(opts: {
       finish({
         exitCode: exitCode(code, signal),
         timedOut,
-        error: timedOut
+        error: aborted
+          ? opts.signal.reason instanceof Error
+            ? opts.signal.reason.message
+            : "CLI task was cancelled"
+          : timedOut
           ? `CLI task exceeded timeout ${record.timeoutMs}ms`
           : signal
             ? `CLI task was terminated by ${signal}`
@@ -763,6 +779,8 @@ async function runCliAttempt(opts: {
         error: message,
       });
     });
+    signal.addEventListener("abort", stopForAbort, { once: true });
+    if (signal.aborted) stopForAbort();
   });
 }
 
@@ -920,11 +938,12 @@ export function markOrphanedCliTasks(opts: {
 export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
   const now = opts.now ?? Date.now;
   const spawnCommand = opts.spawnCommand ?? spawn;
-  const running = new Set<string>();
+  const running = new Map<string, AbortController>();
 
   const schedule = (record: CliTaskRecord, recordPath: string): void => {
     if (running.has(record.taskId)) return;
-    running.add(record.taskId);
+    const controller = new AbortController();
+    running.set(record.taskId, controller);
     queueMicrotask(() => {
       void runCliTask({
         bus: opts.bus,
@@ -933,6 +952,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
         record,
         recordPath,
         now,
+        signal: controller.signal,
         sourceSessionAvailable: opts.sourceSessionAvailable,
       }).finally(() => {
         running.delete(record.taskId);
@@ -941,6 +961,21 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
   };
 
   const unsubscribe = opts.bus.subscribeDurableRoute((event: AgentEvent): SubscriberResult => {
+    if (event.type === "cli.task.cancelled") {
+      const data = eventData(event) as Record<string, unknown>;
+      const taskId = typeof data.taskId === "string" ? data.taskId : "";
+      const controller = running.get(taskId);
+      if (controller) {
+        const reason = typeof data.reason === "string" ? data.reason : "CLI task was cancelled";
+        controller.abort(new Error(reason));
+      }
+      return {
+        accepted: true,
+        by: "cli-task-runner",
+        route: "direct",
+        note: controller ? "active cli task cancellation accepted" : "cli task was not active",
+      };
+    }
     if (event.type !== "cli.task.requested") return;
     const data = eventData(event) as Record<string, unknown>;
     const taskId = safeTaskId(data.taskId, now);
@@ -1051,10 +1086,12 @@ async function runCliTask(opts: {
   record: CliTaskRecord;
   recordPath: string;
   now: () => number;
+  signal: AbortSignal;
   sourceSessionAvailable?: (sessionId: string) => boolean;
 }): Promise<void> {
-  const { bus, spawnCommand, persistDir, record, recordPath, now, sourceSessionAvailable } = opts;
+  const { bus, spawnCommand, persistDir, record, recordPath, now, signal, sourceSessionAvailable } = opts;
   try {
+    signal.throwIfAborted();
     const prompt = promptForRun(record, readFileSync(record.promptPath, "utf8"));
     record.resumeSessionId ??= reusableSessionId(persistDir, record);
     const sandbox = effectiveSandboxFor(record, record.sandbox ?? "danger-full-access");
@@ -1064,7 +1101,17 @@ async function runCliTask(opts: {
     record.startedAt = iso(now);
     writeRecord(recordPath, record);
 
-    const attempt = await runCliAttempt({ bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt: 1 });
+    const attempt = await runCliAttempt({
+      bus,
+      spawnCommand,
+      persistDir,
+      record,
+      recordPath,
+      prompt,
+      now,
+      attempt: 1,
+      signal,
+    });
 
     record.exitCode = attempt.exitCode;
     record.finishedAt = iso(now);

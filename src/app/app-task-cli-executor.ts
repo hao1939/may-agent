@@ -40,6 +40,7 @@ export async function executeTaskWithCli(input: {
   cwd: string;
   prompt: string;
   timeoutMs: number;
+  signal: AbortSignal;
   trace?: EventTrace;
 }): Promise<TaskCliExecution> {
   const id = cliTaskId(input);
@@ -58,7 +59,19 @@ export async function executeTaskWithCli(input: {
       settled = true;
       clearTimeout(timeout);
       unsubscribe();
+      input.signal.removeEventListener("abort", cancel);
       resolve(result);
+    };
+    const cancel = () => {
+      const reason = input.signal.reason instanceof Error ? input.signal.reason.message : "Task was cancelled";
+      input.bus.emit({
+        type: "cli.task.cancelled",
+        source: `app-task:${input.appId}`,
+        owner: `agent:${input.owner}`,
+        data: { taskId: id, reason },
+        ...(input.trace ? { trace: input.trace } : {}),
+      } as unknown as AgentEvent);
+      finish({ status: "failed", cliTaskId: id, summary: reason, evidence: [`cli-task:${id}`] });
     };
     const unsubscribe = input.bus.listen(
       (event) => {
@@ -112,6 +125,10 @@ export async function executeTaskWithCli(input: {
       input.timeoutMs + 5_000,
     );
     timeout.unref?.();
+
+    input.signal.addEventListener("abort", cancel, { once: true });
+    if (input.signal.aborted) cancel();
+    if (settled) return;
 
     try {
       input.bus.emit({

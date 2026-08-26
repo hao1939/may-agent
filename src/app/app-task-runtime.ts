@@ -55,10 +55,28 @@ import {
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
-import { cacheTaskStateReads, readTaskState, ResourceTaskMutationStaleError, type TaskTree } from "./app-task-store.js";
+import {
+  cacheTaskStateReads,
+  readTaskState,
+  ResourceTaskMutationStaleError,
+  type ResourceTaskStateConfig,
+  type TaskTree,
+} from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
-import type { TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import type {
+  TaskDetail,
+  TaskListOptions,
+  TaskOutcomePage,
+  TaskOutcomeProjection,
+  TaskPage,
+  TaskView,
+} from "@may-agent/sdk/app";
+import {
+  createRuntimeAppRead,
+  listRuntimeTaskOutcomeViews,
+  listRuntimeTaskViews,
+  readRuntimeTaskView,
+} from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "./app-inbox-store.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
@@ -74,11 +92,10 @@ import {
   matchingAppTaskConditionTaskIds,
   matchesAppTaskCondition,
   trackAppTaskConditionEventForTasks,
-  trackAppTaskConditionEvents,
 } from "./app-task-condition-tracker.js";
-import { appTaskConditionRoutesByEventType } from "./app-task-condition-index.js";
 import {
   childEventTrace,
+  eventData,
   EVENT_DELIVERY_RESULT,
   EVENT_ROW_ID,
   type AgentEvent,
@@ -210,8 +227,8 @@ export interface AppTaskRuntimeDescriptor {
   agent: string;
   app: AppDefinition;
   reconciliationPaused: boolean;
-  /** Present only when this App has completed the guarded resource-store cutover. */
-  resourceStore?: AppTaskResourceStore;
+  /** Canonical Task authority; descriptor construction refuses legacy JSON state. */
+  resourceStore: AppTaskResourceStore;
 }
 
 export interface AppTaskRuntimeOptions {
@@ -816,7 +833,7 @@ async function executeTaskCapability(input: {
         acceptance: intent.acceptance,
         input: intent.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
-        waits: projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId),
+        waits: input.attempt.waits,
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -868,6 +885,12 @@ async function executeTaskCapability(input: {
       manager: opts.manager,
       agentDefinitions: opts.agentDefinitions,
       runtimeCtx,
+      read: createRuntimeAppRead({
+        getDb: runtimeCtx.getDb,
+        metrics: runtimeCtx.metrics,
+        executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
+        taskStateConfig: appTaskConfig(descriptor),
+      }),
       agentName,
       persistDir: runtime.persistDir,
       workflowDir: paths.workflowDir,
@@ -881,7 +904,7 @@ async function executeTaskCapability(input: {
         attemptId: claim.attemptId,
       },
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
-      ...(descriptor.resourceStore ? { taskEmitter: input.taskEvents } : {}),
+      taskEmitter: input.taskEvents,
       trace,
       executionPaths: input.executionPaths,
       workflowInput: intent.input ?? {},
@@ -916,6 +939,7 @@ async function executeTaskCapability(input: {
         events: reconciliationEvents,
       },
       executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
+      signal: input.attempt.signal,
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
@@ -1051,6 +1075,22 @@ type RuntimeTaskAttempt = {
   close(): void;
 };
 
+const MAX_TASK_ROLE_INSTRUCTIONS_BYTES = 48 * 1024;
+
+function taskAttemptRole(opts: AppTaskRuntimeOptions, agent: string): TaskAttempt["role"] {
+  const definition = opts.agentDefinitions?.get(agent);
+  let instructions = definition?.systemPrompt?.trim() ?? "";
+  const identityPath = definition?.agentDir ? join(definition.agentDir, "AGENTS.md") : "";
+  if (!instructions && identityPath && existsSync(identityPath)) {
+    instructions = readFileSync(identityPath, "utf8").trim();
+  }
+  if (!instructions) instructions = `Act as the selected May agent ${agent}.`;
+  if (Buffer.byteLength(instructions) > MAX_TASK_ROLE_INSTRUCTIONS_BYTES) {
+    instructions = `${instructions.slice(0, MAX_TASK_ROLE_INSTRUCTIONS_BYTES)}\n\n[Selected agent instructions truncated by Runtime.]`;
+  }
+  return { agent, instructions };
+}
+
 /** Build the one fenced Task interface shared by every executor adapter. */
 function runtimeTaskAttempt(input: {
   opts: AppTaskRuntimeOptions;
@@ -1080,13 +1120,23 @@ function runtimeTaskAttempt(input: {
   });
   const subscriptions = new Set<() => void>();
   const acceptedLiveEventIds = new Set<number>();
+  const controller = new AbortController();
   let closed = false;
+  const unsubscribeCancellation = events.onEvent((incoming) => {
+    if (incoming.type !== "app.task.cancelled") return;
+    const data = eventData(incoming) as Record<string, unknown>;
+    if (data.attemptId !== claim.attemptId) return;
+    const reason = typeof data.reason === "string" ? data.reason : "Task was cancelled";
+    controller.abort(new Error(reason));
+  });
   return {
     events,
     attempt: {
       appId: descriptor.id,
       attemptId: claim.attemptId,
+      signal: controller.signal,
       resourceVersion: claim.resourceVersion,
+      role: taskAttemptRole(opts, claim.agent),
       task: structuredClone(task),
       cwd: input.cwd,
       declaredOutputPaths: [...input.declaredOutputPaths],
@@ -1100,7 +1150,9 @@ function runtimeTaskAttempt(input: {
           status: "done" as const,
         })),
       },
+      waits: structuredClone(projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId)),
       events: projectAppTaskReconciliationEvents(claim),
+      resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
       async publish(localKey, event) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
         const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
@@ -1130,6 +1182,7 @@ function runtimeTaskAttempt(input: {
     close() {
       if (closed) return;
       closed = true;
+      unsubscribeCancellation();
       for (const unsubscribe of [...subscriptions]) unsubscribe();
     },
   };
@@ -2218,7 +2271,7 @@ async function executeTaskAgent(input: {
         acceptance: intent.acceptance,
         input: intent.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
-        waits: projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId),
+        waits: input.attempt.waits,
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -2262,6 +2315,7 @@ async function executeTaskAgent(input: {
     typeof opts.manager.waitFor === "function" &&
     typeof opts.manager.progress === "function"
       ? await (async () => {
+          input.attempt.signal.throwIfAborted();
           const definition = opts.agentDefinitions?.get(claim.agent);
           const runOptions = {
             source: agentOptions.source,
@@ -2285,6 +2339,15 @@ async function executeTaskAgent(input: {
             ? opts.manager.runDefinition(definition, prompt, runOptions)
             : opts.manager.run(claim.agent, prompt, runOptions);
           recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, sessionId);
+          const cancelSession = () => {
+            try {
+              opts.manager.cancel(sessionId);
+            } catch {
+              // The session may finish between Task cancellation and abort.
+            }
+          };
+          input.attempt.signal.addEventListener("abort", cancelSession, { once: true });
+          if (input.attempt.signal.aborted) cancelSession();
           const unsubscribe = input.attempt.onEvent((incoming) => {
             try {
               const event = incoming as AgentEvent;
@@ -2302,6 +2365,7 @@ async function executeTaskAgent(input: {
             };
           } finally {
             unsubscribe();
+            input.attempt.signal.removeEventListener("abort", cancelSession);
           }
         })()
       : await opts.manager.callAgent(claim.agent, prompt, agentOptions);
@@ -2403,12 +2467,13 @@ async function executeTaskCli(input: {
         resourceVersion: claim.resourceVersion,
         agent: claim.agent,
         executor: input.tool,
+        role: input.attempt.role,
         mode: claim.mode,
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
-        waits: projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId),
+        waits: input.attempt.waits,
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -2448,6 +2513,7 @@ async function executeTaskCli(input: {
       cwd: input.executionPaths.workspaceDir,
       prompt,
       timeoutMs: APP_TASK_CLI_TIMEOUT_MS,
+      signal: input.attempt.signal,
       ...(childEventTrace(input.event) ? { trace: childEventTrace(input.event) } : {}),
     });
   } finally {
@@ -2874,7 +2940,7 @@ async function reconcileTask(input: {
     const config = appTaskConfig(descriptor);
     activeConfig = config;
     const claimStartedAt = performance.now();
-    const defaultParentId = config.resourceStore?.rootTaskId() ?? readTaskState(config).root_task_id;
+    const defaultParentId = config.resourceStore.rootTaskId();
     if (!defaultParentId) {
       throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
     }
@@ -3628,16 +3694,14 @@ function appDependencyUpdateSubject(event: Record<string, unknown>): string | nu
 }
 
 function appDependencyUpdateWakeTaskIds(
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: ResourceTaskStateConfig,
   event: Record<string, unknown>,
   allowedTaskIds?: Iterable<string>,
 ): string[] {
   const subject = appDependencyUpdateSubject(event);
   if (!subject) return [];
   const allowed = allowedTaskIds ? new Set(allowedTaskIds) : null;
-  const routes = config.resourceStore
-    ? config.resourceStore.readConditionRoutes("app.dependency.completed")
-    : (appTaskConditionRoutesByEventType(readTaskState(config))["app.dependency.completed"] ?? []);
+  const routes = config.resourceStore.readConditionRoutes("app.dependency.completed");
   return [
     ...new Set(
       routes
@@ -3672,7 +3736,7 @@ function admitResolvedAppTaskEvent(input: {
   );
   if (controller) {
     for (const taskId of new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes])) {
-      enqueueAppTask(controller, config, taskId, { front: true });
+      enqueueAppTask(controller, config, taskId, { promote: true });
     }
   }
   // A frozen Condition route is idempotent admission authority. On recovery,
@@ -3703,7 +3767,7 @@ function admitResolvedAppTaskEvent(input: {
     }
     const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
     if (triggerResult.kind === "recorded") {
-      if (controller) enqueueAppTask(controller, config, targetedTaskId, { front: true, promote: true });
+      if (controller) enqueueAppTask(controller, config, targetedTaskId, { promote: true });
       return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
     }
     if (triggerResult.kind === "waiting") {
@@ -3725,7 +3789,7 @@ function admitResolvedAppTaskEvent(input: {
   interruptSupersededObservationSessions(opts, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
-      front: event.type === "project.comment.created",
+      promote: event.type === "project.comment.created",
     });
   }
   return appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
@@ -3786,66 +3850,36 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   const event = canonicalTaskEvent(input.event);
   const updateSubject = appDependencyUpdateSubject(event);
   const matchesByApp = new Map<string, Set<string>>();
-  const resourceDescriptors = descriptors.filter(
-    (descriptor): descriptor is AppTaskRuntimeDescriptor & { resourceStore: AppTaskResourceStore } =>
-      Boolean(descriptor.resourceStore),
-  );
-  if (resourceDescriptors.length > 0) {
-    const loadedResourceApps = new Set(resourceDescriptors.map((descriptor) => descriptor.id));
-    for (const route of resourceDescriptors[0]!.resourceStore.readConditionRoutesForAllApps(String(event.type ?? ""))) {
-      if (!loadedResourceApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
+  const loadedApps = new Set(descriptors.map((descriptor) => descriptor.id));
+  const store = descriptors[0]!.resourceStore;
+  for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""))) {
+    if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
+    const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
+    for (const taskId of route.taskIds) taskIds.add(taskId);
+    matchesByApp.set(route.appId, taskIds);
+  }
+  if (updateSubject) {
+    for (const route of store.readConditionRoutesForAllApps("app.dependency.completed")) {
+      if (!loadedApps.has(route.appId) || route.condition.spec.subject !== updateSubject) continue;
       const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
       for (const taskId of route.taskIds) taskIds.add(taskId);
       matchesByApp.set(route.appId, taskIds);
     }
-    if (updateSubject) {
-      for (const route of resourceDescriptors[0]!.resourceStore.readConditionRoutesForAllApps(
-        "app.dependency.completed",
-      )) {
-        if (!loadedResourceApps.has(route.appId) || route.condition.spec.subject !== updateSubject) continue;
-        const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
-        for (const taskId of route.taskIds) taskIds.add(taskId);
-        matchesByApp.set(route.appId, taskIds);
-      }
-    }
-  }
-  // Transitional JSON-backed Apps retain their existing projection lookup.
-  for (const descriptor of descriptors) {
-    if (descriptor.resourceStore) continue;
-    const config = appTaskConfig(descriptor);
-    const taskIds = [
-      ...new Set([...matchingAppTaskConditionTaskIds(config, event), ...appDependencyUpdateWakeTaskIds(config, event)]),
-    ];
-    if (taskIds.length > 0) matchesByApp.set(descriptor.id, new Set(taskIds));
   }
   return [...matchesByApp]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([appId, taskIds]) => ({ appId, taskIds: [...taskIds].sort() }));
 }
 
-function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {
-  if (!isRecord(value) || !isRecord(value.spec) || !isRecord(value.status)) return false;
-  return typeof value.spec.type === "string" && value.status.state !== "true";
-}
-
 function replayPersistedConditionEvents(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: ResourceTaskStateConfig,
   input: { conditionIds?: string[] } = {},
 ): string[] {
   if (!opts.persistDir) return [];
-  const resourceScope = config.resourceStore?.readOpenConditionReplayScope(input.conditionIds);
-  const tree = resourceScope ? null : readTaskState(config);
-  const relevantIds = input.conditionIds?.length ? new Set(input.conditionIds) : null;
-  const eventTypes = resourceScope?.eventTypes ?? [
-    ...new Set(
-      Object.entries(tree?.conditions ?? {})
-        .filter(([id, value]) => (!relevantIds || relevantIds.has(id)) && isOpenProjectCondition(value))
-        .map(([, value]) => value.spec.type.trim())
-        .filter(Boolean),
-    ),
-  ];
+  const resourceScope = config.resourceStore.readOpenConditionReplayScope(input.conditionIds);
+  const eventTypes = resourceScope.eventTypes;
   if (eventTypes.length === 0) return [];
 
   const placeholders = eventTypes.map(() => "?").join(", ");
@@ -3893,7 +3927,6 @@ function replayPersistedConditionEvents(
     }
   }
 
-  if (!resourceScope) return trackAppTaskConditionEvents(config, events).map((wake) => wake.taskId);
   const allowed = new Set(resourceScope.taskIds);
   const wakes = events.flatMap((event) => {
     const taskIds = matchingAppTaskConditionTaskIds(config, event).filter((taskId) => allowed.has(taskId));
@@ -3915,7 +3948,7 @@ function installConventionTaskControllers(
   );
   for (const previous of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
     if (installedIds.has(previous.id)) continue;
-    if (previous.resourceStore?.hasUnfinishedTasks()) {
+    if (previous.resourceStore.hasUnfinishedTasks()) {
       throw new Error(`Cannot remove App ${previous.id} while it has unfinished Tasks`);
     }
   }
@@ -3961,7 +3994,7 @@ function installConventionTaskControllers(
           // workflow-to-agent handoff. Other children/dependents enter the
           // priority-ordered ordinary lane so continuation bursts stay bounded.
           controller.enqueue(dependentTaskId, {
-            front: dependentTaskId === taskId,
+            promote: dependentTaskId === taskId,
             priority: dependentEntries.get(dependentTaskId)?.options.priority,
           });
         }
@@ -3985,12 +4018,11 @@ function installConventionTaskControllers(
     controllers.set(descriptor.id, controller);
     bindings.set(descriptor.id, binding);
     const config = appTaskConfig(descriptor);
-    if (!config.resourceStore) throw new Error(`App ${descriptor.id} task resource authority is unavailable`);
     const recoveryScheduler = new AppTaskRecoveryScheduler({
       source: config.resourceStore,
       safetyIntervalMs: APP_TASK_RECOVERY_SAFETY_INTERVAL_MS,
       enqueue: (taskId, options) => {
-        controller.enqueue(taskId, options);
+        enqueueAppTask(controller, config, taskId, options);
       },
     });
     binding.recoveryScheduler = recoveryScheduler;
@@ -4062,7 +4094,7 @@ export function retryLoadedFailedAppTask(input: {
     taskId,
     expectedGeneration: input.expectedGeneration,
   });
-  const queued = enqueueAppTask(controller, config, taskId, { front: true, promote: true });
+  const queued = enqueueAppTask(controller, config, taskId, { promote: true });
   return { ...receipt, queued };
 }
 
@@ -4079,9 +4111,9 @@ function enqueueAppTask(
   });
 }
 
-const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, ReturnType<typeof taskReconciliationConfig>>();
+const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, ResourceTaskStateConfig>();
 
-function appTaskConfig(descriptor: AppTaskRuntimeDescriptor) {
+function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): ResourceTaskStateConfig {
   const existing = appTaskConfigs.get(descriptor);
   if (existing) return existing;
   const config = taskReconciliationConfig({
@@ -4211,6 +4243,24 @@ export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; op
   );
 }
 
+export function listLoadedAppTaskOutcomeViews(input: {
+  bus: EventBus;
+  appId: string;
+  projection?: TaskOutcomeProjection;
+}): TaskOutcomePage {
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
+    (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
+  );
+  if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  return listRuntimeTaskOutcomeViews(
+    {
+      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
+      taskStateConfig: appTaskConfig(descriptor),
+    },
+    input.projection,
+  );
+}
+
 export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; taskId: string }): TaskDetail | null {
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
@@ -4298,9 +4348,9 @@ function recoverInterruptedAppTasks(
     if (!descriptor.app.tasks) continue;
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
-    const runningRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["running"], 512);
-    const attentionRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
-    const waitingRecoveryTaskIds = config.resourceStore?.listTaskIdsByPhase(["waiting"], 512);
+    const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
+    const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
+    const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       if (recovery.sessionId) {
         interruptSupersededAgentSession(
@@ -4404,7 +4454,7 @@ function recoverInterruptedAppTasks(
     }
     for (const taskId of replayPersistedConditionEvents(opts, descriptor, config)) {
       if (controller && !descriptor.reconciliationPaused) {
-        enqueueAppTask(controller, config, taskId, { front: true });
+        enqueueAppTask(controller, config, taskId, { promote: true });
       }
     }
     const attentions = pendingAppTaskRecoveryAttention(config, attentionRecoveryTaskIds);
@@ -4457,7 +4507,7 @@ async function requeueAvailableAppTaskHandlers(
     const controller = controllers.get(descriptor.id);
     if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
     const config = appTaskConfig(descriptor);
-    const attentionTaskIds = config.resourceStore?.listTaskIdsByPhase(["attention"], 512);
+    const attentionTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
     for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.agent, attentionTaskIds)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
       const key = `${paths.workflowDir}\0${candidate.workflow}`;
@@ -4570,7 +4620,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
               `Late terminal session ${successfulAgent.sessionId} cannot reattach to restart-interrupted workflow ${successfulAgent.workflowRunId}`,
             );
             if (released.released) {
-              enqueueAppTask(taskController, config, released.taskId, { front: true });
+              enqueueAppTask(taskController, config, released.taskId, { promote: true });
               opts.bus.emit({
                 type: "project.task.recovery.requeued",
                 source: `app-task:${descriptor.id}:task-recovery`,
@@ -4588,7 +4638,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           }
           for (const candidate of listHandlerExecutionFailedAppTasks(
             config,
-            config.resourceStore?.listHandlerExecutionRecoveryTaskIds(successfulAgent.agent, 512),
+            config.resourceStore.listHandlerExecutionRecoveryTaskIds(successfulAgent.agent, 512),
           )) {
             if (candidate.agent !== successfulAgent.agent) continue;
             if (
@@ -4630,7 +4680,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
             } as unknown as AgentEvent);
           }
           if (successfulAgent.binding?.appId === descriptor.id) {
-            enqueueAppTask(taskController, config, successfulAgent.binding.taskId, { front: true });
+            enqueueAppTask(taskController, config, successfulAgent.binding.taskId, { promote: true });
           }
         }
       }

@@ -1,19 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import {
-  taskAgentResultSchema,
-  type AppEvent,
-  type TaskAttempt,
-  type TaskExecutor,
-  type TaskReconcileResult,
-} from "@may-agent/sdk";
+import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileResult } from "@may-agent/sdk";
 import {
   CodexGoalAppServerClient,
   type AppServerNotification,
   type CodexGoalObservation,
   type CodexTurnCompletion,
 } from "./codex-goal-client.js";
-import { buildCanonicalTaskAttemptPacket, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
+import { projectCanonicalTaskAttempt, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
 import {
   CodexGoalProgressPublisher,
@@ -84,20 +78,7 @@ const DEFAULT_SOFT_STALE_MS = 2 * 60_000;
 const DEFAULT_HARD_STALE_MS = 10 * 60_000;
 const DEFAULT_CHECK_INTERVAL_MS = 5_000;
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
-const MAX_AGENT_INSTRUCTIONS_BYTES = 48 * 1024;
 const MAX_PENDING_STEERING_EVENTS = 64;
-
-function selectedAgentInstructions(attempt: TaskAttempt): string {
-  const agent = attempt.task.agent?.trim() || "codex";
-  if (!/^[A-Za-z0-9._-]{1,128}$/.test(agent)) {
-    return `Act as the selected May agent ${JSON.stringify(agent)}.`;
-  }
-  const path = join(attempt.cwd, "agents", agent, "AGENTS.md");
-  if (!existsSync(path)) return `Act as the selected May agent ${agent}.`;
-  const instructions = readFileSync(path, "utf8");
-  if (Buffer.byteLength(instructions) <= MAX_AGENT_INSTRUCTIONS_BYTES) return instructions;
-  return `${instructions.slice(0, MAX_AGENT_INSTRUCTIONS_BYTES)}\n\n[Selected agent instructions truncated by Runtime.]`;
-}
 
 function bindingKey(attempt: TaskAttempt): string {
   return `${attempt.appId}\u0000${attempt.task.id}`;
@@ -178,39 +159,7 @@ function progressEvidence(stats: CodexGoalProgressStats): string[] {
 }
 
 function packetFor(attempt: TaskAttempt) {
-  return buildCanonicalTaskAttemptPacket({
-    identity: {
-      appId: attempt.appId,
-      taskId: attempt.task.id,
-      generation: attempt.task.generation,
-      resourceVersion: attempt.resourceVersion,
-      attemptId: attempt.attemptId,
-    },
-    desired: {
-      outcome: attempt.task.outcome,
-      acceptance: attempt.task.acceptance,
-      mode: attempt.task.mode ?? "achieve",
-      input: attempt.task.input,
-    },
-    role: {
-      agent: attempt.task.agent ?? "codex",
-      instructions: [
-        selectedAgentInstructions(attempt),
-        "Keep working on this Task goal until its acceptance is supported or an exact external wait is identified. The workspace is read-only; cite exact evidence and do not mutate files or external systems.",
-        "Progress commentary may become a durable Task event, so summarize without secret values, raw command output, tool payloads, or diffs.",
-      ].join("\n\n"),
-      capabilities: ["read-workspace", "publish-task-event", "receive-task-event"],
-    },
-    events: attempt.events,
-    observations: { children: attempt.children, dependencies: [] },
-    workspace: { cwd: attempt.cwd, declaredOutputPaths: attempt.declaredOutputPaths },
-    contract: { resultSchema: structuredClone(taskAgentResultSchema) as unknown as Record<string, unknown> },
-    limits: {
-      deadlineAt: new Date(Date.now() + DEFAULT_TURN_TIMEOUT_MS).toISOString(),
-      remainingTaskTokens: null,
-      sandbox: "read-only",
-    },
-  });
+  return projectCanonicalTaskAttempt(attempt);
 }
 
 export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): TaskExecutor {
@@ -244,6 +193,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     let nudgeCount = 0;
     let stopped = false;
     let liveInputOpen = true;
+    let aborting: Promise<void> | null = null;
     const pendingEvents: Array<{ event: AppEvent<Record<string, unknown>>; accept: () => void }> = [];
     const incorporatedLiveEvents = new Set<() => void>();
     const steering = new Set<Promise<unknown>>();
@@ -317,8 +267,26 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       queueEvent(event, accept);
       track(deliverPendingEvents(turnId));
     });
+    const stopForAbort = () => {
+      if (aborting) return;
+      stopped = true;
+      liveInputOpen = false;
+      aborting = (async () => {
+        if (threadId && turnId) {
+          try {
+            await client.interrupt({ threadId, turnId });
+          } catch {
+            // Stopping the client below still releases the executor process.
+          }
+        }
+        await client.stop();
+      })();
+    };
+    attempt.signal.addEventListener("abort", stopForAbort, { once: true });
+    if (attempt.signal.aborted) stopForAbort();
 
     try {
+      attempt.signal.throwIfAborted();
       await client.initialize();
       const binding = existing
         ? await client.resumeThread({
@@ -424,10 +392,12 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       }
     } finally {
       stopped = true;
+      attempt.signal.removeEventListener("abort", stopForAbort);
       unsubscribeEvent();
       unsubscribeNotification();
       await Promise.allSettled([...steering]);
       await progress.flush();
+      if (aborting) await Promise.allSettled([aborting]);
       await client.stop();
     }
   };

@@ -48,6 +48,7 @@ import {
 } from "./app-event-admission-store.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
+import type { HostCapacity } from "./host-capacity.js";
 import type { LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -74,9 +75,7 @@ const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 function assignmentText(item: AppInboxItem): string {
   const data = item.input.data;
   const outcome =
-    data && typeof data === "object" && !Array.isArray(data)
-      ? (data as Record<string, unknown>).outcome
-      : undefined;
+    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).outcome : undefined;
   return typeof outcome === "string" && outcome.trim()
     ? `Assigned to ${item.appId}: ${outcome.trim()}`
     : `Assigned to ${item.appId}.`;
@@ -105,7 +104,9 @@ export type StartAppInboxRuntimeOptions = {
     appDir: string;
     dependency: { kind: "task"; id: string };
   }) => Promise<AppDependencyObservation | null>;
-  /** Maximum request batches the Host may process at once. */
+  /** Shared Host capacity used by both request decisions and Task attempts. */
+  hostCapacity: HostCapacity;
+  /** Maximum request decisions admitted to shared Host capacity at once. */
   maxConcurrentRequests?: number;
   scanIntervalMs?: number;
   leaseMs?: number;
@@ -372,6 +373,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         data: {
           appId: item.appId,
           conversationId: item.conversationId,
+          messageId: `result:${item.id}`,
           author: { kind: "agent", id: item.appId },
           text,
           metadata: {
@@ -551,8 +553,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const pump = (): void => {
     const activeCount = () => [...active.values()].reduce((total, count) => total + count, 0);
     if (closed) return;
+    const totalActive = activeCount();
+    const foregroundActive = active.get("may") ?? 0;
+    const backgroundActive = totalActive - foregroundActive;
+    const backgroundLimit = maxConcurrentRequests === 1 ? 1 : maxConcurrentRequests - 1;
     const foregroundIndex = pending.findIndex((appId) => appId === "may" && (active.get(appId) ?? 0) === 0);
-    const nextIndex = activeCount() < maxConcurrentRequests ? 0 : foregroundIndex;
+    const backgroundIndex = pending.findIndex((appId) => appId !== "may");
+    const nextIndex =
+      foregroundIndex >= 0 && totalActive < maxConcurrentRequests
+        ? foregroundIndex
+        : backgroundIndex >= 0 && totalActive < maxConcurrentRequests && backgroundActive < backgroundLimit
+          ? backgroundIndex
+          : -1;
     if (nextIndex < 0) return;
     const [appId] = pending.splice(nextIndex, 1);
     if (!appId) return;
@@ -564,7 +576,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const appActive = active.get(appId) ?? 0;
     active.set(appId, appActive + 1);
     dirty.delete(appId);
-    const work = host.reconcileOnce(appId);
+    const work =
+      appId === "may"
+        ? options.hostCapacity.runForeground(() => host.reconcileOnce(appId))
+        : options.hostCapacity.run(() => host.reconcileOnce(appId));
     // Start at most one request claim per event-loop turn. Event publication
     // has already returned before this pump claims the request and resolves
     // its Task, and unrelated I/O can run between independent claims.
@@ -596,12 +611,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (closed || !host.appIds().includes(appId)) return;
     dirty.add(appId);
     if (queued.has(appId)) return;
-    const appActive = active.get(appId) ?? 0;
-    const activeCount = [...active.values()].reduce((total, count) => total + count, 0);
-    // When Host capacity is full, let another App queue ahead of additional
-    // work for the App that is already running. This preserves round-robin
-    // fairness without preventing real per-App concurrency when room exists.
-    if (appActive > 0 && activeCount >= maxConcurrentRequests) return;
     queued.add(appId);
     pending.push(appId);
     armPump();
@@ -841,439 +850,449 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     admissionRecoveryHandle = setImmediate(recoverNext);
   };
 
-  const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
-    const routeSnapshot = registrySnapshot;
-    const routeGeneration = routeSnapshot.generation;
-    const data = eventData(event);
-    let dependencyWakeDelivery: DeliveryResult | undefined;
-    const message = addressedAgentMessage(event);
-    if (message) {
-      const candidates = host.matchingAppIds(message.targetOwner, message.input);
-      if (candidates.length === 1) {
-        const admitted = host.admit({
-          appId: candidates[0]!,
-          source:
-            message.sourceAppId && host.isOwnedApp(message.sourceAppId, message.sender)
-              ? { kind: "app", id: message.sourceAppId }
-              : { kind: "system", id: message.identity },
-          input: message.input,
-          originEventId: eventRowId(event),
-          channel: `agent:${message.sender}`,
-          idempotencyKey: message.identity,
-        });
-        schedule(admitted.item.appId);
+  const unsubscribe = options.bus.subscribeDurableRoute(
+    (event): DeliveryResult | void => {
+      const routeSnapshot = registrySnapshot;
+      const routeGeneration = routeSnapshot.generation;
+      const data = eventData(event);
+      let dependencyWakeDelivery: DeliveryResult | undefined;
+      const message = addressedAgentMessage(event);
+      if (message) {
+        const candidates = host.matchingAppIds(message.targetOwner, message.input);
+        if (candidates.length === 1) {
+          const admitted = host.admit({
+            appId: candidates[0]!,
+            source:
+              message.sourceAppId && host.isOwnedApp(message.sourceAppId, message.sender)
+                ? { kind: "app", id: message.sourceAppId }
+                : { kind: "system", id: message.identity },
+            input: message.input,
+            originEventId: eventRowId(event),
+            channel: `agent:${message.sender}`,
+            idempotencyKey: message.identity,
+          });
+          schedule(admitted.item.appId);
+          return {
+            accepted: true,
+            by: `app-inbox:${admitted.item.appId}:message`,
+            route: "direct",
+            note: "addressed agent message admitted to App inbox",
+          };
+        }
+        throw new Error(
+          candidates.length === 0
+            ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
+            : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`,
+        );
+      }
+      if (event.type === "conversation.message.created") {
+        const appId = typeof data.appId === "string" ? data.appId.trim() : "";
+        const conversationId = typeof data.conversationId === "string" ? data.conversationId.trim() : "";
+        const author =
+          data.author && typeof data.author === "object" && !Array.isArray(data.author)
+            ? (data.author as Record<string, unknown>)
+            : {};
+        const authorKind = typeof author.kind === "string" ? author.kind.trim() : "";
+        const authorId = typeof author.id === "string" ? author.id.trim() : "";
+        const text = typeof data.text === "string" ? data.text.trim() : "";
+        if (!appId || !conversationId || !authorKind || !authorId || !text) {
+          throw new Error("Conversation message is missing its App, conversation, author, or text");
+        }
+        if (authorKind === "human") {
+          const metadata =
+            data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
+              ? (data.metadata as Record<string, unknown>)
+              : {};
+          const persistedEventId = eventRowId(event);
+          const fallbackSequence =
+            typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
+              ? metadata.channelMessageId
+              : undefined;
+          const context = record(data.context);
+          const focusedTask = record(context.focusedTask);
+          const focusedAppId =
+            typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
+          const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
+          const admitted = host.admit({
+            appId,
+            ...(focusedAppId === appId && focusedTaskId ? { targetTaskId: focusedTaskId } : {}),
+            source: { kind: "human", id: authorId },
+            input: {
+              kind: "message",
+              data: {
+                message: text,
+                ...(data.context && typeof data.context === "object" && !Array.isArray(data.context)
+                  ? { context: data.context }
+                  : {}),
+              },
+            },
+            originEventId: persistedEventId,
+            conversationId,
+            conversationSequence: persistedEventId ?? fallbackSequence,
+            channel: typeof metadata.channel === "string" ? metadata.channel : undefined,
+            channelTargetId: typeof metadata.channelTargetId === "string" ? metadata.channelTargetId : undefined,
+            channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
+            channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
+            replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
+            idempotencyKey:
+              typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
+                ? data.idempotencyKey.trim()
+                : eventIdentity(event),
+          });
+          schedule(admitted.item.appId);
+          notifyConversationUpdated(admitted.item.appId, admitted.item.conversationId);
+          return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
+        }
+        if (data.transient !== true) notifyConversationUpdated(appId, conversationId);
         return {
           accepted: true,
-          by: `app-inbox:${admitted.item.appId}:message`,
+          by: `conversation:${conversationId}`,
           route: "direct",
-          note: "addressed agent message admitted to App inbox",
+          note: data.transient === true ? "transient conversation transport" : "durable conversation context",
         };
       }
-      throw new Error(
-        candidates.length === 0
-          ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
-          : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`,
-      );
-    }
-    if (event.type === "conversation.message.created") {
-      const appId = typeof data.appId === "string" ? data.appId.trim() : "";
-      const conversationId = typeof data.conversationId === "string" ? data.conversationId.trim() : "";
-      const author =
-        data.author && typeof data.author === "object" && !Array.isArray(data.author)
-          ? (data.author as Record<string, unknown>)
-          : {};
-      const authorKind = typeof author.kind === "string" ? author.kind.trim() : "";
-      const authorId = typeof author.id === "string" ? author.id.trim() : "";
-      const text = typeof data.text === "string" ? data.text.trim() : "";
-      if (!appId || !conversationId || !authorKind || !authorId || !text) {
-        throw new Error("Conversation message is missing its App, conversation, author, or text");
-      }
-      if (authorKind === "human") {
-        const metadata =
-          data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
-            ? (data.metadata as Record<string, unknown>)
-            : {};
-        const persistedEventId = eventRowId(event);
-        const fallbackSequence =
-          typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
-            ? metadata.channelMessageId
-            : undefined;
-        const context = record(data.context);
-        const focusedTask = record(context.focusedTask);
-        const focusedAppId =
-          typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
-        const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
+      if (event.type === "app.input.requested") {
+        const appId = typeof data.appId === "string" ? data.appId.trim() : "";
+        const identity = eventIdentity(event);
         const admitted = host.admit({
+          id: typeof data.requestId === "string" ? data.requestId.trim() || undefined : undefined,
           appId,
-          ...(focusedAppId === appId && focusedTaskId ? { targetTaskId: focusedTaskId } : {}),
-          source: { kind: "human", id: authorId },
-          input: {
-            kind: "message",
-            data: {
-              message: text,
-              ...(data.context && typeof data.context === "object" && !Array.isArray(data.context)
-                ? { context: data.context }
-                : {}),
-            },
-          },
-          originEventId: persistedEventId,
-          conversationId,
-          conversationSequence: persistedEventId ?? fallbackSequence,
-          channel: typeof metadata.channel === "string" ? metadata.channel : undefined,
-          channelTargetId: typeof metadata.channelTargetId === "string" ? metadata.channelTargetId : undefined,
-          channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
-          channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
-          replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
+          source: inputSource(data.source, identity ?? `event:${event.type}`),
+          input: requestedInput(data),
+          originEventId: eventRowId(event),
+          parentId: typeof data.parentId === "string" ? data.parentId : undefined,
+          targetTaskId: typeof data.targetTaskId === "string" ? data.targetTaskId : undefined,
+          conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
+          conversationSequence:
+            typeof data.conversationId === "string"
+              ? typeof data.conversationSequence === "number"
+                ? data.conversationSequence
+                : eventRowId(event)
+              : undefined,
+          channel: typeof data.channel === "string" ? data.channel : undefined,
+          channelTargetId: typeof data.channelTargetId === "string" ? data.channelTargetId : undefined,
+          channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
+          channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
+          replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
           idempotencyKey:
             typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
               ? data.idempotencyKey.trim()
-              : eventIdentity(event),
+              : identity,
         });
         schedule(admitted.item.appId);
-        notifyConversationUpdated(admitted.item.appId, admitted.item.conversationId);
-        return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
-      }
-      if (data.transient !== true) notifyConversationUpdated(appId, conversationId);
-      return {
-        accepted: true,
-        by: `conversation:${conversationId}`,
-        route: "direct",
-        note: data.transient === true ? "transient conversation transport" : "durable conversation context",
-      };
-    }
-    if (event.type === "app.input.requested") {
-      const appId = typeof data.appId === "string" ? data.appId.trim() : "";
-      const identity = eventIdentity(event);
-      const admitted = host.admit({
-        id: typeof data.requestId === "string" ? data.requestId.trim() || undefined : undefined,
-        appId,
-        source: inputSource(data.source, identity ?? `event:${event.type}`),
-        input: requestedInput(data),
-        originEventId: eventRowId(event),
-        parentId: typeof data.parentId === "string" ? data.parentId : undefined,
-        targetTaskId: typeof data.targetTaskId === "string" ? data.targetTaskId : undefined,
-        conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
-        conversationSequence:
-          typeof data.conversationId === "string"
-            ? typeof data.conversationSequence === "number"
-              ? data.conversationSequence
-              : eventRowId(event)
-            : undefined,
-        channel: typeof data.channel === "string" ? data.channel : undefined,
-        channelTargetId: typeof data.channelTargetId === "string" ? data.channelTargetId : undefined,
-        channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
-        channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
-        replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
-        idempotencyKey:
-          typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
-            ? data.idempotencyKey.trim()
-            : identity,
-      });
-      schedule(admitted.item.appId);
-      return {
-        accepted: true,
-        by: `app-inbox:${admitted.item.appId}`,
-        route: "direct",
-        note: `request:${admitted.item.id}; ${admitted.created ? "created" : "existing"}`,
-      };
-    }
-    if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
-      const kind = data.kind;
-      const id = typeof data.id === "string" ? data.id.trim() : "";
-      if ((kind === "app" || kind === "task" || kind === "session") && id) {
-        const taskAppId = kind === "task" && typeof data.appId === "string" ? data.appId.trim() : undefined;
-        if (event.type === "app.dependency.updated" && kind === "task" && taskAppId) {
-          for (const request of listAppInboxItemsWaitingOnTask(options.db, taskAppId, id)) {
-            if (request.source.kind !== "app") continue;
-            options.bus.emit({
-              type: "app.dependency.updated",
-              source: "app-inbox",
-              owner: `app:${request.source.id}`,
-              target: { appId: request.source.id, project: request.source.id },
-              data: {
-                kind: "app",
-                id: request.id,
-                appId: request.source.id,
-                idempotencyKey: `app-request-updated:${request.id}:${eventRowId(event)}`,
-              },
-            } as unknown as AgentEvent);
-          }
-        }
-        for (const appId of host.wakeAppIds({ kind, id }, taskAppId || undefined)) schedule(appId);
-        // One dependency Event may advance both an inbox request and one or
-        // more Tasks. Preserve the direct inbox wake, then continue through
-        // canonical Task-Condition admission below.
-        dependencyWakeDelivery = { accepted: true, by: "app-inbox:wake" };
-      }
-    }
-    if (event.type === "cli.task.completed" || event.type === "cli.task.failed" || event.type === "cli.task.orphaned") {
-      const analysisId = typeof data.taskId === "string" ? data.taskId.trim() : "";
-      if (analysisId) {
-        for (const appId of host.wakeAppIds({ kind: "analysis", id: analysisId })) schedule(appId);
-      }
-    }
-    if (event.type === "session.end") {
-      const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
-      if (sessionId) {
-        for (const appId of host.wakeAppIds({ kind: "session", id: sessionId })) schedule(appId);
-      }
-    }
-    if (String(event.type) === "project.task.reconciled") {
-      const appId = typeof data.project === "string" ? data.project.trim() : "";
-      const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
-      const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
-      const summary = typeof data.summary === "string" ? data.summary.trim() : "";
-      const conversationResult = record(record(data.result).conversation);
-      const conversationId =
-        typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";
-      const topicId = typeof conversationResult.topicId === "string" ? conversationResult.topicId.trim() : "";
-      const followUpId =
-        typeof conversationResult.followUpId === "string" ? conversationResult.followUpId.trim() : "";
-      const text = typeof conversationResult.text === "string" ? conversationResult.text.trim() : "";
-      const taskRefs = Array.isArray(conversationResult.taskRefs)
-        ? conversationResult.taskRefs.flatMap((value) => {
-            const item = record(value);
-            const refAppId = typeof item.appId === "string" ? item.appId.trim().replace(/\.app$/, "") : "";
-            const refTaskId = typeof item.taskId === "string" ? item.taskId.trim() : "";
-            return refAppId && refTaskId ? [{ appId: refAppId, taskId: refTaskId }] : [];
-          }).slice(0, 100)
-        : [];
-      const followUp = followUpId ? host.get(followUpId) : null;
-      const followUpContext = record(record(followUp?.input.data).conversationContext);
-      const correlatedConversationId =
-        followUp?.source.kind === "app" && followUp.source.id === appId &&
-        typeof followUpContext.conversationId === "string"
-          ? followUpContext.conversationId.trim()
-          : "";
-      const correlatedTopicId =
-        followUp?.source.kind === "app" && followUp.source.id === appId &&
-        typeof followUpContext.topicId === "string"
-          ? followUpContext.topicId.trim()
-          : "";
-      const targetConversationId = correlatedConversationId || conversationId;
-      const targetTopicId = correlatedTopicId || topicId;
-      if (appId && targetConversationId && targetTopicId && followUpId && text) {
-        const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
-        if (topic) {
-          for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
-          options.bus.emit({
-            type: "conversation.message.created",
-            source: "app-task-follow-up",
-            owner: `app:${appId}`,
-            data: {
-              appId,
-              conversationId: targetConversationId,
-              author: { kind: "agent", id: appId },
-              text,
-              metadata: {
-                topicId: targetTopicId,
-                taskRefs,
-                ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
-              },
-              idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
-                .update(text)
-                .digest("hex")
-                .slice(0, 16)}`,
-            },
-          });
-        } else {
-          options.bus.emit({
-            type: "info",
-            message: `[app-inbox:${appId}] Follow-up ${followUpId} result names unavailable Topic ${targetTopicId}`,
-          });
-        }
-      }
-      if (appId === "may" && taskId && disposition === "waiting") {
-        const statusIdentity = `${data.generation ?? "?"}:${createHash("sha256")
-          .update(`${disposition}\0${summary}`)
-          .digest("hex")
-          .slice(0, 16)}`;
-        for (const item of oneItemPerConversationTask(
-          listHumanAppInboxItemsWaitingOnTask(options.db, appId, taskId),
-        )) {
-          const idempotencyKey = `conversation-task-status:${item.conversationId}:${appId}:${taskId}:${statusIdentity}:${disposition}`;
-          options.bus.emit({
-            type: "conversation.message.created",
-            source: "app-inbox",
-            owner: `app:${appId}`,
-            data: {
-              appId,
-              conversationId: item.conversationId!,
-              author: { kind: "agent", id: "may" },
-              text: summary || "I’m continuing this as a Task and it is waiting for new evidence.",
-              metadata: {
-                channel: item.channel,
-                channelTargetId: item.channelTargetId,
-                channelThreadId: item.channelThreadId,
-                requestId: item.id,
-                taskRefs: [{ appId, taskId }],
-              },
-              idempotencyKey,
-            },
-          });
-        }
-      }
-    }
-    const identity = eventIdentity(event);
-    if (identity) {
-      const eventId = eventRowId(event)!;
-      const frozenPlan = getAppEventAdmissionPlan(options.db, eventId);
-      // A timed-out plan remains as immutable routing evidence, but it is no
-      // longer admission authority. An explicit retry of the unhandled event
-      // must not reclassify it or report the superseded commands as pending.
-      if (frozenPlan) {
-        if (frozenPlan.status === "superseded") return undefined;
-        return admitAdmissionPlan(frozenPlan, event);
-      }
-
-      const canonical = canonicalAppEvent(event);
-      const exactTarget = exactTaskTarget(canonical);
-      if (exactTarget) {
-        if (!exactTarget.appId) {
-          throw new Error(
-            `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity in registry generation ${routeGeneration}`,
-          );
-        }
-        const entry = loadedById.get(exactTarget.appId);
-        const tasks = entry?.definition.tasks;
-        if (!entry) {
-          throw new Error(
-            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an unknown canonical App in registry generation ${routeGeneration}`,
-          );
-        }
-        if (!tasks) {
-          throw new Error(
-            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability in registry generation ${routeGeneration}`,
-          );
-        }
-        const conditionTaskIds =
-          options.previewTaskEvent?.({
-            appId: entry.definition.id,
-            appDir: entry.appDir,
-            event,
-            targetedTaskId: exactTarget.taskId,
-          }) ?? [];
-        const plan = createAppEventAdmissionPlan(options.db, {
-          eventId,
-          registrySnapshotId: routeSnapshot.id,
-          registryGeneration: routeGeneration,
-          routes: [
-            {
-              appId: entry.definition.id,
-              kind: "exact-task",
-              routeId: exactTarget.taskId,
-              targetedTaskId: exactTarget.taskId,
-              conditionTaskIds,
-            },
-          ],
-          now: now(),
-        });
-        return admitAdmissionPlan(plan, event);
-      }
-
-      const inboxMatches = host.subscriptionInputs(canonical);
-      const inboxCountByApp = new Map<string, number>();
-      for (const match of inboxMatches) {
-        inboxCountByApp.set(match.appId, (inboxCountByApp.get(match.appId) ?? 0) + 1);
-      }
-      const duplicateInboxApp = [...inboxCountByApp].find(([, count]) => count > 1)?.[0];
-      if (duplicateInboxApp) {
-        throw new Error(`Canonical App ${duplicateInboxApp} has multiple inbox routes for event ${identity}`);
-      }
-
-      const conditionTaskIdsByApp = new Map<string, Set<string>>();
-      for (const match of options.previewTaskEventRoutes?.({ event }) ?? []) {
-        if (!loadedById.get(match.appId)?.definition.tasks) continue;
-        const taskIds = conditionTaskIdsByApp.get(match.appId) ?? new Set<string>();
-        for (const taskId of match.taskIds) taskIds.add(taskId);
-        conditionTaskIdsByApp.set(match.appId, taskIds);
-      }
-      const taskCandidates = new Map(
-        (options.previewTaskEventRoutes
-          ? taskSubscriptionsByEventType.get(canonical.type) ?? []
-          : loaded
-        ).map((entry) => [entry.definition.id, entry]),
-      );
-      for (const appId of conditionTaskIdsByApp.keys()) {
-        const entry = loadedById.get(appId);
-        if (entry) taskCandidates.set(appId, entry);
-      }
-      const taskAdmissions = [...taskCandidates.values()].flatMap(({ definition, appDir }) => {
-        const tasks = definition.tasks;
-        if (!tasks) return [];
-        const subscriptionMatched = Boolean(
-          tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical)),
-        );
-        let intent: TaskIntent | null = null;
-        if (subscriptionMatched) {
-          try {
-            intent = tasks.resolve?.(canonical) ?? null;
-          } catch (error) {
-            throw new Error(
-              `Canonical App ${definition.id} task resolver failed for event ${identity} in registry generation ${routeGeneration}: ${error instanceof Error ? error.message : String(error)}`,
-              { cause: error },
-            );
-          }
-        }
-        const conditionTaskIds = options.previewTaskEventRoutes
-          ? [...(conditionTaskIdsByApp.get(definition.id) ?? [])].sort()
-          : options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
-        return intent || conditionTaskIds.length > 0
-          ? [{ appId: definition.id, appDir, intent, conditionTaskIds }]
-          : [];
-      });
-      const inboxApps = new Set(inboxMatches.map((match) => match.appId));
-      const overlap = taskAdmissions.find((admission) => admission.intent && inboxApps.has(admission.appId));
-      if (overlap) {
-        throw new Error(`Canonical App ${overlap.appId} has both inbox and task-intent routes for event ${identity}`);
-      }
-      const taskAdmissionByApp = new Map(taskAdmissions.map((admission) => [admission.appId, admission]));
-
-      const routes: AppEventAdmissionRoute[] = [
-        ...inboxMatches.map((match) => ({
-          appId: match.appId,
-          kind: "inbox" as const,
-          routeId: match.subscriptionId,
-          input: match.input,
-          conditionTaskIds: taskAdmissionByApp.get(match.appId)?.conditionTaskIds ?? [],
-        })),
-        ...taskAdmissions
-          .filter((admission) => !inboxApps.has(admission.appId))
-          .map((admission) => ({
-            appId: admission.appId,
-            kind: "task" as const,
-            routeId: admission.intent?.id ?? admission.conditionTaskIds.join("+"),
-            intent: admission.intent,
-            conditionTaskIds: admission.conditionTaskIds,
-          })),
-      ];
-      if (routes.length > 0) {
-        const plan = createAppEventAdmissionPlan(options.db, {
-          eventId,
-          registrySnapshotId: routeSnapshot.id,
-          registryGeneration: routeGeneration,
-          routes,
-          now: now(),
-        });
-        return admitAdmissionPlan(plan, event);
-      }
-
-      const observationApps = (observationsByEventType.get(canonical.type) ?? [])
-        .filter(({ definition }) =>
-          definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
-        )
-        .map(({ definition }) => definition.id);
-      if (observationApps.length > 0) {
         return {
           accepted: true,
-          by: `app-runtime:observations:${observationApps.join(",")}`,
-          route: "noop",
-          note: `registry-snapshot:${routeSnapshot.id}; generation:${routeGeneration}; zero work routes selected`,
+          by: `app-inbox:${admitted.item.appId}`,
+          route: "direct",
+          note: `request:${admitted.item.id}; ${admitted.created ? "created" : "existing"}`,
         };
       }
-    }
-    return dependencyWakeDelivery;
-  }, { label: "app-inbox-route" });
+      if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
+        const kind = data.kind;
+        const id = typeof data.id === "string" ? data.id.trim() : "";
+        if ((kind === "app" || kind === "task" || kind === "session") && id) {
+          const taskAppId = kind === "task" && typeof data.appId === "string" ? data.appId.trim() : undefined;
+          if (event.type === "app.dependency.updated" && kind === "task" && taskAppId) {
+            for (const request of listAppInboxItemsWaitingOnTask(options.db, taskAppId, id)) {
+              if (request.source.kind !== "app") continue;
+              options.bus.emit({
+                type: "app.dependency.updated",
+                source: "app-inbox",
+                owner: `app:${request.source.id}`,
+                target: { appId: request.source.id, project: request.source.id },
+                data: {
+                  kind: "app",
+                  id: request.id,
+                  appId: request.source.id,
+                  idempotencyKey: `app-request-updated:${request.id}:${eventRowId(event)}`,
+                },
+              } as unknown as AgentEvent);
+            }
+          }
+          for (const appId of host.wakeAppIds({ kind, id }, taskAppId || undefined)) schedule(appId);
+          // One dependency Event may advance both an inbox request and one or
+          // more Tasks. Preserve the direct inbox wake, then continue through
+          // canonical Task-Condition admission below.
+          dependencyWakeDelivery = { accepted: true, by: "app-inbox:wake" };
+        }
+      }
+      if (
+        event.type === "cli.task.completed" ||
+        event.type === "cli.task.failed" ||
+        event.type === "cli.task.orphaned"
+      ) {
+        const analysisId = typeof data.taskId === "string" ? data.taskId.trim() : "";
+        if (analysisId) {
+          for (const appId of host.wakeAppIds({ kind: "analysis", id: analysisId })) schedule(appId);
+        }
+      }
+      if (event.type === "session.end") {
+        const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
+        if (sessionId) {
+          for (const appId of host.wakeAppIds({ kind: "session", id: sessionId })) schedule(appId);
+        }
+      }
+      if (String(event.type) === "project.task.reconciled") {
+        const appId = typeof data.project === "string" ? data.project.trim() : "";
+        const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
+        const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
+        const summary = typeof data.summary === "string" ? data.summary.trim() : "";
+        const conversationResult = record(record(data.result).conversation);
+        const conversationId =
+          typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";
+        const topicId = typeof conversationResult.topicId === "string" ? conversationResult.topicId.trim() : "";
+        const followUpId =
+          typeof conversationResult.followUpId === "string" ? conversationResult.followUpId.trim() : "";
+        const text = typeof conversationResult.text === "string" ? conversationResult.text.trim() : "";
+        const taskRefs = Array.isArray(conversationResult.taskRefs)
+          ? conversationResult.taskRefs
+              .flatMap((value) => {
+                const item = record(value);
+                const refAppId = typeof item.appId === "string" ? item.appId.trim().replace(/\.app$/, "") : "";
+                const refTaskId = typeof item.taskId === "string" ? item.taskId.trim() : "";
+                return refAppId && refTaskId ? [{ appId: refAppId, taskId: refTaskId }] : [];
+              })
+              .slice(0, 100)
+          : [];
+        const followUp = followUpId ? host.get(followUpId) : null;
+        const followUpContext = record(record(followUp?.input.data).conversationContext);
+        const correlatedConversationId =
+          followUp?.source.kind === "app" &&
+          followUp.source.id === appId &&
+          typeof followUpContext.conversationId === "string"
+            ? followUpContext.conversationId.trim()
+            : "";
+        const correlatedTopicId =
+          followUp?.source.kind === "app" && followUp.source.id === appId && typeof followUpContext.topicId === "string"
+            ? followUpContext.topicId.trim()
+            : "";
+        const targetConversationId = correlatedConversationId || conversationId;
+        const targetTopicId = correlatedTopicId || topicId;
+        if (appId && targetConversationId && targetTopicId && followUpId && text) {
+          const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
+          if (topic) {
+            for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
+            options.bus.emit({
+              type: "conversation.message.created",
+              source: "app-task-follow-up",
+              owner: `app:${appId}`,
+              data: {
+                appId,
+                conversationId: targetConversationId,
+                messageId: `result:${followUpId}`,
+                author: { kind: "agent", id: appId },
+                text,
+                metadata: {
+                  requestId: followUpId,
+                  topicId: targetTopicId,
+                  taskRefs,
+                  ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
+                },
+                idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
+                  .update(text)
+                  .digest("hex")
+                  .slice(0, 16)}`,
+              },
+            });
+          } else {
+            options.bus.emit({
+              type: "info",
+              message: `[app-inbox:${appId}] Follow-up ${followUpId} result names unavailable Topic ${targetTopicId}`,
+            });
+          }
+        }
+        if (appId === "may" && taskId && disposition === "waiting") {
+          const statusIdentity = `${data.generation ?? "?"}:${createHash("sha256")
+            .update(`${disposition}\0${summary}`)
+            .digest("hex")
+            .slice(0, 16)}`;
+          for (const item of oneItemPerConversationTask(
+            listHumanAppInboxItemsWaitingOnTask(options.db, appId, taskId),
+          )) {
+            const idempotencyKey = `conversation-task-status:${item.conversationId}:${appId}:${taskId}:${statusIdentity}:${disposition}`;
+            options.bus.emit({
+              type: "conversation.message.created",
+              source: "app-inbox",
+              owner: `app:${appId}`,
+              data: {
+                appId,
+                conversationId: item.conversationId!,
+                author: { kind: "agent", id: "may" },
+                text: summary || "I’m continuing this as a Task and it is waiting for new evidence.",
+                metadata: {
+                  channel: item.channel,
+                  channelTargetId: item.channelTargetId,
+                  channelThreadId: item.channelThreadId,
+                  requestId: item.id,
+                  taskRefs: [{ appId, taskId }],
+                },
+                idempotencyKey,
+              },
+            });
+          }
+        }
+      }
+      const identity = eventIdentity(event);
+      if (identity) {
+        const eventId = eventRowId(event)!;
+        const frozenPlan = getAppEventAdmissionPlan(options.db, eventId);
+        // A timed-out plan remains as immutable routing evidence, but it is no
+        // longer admission authority. An explicit retry of the unhandled event
+        // must not reclassify it or report the superseded commands as pending.
+        if (frozenPlan) {
+          if (frozenPlan.status === "superseded") return undefined;
+          return admitAdmissionPlan(frozenPlan, event);
+        }
+
+        const canonical = canonicalAppEvent(event);
+        const exactTarget = exactTaskTarget(canonical);
+        if (exactTarget) {
+          if (!exactTarget.appId) {
+            throw new Error(
+              `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity in registry generation ${routeGeneration}`,
+            );
+          }
+          const entry = loadedById.get(exactTarget.appId);
+          const tasks = entry?.definition.tasks;
+          if (!entry) {
+            throw new Error(
+              `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an unknown canonical App in registry generation ${routeGeneration}`,
+            );
+          }
+          if (!tasks) {
+            throw new Error(
+              `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability in registry generation ${routeGeneration}`,
+            );
+          }
+          const conditionTaskIds =
+            options.previewTaskEvent?.({
+              appId: entry.definition.id,
+              appDir: entry.appDir,
+              event,
+              targetedTaskId: exactTarget.taskId,
+            }) ?? [];
+          const plan = createAppEventAdmissionPlan(options.db, {
+            eventId,
+            registrySnapshotId: routeSnapshot.id,
+            registryGeneration: routeGeneration,
+            routes: [
+              {
+                appId: entry.definition.id,
+                kind: "exact-task",
+                routeId: exactTarget.taskId,
+                targetedTaskId: exactTarget.taskId,
+                conditionTaskIds,
+              },
+            ],
+            now: now(),
+          });
+          return admitAdmissionPlan(plan, event);
+        }
+
+        const inboxMatches = host.subscriptionInputs(canonical);
+        const inboxCountByApp = new Map<string, number>();
+        for (const match of inboxMatches) {
+          inboxCountByApp.set(match.appId, (inboxCountByApp.get(match.appId) ?? 0) + 1);
+        }
+        const duplicateInboxApp = [...inboxCountByApp].find(([, count]) => count > 1)?.[0];
+        if (duplicateInboxApp) {
+          throw new Error(`Canonical App ${duplicateInboxApp} has multiple inbox routes for event ${identity}`);
+        }
+
+        const conditionTaskIdsByApp = new Map<string, Set<string>>();
+        for (const match of options.previewTaskEventRoutes?.({ event }) ?? []) {
+          if (!loadedById.get(match.appId)?.definition.tasks) continue;
+          const taskIds = conditionTaskIdsByApp.get(match.appId) ?? new Set<string>();
+          for (const taskId of match.taskIds) taskIds.add(taskId);
+          conditionTaskIdsByApp.set(match.appId, taskIds);
+        }
+        const taskCandidates = new Map(
+          (options.previewTaskEventRoutes ? (taskSubscriptionsByEventType.get(canonical.type) ?? []) : loaded).map(
+            (entry) => [entry.definition.id, entry],
+          ),
+        );
+        for (const appId of conditionTaskIdsByApp.keys()) {
+          const entry = loadedById.get(appId);
+          if (entry) taskCandidates.set(appId, entry);
+        }
+        const taskAdmissions = [...taskCandidates.values()].flatMap(({ definition, appDir }) => {
+          const tasks = definition.tasks;
+          if (!tasks) return [];
+          const subscriptionMatched = Boolean(
+            tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical)),
+          );
+          let intent: TaskIntent | null = null;
+          if (subscriptionMatched) {
+            try {
+              intent = tasks.resolve?.(canonical) ?? null;
+            } catch (error) {
+              throw new Error(
+                `Canonical App ${definition.id} task resolver failed for event ${identity} in registry generation ${routeGeneration}: ${error instanceof Error ? error.message : String(error)}`,
+                { cause: error },
+              );
+            }
+          }
+          const conditionTaskIds = options.previewTaskEventRoutes
+            ? [...(conditionTaskIdsByApp.get(definition.id) ?? [])].sort()
+            : (options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? []);
+          return intent || conditionTaskIds.length > 0
+            ? [{ appId: definition.id, appDir, intent, conditionTaskIds }]
+            : [];
+        });
+        const inboxApps = new Set(inboxMatches.map((match) => match.appId));
+        const overlap = taskAdmissions.find((admission) => admission.intent && inboxApps.has(admission.appId));
+        if (overlap) {
+          throw new Error(`Canonical App ${overlap.appId} has both inbox and task-intent routes for event ${identity}`);
+        }
+        const taskAdmissionByApp = new Map(taskAdmissions.map((admission) => [admission.appId, admission]));
+
+        const routes: AppEventAdmissionRoute[] = [
+          ...inboxMatches.map((match) => ({
+            appId: match.appId,
+            kind: "inbox" as const,
+            routeId: match.subscriptionId,
+            input: match.input,
+            conditionTaskIds: taskAdmissionByApp.get(match.appId)?.conditionTaskIds ?? [],
+          })),
+          ...taskAdmissions
+            .filter((admission) => !inboxApps.has(admission.appId))
+            .map((admission) => ({
+              appId: admission.appId,
+              kind: "task" as const,
+              routeId: admission.intent?.id ?? admission.conditionTaskIds.join("+"),
+              intent: admission.intent,
+              conditionTaskIds: admission.conditionTaskIds,
+            })),
+        ];
+        if (routes.length > 0) {
+          const plan = createAppEventAdmissionPlan(options.db, {
+            eventId,
+            registrySnapshotId: routeSnapshot.id,
+            registryGeneration: routeGeneration,
+            routes,
+            now: now(),
+          });
+          return admitAdmissionPlan(plan, event);
+        }
+
+        const observationApps = (observationsByEventType.get(canonical.type) ?? [])
+          .filter(({ definition }) =>
+            definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
+          )
+          .map(({ definition }) => definition.id);
+        if (observationApps.length > 0) {
+          return {
+            accepted: true,
+            by: `app-runtime:observations:${observationApps.join(",")}`,
+            route: "noop",
+            note: `registry-snapshot:${routeSnapshot.id}; generation:${routeGeneration}; zero work routes selected`,
+          };
+        }
+      }
+      return dependencyWakeDelivery;
+    },
+    { label: "app-inbox-route" },
+  );
   // Events schedule normal work immediately. This interval is recovery
   // insurance for lost in-memory wakes, due schedules, and observer slots; it
   // must not turn the App inbox into an ordinary five-second polling loop.

@@ -45,6 +45,13 @@ describe("canonical App definition validation", () => {
         },
       ],
       observers: [{ id: "health", intervalMs: 60_000, run: async () => [] }],
+      metrics: [
+        {
+          id: "evaluation.coverage",
+          sourceQuery: "SELECT 1 AS value",
+          measureInterval: 60_000,
+        },
+      ],
       actions: {
         evaluate: {
           description: "Evaluate one request",
@@ -112,6 +119,10 @@ describe("canonical App definition validation", () => {
             catchUp: "latest",
           },
         ],
+        metrics: [
+          { id: "same", sourceQuery: "", measureInterval: 0 },
+          { id: "same", sourceQuery: "SELECT 1", sourceCommand: "echo 1" },
+        ],
         tasks: { subscriptions: ["task.requested"] },
       }),
     ).toEqual(
@@ -130,6 +141,10 @@ describe("canonical App definition validation", () => {
         "App broken schedule ambiguous-target requires exactly one App input or event",
         "App broken schedule invalid-event requires a valid event",
         "App broken event schedule invalid-event cannot configure inbox catch-up",
+        "App broken metric id is duplicated: same",
+        "App broken metric same sourceQuery must be non-empty",
+        "App broken metric same measureInterval must be positive",
+        "App broken metric same cannot declare both sourceQuery and sourceCommand",
         "App broken task subscriptions require resolve",
       ]),
     );

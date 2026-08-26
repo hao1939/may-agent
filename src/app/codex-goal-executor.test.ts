@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AppEvent, TaskAttempt } from "@may-agent/sdk";
+import { taskAgentResultSchema, type AppEvent, type TaskAttempt } from "@may-agent/sdk";
 import { codexGoalExecutorInternals, createCodexGoalExecutor, type CodexGoalClient } from "./codex-goal-executor.js";
 import type {
   AppServerNotification,
@@ -28,7 +28,12 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
   return {
     appId: "evaluation",
     attemptId: "r_1_test",
+    signal: new AbortController().signal,
     resourceVersion: 4,
+    role: {
+      agent: "evaluator",
+      instructions: "Judge from exact evidence.",
+    },
     task: {
       id: "runtime/codex-goal-trial/may-agent.app/example",
       parentId: "project-app-audit",
@@ -45,7 +50,9 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
     cwd: "/app/projects/evaluation.app",
     declaredOutputPaths: [],
     children: { live: [], completed: [] },
+    waits: { open: [], note: "No accepted waits." },
     events: { items: [], truncated: false },
+    resultSchema: structuredClone(taskAgentResultSchema) as unknown as Record<string, unknown>,
     async publish() {
       return { eventId: 1 };
     },
@@ -148,14 +155,47 @@ class FakeClient implements CodexGoalClient {
 }
 
 describe("codex-goal Task executor", () => {
-  it("loads the selected App agent role and real Task observations into the packet", () => {
+  it("interrupts the exact active Codex turn when its Task attempt is cancelled", async () => {
+    const root = fixtureRoot();
+    const controller = new AbortController();
+    const client = new FakeClient("thread-cancel");
+    let rejectGoal = (_error: unknown) => {};
+    client.waitForGoal = async () => {
+      client.calls.push("terminal-goal");
+      return await new Promise<CodexGoalObservation>((_resolve, reject) => {
+        rejectGoal = reject;
+      });
+    };
+    client.stop = async () => {
+      client.calls.push("stop");
+      rejectGoal(new Error("Codex app-server client stopped"));
+    };
+    const executor = createCodexGoalExecutor({
+      stateFile: join(root, "bindings.json"),
+      createClient: () => client,
+      checkIntervalMs: 10,
+      softStaleAfterMs: 1_000,
+      hardStaleAfterMs: 2_000,
+    });
+
+    const running = executor(attempt({ cwd: root, signal: controller.signal }));
+    while (!client.calls.includes("terminal-goal")) await Bun.sleep(1);
+    controller.abort(new Error("Task was cancelled"));
+
+    await expect(running).rejects.toThrow("stopped");
+    expect(client.calls).toContain("interrupt");
+    expect(client.calls).toContain("stop");
+  });
+
+  it("uses the Runtime-resolved role and observations without rediscovering workspace instructions", () => {
     const root = fixtureRoot();
     const agentDir = join(root, "agents", "evaluator");
     mkdirSync(agentDir, { recursive: true });
-    writeFileSync(join(agentDir, "AGENTS.md"), "Judge from exact evidence.\n");
+    writeFileSync(join(agentDir, "AGENTS.md"), "Conflicting workspace role must be ignored.\n");
     const packet = codexGoalExecutorInternals.packetFor(
       attempt({
         cwd: root,
+        role: { agent: "evaluator", instructions: "Use the immutable Runtime role." },
         declaredOutputPaths: ["reports/review.md"],
         children: {
           live: [],
@@ -177,7 +217,8 @@ describe("codex-goal Task executor", () => {
         },
       }),
     );
-    expect(packet.role.instructions).toContain("Judge from exact evidence.");
+    expect(packet.role.instructions).toBe("Use the immutable Runtime role.");
+    expect(packet.role.instructions).not.toContain("Conflicting workspace role");
     expect(packet.workspace.declaredOutputPaths).toEqual(["reports/review.md"]);
     expect(packet.observations.children.completed[0]?.taskId).toBe("collect-facts");
   });

@@ -297,6 +297,7 @@ CREATE TABLE IF NOT EXISTS event_pair_runs (
   note TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id);
+CREATE INDEX IF NOT EXISTS idx_event_pair_close_event ON event_pair_runs(close_event_id);
 CREATE INDEX IF NOT EXISTS idx_event_pair_status ON event_pair_runs(status, expected_close_at);
 
 CREATE TABLE IF NOT EXISTS app_inbox_items (

@@ -38,6 +38,15 @@ export function createTestAppRead(overrides: Partial<AppRead> = {}): AppRead {
     appResult: overrides.appResult ?? fn(async () => null),
     tasks: {
       list: overrides.tasks?.list ?? fn(async () => ({ items: [] })),
+      outcomes:
+        overrides.tasks?.outcomes ??
+        fn(async () => ({
+          projection: "outcomes" as const,
+          manifestVersion: null,
+          sourceCount: 0,
+          outcomeCount: 0,
+          outcomes: [],
+        })),
       get: getTask,
     },
     execution: overrides.execution ?? fn(async () => null),

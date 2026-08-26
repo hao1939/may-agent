@@ -16,6 +16,7 @@ import {
   EventBus,
 } from "./event-bus.js";
 import { AppRegistry } from "./app-registry.js";
+import { HostCapacity } from "./host-capacity.js";
 import {
   claimNextAppInboxItem,
   createConversationTopic,
@@ -128,6 +129,7 @@ describe("App inbox runtime", () => {
       observations,
       attached,
       options: {
+        hostCapacity: new HostCapacity(4),
         attachTask: async (input: any) => {
           const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
           attached.push(taskId);
@@ -427,8 +429,10 @@ describe("App inbox runtime", () => {
     expect(messages[0]?.data).toMatchObject({
       appId: "may",
       conversationId: "may:primary",
+      messageId: "result:turn-review",
       author: { kind: "agent", id: "may" },
       metadata: {
+        requestId: "turn-review",
         topicId: "topic-review",
         taskRefs: [{ appId: "evaluation", taskId: "review/design" }],
       },
@@ -677,17 +681,42 @@ describe("App inbox runtime", () => {
     expect(task.attached.sort()).toEqual(["probe/live-request", "probe/recovered-request"]);
   });
 
-  it("uses Host capacity for concurrent requests from the same App", async () => {
+  it("shares bounded Host capacity while reserving one foreground May decision", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const started: string[] = [];
     const releases: Array<() => void> = [];
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may", version: 1, agent: "may",
+        inputSchema: {
+          type: "object", additionalProperties: false, required: ["kind", "data"],
+          properties: {
+            kind: { const: "probe" },
+            data: {
+              type: "object", additionalProperties: false, required: ["value"],
+              properties: { value: { type: "string" } }
+            }
+          }
+        },
+        task(input) {
+          return { kind: "desired", intent: {
+            id: "conversation/" + input.id, parentId: "may", outcome: "Answer",
+            acceptance: ["Answered"], mode: "achieve"
+          }};
+        },
+        tasks: {}
+      };\n`,
+    );
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
       db,
       bus,
       ...task.options,
-      maxConcurrentRequests: 2,
+      hostCapacity: new HostCapacity(3),
+      maxConcurrentRequests: 3,
       attachTask: async (input: any) => {
         const taskId = input.attachment.intent.id as string;
         started.push(taskId);
@@ -713,8 +742,40 @@ describe("App inbox runtime", () => {
 
     await waitUntil(() => started.length === 2);
     expect(started).toEqual(["probe/parallel-1", "probe/parallel-2"]);
+
+    bus.emit({
+      type: "app.input.requested",
+      source: "test",
+      owner: "human:test",
+      data: {
+        appId: "may",
+        requestId: "foreground",
+        input: { kind: "probe", data: { value: "foreground" } },
+        source: { kind: "human", id: "message-1" },
+      },
+    });
+    await waitUntil(() => started.length === 3);
+    expect(started).toEqual(["probe/parallel-1", "probe/parallel-2", "conversation/foreground"]);
+
+    bus.emit({
+      type: "app.input.requested",
+      source: "test",
+      owner: "app:evaluation",
+      data: {
+        appId: "evaluation",
+        requestId: "parallel-3",
+        input: { kind: "probe", data: { value: "parallel-3" } },
+        source: { kind: "system", id: "test" },
+      },
+    });
+    await Bun.sleep(20);
+    expect(started).toHaveLength(3);
+
+    releases.shift()?.();
+    await waitUntil(() => started.length === 4);
+    expect(started[3]).toBe("probe/parallel-3");
     for (const release of releases) release();
-    await waitUntil(() => runtime?.host.get("parallel-2")?.waitingOn?.kind === "task");
+    await waitUntil(() => runtime?.host.get("parallel-3")?.waitingOn?.kind === "task");
   });
 
   it("recovers an exact Task wait after restart", async () => {

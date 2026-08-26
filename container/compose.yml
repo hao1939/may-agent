@@ -29,7 +29,6 @@ services:
     ports:
       - "${NOVNC_PORT:-6080}:6080"
       - "${WEB_PORT:-8080}:8080"
-      - "${TERMINAL_PORT:-7681}:7681"
     volumes:
       - /app:/app
       - /app/sources/alpha-source:/app/sources/alpha-source:ro

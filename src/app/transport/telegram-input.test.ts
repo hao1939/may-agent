@@ -715,6 +715,16 @@ describe("Telegram May input", () => {
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
       expect(sent).toContainEqual(expect.stringContaining("Watching 8f12ac90"));
 
+      const unchangedCards = sent.filter((text) => text.startsWith("Task 8f12ac90")).length;
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "task-resource",
+        owner: "app:evaluation",
+        data: { appId: "evaluation", taskId: "review/docs" },
+      } as any);
+      await Bun.sleep(30);
+      expect(sent.filter((text) => text.startsWith("Task 8f12ac90"))).toHaveLength(unchangedCards);
+
       taskProgress = {
         stage: "intermediate",
         message: "Inspecting exact evidence",
