@@ -142,6 +142,9 @@ longer enters those lifecycle transitions through the generic JSON-capable
 reader or runs JSON-only attempt pruning after them. The remaining whole-tree
 attempt-pruning helper and optional-store recovery branches are removed;
 resource-backed attempt history remains the durable evidence.
+Condition preflight now reads the normalized resource route index, and selected
+Condition observations mutate only their exact resource contexts. Live routing
+no longer repairs or falls back to the JSON Condition index.
 Rejected stale reconciliation results are released from the exact resource
 context through their claim fences; that production path no longer reads or
 prunes JSON attempt state.
