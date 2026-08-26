@@ -2686,7 +2686,8 @@ describe("App task reconciler state", () => {
   });
 
   it("requeues the same task when a late workflow result reaches its still-running attempt", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const trigger = {
       type: "project.task.tick",
       data: { project: "sample", taskId: "maintain" },
@@ -2699,17 +2700,18 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected workflow claim");
     expect(recordAppTaskAttemptSession(config, claim, "session-resumed-after-restart")).toBe(true);
+    const resourceConfig = resourceFixture(state, "late-workflow-result").config;
 
     expect(
       releaseLateTerminalWorkflowAppTaskAttempt(
-        config,
+        resourceConfig,
         { taskId: claim.taskId, generation: claim.generation },
         "session-resumed-after-restart",
         "Late terminal result cannot reattach to restart-interrupted workflow workflow-run-1",
       ),
     ).toEqual({ released: true, taskId: claim.taskId });
 
-    const released = readTaskState(config);
+    const released = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(released.resources?.[claim.taskId].status).toMatchObject({
       phase: "pending",
       observedGeneration: claim.generation - 1,
@@ -2720,10 +2722,10 @@ describe("App task reconciler state", () => {
       failureReason: "late-terminal-workflow-result-requeued",
       sessionId: "session-resumed-after-restart",
     });
-    expect(readAppTaskTrigger(config, claim.taskId)).toEqual(trigger);
+    expect(readAppTaskTrigger(resourceConfig, claim.taskId)).toEqual(trigger);
     expect(
       releaseLateTerminalWorkflowAppTaskAttempt(
-        config,
+        resourceConfig,
         { taskId: claim.taskId, generation: claim.generation },
         "session-resumed-after-restart",
         "duplicate terminal delivery",
