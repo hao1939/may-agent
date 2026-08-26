@@ -48,7 +48,13 @@ import {
   releaseStaleAppTaskResult,
   taskReconciliationConfig,
 } from "./app-task-reconciler.js";
-import { readTaskState, saveTaskState } from "./app-task-store.js";
+import {
+  legacyTaskStateConfig,
+  readTaskState,
+  saveTaskState,
+  type ResourceTaskStateConfig,
+  type TaskStateConfig,
+} from "./app-task-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { getDb } from "../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
@@ -138,11 +144,7 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
   };
 }
 
-function activateTaskResources(
-  config: ReturnType<typeof taskReconciliationConfig>,
-  persistDir: string,
-  appId = "sample",
-): AppTaskResourceStore {
+function activateTaskResources(config: TaskStateConfig, persistDir: string, appId = "sample"): ResourceTaskStateConfig {
   const tree = readTaskState(config);
   tree.project ||= appId;
   const finalLifecycle = tree.project_lifecycle === "paused" ? "paused" : "active";
@@ -155,20 +157,28 @@ function activateTaskResources(
   rmSync(config.statePath, { force: true });
   const active = AppTaskResourceStore.activeFromDb(getDb(persistDir), appId);
   if (!active) throw new Error(`expected active resource store for ${appId}`);
-  config.resourceStore = active;
-  return active;
+  return taskReconciliationConfig({
+    appDir: config.appDir,
+    ...(config.stateAppDir ? { stateAppDir: config.stateAppDir } : {}),
+    projectDir: config.projectDir,
+    agent: config.worker,
+    maxConcurrent: config.maxConcurrent,
+    resourceStore: active,
+  });
 }
 
 function loadedTaskConfig(f: ReturnType<typeof fixture>, persistDir = join(f.root, "state")) {
   let resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
   if (!resourceStore) {
-    const legacyConfig = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    resourceStore = activateTaskResources(legacyConfig, persistDir);
+    return activateTaskResources(
+      legacyTaskStateConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        worker: "sample-owner",
+        maxConcurrent: 1,
+      }),
+      persistDir,
+    );
   }
   return taskReconciliationConfig({
     appDir: f.appDir,
@@ -790,13 +800,16 @@ describe("canonical App task runtime", () => {
   it("does not publish a dependency requested from a stale task result", () => {
     const f = fixture();
     const bus = eventBus();
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    const resourceStore = activateTaskResources(config, join(f.root, "state"));
+    const config = activateTaskResources(
+      legacyTaskStateConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        worker: "sample-owner",
+        maxConcurrent: 1,
+      }),
+      join(f.root, "state"),
+    );
+    const resourceStore = config.resourceStore;
     observeAppTaskIntent(config, {
       intent: {
         id: "work/stale-dependency",
@@ -864,10 +877,10 @@ describe("canonical App task runtime", () => {
     const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
     writeFileSync(join(stateDir, "state.json"), `${JSON.stringify({ ...seed, project_lifecycle: "paused" })}\n`);
     activateTaskResources(
-      taskReconciliationConfig({
+      legacyTaskStateConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
-        agent: "sample-owner",
+        worker: "sample-owner",
         maxConcurrent: 1,
       }),
       persistDir,
@@ -1020,10 +1033,10 @@ describe("canonical App task runtime", () => {
       `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
     );
     activateTaskResources(
-      taskReconciliationConfig({
+      legacyTaskStateConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
-        agent: "sample-owner",
+        worker: "sample-owner",
         maxConcurrent: 1,
       }),
       persistDir,
@@ -1031,16 +1044,18 @@ describe("canonical App task runtime", () => {
 
     const registry = new AppRegistry(f.projectsRoot);
     await registry.reload();
-    const evaluationConfig = taskReconciliationConfig({
+    const evaluationSourceConfig = legacyTaskStateConfig({
       appDir: evaluationDir,
       projectDir: evaluationDir,
-      owner: "evaluator",
+      worker: "evaluator",
       maxConcurrent: 1,
     });
-    const evaluationState = readTaskState(evaluationConfig);
+    const evaluationState = readTaskState(evaluationSourceConfig);
     evaluationState.project_lifecycle = "paused";
-    saveTaskState(evaluationConfig, evaluationState, { projectLifecycleReason: "pause deterministic test owner" });
-    activateTaskResources(evaluationConfig, persistDir, "evaluation");
+    saveTaskState(evaluationSourceConfig, evaluationState, {
+      projectLifecycleReason: "pause deterministic test owner",
+    });
+    const evaluationConfig = activateTaskResources(evaluationSourceConfig, persistDir, "evaluation");
     observeAppTaskIntent(evaluationConfig, {
       intent: {
         id: "review/current",
@@ -2164,10 +2179,10 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const legacyConfig = taskReconciliationConfig({
+    const legacyConfig = legacyTaskStateConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      agent: "sample-owner",
+      worker: "sample-owner",
       maxConcurrent: 1,
     });
     const tree = readTaskState(legacyConfig);
@@ -2258,10 +2273,10 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const legacy = taskReconciliationConfig({
+    const legacy = legacyTaskStateConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      agent: "sample-owner",
+      worker: "sample-owner",
       maxConcurrent: 1,
     });
 
@@ -2283,14 +2298,14 @@ describe("canonical App task runtime", () => {
   it("yields readiness inside one large reconciliation after claim persistence", async () => {
     const f = fixture();
     const bus = eventBus();
-    const config = taskReconciliationConfig({
+    const sourceConfig = legacyTaskStateConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      agent: "sample-owner",
+      worker: "sample-owner",
       maxConcurrent: 1,
     });
     const retainedEvidence = "x".repeat(4 * 1024 * 1024);
-    const seeded = readTaskState(config);
+    const seeded = readTaskState(sourceConfig);
     seeded.receipts = {
       historical: {
         metadata: { id: "historical", generation: 1, resourceVersion: 1 },
@@ -2307,8 +2322,8 @@ describe("canonical App task runtime", () => {
         completedAt: "2026-08-19T00:00:00.000Z",
       },
     };
-    saveTaskState(config, seeded);
-    activateTaskResources(config, join(f.root, "state"));
+    saveTaskState(sourceConfig, seeded);
+    const config = activateTaskResources(sourceConfig, join(f.root, "state"));
 
     let readinessTurnObserved = false;
     let ownerObservedReadinessTurn: boolean | undefined;
@@ -2398,13 +2413,13 @@ describe("canonical App task runtime", () => {
     execFileSync("git", ["-C", f.appDir, "add", "."]);
     execFileSync("git", ["-C", f.appDir, "commit", "-m", "baseline"], { stdio: "ignore" });
 
-    const config = taskReconciliationConfig({
+    const sourceConfig = legacyTaskStateConfig({
       appDir: f.appDir,
       projectDir: f.appDir,
-      agent: "sample-owner",
+      worker: "sample-owner",
       maxConcurrent: 1,
     });
-    activateTaskResources(config, persistDir);
+    const config = activateTaskResources(sourceConfig, persistDir);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/retry-workspace",
@@ -2930,13 +2945,7 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
     while (!readTaskState(config).receipts?.["work/post-claim-superseded"] && Date.now() < deadline) {
       await Bun.sleep(5);
@@ -3073,13 +3082,7 @@ describe("canonical App task runtime", () => {
     } as AgentEvent;
     bus.emit(feedback);
 
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
     while (!readTaskState(config).receipts?.["work/registered-executor"] && Date.now() < deadline) {
       await Bun.sleep(5);
@@ -3344,13 +3347,7 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
     while (!readTaskState(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
       await Bun.sleep(5);
@@ -3415,13 +3412,7 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 3_000;
     while (!readTaskState(config).receipts?.["work/resume-codex-goal"] && Date.now() < deadline) {
       await Bun.sleep(5);
@@ -3537,13 +3528,7 @@ describe("canonical App task runtime", () => {
     expect(admissions).toHaveLength(64);
     expect(admissions.every((admission) => admission?.accepted && admission.route === "direct")).toBeTrue();
 
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 3_000;
     while (!readTaskState(config).receipts?.["work/event-storm"] && Date.now() < deadline) await Bun.sleep(5);
 
@@ -3637,13 +3622,7 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
-    config.resourceStore = AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!;
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
     while (!readTaskState(config).receipts?.["work/codex-executor"] && Date.now() < deadline) await Bun.sleep(5);
     expect(cliRequests).toBe(2);
@@ -3669,10 +3648,10 @@ describe("canonical App task runtime", () => {
       `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
     );
     activateTaskResources(
-      taskReconciliationConfig({
+      legacyTaskStateConfig({
         appDir: f.appDir,
         projectDir: f.appDir,
-        agent: "sample-owner",
+        worker: "sample-owner",
         maxConcurrent: 1,
       }),
       join(f.root, "state"),

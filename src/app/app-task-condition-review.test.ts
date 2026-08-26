@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { readTaskState } from "./app-task-store.js";
+import { legacyTaskStateConfig, readTaskState } from "./app-task-store.js";
 import {
   claimObservedAppTask,
   deferAppTask,
@@ -45,10 +45,10 @@ function fixture() {
       2,
     )}\n`,
   );
-  const legacyConfig = taskReconciliationConfig({
+  const legacyConfig = legacyTaskStateConfig({
     appDir,
     projectDir: appDir,
-    owner: "app-owner",
+    worker: "app-owner",
     maxConcurrent: 1,
   });
   const tree = readTaskState(legacyConfig);

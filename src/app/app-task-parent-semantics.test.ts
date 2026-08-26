@@ -15,7 +15,7 @@ import {
   taskReconciliationConfig,
 } from "./app-task-reconciler.ts";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { readTaskState } from "./app-task-store.js";
+import { legacyTaskStateConfig, readTaskState } from "./app-task-store.js";
 
 const roots: string[] = [];
 
@@ -67,10 +67,10 @@ function fixture() {
       2,
     )}\n`,
   );
-  const legacyConfig = taskReconciliationConfig({
+  const legacyConfig = legacyTaskStateConfig({
     appDir,
     projectDir: appDir,
-    owner: "app-owner",
+    worker: "app-owner",
     maxConcurrent: 2,
   });
   const tree = readTaskState(legacyConfig);
