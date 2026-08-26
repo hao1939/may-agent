@@ -1106,7 +1106,7 @@ function runtimeTaskAttempt(input: {
     claim.taskId,
   );
   if (!task || task.generation !== claim.generation) {
-    throw new Error(`Task ${descriptor.id}/${claim.taskId} is no longer current`);
+    throw new ResourceTaskMutationStaleError();
   }
   const events = createAppTaskEvents({
     bus: opts.bus,
@@ -1470,11 +1470,26 @@ export function projectAppTaskWaitPromptContext(
   };
 }
 
-function mergeTaskConditions(conditions: AppTaskConditionSpec[]): AppTaskConditionSpec[] {
+export function mergeTaskConditions(
+  conditions: AppTaskConditionSpec[],
+  authoritativeIds: ReadonlySet<string> = new Set(),
+): AppTaskConditionSpec[] {
   const merged = new Map<string, AppTaskConditionSpec>();
   for (const condition of conditions) {
     const current = merged.get(condition.id);
     if (current && !isDeepStrictEqual(current, condition)) {
+      // Persisted Conditions are the reconciliation authority. An executor may
+      // echo different advisory metadata from its bounded prompt, but the
+      // observable identity must still match. Retargeting the subject, type, or
+      // expected fact remains a conflict rather than silently changing a wait.
+      if (
+        authoritativeIds.has(condition.id) &&
+        current.type === condition.type &&
+        current.subject === condition.subject &&
+        isDeepStrictEqual(current.expected, condition.expected)
+      ) {
+        continue;
+      }
       throw new Error(`Task result conflicts with existing Condition ${condition.id}`);
     }
     merged.set(condition.id, condition);
@@ -3478,11 +3493,14 @@ async function reconcileTask(input: {
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             })
           : [];
-        const conditions = mergeTaskConditions([
-          ...existingAppDependencyConditions,
-          ...(primaryHandlerResult.conditions ?? []),
-          ...dependencyConditions,
-        ]);
+        const conditions = mergeTaskConditions(
+          [
+            ...existingAppDependencyConditions,
+            ...(primaryHandlerResult.conditions ?? []),
+            ...dependencyConditions,
+          ],
+          new Set(existingAppDependencyConditions.map((condition) => condition.id)),
+        );
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {
         const stale = rejectStaleEffect(error);
@@ -3620,6 +3638,28 @@ async function reconcileTask(input: {
     });
     return [intent.id];
   } catch (error) {
+    if (activeConfig && activeClaim) {
+      const stale = recoverStaleTaskActionResult(activeConfig, activeClaim, error);
+      if (stale) {
+        timing.outcome = "completed";
+        emitTaskReconciliationEvent(
+          opts,
+          descriptor,
+          activeClaim.trigger as EventEnvelope | undefined,
+          "project.task.reconciled",
+          activeClaim.taskId,
+          {
+            generation: activeClaim.generation,
+            attemptId: activeClaim.attemptId,
+            handler: activeClaim.handler,
+            disposition: "stale",
+            summary: "The claimed Task changed before executor startup; stale work was discarded without retrying it as a handler failure.",
+            staleRecovery: stale.staleRecovery,
+          },
+        );
+        return stale.reconcileTaskIds;
+      }
+    }
     timing.outcome = "failed";
     if (activeConfig && activeClaim) {
       const failedConfig = activeConfig;
