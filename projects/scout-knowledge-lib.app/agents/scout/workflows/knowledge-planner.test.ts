@@ -162,7 +162,7 @@ describe("Scout owner reconciliation boundary", () => {
       evidence: ["knowledge/README.md exists"],
       actions: [],
     };
-    const run = (agentOutput: typeof baseResult) =>
+    const run = (agentOutput: typeof baseResult, resourceVersion = 9) =>
       execute(
         createTestAppWorkflowContext({
           input: {},
@@ -170,7 +170,7 @@ describe("Scout owner reconciliation boundary", () => {
             appId: "scout-knowledge-lib",
             taskId: "library-maintenance",
             generation: 1,
-            resourceVersion: 9,
+            resourceVersion,
             agent: "scout",
             mode: "maintain",
             outcome: "Maintain the library",
@@ -205,8 +205,9 @@ describe("Scout owner reconciliation boundary", () => {
       summary: "The landing page needs one canonical link.",
       evidence: ["knowledge/README.md omits the canonical index"],
     });
+    await run(baseResult, 10);
 
-    expect(emitted).toHaveLength(3);
+    expect(emitted).toHaveLength(4);
     expect(emitted[0]?.localKey).toBe(emitted[1]?.localKey);
     expect(JSON.stringify(emitted[0]?.data)).toBe(
       JSON.stringify(emitted[1]?.data),
@@ -215,6 +216,10 @@ describe("Scout owner reconciliation boundary", () => {
     expect(String(emitted[0]?.localKey)).toStartWith(
       "state-9:knowledge-maintained:fact-",
     );
+    expect(String(emitted[3]?.localKey)).toStartWith(
+      "state-10:knowledge-maintained:fact-",
+    );
+    expect(emitted[3]?.localKey).not.toBe(emitted[0]?.localKey);
   });
 
   it("contains a deterministic emission conflict instead of throwing for retry", async () => {
