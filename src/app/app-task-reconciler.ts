@@ -1908,9 +1908,9 @@ export function observeAppTaskIntent(
   });
 }
 
-export function readAppTaskIntent(config: TaskStateConfig, taskId: string): AppTaskIntent | null {
+export function readAppTaskIntent(config: ResourceTaskStateConfig, taskId: string): AppTaskIntent | null {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     return resource ? resourceIntent(resource) : null;
   });

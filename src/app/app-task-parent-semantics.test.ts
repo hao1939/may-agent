@@ -14,6 +14,7 @@ import {
   releaseStaleAppTaskResult,
   taskReconciliationConfig,
 } from "./app-task-reconciler.ts";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { readTaskState } from "./app-task-store.js";
 
 const roots: string[] = [];
@@ -66,11 +67,23 @@ function fixture() {
       2,
     )}\n`,
   );
-  return taskReconciliationConfig({
+  const legacyConfig = taskReconciliationConfig({
     appDir,
     projectDir: appDir,
     owner: "app-owner",
     maxConcurrent: 2,
+  });
+  const tree = readTaskState(legacyConfig);
+  tree.project = "sample";
+  tree.project_lifecycle = "active";
+  const resourceStore = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
+  resourceStore.bootstrapSnapshot(tree, "parent-semantics");
+  return taskReconciliationConfig({
+    appDir,
+    projectDir: appDir,
+    agent: "app-owner",
+    maxConcurrent: 2,
+    resourceStore,
   });
 }
 
