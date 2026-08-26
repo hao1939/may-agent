@@ -394,19 +394,8 @@ describe("metrics-snapshot session health metrics", () => {
     expect(metric("evaluator.meaningful-review-rate-24h")).toBeNull();
     expect(metric("evaluator.triage-closure-rate-24h")).toBeNull();
     expect(metric("evaluator.false-good-rate-sample")).toBeNull();
-    expect(metric("evaluator.project-finding-delivery-rate-24h")).toMatchObject(
-      {
-        current: 0.5,
-        target: 0.8,
-        threshold: 0.5,
-        priority: "P1",
-      },
-    );
-    expect(metric("evaluator.project-feedback-pending-age-h")).toMatchObject({
-      target: 0,
-      threshold: 12,
-      priority: "P1",
-    });
+    expect(metric("evaluator.project-finding-delivery-rate-24h")).toBeNull();
+    expect(metric("evaluator.project-feedback-pending-age-h")).toBeNull();
   });
 
   it("retires the invalid Scout practice proxy and leaves domain metrics to Scout", async () => {

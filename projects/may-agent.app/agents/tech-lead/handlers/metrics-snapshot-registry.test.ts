@@ -105,6 +105,12 @@ describe("metrics-snapshot registry and queries", () => {
     expect(activeRegistry).not.toContain(
       'id: "evaluator.false-good-rate-sample"',
     );
+    expect(activeRegistry).not.toContain(
+      'id: "evaluator.project-finding-delivery-rate-24h"',
+    );
+    expect(activeRegistry).not.toContain(
+      'id: "evaluator.project-feedback-pending-age-h"',
+    );
     expect(source).not.toContain(
       'record("eval.llm-coverage-lag-h"',
     );
@@ -123,6 +129,12 @@ describe("metrics-snapshot registry and queries", () => {
     );
     expect(source).not.toContain(
       'record(\n        "evaluator.false-good-rate-sample"',
+    );
+    expect(source).not.toContain(
+      'record(\n        "evaluator.project-finding-delivery-rate-24h"',
+    );
+    expect(source).not.toContain(
+      'record(\n        "evaluator.project-feedback-pending-age-h"',
     );
   });
 

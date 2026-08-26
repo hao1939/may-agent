@@ -228,28 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "evaluator.project-finding-delivery-rate-24h",
-    name: "Evaluation findings handled by target owner workflows (24h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0.8,
-    threshold: 0.5,
-    unit: "ratio",
-    alert_op: "<",
-    priority: "P1",
-  },
-  {
-    id: "evaluator.project-feedback-pending-age-h",
-    name: "Oldest pending evaluation finding delivery (hours)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0,
-    threshold: 12,
-    unit: "hours",
-    alert_op: ">",
-    priority: "P1",
-  },
-  {
     id: "runtime.stale-running-session-count",
     name: "Stale running sessions (non-evaluator)",
     owner: "may",
@@ -1390,62 +1368,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      const outcomeWindowStart = twentyFourH;
-      const feedbackTotal = count(
-        `SELECT COUNT(*) AS c
-           FROM events
-          WHERE event_type = 'project.owner.requested'
-            AND source = 'evaluation.app'
-            AND timestamp > ?
-            AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
-        outcomeWindowStart,
-      );
-      const feedbackDelivered = count(
-        `SELECT COUNT(*) AS c
-           FROM events
-          WHERE event_type = 'project.owner.requested'
-            AND source = 'evaluation.app'
-            AND delivery_status = 'accepted'
-            AND timestamp > ?
-            AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
-        outcomeWindowStart,
-      );
-      record(
-        "evaluator.project-finding-delivery-rate-24h",
-        feedbackTotal > 0
-          ? parseFloat((feedbackDelivered / feedbackTotal).toFixed(4))
-          : 1,
-        feedbackTotal,
-      );
-
-      const oldestPending = (
-        db
-          .prepare(
-            `SELECT MIN(timestamp) AS timestamp
-               FROM events
-              WHERE event_type = 'project.owner.requested'
-                AND source = 'evaluation.app'
-                AND delivery_status IN ('pending', 'unhandled')
-                AND timestamp > ?
-                AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
-          )
-          .get(outcomeWindowStart) as { timestamp?: number | null }
-      )?.timestamp;
-      record(
-        "evaluator.project-feedback-pending-age-h",
-        oldestPending
-          ? parseFloat(((now - oldestPending) / 3_600_000).toFixed(2))
-          : 0,
-        feedbackTotal - feedbackDelivered,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator finding delivery: ${e}`,
       );
     }
 

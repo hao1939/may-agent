@@ -20,6 +20,10 @@ import app, {
   LOW_QUALITY_RATE_24H_SOURCE_QUERY,
   MEANINGFUL_REVIEW_RATE_24H_METRIC_ID,
   MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY,
+  PROJECT_FEEDBACK_PENDING_AGE_METRIC_ID,
+  PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY,
+  PROJECT_FINDING_DELIVERY_RATE_24H_METRIC_ID,
+  PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY,
   SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
   SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
   TRIAGE_CLOSURE_RATE_24H_METRIC_ID,
@@ -180,7 +184,7 @@ describe("canonical evaluation App", () => {
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toHaveLength(8);
+    expect(app.metrics).toHaveLength(10);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -237,6 +241,20 @@ describe("canonical evaluation App", () => {
           owner: "evaluator",
           project: "evaluation",
           sourceQuery: FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: PROJECT_FINDING_DELIVERY_RATE_24H_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: PROJECT_FEEDBACK_PENDING_AGE_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY,
           measureInterval: 300_000,
         }),
       ]),
@@ -476,6 +494,81 @@ describe("evaluation metrics", () => {
       value: 0,
       sampleSize: 0,
     });
+  });
+
+  test("measures project-finding delivery and pending age from one event contract", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE events (
+        event_type TEXT NOT NULL,
+        source TEXT,
+        delivery_status TEXT,
+        data TEXT,
+        timestamp INTEGER NOT NULL
+      )`,
+    );
+    const now = Date.now();
+    for (const [source, status, reason, timestamp] of [
+      [
+        "evaluation.app",
+        "accepted",
+        "evaluation-project-health-feedback",
+        now - 60_000,
+      ],
+      [
+        "evaluation.app",
+        "pending",
+        "evaluation-project-health-feedback",
+        now - 2 * 60 * 60_000,
+      ],
+      [
+        "evaluation.app",
+        "unhandled",
+        "evaluation-project-health-feedback",
+        now - 60 * 60_000,
+      ],
+      [
+        "other.app",
+        "pending",
+        "evaluation-project-health-feedback",
+        now - 60_000,
+      ],
+      ["evaluation.app", "pending", "different-reason", now - 60_000],
+      [
+        "evaluation.app",
+        "pending",
+        "evaluation-project-health-feedback",
+        now - 25 * 60 * 60_000,
+      ],
+    ] as const) {
+      db.run(
+        `INSERT INTO events (event_type, source, delivery_status, data, timestamp)
+         VALUES ('project.owner.requested', ?, ?, ?, ?)`,
+        [source, status, JSON.stringify({ reason }), timestamp],
+      );
+    }
+
+    expect(
+      db.query(PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY).get(),
+    ).toMatchObject({ value: 0.3333, sampleSize: 3 });
+    expect(
+      db.query(PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY).get(),
+    ).toMatchObject({ sampleSize: 2 });
+    expect(
+      (
+        db.query(PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY).get() as {
+          value: number;
+        }
+      ).value,
+    ).toBeGreaterThanOrEqual(2);
+
+    db.run("DELETE FROM events");
+    expect(
+      db.query(PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY).get(),
+    ).toMatchObject({ value: 1, sampleSize: 0 });
+    expect(
+      db.query(PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY).get(),
+    ).toMatchObject({ value: 0, sampleSize: 0 });
   });
 
   test("counts canonical eligible sessions and preserves count evidence", () => {
