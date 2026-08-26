@@ -2573,7 +2573,7 @@ export type AppTaskRetryReceipt = {
  * newer evidence.
  */
 export function retryFailedAppTask(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   input: {
     appId: string;
     taskId: string;
@@ -2581,7 +2581,7 @@ export function retryFailedAppTask(
   },
 ): AppTaskRetryReceipt {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [input.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
     const task = tree.tasks[input.taskId];
     const resource = tree.resources?.[input.taskId];
     if (!task || !resource) throw new Error(`Task ${input.appId}/${input.taskId} was not found`);
