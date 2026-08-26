@@ -4349,7 +4349,8 @@ describe("App task reconciler state", () => {
   });
 
   it("requeues only the exact failed attention generation and retains immutable attempt evidence", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const failed = declareAndClaimTask(config, {
       intent: {
         id: "reviewed-failure",
@@ -4368,18 +4369,19 @@ describe("App task reconciler state", () => {
       reason: "retained-input-review",
       evidence: ["failure-log:811"],
     });
-    const before = readTaskState(config);
+    const resourceConfig = resourceFixture(state, "retry-failed-task").config;
+    const before = resourceConfig.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
     const attemptsBefore = structuredClone(before.attempts);
     const taskIdsBefore = Object.keys(before.tasks);
 
     expect(() =>
-      retryFailedAppTask(config, {
+      retryFailedAppTask(resourceConfig, {
         appId: "sample",
         taskId: failed.taskId,
         expectedGeneration: failed.generation + 1,
       }),
     ).toThrow("generation changed");
-    const receipt = retryFailedAppTask(config, {
+    const receipt = retryFailedAppTask(resourceConfig, {
       appId: "sample",
       taskId: failed.taskId,
       expectedGeneration: failed.generation,
@@ -4394,44 +4396,54 @@ describe("App task reconciler state", () => {
       previousAttemptId: failed.attemptId,
     });
     expect(receipt.resourceVersion).toBeGreaterThan(receipt.previousResourceVersion);
-    const after = readTaskState(config);
+    const after = resourceConfig.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
     expect(Object.keys(after.tasks)).toEqual(taskIdsBefore);
     expect(after.attempts).toEqual(attemptsBefore);
     expect(after.resources?.[failed.taskId]).toMatchObject({
       metadata: { id: failed.taskId, generation: failed.generation },
       status: { phase: "pending", evidence: ["failure-log:811"] },
     });
-    expect(readAppTaskTrigger(config, failed.taskId)).toMatchObject({
+    expect(readAppTaskTrigger(resourceConfig, failed.taskId)).toMatchObject({
       type: "project.comment.created",
       eventId: 811,
     });
   });
 
   it("rejects retry controls for non-attention tasks and attention without a failed attempt", () => {
-    const { config } = fixture();
+    const runningState = fixture();
+    const { config } = runningState;
     const running = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
       handler: "agent:app-owner",
     });
     if (running.kind !== "claimed") throw new Error("expected running claim");
+    const runningResourceConfig = resourceFixture(runningState, "retry-running-task").config;
     expect(() =>
-      retryFailedAppTask(config, {
+      retryFailedAppTask(runningResourceConfig, {
         appId: "sample",
         taskId: running.taskId,
         expectedGeneration: running.generation,
       }),
     ).toThrow("expected attention");
 
-    const tree = readTaskState(config);
-    tree.resources![running.taskId].status.phase = "attention";
-    tree.tasks[running.taskId].state = "review";
-    saveTaskState(config, tree);
+    const attentionState = fixture();
+    const attentionClaim = declareAndClaimTask(attentionState.config, {
+      intent: intent(),
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (attentionClaim.kind !== "claimed") throw new Error("expected attention claim");
+    const tree = readTaskState(attentionState.config);
+    tree.resources![attentionClaim.taskId].status.phase = "attention";
+    tree.tasks[attentionClaim.taskId].state = "review";
+    saveTaskState(attentionState.config, tree);
+    const attentionResourceConfig = resourceFixture(attentionState, "retry-attention-without-failure").config;
     expect(() =>
-      retryFailedAppTask(config, {
+      retryFailedAppTask(attentionResourceConfig, {
         appId: "sample",
-        taskId: running.taskId,
-        expectedGeneration: running.generation,
+        taskId: attentionClaim.taskId,
+        expectedGeneration: attentionClaim.generation,
       }),
     ).toThrow("no completed failed attempt");
   });
