@@ -139,7 +139,9 @@ instead of mutating a whole JSON Task tree.
 Claiming an attempt and accepting its completed or waiting result now use the
 same exact resource context and require resource authority. The reconciler no
 longer enters those lifecycle transitions through the generic JSON-capable
-reader or runs JSON-only attempt pruning after them.
+reader or runs JSON-only attempt pruning after them. The remaining whole-tree
+attempt-pruning helper and optional-store recovery branches are removed;
+resource-backed attempt history remains the durable evidence.
 Rejected stale reconciliation results are released from the exact resource
 context through their claim fences; that production path no longer reads or
 prunes JSON attempt state.
