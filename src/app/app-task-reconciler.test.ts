@@ -161,6 +161,31 @@ function mutateAttemptFixture(
   ).toBe(true);
 }
 
+function mutateTaskResourceFixture(
+  config: ReturnType<typeof resourceFixture>["config"],
+  taskId: string,
+  mutate: (
+    resource: NonNullable<ReturnType<typeof readTaskState>["resources"]>[string],
+    trigger: NonNullable<ReturnType<typeof readTaskState>["taskTriggers"]>[string] | undefined,
+  ) => void,
+  ready = true,
+): void {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  const resource = tree.resources?.[taskId];
+  if (!resource) throw new Error(`expected resource-backed fixture ${taskId}`);
+  const trigger = tree.taskTriggers?.[taskId];
+  const expectedResourceVersion = resource.metadata.resourceVersion;
+  mutate(resource, trigger);
+  resource.metadata.resourceVersion += 1;
+  if (trigger) trigger.resourceVersion += 1;
+  expect(
+    config.resourceStore.commit({
+      fences: [{ taskId, resourceVersion: expectedResourceVersion }],
+      tasks: [{ resource, trigger, ready }],
+    }),
+  ).toBe(true);
+}
+
 function intent(mode: "achieve" | "maintain" = "achieve") {
   return {
     id: mode === "achieve" ? "evaluate:session-1" : "pipeline-monitor",
@@ -876,7 +901,8 @@ describe("App task reconciler state", () => {
   });
 
   it("orders runnable tasks by declared priority before lower-priority work", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "priority-order");
     for (const [id, priority] of [
       ["work/p2", "P2"],
       ["work/p0-z", "P0"],
@@ -899,7 +925,8 @@ describe("App task reconciler state", () => {
   });
 
   it("prefers older ready work over newer peers within the same priority", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "ready-age-order");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/a-newer", priority: "P2" },
       appAgent: "app-owner",
@@ -909,20 +936,20 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
     });
 
-    const tree = readTaskState(config);
-    if (!tree.resources?.["work/a-newer"] || !tree.resources?.["work/z-older"]) {
-      throw new Error("expected runnable resources");
-    }
-    tree.resources["work/a-newer"].status.updatedAt = "2026-07-25T10:00:00.000Z";
-    tree.resources["work/z-older"].status.updatedAt = "2026-07-25T09:00:00.000Z";
-    saveTaskState(config, tree);
+    mutateTaskResourceFixture(config, "work/a-newer", (resource) => {
+      resource.status.updatedAt = "2026-07-25T10:00:00.000Z";
+    });
+    mutateTaskResourceFixture(config, "work/z-older", (resource) => {
+      resource.status.updatedAt = "2026-07-25T09:00:00.000Z";
+    });
 
     const runnable = listRunnableAppTaskIds(config);
     expect(runnable.indexOf("work/z-older")).toBeLessThan(runnable.indexOf("work/a-newer"));
   });
 
   it("ages ready work toward P1 without erasing the explicit P0 boundary", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "priority-aging");
     for (const [id, priority] of [
       ["work/fresh-p0", "P0"],
       ["work/aged-p1", "P1"],
@@ -936,18 +963,16 @@ describe("App task reconciler state", () => {
       });
     }
 
-    const tree = readTaskState(config);
     const nowMs = Date.now();
     for (const [id, ageMinutes] of [
       ["work/aged-p1", 5],
       ["work/aged-p2", 10],
       ["work/aged-p3", 15],
     ] as const) {
-      const resource = tree.resources?.[id];
-      if (!resource) throw new Error(`expected ${id}`);
-      resource.status.updatedAt = new Date(nowMs - ageMinutes * 60_000 - 1_000).toISOString();
+      mutateTaskResourceFixture(config, id, (resource) => {
+        resource.status.updatedAt = new Date(nowMs - ageMinutes * 60_000 - 1_000).toISOString();
+      });
     }
-    saveTaskState(config, tree);
 
     const entries = listRunnableAppTaskQueueEntries(config);
     expect(entries.filter((entry) => entry.taskId.startsWith("work/aged-"))).toEqual([
@@ -977,7 +1002,8 @@ describe("App task reconciler state", () => {
   });
 
   it("ages triggered work from when it became ready instead of its old waiting status", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "trigger-aging");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/fresh-trigger-p2", priority: "P2" },
       appAgent: "app-owner",
@@ -989,18 +1015,17 @@ describe("App task reconciler state", () => {
       trigger: { type: "repo.ref.changed", data: { ref: "origin/dev" } },
     });
 
-    const tree = readTaskState(config);
     const oldStatus = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
     const oldTrigger = new Date(Date.now() - 10 * 60_000 - 1_000).toISOString();
     for (const id of ["work/fresh-trigger-p2", "work/aged-trigger-p2"]) {
-      const resource = tree.resources?.[id];
-      if (!resource) throw new Error(`expected ${id}`);
-      resource.status.updatedAt = oldStatus;
+      mutateTaskResourceFixture(config, id, (resource, trigger) => {
+        resource.status.updatedAt = oldStatus;
+        if (id === "work/aged-trigger-p2") {
+          if (!trigger) throw new Error("expected persisted trigger");
+          trigger.observedAt = oldTrigger;
+        }
+      });
     }
-    const agedTrigger = tree.taskTriggers?.["work/aged-trigger-p2"];
-    if (!agedTrigger) throw new Error("expected persisted trigger");
-    agedTrigger.observedAt = oldTrigger;
-    saveTaskState(config, tree);
 
     const entries = listRunnableAppTaskQueueEntries(config);
     expect(entries.find((entry) => entry.taskId === "work/fresh-trigger-p2")).toEqual({
@@ -1014,7 +1039,8 @@ describe("App task reconciler state", () => {
   });
 
   it("schedules an unresolved direct project comment before autonomous priority backlog", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "human-comment-order");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/autonomous-p0", priority: "P0" },
       appAgent: "app-owner",
@@ -1102,7 +1128,8 @@ describe("App task reconciler state", () => {
   });
 
   it("schedules untriggered P0 before triggered P2 (priority over trigger presence)", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "priority-before-trigger");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/new-p0", priority: "P0" },
       appAgent: "app-owner",
@@ -1130,7 +1157,8 @@ describe("App task reconciler state", () => {
   });
 
   it("uses trigger as tiebreak within same priority", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "trigger-tiebreak");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/untriggered-p1", priority: "P1" },
       appAgent: "app-owner",
@@ -1151,7 +1179,8 @@ describe("App task reconciler state", () => {
   });
 
   it("P0 untriggered beats stream of triggered P1s (priority inversion regression)", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "priority-inversion");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "ops/critical-p0", priority: "P0" },
       appAgent: "app-owner",
@@ -1617,7 +1646,8 @@ describe("App task reconciler state", () => {
   });
 
   it("detaches prior-generation Conditions and triggers when desired state changes", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "generation-detach");
     const monitor = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: monitor,
@@ -1638,18 +1668,12 @@ describe("App task reconciler state", () => {
         },
       ],
     });
-    const waitingTree = readTaskState(config);
-    waitingTree.taskTriggers = {
-      ...(waitingTree.taskTriggers ?? {}),
-      [monitor.id]: {
-        taskId: monitor.id,
-        taskGeneration: 1,
-        resourceVersion: 1,
-        event: { type: "prior-generation.trigger" },
-        observedAt: "2026-07-20T00:00:00.000Z",
-      },
-    };
-    saveTaskState(config, waitingTree);
+    expect(
+      recordAppTaskTrigger(config, monitor.id, {
+        type: "prior-generation.trigger",
+        data: { overrideWait: true },
+      }),
+    ).toEqual({ kind: "recorded" });
 
     expect(
       observeAppTaskIntent(config, {
@@ -1670,7 +1694,8 @@ describe("App task reconciler state", () => {
   });
 
   it("claims generation drift before honoring a stale waiting Condition", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "generation-drift");
     const monitor = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: monitor,
@@ -1691,12 +1716,9 @@ describe("App task reconciler state", () => {
         },
       ],
     });
-    const driftedTree = readTaskState(config);
-    const resource = driftedTree.resources?.[monitor.id];
-    if (!resource) throw new Error("expected task resource");
-    resource.metadata.generation = 2;
-    resource.metadata.resourceVersion += 1;
-    saveTaskState(config, driftedTree);
+    mutateTaskResourceFixture(config, monitor.id, (resource) => {
+      resource.metadata.generation = 2;
+    });
 
     expect(listRunnableAppTaskIds(config)).toContain(monitor.id);
     const claim = claimObservedAppTask(config, {
@@ -3008,7 +3030,7 @@ describe("App task reconciler state", () => {
 
   it("requeues running tasks whose current attempt record is missing", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "running-without-attempt");
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3016,20 +3038,33 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    const orphaned = readTaskState(config);
-    delete orphaned.attempts![claim.attemptId];
-    saveTaskState(config, orphaned);
-    const resourceConfig = resourceFixture(state, "running-without-attempt").config;
+    const orphaned = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const resource = orphaned.resources?.[claim.taskId];
+    if (!resource) throw new Error("expected running resource");
+    expect(
+      config.resourceStore.commit({
+        fences: [
+          {
+            taskId: claim.taskId,
+            resourceVersion: resource.metadata.resourceVersion,
+            generation: resource.metadata.generation,
+            currentAttemptId: claim.attemptId,
+          },
+        ],
+        deleteAttemptIds: [claim.attemptId],
+      }),
+    ).toBe(true);
+    expect(config.resourceStore.setRecoveryState(claim.taskId, { ready: true, changed: true })).toBe(true);
 
-    expect(listRunnableAppTaskIds(resourceConfig)).toContain(claim.taskId);
-    expect(repairRunningAppTasksWithoutAttempt(resourceConfig, [claim.taskId])).toEqual([
+    expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
+    expect(repairRunningAppTasksWithoutAttempt(config, [claim.taskId])).toEqual([
       expect.objectContaining({
         taskId: claim.taskId,
         disposition: "requeued",
       }),
     ]);
 
-    const released = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const released = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(released.resources?.[claim.taskId]).toMatchObject({
       status: {
         phase: "pending",
@@ -3037,7 +3072,7 @@ describe("App task reconciler state", () => {
     });
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
-    expect(listRunnableAppTaskIds(resourceConfig)).toContain(claim.taskId);
+    expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
   });
 
   it("requeues an orphaned App dependency wait and leaves admitted waits alone", () => {
@@ -5435,7 +5470,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps a decomposition parent open while applying child task actions", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "decomposition-children");
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
