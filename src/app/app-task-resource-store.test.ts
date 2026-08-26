@@ -528,18 +528,13 @@ describe("AppTaskResourceStore", () => {
         spec: expect.objectContaining({ type: "example.completed", expected: "done" }),
       }),
     ]);
-    expect(
-      readRuntimeTaskView({ executionPaths: { appDir, projectDir: root }, taskStateConfig: config }, "normal"),
-    ).toMatchObject({
+    expect(readRuntimeTaskView({ taskStateConfig: config }, "normal")).toMatchObject({
       id: "normal",
       conditions: [expect.objectContaining({ id: "example:later", type: "example.completed", expected: "done" })],
     });
-    expect(
-      listRuntimeTaskViews(
-        { executionPaths: { appDir, projectDir: root }, taskStateConfig: config },
-        { status: ["waiting"] },
-      ).items[0],
-    ).not.toHaveProperty("conditions");
+    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["waiting"] }).items[0]).not.toHaveProperty(
+      "conditions",
+    );
     expect(store.readConditionRoutes("unrelated.event")).toEqual([]);
 
     const queued: string[] = [];
@@ -648,15 +643,14 @@ describe("AppTaskResourceStore", () => {
 
     expect(store.readTask("normal")?.status.summary).toBe("resource local");
     expect(existsSync(paths.taskStatePath)).toBeFalse();
-    expect(
-      readRuntimeTaskView({ executionPaths: { appDir, projectDir: root }, taskStateConfig: config }, "normal"),
-    ).toMatchObject({ id: "normal", summary: "resource local" });
-    expect(
-      listRuntimeTaskViews(
-        { executionPaths: { appDir, projectDir: root }, taskStateConfig: config },
-        { limit: 2 },
-      ).items.map((item) => item.id),
-    ).toEqual(["active", "human"]);
+    expect(readRuntimeTaskView({ taskStateConfig: config }, "normal")).toMatchObject({
+      id: "normal",
+      summary: "resource local",
+    });
+    expect(listRuntimeTaskViews({ taskStateConfig: config }, { limit: 2 }).items.map((item) => item.id)).toEqual([
+      "active",
+      "human",
+    ]);
     setProjectLifecycle(config, "paused", "resource lifecycle test");
     expect(store.projectLifecycle()).toBe("paused");
     expect(existsSync(paths.taskStatePath)).toBeFalse();

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "./app-inbox-store.js";
-import { createRuntimeAppRead, createRuntimeTaskReader } from "./app-read.js";
+import { createRuntimeAppRead } from "./app-read.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { observeAppTaskIntent, taskReconciliationConfig } from "./app-task-reconciler.js";
 
 describe("App read projections", () => {
@@ -22,6 +23,37 @@ describe("App read projections", () => {
     db.close();
     rmSync(root, { recursive: true, force: true });
   });
+
+  function resourceConfig() {
+    const appDir = join(root, "evaluation.app");
+    const store = AppTaskResourceStore.fromDb(db, "evaluation");
+    store.bootstrapSnapshot(
+      {
+        project: "evaluation",
+        project_lifecycle: "active",
+        root_task_id: "review",
+        groups: {
+          review: {
+            id: "review",
+            parent_id: null,
+            state: "backlog",
+            owner: "evaluation",
+            children: [],
+          },
+        },
+        resources: {},
+        tasks: {},
+      },
+      "seed:test",
+    );
+    return taskReconciliationConfig({
+      appDir,
+      projectDir: root,
+      agent: "evaluation",
+      maxConcurrent: 1,
+      resourceStore: store,
+    });
+  }
 
   it("returns only the authored result for a completed inbox item", async () => {
     createAppInboxItem(db, {
@@ -70,7 +102,6 @@ describe("App read projections", () => {
       getDb: () => db,
       metrics: { get: () => null } as any,
       taskRead,
-      executionPaths: { appDir: join(root, "missing-app"), projectDir: root },
     });
 
     expect(read.tasks).toBe(taskRead);
@@ -79,23 +110,7 @@ describe("App read projections", () => {
   });
 
   it("lists and gets only the current App's Tasks through one bounded collection", async () => {
-    mkdirSync(join(root, "tasks"), { recursive: true });
-    writeFileSync(
-      join(root, "tasks", "seed.json"),
-      `${JSON.stringify({
-        root_task_id: "review",
-        groups: {
-          review: { id: "review", parent_id: null, state: "backlog", owner: "evaluation", children: [] },
-        },
-        resources: {},
-      })}\n`,
-    );
-    const config = taskReconciliationConfig({
-      appDir: root,
-      projectDir: root,
-      owner: "evaluation",
-      maxConcurrent: 1,
-    });
+    const config = resourceConfig();
     for (const id of ["review/a", "review/b"]) {
       observeAppTaskIntent(config, {
         appAgent: "evaluation",
@@ -113,7 +128,7 @@ describe("App read projections", () => {
     const read = createRuntimeAppRead({
       getDb: () => db,
       metrics: { get: () => null } as any,
-      executionPaths: { appDir: root, projectDir: root },
+      taskStateConfig: config,
     });
 
     const first = await read.tasks.list({ limit: 1 });
@@ -140,31 +155,25 @@ describe("App read projections", () => {
     await expect(read.tasks.list({ cursor: "not-a-cursor" })).rejects.toThrow("Invalid Task cursor");
   });
 
-  it("reuses one parsed Task resource for a bounded read pass and notices later writes", () => {
-    mkdirSync(join(root, "tasks"), { recursive: true });
-    writeFileSync(
-      join(root, "tasks", "seed.json"),
-      `${JSON.stringify({ groups: { root: { id: "root", parent_id: null } }, resources: {} })}\n`,
-    );
-    const config = taskReconciliationConfig({
-      appDir: root,
-      projectDir: root,
-      owner: "evaluation",
-      maxConcurrent: 1,
-    });
+  it("reads later Task mutations from the same resource authority", async () => {
+    const config = resourceConfig();
     observeAppTaskIntent(config, {
       appAgent: "evaluation",
-      intent: { id: "first", parentId: "root", outcome: "First", acceptance: ["Done"], mode: "achieve" },
+      intent: { id: "first", parentId: "review", outcome: "First", acceptance: ["Done"], mode: "achieve" },
     });
-    const readTask = createRuntimeTaskReader({ appDir: root, projectDir: root });
+    const read = createRuntimeAppRead({
+      getDb: () => db,
+      metrics: { get: () => null } as any,
+      taskStateConfig: config,
+    });
 
-    expect(readTask("first")?.status).toBe("pending");
-    expect(readTask("missing")).toBeNull();
+    await expect(read.tasks.get("first")).resolves.toMatchObject({ status: "pending" });
+    await expect(read.tasks.get("missing")).resolves.toBeNull();
 
     observeAppTaskIntent(config, {
       appAgent: "evaluation",
-      intent: { id: "second", parentId: "root", outcome: "Second", acceptance: ["Done"], mode: "achieve" },
+      intent: { id: "second", parentId: "review", outcome: "Second", acceptance: ["Done"], mode: "achieve" },
     });
-    expect(readTask("second")?.status).toBe("pending");
+    await expect(read.tasks.get("second")).resolves.toMatchObject({ status: "pending" });
   });
 });
