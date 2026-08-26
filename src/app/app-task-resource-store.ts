@@ -693,7 +693,11 @@ export class AppTaskResourceStore {
    * their parent chain, direct children, dependencies, attempts, Conditions,
    * and completed direct children, but never unrelated App history.
    */
-  readTaskContext(input: { taskIds: Iterable<string>; admissionIds?: Iterable<string> }): TaskTree {
+  readTaskContext(input: {
+    taskIds: Iterable<string>;
+    admissionIds?: Iterable<string>;
+    conditionIds?: Iterable<string>;
+  }): TaskTree {
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) throw new Error("Task resource store has no imported App metadata");
     const metadata = parseJson<Record<string, unknown>>(rawMetadata);
@@ -749,6 +753,29 @@ export class AppTaskResourceStore {
       }
     }
 
+    const requestedConditionIds = [...new Set([...(input.conditionIds ?? [])].map((id) => id.trim()).filter(Boolean))];
+    if (requestedConditionIds.length > 0) {
+      const rows = this.db
+        .prepare(
+          `SELECT DISTINCT task.task_id, task.resource_json, task.trigger_json
+           FROM app_task_condition_routes route
+           JOIN app_tasks task
+             ON task.app_id = route.app_id AND task.task_id = route.task_id
+           WHERE route.app_id = ?
+             AND route.condition_id IN (${requestedConditionIds.map(() => "?").join(", ")})`,
+        )
+        .all(this.appId, ...requestedConditionIds) as Array<{
+        task_id?: string;
+        resource_json?: string;
+        trigger_json?: string | null;
+      }>;
+      for (const row of rows) {
+        if (!row.task_id || !row.resource_json) continue;
+        resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
+        if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
+      }
+    }
+
     const taskIds = Object.keys(resources);
     const attempts = taskIds.length
       ? Object.fromEntries(
@@ -774,7 +801,10 @@ export class AppTaskResourceStore {
         )
       : {};
     const conditionIds = [
-      ...new Set(Object.values(resources).flatMap((resource) => resource.status.conditionIds ?? [])),
+      ...new Set([
+        ...Object.values(resources).flatMap((resource) => resource.status.conditionIds ?? []),
+        ...(input.conditionIds ?? []),
+      ]),
     ];
     const conditions = conditionIds.length
       ? Object.fromEntries(

@@ -8,6 +8,8 @@ import {
   observeAppTaskIntent,
   taskReconciliationConfig,
 } from "./app-task-reconciler.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { readTaskState } from "./app-task-store.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
 
 const roots: string[] = [];
@@ -27,7 +29,19 @@ function fixture() {
       },
     })}\n`,
   );
-  return taskReconciliationConfig({ appDir, projectDir: appDir, owner: "app-owner", maxConcurrent: 1 });
+  const legacyConfig = taskReconciliationConfig({ appDir, projectDir: appDir, owner: "app-owner", maxConcurrent: 1 });
+  const tree = readTaskState(legacyConfig);
+  tree.project = "sample";
+  tree.project_lifecycle = "active";
+  const resourceStore = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
+  resourceStore.bootstrapSnapshot(tree, "codex-goal-fencing");
+  return taskReconciliationConfig({
+    appDir,
+    projectDir: appDir,
+    agent: "app-owner",
+    maxConcurrent: 1,
+    resourceStore,
+  });
 }
 
 afterEach(() => {
