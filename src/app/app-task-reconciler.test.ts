@@ -3860,7 +3860,8 @@ describe("App task reconciler state", () => {
   });
 
   it("releases execution failure only after newer success from the same agent", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3877,7 +3878,7 @@ describe("App task reconciler state", () => {
       reason: "HandlerExecutionFailed",
     });
 
-    const [candidate] = listHandlerExecutionFailedAppTasks(config);
+    const [candidate] = listHandlerExecutionFailedAppTasks(resourceFixture(state, "execution-failed").config);
     expect(candidate).toMatchObject({
       taskId: claim.taskId,
       agent: "branch-owner",
