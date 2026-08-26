@@ -1893,6 +1893,7 @@ export function observeAppTaskIntent(
         ...(existingAttempt ? { attempts: [existingAttempt] } : {}),
         conditions: [...relevantConditionIds].flatMap((id) => (tree.conditions?.[id] ? [tree.conditions[id]] : [])),
         deleteConditionIds: [...relevantConditionIds].filter((id) => !tree.conditions?.[id]),
+        ...(generation > previousGeneration ? { pruneConditionIds: [...initialConditionIds] } : {}),
         ...(admissionKey && tree.appTaskAdmissions?.[admissionKey]
           ? { admissions: [{ taskId: admissionKey, value: tree.appTaskAdmissions[admissionKey] }] }
           : {}),
@@ -2368,9 +2369,11 @@ function effectiveAppTaskPriority(
   return appTaskPriorityOrder[promotedRank] ?? declaredPriority;
 }
 
-export function listRunnableAppTaskQueueEntries(config: TaskStateConfig): AppTaskQueueEntry[] {
+export function listRunnableAppTaskQueueEntries(config: ResourceTaskStateConfig): AppTaskQueueEntry[] {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
+    const candidates = config.resourceStore.listRecoveryCandidates(Date.now(), 10_000).items;
+    const candidateIds = [...new Set(candidates.map((candidate) => candidate.taskId))];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidateIds });
     const nowMs = Date.now();
     const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
     const hasDirectProjectComment = (resource: AppTaskResource): boolean =>
@@ -2381,20 +2384,23 @@ export function listRunnableAppTaskQueueEntries(config: TaskStateConfig): AppTas
       hasDirectProjectComment(resource) || hasSatisfiedConditionReconciliation(tree, resource)
         ? "P0"
         : effectiveAppTaskPriority(resource, nowMs, tree.taskTriggers?.[resource.metadata.id]?.observedAt);
-    return Object.values(tree.resources ?? {})
+    const recoveryOrder = new Map(candidateIds.map((taskId, index) => [taskId, index]));
+    return candidateIds
+      .flatMap((taskId) => (tree.resources?.[taskId] ? [tree.resources[taskId]] : []))
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
       .sort((left, right) => {
-        const commentOrder = Number(hasDirectProjectComment(right)) - Number(hasDirectProjectComment(left));
+        const laneOrder =
+          Number((right.status.lane ?? taskTriggerLane(tree.taskTriggers?.[right.metadata.id]?.event)) === "human") -
+          Number((left.status.lane ?? taskTriggerLane(tree.taskTriggers?.[left.metadata.id]?.event)) === "human");
         const triggerOrder = Number(hasPersistedTrigger(right)) - Number(hasPersistedTrigger(left));
         const leftPriority = priorityOrder[effectivePriority(left)];
         const rightPriority = priorityOrder[effectivePriority(right)];
-        const leftUpdatedAt = String(left.status.updatedAt ?? "");
-        const rightUpdatedAt = String(right.status.updatedAt ?? "");
         return (
-          commentOrder ||
+          laneOrder ||
           leftPriority - rightPriority ||
           triggerOrder ||
-          leftUpdatedAt.localeCompare(rightUpdatedAt) ||
+          (recoveryOrder.get(left.metadata.id) ?? Number.MAX_SAFE_INTEGER) -
+            (recoveryOrder.get(right.metadata.id) ?? Number.MAX_SAFE_INTEGER) ||
           left.metadata.id.localeCompare(right.metadata.id)
         );
       })
@@ -2408,7 +2414,7 @@ export function listRunnableAppTaskQueueEntries(config: TaskStateConfig): AppTas
   });
 }
 
-export function listRunnableAppTaskIds(config: TaskStateConfig): string[] {
+export function listRunnableAppTaskIds(config: ResourceTaskStateConfig): string[] {
   return listRunnableAppTaskQueueEntries(config).map((entry) => entry.taskId);
 }
 
