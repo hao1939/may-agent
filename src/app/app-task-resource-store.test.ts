@@ -12,6 +12,7 @@ import {
   readTaskState,
   saveTaskState,
   setProjectLifecycle,
+  type ResourceTaskStateConfig,
   type TaskStateConfig,
   type TaskTree,
 } from "./app-task-store.js";
@@ -425,7 +426,7 @@ describe("AppTaskResourceStore", () => {
     const appDir = join(configRoot, "example.app");
     mkdirSync(appDir, { recursive: true });
     const paths = projectRuntimePaths(appDir, configRoot);
-    const config: TaskStateConfig = {
+    const config: ResourceTaskStateConfig = {
       appDir,
       projectDir: configRoot,
       statePath: paths.taskStatePath,
