@@ -130,7 +130,8 @@ The installed Task Runtime now has no generic `readTaskState` call: accepted
 waits, active attempts, prior workspaces, executor event fences, and persisted
 terminal-result recovery all read their exact resource rows or bounded resource
 contexts. Focused Runtime fixtures activate resource authority before invoking
-those paths.
+those paths. The verifier's pending-wake read is resource-only too; the broader
+trigger API remains explicit fixture compatibility for a later bounded batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
