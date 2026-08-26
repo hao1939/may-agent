@@ -381,6 +381,52 @@ describe("App inbox store", () => {
     ]);
   });
 
+  it("uses an explicitly published response as the one canonical Conversation message", () => {
+    createAppInboxItem(db, {
+      id: "request-with-message",
+      appId: "may",
+      source: { kind: "human", id: "human:request-with-message" },
+      input: { kind: "message", data: { message: "apply it" } },
+      conversationId: "may:primary",
+      conversationSequence: 100,
+      channel: "may-console",
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "request-with-message", "worker", 1_000, 101)!;
+    expect(
+      completeAppInboxClaim(
+        db,
+        claim,
+        { summary: "Applied the proposal", response: "I’m applying the additive first stage." },
+        102,
+      ),
+    ).toBe(true);
+    db.run(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (1000, 'conversation.message.created', 'app-inbox', 'app:may', ?, 103)`,
+      [
+        JSON.stringify({
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "agent", id: "may" },
+          text: "I’m applying the additive first stage.",
+          metadata: { channel: "may-console", requestId: "request-with-message" },
+        }),
+      ],
+    );
+
+    const agentMessages = readAppConversationResource(db, "may", "may:primary").messages.filter(
+      (message) => message.author.kind === "agent",
+    );
+    expect(agentMessages).toEqual([
+      expect.objectContaining({
+        id: "event:1000",
+        text: "I’m applying the additive first stage.",
+        metadata: expect.objectContaining({ requestId: "request-with-message" }),
+      }),
+    ]);
+  });
+
   it("does not treat a cross-App id collision as an idempotent create", () => {
     create("shared-id", { now: 100 });
 
