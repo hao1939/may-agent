@@ -1,4 +1,4 @@
-import { readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import type { AppTaskCondition } from "./app-task-state.js";
 import type { TaskStateConfig, TaskTree } from "./app-task-store.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
@@ -94,28 +94,5 @@ export function writeAppTaskConditionRouteIndex(config: TaskStateConfig, tree: T
   } catch {
     rmSync(tempPath, { force: true });
     return false;
-  }
-}
-
-/** Return indexed candidates, or null when canonical state must be consulted. */
-export function readAppTaskConditionRoutes(config: TaskStateConfig, eventType: string): AppTaskConditionRoute[] | null {
-  const indexPath = projectRuntimePaths(config.stateAppDir ?? config.appDir).taskConditionRoutesPath;
-  try {
-    const before = stateSignature(config.statePath);
-    const index = JSON.parse(readFileSync(indexPath, "utf-8")) as AppTaskConditionRouteIndex;
-    const after = stateSignature(config.statePath);
-    if (index.schemaVersion !== 1 || !sameSignature(before, after) || !sameSignature(index.state, after)) {
-      return null;
-    }
-    const routes = index.eventTypes?.[eventType];
-    if (routes === undefined) return [];
-    return Array.isArray(routes) &&
-      routes.every(
-        (route) => Array.isArray(route?.taskIds) && route.taskIds.every((taskId) => typeof taskId === "string"),
-      )
-      ? routes
-      : null;
-  } catch {
-    return null;
   }
 }
