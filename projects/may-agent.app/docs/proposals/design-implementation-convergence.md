@@ -121,7 +121,9 @@ fixtures now bootstrap resource authority directly.
 The loaded Runtime completion probe is resource-only as well. Its callers pass
 the installed resource config, and its bounded Task/receipt read no longer
 accepts offline JSON state. An unused whole-App intent scan was removed instead
-of preserving another compatibility surface.
+of preserving another compatibility surface. The bounded App-wide live Task
+snapshot now likewise queries the resource index and reads only the selected
+Task contexts; its focused fixture exercises that authority directly.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
