@@ -3255,12 +3255,12 @@ export function recordAppTaskAttemptSession(config: TaskStateConfig, claim: AppT
  * work.
  */
 export function associateAppTaskSession(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   binding: { taskId: string; generation: number },
   sessionId: string,
 ): AppTaskSessionAssociation {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [binding.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
     const task = tree.tasks[binding.taskId];
     const resource = tree.resources?.[binding.taskId];
     if (!task || !resource) return { status: "missing", taskId: binding.taskId };

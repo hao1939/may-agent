@@ -2901,7 +2901,8 @@ describe("App task reconciler state", () => {
   });
 
   it("associates workflow sessions with the current attempt and rejects stale generations", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "workflow-session-association");
     const original = intent();
     const claim = declareAndClaimTask(config, {
       intent: original,
@@ -4721,7 +4722,8 @@ describe("App task reconciler state", () => {
   });
 
   it("returns sessions superseded by a dependent update-task action", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "superseded-session-association");
     const targetIntent: AppTaskIntent = {
       id: "work/running-target",
       parentId: "operations",
