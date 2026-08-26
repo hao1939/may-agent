@@ -44,6 +44,7 @@ describe("Herdr web terminal", () => {
     const dockerfile = readFileSync(resolve(repoRoot, "container/Dockerfile"), "utf8");
 
     expect(nginx).toContain("listen 8080;");
+    expect(nginx).toContain("absolute_redirect off;");
     expect(nginx).toContain("location /terminal/");
     expect(nginx).toContain("proxy_pass http://127.0.0.1:7681;");
     expect(nginx).toContain("proxy_pass http://127.0.0.1:8081;");
