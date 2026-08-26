@@ -61,6 +61,12 @@ Bare text always enters `Conversation may:primary` as one durable human
 message. It has no session target. Transport `ok` receipts stay hidden because
 they prove admission, not useful progress.
 
+Console separates conversation turns with one blank line. A multiline turn
+keeps every continuation line aligned under the text after `you>` or `may>`;
+the speaker remains visually distinct without repeating it on every line.
+Long prose wraps to the current terminal width with the same continuation
+indentation.
+
 `/reload` includes one adapter-local request identity. Console waits for the
 correlated `runtime.reload.finished` fact, renders its success or failure, and
 then records that rendered command result in Conversation. Other Console
@@ -127,20 +133,36 @@ human-readable message.
 
 When a conversational follow-up is durably admitted, Runtime adds one
 tool-authored Task activity to the shared Conversation. Console renders it as
-`[task]`, shows the exact Task reference, and automatically watches that Task.
+an indented `[task]` block, shows the exact Task reference, and automatically
+watches that Task.
 This is separate from `may>` speech: May explains the decision; `[task]` proves
 what was accepted. A downstream assignment may move the local watch from May's
 conversation Task to the responsible App Task. Watch refreshes stay transient
 and are coalesced by canonical Task revision, so internal event volume does not
 become terminal noise.
 
-`/tasks` uses plain, compact rows: Task reference, App, state, last-change age,
-concrete goal, and whether the human must act. `/task <ref>` puts the useful
-answers first: `Goal`, `State`, `Current`, `Expected result`, and `You`. When no
-open human-owned Condition exists, `You` explicitly says
-`Nothing needed right now.` Task ID and diagnostic session appear last. Console
-derives this from the shared Task view and does not invent a second status
-model.
+`/tasks` uses small, separated blocks. The first line identifies the Task, App,
+state, and last-change age; indented lines show its concrete goal and what the
+human needs to do. `/todo` follows the same hierarchy. `/task <ref>` puts the
+useful answers first in consistently indented sections: `Goal`, `State`,
+`Current`, `Expected result`, and `You`. When no open human-owned Condition
+exists, `You` explicitly says `Nothing needed right now.` Task ID and
+diagnostic session appear last. Console derives this from the shared Task view
+and does not invent a second status model.
+
+Starting or refreshing `/watch` renders a compact Task update rather than the
+full `/task` view. The latest useful progress or result comes first as the
+content the human is trying to understand. Task identity, state, age, related
+work, and `You` form a small indented footer beneath it. Repeated acceptance
+criteria, internal IDs, and diagnostic session details remain available
+through `/task <ref>` without competing with the update.
+
+A direct May answer is appended to Conversation even when it creates no new
+Task or dependency. A durable follow-up result is correlated through its exact
+follow-up request to the existing Conversation and Topic; model-written Topic
+labels cannot make an otherwise valid result disappear. The resulting `may>`
+turn is the answer. A watch update is supporting execution evidence, not a
+substitute for that turn.
 
 ## Watch
 

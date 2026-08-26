@@ -215,6 +215,14 @@ backend result containing the Topic, exact Task references, and useful text.
 Runtime validates and appends that text to the shared Conversation. The
 frontend is not invoked again.
 
+The exact follow-up request is the durable correlation authority. Runtime uses
+its recorded Conversation and Topic when projecting the result; an LLM-written
+label cannot redirect or silently discard a valid answer. If neither that
+correlation nor the named Topic resolves, Runtime reports the rejected
+projection instead of treating it as successful human communication. Direct
+frontend answers follow the same rule: storing the request receipt is not
+enough; the response is appended as one Conversation message.
+
 Progress is deduplicated by stable event or result identity and appears at most
 once in durable Conversation. Adapters may render faster transient progress
 while watching a Task, but transient output is not later used as conversational
