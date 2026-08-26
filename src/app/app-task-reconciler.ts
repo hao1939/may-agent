@@ -424,7 +424,7 @@ function projectIdFromAppDir(appDir: string): string {
 }
 
 function syntheticAttemptTrigger(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   taskId: string,
   reason: string | undefined,
 ): Record<string, unknown> {
@@ -617,7 +617,7 @@ function checkpointRecoveryEvidence(
 }
 
 function buildRecoveredSessionHandoff(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   attempt: AppTaskAttempt | undefined,
 ): AppTaskClaim["handoff"] | undefined {
   if (!attempt?.sessionId || attempt.failureReason !== "previous-runtime-attempt-requeued") {
@@ -3595,7 +3595,7 @@ function applyTaskActions(
   claim: AppTaskClaim,
   actions: AppTaskAction[],
   evidence: string[],
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   acceptanceBasis: AppTaskAcceptanceBasis,
 ): { actionsApplied: string[]; supersededSessionIds: string[] } {
   validateTaskActions(tree, actions, config);
