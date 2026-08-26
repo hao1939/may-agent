@@ -12,7 +12,7 @@ import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js
 import { renewAppTaskAttemptLease, type AppTaskClaim } from "./app-task-reconciler.js";
 import { EventBus } from "./event-bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
-import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
+import { cacheTaskStateReads, readTaskState, type ResourceTaskStateConfig, type TaskTree } from "./app-task-store.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 
 const roots: string[] = [];
@@ -330,7 +330,7 @@ describe("AppTaskEmitter", () => {
     const appDir = join(root, "sample.app");
     mkdirSync(appDir, { recursive: true });
     const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: ResourceTaskStateConfig = {
       appDir,
       projectDir: root,
       statePath: paths.taskStatePath,
@@ -389,7 +389,7 @@ describe("AppTaskEmitter", () => {
     const appDir = join(root, "sample.app");
     mkdirSync(appDir, { recursive: true });
     const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: ResourceTaskStateConfig = {
       appDir,
       projectDir: root,
       statePath: paths.taskStatePath,
@@ -468,7 +468,7 @@ describe("AppTaskEmitter", () => {
     const projectDir = join(root, "projects", "gym");
     mkdirSync(appDir, { recursive: true });
     const paths = projectRuntimePaths(appDir, join(root, "projects"));
-    const config: TaskStateConfig = {
+    const config: ResourceTaskStateConfig = {
       appDir,
       stateAppDir: paths.stateAppDir,
       projectDir,
