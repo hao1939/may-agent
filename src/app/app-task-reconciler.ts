@@ -3103,12 +3103,12 @@ function matchingTask(
 }
 
 export function releaseStaleAppTaskResult(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   summary = "Stale reconciliation result was rejected; retrying from current task evidence",
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const task = tree.tasks[claim.taskId];
     const resource = tree.resources?.[claim.taskId];
     if (!task || !resource) return { status: "missing", taskId: claim.taskId };
@@ -3134,7 +3134,6 @@ export function releaseStaleAppTaskResult(
     });
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     saveTaskState(config, tree, {
       resourceMutation: {
         fences: [

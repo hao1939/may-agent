@@ -4188,7 +4188,8 @@ describe("App task reconciler state", () => {
   });
 
   it("can release a stale current attempt so the task is judged again from current evidence", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "stale-result-release");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -4196,10 +4197,9 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    const concurrent = readTaskState(config);
-    concurrent.attempts![claim.attemptId].metadata.resourceVersion += 1;
-    concurrent.attempts![claim.attemptId].specHash = "superseded-attempt-contract";
-    saveTaskState(config, concurrent);
+    mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+      attempt.specHash = "superseded-attempt-contract";
+    });
 
     expect(
       completeAppTask(config, claim, {
@@ -4239,7 +4239,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps accepted waits and semantic progress when feedback fences an attempt", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "feedback-stale-result-release");
     const taskIntent = intent();
     const initial = declareAndClaimTask(config, {
       intent: taskIntent,

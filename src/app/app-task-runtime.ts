@@ -2772,7 +2772,7 @@ function emitTaskReconciliationEvent(
 }
 
 function recoverStaleTaskResult(
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } {
   const recovery = releaseStaleAppTaskResult(
@@ -2787,7 +2787,7 @@ function recoverStaleTaskResult(
 }
 
 function recoverStaleTaskActionResult(
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   error: unknown,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
