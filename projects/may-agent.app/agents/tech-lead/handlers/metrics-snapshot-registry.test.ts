@@ -99,6 +99,9 @@ describe("metrics-snapshot registry and queries", () => {
     expect(activeRegistry).not.toContain(
       'id: "evaluator.meaningful-review-rate-24h"',
     );
+    expect(activeRegistry).not.toContain(
+      'id: "evaluator.triage-closure-rate-24h"',
+    );
     expect(source).not.toContain(
       'record("eval.llm-coverage-lag-h"',
     );
@@ -111,6 +114,9 @@ describe("metrics-snapshot registry and queries", () => {
     );
     expect(source).not.toContain(
       'record(\n        "evaluator.meaningful-review-rate-24h"',
+    );
+    expect(source).not.toContain(
+      'record(\n        "evaluator.triage-closure-rate-24h"',
     );
   });
 

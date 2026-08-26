@@ -20,6 +20,8 @@ import app, {
   MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY,
   SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
   SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
+  TRIAGE_CLOSURE_RATE_24H_METRIC_ID,
+  TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY,
   taskForEvaluationInput,
   taskInputForEvent,
   taskIntentForEvent,
@@ -176,7 +178,7 @@ describe("canonical evaluation App", () => {
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toHaveLength(6);
+    expect(app.metrics).toHaveLength(7);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -219,6 +221,13 @@ describe("canonical evaluation App", () => {
           owner: "evaluator",
           project: "evaluation",
           sourceQuery: MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: TRIAGE_CLOSURE_RATE_24H_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY,
           measureInterval: 300_000,
         }),
       ]),
@@ -388,6 +397,41 @@ describe("evaluation metrics", () => {
     expect(
       db.query(MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY).get(),
     ).toMatchObject({ value: 1, sampleSize: 0 });
+  });
+
+  test("measures triage closures against only needs-triage routes", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE events (
+        event_type TEXT NOT NULL,
+        data TEXT,
+        timestamp INTEGER NOT NULL
+      )`,
+    );
+    const now = Date.now();
+    for (const [eventType, lane, timestamp] of [
+      ["evaluation.routed", "needs_triage", now - 60_000],
+      ["evaluation.routed", "needs_triage", now - 60_000],
+      ["evaluation.routed", "success_candidate", now - 60_000],
+      ["evaluation.triage_closed", "needs_triage", now - 60_000],
+      ["evaluation.triage_closed", "needs_triage", now - 25 * 60 * 60_000],
+    ] as const) {
+      db.run(
+        "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+        [eventType, JSON.stringify({ lane }), timestamp],
+      );
+    }
+
+    expect(db.query(TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY).get()).toMatchObject({
+      value: 0.5,
+      sampleSize: 2,
+    });
+
+    db.run("DELETE FROM events");
+    expect(db.query(TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY).get()).toMatchObject({
+      value: 1,
+      sampleSize: 0,
+    });
   });
 
   test("counts canonical eligible sessions and preserves count evidence", () => {
