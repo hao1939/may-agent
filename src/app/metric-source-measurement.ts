@@ -17,6 +17,7 @@ export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "project.task.reconciled",
   "project.task.reconcile.skipped",
   "project.task.executor.progress",
+  "handler.routed",
   "metric.breach",
   "conversation.updated",
   "gym.review.filtered",
