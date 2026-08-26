@@ -162,8 +162,10 @@ Orphaned cross-App dependency waits are checked against admitted requests from
 their indexed waiting resource contexts and requeue the same Task without a
 JSON repair path. Running Tasks whose current attempt is missing or no longer
 running are likewise repaired from the indexed resource candidates and requeue
-the same Task through one fenced mutation. Broader recovery repairs remain in
-a later batch.
+the same Task through one fenced mutation. Exact Task-intent lookup now reads
+only the requested resource context as well; installed routing and focused
+resource fixtures no longer pass that ordinary read through JSON state.
+Broader recovery repairs remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
