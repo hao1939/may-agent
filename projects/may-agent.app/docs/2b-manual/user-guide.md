@@ -80,7 +80,7 @@ may> now add tests for it
 ```
 
 May may group related Turns under a Topic. A Topic remembers what you are
-discussing and links the responsible App Tasks; it has no status or execution
+discussing and links the responsible Tasks; it has no status or execution
 loop. Long-running work is always represented by an exact Task owned by the App
 that can do it.
 
@@ -97,7 +97,7 @@ agent run named `may`.
 | `/topics`             | List Topics and their linked Task count                    |
 | `/topics more`        | Continue to the next older Topic page                      |
 | `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
-| `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps or recent terminal Tasks |
+| `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps or recent terminal Tasks |
 | `/tasks more`         | Continue the exact prior Task list when another page exists |
 | `/todo [all]`         | Show Tasks with an explicit open human-owned Condition      |
 | `/todo more`          | Continue the exact prior human-action page                  |

@@ -50,7 +50,7 @@ describe("canonical May conversation App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
-  test("maps every follow-up event to one hidden standing Task", () => {
+  test("maps every follow-up event to one ordinary conversation Task", () => {
     expect(
       mayFollowUpTask({
         type: "app.follow-up.requested",
@@ -60,9 +60,15 @@ describe("canonical May conversation App", () => {
     ).toMatchObject({
       id: MAY_FOLLOW_UP_TASK_ID,
       mode: "maintain",
-      category: "internal",
       agent: "may",
     });
+    expect(
+      mayFollowUpTask({
+        type: "app.follow-up.requested",
+        target: { appId: "may", project: "may" },
+        data: { requestId: "turn-1" },
+      }),
+    ).not.toHaveProperty("category");
   });
 
   test("maps durable May goals to ordinary visible goal Tasks", () => {

@@ -245,7 +245,7 @@ Task event/result -> standing May Task -> Conversation update
 ```
 
 An App Task waits on exact child work or Conditions. A May frontend request
-does not wait on destination work. The standing follow-up Task preserves that
+does not wait on destination work. May's conversation Task preserves that
 obligation, and a persisted May response enters Conversation independently of
 channel rendering.
 Events provide causal evidence and wakes along those relationships; they do
@@ -267,7 +267,7 @@ conversation.message.created target.appId=may
   -> bounded May frontend request
   -> answer/clarification, or typed follow-up event
   -> frontend request done
-  -> standing follow-up Task links and follows exact App Tasks
+  -> May conversation Task links and follows exact Tasks
   -> useful result persisted in Conversation
   -> Console and Telegram independently observe and render
 ```

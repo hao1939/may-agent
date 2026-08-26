@@ -106,7 +106,7 @@ adapter, it may declare one default Conversation, for example
 `requests: { mode: "agent", conversationId: "may:primary" }`. The Host places
 those requests and their accepted responses in that same Conversation using the
 origin event identity. The non-human input is not presented as a human Turn.
-For May, one maintain-mode follow-up Task consumes typed frontend decisions and
+For May, one normal maintain-mode conversation Task consumes typed frontend decisions and
 meaningful Task events. It is ordinary Task infrastructure and replaces the
 former rule that kept every frontend request open for child results.
 

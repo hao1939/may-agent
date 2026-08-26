@@ -83,7 +83,7 @@ conversation.message.created (target.appId=may, author.kind=human)
     -> bounded agent session
       -> direct App result, or app.follow-up.requested
         -> frontend request complete
-          -> standing May follow-up Task
+          -> May conversation Task
             -> responsible App Task events/results
               -> conversation.updated
                 -> independent adapter read/render
@@ -672,7 +672,7 @@ domain App request/task
   -> typed human-attention event to May
   -> outbound delivery operation
   -> conversation.message.created (author.kind=human)
-  -> May follow-up Task routes the answer
+  -> May conversation Task routes the answer
   -> app.dependency.completed fact
   -> source App request/task resumes
 ```

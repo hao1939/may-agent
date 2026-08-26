@@ -19,12 +19,12 @@ human Telegram message
   -> Conversation may:primary
   -> one bounded May frontend request and optional Topic
   -> direct answer or typed follow-up event
-  -> standing May follow-up Task reviews responsible App Tasks
+  -> May conversation Task reviews Tasks owned by responsible Apps
   -> persisted result in Conversation
   -> Telegram independently renders unseen messages
 ```
 
-Destination App Tasks own work; the Host request correlates the human turn and
+Destination Tasks own work; the Host request correlates the human turn and
 May's response. Topics link related turns to those Tasks. The Conversation provides shared durable context across Telegram and
 Console. Telegram chat/topic/message IDs, traces, sessions, notification rows,
 and reply anchors are delivery or context evidence only.
@@ -136,12 +136,12 @@ unfinished May frontend request
   -> prepare a fresh bounded May session
   -> finish the same bounded decision
 
-standing May follow-up Task
+May conversation Task
   -> Runtime retries the same Task from durable Events and links
 ```
 
 Do not replay the last prompt or steer an unrelated current session. Session
-loss cannot lose or duplicate the bounded request or standing follow-up Task.
+loss cannot lose or duplicate the bounded request or May conversation Task.
 
 ## Answers And Cross-App Dependencies
 

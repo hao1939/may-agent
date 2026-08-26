@@ -5,8 +5,8 @@
 
 ## Mental model
 
-> May talks with the human in the foreground and keeps promises moving in one
-> small background Task.
+> May talks with the human in the frontend and keeps durable follow-through
+> moving in one normal Task.
 
 ```text
 Human
@@ -15,7 +15,7 @@ Human
         `- publish one typed durable intent or feedback event
                               |
                               v
-                    May follow-up Task
+                    May conversation Task
                       |- continue an exact Task
                       |- request another App's Task
                       `- create an ordinary May goal Task
@@ -24,7 +24,7 @@ Human
                   Task events and results
                               |
                               v
-                    May follow-up Task
+                    May conversation Task
                               |
                               v
                  Conversation message -> Human
@@ -39,15 +39,21 @@ There are four durable resources:
 - **Task** is an executable goal owned by one App.
 - **Event** is a fact or input that wakes the component that can act on it.
 
+There is only one kind of Task. “Conversation,” “delegated,” “maintenance,”
+and “child” describe a Task's goal or relationship, never a different resource
+or lifecycle. An App owns and reconciles Tasks; an agent, workflow, Codex, or
+Claude is only a replaceable way to perform one attempt.
+
 The May App has two deliberately separate roles:
 
 - the **frontend** handles one conversational turn; and
-- one standing **follow-up Task** maintains Topic-to-Task follow-through.
+- one long-lived **conversation Task** maintains Topic-to-Task follow-through.
 
-The follow-up Task is backend infrastructure for May's deputy behavior. It is
-not another copy of the human's work and is omitted from ordinary `/tasks`
-views. A durable goal that May itself must perform is a separate, ordinary
-May-owned Task and is shown like every other App Task.
+The conversation Task is a normal visible Task owned by May. It has the same
+resource, lifecycle, events, reconciliation, retry, recovery, and presentation
+as every other Task. Its goal is Conversation follow-through rather than a
+copy of a delegated goal. A durable goal that May itself must perform is a
+separate May-owned Task.
 
 ## Frontend: one bounded turn
 
@@ -111,24 +117,36 @@ hidden state machine. May preserves answers already given, does not ask for
 discoverable facts, recommends a safe default, and proceeds when the human
 delegates the choice back to May.
 
-## Backend: one standing follow-up Task
+## Backend: one normal conversation Task
 
-The May App owns one maintain-mode Task per Conversation:
+May owns one ordinary maintain-mode Task per Conversation:
 
 ```text
-may/follow-up/may:primary
+may/conversation/follow-up
 ```
 
-It wakes on:
+The current shared Conversation is `may:primary`, so this is its one Task.
+If independent Conversations are introduced later, each receives one stable
+Task identity derived from its Conversation identity.
+
+It is visible in `/tasks` and wakes on:
 
 - a typed durable intent or feedback event from the frontend;
 - a linked Task's meaningful progress, wait, attention, or result;
 - a Topic-to-Task link change; and
 - a coalesced low-frequency recovery tick.
 
-It never waits synchronously inside event delivery and never polls individual
-Tasks. Events are persisted quickly; Task reconciliation runs asynchronously.
-The recovery tick only repairs missed wakes from durable truth.
+The frontend and backend never call or wait for each other. Both react to
+persisted Events and update durable resources. An Event says what changed and
+wakes interested consumers; Conversation, Topic, and Task resources remain the
+truth they reread. Publishers do not wait for subscribers, and repeated wakes
+are safe to coalesce by Task identity.
+
+It never waits synchronously inside event delivery and never creates an
+in-memory watcher or polling loop for an individual Task. Events are persisted
+quickly; Task reconciliation runs asynchronously. The recovery tick performs
+one bounded read of unfinished Tasks linked to this Conversation and only
+repairs missed wakes or stale relationships from durable truth.
 
 For each follow-up, the backend:
 
@@ -142,12 +160,25 @@ For each follow-up, the backend:
 8. appends a useful May message to the Conversation when the human should be
    updated.
 
+The same pass performs the semantic health check for linked unfinished Tasks:
+
+- recent progress or a valid explicit wait is healthy and needs no steering;
+- an expired lease or interrupted attempt is mechanical and belongs to Runtime
+  recovery on the same Task;
+- a Task with neither active execution nor a valid wait is woken or steered by
+  exact identity; and
+- work moving away from the human's goal receives feedback on that same Task,
+  rather than a replacement Task.
+
+When no linked Task changed, the recovery pass reschedules without an LLM
+turn. It never scans unrelated Apps or Tasks.
+
 The target App decides whether a new request maps to an existing or new Task.
 Once a primary Task exists, that App owns execution and child decomposition.
 The Runtime validates and persists effects but does not infer semantic
 relationships.
 
-The standing Task stores only compact correlation needed to avoid losing a
+The conversation Task stores only compact correlation needed to avoid losing a
 promise: Topic, follow-up identity, primary Task identity, and the last
 meaningful update already surfaced. Canonical Task resources remain the source
 of status, progress, waits, and results. It does not copy Task state.
@@ -156,15 +187,16 @@ of status, progress, waits, and results. It does not copy Task state.
 
 When no installed App is a better owner, the backend creates a normal May goal
 Task. That Task uses the same Task interface, events, recovery, and executor
-choices as every other App. It may run the May agent, a workflow, Codex, or
-Claude. It is not the standing follow-up Task.
+choices as every other Task. It may run the May agent, a workflow, Codex, or
+Claude. It is not the conversation Task.
 
 ## Results and human updates
 
 Task events wake the backend; they do not directly manufacture chat text. The
 backend decides whether an event matters to the human and publishes a typed
 backend result containing the Topic, exact Task references, and useful text.
-The frontend appends that text to the shared Conversation in plain language.
+Runtime validates and appends that text to the shared Conversation. The
+frontend is not invoked again.
 
 Progress is deduplicated by stable event or result identity and appears at most
 once in durable Conversation. Adapters may render faster transient progress
@@ -196,7 +228,7 @@ Conversation or Topic identity.
 | Component | Owns | Does not own |
 | --- | --- | --- |
 | May frontend | understanding one Turn, direct answer, clarification, typed durable intent | long-running work, child waits, recovery |
-| May follow-up Task | Topic-to-Task linkage, follow-through, steering, human updates | domain execution, copied Task status, adapter delivery |
+| May conversation Task | Topic-to-Task linkage, follow-through, steering, human updates | domain execution, copied Task status, adapter delivery |
 | Target App | goal interpretation inside its domain, Task execution and decomposition | human Conversation presentation |
 | Runtime | event persistence, validation, scheduling, retry, mechanical recovery | semantic ownership or intent inference |
 | Adapter | input/output presentation and local selection | work state or delivery-gated completion |
@@ -205,7 +237,7 @@ Conversation or Topic identity.
 
 - Event publication persists and returns without running a long handler inline.
 - Repeated wakes coalesce by Task identity.
-- One follow-up Task replaces per-request coordination loops; it is not added
+- One conversation Task replaces per-request coordination loops; it is not added
   beside them.
 - Runtime retries interrupted attempts on the same Task.
 - The owning App resolves semantic waits; May supplies human context or
@@ -221,11 +253,11 @@ Conversation or Topic identity.
 2. One frontend turn finishes after its answer, clarification, or durable
    follow-up event is accepted.
 3. Direct Q&A creates no Task.
-4. There is one standing follow-up Task per Conversation, and it is hidden from
-   ordinary human work lists.
-5. The standing Task replaces the old open-request child-wait loop.
+4. There is one normal, visible conversation Task per Conversation.
+5. The conversation Task replaces the old open-request child-wait loop.
 6. Every durable goal is an ordinary Task owned by its responsible App.
-7. May-owned goal Tasks and the standing follow-up Task are different Tasks.
+7. May-owned goal Tasks and the conversation Task are ordinary Tasks with
+   different goals.
 8. Topic carries context and exact links only; it never carries work state.
 9. Existing unfinished work is continued by exact identity when it can still
    fulfill the outcome.
@@ -243,12 +275,12 @@ Conversation or Topic identity.
 
 ## Migration rule
 
-During migration, the new follow-up Task must not coexist with the old rule
+During migration, the conversation Task must not coexist with the old rule
 that keeps each May human request open for child results. Cut over in this
 order:
 
-1. admit and verify the standing follow-up Task;
+1. admit and verify the conversation Task;
 2. publish typed follow-up events from bounded frontend decisions;
 3. project backend results into Conversation;
 4. stop frontend requests from waiting on child App work; and
-5. retire legacy Conversation wrapper Tasks and hidden request coordination.
+5. retire legacy Conversation wrapper Tasks and request coordination.

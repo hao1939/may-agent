@@ -35,7 +35,7 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 | `/apps [app]`            | List Apps or select one App                           |
 | `/topics`, `/topics more` | List Conversation Topics page by page                |
 | `/topic [ref\|clear]`   | Show, follow, or leave one Topic                      |
-| `/tasks [all] [history]` | List selected-App Tasks, optionally all Apps/history |
+| `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps/history |
 | `/todo [all]`            | Show Tasks that explicitly need human action         |
 | `/todo more`             | Continue the current human-action page                |
 | `/task <ref>`            | Read one exact Task                                   |

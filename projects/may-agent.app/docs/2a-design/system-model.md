@@ -63,7 +63,7 @@ The ordinary interaction model has four nouns:
 ```text
 human or caller
   -> Host event and bounded request
-  -> App task when durable work is required
+  -> Task when durable work is required
   -> event-driven execution until completion or an exact wait
   -> accepted result
   -> Host projection to the caller
@@ -84,8 +84,12 @@ Two common words are deliberately not resources:
   dependency relationships; it does not own, schedule, or mutate work.
 
 Humans normally talk to May or invoke a named App command and then track the
-request. They inspect a related task only when they need progress or diagnostic
-detail.
+Task. They inspect its details when they need progress or diagnostic detail.
+
+There is one kind of Task. A conversation coordinator, deployment, evaluation,
+and project review all use the same Task resource and lifecycle. Their owning
+App, goal, relationships, and selected attempt handler differ; their Task kind
+does not.
 
 ### May in one flow
 
@@ -93,22 +97,22 @@ detail.
 human talks to May (`app:may`)
   -> May frontend understands one turn
   -> it answers or publishes typed durable intent/feedback
-  -> May's standing follow-up Task links and follows responsible App Tasks
-  -> task events wake follow-up and May updates the Conversation
+  -> May's conversation Task links and follows Tasks owned by responsible Apps
+  -> Task events wake it and May updates the Conversation
 ```
 
 May is the App; “May App” is only the precise name used when contrasting May
 with another App or with the Host. That is the complete ordinary mental model.
 The Host may run a bounded executor such as `agent:may` to decide one turn, but
 the executor is not another service or owner. A Topic only links related turns
-and App Tasks.
+and Tasks.
 
 May is the human's deputy rather than a forwarding layer. Its frontend uses Conversation,
 preferences, and focused resources to understand the intention. When current
 evidence is enough, May answers, suggests, reviews, or gives an opinion in that
 bounded turn without creating or changing a Task. When durable work is needed,
-May publishes only a clear durable outcome or exact feedback. One standing
-follow-up Task performs Task linkage, watches meaningful Task events, and
+May publishes only a clear durable outcome or exact feedback. One normal,
+visible conversation Task performs Task linkage, observes meaningful Task events, and
 brings useful results back to Conversation. A mixed request may receive a
 useful immediate answer and continue exact work. Focus is context, not
 automatic mutation authority.
@@ -117,7 +121,7 @@ The names describe different responsibilities:
 
 | Name                                      | Meaning                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **May** (`app:may`)                       | The deputy: a bounded conversational frontend plus one standing follow-up Task.                  |
+| **May** (`app:may`)                       | The deputy: a bounded conversational frontend plus one normal conversation Task.                 |
 | **Agent** (for example `agent:may`)       | A named reasoning profile for one bounded attempt. It owns no durable work.                      |
 | **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
 | **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
@@ -156,12 +160,12 @@ For example:
 - changing the Host belongs to `app:may-agent`; May may route the request but
   neither May nor the selected agent owns that Host Operations Task.
 
-The Conversation preserves what the human said. The standing May follow-up
+The Conversation preserves what the human said. May's conversation
 Task preserves durable follow-through, and destination Apps preserve goals in
 their Tasks. The May executor can change, fail, or be replaced without creating
 per-turn wrapper Tasks. Durable Task identity remains namespaced by its owning
 App. When May is the best owner of a goal, it owns an ordinary goal Task in
-addition to its standing follow-up Task.
+addition to its conversation Task.
 
 The public SDK calls the execution selection `agent`. The Host accepts the old
 `owner` spelling at one migration boundary and still stores it in retained Task
@@ -309,7 +313,7 @@ a new attempt, but it keeps the same request and task identities.
 | ----------- | ---------------------------------------------------- | ------------------------ |
 | Event       | Durable new information that may create or wake work | Host                     |
 | Conversation| Ordered human, May, command, and tool messages       | May/Host projection      |
-| Topic       | Related turns linked to exact App Tasks              | May/Host linkage         |
+| Topic       | Related turns linked to exact Tasks                  | May/Host linkage         |
 | App request | One caller still owed a correlated result            | Host                     |
 | Task        | One desired outcome reconciled by an App             | Host storage, App policy |
 | Attempt     | One bounded agent or workflow execution              | Host                     |
@@ -330,7 +334,7 @@ work list, or owner. Adapters observe its updates and render independently, so
 their delivery state never gates a human request's semantic completion.
 
 A Topic is equally small: `id`, plain title, who opened it, its origin message,
-and links to exact App Tasks. Active or finished meaning is derived from the
+and links to exact Tasks. Active or finished meaning is derived from the
 unanswered request and linked Task resources. A Topic has no status, progress,
 queue, retry, scheduler, or result of its own.
 
@@ -339,7 +343,7 @@ queue, retry, scheduler, or result of its own.
 - Every state-changing input first becomes one event.
 - A human `conversation.message.created` event adds shared May Conversation
   context and creates one bounded May frontend request.
-- A typed durable May decision emits one event to the standing follow-up Task;
+- A typed durable May decision emits one event to May's conversation Task;
   the frontend request does not wait on destination Tasks.
 - An addressed `app.input.requested` event creates one durable App request.
 - A declared subscription translates a fact into typed input and then one task.

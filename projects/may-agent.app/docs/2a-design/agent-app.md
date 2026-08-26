@@ -302,7 +302,7 @@ execution, not May's responsibility to close the human conversation with a
 useful verified result.
 
 A Topic is human-facing context, not work. Its stored fields are only `id`, a
-short title, `openedBy`, `originMessageId`, and links to exact App Tasks. It has
+short title, `openedBy`, `originMessageId`, and links to exact Tasks. It has
 no status, progress, result, retry, scheduler, or reconciliation loop. One Topic
 may link to several Tasks; one Task may outlive the turn that created the link.
 Active and finished views derive from unanswered requests and canonical Task
@@ -350,14 +350,14 @@ one schema-validated request decision with four small parts:
 
 - an optional plain-language message for an answer, clarification, or useful
   immediate explanation;
-- no work, or one typed durable intent/feedback event for the May follow-up Task;
+- no work, or one typed durable intent/feedback event for May's conversation Task;
 - optional narrow human-authorized controls for exact Tasks already supplied
   in context; and
 - no Topic, one new plain-language Topic, or one exact existing Topic.
 
 A message without work completes the Turn. A message with durable intent is
-shown once and completes after its follow-up event is accepted. The standing
-May follow-up Task then continues an exact Task or requests genuinely new App
+shown once and completes after its follow-up event is accepted. May's
+conversation Task then continues an exact Task or requests genuinely new App
 work. Topic and Task identities say what is continuing; the frontend request
 does not become the coordinator.
 
@@ -365,7 +365,7 @@ Direct advice is the ordinary fast path, including when a Task is focused. May
 may explain whether a wait makes sense, recommend a next step, or give an
 opinion from the supplied evidence without producing a Task effect. If the
 human also asks for action, the same decision may answer now and publish typed
-feedback naming the exact existing Task. The follow-up Task applies that
+feedback naming the exact existing Task. The conversation Task applies that
 decision and requests new work only when no supplied unfinished Task can
 fulfill the desired outcome. These are LLM decisions over
 structured context, not keyword branches in Runtime.
@@ -426,9 +426,9 @@ ownership or create new work. A completed historical Task stays immutable;
 May may use its Topic as context and create a distinct follow-up when needed.
 
 An accepted follow-up event carries the Topic and exact identity selected from
-the current bounded context. The standing follow-up Task serializes linkage,
+the current bounded context. The conversation Task serializes linkage,
 reuses the fitting unfinished primary Task, and asks a destination App for new
-work only when needed. Destination Task events wake that same follow-up Task.
+work only when needed. Destination Task events wake that same conversation Task.
 There is no open per-turn child-wait loop, Topic scheduler, polling loop, or
 transport acknowledgement between them.
 
@@ -446,7 +446,7 @@ the dependency. A missing owner or capability goes to the Host Operations App
 
 A clarification completes the current request with the question. The next
 human message is a new request carrying bounded Conversation and Topic context.
-Durable work is followed by the standing May Task and owned by exact App Tasks.
+Durable work is followed by May's conversation Task and owned through exact Tasks.
 This keeps human conversation natural without turning the dialogue into work.
 
 The **Host Operations App** (stable `appId: may-agent`) is a different App. It

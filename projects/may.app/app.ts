@@ -77,6 +77,7 @@ export function mayFollowUpTask(
     acceptance: [
       "Every newly observed follow-up is either linked to one fitting unfinished Task, requested from the accountable App, or represented by one direct May-owned child goal.",
       "Existing work is continued by exact identity; a new sibling is never created merely because work is waiting, stale, or slow.",
+      "Every linked unfinished Task is checked when it changes and during bounded recovery; healthy work is left alone, mechanical failure is left to Runtime recovery, and missing or semantically stalled progress is steered through the same Task.",
       "Useful progress, a concrete human decision, or a terminal result is returned in result.conversation with conversationId, topicId, followUpId, text, and exact taskRefs; transport state is never mentioned.",
     ],
     mode: "maintain",
@@ -95,7 +96,6 @@ export function mayFollowUpTask(
       },
     },
     priority: "P0",
-    category: "internal",
   };
 }
 
@@ -170,7 +170,7 @@ export default defineApp({
   version: 1,
   agent: "may",
   description:
-    "Hao's conversational deputy: understands turns, links Topics, routes App Tasks, and returns results.",
+    "Hao's conversational deputy: understands turns, links Topics, routes Tasks to their owning Apps, and returns results.",
   inputSchema: mayInputSchema,
   requests: {
     mode: "agent",

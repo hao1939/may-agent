@@ -10,28 +10,28 @@ and [telegram-notifications.md](telegram-notifications.md).
 ## Mental model
 
 Console and Telegram are adapters over the same May Conversation and the same
-App Tasks. They own presentation, provider coordinates, and local watch state.
+Tasks. They own presentation, provider coordinates, and local watch state.
 They do not own work.
 
 ```text
 Console ──┐
           ├─> Conversation may:primary ─> May App (`may`)
 Telegram ─┘                                │
-                                           └─> responsible App Tasks
+                                           └─> Tasks owned by responsible Apps
 ```
 
 The ordinary human objects are:
 
 - an App, which owns a responsibility;
 - a Task, which is durable work reconciled by an App;
-- a Topic, which links related turns to exact App Tasks; and
+- a Topic, which links related turns to exact Tasks; and
 - a Conversation message, which is how a human talks with May.
 
 A Host request correlates one caller with its eventual result. A session is a
 replaceable execution attempt. Neither is the ordinary human control target.
-May has one hidden standing follow-up Task per Conversation, not one generic
-Task per human request. It also may own ordinary visible goal Tasks when no
-other App is responsible. The Host Operations App (`may-agent`) owns platform
+May has one normal visible conversation Task per Conversation, not one generic
+Task per human request. It also may own other goal Tasks when no other App is
+responsible. The Host Operations App (`may-agent`) owns platform
 Tasks. An agent run named `may` is only a bounded turn decision or an attempt
 selected by an App.
 
@@ -191,9 +191,9 @@ adds `context.focusedTask`. The selected App is a useful conversational lens,
 not permission to force work into the wrong owner.
 
 When May assigns asynchronous work, the Conversation Topic links to the real
-destination App Tasks. When a destination App durably attaches the request, one
-assignment message names the owner App, repeats the concrete requested outcome,
-names that exact owner Task, and carries a canonical
+Tasks owned by destination Apps. When a destination App durably attaches the
+request, one assignment message names the owner App, repeats the concrete
+requested outcome, names that exact owner Task, and carries a canonical
 `followTask` presentation hint. Console automatically
 follows that owner Task; it never guesses from prose, the newest session, or the
 last Task reference. Exact Task detail shows linked App Task references and typed
