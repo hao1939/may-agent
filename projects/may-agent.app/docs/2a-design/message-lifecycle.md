@@ -1,7 +1,10 @@
 # Message Lifecycle
 
 **Design status:** Accepted.
-**Implementation status:** Migration in progress.
+**Implementation status:** Implemented and live-verified. May frontend requests
+finish after one bounded decision, `may/conversation/follow-up` is an ordinary
+visible Task, linked Task updates wake that same Task without satisfying its
+wait, and terminal text is appended to Conversation once by follow-up identity.
 
 ## Mental model
 
@@ -273,14 +276,23 @@ Conversation or Topic identity.
 16. Code collects context and applies validated effects; the LLM decides
     meaning.
 
-## Migration rule
+## Cutover and recovery
 
-During migration, the conversation Task must not coexist with the old rule
-that keeps each May human request open for child results. Cut over in this
-order:
+The cutover is complete. The conversation Task does not coexist with the old
+rule that kept each May human request open for child results. The completed
+cutover order was:
 
 1. admit and verify the conversation Task;
 2. publish typed follow-up events from bounded frontend decisions;
 3. project backend results into Conversation;
 4. stop frontend requests from waiting on child App work; and
 5. retire legacy Conversation wrapper Tasks and request coordination.
+
+Live verification on 2026-08-26 used Runtime source
+`978c3e9c8997e658547358dbe9f7b720394c2ada` and App-definition source
+`9850fca0b5b8fed32c24c977f50e66a9145f652c`. One existing
+`may/conversation/follow-up` Task was visible, survived Runtime restart,
+reconciled from the legacy stored spec to the ordinary spec on the same
+identity, reused one fitting Host Task, woke on its progress without treating
+progress as completion, and appended one terminal result without creating a
+sibling Task.
