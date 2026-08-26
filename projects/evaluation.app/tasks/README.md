@@ -59,7 +59,6 @@ after their result is absorbed.
 
 | Task key                              | Mode       | Handler                                 | Convergence                                                                                                                                     |
 | ------------------------------------- | ---------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runtime/aftermath-coverage-snapshot` | `achieve`  | `evaluator-aftermath-coverage-snapshot` | One fresh trailing-3h eligible/evaluated count and coverage metric sample is persisted.                                                         |
 | `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`                   | An eligible or explicitly requested session has a durable evaluation or structured skip.                                                        |
 | `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`                   | The requested session has one workflow-traced deep judgment.                                                                                    |
 | `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`                   | At most one candidate is reviewed, or none exists now.                                                                                          |
@@ -72,6 +71,10 @@ Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.
 Only stable configuration belongs in a `maintain` task input. This prevents a
 metric timestamp or manual review reason from creating a new task generation.
+
+The trailing-three-hour aftermath coverage metric is not a Task. Evaluation
+declares its eligibility query in `app.ts`; Runtime measures it on the shared
+Host metric event and preserves the eligible/evaluated counts with each sample.
 
 For automatic aftermath, each eligible `session.end` resolves directly to the
 exact `runtime/session-aftermath/<session>` task. Independent session tasks use

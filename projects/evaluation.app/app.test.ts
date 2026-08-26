@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
+import { Database } from "bun:sqlite";
 import {
   matchesEventSelector,
   type AppEvent,
@@ -7,6 +8,8 @@ import {
   type AppTaskInput,
 } from "@may-agent/sdk";
 import app, {
+  AFTERMATH_COVERAGE_METRIC_ID,
+  AFTERMATH_COVERAGE_SOURCE_QUERY,
   taskForEvaluationInput,
   taskInputForEvent,
   taskIntentForEvent,
@@ -46,7 +49,7 @@ describe("canonical evaluation App", () => {
       id: "evaluation",
       version: 1,
       agent: "evaluator",
-      tasks: { maxConcurrent: 5 },
+      tasks: { maxConcurrent: 16 },
     });
     expect(app).not.toHaveProperty("inbox");
     expect(app.task).toBe(taskForEvaluationInput);
@@ -161,25 +164,81 @@ describe("canonical evaluation App", () => {
     });
   });
 
-  test("creates an independent aftermath coverage successor for each admitted snapshot request", () => {
-    const first = taskForEvaluationInput(
-      admitted({ kind: "aftermath-coverage-snapshot", data: {} }),
+  test("declares aftermath coverage as one deterministic App metric", () => {
+    expect(app.tasks?.maxConcurrent).toBe(16);
+    expect(app.metrics).toEqual([
+      expect.objectContaining({
+        id: AFTERMATH_COVERAGE_METRIC_ID,
+        owner: "evaluator",
+        project: "evaluation",
+        sourceQuery: AFTERMATH_COVERAGE_SOURCE_QUERY,
+        measureInterval: 300_000,
+      }),
+    ]);
+  });
+});
+
+describe("aftermath coverage metric", () => {
+  test("counts canonical eligible sessions and preserves count evidence", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE sessions (
+        sessionId TEXT PRIMARY KEY,
+        agent TEXT NOT NULL,
+        status TEXT NOT NULL,
+        workflowRunId TEXT,
+        startedAt INTEGER NOT NULL,
+        endedAt INTEGER
+      )`,
     );
-    const second = taskForEvaluationInput({
-      ...admitted({ kind: "aftermath-coverage-snapshot", data: {} }),
-      id: "request-2",
-    });
-    expect(first).toMatchObject({
-      kind: "desired",
-      intent: {
-        id: "runtime/aftermath-coverage-snapshot/request-1",
-        mode: "achieve",
-        workflow: "evaluator-aftermath-coverage-snapshot",
-      },
-    });
-    expect(second).toMatchObject({
-      kind: "desired",
-      intent: { id: "runtime/aftermath-coverage-snapshot/request-2" },
+    db.run("CREATE TABLE evaluations (sessionId TEXT NOT NULL)");
+    db.run(
+      `CREATE TABLE events (
+        id INTEGER PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        session_id TEXT,
+        source TEXT,
+        data TEXT
+      )`,
+    );
+    const endedAt = Date.now() - 20 * 60_000;
+    const addSession = (
+      sessionId: string,
+      agent: string,
+      status = "done",
+      workflowRunId: string | null = null,
+      end = endedAt,
+    ) =>
+      db.run(
+        "INSERT INTO sessions (sessionId, agent, status, workflowRunId, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
+        [sessionId, agent, status, workflowRunId, end - 1_000, end],
+      );
+
+    addSession("evaluated", "may");
+    addSession("missing", "gym");
+    addSession("routine-workflow", "gym", "done", "wr_1");
+    addSession("evaluator", "evaluator");
+    addSession("too-recent", "may", "done", null, Date.now() - 60_000);
+    addSession("resumable", "may", "interrupted");
+    db.run("INSERT INTO evaluations (sessionId) VALUES ('evaluated')");
+    db.run(
+      "INSERT INTO events (event_type, session_id, source, data) VALUES ('session.end', 'resumable', 'watchdog', ?)",
+      [JSON.stringify({ sessionId: "resumable", interruptionKind: "observation-timeout" })],
+    );
+
+    const sample = db.query(AFTERMATH_COVERAGE_SOURCE_QUERY).get() as {
+      value: number;
+      sampleSize: number;
+      measuredAt: number;
+      note: string;
+    };
+    expect(sample.value).toBe(0.5);
+    expect(sample.sampleSize).toBe(2);
+    expect(JSON.parse(sample.note)).toMatchObject({
+      source: "canonical-terminal-sessions+evaluations",
+      eligible: 2,
+      evaluated: 1,
+      graceMs: 420_000,
     });
   });
 });

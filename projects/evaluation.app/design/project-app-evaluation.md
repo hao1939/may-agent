@@ -258,7 +258,7 @@ The seed tree contains only standing `maintain` responsibilities:
 | `project-app-audit`        | Every watched app has a current independent assessment.                   | Each target fingerprint and due report state are current.                                                  |
 | `finding-delivery`         | Findings reach owners and useful human decisions without duplicates.      | New actionable findings have one delivery; unchanged findings create none.                                 |
 | `evaluator-reliability`    | Evaluation's own process remains bounded and operable.                    | Known work uses declared workflows; exceptions have bounded work or exact Conditions.                      |
-| `pipeline-health`          | Coverage, throughput, review delivery, and anomalies remain observable.   | Coverage snapshots, the deep-evaluation frontier, and explicit metric/review-failure facts remain current. |
+| `pipeline-health`          | Coverage, throughput, review delivery, and anomalies remain observable.   | The App-owned coverage source, deep-evaluation frontier, and explicit metric/review-failure facts remain current. |
 | `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.        | Accepted calibration is reflected in criteria and regression evidence.                                     |
 | `drift-detection`          | Comparable cohorts reveal meaningful quality drift.                       | Claims name cohorts, windows, criteria version, and samples; absent evidence creates no speculative work.  |
 | `system-integrity`         | Evaluator-local routing, ownership, state, and reports remain consistent. | Each concrete defect has one bounded repair and observable postcondition.                                  |
@@ -279,7 +279,6 @@ not consume evaluator sessions merely to repeat unchanged child state.
 | Event                                              | Task                                  | Mode       | Observable postcondition                                                                                                                                                                                          |
 | -------------------------------------------------- | ------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | eligible `session.end`                             | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip.                                                                                                                                           |
-| `evaluation.aftermath.coverage_snapshot.requested` | `runtime/aftermath-coverage-snapshot` | `achieve`  | A fresh trailing-3h eligible/evaluated count and coverage metric sample are persisted.                                                                                                                            |
 | `evaluation.session.requested`                     | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                                                                                                                     |
 | `evaluation.deep.requested`                        | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                                                                                                                          |
 | new evaluator-owned metric breach or recovery      | `runtime/owner-review`                | `maintain` | The exact metric transition is reviewed from bounded reconciliation context without a broad pipeline rescan. Repeated updates for the same open alert stay as facts but do not wake another expensive owner turn. |
@@ -856,8 +855,8 @@ The canonical implementation is complete for this workflow slice:
 5. Incomplete evaluator results block the attempt and remain evaluator-local;
    they do not blame a target App or manufacture a successful review.
 6. Standing schedules cover every configured target, including `gym.app`.
-7. An explicit coverage snapshot publishes one bounded trailing-3h metric sample
-   without becoming another evaluation lane.
+7. The App declares one bounded trailing-3h coverage query; Runtime measures it
+   on the shared Host cadence without creating a Task or calling an agent.
 
 Follow-on work is operational calibration: verify target-owner reactions from
 later public evidence, add precise target event fast paths only when they have

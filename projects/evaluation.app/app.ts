@@ -13,6 +13,58 @@ import {
 
 const projectId = "evaluation";
 const evaluationExecutor = "codex-goal";
+export const AFTERMATH_COVERAGE_METRIC_ID =
+  "evaluator.aftermath-coverage-rate-3h";
+export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
+  SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
+), eligible AS (
+  SELECT DISTINCT s.sessionId
+  FROM sessions s
+  CROSS JOIN bounds b
+  WHERE s.status IN ('done', 'error', 'interrupted')
+    AND s.agent NOT IN ('evaluator', 'judge')
+    AND COALESCE(s.endedAt, s.startedAt) > b.window_end - 10800000
+    AND COALESCE(s.endedAt, s.startedAt) <= b.window_end
+    AND NOT (
+      s.status = 'done'
+      AND s.agent != 'may'
+      AND COALESCE(s.workflowRunId, '') != ''
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM events latest
+      WHERE latest.id = (
+        SELECT MAX(candidate.id)
+        FROM events candidate
+        WHERE candidate.event_type = 'session.end'
+          AND candidate.session_id = s.sessionId
+      )
+        AND s.status = 'interrupted'
+        AND COALESCE(latest.source, '') != 'runtime:auto-resume'
+        AND json_extract(latest.data, '$.interruptionKind') = 'observation-timeout'
+    )
+), counts AS (
+  SELECT COUNT(*) AS eligible,
+         COUNT(DISTINCT e.sessionId) AS evaluated
+  FROM eligible x
+  LEFT JOIN evaluations e ON e.sessionId = x.sessionId
+)
+SELECT CASE
+         WHEN counts.eligible = 0 THEN 1.0
+         ELSE ROUND(1.0 * counts.evaluated / counts.eligible, 4)
+       END AS value,
+       counts.eligible AS sampleSize,
+       bounds.window_end AS measuredAt,
+       json_object(
+         'source', 'canonical-terminal-sessions+evaluations',
+         'eligible', counts.eligible,
+         'evaluated', counts.evaluated,
+         'windowStart', bounds.window_end - 10800000,
+         'windowEnd', bounds.window_end,
+         'graceMs', 420000
+       ) AS note
+FROM counts
+CROSS JOIN bounds`;
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const sessionSchema = Type.Object(
   {
@@ -117,11 +169,9 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  ...["aftermath-coverage-snapshot", "deep-scan"].map((kind) =>
-    Type.Object(
-      { kind: Type.Literal(kind), data: detailsSchema },
-      { additionalProperties: false },
-    ),
+  Type.Object(
+    { kind: Type.Literal("deep-scan"), data: detailsSchema },
+    { additionalProperties: false },
   ),
 ]);
 
@@ -300,21 +350,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         priority: "P1",
       };
     }
-    case "aftermath-coverage-snapshot":
-      return {
-        id: "runtime/aftermath-coverage-snapshot",
-        parentId: "pipeline-health",
-        outcome:
-          "Publish one fresh 3h aftermath coverage sample from bounded eligible and evaluated session counts.",
-        acceptance: [
-          "A responsible executor terminates with exact eligible and evaluated counts for the trailing 3h window.",
-          "The evaluator.aftermath-coverage-rate-3h sample persists with sample-size and count/source evidence.",
-        ],
-        mode: "achieve",
-        workflow: "evaluator-aftermath-coverage-snapshot",
-        input: data,
-        priority: "P0",
-      };
     case "deep-eval": {
       const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;
@@ -461,15 +496,6 @@ export function taskForEvaluationInput(
 ): AppTaskAttachment {
   const configured = taskIntentForInput(admitted.input);
   if (configured) {
-    if (admitted.input.kind === "aftermath-coverage-snapshot") {
-      return {
-        kind: "desired",
-        intent: {
-          ...configured,
-          id: `runtime/aftermath-coverage-snapshot/${safeTaskIdPart(admitted.id)}`,
-        },
-      };
-    }
     return { kind: "desired", intent: configured };
   }
   const taskId = safeTaskIdPart(admitted.id);
@@ -537,8 +563,6 @@ export function taskInputForEvent(
           }
         : null;
     }
-    case "evaluation.aftermath.coverage_snapshot.requested":
-      return eventInput("aftermath-coverage-snapshot", event);
     case "evaluation.deep.requested": {
       const sessionId = eventSessionId(event);
       return sessionId
@@ -586,7 +610,29 @@ export function taskIntentForEvent(
   return input ? taskIntentForInput(input) : null;
 }
 
-const app = defineApp({
+export const evaluationMetricDefinitions = [
+  {
+    id: AFTERMATH_COVERAGE_METRIC_ID,
+    name: "Evaluator aftermath liveness (3h)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 0.8,
+    threshold: 0.2,
+    unit: "ratio",
+    priority: "P3" as const,
+    status: "active",
+    source: "canonical terminal sessions and evaluations",
+    sourceQuery: AFTERMATH_COVERAGE_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: "<" as const,
+    speed: "fast",
+    description:
+      "Share of canonical terminal non-evaluator sessions in the trailing three-hour window, after a seven-minute evaluation grace period, that have a durable evaluation.",
+  },
+];
+
+const baseApp = defineApp({
   id: projectId,
   version: 1,
   agent: "evaluator",
@@ -682,12 +728,6 @@ const app = defineApp({
         };
       },
     },
-    "snapshot-aftermath-coverage": {
-      description:
-        "Compute and persist one bounded trailing-3h aftermath coverage sample.",
-      inputSchema: Type.Object({}, { additionalProperties: true }),
-      toInput: (data) => ({ kind: "aftermath-coverage-snapshot", data }),
-    },
     "deep-eval": {
       description: "Run one deep evaluator review for a specific session.",
       inputSchema: sessionSchema,
@@ -751,10 +791,6 @@ const app = defineApp({
     subscriptions: [
       "session.end",
       { type: "evaluation.session.requested", project: projectId },
-      {
-        type: "evaluation.aftermath.coverage_snapshot.requested",
-        project: projectId,
-      },
       { type: "evaluation.deep.requested", project: projectId },
       { type: "evaluation.deep.scan", project: projectId },
       { type: "evaluation.project.review.requested", project: projectId },
@@ -767,8 +803,13 @@ const app = defineApp({
     ],
     resolve: taskIntentForEvent,
     validateAction: validateEvaluationTaskAction,
-    maxConcurrent: 5,
+    // Aftermath production must keep pace with bursty direct-session traffic.
+    // The previous cap of five allowed old backlog work to consume roughly
+    // half of the available lanes while fresh eligible sessions aged out of
+    // the three-hour coverage window.
+    maxConcurrent: 16,
   },
 });
+const app = { ...baseApp, metrics: evaluationMetricDefinitions };
 
 export default app;
