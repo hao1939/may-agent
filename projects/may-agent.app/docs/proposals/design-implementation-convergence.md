@@ -133,6 +133,9 @@ contexts. Focused Runtime fixtures activate resource authority before invoking
 those paths. The verifier's pending-wake read and the reconciler's exact trigger
 inspection and recording are resource-only too; desired-state observation
 remains explicit fixture compatibility for a later bounded batch.
+Rejected stale reconciliation results are released from the exact resource
+context through their claim fences; that production path no longer reads or
+prunes JSON attempt state.
 The externally visible effect fence also reads the exact resource context, so a
 generation change or newer unaccepted Event is checked without a JSON path.
 Startup recovery discovers unreported attention Tasks from the bounded resource
