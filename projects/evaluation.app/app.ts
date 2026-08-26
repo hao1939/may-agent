@@ -15,6 +15,16 @@ const projectId = "evaluation";
 const evaluationExecutor = "codex-goal";
 export const AFTERMATH_COVERAGE_METRIC_ID =
   "evaluator.aftermath-coverage-rate-3h";
+export const LLM_COVERAGE_LAG_METRIC_ID = "eval.llm-coverage-lag-h";
+export const LLM_COVERAGE_LAG_SOURCE_QUERY = `SELECT COALESCE(
+  ROUND(
+    (strftime('%s','now') * 1000 - MAX(createdAt)) / 3600000.0,
+    2
+  ),
+  9999
+) AS value
+FROM evaluations
+WHERE evaluatedByHeuristic = 0`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -611,6 +621,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: LLM_COVERAGE_LAG_METRIC_ID,
+    name: "LLM evaluation lag (hours since last non-heuristic eval)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 1,
+    threshold: 4,
+    unit: "hours",
+    priority: "P0" as const,
+    status: "active",
+    source: "non-heuristic evaluations",
+    sourceQuery: LLM_COVERAGE_LAG_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: ">" as const,
+    speed: "fast",
+    description:
+      "Hours since the newest durable non-heuristic evaluation, or 9999 when no such evaluation exists.",
+  },
   {
     id: AFTERMATH_COVERAGE_METRIC_ID,
     name: "Evaluator aftermath liveness (3h)",

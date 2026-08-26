@@ -12,8 +12,8 @@ Escalation is an explicit request across a real ownership boundary.
 
 ```text
 source obligation
-  -> current owner proves it cannot perform the required next action
-  -> child request addressed to the owner who can decide or act
+  -> current App proves the next action is outside its responsibility
+  -> child request addressed to the App that can decide or act
   -> source waits on that exact child result
   -> source task reconciles the result
 ```
@@ -27,7 +27,7 @@ original outcome. Runtime request records correlate the dependency and result.
 
 | Situation                                                   | Correct representation                                        |
 | ----------------------------------------------------------- | ------------------------------------------------------------- |
-| Another useful repair remains inside the same owner's scope | Continue the bounded workflow or reconcile the same task      |
+| Another useful repair remains inside the same App's scope   | Continue the bounded workflow or reconcile the same Task      |
 | Reusable workflow needs App-agent judgment                  | Return `needs-agent` for the same task                        |
 | Bounded execution cannot continue safely                    | Return `blocked` evidence; owning boundary decides next state |
 | Known external fact will change later                       | Persist an exact task Condition                               |
@@ -35,7 +35,7 @@ original outcome. Runtime request records correlate the dependency and result.
 | Human approval or private judgment is required              | Exact human Condition or May conversational request           |
 | Agent attempt was incomplete                                | Honest execution result; not escalation by itself             |
 
-The current owner, not the Host, decides that a blocker crosses an
+The current App, not the Host, decides that a blocker crosses an
 ownership boundary.
 
 ## App-to-App escalation
@@ -71,7 +71,7 @@ correlated result. The parent wakes, reviews the result, and decides how it
 changes the original obligation.
 
 Creating the child is progress, not resolution. The parent cannot complete
-merely because another owner accepted the request.
+merely because another App accepted the request.
 
 ## Task-owned escalation
 
@@ -131,20 +131,21 @@ parallel inbox or a model-generated list.
 Do not paste an entire transcript when exact artifacts, task IDs, or execution
 IDs identify the evidence.
 
-## Delivery, result, and completion
+## Admission, result, and completion
 
 These states remain separate:
 
 | State                  | Meaning                                             |
 | ---------------------- | --------------------------------------------------- |
 | Child admitted         | Destination task durably owns the requested outcome |
-| Notification delivered | The human-facing message reached its channel        |
+| Adapter observation    | Optional evidence about a presentation attempt       |
 | Child result           | Destination task returned an accepted result        |
 | Source resumed         | Original task observed and applied that result      |
 | Source complete        | Original owner verified its own outcome             |
 
-Events and traces may record all five transitions for audit. They do not own
-the lifecycle or replace the parent/child inbox and task links.
+Events and traces may record these transitions for audit. Adapter observation
+is optional and never gates the work. None replaces the parent/child request
+and Task links.
 
 ## Deduplication and expiry
 
@@ -177,7 +178,7 @@ stop.
 Health readouts surface:
 
 - parent requests/tasks waiting on child App results;
-- stale child admission, handling, or delivery;
+- stale child admission or handling;
 - human notifications without actionable context;
 - child results not yet applied by their source obligation;
 - duplicate suppression and conflicting correlation keys;
@@ -195,8 +196,8 @@ legacy pairs or source-session resume ownership.
 - The destination is an App address, not an owner string fallback.
 - The child request states one exact action/decision and compact evidence.
 - Parent/child linkage is durable before the child is woken.
-- Delivery, destination result, source resume, and source completion remain
-  distinct.
+- Admission, destination result, source resume, and source completion remain
+  distinct; adapter presentation remains outside Task state.
 - The source owner applies the child result before claiming completion.
 - Local workflow blocking never escalates automatically.
 - Deduplication preserves one child per source dependency and semantic key.

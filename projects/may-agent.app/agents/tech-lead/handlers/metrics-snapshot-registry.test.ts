@@ -33,21 +33,8 @@ describe("metrics-snapshot registry and queries", () => {
         alert_op: ">",
       }),
     ).toBe("tech-lead");
-    expect(
-      metricOperationalOwner({
-        id: "scout.knowledge-practice-loaded",
-        name: "Scout knowledge practice loaded",
-        owner: "may",
-        project: "scout-knowledge-lib.app",
-        type: "health",
-        target: 1,
-        threshold: 1,
-        unit: "boolean",
-        alert_op: "<",
-      }),
-    ).toBe("scout");
   });
-  it("keeps Scout metrics advisory and scoped to the current project", () => {
+  it("does not reactivate the Scout-owned retired output metric", () => {
     const source = metricsSnapshotSource();
     const activeRegistry = source.slice(
       source.indexOf("const ALL_METRICS"),
@@ -57,48 +44,54 @@ describe("metrics-snapshot registry and queries", () => {
       source.indexOf("const RETIRED_METRIC_IDS"),
     );
 
-    expect(activeRegistry).toContain('id: "scout.accepted-source-outputs-24h"');
-    expect(activeRegistry).toContain('project: "scout-knowledge-lib.app"');
-    const scoutContentMetrics = sourceBlock(
-      activeRegistry,
-      'id: "scout.knowledge-preamble-coverage"',
-      'id: "handler.p95-duration"',
+    expect(activeRegistry).not.toContain(
+      'id: "scout.accepted-source-outputs-24h"',
     );
-    expect(scoutContentMetrics.match(/mode: "disabled"/g)).toHaveLength(2);
+    expect(activeRegistry).not.toContain(
+      'id: "scout.knowledge-practice-loaded"',
+    );
+    expect(activeRegistry).not.toContain(
+      'id: "scout.knowledge-preamble-coverage"',
+    );
     expect(activeRegistry).not.toContain('id: "scout.sourced-artifacts-24h"');
     expect(activeRegistry).not.toContain(
       'id: "scout.downstream-reference-files-7d"',
     );
     expect(retiredRegistry).toContain('"scout.sourced-artifacts-24h"');
     expect(retiredRegistry).toContain('"scout.downstream-reference-files-7d"');
+    expect(retiredRegistry).toContain('"scout.accepted-source-outputs-24h"');
+    expect(retiredRegistry).toContain('"scout.knowledge-practice-loaded"');
   });
 
-  it("counts admitted outputs from converged Scout source reconciliations", () => {
+  it("leaves accepted-output semantics to Scout's replacement metric", () => {
     const source = metricsSnapshotSource();
-    const block = sourceBlock(
-      source,
-      "function scoutAcceptedSourceOutputsSince",
-      "function terminalSessionsWithoutEndEvent",
-    );
 
-    expect(block).toContain("event_type = 'project.task.reconciled'");
-    expect(block).toContain("project_id = 'scout-knowledge-lib'");
-    expect(block).toContain("task_id LIKE 'explore-%'");
-    expect(block).toContain('data.disposition !== "converged"');
-    expect(block).toContain('item.startsWith("output:/")');
+    expect(source).not.toContain("function scoutAcceptedSourceOutputsSince");
+    expect(source).not.toContain(
+      'record(\n        "scout.accepted-source-outputs-24h"',
+    );
   });
 
-  it("measures preamble coverage only in canonical Scout knowledge", () => {
+  it("leaves preamble coverage collection to Scout", () => {
     const source = metricsSnapshotSource();
-    const block = sourceBlock(
-      source,
-      "function scoutKnowledgePreambleCoverage",
-      "function sessionJsonlPath",
+
+    expect(source).not.toContain("function scoutKnowledgePreambleCoverage");
+    expect(source).not.toContain(
+      'record(\n        "scout.knowledge-preamble-coverage"',
+    );
+  });
+
+  it("leaves LLM evaluation lag definition and measurement to Evaluation", () => {
+    const source = metricsSnapshotSource();
+    const activeRegistry = source.slice(
+      source.indexOf("const ALL_METRICS"),
+      source.indexOf("const RETIRED_METRIC_IDS"),
     );
 
-    expect(block).toContain('"scout-knowledge-lib", "knowledge"');
-    expect(block).not.toContain('"shared", "knowledge"');
-    expect(block).not.toContain('"agents", "scout", "knowledge"');
+    expect(activeRegistry).not.toContain('id: "eval.llm-coverage-lag-h"');
+    expect(source).not.toContain(
+      'record("eval.llm-coverage-lag-h"',
+    );
   });
 
   it("keeps the stale trace-completeness metric retired", () => {

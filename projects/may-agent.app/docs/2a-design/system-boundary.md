@@ -1,12 +1,16 @@
 # Host And App Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Implemented.
+**Implementation status:** The Host/App boundary is implemented for current
+Apps. Installed Task runtimes require resource authority; retained JSON support
+is limited to offline import and test compatibility. The retired inbox delivery
+table is retained only as historical schema evidence. Incident-shaped public
+inputs remain a convergence gap rather than an alternate accepted boundary.
 
 There is one architectural split:
 
 ```text
-Host = persist, schedule, run, recover, deliver
+Host = persist, schedule, run, recover, expose results
 App  = define meaning, policy, desired outcomes, acceptance
 ```
 
@@ -24,11 +28,11 @@ event
   -> App decides what domain work means
   -> Host runs bounded work when the App asks
   -> App decides whether the result is enough
-  -> Host stores, recovers, and delivers the result
+  -> Host stores, recovers, and exposes the result
 ```
 
 The Host does not invent domain work. The App does not implement storage,
-queues, retries, recovery, or delivery.
+queues, retries, recovery, or presentation transport.
 
 ## Plain names
 
@@ -48,11 +52,11 @@ The Host has five jobs:
 
 | Job      | What it does                                                          |
 | -------- | --------------------------------------------------------------------- |
-| Persist  | Store requests, tasks, facts, attempts, results, and delivery proof   |
+| Persist  | Store requests, Tasks, facts, attempts, results, and adapter evidence |
 | Schedule | Wake declared work at the right time and limit concurrency            |
 | Run      | Execute one bounded agent or workflow attempt                         |
 | Recover  | Continue the same unfinished request or task after failure or restart |
-| Deliver  | Return the accepted result to its caller or channel                   |
+| Expose   | Return the accepted result to its caller and shared resource views    |
 
 The Host also validates and loads complete App definitions. Reload either
 publishes a complete replacement or keeps the previous definition active.
@@ -82,19 +86,23 @@ scheduler, queue, retry worker, or recovery worker of its own.
 
 ## Request and task
 
-When a caller expects an answer, the Host records a request and links it to the
-App task that owns the outcome:
+When a caller asks an App for durable work, the Host records a request and
+links it to the Task that owns the outcome:
 
 ```text
-request -> App task -> accepted result
+request -> Task owned by the App -> accepted result
 ```
+
+A conversational frontend request may instead answer directly or publish typed
+follow-up intent. It does not remain open merely to watch destination work;
+May's normal conversation Task owns that follow-through.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:
 
 ```text
-task -> check current state -> run one bounded attempt
-     -> done, wait for an exact fact, ask the owner, or try again
+Task -> check current state -> run one bounded attempt
+     -> done, wait for an exact fact, require attention, or try again
 ```
 
 The request remains the caller identity and the task remains the App work
@@ -159,7 +167,7 @@ publish(event)
 
 The event type selects one of four existing Host meanings: App input, reported
 fact, exact task/session control, or Host lifecycle control. `get(eventId)`
-reads delivery and linked outcomes; `subscribe(filter)` observes events.
+reads admission and linked outcomes; `subscribe(filter)` observes Events.
 Adapters do not call App agents or the model runner directly, and Apps do not
 receive this Host interface.
 
@@ -178,9 +186,10 @@ generic query, command, service locator, database, path bag, or runtime context.
 
 - Can the design be explained using Host and App without a third owner?
 - Is work stored before it runs?
-- Does every result belong to one request and every durable outcome to one task?
+- Does every caller result correlate to one request and every durable outcome
+  belong to one Task?
 - Does the App decide meaning and completion?
-- Does the Host own execution, concurrency, restart, and delivery?
+- Does the Host own execution, concurrency, restart, and result exposure?
 - Can a fact start work only through an explicit App route?
 - Are sessions and workflows bounded attempts rather than hidden controllers?
 - Is any new public capability smaller than exposing Host internals?

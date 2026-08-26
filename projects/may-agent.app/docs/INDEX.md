@@ -13,7 +13,7 @@ archive.
 | Is this Host or App responsibility? | [system-boundary.md](2a-design/system-boundary.md) |
 | Is this a request, task, or fact? | [work-model.md](1-principles/work-model.md) |
 | How does an App declare behavior? | [agent-app.md](2a-design/agent-app.md) |
-| How are desired-state tasks reconciled? | [task-resource-engine.md](2a-design/task-resource-engine.md) |
+| How are desired-state Tasks reconciled? | [task-resource-engine.md](2a-design/task-resource-engine.md) |
 | How does admitted input/fact routing work? | [events.md](2a-design/events.md) |
 | How do humans share context across adapters? | [human-control-surfaces.md](2a-design/human-control-surfaces.md) |
 | How does a particular subsystem behave? | Its Tier 2a subsystem document |
@@ -51,7 +51,7 @@ owning document and keep implementation details there.
 | [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration.      |
 | [runtime.md](2a-design/runtime.md)                             | Model/tool boundary, direct execution, and runtime internals. |
 | [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.                  |
-| [workflows.md](2a-design/workflows.md)                         | Agent-owned reusable process and execution contract.          |
+| [workflows.md](2a-design/workflows.md)                         | App-local reusable process and execution contract.            |
 | [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                            |
 | [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.                 |
 | [native-coding-workers.md](2a-design/native-coding-workers.md) | Codex/Claude adapter and continuity model.                    |
@@ -60,7 +60,7 @@ owning document and keep implementation details there.
 
 | Document                                                     | Purpose                                                                |
 | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| [agent-app.md](2a-design/agent-app.md)                       | App package, ownership, and optional autonomy.                          |
+| [agent-app.md](2a-design/agent-app.md)                       | App package, ownership, input, and Task policy.                         |
 | [projects.md](2a-design/projects.md)                         | Durable goal context, project posture, and workspace layout.           |
 | [task-resource-engine.md](2a-design/task-resource-engine.md) | Canonical tasks, key queue, Conditions, claims, results, and recovery. |
 | [default-project-ui.md](2a-design/default-project-ui.md)     | Shared project readout and steering contract.                          |
@@ -70,12 +70,12 @@ owning document and keep implementation details there.
 | Document                                                         | Purpose                                              |
 | ---------------------------------------------------------------- | ---------------------------------------------------- |
 | [events.md](2a-design/events.md)                                 | Event admission, routing, and acceptance.             |
-| [event-graph.md](2a-design/event-graph.md)                       | Causality, closure, and delivery read model.         |
+| [event-graph.md](2a-design/event-graph.md)                       | Causality, closure, and trace read model.            |
 | [cron.md](2a-design/cron.md)                                     | Time-based event production.                         |
 | [heartbeat.md](2a-design/heartbeat.md)                           | Agent heartbeat workflows and App schedules.         |
 | [metrics.md](2a-design/metrics.md)                               | Metrics, alerts, pairs, and blind spots.             |
 | [guards.md](2a-design/guards.md)                                 | Detection signals and observability.                 |
-| [escalation.md](2a-design/escalation.md)                         | Owner-boundary escalation and closure.               |
+| [escalation.md](2a-design/escalation.md)                         | Cross-App and human-boundary requests.               |
 | [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Evaluation evidence to learned improvement.          |
 | [session-eval-trail.md](2a-design/session-eval-trail.md)         | Session summary and append-only evaluation evidence. |
 
@@ -103,11 +103,12 @@ current-design list.
 | [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | SDK usage examples.                                         |
 | [handler-authoring.md](2b-manual/handler-authoring.md)                     | Event handler authoring.                                    |
 | [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring and invocation.                          |
-| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adopt the App and optional task-resource conventions.       |
+| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Create an App on the shared Task contract.                   |
 | [agent-convention.md](2b-manual/agent-convention.md)                       | Agent directory and definition conventions.                 |
 | [metric-alerts.md](2b-manual/metric-alerts.md)                             | Alert triage, repair, calibration, and escalation.          |
 | [event-runtime-audit.md](2b-manual/event-runtime-audit.md)                 | Compare event runtime behavior with design.                 |
 | [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md)                 | Inspect guard volume and signal quality.                    |
+| [app-operations-recovery.md](2b-manual/app-operations-recovery.md)         | Restart, recovery, migration, and deployment verification.  |
 
 ## Tier 3 — Active proposals and trackers
 
@@ -117,12 +118,6 @@ Active reviews are:
   — converge the complete Host, Runtime, App, executor, metrics, Conversation,
   adapter, and documentation implementation on the accepted simple event-driven
   Task model without another rewrite.
-- [lightweight-event-driven-reconciliation.md](proposals/lightweight-event-driven-reconciliation.md)
-  — rebuild the Host from a small EventHub/task loop, make emitted events
-  visible immediately, foreground human work, and remove history-sized cost.
-- [codex-goal-executor.md](proposals/codex-goal-executor.md)
-  — prove a resumable, steerable Codex executor while one App Task remains the
-  only durable goal and native May learns behind the same attempt contract.
 
 Earlier reviewed drafts were resolved as follows:
 
@@ -136,9 +131,9 @@ Earlier reviewed drafts were resolved as follows:
 The decision records and current authorities are indexed under
 [archive/](archive/README.md).
 
-Completed proposals do not remain in the active proposal folder. The Task
-interface, human-action projection, and their earlier presentation evidence are
-archived below.
+Completed proposals do not remain in the active proposal folder. The lightweight
+Event/Task decision, Codex evaluation, Task interface, human-action projection,
+and earlier presentation evidence are archived below.
 
 ## Historical material
 

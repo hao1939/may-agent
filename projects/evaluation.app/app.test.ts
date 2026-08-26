@@ -10,6 +10,8 @@ import {
 import app, {
   AFTERMATH_COVERAGE_METRIC_ID,
   AFTERMATH_COVERAGE_SOURCE_QUERY,
+  LLM_COVERAGE_LAG_METRIC_ID,
+  LLM_COVERAGE_LAG_SOURCE_QUERY,
   taskForEvaluationInput,
   taskInputForEvent,
   taskIntentForEvent,
@@ -164,21 +166,57 @@ describe("canonical evaluation App", () => {
     });
   });
 
-  test("declares aftermath coverage as one deterministic App metric", () => {
+  test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toEqual([
-      expect.objectContaining({
-        id: AFTERMATH_COVERAGE_METRIC_ID,
-        owner: "evaluator",
-        project: "evaluation",
-        sourceQuery: AFTERMATH_COVERAGE_SOURCE_QUERY,
-        measureInterval: 300_000,
-      }),
-    ]);
+    expect(app.metrics).toHaveLength(2);
+    expect(app.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: AFTERMATH_COVERAGE_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: AFTERMATH_COVERAGE_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: LLM_COVERAGE_LAG_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: LLM_COVERAGE_LAG_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+      ]),
+    );
   });
 });
 
-describe("aftermath coverage metric", () => {
+describe("evaluation metrics", () => {
+  test("measures lag from the newest non-heuristic evaluation", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE evaluations (
+        createdAt INTEGER NOT NULL,
+        evaluatedByHeuristic INTEGER NOT NULL
+      )`,
+    );
+    db.run(
+      "INSERT INTO evaluations (createdAt, evaluatedByHeuristic) VALUES (?, 0), (?, 1)",
+      [Date.now() - 2 * 60 * 60_000, Date.now() - 60_000],
+    );
+
+    const sample = db.query(LLM_COVERAGE_LAG_SOURCE_QUERY).get() as {
+      value: number;
+    };
+    expect(sample.value).toBeGreaterThanOrEqual(2);
+    expect(sample.value).toBeLessThan(2.01);
+
+    db.run("DELETE FROM evaluations");
+    expect(
+      (db.query(LLM_COVERAGE_LAG_SOURCE_QUERY).get() as { value: number })
+        .value,
+    ).toBe(9999);
+  });
+
   test("counts canonical eligible sessions and preserves count evidence", () => {
     const db = new Database(":memory:");
     db.run(

@@ -1,8 +1,11 @@
 # Metrics And Alerts
 
 **Design status:** Accepted.
-**Implementation status:** Implemented by `MetricService`; Apps and workflows
-define and record their own measurements.
+**Implementation status:** `MetricService` and App/workflow-owned measurement
+are implemented, and Cron is the sole Host snapshot scheduler. Host Operations
+still carries a legacy central catalog for Host measurements and domain metrics
+not yet moved to their Apps. That remaining authority gap is tracked in the
+convergence tracker.
 
 ## Purpose
 
@@ -10,8 +13,9 @@ Metrics are observations about health, progress, quality, or blind spots. They
 do not own work and do not decide what an App should do.
 
 ```text
-App observer or workflow
-  -> define and record a metric
+App declaration, observer, or workflow
+  -> define a metric
+  -> Runtime source measurement or App code records an observation
   -> evaluate its alert rule
   -> metric.breach or metric.recovered fact
   -> any explicitly declared App route may react
@@ -41,6 +45,18 @@ Apps use this capability rather than writing metric tables directly. The
 implementation authority is `projects/may-agent/src/lib/metrics.ts`; schemas
 remain authoritative for stored columns.
 
+Stable deterministic sources may be declared directly on `defineApp` through
+`metrics`. Runtime installs those definitions when the App generation becomes
+current and measures `sourceQuery` or `sourceCommand` on the shared Host
+snapshot event. This path creates no Task and calls no agent. A query may return
+`value` plus optional `sampleSize`, `measuredAt`, and `note` columns so the
+sample retains its evidence.
+
+`measureInterval` is the metric's minimum normal sampling cadence. The shared
+five-minute event only checks what is due; it does not force every source to
+run. Runtime keeps this optional cadence gate in memory, so a restart may take
+one harmless early sample. An explicit forced snapshot bypasses the gate.
+
 Example:
 
 ```ts
@@ -62,10 +78,12 @@ ctx.metrics.record("scout.source-check-failures", failures, {
 ctx.metrics.evaluate("scout.source-check-failures");
 ```
 
-There is no global `ALL_METRICS` catalog or special metrics-snapshot owner.
-Definitions live with the App code that understands their meaning. Current
-definitions and values live in `metrics`; historical samples live in
-`metric_snapshots`; unresolved alert state lives in `metric_alerts`.
+In the accepted model there is no global `ALL_METRICS` catalog or special
+metrics-snapshot owner. Definitions live with the App code that understands
+their meaning. The current legacy catalog is a migration gap, not a second
+accepted authority. Current definitions and values live in `metrics`;
+historical samples live in `metric_snapshots`; unresolved alert state lives in
+`metric_alerts`.
 
 ## Definition contract
 
@@ -114,6 +132,7 @@ Metric age or alert state does not silently satisfy them.
 
 Put a measurement beside the code that can state what it means:
 
+- an App declaration defines a deterministic stored query or command;
 - an App observer measures external or project state;
 - a workflow records evidence produced during one bounded attempt;
 - deterministic Host instrumentation measures runtime mechanics; and

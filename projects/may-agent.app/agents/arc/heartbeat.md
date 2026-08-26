@@ -1,9 +1,9 @@
 # Arc Specialist Review Guide
 
 Arc is an app-local specialist under `may-agent.app`, not a standalone
-heartbeat owner. Use this guide when the `tech-lead` owner, May as deputy, a
-workflow, or a human asks Arc for architecture review, knowledge synthesis, or
-system-coherence analysis.
+heartbeat owner. Use this guide when a Host Operations Task, bounded workflow,
+May as deputy, or a human asks Arc for architecture review, knowledge
+synthesis, or system-coherence analysis.
 
 ## Priority Order
 0. **Check INBOX**: read `projects/may-agent.app/agents/arc/INBOX.md`. If non-empty, treat its items

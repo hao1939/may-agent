@@ -18,14 +18,15 @@ persist, execute, and recover without deciding domain meaning.
 
 The human boundary has one additional, strict convention:
 
-> **May owns the conversation. Apps own the work.**
+> **May owns the conversation. The accountable App owns each Task.**
 
 May handles one human turn; an accountable App owns durable execution and
-proof. May first makes the request actionable: desired outcome, relevant scope,
-material constraints, acceptance proof, and true authority boundaries. It asks
-one focused question only when ambiguity would materially change that outcome
-or its accountable App. One bounded, audited break-glass attempt is the exception. The complete
-ingress, routing, closure, and recovery contract is in
+proof. That App may be May when no more specific App owns the outcome. May
+first makes the request actionable: desired outcome, relevant scope, material
+constraints, acceptance proof, and true authority boundaries. It asks one
+focused question only when ambiguity would materially change that outcome or
+its accountable App. One bounded, audited break-glass attempt is the exception.
+The complete ingress, routing, closure, and recovery contract is in
 [Message Lifecycle](../2a-design/message-lifecycle.md).
 
 One human or caller request identifies one promised result. The Host links it
@@ -113,7 +114,7 @@ state fails closed to attention; absence of a known wait is not completion proof
 
 Every maintain task must have a way to learn that its facts changed: a domain
 event or watcher, and a scheduled check when events alone are not reliable. The
-controller's frequent resync repairs missed task delivery; it does not replace
+controller's bounded resync repairs missed in-memory wakes; it does not replace
 domain observation or run every expensive workflow continuously.
 
 Apps choose outcomes, default agents, workflows, and acceptance. The shared runtime
@@ -230,8 +231,8 @@ instead of a second heartbeat-driven project loop.
 ## Invariants
 
 1. Signals wake judgment; they do not decide project truth.
-2. A task tree is only an optional layout of containment and dependency; it is
-   not a resource or scheduler.
+2. A hierarchical Task view is only an optional layout of containment and
+   dependency; it is not a resource or scheduler.
 3. Queues carry stable IDs, never copied task specifications.
 4. Owners remain accountable even when they delegate a workflow.
 5. Workflows are learned processes, not mandatory wrappers around agent work.

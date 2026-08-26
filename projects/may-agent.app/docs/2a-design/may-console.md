@@ -1,7 +1,10 @@
 # May Console
 
 **Design status:** Accepted.
-**Implementation status:** Implemented.
+**Implementation status:** Commands, shared Conversation reads, focused App,
+one Task watch, and readable Task cards are implemented. Equivalent terminal
+content can still appear once as May speech and again as a watched Task summary;
+canonical semantic-revision suppression remains open.
 
 May Console is a small terminal adapter for the running daemon. It owns
 readline, rendering, reconnect, completion, one local Task watch, and typed

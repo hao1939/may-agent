@@ -4,7 +4,7 @@
 
 - App manifest: `projects/may-agent.app/app.ts`
 - Project model: `projects/may-agent.app/project.json`
-- Task resources: `projects/may-agent.app/.state/tasks/tree.json`
+- Task resources: supplied reconciliation context and bounded `read.tasks` views
 - Agent App design: `projects/may-agent.app/docs/2a-design/agent-app.md`
 - Events design: `projects/may-agent.app/docs/2a-design/events.md`
 - Metrics design: `projects/may-agent.app/docs/2a-design/metrics.md`

@@ -2,7 +2,7 @@
 
 **Status:** Historical evaluation proposal; the accepted behavior and current
 correction/wait boundaries are authoritative in
-[`native-coding-workers.md`](../2a-design/native-coding-workers.md).
+[`native-coding-workers.md`](../../2a-design/native-coding-workers.md).
 
 **Scope:** records the evidence and reasoning used to introduce Codex as a
 resumable Task executor while preserving App Task authority.

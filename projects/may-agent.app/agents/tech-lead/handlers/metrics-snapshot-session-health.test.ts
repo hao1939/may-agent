@@ -39,7 +39,7 @@ describe("metrics-snapshot session health metrics", () => {
     return testRuntime(root, emit).sdk;
   }
 
-  it("measures failure triage as an outcome metric and aftermath coverage as liveness", async () => {
+  it("measures Host-owned failure triage without redefining Evaluation coverage", async () => {
     const root = join(
       tmpdir(),
       `metrics-session-health-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -223,12 +223,6 @@ describe("metrics-snapshot session health metrics", () => {
         )
         .get("session.failed-triage-rate-3h"),
     ).toMatchObject({ sample_size: 2 });
-    expect(metric("evaluator.aftermath-coverage-rate-3h")).toMatchObject({
-      current: 0.6667,
-      target: 0.8,
-      threshold: 0.2,
-      priority: "P3",
-    });
     expect(metric("eval.llm-evals-24h")).toMatchObject({
       current: 2,
       target: 4,
@@ -440,7 +434,7 @@ describe("metrics-snapshot session health metrics", () => {
     });
   });
 
-  it("keeps Scout project watch metrics active and measured", async () => {
+  it("retires the invalid Scout practice proxy and leaves domain metrics to Scout", async () => {
     const root = join(
       tmpdir(),
       `metrics-scout-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -518,24 +512,19 @@ describe("metrics-snapshot session health metrics", () => {
         )
         .get(id) as any;
     expect(metric("scout.knowledge-practice-loaded")).toMatchObject({
-      current: 1,
+      current: 0,
       owner: "scout",
-      status: "active",
-      project: "scout-knowledge-lib.app",
+      status: "retired",
+      project: "scout-second-brain-learning",
       target: 1,
       threshold: 1,
     });
-    expect(metric("scout.knowledge-preamble-coverage")).toMatchObject({
-      current: 0.5,
-      owner: "scout",
-      status: "active",
-      project: "scout-knowledge-lib.app",
-    });
+    expect(metric("scout.knowledge-preamble-coverage")).toBeNull();
     expect(metric("scout.sourced-artifacts-24h")).toBeNull();
     expect(metric("scout.downstream-reference-files-7d")).toBeNull();
   });
 
-  it("does not count terminal no-recovery finish-block digests as unresolved dirty exits", async () => {
+  it("leaves source-defined metric execution to Runtime", async () => {
     const root = join(
       tmpdir(),
       `metrics-finish-blocked-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -733,12 +722,12 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
 
     const metric = (id: string) =>
       db.prepare("SELECT current FROM metrics WHERE id = ?").get(id) as any;
-    expect(metric("session.finish-blocked-uncommitted-count-24h").current).toBe(
-      3,
-    );
-    expect(metric("session.finish-blocked-unresolved-count-24h").current).toBe(
-      1,
-    );
+    expect(
+      metric("session.finish-blocked-uncommitted-count-24h").current,
+    ).toBeNull();
+    expect(
+      metric("session.finish-blocked-unresolved-count-24h").current,
+    ).toBeNull();
   });
 
   it("measures critical runtime signals with explicit owners", async () => {

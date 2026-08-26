@@ -28,6 +28,7 @@ contracts; Tier-2 design governs when wording conflicts.
 | [herdr-backed-web-terminal.md](decisions/herdr-backed-web-terminal.md)                                               | [Web Terminal](../2a-design/web-terminal.md)                                                                          |
 | [task-focused-shared-human-interface.md](decisions/task-focused-shared-human-interface.md)                         | [Human Control Surfaces](../2a-design/human-control-surfaces.md), [May Console](../2a-design/may-console.md), and [Telegram](../2a-design/telegram-notifications.md) |
 | [human-action-task-view.md](decisions/human-action-task-view.md)                                                   | [Human Control Surfaces](../2a-design/human-control-surfaces.md) and [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [lightweight-event-driven-reconciliation.md](decisions/lightweight-event-driven-reconciliation.md)               | [System Model](../2a-design/system-model.md), [Events](../2a-design/events.md), and [Task Resource Engine](../2a-design/task-resource-engine.md) |
 
 ## Reviews
 
@@ -48,6 +49,7 @@ contracts; Tier-2 design governs when wording conflicts.
 - [Canonical Agent App migration](implementation/canonical-agent-app-migration.md)
 - [Task reconciliation closeout](implementation/task-reconciliation-closeout-and-reviewability.md)
 - [System operations convergence](implementation/system-operations-model.md)
+- [Codex goal executor evaluation](implementation/codex-goal-executor.md)
 
 ## V2
 

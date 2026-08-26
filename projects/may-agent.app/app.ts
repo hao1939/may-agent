@@ -10,7 +10,7 @@ import {
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
-const hostOperationsAgent = "may";
+const hostOperationsAgent = "tech-lead";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const nonEmptyString = Type.String({ minLength: 1 });
 const stringList = Type.Array(nonEmptyString, { minItems: 1 });
@@ -24,13 +24,21 @@ const platformObligationDataSchema = Type.Object(
 );
 
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
+export const OWNER_REVIEW_DELIVERY_ACCEPTANCE = [
+  "Before sending any direct owner signal for recurring or previously attempted work, inspect the canonical delivery and remediation receipts and reuse the existing owner lineage when it already covers the obligation.",
+  "The terminal result discloses every direct owner signal created during the review and explicitly records zero when none were created.",
+] as const;
 export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
-export const PLATFORM_METRIC_INTERVAL_MS = 300_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
-export function validateHostOperationsCondition(condition: Condition): string | null {
+export function validateHostOperationsCondition(
+  condition: Condition,
+): string | null {
   const owner = condition.owner?.trim().replace(/^(?:app|agent):/, "");
-  if ((owner === projectId || owner === hostOperationsAgent) && condition.requestedAction?.trim()) {
+  if (
+    (owner === projectId || owner === hostOperationsAgent || owner === "may") &&
+    condition.requestedAction?.trim()
+  ) {
     return "cannot wait for unfinished work assigned back to Host Operations; perform or durably submit that work first";
   }
   return null;
@@ -58,153 +66,6 @@ export const platformInputSchema = Type.Union([
         platformObligationDataSchema,
         Type.Object({ acceptance: stringList, evidence: stringList }),
       ]),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("dependency-authority-runtime-review"),
-      data: Type.Object(
-        {
-          outcome: nonEmptyString,
-          acceptance: stringList,
-          sourceRequestId: Type.Literal("appdep_b0fced12cada9800c8035457"),
-          requestingAppId: Type.Literal("aks-rp-e2e"),
-          requestingTaskId: Type.Literal("runtime/owner-review"),
-          requestingTaskGeneration: Type.Literal(154),
-          sourceEventIds: Type.Tuple([
-            Type.Literal(5810518),
-            Type.Literal(5810519),
-          ]),
-          historicalSessionId: Type.Literal("s_1787054895397_14"),
-          suppliedDependencyAuthority: Type.Literal(true),
-          hostPrivateProjectionReadsAllowed: Type.Literal(false),
-          safetyBounds: stringList,
-        },
-        { additionalProperties: false },
-      ),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("installed-app-resolver-observation"),
-      data: Type.Object(
-        {
-          outcome: nonEmptyString,
-          acceptance: stringList,
-          sourceRequestId: Type.Literal("appdep_c486e1db18a2121dd83a2d69"),
-          requestingAppId: Type.Literal("aks-rp-e2e"),
-          requestingTaskId: Type.Literal(
-            "ops/verify-loaded-runtime-master-validation-authority-parity-20260820",
-          ),
-          targetAppId: Type.Literal("aks-rp-e2e"),
-          syntheticEvent: Type.Object(
-            {
-              type: Type.Literal("project.task.tick"),
-              action: Type.Literal("master-validation-compact"),
-              taskId: Type.Literal("master-validation-compact"),
-              data: Type.Object(
-                { taskId: Type.Literal("master-validation-compact") },
-                { additionalProperties: false },
-              ),
-            },
-            { additionalProperties: false },
-          ),
-          evidenceArtifact: Type.Literal(
-            "agents/app-ops/workspace/verify-loaded-runtime-master-validation-authority-parity-20260820/compatibility-gap.md",
-          ),
-          safetyBounds: stringList,
-        },
-        { additionalProperties: false },
-      ),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("app-deployment-adjudication"),
-      data: Type.Intersect([
-        platformObligationDataSchema,
-        Type.Object({
-          requestingApp: Type.Literal("aks-rp-e2e"),
-          requestingTaskId: nonEmptyString,
-          historicalArtifact: nonEmptyString,
-        }),
-      ]),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("runtime-source-deployment-request"),
-      data: Type.Intersect([
-        platformObligationDataSchema,
-        Type.Object({
-          context: Type.Object(
-            {
-              callerApp: Type.Literal("aks-rp-e2e"),
-              callerTask: nonEmptyString,
-            },
-            { additionalProperties: true },
-          ),
-          acceptance: stringList,
-        }),
-      ]),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("protected-agent-config-repair"),
-      data: Type.Intersect([
-        platformObligationDataSchema,
-        Type.Object({
-          acceptance: stringList,
-          requestCorrelation: Type.Literal("appdep_69d1bbe3d001c5aeec77b979"),
-          targetApp: Type.Literal("evaluation"),
-          targetAgent: Type.Literal("evaluator"),
-          configPath: Type.Literal(
-            "/app/projects/evaluation.app/agents/evaluator/agent.json",
-          ),
-          field: Type.Literal("model"),
-          currentValue: Type.Literal("gpt-5.6-sol"),
-          proposedValue: Type.Literal("claude-opus-5"),
-          credentialMutation: Type.Literal(false),
-          requiresHaoApproval: Type.Literal(true),
-        }),
-      ]),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("status-readonly-supervisor-activation"),
-      data: Type.Object(
-        {
-          outcome: nonEmptyString,
-          acceptance: stringList,
-          sourceRequestId: Type.Literal("appdep_a403431cd372972301012d47"),
-          sourceEventIds: Type.Tuple([
-            Type.Literal(5799145),
-            Type.Literal(5799146),
-          ]),
-          taskId: Type.Literal("harden-status-invocation-readonly-20260819"),
-          correlation: Type.Literal("status-readonly-9f5d4d7f-20260819T2355Z"),
-          receipt: Type.Literal(
-            "/app/projects/may-agent/.state/deploy-receipts/status-readonly-9f5d4d7f-20260819T2355Z.json",
-          ),
-          sourceCommit: Type.Literal(
-            "9f5d4d7f59143a855a546fd092002e56cf9a4a18",
-          ),
-          artifactSha: Type.Literal(
-            "ef6f641daced640ea8644a9f681147913583c1e042b7a35aa32367f650ba7b02",
-          ),
-          safetyBounds: stringList,
-          currentEvidence: detailsSchema,
-        },
-        { additionalProperties: false },
-      ),
     },
     { additionalProperties: false },
   ),
@@ -328,13 +189,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       };
     }
     case "runtime-deployment.adjudicate-current-host-state":
-    case "runtime-capability-request":
-    case "dependency-authority-runtime-review":
-    case "installed-app-resolver-observation":
-    case "app-deployment-adjudication":
-    case "runtime-source-deployment-request":
-    case "protected-agent-config-repair":
-    case "status-readonly-supervisor-activation": {
+    case "runtime-capability-request": {
       const data = record(input.data);
       return {
         id: "",
@@ -400,43 +255,11 @@ export function taskForHostOperationsInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
   if (
-    admitted.input.kind === "protected-agent-config-repair" &&
-    (admitted.source.kind !== "app" || admitted.source.id !== "evaluation")
-  ) {
-    throw new Error(
-      "protected-agent-config-repair is accepted only from App evaluation",
-    );
-  }
-  if (
-    admitted.input.kind === "dependency-authority-runtime-review" &&
-    (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
-  ) {
-    throw new Error(
-      "dependency-authority-runtime-review is accepted only from App aks-rp-e2e",
-    );
-  }
-  if (
-    admitted.input.kind === "installed-app-resolver-observation" &&
-    (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
-  ) {
-    throw new Error(
-      "installed-app-resolver-observation is accepted only from App aks-rp-e2e",
-    );
-  }
-  if (
     admitted.input.kind === "contain-external-and-replayed-workspace-writer" &&
     (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
   ) {
     throw new Error(
       "contain-external-and-replayed-workspace-writer is accepted only from App aks-rp-e2e",
-    );
-  }
-  if (
-    admitted.input.kind === "status-readonly-supervisor-activation" &&
-    (admitted.source.kind !== "app" || admitted.source.id !== "may-agent")
-  ) {
-    throw new Error(
-      "status-readonly-supervisor-activation is accepted only from App may-agent",
     );
   }
   const resolved = taskIntentForInput(admitted.input);
@@ -454,14 +277,17 @@ export function taskForHostOperationsInput(
           outcome:
             stringValue(record(admitted.input.data).outcome) ||
             "Review and resolve the addressed Host Operations request.",
-          acceptance: Array.isArray(record(admitted.input.data).acceptance)
-            ? (record(admitted.input.data).acceptance as unknown[]).filter(
-                (item): item is string =>
-                  typeof item === "string" && item.trim().length > 0,
-              )
-            : [
-                "Return a terminal, evidence-backed platform disposition through the supported control plane.",
-              ],
+          acceptance: [
+            ...(Array.isArray(record(admitted.input.data).acceptance)
+              ? (record(admitted.input.data).acceptance as unknown[]).filter(
+                  (item): item is string =>
+                    typeof item === "string" && item.trim().length > 0,
+                )
+              : [
+                  "Return a terminal, evidence-backed platform disposition through the supported control plane.",
+                ]),
+            ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
+          ],
           mode: "achieve" as const,
           input: {
             kind: admitted.input.kind,
@@ -543,13 +369,6 @@ const app = defineApp({
       event: scheduledEvent("project.tick", {
         reason: "scheduled-project-review",
         lane: "platform-review",
-      }),
-    },
-    {
-      id: "platform-metrics",
-      intervalMs: PLATFORM_METRIC_INTERVAL_MS,
-      event: scheduledEvent("trigger.metrics-snapshot", {
-        reason: "scheduled-platform-measurement",
       }),
     },
     {

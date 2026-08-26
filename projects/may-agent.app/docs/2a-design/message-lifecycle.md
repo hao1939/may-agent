@@ -1,10 +1,11 @@
 # Message Lifecycle
 
 **Design status:** Accepted.
-**Implementation status:** Implemented and live-verified. May frontend requests
-finish after one bounded decision, `may/conversation/follow-up` is an ordinary
-visible Task, linked Task updates wake that same Task without satisfying its
-wait, and terminal text is appended to Conversation once by follow-up identity.
+**Implementation status:** The frontend/backend split, visible
+`may/conversation/follow-up` Task, linked-Task wakes, explicit terminal
+Conversation append, and window-independent response identity are implemented.
+The shared Task projection also filters progress and accepted observations by
+exact attempt identity; prior-attempt observations remain history.
 
 ## Mental model
 
@@ -118,16 +119,16 @@ and correlation aid, not another work state.
 
 ### Natural conversation rules
 
-| Human situation | May's decision |
-| --- | --- |
-| “Does this wait make sense?” | Read the focused Task and answer; no mutation. |
-| “It does not; fix it.” | Answer and publish feedback for that exact Task. |
-| “Agree, do it.” | Apply the preceding proposal in the same Topic. |
-| “Also include pending benchmarks.” | Refine the existing Task when its owner and goal still fit. |
-| “Do this across every App.” | Start distinct work only when the accountable scope truly changed. |
+| Human situation                                 | May's decision                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| “Does this wait make sense?”                    | Read the focused Task and answer; no mutation.                                       |
+| “It does not; fix it.”                          | Answer and publish feedback for that exact Task.                                     |
+| “Agree, do it.”                                 | Apply the preceding proposal in the same Topic.                                      |
+| “Also include pending benchmarks.”              | Refine the existing Task when its owner and goal still fit.                          |
+| “Do this across every App.”                     | Start distinct work only when the accountable scope truly changed.                   |
 | “Continue the cleanup we discussed last month.” | Resolve the older Topic with bounded read-only lookup, then continue its exact work. |
-| The referenced Task already finished | Keep it immutable; create a follow-up only for a genuinely new outcome. |
-| Meaning remains materially ambiguous | State the likely interpretation and ask the smallest concrete question. |
+| The referenced Task already finished            | Keep it immutable; create a follow-up only for a genuinely new outcome.              |
+| Meaning remains materially ambiguous            | State the likely interpretation and ask the smallest concrete question.              |
 
 Clarification is ordinary multi-turn Conversation, not a draft resource or
 hidden state machine. May preserves answers already given, does not ask for
@@ -223,8 +224,10 @@ projection instead of treating it as successful human communication. Direct
 frontend answers follow the same rule: storing the request receipt is not
 enough; the response is appended as one Conversation message. When that
 explicit message exists, the inbox result remains execution evidence but is
-not synthesized as a second Conversation message. Message identity, not text
-comparison, establishes the one canonical presentation.
+not a second Conversation message. Both the explicit Event and the bounded
+compatibility projection use `result:<requestId>`; a read prefers explicit
+message data when both are present. Message identity, not text comparison,
+establishes the one canonical presentation.
 
 Progress is deduplicated by stable event or result identity and appears at most
 once in durable Conversation. Adapters may render faster transient progress
@@ -238,8 +241,9 @@ reports its own observation.
 
 No component tracks “delivery to web-ui.” Conversation persistence is semantic
 completion. Console and Telegram independently observe `conversation.updated`
-and render unseen message identities. A failed adapter can catch up by reading
-the Conversation.
+and render unseen message identities. A missed notification can trigger a
+bounded Conversation reread; adapters do not promise that every message is
+shown exactly once across process loss or offline time.
 
 ## Presentation adapters
 
@@ -258,13 +262,13 @@ Conversation or Topic identity.
 
 ## Ownership boundary
 
-| Component | Owns | Does not own |
-| --- | --- | --- |
-| May frontend | understanding one Turn, direct answer, clarification, typed durable intent | long-running work, child waits, recovery |
-| May conversation Task | Topic-to-Task linkage, follow-through, steering, human updates | domain execution, copied Task status, adapter delivery |
-| Target App | goal interpretation inside its domain, Task execution and decomposition | human Conversation presentation |
-| Runtime | event persistence, validation, scheduling, retry, mechanical recovery | semantic ownership or intent inference |
-| Adapter | input/output presentation and local selection | work state or delivery-gated completion |
+| Component             | Owns                                                                       | Does not own                                           |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| May frontend          | understanding one Turn, direct answer, clarification, typed durable intent | long-running work, child waits, recovery               |
+| May conversation Task | Topic-to-Task linkage, follow-through, steering, human updates             | domain execution, copied Task status, adapter delivery |
+| Target App            | goal interpretation inside its domain, Task execution and decomposition    | human Conversation presentation                        |
+| Runtime               | event persistence, validation, scheduling, retry, mechanical recovery      | semantic ownership or intent inference                 |
+| Adapter               | input/output presentation and local selection                              | work state or delivery-gated completion                |
 
 ## Recovery and performance
 
@@ -299,8 +303,8 @@ Conversation or Topic identity.
     guessing.
 12. Task progress and results remain authoritative in Task resources.
 13. The backend emits only useful human updates, never transport bookkeeping.
-14. Conversation persistence, not adapter acknowledgement, is semantic
-    delivery.
+14. Conversation persistence, not adapter acknowledgement, completes the
+    semantic response.
 15. Runtime recovery resumes the same Task; it does not invent substitute
     work.
 16. Code collects context and applies validated effects; the LLM decides

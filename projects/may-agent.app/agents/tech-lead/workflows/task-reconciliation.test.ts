@@ -24,7 +24,7 @@ describe("may-agent task reconciliation manifest", () => {
     ]);
   });
 
-  it("attaches addressed owner requests to the stable owner-review task", () => {
+  it("attaches addressed owner requests to the stable direct owner-review Task", () => {
     const subscription = app.subscriptions?.find(
       (entry) => entry.id === "project-owner-request",
     );
@@ -41,17 +41,11 @@ describe("may-agent task reconciliation manifest", () => {
       mode: "maintain",
     });
     expect(intent?.input).toEqual({ scope: "may-agent-platform" });
-    expect(intent?.workflow).toBe("platform-owner-review");
-    expect(app.owner).toBe("may");
+    expect(intent?.agent).toBe("tech-lead");
+    expect(intent).not.toHaveProperty("workflow");
+    expect(app.agent).toBe("tech-lead");
+    expect(app).not.toHaveProperty("owner");
     expect(app.tasks?.subscriptions).toEqual([
-      {
-        type: "session.recovery.requested",
-        project: "may-agent",
-      },
-      {
-        type: "may-agent.resource-migration.requested",
-        project: "may-agent",
-      },
       { type: "project.tick", project: "may-agent" },
       { type: "project.tasks.ready", project: "may-agent" },
       "metric.breach",
@@ -70,18 +64,13 @@ describe("may-agent task reconciliation manifest", () => {
     ).toBeNull();
   });
 
-  it("maps the bounded legacy cleanup to one finite resource", () => {
+  it("does not recreate the retired resource-migration Task route", () => {
     expect(
       resolveMayAgentTask({
         type: "may-agent.resource-migration.requested",
         data: {},
         target: { appId: "may-agent", project: "may-agent" },
       }),
-    ).toMatchObject({
-      id: "runtime/unified-resource-migration-v1",
-      mode: "achieve",
-      workflow: "unified-resource-migration",
-      priority: "P0",
-    });
+    ).toBeNull();
   });
 });

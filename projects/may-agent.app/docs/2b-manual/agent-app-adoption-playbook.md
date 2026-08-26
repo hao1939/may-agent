@@ -166,6 +166,6 @@ bun run test
 bun run bundle:verify
 ```
 
-Before rollout, prove direct completion, agent handling, delegation, task
-attachment, restart recovery, registry reload, and final delivery for the App's
-actual routes.
+Before rollout, prove direct completion, agent handling, dependencies, Task
+attachment, restart recovery, registry reload, result correlation, and any
+adapter-specific presentation required by the App's actual routes.

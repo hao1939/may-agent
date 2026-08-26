@@ -7,8 +7,8 @@
  * upserts metric rows and refreshes mutable metadata (name/owner/target/etc.)
  * so DB rows cannot silently drift away from the registry constants.
  *
- * Custom metrics can still be measured via metrics.source_query/source_command
- * in the generic section near the end of the handler.
+ * App-owned source_query/source_command metrics are measured by Runtime's
+ * passive metric-source consumer on the same trigger, not by this handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import {
@@ -21,8 +21,6 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
-import { exec, execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type {
   CronEntry,
   EventEnvelope,
@@ -33,19 +31,6 @@ import {
   listConfiguredAgents,
   resolveMetricOwner,
 } from "./lib/metric-ownership.js";
-
-const execAsync = promisify(exec);
-const execFileAsync = promisify(execFile);
-
-export function batchableProjectMetricCommand(
-  command: string,
-): { scriptPath: string; metricId: string } | null {
-  const match = command
-    .trim()
-    .match(/^bun\s+(\S+\/project-metrics\.ts)\s+(\S+)\s+--json$/);
-  if (!match) return null;
-  return { scriptPath: match[1]!, metricId: match[2]! };
-}
 
 // v2 metric types:
 //   gauge   — point-in-time value, can go up/down (rates, ratios, sizes)
@@ -243,28 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "evaluator.aftermath-coverage-rate-3h",
-    name: "Evaluator aftermath liveness (3h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0.8,
-    threshold: 0.2,
-    unit: "ratio",
-    alert_op: "<",
-    priority: "P3",
-  },
-  {
-    id: "eval.llm-coverage-lag-h",
-    name: "LLM evaluation lag (hours since last non-heuristic eval)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 1,
-    threshold: 4,
-    unit: "hours",
-    alert_op: ">",
-    priority: "P0",
-  },
-  {
     id: "eval.llm-evals-24h",
     name: "LLM-evaluated sessions (24h)",
     owner: "evaluator",
@@ -365,45 +328,6 @@ const ALL_METRICS: MetricDef[] = [
     description:
       "Running/idle non-evaluator sessions older than stale cutoff (30min). Measures platform-wide session health, not evaluator-specific.",
     config: { alert: { mode: "consecutive_failures", count: 2 } },
-  },
-  {
-    id: "scout.knowledge-practice-loaded",
-    name: "Scout knowledge practice loaded",
-    owner: "may",
-    project: "scout-knowledge-lib.app",
-    type: "health",
-    target: 1,
-    threshold: 1,
-    unit: "boolean",
-    alert_op: "<",
-    priority: "P2",
-    config: { alert: { mode: "consecutive_failures", count: 1 } },
-  },
-  {
-    id: "scout.knowledge-preamble-coverage",
-    name: "Scout knowledge preamble coverage",
-    owner: "scout",
-    project: "scout-knowledge-lib.app",
-    type: "gauge",
-    target: 0.25,
-    threshold: 0.15,
-    unit: "ratio",
-    alert_op: "<",
-    priority: "P3",
-    config: { alert: { mode: "disabled", disabled: true } },
-  },
-  {
-    id: "scout.accepted-source-outputs-24h",
-    name: "Scout accepted source outputs (24h)",
-    owner: "scout",
-    project: "scout-knowledge-lib.app",
-    type: "gauge",
-    target: 2,
-    threshold: 1,
-    unit: "count",
-    alert_op: "<",
-    priority: "P2",
-    config: { alert: { mode: "disabled", disabled: true } },
   },
   {
     id: "handler.p95-duration",
@@ -652,11 +576,12 @@ const ALL_METRICS: MetricDef[] = [
 ];
 
 export function metricOperationalOwner(metric: MetricDef): string | undefined {
-  if (metric.project === "scout-knowledge-lib.app") return "scout";
   return metric.owner === "may" ? "tech-lead" : metric.owner;
 }
 
 const RETIRED_METRIC_IDS = [
+  "scout.knowledge-practice-loaded",
+  "scout.accepted-source-outputs-24h",
   "scout.sourced-artifacts-24h",
   "scout.downstream-reference-files-7d",
   "evaluator.stale-running-session-count",
@@ -765,87 +690,6 @@ function readFilePrefix(path: string, maxBytes = 512 * 1024): string {
   } finally {
     closeSync(fd);
   }
-}
-
-function walkMarkdownFiles(root: string, maxFiles = 5000): string[] {
-  const files: string[] = [];
-  const visit = (dir: string) => {
-    if (files.length >= maxFiles || !existsSync(dir)) return;
-    let entries: string[];
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (
-        files.length >= maxFiles ||
-        entry === "node_modules" ||
-        entry === ".git"
-      )
-        continue;
-      const path = join(dir, entry);
-      try {
-        const stat = statSync(path);
-        if (stat.isDirectory()) visit(path);
-        else if (stat.isFile() && entry.endsWith(".md")) files.push(path);
-      } catch {
-        // Ignore unreadable files.
-      }
-    }
-  };
-  visit(root);
-  return files;
-}
-
-function fileContains(path: string, patterns: RegExp[]): boolean {
-  try {
-    const content = readFilePrefix(path, 256 * 1024);
-    return patterns.every((pattern) => pattern.test(content));
-  } catch {
-    return false;
-  }
-}
-
-function fileContainsAny(path: string, patterns: RegExp[]): boolean {
-  try {
-    const content = readFilePrefix(path, 256 * 1024);
-    return patterns.some((pattern) => pattern.test(content));
-  } catch {
-    return false;
-  }
-}
-
-function scoutKnowledgePracticeLoaded(root: string): boolean {
-  const path = join(
-    root,
-    "projects",
-    "scout-knowledge-lib.app",
-    "agents",
-    "scout",
-    "AGENTS.md",
-  );
-  return fileContains(path, [
-    /search .*existing|existing .*update|update .*existing/i,
-    /<ai_context>/i,
-  ]);
-}
-
-function scoutKnowledgePreambleCoverage(root: string): {
-  value: number;
-  sampleSize: number;
-} {
-  const files = walkMarkdownFiles(
-    join(root, "projects", "scout-knowledge-lib", "knowledge"),
-  );
-  if (files.length === 0) return { value: 1, sampleSize: 0 };
-  const withPreamble = files.filter((file) =>
-    fileContainsAny(file, [/<ai_context>/i]),
-  ).length;
-  return {
-    value: parseFloat((withPreamble / files.length).toFixed(4)),
-    sampleSize: files.length,
-  };
 }
 
 function sessionJsonlPath(
@@ -1001,38 +845,6 @@ export const create: HandlerModule["create"] = (
 
     function count(query: string, ...args: any[]): number {
       return (db.prepare(query).get(...args) as any)?.c || 0;
-    }
-
-    function scoutAcceptedSourceOutputsSince(since: number): number {
-      const rows = db
-        .prepare(
-          `SELECT data
-             FROM events
-            WHERE event_type = 'project.task.reconciled'
-              AND project_id = 'scout-knowledge-lib'
-              AND task_id LIKE 'explore-%'
-              AND timestamp > ?`,
-        )
-        .all(since) as Array<{ data?: string | null }>;
-      let outputs = 0;
-      for (const row of rows) {
-        if (!row.data) continue;
-        try {
-          const data = JSON.parse(row.data) as {
-            disposition?: unknown;
-            evidence?: unknown;
-          };
-          if (data.disposition !== "converged" || !Array.isArray(data.evidence))
-            continue;
-          outputs += data.evidence.filter(
-            (item): item is string =>
-              typeof item === "string" && item.startsWith("output:/"),
-          ).length;
-        } catch {
-          // Ignore malformed historical event data.
-        }
-      }
-      return outputs;
     }
 
     function terminalSessionsWithoutEndEvent(
@@ -1648,84 +1460,6 @@ export const create: HandlerModule["create"] = (
     }
 
     try {
-      // This is a pipeline liveness/meta signal, not the north-star quality
-      // metric. A small threshold catches "evaluator stopped entirely" without
-      // making raw coverage the goal.
-      const eligible = count(
-        `SELECT COUNT(*) as c
-         FROM sessions s
-         WHERE s.status IN ('done', 'error', 'interrupted')
-           AND s.agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(s.error, '') NOT IN (
-             'Task-bound project session recovery is owned by the app task reconciler',
-             'Task-bound execution is recovered through its Task, not by resuming the old session'
-           )
-           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
-           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
-           AND NOT (
-             s.status = 'done'
-             AND COALESCE(s.outcome, '') = 'done'
-             AND COALESCE(s.error, '') = 'Cancelled'
-           )
-           AND COALESCE(s.endedAt, s.startedAt) > ?
-           AND COALESCE(s.endedAt, s.startedAt) <= ?`,
-        threeH,
-        sevenMinutesAgo,
-      );
-      const evaluated = count(
-        `SELECT COUNT(DISTINCT s.sessionId) as c
-         FROM sessions s
-         JOIN evaluations e ON e.sessionId = s.sessionId
-         WHERE s.status IN ('done', 'error', 'interrupted')
-           AND s.agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(s.error, '') NOT IN (
-             'Task-bound project session recovery is owned by the app task reconciler',
-             'Task-bound execution is recovered through its Task, not by resuming the old session'
-           )
-           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
-           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
-           AND NOT (
-             s.status = 'done'
-             AND COALESCE(s.outcome, '') = 'done'
-             AND COALESCE(s.error, '') = 'Cancelled'
-           )
-           AND COALESCE(s.endedAt, s.startedAt) > ?
-           AND COALESCE(s.endedAt, s.startedAt) <= ?`,
-        threeH,
-        sevenMinutesAgo,
-      );
-      record(
-        "evaluator.aftermath-coverage-rate-3h",
-        eligible > 0 ? parseFloat((evaluated / eligible).toFixed(4)) : 1,
-        eligible,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator.aftermath-coverage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      const lastNonHeuristicEval = (
-        db
-          .prepare(
-            "SELECT MAX(createdAt) as lastCreatedAt FROM evaluations WHERE evaluatedByHeuristic = 0",
-          )
-          .get() as any
-      )?.lastCreatedAt as number | null | undefined;
-      const lagH = lastNonHeuristicEval
-        ? (now - lastNonHeuristicEval) / 3600000
-        : 9999;
-      record("eval.llm-coverage-lag-h", parseFloat(lagH.toFixed(2)));
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring eval.llm-coverage-lag-h: ${e}`,
-      );
-    }
-
-    try {
       record(
         "eval.llm-evals-24h",
         count(
@@ -1982,46 +1716,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring runtime.stale-running-session-count: ${e}`,
-      );
-    }
-
-    try {
-      record(
-        "scout.knowledge-practice-loaded",
-        scoutKnowledgePracticeLoaded(ctx.sdk.paths.root) ? 1 : 0,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring scout.knowledge-practice-loaded: ${e}`,
-      );
-    }
-
-    try {
-      const coverage = scoutKnowledgePreambleCoverage(ctx.sdk.paths.root);
-      record(
-        "scout.knowledge-preamble-coverage",
-        coverage.value,
-        coverage.sampleSize,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring scout.knowledge-preamble-coverage: ${e}`,
-      );
-    }
-
-    try {
-      record(
-        "scout.accepted-source-outputs-24h",
-        scoutAcceptedSourceOutputsSince(twentyFourH),
-        undefined,
-        "Semantic cutover 2026-07-20: counts admitted output evidence from converged Scout source reconciliations.",
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring scout.accepted-source-outputs-24h: ${e}`,
       );
     }
 
@@ -2371,162 +2065,10 @@ export const create: HandlerModule["create"] = (
       );
     }
 
-    // ── Generic metrics (source_query / source_command) ──────────────
-
-    const measurable = db
-      .prepare(
-        "SELECT id, source_query, source_command FROM metrics WHERE status = 'active' AND (source_query IS NOT NULL OR source_command IS NOT NULL)",
-      )
-      .all() as any[];
-
-    // Project metric programs often load the same large task/spec snapshot for
-    // every metric. Running one process per row made the AKS sampler reread the
-    // same state about 35 times and pushed this handler past ten minutes. Batch
-    // compatible commands by script so each project snapshot is loaded once.
-    const batchGroups = new Map<
-      string,
-      Array<{ metricId: string; rowId: string }>
-    >();
-    for (const m of measurable) {
-      if (typeof m.source_command !== "string") continue;
-      const parsed = batchableProjectMetricCommand(m.source_command);
-      if (!parsed) continue;
-      const group = batchGroups.get(parsed.scriptPath) ?? [];
-      group.push({ metricId: parsed.metricId, rowId: String(m.id) });
-      batchGroups.set(parsed.scriptPath, group);
-    }
-
-    const batchHandledIds = new Set<string>();
-    const batchSamples = new Map<string, Record<string, unknown>>();
-    for (const [scriptPath, group] of batchGroups) {
-      if (group.length < 2) continue;
-      for (const item of group) batchHandledIds.add(item.rowId);
-      try {
-        const { stdout } = await execFileAsync(
-          "bun",
-          [scriptPath, "--batch-json", ...group.map((item) => item.metricId)],
-          {
-            cwd: ctx.sdk.paths.root,
-            timeout: 120_000,
-            maxBuffer: 4 * 1024 * 1024,
-          },
-        );
-        const parsed = JSON.parse(stdout.trim()) as Record<
-          string,
-          Record<string, unknown>
-        >;
-        for (const item of group) {
-          const sample = parsed[item.metricId];
-          if (sample) batchSamples.set(item.rowId, sample);
-        }
-      } catch (error) {
-        ctx.sdk.log(
-          "info",
-          `[metrics-snapshot] Batched project metrics failed for ${scriptPath}: ${String(error)}`,
-        );
-      }
-    }
-
-    let measured = 0;
-    for (const m of measurable) {
-      try {
-        let value: number | null = null;
-        let sampleSize: number | undefined;
-        let measuredAt: number | undefined;
-        let note: string | undefined;
-        const batchSample = batchSamples.get(String(m.id));
-        if (batchSample) {
-          if (
-            typeof batchSample.value === "number" &&
-            Number.isFinite(batchSample.value)
-          ) {
-            value = batchSample.value;
-          }
-          if (
-            typeof batchSample.sampleSize === "number" &&
-            Number.isFinite(batchSample.sampleSize)
-          ) {
-            sampleSize = batchSample.sampleSize;
-          }
-          if (
-            typeof batchSample.measuredAt === "number" &&
-            Number.isFinite(batchSample.measuredAt)
-          ) {
-            measuredAt = batchSample.measuredAt;
-          }
-          if (typeof batchSample.note === "string") {
-            note = batchSample.note;
-          } else if (batchSample.note != null) {
-            note = JSON.stringify(batchSample.note);
-          }
-        } else if (batchHandledIds.has(String(m.id))) {
-          // Preserve the previous sample when a batch fails or omits a metric;
-          // falling back here would recreate the serial cold-start storm.
-          continue;
-        } else if (m.source_query) {
-          const row = db.prepare(m.source_query).get() as any;
-          if (row) {
-            const vals = Object.values(row).filter(
-              (v) => typeof v === "number",
-            );
-            if (vals.length > 0) value = vals[0] as number;
-          }
-        } else if (m.source_command) {
-          const { stdout } = await execAsync(m.source_command, {
-            cwd: ctx.sdk.paths.root,
-            timeout: 5000,
-            maxBuffer: 1024 * 1024,
-          });
-          const output = stdout.trim();
-          try {
-            const parsed = JSON.parse(output);
-            // Plain number output (e.g. "0" or "42") — JSON.parse succeeds
-            // but returns a primitive, not an object with .value
-            if (typeof parsed === "number" && Number.isFinite(parsed)) {
-              value = parsed;
-            } else if (
-              parsed &&
-              typeof parsed === "object" &&
-              typeof parsed.value === "number" &&
-              Number.isFinite(parsed.value)
-            ) {
-              value = parsed.value;
-              if (
-                typeof parsed.sampleSize === "number" &&
-                Number.isFinite(parsed.sampleSize)
-              ) {
-                sampleSize = parsed.sampleSize;
-              }
-              if (
-                typeof parsed.measuredAt === "number" &&
-                Number.isFinite(parsed.measuredAt)
-              ) {
-                measuredAt = parsed.measuredAt;
-              }
-              if (typeof parsed.note === "string") {
-                note = parsed.note;
-              } else if (parsed.note != null) {
-                note = JSON.stringify(parsed.note);
-              }
-            }
-          } catch {
-            const parsed = parseFloat(output);
-            if (!isNaN(parsed)) value = parsed;
-          }
-        }
-        if (value !== null) {
-          record(m.id, value, sampleSize, note, measuredAt);
-          measured++;
-        }
-      } catch {
-        /* skip individual metric errors */
-      }
-    }
-
     // ── Alert lifecycle (type-aware: open on breach, resolve on recovery) ───────
 
     try {
-      metricService.evaluate();
+      for (const metric of ALL_METRICS) metricService.evaluate(metric.id);
     } catch (e) {
       ctx.sdk.log(
         "info",
@@ -2536,7 +2078,7 @@ export const create: HandlerModule["create"] = (
 
     ctx.sdk.log(
       "info",
-      `[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`,
+      `[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded`,
     );
   };
 };

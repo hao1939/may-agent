@@ -1,5 +1,7 @@
 # Evidence-First Process
 
+**Design status:** Accepted.
+
 How to validate ideas before building systems. The historical context-learning
 experiment below is an illustration, not a report of current runtime state.
 

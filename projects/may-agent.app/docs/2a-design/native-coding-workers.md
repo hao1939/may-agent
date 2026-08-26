@@ -1,15 +1,19 @@
 # Native Coding Workers
 
 **Design status:** Accepted.
-**Implementation status:** Implemented as both a direct Task executor adapter
-and a compatibility execution tool, using the same persistent worker records,
-classified failures, expected-output validation, and native process runner.
+**Implementation status:** Implemented as a direct Task executor adapter and a
+compatibility execution tool. Persistent worker records, classified failures,
+expected-output validation, resumable Codex goals, and the native process
+runner are present. Task cancellation now interrupts the exact managed session,
+workflow, Codex turn, or Codex/Claude process tree through the shared attempt
+signal. Runtime resolves one executor-neutral `TaskAttempt`; Codex's canonical
+packet is only its JSON transport projection of that Runtime-owned boundary.
 
 Tasks that select `codex-goal` use the persistent Codex goal executor described
 here. Codex keeps working toward the Task goal, receives live Task events, and
 resumes the same thread after process failure. The older `codex` executor
 remains a one-shot compatibility adapter. The earlier
-[executor proposal](../proposals/codex-goal-executor.md) records evaluation
+[executor proposal](../archive/implementation/codex-goal-executor.md) records evaluation
 history but does not override this accepted design.
 
 ## Accepted Codex Goal Boundaries
@@ -149,13 +153,13 @@ The native worker does not become an App planner or owner.
 
 The current runtime has two layers:
 
-| Layer            | File                                                | Responsibility                                                                                                  |
-| ---------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Layer            | File                                                  | Responsibility                                                                                                  |
+| ---------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Task adapter     | `projects/may-agent/src/app/app-task-cli-executor.ts` | Translate one fenced Task attempt into a CLI request and return its terminal JSON to normal Task admission.     |
-| Tool surface     | `projects/may-agent/src/lib/tools/run-cli-agent.ts` | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately.                      |
-| Runtime runner   | `projects/may-agent/src/app/cli-task-runner.ts`     | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
-| Event schema     | `projects/may-agent/src/app/event-bus.ts`           | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
-| Restart recovery | `projects/may-agent/src/app/daemon-events.ts`       | Marks in-flight CLI tasks as orphaned after runtime restart.                                                    |
+| Tool surface     | `projects/may-agent/src/lib/tools/run-cli-agent.ts`   | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately.                      |
+| Runtime runner   | `projects/may-agent/src/app/cli-task-runner.ts`       | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
+| Event schema     | `projects/may-agent/src/app/event-bus.ts`             | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
+| Restart recovery | `projects/may-agent/src/app/daemon-events.ts`         | Marks in-flight CLI tasks as orphaned after runtime restart.                                                    |
 
 The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
 retired. Both the Task adapter and compatibility tool use the same
@@ -478,7 +482,7 @@ configuration before the worker starts.
 ## Result Contract
 
 The worker writes `result.md` plus `result.json`. `result.md` is optimized for
-human reading. `result.json` is optimized for owner workflows that need to judge
+human reading. `result.json` is optimized for the owning Task attempt that must judge
 the result without parsing prose. The minimum `result.json` includes:
 
 ```typescript
@@ -542,7 +546,7 @@ from native streams remains a follow-up.
 
 ## Review Boundary
 
-The runner never mutates the task tree or project plan directly. It emits the
+The runner never mutates Task persistence or project posture directly. It emits the
 terminal CLI event to the owner and optionally steers the source session with a
 compact update. The owner can then:
 
@@ -582,24 +586,24 @@ these enter the May App first:
 - "delegate this investigation"
 - "let Claude try a patch"
 
-May's task may converge directly or request the outcome from the accountable
-App task. That App may use a bounded awaited worker call as implementation
+May's Task may converge directly or request the outcome from the Task owned by
+the accountable App. That App may use a bounded awaited worker call as implementation
 capacity; it cannot turn `run_cli_agent` into an asynchronous ownership path.
 
-## Open Design Gaps
+## Current Boundaries
 
-1. The Codex and Claude stream parsers should classify partial success
-   explicitly. Permission, tool, timeout, process, output-schema, and no-output
-   failures are classified today.
-2. Expected JSON output with required fields is implemented; richer JSON Schema
-   validation remains optional follow-up.
-3. Direct CLI Task execution creates and finalizes a task-generation worktree
-   for Git-backed Apps. Compatibility `run_cli_agent` calls still require an
-   explicitly supplied prepared worktree when mutation isolation is needed.
-4. UI should show active CLI worker records with native session id, status,
-   result path, and events path.
-5. Metrics should track request count, completion rate, orphan count, timeout
-   rate, average duration, and failed-parser/no-output rate.
+- A process that produced useful partial text but no schema-valid terminal
+  result remains a failed attempt. Its retained stream and artifacts are
+  evidence for the retry; they are not an implicitly accepted Task result.
+- Required fields are validated today. Richer JSON Schema support is not a
+  separate lifecycle and should be added only when a concrete result contract
+  cannot be expressed by the shared validator.
+- Direct CLI Task execution creates and finalizes a task-generation worktree
+  for Git-backed Apps. Compatibility `run_cli_agent` calls require an explicitly
+  supplied prepared worktree when mutation isolation is needed.
+- Task, attempt, session, trace, and artifact views remain the supported
+  inspection surfaces. Add a worker-specific projection or metric only when a
+  measured operator question cannot be answered from those records.
 
-Improve the existing adapter in place: add partial-result parsing, UI/read-model
-visibility, and worker metrics without introducing another execution path.
+Any follow-up improves the existing adapter and shared read models in place; it
+must not introduce another owner, queue, retry lifecycle, or execution path.

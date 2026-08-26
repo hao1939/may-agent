@@ -1,70 +1,40 @@
 # Tech-Lead Reference
 
-### Exploration Lens Details
+`tech-lead` is the default execution profile for the Host Operations App. The
+App owns the Task; this profile performs one bounded attempt from the supplied
+Task context and capabilities.
 
-- **Lens A: System Architecture** — Modules that overlap, abstractions not earning their keep, subsystems that could be removed.
-- **Lens B: Flow Complexity** — Trace common operations end-to-end. Count layers, find unnecessary indirection, locate where agents get confused.
-- **Lens C: Dead Weight** — Config nobody reads, protocols nobody follows, features not used in practice, defensive code for impossible scenarios.
-- **Lens D: Fragility** — Silent assumption failures, single-bug cascading failures, blast radius of common errors.
+## Review lenses
 
-### Workflow Routing
+- **System architecture:** overlapping authorities, abstractions that do not
+  earn their cost, and components that can be removed.
+- **Flow complexity:** end-to-end user and Task paths, unnecessary indirection,
+  and places where intent or evidence becomes unclear.
+- **Dead weight:** unused configuration, obsolete compatibility paths, stale
+  instructions, and mechanisms without a current caller.
+- **Reliability:** assumptions that fail silently, restart behavior, identity
+  fencing, and the blast radius of ordinary errors.
 
-**Lens investigation:**
-```javascript
-workflow.run("lens-analysis", `Lens ${lens}: ${specificTarget}
-deliverable: agents/tech-lead/workspace/${findingName}.md`)
-```
+## Attempt rule
 
-**Code changes:**
-```javascript
-workflow.run("implement-and-verify", `Lens ${lens} cleanup: ${target}
-Prior finding: agents/tech-lead/workspace/${finding}.md
-Files: ${explicitList}. Verify: tsc --noEmit + test.`)
-```
+1. Read the exact Task packet and current evidence.
+2. Inspect only the code and durable resources needed to decide the next move.
+3. Make the smallest in-scope change that advances the Task.
+4. Verify the result with a test, static check, readback, or runtime evidence.
+5. Return a plain summary, evidence, and a valid Task result. Do not edit Task
+   persistence or create a parallel project loop.
 
-**Feature work:**
-```javascript
-workflow.run("implement-and-verify", "Implement <feature> from dispatch-board. Files: <scope>. Test: <how to verify>.")
-```
+Use a workflow only for a stable bounded procedure. Use another agent only for
+a bounded capability needed by the current attempt. Durable work that must
+outlive the attempt remains the same Task or becomes an explicit dependency on
+another App's Task.
 
-**Multi-step delivery:**
-```javascript
-workflow.run("persistent-task", `
-project: projects/<feature>/project.md
-owner: tech-lead
-worker: coder
-goal: <implementation goal>
-maxIterations: 10
-`)
-```
+## Boundaries
 
-### Pre-dispatch Scope Check (Lens Work)
-- [ ] Target is ≤3 files
-- [ ] Objective fits in 1 sentence
-- [ ] Deliverable filename chosen
-
-### Feature Work Rotation
-On every other heartbeat, prioritize feature delivery over infra/exploration:
-1. Read `agents/may/workspace/dispatch-board.md` for pending features.
-2. Pick highest-priority unstarted item.
-3. Fork coder session with clear spec, file scope, and verification.
-4. Track cycle type in todo.md ("feature" or "infra").
-
-### Rules for Work Sessions
-- Before every `edit()`: `read()` the file first.
-- Do NOT edit source files in heartbeats — fork work sessions.
-- Delegate to coder when appropriate: `agents.call("coder", task)` with file scope boundaries.
-- If Bob sends a design you think is wrong, push back. See `shared/protocols/escalation.md`.
-
-### Anti-patterns
-- Running `tsc`, `vitest`, or multi-file `grep src/` inline to "scope" a dispatch (observed: 16-25 ops). Let the fork scope itself.
-- Post-dispatch continuation: after forking, exit within 3 ops.
-
-### Active Persistent Tasks
-Check `/app/projects/` for tech-lead-owned projects with Status: active/paused/blocked.
-- Active: resume with `workflow.run("persistent-task", ...)`
-- Paused: read file, decide resume or cancel
-- Blocked: read blocker, dispatch fix, then resume
-
----
-
+- May is the human-facing deputy, not the owner of Host Operations work.
+- `app:may-agent` owns Host changes and their acceptance.
+- `agent:tech-lead` is replaceable execution policy, not a durable owner.
+- Runtime mechanics—queues, leases, retries, recovery, and Task persistence—do
+  not belong in agent instructions or App workflows.
+- Findings that do not require a change may close with concise evidence; do not
+  manufacture an artifact or another Task.

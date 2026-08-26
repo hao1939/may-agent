@@ -15,7 +15,7 @@ Restart the daemon normally. Startup:
 5. interrupts stale task execution evidence and requeues the same Task through
    normal bounded Host capacity; it does not directly resume every old task
    session outside the dispatcher;
-6. enables outward delivery after transports are attached.
+6. attaches adapters, which independently resume bounded resource observation.
 
 Do not recreate requests, task ticks, or Condition events merely because the
 process restarted.
@@ -36,7 +36,7 @@ Check that:
 
 ## Unfinished request
 
-Inspect the request, linked task, exact dependency, and delivery record. The
+Inspect the request, linked task, exact dependency, and result projection. The
 request may remain open while its task is pending, running, waiting, or in
 attention. Recovery must preserve its request id, source, input, idempotency
 key, and task link; only the task controller may restart App work.
@@ -180,12 +180,12 @@ exact wait; a failed or rolled-back receipt is a terminal disposition. Stop
 when these bounded facts answer the request—do not scan the workspace, inspect
 unrelated worktrees, or tail broad logs as a substitute for receipt evidence.
 
-## Delivery uncertainty
+## Adapter uncertainty
 
-An App result and its outward delivery are separate durable facts. Retry only a
-delivery that has no confirmed attempt or whose transport contract explicitly
-permits retry. Never rerun the selected agent simply to resend an already-produced
-result.
+An App result remains readable even when an adapter send fails or its provider
+outcome is uncertain. Never rerun the selected agent or reopen the Task merely
+to resend an already-produced result. Inspect adapter/provider diagnostics or
+ask the human to read the shared Conversation through another surface.
 
 ## Escalation boundary
 

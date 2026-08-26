@@ -17,7 +17,7 @@ browser
   -> bounded read
      or publish(EventInput)
   -> canonical daemon authority
-  -> App request, task, session, metric, event, or delivery projection
+  -> App request, Task, session, metric, Event, or adapter projection
 ```
 
 ## Source and process ownership
@@ -44,15 +44,15 @@ filesystem layout as a public contract. A read model:
 
 - names its source and freshness/measurement time;
 - distinguishes missing, unknown, stale, and invalid state;
-- uses stable App request, project, task, execution, event, metric, alert, and
-  delivery identities;
+- uses stable App request, project, Task, execution, Event, metric, alert, and
+  adapter-attempt identities;
 - bounds timelines, transcripts, summaries, and collections;
 - preserves canonical task generation, Conditions, readiness, and integrity
   findings; and
 - surfaces read/projection failure without inventing domain meaning.
 
-Stable families include health/overview, App inbox/request health, events and
-traces, agents and executions, projects/tasks, metrics/alerts, delivery, and
+Stable families include health/overview, App request health, Events and traces,
+agents and executions, projects/Tasks, metrics/alerts, adapter diagnostics, and
 terminal transport. The executable server route table remains the endpoint
 catalog.
 
@@ -113,8 +113,8 @@ invent a domain type, address an owner by fallback, or bypass App actions.
 
 The receipt always includes the event ID, `recorded` or `accepted`, and linked
 request/task/session/operation identities when present. HTTP returns `202` for
-durable required events still awaiting acceptance. No HTTP `2xx` proves task
-convergence, human delivery, or domain completion.
+durable required Events still awaiting acceptance. No HTTP `2xx` proves Task
+convergence, adapter display, or domain completion.
 
 ## App and project boundary
 
@@ -138,15 +138,17 @@ task meaning independently.
 
 ## Event and websocket boundary
 
-`GET /api/events/:id` returns the bounded event, delivery state, and linked
+`GET /api/events/:id` returns the bounded Event, admission state, and linked
 outcomes. Historical queries remain bounded. Live websockets stream the same
 canonical events and projection changes.
 
 Browser receipt of a websocket frame is observation only. It does not satisfy
-semantic event delivery, App request handling, task work, or human delivery.
+semantic Event admission, App request handling, Task work, or Conversation
+completion.
 
-Trace graphs show causal evidence and links to authoritative App/task/delivery
-objects. They do not reconstruct an event-pair work lifecycle in the browser.
+Trace graphs show causal evidence and links to authoritative App requests,
+Tasks, and optional adapter diagnostics. They do not reconstruct an event-pair
+work lifecycle in the browser.
 
 ## Files and path safety
 
@@ -174,7 +176,7 @@ move without relying on legacy event-pair or session-follow-through behavior.
 - Every write uses one allowlisted `publish(EventInput)` operation.
 - An HTTP receipt never appears as semantic completion.
 - App/task meaning remains in canonical runtime and App-owned state.
-- Browser/websocket observation never counts as delivery acceptance.
+- Browser/websocket observation never counts as semantic Event admission.
 - Actions translate to App input and do not publish command-like events.
 - Paths stay within admitted roots.
 - Compatibility adds no second semantics or actionable route.

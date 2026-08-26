@@ -8,7 +8,7 @@ contract, update the corresponding document here in the same change.
 The system is easiest to understand as one loop:
 
 ```text
-event -> App Task -> one bounded attempt -> result or another wake
+event -> Task owned by an App -> one bounded attempt -> result or another wake
 ```
 
 An App owns each durable outcome. The Host stores events and Tasks, runs
@@ -17,11 +17,13 @@ workflow, but neither becomes another work owner.
 
 For May, the ordinary model is simply: a human talks to **May** (`app:may`),
 which answers directly or links the Conversation Topic to typed work in the
-responsible App. The correlated request remains open until May returns the
-reviewed result; it is not a Task. Execution diagnostics may name the bounded executor,
-for example `agent:may`; that executor owns no Task. The **Host Operations
-App** (`app:may-agent`) owns Tasks that change the Host. There is no separate
-architectural component called “May agent.”
+responsible App. The bounded frontend request ends after May answers or
+publishes typed follow-up intent; May's normal visible conversation Task then
+follows durable work and returns useful updates to Conversation. Execution
+diagnostics may name the bounded executor, for example `agent:may`; that
+executor owns no Task. The **Host Operations App** (`app:may-agent`) owns Tasks
+that change the Host. There is no separate architectural component called
+“May agent.”
 
 ## Documentation tiers
 
@@ -49,9 +51,9 @@ system model. Use [INDEX.md](INDEX.md) for complete topical navigation.
 
 ### I want to build an autonomous App
 
-1. [agent-app.md](2a-design/agent-app.md) — package, ownership, optional host attachments
+1. [agent-app.md](2a-design/agent-app.md) — package, ownership, and host attachments
 2. [projects.md](2a-design/projects.md) — durable goal and project posture
-3. [task-resource-engine.md](2a-design/task-resource-engine.md) — optional task reconciliation
+3. [task-resource-engine.md](2a-design/task-resource-engine.md) — the one durable work loop
 4. [workflows.md](2a-design/workflows.md) — reusable processes owned by agents
 5. [sdk.md](2a-design/sdk.md) — stable TypeScript capability surface
 6. [workflow-authoring.md](2b-manual/workflow-authoring.md) — implementation guide
@@ -70,7 +72,7 @@ system model. Use [INDEX.md](INDEX.md) for complete topical navigation.
 
 1. [user-guide.md](2b-manual/user-guide.md) — CLI, Docker, socket, and chat commands
 2. [metrics.md](2a-design/metrics.md) — live metrics and alerts
-3. [event-runtime-audit.md](2b-manual/event-runtime-audit.md) — event delivery audit
+3. [event-runtime-audit.md](2b-manual/event-runtime-audit.md) — Event admission audit
 4. [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) — guard signal audit
 5. [metric-alerts.md](2b-manual/metric-alerts.md) — alert handling
 6. [runtime.md](2a-design/runtime.md) — runtime internals

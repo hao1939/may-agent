@@ -77,7 +77,7 @@ Every actionable App input resolves to one stable existing task or desired
 There is no direct-completion or delegation disposition beside this path. A
 simple answer converges in its first bounded reconciliation attempt. A
 cross-App outcome becomes a typed Runtime-managed task dependency. The Host
-request remains only the caller's correlation and delivery record.
+request remains only the caller's correlation and result record.
 
 ## Workflow Context
 
@@ -124,8 +124,9 @@ Available capabilities are intentionally narrow:
 ## Task-Bound Workflows
 
 When `ctx.reconciliation` exists, it contains the exact task generation,
-desired input, trigger, selected agent, and bounded live/completed child views. It does
-not expose the global task tree or mutation handles.
+desired input, ordered unobserved events, selected agent, and bounded
+live/completed child views. It does not expose a global Task hierarchy or
+mutation handles.
 
 A task workflow returns an `ExecutionResult` whose output is admitted as a
 typed reconciliation result. Return task changes through the compatibility

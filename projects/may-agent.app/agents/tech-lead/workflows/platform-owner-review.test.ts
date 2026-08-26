@@ -37,7 +37,7 @@ describe("platform-owner-review", () => {
     mkdirSync(projectDir, { recursive: true });
     writeFileSync(
       join(appDir, "project.json"),
-      JSON.stringify({ id: "may-agent", owner: "may" }),
+      JSON.stringify({ id: "may-agent", owner: "tech-lead" }),
     );
 
     const ownerResult: OwnerResult = {
@@ -86,10 +86,20 @@ describe("platform-owner-review", () => {
           ],
           truncated: false,
         },
-        trigger: {
-          type: "project.owner.requested",
-          data: { eventId: 5030987 },
-          target: { appId: "may-agent", project: "may-agent" },
+        events: {
+          items: [
+            {
+              eventId: 5030987,
+              observedAt: "2026-08-26T00:00:00.000Z",
+              event: {
+                type: "project.owner.requested",
+                data: { eventId: 5030987 },
+                target: { appId: "may-agent", project: "may-agent" },
+              },
+            },
+          ],
+          throughEventId: 5030987,
+          truncated: false,
         },
       },
       read: {
@@ -101,9 +111,8 @@ describe("platform-owner-review", () => {
       agents: {
         call: async (_agent: string, prompt: string, options?: unknown) => {
           observed.prompt = prompt;
-          observed.schema = (
-            options as { schema?: unknown } | undefined
-          )?.schema;
+          observed.schema = (options as { schema?: unknown } | undefined)
+            ?.schema;
           duringOwnerRun?.(appDir);
           return result;
         },
@@ -307,12 +316,22 @@ describe("platform-owner-review", () => {
 
   it("makes an explicit owner instruction the primary review request", async () => {
     const harness = makeHarness();
-    harness.ctx.reconciliation!.trigger = {
-      type: "project.owner.requested",
-      data: {
-        eventId: 5030988,
-        instruction: "Review the task workspace convention proposal.",
-      },
+    harness.ctx.reconciliation!.events = {
+      items: [
+        {
+          eventId: 5030988,
+          observedAt: "2026-08-26T00:01:00.000Z",
+          event: {
+            type: "project.owner.requested",
+            data: {
+              eventId: 5030988,
+              instruction: "Review the task workspace convention proposal.",
+            },
+          },
+        },
+      ],
+      throughEventId: 5030988,
+      truncated: false,
     };
 
     await execute(harness.ctx);

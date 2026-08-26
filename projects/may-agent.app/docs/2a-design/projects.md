@@ -18,8 +18,8 @@ executions. It answers:
 
 Projects do not replace events, sessions, workflows, or tasks. The project
 holds durable intent and posture; tasks own all App work, while the other
-records represent signals and bounded execution. Parent/dependency
-relationships may be rendered as a task tree, but that tree is not another
+records represent signals and bounded execution. A UI may render
+parent/dependency relationships hierarchically, but that view is not another
 record.
 
 See [system-model.md](system-model.md) for the whole-system model and
@@ -219,4 +219,5 @@ projections.
   subscription, or exact task target; observation-only facts create no work.
 - Events, Conditions, metrics, and resync may wake judgment; none decides project meaning.
 - Runtime projections never become a second source of project truth.
-- Migrated apps keep no compatibility writer, scheduler, or mirrored task tree.
+- Migrated Apps keep no compatibility writer, scheduler, or mirrored Task
+  authority.

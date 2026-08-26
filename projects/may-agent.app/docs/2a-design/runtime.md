@@ -109,10 +109,12 @@ rewriting its error row.
 
 ## Capacity
 
-The Host constructs one `HostCapacity` limit for task attempts. Per-App task
-limits apply in addition. The Host separately bounds cheap request
-coordination, but Apps do not configure that mechanical limit and it does not
-consume model/task attempt capacity. Delivery is passive.
+The Host constructs one `HostCapacity` limit shared by request decisions and
+task attempts. Per-App task limits apply in addition. The request coordinator
+coalesces App keys and admits at most the Host limit: normal request decisions
+use background capacity, while at most one May decision may use the reserved
+foreground slot. Apps do not configure either mechanical limit. Delivery is
+passive and consumes neither.
 
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
@@ -261,9 +263,10 @@ receive at most two delayed resume attempts, and exhaustion emits an
 escalation. Any semantic decision after that belongs to the accountable App or
 human, not infrastructure.
 
-The separate maintenance process also performs the small 30-second delivery
-expiry and lifecycle-pair repair pass. Keeping it out of `DbWriter`'s insert
-path prevents a periodic history query from taxing the next incoming event.
+The separate maintenance process still performs a legacy 30-second delivery
+expiry and lifecycle-pair repair pass. It remains outside `DbWriter`'s insert
+path, but the unused transport-delivery portion should be removed with the dead
+inbox delivery API rather than becoming a current App contract.
 
 ## Recovery
 
@@ -271,7 +274,7 @@ At startup the Host:
 
 - releases or repairs stale claims and leases;
 - repairs request correlation and requeues runnable tasks;
-- preserves completed results and delivery evidence;
+- preserves completed results and event-admission evidence;
 - resumes only compatible sessions that are not owned by a Task; and
 - leaves paused task work retained but unqueued.
 

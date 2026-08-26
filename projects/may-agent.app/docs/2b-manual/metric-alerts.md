@@ -1,240 +1,108 @@
 # Metric Alert Manual
 
-Metric alerts are work items, not dashboard decoration. If an alert is visible
-to an agent, that agent must judge it and choose one operation.
+A metric alert is an observation that may need judgment. It is not a Task,
+owner inbox item, or automatic instruction to change the system.
 
-## Ownership
+The normal flow is:
 
-Alert ownership is resolved by code, not by agent judgement. Every metric has
-an owner by convention:
+```text
+measurement -> metric rule -> breach or recovery fact
+                         -> explicit App route, exact Task wake, or observation
+```
 
-1. `metrics.owner` if set.
-2. `project:<id>` if `metrics.project` is set, so the normal project route can
-   resolve the current app/owner.
-3. The metric id prefix if it is an eligible agent convention, for example
-   `arc.*`.
-4. `may` as the default owner.
+No route means the fact remains observable. The Host must not guess an owner,
+create a Task, or fall back to May.
 
-System-wide `project.*` metrics with no `metrics.project` are owned by `may`
-because they measure the project monitor. Project-scoped metrics are owned by
-the project owner because they measure that project.
+## 1. Verify the observation
 
-Do not manually reroute an alert by editing `metrics.owner` during triage. If
-ownership is wrong, fix the source metadata that the resolver uses:
+Read the metric definition, current value, threshold, priority, source,
+sampling window, latest samples, and open alert. Confirm:
 
-- For project-scoped metrics, set `metrics.project` to the project id/path/name
-  and make sure the App registry has the correct owner, unless the
-  metric intentionally has its own explicit `metrics.owner`.
-- For a system metric with no project, fix the metric definition or owner
-  resolver code.
+- the source still exists and ran recently;
+- the value and unit have the documented meaning;
+- the alert rule really matches the current value;
+- the sample is fresh enough to support a decision; and
+- a known blind spot does not invalidate the conclusion.
 
-The owner is responsible for judging the alert. For cross-domain metrics, the
-owner may delegate, but the owner remains accountable until the alert is fixed,
-resolved, downgraded, excepted, or escalated.
+A stale, duplicated, or malformed observation is a measurement problem, not
+evidence that the measured domain failed.
 
-A `metric.alert_judged` event means the owner made a judgment. It is not proof
-that the alert is closed. Closure still needs a concrete operation and a later
-measurement followed by `MetricService.evaluate()`, which emits
-`metric.recovered` when the rule is healthy again.
+## 2. Find the declared responsibility
 
-## Priority
+The metric definition may attribute the observation to an App or project, but
+attribution alone does not create work. Check the installed App declaration for
+an explicit matching subscription, Task selector, Condition, or observation
+route.
 
-- `P0`: safety or system integrity. Must get explicit owner action now.
-- `P1`: important health issue. Must get explicit owner action.
-- `P2`: normal drift. Visible in heartbeat; act when it matters.
-- `P3`: watch/noisy/accepted-exception lane. Should not interrupt work
-  immediately, but a still-open P3 alert still needs an eventual owner
-  judgment or recovery signal.
+| Route                        | Meaning                                                     |
+| ---------------------------- | ----------------------------------------------------------- |
+| App input or Task selector   | The App intentionally turns this fact into desired work     |
+| Exact Task or Condition wake | Existing work should reconsider the new fact                |
+| Observation-only             | Retain it for health and audit; create no work              |
+| No declared route            | Record a routing/design gap if action is genuinely required |
 
-Downgrading is allowed only when the owner has evidence that the alert is not
-currently worth interrupting work. Downgrade is not a way to hide unknowns.
-
-## Required Triage
-
-For each open alert:
-
-1. Read the metric row: current value, threshold, target, alert op, owner,
-   priority, updated time.
-2. Read the latest snapshots and recent related events.
-3. Decide whether the breach is real, stale, noisy, impossible, or blocked.
-4. Choose exactly one operation below.
-5. State the chosen operation and evidence in the session summary.
-
-When running under the `metric-alert-triage` workflow, also end with the exact
-structured footer requested by the workflow. That footer is converted into a
-durable `metric.alert_judged` event, which is what the steward and UI use for
-the closure chain. If the footer is missing, the workflow must not record the
-alert as judged.
-
-## Available Operations
-
-### 1. Investigate
-
-Use when the cause is not known yet. This is usually the first step, but it is
-not a final operation by itself.
-
-Minimum evidence:
-
-- Current metric row.
-- Latest 5-10 snapshots.
-- Recent related events or sessions.
-- Whether the value is still breaching now.
-
-After investigation, choose one of the final operations below: fix, calibrate,
-downgrade, upgrade/escalate, exception, or resolve stale state.
-
-### 2. Fix Root Cause
-
-Use when the metric is real and the owner can correct the cause safely.
-
-Examples: fix a broken handler, restart a stuck workflow, update a project file,
-repair a bad query, or add missing measurement.
-
-The operation is not complete until the owner has actually made the change or
-started the workflow that can make it. Saying that someone should act later is
-not a fix.
-
-Do not manually resolve the alert before the metric recovers. The App observer
-or workflow that owns the measurement must record fresh evidence and evaluate
-it; the owner remains responsible for judging whether the issue is fixed.
-
-### 3. Calibrate Metric
-
-Use when the metric is valid but the threshold, target, priority, or measurement
+Do not edit `metrics.owner` during triage to force routing. Fix the metric
+definition or App declaration through ordinary reviewed code when responsibility
 is wrong.
 
-Allowed changes must go through the runtime's safe write path. Do **not** open
-`.state/*.db` directly from a session, workflow, heartbeat, or shell command.
-If you do not have an explicit write tool/workflow in the current environment,
-escalate the exact requested metric update to May/human with evidence instead of
-running ad hoc SQL.
+## 3. Choose the smallest justified response
 
-Keep calibration conservative:
+The accountable App decides what the observation means in the context of its
+current Task. Common responses are:
 
-- Changing threshold/target requires evidence from recent snapshots.
-- Do not change a metric to make a real problem disappear.
+- **No action:** evidence shows the alert is expected, transient, or not useful
+  enough to drive work.
+- **Fix the cause:** continue or create one Task whose outcome is the actual
+  repair, then verify with fresh domain evidence.
+- **Repair measurement:** correct a broken source, query, unit, or sampling
+  path and rerun the measurement.
+- **Calibrate:** change threshold, target, priority, or rule only with evidence
+  that the old definition did not represent the intended question.
+- **Retire:** stop measuring a question that no longer informs decisions while
+  preserving its history.
+- **Accept an exception:** record why the current breach is understood, its
+  scope, and the fact that should trigger review.
+- **Request a human decision:** expose one exact requested action on the owning
+  Task when policy, risk, or irreversible effects require it.
 
-### 4. Downgrade Priority
+Do not create a cleanup Task merely to make the dashboard green. The Task goal
+must describe the real outcome, not “handle alert.” Repeated observations for
+the same outcome should wake or update that Task rather than create siblings.
 
-Use when the metric is real, but there is solid evidence it should not interrupt
-current work at its current priority.
+## 4. Apply changes through normal boundaries
 
-Allowed downgrade requires a safe runtime write path; if the current workflow
-only has read-only DB access, escalate the requested priority/blocker update to
-May/human instead of editing the runtime DB directly.
+- App/workflow code uses `ctx.metrics` for definitions, samples, evaluation,
+  and explicit alert resolution.
+- Task changes return through the normal reconciliation result.
+- Human input returns through an exact Condition or typed feedback to the same
+  Task.
+- Runtime or schema repair belongs to a Host Operations Task.
+- Raw writes to `.state/*.db`, `metrics`, `metric_alerts`, Tasks, or Event rows
+  are not an operational shortcut.
 
-Rules:
+If the current attempt lacks authority for the needed action, return evidence
+and request the accountable App outcome. Do not send an untracked message and
+assume somebody will act.
 
-- Downgrade only with evidence, not annoyance.
-- Downgrade `P1 -> P2/P3` for noisy or non-urgent drift.
-- Downgrade `P0` only if the metric is wrong, obsolete, or misclassified.
-- Include a review condition in `metrics.blocker`.
+## 5. Close with fresh evidence
 
-### 5. Upgrade Or Escalate Emergency
+After a repair or calibration, record a fresh sample and run
+`MetricService.evaluate()`. `metric.recovered` means the rule no longer
+breaches; it does not by itself prove the related Task outcome is complete.
+The App verifies its own acceptance criteria before converging the Task.
 
-Use when the alert is more severe than its current priority, or the owner cannot
-safely fix it.
+Manual alert resolution is appropriate only for a proven duplicate, invalid
+row, retired definition, or explicitly accepted exception. Preserve the reason
+and evidence through the supported metric capability.
 
-Upgrade priority when the system should react more aggressively. Priority
-updates require a safe runtime write path; if unavailable, escalate the requested
-priority/blocker update with evidence.
+## Audit checklist
 
-Escalate to human when:
+- Did current source evidence confirm the breach?
+- Is responsibility declared by an App route rather than guessed from a name?
+- Does any Task represent a real durable outcome rather than alert bookkeeping?
+- Did repeated evidence continue the same Task where appropriate?
+- Were all mutations applied through typed App/Runtime capabilities?
+- Does fresh evidence support recovery, calibration, retirement, or exception?
+- Is human attention concrete and attached to the Task that will resume?
 
-- The fix requires destructive action, data deletion, DB rebuild, or secrets.
-- The metric contradicts system state and the owner cannot prove which is wrong.
-- The alert has repeated across multiple agent sessions without recovery.
-- The right action is a product or policy decision.
-
-Escalation must include: metric id, current value, threshold, evidence checked,
-and the decision needed from the human.
-
-Do not "escalate" by sending a queued message to the same owner that is already
-running the triage. If the owner is you and the action is safe, do it and choose
-`fix_root_cause`. If it requires a human/product decision or unsafe operation,
-notify the human with the required decision and choose `upgrade_or_escalate`.
-
-### 6. Resolve Stale Or Transient Alert
-
-Use only when the alert row is stale, duplicate, already recovered, or caused by
-a known measurement bug.
-
-Before resolving manually, verify the current value is in range or the alert row
-is invalid. Manual alert resolution requires a safe runtime write path; if the
-current environment only provides read-only DB tools, escalate the resolution
-request and evidence instead of editing `metric_alerts` directly.
-
-Manual resolve must include the reason in the session summary.
-
-### 7. Document Exception
-
-Use when the breach is real but intentionally accepted for now.
-
-An exception should be rare and documented on the metric through a safe runtime
-write path. If you only have read-only DB access, escalate the exact exception
-text, expiry/review condition, and evidence to May/human instead of writing the
-metric row directly.
-
-Do not resolve the alert just because an exception exists unless the owner also
-changes the threshold or disables the metric. A visible low-priority alert is
-preferable to silent drift.
-
-## Quick Decision Table
-
-| Situation | Operation |
-|-----------|-----------|
-| Cause unknown | Investigate, then choose a final operation |
-| Real issue, safe fix exists | Fix root cause |
-| Threshold/target/priority/measurement is wrong | Calibrate metric |
-| Alert routed to the wrong owner | Fix `metrics.project`, `projects.owner`, or resolver code |
-| Real but non-urgent/noisy with evidence | Downgrade priority |
-| More severe than labeled | Upgrade priority |
-| Unsafe, destructive, or policy decision | Escalate emergency |
-| Alert row stale, duplicate, or already recovered | Resolve stale/transient alert |
-| Accepted breach for a known period | Document exception |
-
-## SQL Reference
-
-Use the `query_db` tool for read-only inspection. Inspect schemas before using
-unfamiliar columns, and do not open `.state/*.db` from bash or ad hoc scripts.
-
-Read metric:
-
-```sql
-SELECT * FROM metrics WHERE id = ?;
-```
-
-Read recent snapshots:
-
-```sql
-SELECT value, measured_at, note
-FROM metric_snapshots
-WHERE metric_id = ?
-ORDER BY measured_at DESC
-LIMIT 10;
-```
-
-Read open alert:
-
-```sql
-SELECT *
-FROM metric_alerts
-WHERE metric_id = ?
-  AND resolved_at IS NULL;
-```
-
-## Legacy Terms
-
-Older prompts may say `fix`, `calibrate`, `resolve`, `exception`, or
-`escalate`. Map them to the operations above. `Investigate` is only complete
-when followed by a final operation or an explicit escalation.
-
-## Anti-Patterns
-
-- Investigation-only sessions that leave the alert unchanged and unjudged.
-- Downgrading because the alert is annoying.
-- Resolving a still-breaching metric without fixing or calibrating it.
-- Treating heartbeat visibility as acknowledgement.
-- Treating a queued self-notification as escalation.
-- Assuming `metric_alerts` rows are the source of truth. The metric row and
-  snapshots are the measurement; alert rows are lifecycle state.
+See [Metrics And Alerts](../2a-design/metrics.md) for the governing design.

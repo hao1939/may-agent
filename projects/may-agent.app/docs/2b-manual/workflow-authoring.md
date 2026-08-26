@@ -65,7 +65,7 @@ The stable capabilities are:
 | Capability                               | Purpose                                                                        |
 | ---------------------------------------- | ------------------------------------------------------------------------------ |
 | `ctx.input`                              | App-owned typed workflow input                                                 |
-| `ctx.reconciliation`                     | Exact task generation and bounded child/trigger facts when a task owns the run |
+| `ctx.reconciliation`                     | Exact task generation, events, and bounded child/frontier facts when a task owns the run |
 | `ctx.read.appResult(id)`                 | Read one completed App result                                                  |
 | `ctx.read.tasks.get(id)`                 | Read one bounded current-App task resource                                     |
 | `ctx.read.tasks.list(options)`           | List one bounded page of current-App task summaries                            |
@@ -103,10 +103,10 @@ When a task owns the run, `ctx.reconciliation` supplies:
 
 - App/task identity and fenced generation;
 - outcome, acceptance, mode, selected agent, and typed input;
-- exact trigger fact where present; and
+- ordered unobserved Task events; and
 - bounded live/completed direct children.
 
-It does not expose the global task tree or mutation handles. A task workflow
+It does not expose a global Task hierarchy or mutation handles. A Task workflow
 returns the reconciliation output expected by its App task policy:
 
 ```ts

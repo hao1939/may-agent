@@ -1,376 +1,205 @@
 # May Design And Implementation Convergence
 
-**Status:** Accepted for staged implementation
+**Status:** Active convergence tracker
 
-**Review date:** 2026-08-25
+**Last reviewed:** 2026-08-26
 
-**Scope:** Review the complete May system—not only Conversation and Topic—then
-converge Infra, Runtime, Apps, executors, adapters, metrics, and documentation on
-one simple event-driven design.
+**Scope:** Keep the complete May Host, Apps, executors, Conversation adapters,
+and documentation aligned with the accepted event-driven Task model.
 
 ## Purpose
 
-The current core design is sound, but the implementation still carries several
-older models beside it. This proposal records the gaps and a review order. Hao
-authorized focused staged implementation on 2026-08-25; broad database cleanup
-remains out of scope.
+This is not another architecture proposal. It records only known differences
+between the accepted design and the implementation that runs today. Resolved
+design decisions move into Tier-2 documents; completed migration evidence moves
+to the archive.
 
-The goal is convergence, not another architecture:
+The target remains small:
 
 ```text
-Turn or Event
-  -> persist immediately
-  -> May answers directly, or assigns work to an App Task
-  -> the App reconciles its Task through a workflow, agent, or CLI executor
-  -> progress, steering, waits, and results return as Task Events
-  -> Console, Telegram, and later adapters observe and render the Conversation
+human turn or event
+  -> persist and return
+  -> May answers, clarifies, or publishes typed durable intent
+  -> one Task owned by the accountable App represents each durable outcome
+  -> one fenced attempt keeps working until done, exactly waiting, or unsafe
+  -> Task events carry progress, facts, feedback, and steering
+  -> Conversation and Task reads feed independent presentation adapters
 ```
 
-The responsibilities remain plain:
-
-- May understands and represents the human.
-- Apps own durable Tasks and decide what completion means.
-- Agents, workflows, Codex, and other executors perform bounded attempts; they
-  do not own work.
-- Topics connect human conversation context to related Tasks; they are not work.
-- Infra persists Events, admits small routes, applies capacity, and delivers
-  passive observations.
-- Runtime wakes and fences Task attempts, accepts results, and recovers missed
-  progress.
-
-## What already fits
-
-These parts should be retained rather than redesigned:
-
-1. Event persistence precedes semantic routing and side effects.
-2. Passive listeners have independent bounded FIFOs and cannot extend Event
-   acceptance latency.
-3. Apps, not sessions or executors, own durable Tasks.
-4. A session, workflow run, or Codex thread is replaceable attempt evidence.
-5. Repeated Task wakes coalesce and recovery uses bounded indexed reads.
-6. May human Turns use the conversational request path rather than manufacturing
-   a generic May tracking Task.
-7. Console and Telegram observe one shared Conversation while retaining
-   interface-appropriate presentation and commands.
-
-## Findings
-
-### 1. Metrics have two execution authorities
-
-The accepted metrics design says there is no global `ALL_METRICS` catalog and
-that definitions live beside the Apps that understand them. The current
-implementation still has a roughly 2,500-line central registry in
-`agents/tech-lead/handlers/metrics-snapshot.ts`.
-
-The same work is also scheduled twice:
-
-- `app.ts` publishes `trigger.metrics-snapshot` every five minutes; and
-- `agents/tech-lead/cron.json` runs `metrics-snapshot` every five minutes.
-
-Live evidence from the six hours ending at review time showed:
-
-- 71 `trigger.metrics-snapshot` Events;
-- 94 handler starts;
-- 91 completions and 3 failures;
-- 25.0 total handler-minutes;
-- 16.5-second mean, 39.8-second p95, and 51.3-second maximum duration.
-
-This is direct production cost and contradicts the one-scheduler design.
-
-Proposed direction:
-
-1. Confirm Cron as the one selected Host-maintenance authority.
-2. Remove the App `platform-metrics` schedule.
-3. Keep only small Host-owned runtime measurements in Host maintenance.
-4. Move evaluation, scout, and domain measurements to their owning Apps in
-   bounded steps.
-5. Retire the central catalog after its last metric family moves.
-
-### 2. Host Operations execution identity is contradictory
-
-`app.ts` selects `may` for Host Operations Tasks and `project.json` names May as
-owner. Active `tech-lead` material says that `tech-lead` owns the project and
-May is outside project ownership. Retained live Task rows mostly name May as
-their selected owner/execution profile.
-
-This mixes May's human-deputy role with platform execution.
-
-Preferred direction:
-
-- the `may-agent` App owns platform Tasks;
-- `tech-lead` is the default execution profile for those Tasks; and
-- May understands, delegates, reviews returned evidence, and speaks to the
-  human.
-
-If May is intentionally retained as the platform executor, the conflicting
-`tech-lead` owner model must instead be removed. Keeping both is the problem.
-
-### 3. Host Operations exposes incidents as permanent contracts
-
-`app.ts` contains public input variants bound to exact historical facts,
-including old `appdep_*` IDs, Event IDs, Task generations, session IDs, commits,
-artifact hashes, paths, and incident correlations.
-
-These are preserved incidents, not reusable App capabilities. Encoding them in
-the public schema makes the current contract hard to understand and encourages
-future incidents to add another permanent route.
-
-Proposed direction:
-
-1. Confirm that no unfinished request still depends on each exact input kind.
-2. Preserve completed proof in an artifact or archive.
-3. Remove finite historical input kinds.
-4. Keep a small stable contract: owner review, platform obligation, deployment
-   request, and runtime capability request.
-
-### 4. The Codex executor proposal overstates parity
-
-The Codex proposal requires mechanical cancellation through
-`TaskAttempt.signal` and one canonical attempt packet built by Runtime for all
-executors. Current implementation differs:
-
-- `TaskAttempt` has no `AbortSignal`;
-- Task cancellation cannot interrupt an active Codex turn;
-- Codex `interrupt()` is used for hard-stale recovery, not Task cancellation;
-- the canonical packet is built inside the Codex adapter;
-- live native execution does not consume that packet;
-- `renderNativeTaskAttempt()` only clones synthetic test data; and
-- role instructions are rediscovered from `<cwd>/agents/<agent>/AGENTS.md`,
-  which does not resolve the global May role from an App workspace.
-
-Proposed production gates:
-
-1. Add mechanical cancellation to the executor contract and wire it to Codex
-   interruption/process shutdown.
-2. Build the canonical packet once in Runtime.
-3. Pass the same packet and resolved role capabilities to native and external
-   executors.
-4. Add a fixture comparing real native and Codex attempt inputs.
-5. Keep the proposal status honest until those gates pass.
-
-### 5. Task Runtime still carries two persistence models
-
-Every currently installed App records resource authority in
-`app_task_store_meta`, but normal production code still supports the legacy JSON
-Task tree through `app-task-store.ts`, `app-task-resource-cutover.ts`, and many
-`!resourceStore` branches.
-
-This leaves two persistence mental models inside two very large core files:
-
-- `app-task-reconciler.ts`: 4,279 lines;
-- `app-task-runtime.ts`: 4,699 lines.
-
-Proposed direction:
-
-1. Prove that no installed or live App depends on JSON authority.
-2. Preserve old files as read-only evidence/export input.
-3. Move any necessary importer to an offline script.
-4. Remove dual read/write/cutover branches from normal startup and
-   reconciliation.
-
-### 6. Inbox Runtime retains abandoned lifecycle APIs
-
-No production callers were found for several exported store operations,
-including old referenced-work claiming, continuation completion, session claim
-enumeration, delivery reads, unlinked delegation listing, and generic wait
-queries. Some remain used only in tests or fixtures.
-
-`app_inbox_deliveries` is still joined into request and health reads even though
-there is no active production writer. This conflicts with the accepted rule
-that transport delivery does not gate semantic work.
-
-Proposed direction:
-
-- remove unused APIs and delivery joins from the active path;
-- retain historical tables and columns until a separately reviewed schema
-  migration; and
-- do not introduce another cleanup worker.
-
-### 7. Pre-cutover May wrapper Tasks are retired
-
-At review time the live store contained six old `may/conversation/app_*` Task
-rows: one appeared waiting and five required attention. The current May App
-uses `requests: { mode: "agent" }`, so new human Turns do not create these
-wrappers.
-
-As of 2026-08-25, all six rows have exact typed cancellation records and are
-absent from the active Task view. The last stale wrapper was cancelled through
-the same validated human Task control used by the adapters; May did not edit
-persistence or create another cleanup Task. A production soak then proved that
-direct answers and rejected unknown Task references created no wrapper or
-delegation residue.
-
-The retained rows remain historical evidence. No database deletion, permanent
-legacy-wrapper janitor, or broad cleanup is needed. Finite human requests must
-continue to use Host request correlation and must never be attached to a
-standing Task that intentionally does not terminate.
-
-### 8. Topic selection can fail after aging out of the recent view
-
-This gap is implemented in the current candidate. Conversation reads now expose
-opaque Topic pagination, exact Topic/ref reads, bounded exact Topic messages,
-and exact reply-to-Topic resolution. Console and Telegram can select an old
-Topic without relying on the recent projection. Natural old-discussion
-references use a scoped read-only Conversation lookup whose candidates remain
-an LLM decision, not a keyword router.
-
-Retained direction:
-
-- the selected Topic ID is authoritative; adapters may cache its presentation;
-- exact selected Topic membership is read from canonical Topic storage;
-- recent lists remain bounded; and
-- presentation stays separate between Console and Telegram.
-
-Related lower-priority adapter cleanup:
-
-- serialize Console-local asynchronous Topic commands so pasted commands render
-  in order;
-- share only small Topic identity/resolution helpers;
-- report an eight-character reference collision as ambiguous rather than not
-  found.
-
-### 9. Human request concurrency is implicit
-
-`maxConcurrentRequests` looks like a strict total limit, but when capacity is
-full the request pump may start one additional May request. Human precedence is
-the correct behavior; the hidden extra slot is not.
-
-Proposed direction:
-
-- make the foreground human reserve explicit in configuration and naming;
-- test the exact maximum and human-precedence behavior; and
-- avoid adding a general broker or queue abstraction.
-
-### 10. Task queue ordering has overlapping controls
-
-`AppTaskQueue` combines:
-
-- human and normal lanes;
-- `front`;
-- `promote`;
-- P0 through P3 priority;
-- front-burst fairness; and
-- separate priority-skip aging maps.
-
-This works, but it is difficult to explain and contains three overlapping ways
-to move work ahead.
-
-After higher-priority correctness work, consider reducing it to:
-
-- human versus normal lane;
-- stable priority and FIFO within the lane; and
-- repeated wakes coalesced by Task ID.
-
-Keep an extra ordering mechanism only when a focused starvation test proves it
-is necessary.
-
-### 11. Accepted documentation contains conflicting claims
-
-Current inconsistencies include:
-
-- `system-model.md` says every installed App maps admitted input to a Task,
-  while May intentionally handles one bounded conversational request directly;
-- `docs/INDEX.md` describes lightweight reconciliation as active future work,
-  while that proposal says accepted, implemented, and verified;
-- `agents/tech-lead/context.md` points to the former JSON Task tree and a removed
-  proposal path;
-- Runtime `package.json` still describes a feature-unit sub-agent system; and
-- the EventBus header links to the obsolete `v2-architecture` document.
-
-Use this wording consistently:
-
-> Every executable durable App outcome uses a Task. May may answer one bounded
-> conversational request directly; durable destination work belongs to the
-> destination App's Tasks.
-
-### 12. App verification does not cover all active material
-
-Runtime TypeScript and canonical App-boundary checks passed. The Host Operations
-App's focused `app.test.ts` passed all sixteen tests. The complete App check did
-not pass:
-
-- the current installation lacks Node/Bun type declarations used by workflows;
-- `platform-owner-review.ts` still reads the removed
-  `ctx.reconciliation.trigger`; and
-- `session-recovery.ts` still returns obsolete state `needs-owner`.
-
-This means the focused manifest tests can pass while active agent workflow
-material remains incompatible with the current SDK. Fix or remove that material
-before claiming full App verification.
-
-### 13. May lacked canonical referenced-Task state and narrow Task control
-
-The stale wrapper incident exposed two coupled gaps. Command views stored exact
-`taskRefs`, but a later May turn received only rendered text unless the adapter
-was actively watching one Task. May therefore invented a relationship between
-an old wrapper and unrelated repair work. It also had no structured way to
-apply the human's simple request to remove the exact obsolete Task, so it
-delegated another Host Operations Task.
-
-Accepted direction:
-
-1. Runtime resolves a bounded newest-first set of command/tool `taskRefs` into
-   current canonical Task snapshots before calling May.
-2. May may return a plain response plus cancellation of an exact Task already
-   supplied as focused, recently referenced, or linked by the current Topic.
-3. The Host validates direct human authority and exact identity, then uses the
-   existing human Task service. May never receives persistence access.
-4. Feedback and continuation remain typed input to the same owner Task.
-5. Host Operations remains a separate App and receives only genuine Host code,
-   configuration, deployment, or policy work.
-6. A Task cannot wait for an action assigned back to its own App unless that
-   operation was first durably submitted and the Condition names its real
-   correlation.
-
-## Proposed order
-
-1. Stop duplicate metrics scheduling and measure the change.
-2. Choose one Host Operations execution identity and align code, agent material,
-   and documentation.
-3. Remove or archive incident-specific App input contracts after checking live
-   dependencies.
-4. Complete Codex cancellation and real executor-input parity.
-5. Prove resource authority and retire the legacy JSON Task path.
-6. Remove dead inbox lifecycle/delivery APIs from the active path.
-7. Perform one bounded migration of pre-cutover May wrapper Tasks.
-8. Fix exact selected-Topic lookup and Console command ordering.
-9. Consolidate accepted documentation and repair the complete App check.
-10. Simplify queue ordering only after measurements and focused tests show which
-    fairness controls remain necessary.
-
-Each step should be independently reviewable, tested, and reversible. Do not
-combine the sequence into one broad rewrite.
+The governing rules are:
+
+- one kind of Task and one Task reconciliation path;
+- code collects bounded facts and applies validated effects; the LLM decides
+  semantic meaning;
+- message and Task identity, never text matching, prevents duplicates;
+- previous-attempt observations remain history and never become current state;
+- adapters are best-effort event listeners and resource readers, not work
+  owners or guaranteed-delivery services; and
+- extensions attach to events and release resources after bounded work.
+
+## Open simplification gaps
+
+### 1. Host metrics still have a central catalog
+
+Cron is now the single Host-maintenance schedule for `metrics-snapshot`, but
+the handler still retains the large central `ALL_METRICS` catalog while current
+design assigns domain measurements to their Apps.
+
+The first bounded slice is complete: Host Operations no longer defines or
+measures Scout's retired rolling accepted-output metric, it retires the invalid
+instruction-text “loaded” proxy, and Scout's existing library-health workflow
+owns the advisory preamble measurement and the evidence-backed accepted-output
+replacement. No new scheduler or metric lifecycle was introduced.
+
+The Evaluation aftermath-coverage slice is now converged. Evaluation declares
+the exact eligibility query and metric metadata on its App definition; Runtime
+measures it on Cron's existing snapshot event and preserves count/window
+evidence. The former sibling snapshot Tasks, evaluator-agent aggregate call,
+Host catalog entry, and duplicate Host source executor are removed. Runtime is
+the only executor for persisted `sourceQuery` and `sourceCommand` definitions;
+Host Operations measures and evaluates only its built-ins.
+
+Evaluation now also owns the LLM-evaluation lag definition and its exact
+read-only query. Runtime samples it through that same source consumer and
+existing snapshot event; the central Host definition and measurement block are
+removed. Continue moving the remaining Evaluation metrics one exact meaning at
+a time rather than introducing a second catalog or a bulk compatibility layer.
+
+Runtime also honors each source definition's `measureInterval` as a minimum
+normal cadence. This removes the prior behavior where a six-hour Scout command
+was executed and sampled on every five-minute wake; forced operational samples
+remain available without another scheduler.
+
+Retain only small Host-owned runtime measurements centrally, and move domain
+measurements to their Apps in bounded steps.
+
+### 2. Generic Task code retains offline JSON compatibility
+
+Production authority is now proved and enforced: every live App has resource
+authority, installed descriptors require `resourceStore`, startup refuses an
+uncut legacy App, and event routing, Condition replay, recovery, scheduling,
+executor emission, App observers, and Task-owned workflows receive the loaded
+resource reader rather than a JSON fallback.
+
+`app-task-store.ts`, the reconciler config, and cutover helpers still compile a
+JSON path used by the guarded offline importer and many focused fixtures. Keep
+that compatibility explicit and outside installed Runtime construction, then
+migrate fixtures in bounded slices before deleting it. Retain old files as
+read-only evidence; do not add a legacy/modern abstraction.
+
+### 3. Host Operations exposes historical incidents as public inputs
+
+Six completed input variants that embedded exact old dependency IDs, Event
+IDs, generations, sessions, commits, hashes, and paths have been removed from
+the public schema and routing switch. Their focused fixtures remain explicitly
+archived in the App test while retained receipts preserve the real evidence.
+
+One exact containment input remains temporarily because the live database has
+an unfinished request using it. It is compatibility for that existing request,
+not a reusable App capability and must not receive new producers.
+
+Check unfinished dependencies, archive completed proof, and retain a small
+stable contract such as owner review, platform obligation, deployment request,
+and runtime capability request.
+
+## Documentation gaps
+
+The active reading path had three structural problems at this review:
+
+1. completed/historical proposals were still listed as active;
+2. several Tier-2 documents said “implemented” while known gaps were recorded
+   only in a proposal; and
+3. stable design documents repeated migration narratives and delivery
+   vocabulary that no longer matches the simple event-listener model.
+
+The first cleanup moves completed proposals to the archive, makes implementation
+status honest, fixes stale workflow-context wording, and keeps this file as the
+only active convergence tracker. `system-model.md` now stops at the public
+mental model and links to subsystem authorities. `agent-app.md` now keeps only
+the generic App/request/dependency contract and links May behavior to
+`message-lifecycle.md`. `event-graph.md` now keeps the trace and read-model
+contract; historical inspection and additive backfill procedure live in
+`event-runtime-audit.md`.
+
+The target authority split is:
+
+| Document          | Keep here                                                           | Move or replace with a link                                        |
+| ----------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `system-model.md` | the small public mental model and responsibility boundaries         | subsystem protocols and migration detail                           |
+| `agent-app.md`    | the generic App declaration, admission, and reconciliation contract | detailed May conversation behavior owned by `message-lifecycle.md` |
+| `event-graph.md`  | trace identity, causality, closure, and read-model invariants       | backfill/runbook detail owned by `event-runtime-audit.md`          |
+
+Do this consolidation only while editing the owning contract; a broad prose
+rewrite is not an implementation prerequisite. This tracker remains active
+until its correctness and boundary gaps close, then moves to the implementation
+archive. It is not a second design authority.
+
+## Resolved and absorbed
+
+| Earlier finding                                                                                                         | Disposition                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-cutover `may/conversation/app_*` wrapper Tasks                                                                      | Cancelled through normal Task control; retained only as history                                                                                                                                                                                   |
+| Exact old-Topic lookup                                                                                                  | Implemented with pagination and exact reads; candidate retrieval does not choose semantic intent                                                                                                                                                  |
+| Referenced-Task context and narrow human Task control                                                                   | Implemented through bounded canonical reads and validated exact control                                                                                                                                                                           |
+| Per-request May follow-through loop                                                                                     | Replaced by one normal visible Conversation Task plus bounded frontend turns                                                                                                                                                                      |
+| Explicit response plus fallback inbox result                                                                            | Both projections now use the request- or follow-up-derived `result:<requestId>` message identity; bounded-window regression coverage proves the identity remains stable while explicit data wins when both are present                            |
+| Current Task observation scope                                                                                          | Progress reads now require the exact active `attemptId`; accepted Task status records its producing attempt, timestamp inference is removed, terminal results win, and multi-attempt coverage keeps prior progress historical                     |
+| Host Operations source check                                                                                            | The App now installs its declared Node/Bun types, consumes the bounded reconciliation Event batch, uses the current `needs-agent` handoff state, and passes its complete syntax, type, format, and manifest-test check                            |
+| Telegram best-effort watch presentation                                                                                 | Telegram starts at the current Conversation head without promising offline replay and now suppresses unchanged watched-Task revisions while still rendering real progress and terminal changes                                                    |
+| Equivalent Console result and terminal card                                                                             | Console correlates canonical `result:*` Conversation messages with exact Task references and suppresses only the matching supporting terminal card; the watch-ended state remains visible and no prose comparison is used                         |
+| Task cancellation and active executor resources                                                                         | `TaskAttempt.signal` now carries the exact attempt stop signal; durable cancellation names that attempt and stops managed sessions, workflows, Codex turns, and Codex/Claude subprocess trees while the terminal Task fence remains authoritative |
+| Executor input parity                                                                                                    | Runtime now resolves one `TaskAttempt` with role, current children and waits, ordered Events, workspace, output paths, and result schema. Built-in and registered executor paths consume that boundary; Codex's JSON projection is transport only                                                              |
+| Host Operations recurring execution                                                                                      | Cron is the sole five-minute `metrics-snapshot` scheduler. `app:may-agent` owns Host Operations Tasks, `agent:tech-lead` is the App and project default attempt profile, and May remains the human-facing deputy. Retained `may` records are compatibility evidence, not another execution model                  |
+| First Scout metric-ownership slice                                                                                        | Host Operations no longer reactivates `scout.accepted-source-outputs-24h`, retires the invalid `scout.knowledge-practice-loaded` proxy, and leaves `scout.knowledge-preamble-coverage` plus the accepted-output replacement to Scout's existing six-hour library-health workflow                          |
+| Evaluation aftermath-coverage metric                                                                                     | Evaluation declares one evidence-bearing source query; Runtime measures it on the shared Cron event. Per-snapshot Tasks, agent aggregation, the Host catalog entry, and Host's duplicate generic source executor are removed                                                                                 |
+| Evaluation LLM-coverage-lag metric                                                                                        | Evaluation declares the exact non-heuristic-evaluation lag query; Runtime measures it on the shared Cron event, and the Host catalog plus handwritten measurement block no longer own that domain meaning                                                                                                  |
+| Scout App test boundary                                                                                                   | The App check runs Scout-owned tests only. Cached third-party source repositories under the agent workspace remain inspectable evidence but are not treated as part of Scout App verification                                                                                                             |
+| Whole-system document scope                                                                                                | `system-model.md` retains the public nouns, May/App/agent boundary, one flow, record map, and governing rules; detailed persistence, dependency, recovery, presentation, and code contracts link to their owning subsystem documents instead of being restated                                            |
+| Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic, conversation-Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |
+| Event graph document scope                                                                                                  | `event-graph.md` owns trace identity, causality, closure, provenance, storage, and graph-read invariants. Historical audit and additive backfill commands live in `event-runtime-audit.md`; neither trace nor backfill becomes work authority                                                                    |
+| Event trace audit semantics and runtime cost                                                                                 | The checker audits the current `conversation.message.created` to May-request boundary and correlated Conversation result instead of adapter delivery. An indexed close-event lookup removes the retained-history quadratic scan; the 249k-event live audit now completes in under one second with structural and semantic integrity passing                  |
+| Native coding worker document scope                                                                                           | The accepted adapter contract now records current failure, validation, worktree, and inspection boundaries instead of maintaining a speculative UI/metric/parser wishlist. New worker features require concrete evidence and extend the existing adapter/read models rather than creating another execution path                                      |
+| Task engine interface documentation                                                                                            | The engine contract now names the shared `TaskAttempt` instead of a stale narrower pseudo-type, distinguishes small list views from exact `TaskDetail`, records the opt-in lossless outcome projection, and makes correlated request completion independent of adapter delivery                                                                   |
+| Installed Task persistence authority                                                                                           | All live Apps have resource authority; installed descriptors require it, startup refuses uncut JSON state, and production routing, Condition replay, recovery, scheduling, execution, App observers, and Task-owned workflow reads use the loaded resource authority                                                                                 |
+| Inbox delivery/lifecycle compatibility surface                                                                                 | Removed unused delivery projection types and reads, per-item/list N+1 delivery joins, the health delivery subquery, and uncalled continuation/claim/wait helpers. Historical delivery rows and schema remain untouched evidence and do not affect request or Task state                                                                             |
+| Task queue ordering                                                                                                             | Removed front/ordinary lanes, burst counters, and both skip-aging maps. Scheduling is trusted human lane, canonical effective priority, exact-wake promotion among equal-priority peers, FIFO, and Task-ID coalescing; passive recovery rereads canonical priority                                                                                |
+| Shared request/Task capacity                                                                                                    | Request decisions now acquire the same Host capacity as Task attempts. Normal request decisions use background slots, at most one May decision uses the reserved foreground slot, App keys coalesce, and the request coordinator does not exceed its stated admission bound                                                                      |
+| Completed Host Operations incident inputs                                                                                       | Removed dependency-authority, installed-resolver, App-deployment, runtime-source-deployment, protected-config, and status-activation incident shapes after live resource and inbox reads found no unfinished consumers. Historical receipts remain evidence; one unfinished containment input remains temporary compatibility                  |
+| Loaded specialist instructions with Task trees, mandatory artifacts, proactive backlogs, and fire-and-forget delegation | Replaced with the shared Task/attempt boundary and current environment facts                                                                                                                                                                      |
+
+Resolved rows do not remain implementation steps in this tracker.
+
+## Repair order
+
+1. Reduce the central metrics catalog in bounded App-owned steps.
+2. Move retained JSON import/test compatibility out of normal Task code, then
+   retire it as fixtures migrate.
+3. Remove incident-specific public contracts.
+4. Run a final document-by-document status, link, and code-reference audit.
+
+Each step is independently reviewable and reversible. Do not combine them into
+a broad rewrite.
 
 ## Non-goals
 
-This proposal does not propose:
+- no new broker, queue service, delivery service, or Conversation database;
+- no Task subtype, hidden Task, per-turn wrapper Task, or adapter-owned work;
+- no text-based duplicate detection or keyword intent router;
+- no broad production database cleanup;
+- no session, Topic, workflow, Codex thread, or trace as work authority; and
+- no guarantee that every adapter displays every message exactly once.
 
-- a replacement Event broker;
-- a new Task type or tracking wrapper for every human Turn;
-- a new guaranteed-delivery subsystem for Console or Telegram;
-- a permanent cleanup reconciler for historical rows;
-- broad deletion or rebuilding of the production database;
-- treating sessions, Topics, workflows, or Codex threads as work ownership; or
-- hiding current concepts behind new vocabulary.
+## Completion
 
-## Review questions
+Convergence is complete when:
 
-1. Is Cron the selected single authority for Host metrics snapshots?
-2. Should `tech-lead` become the default Host Operations executor, keeping May
-   only as human deputy?
-3. Which incident-specific input kinds still have unfinished live dependencies?
-4. Is mechanical cancellation required before any further Codex rollout?
-5. What proof is sufficient to remove the legacy JSON Task runtime path?
-6. Which queue-ordering mechanisms have demonstrated starvation cases that
-   justify retaining them?
-
-## Acceptance criteria
-
-The proposal is ready to move from review to an implementation plan when:
-
-- the six review questions have explicit decisions;
-- every migration step has a bounded verification and rollback;
-- no step requires broad DB cleanup;
-- May, App, Task, executor, Event, Conversation, and Topic retain the simple
-  responsibilities stated above; and
-- documentation describes the implementation that actually runs.
+- the full Host and every installed App pass their paired checks;
+- one message keeps one identity across all bounded projections;
+- current Task presentation is explicitly tied to the current attempt or
+  accepted revision;
+- cancellation releases active executor resources;
+- each recurring responsibility has one scheduler and one owner;
+- current Apps have one resource-backed Runtime path;
+- active Tier-2 documents state remaining gaps honestly; and
+- a fresh code-and-document audit finds no second work, delivery, routing, or
+  persistence authority.

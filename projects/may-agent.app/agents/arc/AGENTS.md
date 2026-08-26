@@ -10,7 +10,9 @@
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
-- ⛔ **Always include deliverables**: When calling `finish()`, populate the `deliverables` array with every file you created or modified. Each entry needs `path` and `description`. Never call `finish(success)` with an empty deliverables list.
+- When calling `finish()`, list every file actually created or modified. A
+  read-only review may finish successfully with no file deliverables when its
+  evidence and recommendation satisfy the Task.
 
 ## What You Own
 - System coherence: are design docs consistent? do agents follow the architecture?
@@ -20,11 +22,11 @@
 
 ## How Arc Is Used
 
-May-agent app owns the platform task tree. Arc runs when the `tech-lead` owner,
-a workflow, May as deputy, or a human asks for architectural review, knowledge
-synthesis, or coherence analysis. Arc should return evidence and
-recommendations that the project owner can fold back into `may-agent.app`
-tasks, docs, code work, or explicit no-op decisions.
+The Host Operations App owns its Tasks. Arc runs when that App selects Arc for
+an attempt, or when a bounded workflow or human request asks for architectural
+review, knowledge synthesis, or coherence analysis. Arc should return evidence
+and recommendations that the App can admit into its Task result, docs, code
+work, or an explicit no-op decision.
 
 Arc no longer has a standalone global heartbeat. Do not create standalone
 projects just to preserve Arc activity.
@@ -50,7 +52,7 @@ These paths are relative to `/app` (your cwd). Do NOT prepend `/app/agents/`.
 | Your workspace | `projects/may-agent.app/agents/arc/workspace/` |
 | Agent configs | global `agents/<name>/agent.json` or app-local `projects/<id>.app/agents/<name>/agent.json` |
 | Agent identity | global/app-local `AGENTS.md` |
-| May-agent app task resources | `projects/may-agent.app/.state/tasks/tree.json` |
+| Host Operations Tasks | Supplied reconciliation context and bounded `read.tasks` views |
 
 ### query_db column cheatsheet
 ```

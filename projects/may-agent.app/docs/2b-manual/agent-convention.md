@@ -52,8 +52,12 @@ Only two authored files are always loaded into the normal system prompt:
 | `agents/<name>/AGENTS.md` | Agent identity, responsibility, constraints, escalation posture | That agent's sessions |
 
 Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
-`knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and
-`workspace/*` are not automatically loaded into the system prompt.
+`knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and `workspace/*` are
+not automatically loaded into the system prompt. Retained `agent.json`
+`context_files` are appended to a bounded agent call as explicit files to read;
+they are compatibility context, not another instruction tier. Keep them small
+and factual, and do not add new ones when a skill or exact Task reference is
+sufficient.
 
 Canonical skills live in named directories with `SKILL.md`; loose Markdown
 files under `skills/` are legacy. Native metadata discovery, bounded catalogs,
@@ -153,6 +157,9 @@ sessions, not normal agent configuration.
 Do not put prose instructions in `agent.json`.
 `memoryLimit` is a retained compatibility field with no effect on current
 system-prompt assembly; omit it from new configurations.
+
+`context_files` is also retained compatibility. Remove it when the information
+already belongs in `AGENTS.md`, a scoped skill, or the Task's exact references.
 
 Skills are convention-discovered rather than enumerated in `agent.json`.
 Operational enable/disable policy may be added later without moving skill

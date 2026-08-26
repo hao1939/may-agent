@@ -110,7 +110,7 @@ export async function execute(
       });
       return result(
         ctx,
-        "needs-owner",
+        "needs-agent",
         `Cannot recover ${decision.sessionId}: the original task is missing.`,
         [`session:${decision.sessionId}`],
       );
@@ -132,7 +132,7 @@ export async function execute(
     if (rerun.status === "error") {
       return result(
         ctx,
-        "needs-owner",
+        "needs-agent",
         `Recovery rerun ${rerun.id} failed for ${decision.sessionId}: ${rerun.summary}`,
         evidence(rerun.evidence),
       );
@@ -155,7 +155,8 @@ export async function execute(
         sourceAgent: "tech-lead",
         sourceSessionId: decision.sessionId,
         reason,
-        requestedAction: "Review the failed session and choose a recovery path.",
+        requestedAction:
+          "Review the failed session and choose a recovery path.",
         evidence: decision,
       },
       `agent:${decision.agent || "may"}`,
@@ -166,7 +167,7 @@ export async function execute(
       { sessionId: decision.sessionId, agent: decision.agent, reason },
       `agent:${decision.agent || "may"}`,
     );
-    return result(ctx, "needs-owner", reason, [
+    return result(ctx, "needs-agent", reason, [
       `session:${decision.sessionId}`,
     ]);
   }

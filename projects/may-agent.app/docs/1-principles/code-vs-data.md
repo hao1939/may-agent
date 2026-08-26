@@ -26,7 +26,7 @@ Is a new external action unavailable?
   -> tool or SDK capability
 
 Does work need durable ownership across multiple executions?
-  -> project app and, when useful, task resources
+  -> an accountable App and one Task
 
 Does existing behavior only need a wake or observation?
   -> event, schedule, watcher, metric, or small handler
@@ -46,7 +46,7 @@ steps use skills and tools while guards observe mechanical risk.
 | TypeScript must compile                           | Test/code                                  | Deterministic invariant                         |
 | Detect likely secret material in writes           | Observable guard, then calibrated blocking | Mechanical risk with measurable false positives |
 | Call a provider API                               | Tool                                       | Explicit external capability                    |
-| Maintain a domain goal over time                  | Project app/task resources                 | Durable owner and state                         |
+| Maintain a domain goal over time                  | App Task                                   | Durable owner and state                         |
 | Recheck provider readiness                        | Watcher event plus Condition               | External level observation                      |
 
 ## Why not default to prompt rules or blocking guards?

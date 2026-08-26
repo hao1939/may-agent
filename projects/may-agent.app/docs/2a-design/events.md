@@ -1,4 +1,4 @@
-# Events, Delivery, And Task Admission
+# Events And Task Admission
 
 **Design status:** Accepted.
 **Implementation status:** Event persistence, frozen admission journaling,
@@ -22,8 +22,8 @@ publish(event) -> validate -> persist event + exact admission -> receipt
 ```
 
 The event ID is the root causal identity. An event does not replace mutable work
-state: an App task owns the work, a request correlates a caller and delivery,
-and exact controls link to their owning session or operation.
+state: an App task owns the work, a request correlates a caller and result, and
+exact controls link to their owning session or operation.
 
 Read [system-model.md](system-model.md) for the relationship among requests,
 tasks, facts, and execution; [agent-app.md](agent-app.md) for authoring routes;
@@ -59,15 +59,15 @@ External callers cannot assert those fields. `target` selects an exact object
 inside the route chosen by `type`; it does not grant arbitrary control.
 
 `publish` returns an event ID, `recorded` or `accepted`, and any linked request,
-task, session, delivery, or operation identity. Neither state means domain work
+task, session, or operation identity. Neither state means domain work
 is complete. `get` returns that bounded view again from durable state.
 
 App code still uses typed SDK inputs, task results, facts, and capabilities. It
 never receives this Host interface or the raw EventBus.
 
-## Delivery contracts
+## Admission contracts
 
-Each admitted event type has one delivery contract:
+Each admitted event type has one admission contract:
 
 - `record`: persistence is sufficient; zero or more declared routes may react.
 - `required`: exactly one semantic route must durably accept responsibility.
@@ -112,9 +112,10 @@ persists the exact request, Task link, or operation that makes the work
 recoverable, then handles that resource asynchronously. Ordering is local to
 one Task or operation; unrelated consumers run independently.
 
-Expiry repair for pending delivery and lifecycle-pair records runs in the
+Expiry repair for pending admission and lifecycle-pair records runs in the
 separate maintenance process. Event persistence never performs that periodic
-history sweep before inserting a new event.
+history sweep before inserting a new event. Retained schema fields named
+`delivery_*` describe this historical admission state, not adapter display.
 
 `conversation.message.created`, `app.input.requested`, direct-agent
 `chat.start.requested`, exact session controls, and Host lifecycle controls are
@@ -187,8 +188,8 @@ app.input.requested target.appId=<app>
 An unknown App address is rejected before a receipt exists. It does not fall
 back to a generic owner inbox or May.
 
-The request persists caller correlation, dependency links, result, restart
-recovery, and delivery state. It does not execute App policy. The App sees the
+The request persists caller correlation, dependency links, result, and restart
+recovery. It does not execute App policy. The App sees the
 typed task context and returns only reconciliation evidence and desired task
 changes.
 
@@ -206,19 +207,22 @@ for one request. Agent, tool, and command authors add context but no work;
 `transient: true` adds neither durable context nor work. This special route
 does not replace generic `app.input.requested` for schedules, App actions,
 delegation, or non-conversation callers. A conversational App may name one
-default Conversation for addressed event/API requests. Their accepted responses
-enter that Conversation, but their inputs are not presented as human Turns.
+default Conversation for addressed event/API requests. A correlated agent
+response carries `messageId=result:<requestId>`, so its explicit Event and
+bounded compatibility projection remain one message across independent read
+windows. Accepted responses to addressed event/API requests enter that
+Conversation, but their inputs are not presented as human Turns.
 
-## Delivery acceptance
+## Admission state
 
-Event delivery metadata answers whether the event type's contract is satisfied,
-not whether resulting work finished. The durable acknowledgement point is:
+Event admission metadata answers whether the event type's contract is
+satisfied, not whether resulting work finished. The durable acknowledgement
+point is:
 
 | Route                       | Accepted after                                                 |
 | --------------------------- | -------------------------------------------------------------- |
 | App subscription            | translated input, task intent, and exact trigger are durable   |
 | Exact task target           | task wake/trigger is durably correlated                        |
-| Human/channel adapter       | adapter accepts the outbound delivery operation                |
 | Observation-only projection | projection explicitly accepts responsibility for that evidence |
 | Record-only event           | persistence; no semantic accepter is required                  |
 
@@ -227,7 +231,8 @@ subscribers do not count as semantic acceptance.
 
 For asynchronous work, accepted means “the correct durable owner now has it,”
 not "finished." Completion remains in the task resource and its linked caller
-request or delivery operation.
+request. Adapter presentation is a passive consequence, not another semantic
+route or operation.
 
 Record-only facts with no consumer remain valid observations. A required event
 without durable acceptance remains visible for recovery. Invalid or unknown
@@ -264,7 +269,7 @@ or task. Its resolution wakes that source obligation. Metric alert state remains
 a metric projection; a breach event may wake work but does not own its result.
 
 Trace closure answers which evidence fulfilled an earlier cause. It is useful
-for audit but cannot replace inbox/task/delivery completion.
+for audit but cannot replace request or Task completion.
 
 ## Human-rooted flow
 
@@ -370,17 +375,16 @@ admission and task intent use stable idempotency/correlation.
 audit and reconciliation. The in-process bus is not a general work queue and
 does not promise implicit exactly-once replay.
 
-The event row retains bounded routing, delivery, causality, and correlation
+The event row retains bounded routing, causality, and correlation
 metadata. Large immutable bodies may be stored content-addressably before the
 row commits. Routing consumers use the bounded projection; audit/detail readers
 resolve the full body only when required.
 
 Retention protects:
 
-- events referenced by unfinished App requests, task triggers, Conditions, or
-  delivery operations;
+- events referenced by unfinished App requests, task triggers, or Conditions;
 - retained trace parents and closure links;
-- human roots/results still referenced by Conversation or adapter operations;
+- human roots/results still referenced by Conversation;
   and
 - explicit audit holds.
 
@@ -393,17 +397,17 @@ artifacts.
 Operational checks distinguish:
 
 - valid record-only observation from failed required admission;
-- delivery acceptance from semantic completion;
+- event admission from semantic completion;
 - a persisted task trigger from queue pressure;
 - a correlated App request from a callerless inbox item;
 - an exact task wake from broad task resolution;
 - missing trace evidence from missing work ownership; and
 - canonical consumption from forbidden legacy dual consumption.
 
-The App inbox health surface reports pending age, claim/handling latency, lease
-reclaim, dependency waits, result admission, and delivery waits. Event health
-reports required events awaiting acceptance and delivery failures; it does not
-infer owner work from record-only facts.
+The App request health surface reports pending age, claim/handling latency,
+lease reclaim, dependency waits, and result admission. Event health reports
+required events awaiting admission. Adapter/provider failures are separate
+presentation diagnostics; neither surface infers work from record-only facts.
 
 Detailed procedures live in
 [event-runtime-audit.md](../2b-manual/event-runtime-audit.md).
@@ -414,7 +418,7 @@ Detailed procedures live in
 - Every fact-to-work transition is explicitly declared and idempotent.
 - App subscriptions translate facts through the shared input-to-task resolver;
   exact task targets wake only the named task.
-- Passive listeners never satisfy semantic delivery or delay acceptance.
+- Passive listeners never satisfy semantic admission or delay acceptance.
 - Event acceptance never implies request/task/domain completion.
 - No unhandled fact falls back to a generic owner inbox.
 - No request or task lifecycle is represented by an event pair.

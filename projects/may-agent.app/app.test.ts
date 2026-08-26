@@ -4,8 +4,8 @@ import type { AppEvent, AppInput } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import app, {
   OWNER_HEARTBEAT_INTERVAL_MS,
+  OWNER_REVIEW_DELIVERY_ACCEPTANCE,
   OWNER_REVIEW_TASK_ID,
-  PLATFORM_METRIC_INTERVAL_MS,
   PLATFORM_REVIEW_INTERVAL_MS,
   resolveMayAgentTask,
   taskForMayAgentInput,
@@ -34,7 +34,7 @@ describe("Host Operations App", () => {
     expect(app).toMatchObject({
       id: "may-agent",
       version: 1,
-      agent: "may",
+      agent: "tech-lead",
       tasks: { maxConcurrent: 2 },
     });
     expect(app).not.toHaveProperty("inbox");
@@ -167,14 +167,7 @@ describe("Host Operations App", () => {
     ).toBe(PLATFORM_REVIEW_INTERVAL_MS);
     expect(
       app.schedules?.find(({ id }) => id === "platform-metrics"),
-    ).toMatchObject({
-      intervalMs: PLATFORM_METRIC_INTERVAL_MS,
-      event: {
-        type: "trigger.metrics-snapshot",
-        data: { reason: "scheduled-platform-measurement" },
-        target: { appId: "may-agent", project: "may-agent" },
-      },
-    });
+    ).toBeUndefined();
     expect(
       app.schedules?.find(({ id }) => id === "owner-heartbeat")?.intervalMs,
     ).toBe(OWNER_HEARTBEAT_INTERVAL_MS);
@@ -202,7 +195,7 @@ describe("may-agent task routing", () => {
     expect(intent).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
-      agent: "may",
+      agent: "tech-lead",
       input: { scope: "may-agent-platform" },
     });
     expect(intent).not.toHaveProperty("workflow");
@@ -278,35 +271,38 @@ describe("may-agent task routing", () => {
     expect(resolveMayAgentTask(sourceFailure)).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
-      agent: "may",
+      agent: "tech-lead",
       input: { scope: "may-agent-platform" },
     });
   });
 
-  it("maps an addressed owner review to request-specific achieve work", () => {
-    expect(
-      taskForMayAgentInput(
-        admittedInput({
-          kind: "owner-review",
-          data: {
-            reason: "manual",
-            outcome: "Resolve this addressed review.",
-            acceptance: ["Return terminal proof."],
-          },
-        }),
-      ),
-    ).toMatchObject({
+  it("maps an addressed owner review to request-specific achieve work with delivery dedupe proof", () => {
+    const attachment = taskForMayAgentInput(
+      admittedInput({
+        kind: "owner-review",
+        data: {
+          reason: "manual",
+          outcome: "Resolve this addressed review.",
+          acceptance: ["Return terminal proof."],
+        },
+      }),
+    );
+
+    expect(attachment).toMatchObject({
       kind: "desired",
       intent: {
         id: "app-request/request-1",
         mode: "achieve",
         outcome: "Resolve this addressed review.",
-        acceptance: ["Return terminal proof."],
       },
     });
+    expect(attachment.intent.acceptance).toEqual([
+      "Return terminal proof.",
+      ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
+    ]);
   });
 
-  it("golden-traces every explicit AKS-to-May obligation through schema and task handling", () => {
+  it("golden-traces the stable Host obligation contracts through schema and task handling", () => {
     const inputs: AppInput[] = [
       {
         kind: "runtime-deployment.adjudicate-current-host-state",
@@ -323,26 +319,6 @@ describe("may-agent task routing", () => {
           evidence: ["sdk-current/src/workflow.ts"],
         },
       },
-      {
-        kind: "app-deployment-adjudication",
-        data: {
-          outcome: "Adjudicate the historical App deployment.",
-          requestingApp: "aks-rp-e2e",
-          requestingTaskId: "ops/example",
-          historicalArtifact: "/app/.state/releases/apps/example",
-        },
-      },
-      {
-        kind: "runtime-source-deployment-request",
-        data: {
-          outcome: "Deploy the exact current source through May authority.",
-          acceptance: ["Return terminal loaded-source proof."],
-          context: {
-            callerApp: "aks-rp-e2e",
-            callerTask: "ops/promote-example",
-          },
-        },
-      },
     ];
 
     for (const [index, input] of inputs.entries()) {
@@ -356,7 +332,7 @@ describe("may-agent task routing", () => {
         kind: "desired",
         intent: {
           id: `app-request/aks-request-${index + 1}`,
-          agent: "may",
+          agent: "tech-lead",
           mode: "achieve",
           outcome: input.data.outcome,
           input: { kind: input.kind },
@@ -365,7 +341,7 @@ describe("may-agent task routing", () => {
     }
   });
 
-  it("golden-traces the rejected dependency-authority request through one finite AKS-only May task", () => {
+  it.skip("archives the retired dependency-authority incident contract", () => {
     const input: AppInput = {
       kind: "dependency-authority-runtime-review",
       data: {
@@ -400,7 +376,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/dependency-authority-replacement-1",
-        agent: "may",
+        agent: "tech-lead",
         mode: "achieve",
         input: {
           kind: "dependency-authority-runtime-review",
@@ -438,7 +414,7 @@ describe("may-agent task routing", () => {
     );
   });
 
-  it("golden-traces the rejected installed resolver request through one finite AKS-only May task", () => {
+  it.skip("archives the retired installed-resolver incident contract", () => {
     const input: AppInput = {
       kind: "installed-app-resolver-observation",
       data: {
@@ -475,7 +451,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/installed-observation-replacement-1",
-        agent: "may",
+        agent: "tech-lead",
         mode: "achieve",
         input: {
           kind: "installed-app-resolver-observation",
@@ -503,7 +479,7 @@ describe("may-agent task routing", () => {
     );
   });
 
-  it("golden-traces the rejected status activation request through the exact finite May-agent consumer", () => {
+  it.skip("archives the retired status-activation incident contract", () => {
     const input: AppInput = {
       kind: "status-readonly-supervisor-activation",
       data: {
@@ -544,7 +520,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/status-activation-replacement-1",
-        agent: "may",
+        agent: "tech-lead",
         mode: "achieve",
         input: {
           kind: "status-readonly-supervisor-activation",
@@ -576,7 +552,7 @@ describe("may-agent task routing", () => {
     );
   });
 
-  it("golden-traces the rejected AKS containment binding to one finite May task", () => {
+  it("golden-traces the rejected AKS containment binding to one finite Host Operations Task", () => {
     const input: AppInput = {
       kind: "contain-external-and-replayed-workspace-writer",
       data: {
@@ -617,7 +593,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/appdep_7d94713590078a6994af0d6d",
-        agent: "may",
+        agent: "tech-lead",
         mode: "achieve",
         priority: "P0",
         outcome: input.data.requiredOutcome,
@@ -652,7 +628,7 @@ describe("may-agent task routing", () => {
     );
   });
 
-  it("golden-traces the exact evaluation protected-config request to a correlated May task", () => {
+  it.skip("archives the retired protected-config incident contract", () => {
     const input: AppInput = {
       kind: "protected-agent-config-repair",
       data: {
@@ -683,7 +659,7 @@ describe("may-agent task routing", () => {
       kind: "desired",
       intent: {
         id: "app-request/evaluation-protected-config-proof-1",
-        agent: "may",
+        agent: "tech-lead",
         mode: "achieve",
         input: {
           kind: "protected-agent-config-repair",
@@ -757,7 +733,7 @@ describe("may-agent task routing", () => {
         },
       }),
     ).toThrow(
-      "protected-agent-config-repair is accepted only from App evaluation",
+      "Unsupported Host Operations input kind: protected-agent-config-repair",
     );
     expect(() =>
       taskForMayAgentInput(

@@ -28,7 +28,7 @@ owner fallback for an unknown target or unhandled fact.
 
 See [events.md](../2a-design/events.md).
 
-## 3. Requests own delivery; tasks own App work
+## 3. Requests correlate results; Tasks own App work
 
 The Host keeps one request when a caller expects a correlated result. The App
 handles that responsibility by reconciling one task. Simple work converges in
@@ -36,10 +36,11 @@ one bounded attempt; difficult, waiting, decomposed, or maintained work keeps
 the same task across attempts. The request remains the caller-facing identity
 and the task remains the App-facing work identity.
 
-An App action is only a named, validated way to create a request. A task tree is
-only a read-only arrangement of tasks by their declared relationships. Neither
-is another work lifecycle or state authority. A session, workflow, event,
-metric, queue entry, or delivery receipt is not one either.
+An App action is only a named, validated way to create a request. A hierarchy
+shown in a UI is only a read-only arrangement of Tasks by their declared
+relationships. Neither is another work lifecycle or state authority. A
+session, workflow, event, metric, queue entry, or transport receipt is not one
+either.
 
 If the next action crosses an App or human boundary, create a typed child
 request and wait on that exact identity. Escalation is an explicit handoff, not

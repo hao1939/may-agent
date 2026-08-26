@@ -41,7 +41,7 @@ Runtime mechanisms are selected by control need, not maturity level:
 | Mechanically detectable risk around execution               | Guard                                 | Guard hook/runtime                     |
 | New action or external integration                          | Tool                                  | Tool implementation                    |
 | Timer admission, fact publication, or mechanical projection | App schedule/observer or host handler | Shared scheduler/host                  |
-| Durable multi-session goal and state                        | Project app                           | Project owner through events/workflows |
+| Durable multi-session goal and state                        | App Task                              | App through events and attempts        |
 | Cross-owner blocker                                         | Escalation                            | Receiving owner                        |
 
 These mechanisms compose. They do not supersede one another. An App schedule
@@ -185,7 +185,7 @@ Keep judgment and multi-step domain orchestration in the owning workflow/agent.
 
 ## Projects
 
-Create or extend a project app when the improvement is a durable goal requiring
+Create or extend an App when the improvement is a durable goal requiring
 ownership, state, decomposition, multiple executions, and later validation.
 Do not create a project merely because a timer repeats.
 

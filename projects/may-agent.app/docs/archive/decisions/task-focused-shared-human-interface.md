@@ -5,8 +5,8 @@
 **Scope:** May Console, Telegram, future Conversation adapters, Task references,
 focused interaction, cancellation, and read-path performance
 
-**Aligned with:** [System Model](../2a-design/system-model.md),
-[Human Control Surfaces](../2a-design/human-control-surfaces.md), and
+**Aligned with:** [System Model](../../2a-design/system-model.md),
+[Human Control Surfaces](../../2a-design/human-control-surfaces.md), and
 [Lightweight Event-Driven Reconciliation](lightweight-event-driven-reconciliation.md)
 
 ## Proposed decision

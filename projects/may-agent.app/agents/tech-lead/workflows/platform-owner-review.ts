@@ -17,10 +17,7 @@ type OwnerAuthFailure = {
 };
 
 type OwnerReviewArtifactStatus =
-  | "pending"
-  | "blocked"
-  | "waiting"
-  | "converged";
+  "pending" | "blocked" | "waiting" | "converged";
 
 type OwnerReviewArtifact = {
   generated_at: string;
@@ -59,8 +56,14 @@ function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function latestTaskEvent(ctx: WorkflowContext): Record<string, unknown> | null {
+  return ctx.reconciliation?.events.items.at(-1)?.event ?? null;
+}
+
 function triggerEventId(ctx: WorkflowContext): number | null {
-  const trigger = record(ctx.reconciliation?.trigger);
+  const latest = ctx.reconciliation?.events.items.at(-1);
+  if (latest?.eventId) return latest.eventId;
+  const trigger = record(latest?.event);
   const data = record(trigger.data);
   const value = trigger.eventId ?? data.eventId ?? data.event_id;
   const parsed = Number(value);
@@ -68,8 +71,9 @@ function triggerEventId(ctx: WorkflowContext): number | null {
 }
 
 function triggerText(ctx: WorkflowContext): string {
-  return ctx.reconciliation?.trigger
-    ? JSON.stringify(ctx.reconciliation.trigger, null, 2)
+  const trigger = latestTaskEvent(ctx);
+  return trigger
+    ? JSON.stringify(trigger, null, 2)
     : JSON.stringify(ctx.input, null, 2);
 }
 
@@ -116,10 +120,10 @@ function preservedOwnerProgress(
 }
 
 function metricIdFromTrigger(ctx: WorkflowContext): string | null {
-  const trigger = ctx.reconciliation?.trigger;
+  const trigger = latestTaskEvent(ctx);
   const data = record(trigger?.data);
-  const value =
-    trigger?.target?.metricId ?? data.metricId ?? data.metric_id ?? null;
+  const target = record(trigger?.target);
+  const value = target.metricId ?? data.metricId ?? data.metric_id ?? null;
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
@@ -155,7 +159,7 @@ async function buildReviewPacket(
       acceptance: reconciliation.acceptance,
       input: reconciliation.input,
     },
-    trigger: reconciliation.trigger ?? null,
+    trigger: latestTaskEvent(ctx),
     trigger_metric: triggerMetric,
     children: {
       live: reconciliation.children.live,

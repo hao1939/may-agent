@@ -3,11 +3,16 @@
 **Design status:** Accepted.
 **Implementation status:** Core reconciliation, generation fencing, Conditions,
 parent/child work, indexed parent/dependency relationships, bounded
-concurrency, resource-backed Task list/get, fenced mid-attempt event emission,
-and indexed recovery are implemented for current Apps. The public SDK uses
+concurrency, resource-backed Task list/get and opt-in outcome projection,
+fenced mid-attempt event emission, and indexed recovery are implemented for
+current Apps. The public SDK uses
 `agent` for the managed agent selected for bounded attempts. Retained Task
 records may still spell that field `owner`; the Host normalizes it at the
-storage boundary and does not expose it as Task ownership.
+storage boundary and does not expose it as Task ownership. Normal Runtime
+descriptor construction requires resource authority, and routing and recovery
+have no JSON fallback. The generic store/reconciler still compiles retained
+JSON support for the guarded offline importer and focused fixtures; separating
+and then retiring that compatibility boundary remains open.
 
 The task engine is the single Host execution path for App-owned work. Read
 [agent-app.md](agent-app.md) first.
@@ -16,8 +21,9 @@ The task engine is the single Host execution path for App-owned work. Read
 
 The Host stores a request when a caller expects a result. The App does not
 reconcile that inbox record directly; it resolves the input to a task and
-reconciles the task. The Host completes and delivers the request from the
-accepted task result.
+reconciles the task. The Host completes the correlated request from the
+accepted task result. Conversation and presentation adapters observe that
+result independently; transport delivery never gates Task completion.
 
 Every actionable App input therefore creates, revises, attaches to, or wakes a
 task. A simple task converges on its first bounded attempt and leaves a compact
@@ -65,18 +71,17 @@ default agent executor, name a workflow, or select a registered executor;
 `codex` and `claude` are the built-in native adapters. `workflow` and
 `executor` are mutually exclusive; omitting both means the default agent.
 
-The complete executor extension boundary is deliberately small:
+The executor extension boundary is deliberately small:
 
 ```ts
-type TaskExecutor = (attempt: {
-  appId: string;
-  task: TaskDetail;
-  cwd: string;
-  events: TaskReconciliationEvents;
-  publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
-  onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
-}) => Promise<TaskReconcileResult>;
+type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
+
+`TaskAttempt` supplies the exact App and attempt identities, cancellation
+signal, resolved role, current `TaskDetail`, working/output paths, direct child
+and wait views, ordered unaccepted Events, result schema, and the fenced
+`publish`/`onEvent` capabilities. The SDK owns this type; transport adapters
+may project it to JSON but must not define a narrower semantic contract.
 
 An executor reads current Task state and its bounded unobserved event batch,
 keeps working while safe progress is available, optionally publishes retry-safe
@@ -92,6 +97,12 @@ checks again for newer unaccepted Task input. If any exists, it applies no
 effect and immediately retries from that evidence. The Runtime owns fencing,
 leases, event persistence, result admission, and recovery, so an executor
 implements no scheduler, queue, retry loop, or Task storage.
+
+`signal` stops only the current execution resources. Runtime aborts it after
+the durable Task cancellation names that exact attempt. Adapters translate the
+same signal into managed-session cancellation, workflow-step cancellation,
+Codex turn interruption, or CLI process-tree termination. The signal never
+replaces the terminal Task cancellation or its result-admission fence.
 
 Every adapter receives the same bounded Task detail and ordered event batch,
 may publish a fact through the current generation/attempt fence, and returns
@@ -134,15 +145,23 @@ the promised result.
 
 ## Resource read interface
 
-Tasks use the same small resource-read shape inside and outside an App. There
-is one transport-neutral service backed by canonical task state:
+Exact Tasks use the same small resource-read shape inside and outside an App.
+There is one transport-neutral service backed by canonical task state:
 
 ```text
 tasks.list({ appId, status?, limit?, cursor? })
   -> bounded TaskPage
 
 tasks.get({ appId, taskId })
-  -> TaskView or not-found
+  -> TaskDetail or not-found
+
+```
+
+The current App/agent read capability also exposes an opt-in shadow view:
+
+```text
+tasks.outcomes({ includeDone? })
+  -> TaskOutcomePage
 ```
 
 The current shared `TaskView` is deliberately small:
@@ -161,9 +180,13 @@ meaning. A parent that needs a child's verdict reads this object; it never
 reconstructs the verdict from `summary`, `response`, evidence labels, or task
 prose. Human explanation stays in `summary` or `response`.
 
-The get form returns the same projection for one exact ID or not-found. Richer
-Conditions, dependencies, direct children, attempt, and activity detail may be
-added later without creating another authority or transport-specific model.
+The get form returns one exact `TaskDetail`, including parent, mode, acceptance,
+input, selected execution mechanism, dependencies, and Conditions. Attempt and
+activity evidence remain linked records rather than copied Task truth.
+
+The optional outcome projection groups exact Task identities for a simpler read
+view while preserving every member and link. It is not a new work resource,
+write API, or completion authority; list/get remain the exact Task interface.
 
 The contract is shared; only scope binding and transport differ:
 
@@ -177,7 +200,8 @@ The contract is shared; only scope binding and transport differ:
 - the UI uses the HTTP adapter and renders the returned resources.
 
 There is no separate HTTP read model, agent task model, or SDK task model.
-Adapters translate argument placement but return the same `TaskView` and page.
+Adapters translate argument placement but preserve the same exact `TaskView`,
+`TaskDetail`, and pagination contract.
 
 Exact absence returns not-found. Invalid limits or continuation tokens are
 caller errors. HTTP maps absence to 404 and invalid reads to a 400 response;
@@ -201,7 +225,7 @@ derived filter over live Tasks with at least one unsatisfied Condition owned by
 `human` or `human:<role>`; it is not another resource or lifecycle. The bounded
 card adds `{ requestedAction, since? }`. `since` is present only when the
 current Condition start is known; later observation time is not a substitute.
-Generic `attention`, age, and delivery state never satisfy this filter.
+Generic `attention`, age, and adapter state never satisfy this filter.
 
 There is deliberately no generic task write API. A caller asks the accountable
 App for an outcome, optionally naming the observed task. App policy then keeps,
@@ -220,7 +244,9 @@ generation-fenced and atomically admitted with the result.
    injected by the Host and cannot be requested by tool arguments.
 5. **Done:** carry list/get over the daemon control socket and App-ID HTTP
    routes as thin adapters.
-6. **Remaining:** migrate the default UI and point old path-based project
+6. **Done:** add the opt-in, lossless outcome projection to the App/agent read
+   capability without changing exact Task list/get or the default UI.
+7. **Remaining:** migrate the default UI and point old path-based project
    endpoints at the shared reader, then remove
    them and their `tree.json` read-model dependency after callers migrate.
 
@@ -291,8 +317,13 @@ from time, contain App-specific policy, or use `tree.json` as a scheduler.
 Global and per-App capacity limits allow unrelated keys to run concurrently
 while serializing each key. Durable excess work stays pending. Trusted human
 and normal lanes form the scheduling boundary, and human work has reserved Host
-capacity. App priority may order peers inside a lane but cannot override
-trusted human origin.
+capacity. Inside one lane, Runtime uses the effective priority derived from the
+persisted Task and FIFO for peers. A fresh exact wake may move ahead of passive
+peers at the same priority, but it cannot override human origin or a higher
+priority. Repeated wakes for one Task coalesce; a wake received while its
+attempt is running requests exactly one fresh pass. Passive recovery rereads
+canonical Task priority rather than carrying a second ordering policy in its
+index or queue.
 
 The controller is stable across definition reloads. Publication changes one
 immutable definition pointer; a claim captures that pointer and uses its App,

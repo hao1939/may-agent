@@ -85,7 +85,7 @@ declaration has no `inbox` or `resyncIntervalMs` tuning surface.
 `task(input)` is pure policy. It receives one validated App input and returns
 the stable existing task reference or desired `TaskIntent` that owns the work.
 The Runtime persists the link before waking the task. The App never handles the
-Host request record, delivery state, claim, lease, channel, or retry metadata.
+Host request record, adapter state, claim, lease, channel, or retry metadata.
 
 The resolver must not call an agent, inspect mutable context, or guess semantic
 references. Exact structured task references may wake their task directly.
@@ -178,7 +178,7 @@ references. They do not copy every other Task's input, acceptance, result
 evidence, or attempt detail into each execution. The current task is omitted,
 the list is capped at 64, and `truncated` makes an incomplete view explicit.
 When one exact Task matters, the workflow calls `read.tasks.get(taskId)`. This
-is not a global task-tree or storage API.
+is not a global Task hierarchy or storage API.
 
 The event batch has `items`, `throughEventId`, and `truncated`. `items` are
 ordered by durable event identity. `throughEventId` is the highest event in the
@@ -310,18 +310,39 @@ All executor adapters translate one small contract:
 ```ts
 type TaskAttempt = {
   appId: string;
+  attemptId: string;
+  signal: AbortSignal;
+  resourceVersion: number;
+  role: { agent: string; instructions: string };
   task: TaskDetail;
   cwd: string;
+  declaredOutputPaths: string[];
+  children: {
+    live: TaskReconciliationChild[];
+    completed: TaskReconciliationChild[];
+  };
+  waits: { open: Array<Record<string, unknown>>; note: string };
   events: TaskReconciliationEvents;
+  resultSchema: Record<string, unknown>;
   publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
   onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
 };
 
-type TaskExecutor =
-  (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
+type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
 
-`appId` scopes the Task identity and `cwd` is the attempt working directory.
+Runtime creates this object once per fenced attempt. Identity and desired Task
+state, the resolved role, current children and accepted waits, ordered Event
+input, workspace and declared outputs, and the admitted result schema are the
+same semantic facts for every executor. An adapter may serialize those facts
+for its transport, but it does not rediscover or reinterpret them. Timeout,
+sandbox, and native process settings remain execution details rather than Task
+facts.
+
+`appId` scopes the Task identity, `attemptId` names the exact fence, and `cwd`
+is the attempt working directory. `signal` is a best-effort resource-control
+signal for that attempt; terminal Task state remains authoritative even if an
+executor cannot stop immediately.
 `publish` is immediate, durable, idempotent within the Task generation, and
 rejected after the attempt fence expires. `onEvent` is only a live convenience.
 Its `accept` callback marks the exact event for consumption only if the returned
@@ -332,8 +353,8 @@ Task-owned workflows expose these as `ctx.events.emit` and
 `ctx.events.onEvent`; Runtime removes live listeners when the bounded workflow
 ends. The returned result is the only Task state transition.
 
-Runtime creates one fenced attempt, then hands that same object to the selected
-adapter. Omitted or `agent` selects the managed-agent adapter. For another
+Runtime hands that object to the selected adapter. Omitted or `agent` selects
+the managed-agent adapter. For another
 name, a Host registration takes precedence over the built-in `codex` and
 `claude` adapters, so either native CLI can be replaced without changing Task
 state or reconciliation. Registering an executor adds a function, not a queue,

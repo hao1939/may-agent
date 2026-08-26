@@ -1,7 +1,9 @@
 # Default Project UI
 
 **Design status:** Accepted.
-**Implementation status:** Implemented.
+**Implementation status:** The project UI exists, but its Task view still uses
+older path-based endpoints and a generated projection. Migration to the shared
+App-ID Task reader remains open.
 
 The default project UI is the shared control surface for every App.
 Domain UIs may go deeper, but a person should be able to open any project and

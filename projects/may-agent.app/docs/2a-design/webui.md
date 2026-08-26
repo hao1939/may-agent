@@ -1,13 +1,14 @@
 # Web UI
 
 **Design status:** Accepted.
-**Implementation status:** Implemented as a static route-based operator UI;
-individual readouts continue to evolve.
+**Implementation status:** The static route-based operator UI is implemented.
+The default project/task surface still uses older path-based projections and
+has not completed migration to the shared App-ID Task reader.
 
 ## Purpose
 
-The Web UI is a window into the same App request, task, event, project,
-session, metric, and owner model used by agents. It is not a second control
+The Web UI is a window into the same App, request, Task, Event, project,
+session, metric, and execution-profile model used by the Host. It is not a second control
 plane and does not invent browser-only lifecycle state.
 
 The UI serves three human roles:
@@ -15,22 +16,22 @@ The UI serves three human roles:
 | Role         | Primary question                                               |
 | ------------ | -------------------------------------------------------------- |
 | Watcher      | Is the system alive, moving, and failing visibly?              |
-| Steerer      | Which owner/session/project should receive this intent?        |
+| Steerer      | Which App, Task, or session should receive this intent?         |
 | Investigator | What event, evidence, decision, or state explains the outcome? |
 
 ## Product Model
 
 The UI renders the objects defined in [system-model.md](system-model.md):
 
-- projects and tasks are durable work context; a tree is only an optional task
-  layout;
-- requests show caller correlation, linked tasks, and delivery state;
+- projects hold durable context and Tasks own durable work; a hierarchy is
+  only an optional relationship view;
+- requests show caller correlation, linked Tasks, and result state;
 - events and traces show signals and causality;
 - sessions and workflow runs show execution attempts;
 - metrics and alerts show measured signals needing judgment;
-- agents show accountable identities and their current execution context.
+- agents show replaceable execution profiles and their current attempts.
 
-App schedules, observers, task reconciliation, and owner workflows are project
+App schedules, observers, Task reconciliation, and accepted results are App
 liveness. Standalone agent heartbeats are agent liveness. The UI must not treat
 heartbeat sessions as the only form of agency.
 
@@ -65,7 +66,7 @@ The platform uses real browser paths and `history.pushState`:
 | `/projects/:id/functions`        | Declared App commands that create requests                      |
 | `/metrics` and `/metrics/:id`    | Metric/alert detail and evidence                                |
 | `/sessions/:id`                  | Transcript, result, lineage, tools, and steering                |
-| `/events` and `/events/:eventId` | Event list, delivery health, and trace graph                    |
+| `/events` and `/events/:eventId` | Event list, admission health, and trace graph                   |
 | `/learning`                      | Evaluation and learning readouts                                |
 | `/knowledge`                     | Searchable durable knowledge                                    |
 | `/terminal`                      | Browser terminal profiles                                       |
@@ -94,8 +95,8 @@ must not block terminal startup.
 The front page should answer, in order:
 
 1. Is the daemon and channel path healthy?
-2. Which project owners or standalone agents moved recently?
-3. Which projects, alerts, delivery failures, or sessions need attention?
+2. Which Apps, Tasks, or standalone agents moved recently?
+3. Which projects, alerts, admission failures, adapter failures, or sessions need attention?
 4. Where should the operator click for evidence?
 
 Liveness uses existing facts:
@@ -103,13 +104,13 @@ Liveness uses existing facts:
 - recent project agent/workflow/session activity;
 - active and recently changed projects;
 - open metric alerts;
-- event delivery, request, task, and human-delivery health;
-- recent messages and human-result delivery;
+- Event admission, request, and Task health;
+- recent Conversation messages and adapter diagnostics;
 - standalone heartbeat activity where heartbeats are enabled.
 
 Empty standalone heartbeat tracks are not an App failure. An App
-is alive when its schedules/events reach owner workflows and produce current
-project/task evidence.
+is alive when its schedules or Events reach Tasks and produce current project
+or Task evidence.
 
 ## Project Surface
 
@@ -147,7 +148,7 @@ The event page renders backend graph nodes and edges directly. It distinguishes:
 - closure links;
 - projected compatibility evidence;
 - supporting session/tool/transcript detail;
-- delivery acceptance, declared App/task consumers, unhandled facts, and links
+- Event admission, declared App/Task consumers, unhandled facts, and links
   to correlated App requests or tasks.
 
 The browser may own selection and layout. It must not invent missing causal
@@ -170,8 +171,9 @@ uses the shared `publish` operation. Examples:
 
 The UI confirms “accepted/queued” only after the request, task trigger, or
 control operation is durably correlated. Completion appears later in the
-owning App request, task, delivery operation, escalation, metric, or runtime
-result. Never show “done” merely because an HTTP POST returned successfully.
+owning App request, Task, escalation, metric, or Runtime result. Adapter send
+state is diagnostic only. Never show “done” merely because an HTTP POST
+returned successfully.
 
 Project/task commands include the selected project id, task id, visible raw
 fact, expected owner response, and relevant evidence. They create an App
@@ -193,8 +195,8 @@ a surface that lacks a live feed, not a hidden second source of state.
 - Show when data was measured or last moved.
 - Distinguish known, inferred, missing, and stale facts.
 - Preserve raw facts beside system hints.
-- Surface unhandled facts, failed task admission, stale request/dependency waits,
-  failed sessions, delivery uncertainty, and missing coverage.
+- Surface unhandled facts, failed Task admission, stale request/dependency waits,
+  failed sessions, adapter errors, and missing coverage.
 - Keep the operator's submitted intent visible until an accepted task result
   arrives or the system reports a failure.
 - Do not turn an empty metric panel into a healthy verdict.

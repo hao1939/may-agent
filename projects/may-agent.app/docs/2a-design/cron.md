@@ -1,10 +1,10 @@
 # Scheduling And Observation
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. Canonical App input/event schedules and
-observers use the shared scheduler. Explicit standalone and host-maintenance
-jobs use the same scheduler through its historical Cron adapter without
-becoming an App authoring surface.
+**Implementation status:** Canonical App input/event schedules, observers, and
+host-maintenance jobs use the shared scheduler. Host metric snapshots are
+currently declared by both an App schedule and a Cron job; convergence to one
+authority remains open.
 
 ## Purpose
 

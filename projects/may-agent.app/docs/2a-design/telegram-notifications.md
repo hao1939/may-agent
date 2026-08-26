@@ -1,10 +1,11 @@
 # Telegram Channel
 
 **Design status:** Accepted.
-**Implementation status:** Shared Conversation admission, stable reply identity,
-correlated outbound delivery, native App/Task reads, one Task watch per
-chat/topic, focused feedback, human-action projection, and Task cancellation
-are implemented.
+**Implementation status:** Shared Conversation admission, native App/Task
+reads, one Task watch per chat/topic, focused context, human-action projection,
+and Task cancellation are implemented. Outbound sends are best effort; there
+is no durable per-surface replay cursor. Watch refreshes suppress unchanged
+semantic Task revisions and render only meaningful changes.
 
 ## Purpose
 
@@ -187,32 +188,18 @@ it never waits on a notification event.
 Historical `escalation.*` and `message.created` event pairs remain traceable as
 read-only evidence. They do not own new attention work or resume sessions.
 
-## Outbound Delivery
+## Outbound Presentation
 
-The adapter may stage one delivery operation linked to the originating
-Conversation message:
+The Conversation message is semantic truth. Telegram observes an update,
+performs a bounded Conversation read, and makes a best-effort provider send.
+Provider message IDs and send diagnostics may be retained for replies and
+debugging, but they do not create a delivery lifecycle or completion gate.
 
-```text
-persisted Conversation message
-  -> durable delivery operation
-  -> Telegram send attempt
-  -> delivered / failed / uncertain
-```
-
-Keep semantic result and transport certainty separate:
-
-| State            | Meaning                                                                |
-| ---------------- | ---------------------------------------------------------------------- |
-| May result ready | Semantic work is terminal and the content is readable from any adapter |
-| Delivery pending | No provider attempt has reached a terminal policy state                |
-| Delivered        | Provider evidence confirms the message                                 |
-| Failed           | Retry policy may safely continue or the failure is terminal            |
-| Uncertain        | The send may have succeeded; blind retry could duplicate it            |
-
-Delivery state is operational adapter state. It never reopens, delays, or
-changes the May result. For an uncertain send, inspect provider/channel state
-or request operator judgment while preserving the same operation ID; do not
-blindly duplicate it.
+On startup Telegram begins from the current Conversation head so it does not
+replay a large history into a chat. While running it renders newly observed
+message identities. A later explicit history/catch-up feature would require a
+separate reviewed product decision; ordinary operation does not promise
+exactly-once display or offline replay.
 
 ## Reply Target
 
@@ -340,7 +327,7 @@ Telegram integration tests prove:
 - restart during May handling or delivery preserves identity;
 - original session loss creates a fresh session for the same request;
 - proactive attention is one May child request, not an event-pair lifecycle;
-- uncertain sends do not duplicate blindly;
+- failed or uncertain provider sends never rerun May or reopen Task work;
 - Task controls target exact identities and never list-position/session guesses;
 - focused watch feedback reaches May with exact canonical Task context;
 - idle watch performs no polling and coalesces concurrent wakes;
@@ -356,7 +343,7 @@ Telegram integration tests prove:
 
 - Telegram and Console share one `Conversation may:primary`.
 - One durable human message has at most one May App request.
-- One adapter response attempt has at most one delivery operation.
+- One Conversation identity is the semantic response identity across adapters.
 - Telegram identity is delivery/context evidence, not Conversation or work authority.
 - May owns conversation and final wording; domain Apps own project outcomes.
 - Cross-App/human attention uses durable parent-child request dependencies.

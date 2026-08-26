@@ -67,12 +67,15 @@ For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 Console, Web, Telegram, and control-socket text all add one durable human Turn
 to May's Conversation and admit one recoverable May request. The request
 remembers which Turn needs an answer; it is not executable work and does not
-create a May Task.
+become a per-Turn Task. May answers directly or publishes one typed follow-up
+for the existing conversation Task. May may also create an ordinary goal Task
+when it is the accountable App.
 
 ```
 may> implement a retry mechanism for failed API calls
       ↓
-  one May request -> direct answer or responsible App Task
+  one May request -> direct answer or typed durable follow-up
+                  -> existing conversation Task -> responsible Task
 
 may> now add tests for it
       ↓

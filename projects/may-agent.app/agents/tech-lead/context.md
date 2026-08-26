@@ -6,18 +6,18 @@
 - Runtime/domain repo: `/app/projects/may-agent`
 - Global deputy/chat agent: `/app/agents/may`
 
-`may-agent.app` is the project. `tech-lead` is its owner. May is outside the
-project ownership model and handles human chat, deputy judgment, and system
-escalation paths.
+`may-agent.app` is the Host Operations App. The App owns its Tasks and selects
+`tech-lead` as the default execution profile. May handles human conversation,
+deputy judgment, and routing but does not own Host Operations work.
 
 ## Start Here
 
 - `projects/may-agent.app/project.json`
 - `projects/may-agent.app/app.ts`
-- `projects/may-agent.app/.state/tasks/tree.json`
 - `projects/may-agent.app/docs/2a-design/agent-app.md`
+- `projects/may-agent.app/docs/2a-design/system-model.md`
 - `projects/may-agent.app/docs/2a-design/events.md`
-- `projects/may-agent.app/docs/3-proposals/chat-agent-separation.md`
+- `projects/may-agent.app/docs/proposals/design-implementation-convergence.md`
 
 ## Checks
 

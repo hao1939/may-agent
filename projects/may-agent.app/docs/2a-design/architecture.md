@@ -1,10 +1,11 @@
 # Architecture
 
 **Design status:** Accepted.
-**Implementation status:** The canonical path is implemented for every current
-App. Request storage correlates and delivers Task results; it does not execute
-App policy. Task-enabled Apps must have active resource authority; retained
-pre-cutover files remain evidence but are not a runnable compatibility path.
+**Implementation status:** The canonical path is active for every installed
+App. Request storage correlates Task results; it does not execute App policy.
+Installed descriptors require resource authority and normal routing, recovery,
+and reads have no JSON fallback. Generic store/reconciler code still retains
+JSON compatibility for the guarded offline importer and focused fixtures.
 
 Read [system-model.md](system-model.md) first. The architecture follows one
 split:
@@ -73,7 +74,7 @@ input
   -> Host schedules another wake or delivers the accepted result
 ```
 
-The request remains the caller's correlation and delivery identity. The task
+The request remains the caller's correlation and result identity. The Task
 is the App's work identity. A session or trace can explain an attempt but
 cannot replace either record.
 

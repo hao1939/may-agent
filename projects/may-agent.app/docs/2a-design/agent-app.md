@@ -1,12 +1,13 @@
 # App Contract
 
 **Design status:** Accepted.
-**Implementation status:** Every current App uses Task reconciliation as its
-only side-effecting policy path. Pure translators and Task resolvers select
-durable work during admission; they cannot perform it. Request storage
-correlates Task results without a second owner or delivery loop. Scoped Task
-list/get reads are implemented across the SDK, agent tool, control socket, and
-HTTP.
+**Implementation status:** Every current App uses Task reconciliation for
+durable side-effecting work. Pure translators and Task resolvers select durable
+work during admission; they cannot perform it. Request storage correlates Task
+results without a second owner or delivery loop. Scoped Task list/get reads are
+implemented across the SDK, agent tool, control socket, and HTTP. The Host
+Operations App passes its complete local source check; remaining Host and App
+simplification gaps stay in the convergence tracker.
 
 An App is one durable address with one accountable responsibility. Keep the
 mental model to one work object and three responsibilities:
@@ -200,265 +201,53 @@ channel metadata, and persistence handles never enter App code.
 Addressed ingress uses a required `app.input.requested` event. Acceptance means
 the Host created or found exactly one durable request and linked it to the
 event and its task. The request waits for that task's accepted result; it never
-invokes the selected agent independently of the Task. The result may include an optional caller-facing
-`response`; its `summary` remains concise operational state for task views and
-recovery. Apps put no channel delivery state into either field.
+invokes the selected agent independently of the Task. The result may include an
+optional caller-facing `response`; its `summary` remains concise operational
+state for task views and recovery. Apps put no channel delivery state into
+either field.
 
-May uses plain language by default across `response`, `summary`, typed
-dependency descriptions, questions, progress, failures, and design
-explanations. It preserves exact resource identifiers, schema fields, quoted
-evidence, and necessary technical terms; a necessary term is explained simply
-when introduced. This is a communication rule for semantic content, not a
-rewrite of machine-readable contracts and not a keyword filter.
-For example, May says “passing run” rather than “terminal proof,” “one focused
-follow-up” rather than “bounded attempt,” and “tie the evidence to the revision”
-rather than “correlate the proof” when those phrases carry the same meaning.
+There is no App disposition lifecycle. Immediate completion means the Task
+converged in one attempt. Agent calls, workflows, and cross-App dependencies
+are capabilities used by an attempt; their records never replace the Task.
 
-A waiting May result describes only the current owner, current work or blocker,
-material constraints, and required proof. It does not send the destination App
-a story about May's later review, replanning, escalation, or response. The next
-reconciliation attempt already owns that decision.
-
-There is no App disposition lifecycle. Immediate completion means the task
-converged in one attempt. Delegation, analysis, agent calls, workflows, and
-human waits are capabilities or dependencies used by the task attempt. Their
-runtime records do not replace the task.
-
-May feedback about unfinished work becomes typed input to that exact Task.
-During ordinary reconciliation, May returns a dependency with the responsible
-`appId`, exact `taskId`, and accepted App input. Runtime attaches the input to
-the existing Task, wakes it once, and correlates its next result. Omitting
-`taskId` asks the App for a genuinely new outcome. This does not require a
-special `continue` disposition, semantic judgment during admission, or a
-second work loop. The root request—not the opening event or a later feedback
-message—retains caller correlation and result delivery.
-
-A dependency wake means “re-read and decide,” not only success. Completion,
-failure, interruption, task attention, and a missing formerly linked task all
-wake the exact requester. The Host re-observes stored task waits after restart
-and during ordinary resync, so a missed event cannot turn a reviewable failure
-into permanent waiting.
-
-The task result shape for child App work is intentionally small:
+A Task may request one typed outcome from another App:
 
 ```ts
 dependencies: [{ id: "review", appId: "evaluation", input: { kind, data } }];
 ```
 
-For feedback or a decision on existing work:
+When the intent is feedback or a decision for exact unfinished work, it names
+that Task rather than creating a sibling:
 
 ```ts
-dependencies: [{ id: "feedback", appId: "evaluation", taskId, input: { kind, data } }];
+dependencies: [
+  { id: "feedback", appId: "evaluation", taskId, input: { kind, data } },
+];
 ```
 
-`id` is stable within the parent task generation. Runtime owns the derived
-request identity, idempotency, completion Condition, and result Event. The App
-does not emit `app.input.requested`, wait on a delivery receipt, or query the
-target App directly.
+The local `id` is stable within the parent generation. Runtime owns the
+derived request identity, idempotency, admission, completion Condition, and
+result Event. The source App supplies input accepted by the destination App's
+declared schema; it does not emit `app.input.requested`, query the destination
+store, or wait for transport acknowledgement.
 
-The App waits only after the destination App has accepted the durable request.
-An unaccepted request is an execution failure on the same runnable Task, not an
-external wait and not a reason to create replacement work.
+Only successful durable admission installs an external wait. Rejection leaves
+the same parent Task runnable with exact evidence so its App can correct the
+input or choose another safe path. Completion, failure, interruption,
+attention, and disappearance of a formerly linked Task all wake the exact
+requester. Runtime re-observes persisted waits after restart.
 
-`input` must already satisfy the target App's declared `inputSchema`. A source
-App cannot use `{ kind: "message", data: ... }` as a universal cross-App
-envelope. `message` is valid only for Apps that declare it. Invalid typed input
-is rejected before Task creation, and the source task must replan without
-claiming that the target owns work.
+May's human-facing behavior is one use of this generic contract, not part of
+the App authoring model. [Message Lifecycle](message-lifecycle.md) owns its
+bounded frontend decision, clarification quality, Topic linkage, one visible
+conversation Task, direct advice, exact feedback, follow-through, and
+plain-language response rules. [Human Control Surfaces](human-control-surfaces.md)
+owns focused App/Task context and supported human controls.
 
-The **May App** (stable `appId: may`) owns ordinary human conversation. It does
-not create a Task merely to track a human turn. The Host request remembers who
-is owed an answer; May's bounded agent decides what the turn means. Console and
-Telegram independently render the resulting Conversation message; their
-delivery state is Host concern, not part of May's answer.
-
-For a durable human request, May follows one small ownership decision:
-
-1. understand the desired outcome, scope, material constraints, proof, and
-   authority boundary from the message, bounded Conversation, focused
-   resources, and durable preferences;
-2. answer immediately when current evidence is sufficient;
-3. when ambiguity remains, infer safe reversible defaults and ask only for the
-   smallest human decision that materially changes outcome, ownership, risk,
-   proof, or authority;
-4. when the human means to question, steer, approve, cancel, or otherwise
-   change existing work, address or continue that exact Task instead of
-   creating sibling work;
-5. when a short reply approves or rejects May's immediately preceding
-   proposal, apply it to that proposal as a whole: preserve each action and
-   boundary, and represent advice to leave valid work alone as a constraint
-   rather than new work;
-6. otherwise choose the installed App whose declared responsibility fits the
-   clear outcome and whose input schema accepts the typed request; and
-7. link the turn to one lightweight Topic and one or more exact destination
-   Tasks when durable work is needed; and
-8. review the exact dependency results against the human's intention before
-   answering, steering the same Task when a result is incomplete.
-
-May is the human's deputy, not an intent classifier or forwarding router. A
-focused App or Task is exact context, not a predetermined action. May decides
-whether the new message concerns that work at all. Delegation transfers domain
-execution, not May's responsibility to close the human conversation with a
-useful verified result.
-
-A Topic is human-facing context, not work. Its stored fields are only `id`, a
-short title, `openedBy`, `originMessageId`, and links to exact Tasks. It has
-no status, progress, result, retry, scheduler, or reconciliation loop. One Topic
-may link to several Tasks; one Task may outlive the turn that created the link.
-Active and finished views derive from unanswered requests and canonical Task
-state.
-
-A good clarification minimizes human work. Before asking, May checks whether
-the answer is already present or can be chosen safely. The question states the
-likely interpretation, safe assumptions, recommended choice, and only the
-remaining decision. Prefer confirmation or a short choice over “what do you
-want?” One compact question may include tightly related unknowns when doing so
-avoids another turn. Clarification remains ordinary Conversation text; there is
-no intent-draft resource, clarification Condition, or extra lifecycle.
-
-Clarification may naturally take more than one Turn. A partial answer preserves
-the facts it established in the same Topic; May asks only about a remaining
-material ambiguity. A correction replaces the earlier assumption for the work
-that has not yet been accepted. “Use your judgment” authorizes May to apply its
-recommended safe reversible default. If the human asks a question in return,
-May answers it and returns to the unresolved choice only when that choice is
-still necessary. It never repeats an answered question or asks the human to
-choose App-owned implementation details.
-
-This conversational clarification is distinct from an exact human decision
-required by work already in progress. In that case the owning Task exposes a
-human-owned Condition with a concrete requested action, and May routes the
-answer as typed input to that same Task. Topic history explains the exchange;
-the Condition and Task remain authoritative for the work.
-
-### Understanding boundary
-
-Understanding is one bounded LLM decision over structured, Host-authored
-context. The current human-visible scope is presented first: current message,
-selected App, focused Task, selected Topic, reply target, and the command view
-the human actually saw. A focused Task observation includes its identity,
-owner, goal, acceptance, admitted input, current state, progress or result,
-exact waits, and evidence; a status-and-summary projection is not sufficient
-for an ownership decision.
-
-Code then supplies the bounded visible Conversation, the immediately preceding
-proposal or answer, recent Topic candidates and their exact Task links,
-canonical snapshots for Tasks represented by recent command/tool views,
-current Topic-to-Task links, durable preferences, and compact
-installed App input contracts. The LLM decides what the human means and returns
-one schema-validated request decision with four small parts:
-
-- an optional plain-language message for an answer, clarification, or useful
-  immediate explanation;
-- no work, or one typed durable intent/feedback event for May's conversation Task;
-- optional narrow human-authorized controls for exact Tasks already supplied
-  in context; and
-- no Topic, one new plain-language Topic, or one exact existing Topic.
-
-A message without work completes the Turn. A message with durable intent is
-shown once and completes after its follow-up event is accepted. May's
-conversation Task then continues an exact Task or requests genuinely new App
-work. Topic and Task identities say what is continuing; the frontend request
-does not become the coordinator.
-
-Direct advice is the ordinary fast path, including when a Task is focused. May
-may explain whether a wait makes sense, recommend a next step, or give an
-opinion from the supplied evidence without producing a Task effect. If the
-human also asks for action, the same decision may answer now and publish typed
-feedback naming the exact existing Task. The conversation Task applies that
-decision and requests new work only when no supplied unfinished Task can
-fulfill the desired outcome. These are LLM decisions over
-structured context, not keyword branches in Runtime.
-
-Code validates every identity and typed input; it never picks a Topic or Task by
-keyword.
-
-Recent context is not the limit of human memory. An exact old Topic selected by
-an adapter, named by stable reference, or reached through a reply is loaded
-directly. For a natural reference to an older discussion outside the bounded
-set, May may perform a bounded read-only Topic lookup and inspect likely exact
-candidates before its final decision. The model chooses the lookup and judges
-meaning; storage code only returns bounded Conversation evidence. Lookup does
-not wake work, select an owner, or create a Task. If several candidates would
-lead to materially different actions, May asks one compact question with the
-likely interpretation rather than guessing.
-
-For delegated work, May puts its concrete interpretation in the typed input's
-`outcome` and acceptance. The destination App preserves those fields as the
-Task goal. The assignment message repeats that outcome with the exact Task
-reference, so the human can correct a misunderstanding immediately. It does not
-show a generic “assigned” receipt while hiding what May understood.
-
-Code validates schemas, canonical identities, App availability, authority
-boundaries, idempotency, and stale-result fences. It does not duplicate the LLM
-with keyword routing, a second intent classifier, or a clarification state
-machine. Conversely, the LLM cannot invent Apps, bypass typed input, retarget a
-Task implicitly, control a Task absent from canonical context, or make stale
-effects authoritative. The Host applies cancellation through the existing
-human Task service; May never receives the Host database.
-
-The same boundary applies after admission. Code may parse explicit commands,
-typed event and resource fields, declared artifact formats, provider error
-compatibility, and presentation-only search. It must not decide domain meaning
-by searching summaries, evidence labels, reasons, or ordinary messages for
-keywords. When later code needs a decision, the LLM or owning App returns it in
-a schema-validated `result`; parents read the exact child Task result by ID.
-Summaries and evidence explain a decision but never become its machine
-authority.
-
-When a turn carries a focused Task or follows a Topic, the Host includes that
-exact context. May still decides whether the human is asking about it, steering
-it, or starting something new. Relevant feedback becomes typed input to the
-existing owner Task; unrelated text does not mutate it.
-
-Task recovery does not pass through May. Runtime repairs expired attempts and
-wakes the same Task; the owning App reconciles its meaning and execution. May
-contributes only information the owner does not already have--the human's
-intent, feedback, decision, or a semantic challenge to an invalid wait--and
-then explains the accepted result. It never creates replacement work merely
-because a Task looks stale.
-
-The visible scope is the default subject of ordinary pronouns and unqualified
-scope. "Do it" normally refers to the preceding proposal; "all tasks" while
-working in a Gym cleanup Topic normally refers to that bounded Gym concern.
-Only the human's meaning—not a keyword or the mere presence of focus—may widen
-ownership or create new work. A completed historical Task stays immutable;
-May may use its Topic as context and create a distinct follow-up when needed.
-
-An accepted follow-up event carries the Topic and exact identity selected from
-the current bounded context. The conversation Task serializes linkage,
-reuses the fitting unfinished primary Task, and asks a destination App for new
-work only when needed. Destination Task events wake that same conversation Task.
-There is no open per-turn child-wait loop, Topic scheduler, polling loop, or
-transport acknowledgement between them.
-
-Runtime projects the current installed App IDs, descriptions, and compact input
-contracts into the bounded executor prompt. A contract contains its kind,
-required data paths, field shapes, and fixed literal values derived from the
-App's existing input schema. The field shapes cover optional named fields too,
-so an executor can form a valid input without copying the full schema. Only an
-App with a loaded Task policy and an input-to-Task
-resolver is an advertised dependency target. This catalog is discovery, not
-routing policy: May chooses the accountable App, while Runtime validates the
-chosen App and input against the same registry generation before publishing
-the dependency. A missing owner or capability goes to the Host Operations App
-(`may-agent`) for resolution rather than becoming hidden May work.
-
-A clarification completes the current request with the question. The next
-human message is a new request carrying bounded Conversation and Topic context.
-Durable work is followed by May's conversation Task and owned through exact Tasks.
-This keeps human conversation natural without turning the dialogue into work.
-
-The **Host Operations App** (stable `appId: may-agent`) is a different App. It
-owns platform/runtime Tasks such as a correlated Host deployment. May may route
-a human request to it, but the resulting Task belongs to `may-agent`; an agent
-execution named `may` remains only a replaceable attempt.
-
-The boundary is about responsibility, not ceremony. May answers, clarifies,
-delegates genuine domain work, and applies a human's exact supported Task
-control. Host Operations is not an intermediary for cancellation, feedback, or
-other routine control. It receives work only when the desired outcome really
-changes Host code, configuration, deployment, or platform policy.
+The Host Operations App (`app:may-agent`) is an ordinary App for desired Host
+changes. May may address it through typed input, but routine Task feedback,
+cancellation, and presentation remain on the shared Task and adapter
+boundaries; Host Operations is not an intermediary.
 
 ## Events and subscriptions
 
@@ -562,7 +351,7 @@ The host owns:
 
 Apps own domain meaning, input schemas, pure task resolution, reconciliation,
 acceptance, observer interpretation, workflows, and domain metrics. Apps never
-receive raw SQL, request/delivery state, unrestricted task storage, global
+receive raw SQL, request or adapter state, unrestricted task storage, global
 runtime paths, scheduler handles, or recovery APIs.
 
 When task reconciliation is paused, the Host admits input and keeps schedules,
@@ -591,7 +380,7 @@ describe domain outcomes. A metric breach is a fact that may wake a task or,
 when a new outcome is genuinely required, declare or revise a task through the
 App input path. It is never an alternate work authority.
 
-## Migration progress
+## Contract migration progress
 
 The code moves to this model in one direction while preserving restartable
 work:
@@ -616,6 +405,8 @@ work:
 At every step there remains one authoritative task and at most one App
 execution path for newly migrated input. Compatibility may translate old
 declarations at load time, but it must not run both paths for the same input.
+Remaining Runtime and App cleanup is tracked in
+[design-implementation-convergence.md](../proposals/design-implementation-convergence.md).
 
 ## Integrity invariants
 

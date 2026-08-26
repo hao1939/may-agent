@@ -1,9 +1,9 @@
 # May-agent App Workflows
 
-Reusable project task workflows for May-agent platform planning, review, and
-task execution belong here when they are useful enough to outgrow direct owner
-handling.
+Reusable Host Operations workflows belong here when a repeated bounded process
+is useful enough to outgrow a direct agent attempt.
 
-`app.ts` correlates planning and signal events to tasks; reconciliation invokes
-an app-local workflow or falls back to `tech-lead`. May remains the human-facing
-deputy and system-escalation path, not the owner of this project.
+`app.ts` maps addressed input and facts to Tasks; reconciliation invokes an
+explicit App-local workflow or the selected agent. The App owns the Task,
+`tech-lead` is its default execution profile, and May remains the human-facing
+deputy.

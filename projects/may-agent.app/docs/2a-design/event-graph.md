@@ -1,10 +1,12 @@
 # Event Graph And Trace
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for new runtime events. Execution
-lifecycle closure is transactional, App requests/tasks retain their own durable
-authority, channel delivery is projected, and integrity checks cover structural
-and semantic failures. Retained history may still require explicit backfill.
+**Implementation status:** Core trace storage, links, APIs, UI projection, and
+transactional execution closure are implemented for new Runtime Events. App
+requests and Tasks retain their own durable authority. Retained history may
+still require explicit backfill. Conversation response identity and current
+Task observations are now resolved by the shared projections rather than by
+adapter-local inference.
 
 ## Purpose
 
@@ -59,7 +61,7 @@ may add supporting detail, but they must not create a missing causal parent or
 pretend that context was passed when it was not.
 
 `get(eventId)` is the compact entry point. It returns the stored event, its
-`recorded`/`accepted` delivery state, and bounded links to authoritative
+`recorded`/`accepted` admission state, and bounded links to authoritative
 request, task, session, delivery, or operation records. Those links expose
 current state without copying mutable work truth into the event row. The graph
 may expand them as supporting nodes but cannot treat them as event children
@@ -281,587 +283,167 @@ main chain, and links for non-parent relationships.
 
 ## Graph Read Model
 
-Trace storage records durable event relationships. The graph read model turns
-those relationships plus projections such as sessions, workflow runs,
-transcripts, notifications, metrics, and pair runs into display-ready graph
-nodes and edges.
+Trace storage records durable event relationships. The read model adds bounded
+supporting records—Tasks, requests, sessions, workflow runs, transcript turns,
+tools, metrics, and adapter diagnostics—without turning them into Events or
+copying their mutable truth.
 
-The read model owns graph semantics:
+It owns:
 
-- which records are graph nodes;
-- which node is the parent of another node in the displayed hierarchy;
-- which edges mean main flow, reference, closure, detail, tool call, or return;
-- which nodes are primary evidence and which are supporting detail evidence;
-- which abnormal/skipped/unhandled records must remain visible for inspection.
-- the provenance of every edge: `persisted`, `lifecycle`, `correlation`,
-  `projection`, or `transcript`.
+- which persisted or projected records appear as nodes;
+- display hierarchy through an explicit `parentKey`;
+- flow, reference, closure, detail, sequence, tool-call, and tool-result edges;
+- `persisted`, `lifecycle`, `correlation`, `projection`, or `transcript`
+  provenance for every edge; and
+- visibility of skipped, malformed, unhandled, orphaned, and diagnostic facts.
 
-Persisted `parentEventId` and links are authoritative. Lifecycle and correlation
-edges are visibly marked compatibility evidence; they are not substitutes for
-propagating trace when new work is emitted.
+Persisted `parentEventId` and trace links are authoritative. Lifecycle and
+correlation edges keep retained history inspectable, but are labeled
+compatibility evidence and never repair missing causal propagation silently.
 
-The UI owns only presentation:
+Display hierarchy and time are independent. `parentKey` sets horizontal
+nesting; timestamp plus stable sequence sets vertical chronology. Missing
+transcript timestamps may be interpolated within their known session bounds,
+but hierarchy traversal must never reorder time.
 
-- layout direction, spacing, colors, and selection;
-- scroll position, anchors, and fallback raw rows;
-- rendering different node/edge kinds consistently.
+The UI owns layout, selection, colors, spacing, and raw inspectors. It does not
+infer parents from event names, search payload text for relationships, hide
+backend-returned diagnostics, or build a second graph model.
 
-Layout has two independent axes:
+## Storage, Writing, And Retention
 
-- horizontal position is hierarchy depth derived from `parentKey`; siblings at
-  the same depth align in the same column;
-- vertical position is chronological across the complete graph; earlier nodes
-  are always above later nodes, with stable sequence order breaking timestamp
-  ties.
-
-Transcript records do not always carry a timestamp on every turn. The read
-model interpolates a missing timestamp between the nearest known transcript or
-session timestamps, then enforces monotonic session order. The UI must not use
-hierarchy traversal to reorder nodes vertically.
-
-Do not make the browser infer semantic hierarchy from event names or payload
-string matching. If the graph needs a session event, an LLM turn, a tool call,
-or a diagnostic to appear as a child of a session node, the API response should
-carry that relationship explicitly.
-
-Display hierarchy is intentionally generic and can have multiple levels:
+Events remain append-only nodes. Trace metadata is additive:
 
 ```text
-event
-  session detail event
-  transcript turn
-    tool call
-      tool result
-  workflow step
-    child session
-      transcript turn
+event_traces(event_id, trace_id, parent_event_id, visibility)
+event_trace_links(from_event_id, to_event_id, type, label)
 ```
 
-The current UI may render only two or three visible levels, but the data model
-must not bake in that limit.
+A parent edge points parent to child. A stored reference or closure link points
+from the declaring event to the related event. Renderers may draw a closure in
+the readable opener-to-closer direction while preserving its stored
+provenance.
 
-Recommended display node shape:
+A new producer emits one normal Event envelope. While handling a persisted
+Event, emitted Events inherit its trace and use it as their direct parent unless
+the producer explicitly starts a new trace or adds a non-parent link. Event
+insertion and trace/link insertion commit together. App requests, Tasks, and
+dependencies keep their own identities and link to Events; the Host never emits
+decorative Events solely to improve graph shape.
 
-```typescript
-type EventGraphDisplayNode = {
-  key: string; // stable within response: event:3128372, session:s_123:turn:4
-  kind:
-    | "event"
-    | "session"
-    | "workflow"
-    | "turn"
-    | "tool_call"
-    | "tool_result"
-    | "metric"
-    | "notification"
-    | "diagnostic";
-  role?: "primary" | "detail" | "diagnostic";
-  parentKey?: string; // display parent, not necessarily trace parent
-  level?: number; // convenience for simple renderers; derivable from parentKey
-  visibility: "default" | "detail";
-  eventId?: number;
-  sessionId?: string;
-  workflowRunId?: string;
-  turnIndex?: number;
-  toolCallId?: string;
-  timestamp?: number;
-  type?: string;
-  label: string;
-  summary?: string;
-  dataPreview?: Record<string, unknown>;
-  refs?: Record<string, string | number | boolean | null>;
-};
-```
+An Event without a provable parent starts a local `event:<eventId>` trace.
+History may be projected from exact lifecycle and correlation records, but
+backfill never invents an App result, closes work, or becomes current Task
+authority.
 
-Recommended display edge shape:
+Retention protects Events referenced by unfinished requests, Tasks,
+Conditions, sessions, lifecycle pairs, or retained trace links. After closure,
+high-volume detail may expire before boundary and closure evidence. If detail
+leaves the operational database, retain a compact manifest rather than leaving
+a dangling causal parent.
 
-```typescript
-type EventGraphDisplayEdge = {
-  key: string;
-  sourceKey: string;
-  targetKey: string;
-  kind:
-    | "flow"
-    | "reference"
-    | "closure"
-    | "detail"
-    | "sequence"
-    | "tool_call"
-    | "tool_result";
-  label?: string;
-  provenance:
-    | "persisted"
-    | "lifecycle"
-    | "correlation"
-    | "projection"
-    | "transcript";
-};
-```
-
-Important distinction:
-
-- `trace.parentEventId` is the durable event-to-event parent.
-- `parentKey` is the display hierarchy used to draw detail nodes under a
-  selected event/session/workflow.
-
-Historical `session.completed`, `session.receipt`, routine `handler.skipped`,
-and `evaluation.skipped` records may be detail children of a session start node
-even when their durable trace parent is different or missing. The graph keeps
-their original `eventId`, `type`, and trace metadata; the runtime no longer
-creates these derivative records for normal session completion.
-
-The read model must not drop records because they look secondary. Skipped,
-unhandled, malformed, orphan, and diagnostic records are often the evidence the
-human is looking for.
-
-### One terminal session fact
-
-New sessions have one terminal event: `session.end`. Its `data` contains the
-runtime outcome, summary, duration, structured `finishParams`, and correlation
-fields. Recovery, evaluation, and project workflows subscribe to that event
-directly.
-
-The runtime does not copy it into `session.completed` or `session.receipt`.
-Expected filtering returns without an event; `handler.skipped` is reserved for
-an explicit request that was malformed or deliberately declined. Evaluation
-preflight stores an intentional skip in the evaluation read model instead of
-emitting a dead-end `evaluation.skipped` event.
-
-This rule keeps the graph faithful: one fact has one event ID, one payload, and
-one place in the timeline. Historical derivative events remain inspectable but
-must not influence current routing.
-
-## Event Envelope
-
-The canonical envelope stays small. `trace` is event-system metadata, not domain
-data, so it belongs beside `type`, `source`, `target`, and `owner`.
-
-Target shape:
-
-```typescript
-type EventEnvelope<
-  TData extends Record<string, unknown> = Record<string, unknown>,
-> = {
-  id?: number; // assigned by the event store
-  type: string;
-  source?: string;
-  target?: Record<string, unknown>;
-  owner: string;
-  urgency?: "low" | "normal" | "high" | "immediate";
-  ttl_ms?: number;
-  timestamp?: number;
-  visibility?: "default" | "detail";
-  trace?: {
-    traceId: string;
-    parentEventId?: number;
-    links?: Array<{
-      eventId: number;
-      type?: "reference" | "closure";
-      label?: string;
-    }>;
-  };
-  data: TData;
-};
-```
-
-`data` remains domain attributes. Do not put general trace relations into
-`data`. Historical rows may keep legacy context fields such as
-`conversationId`, `originalIssue`, or correlation keys. New producers use
-`trace` whenever the related event id is known.
-
-## Storage
-
-Keep events as nodes:
-
-```sql
-events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_type TEXT NOT NULL,
-  source TEXT,
-  owner TEXT,
-  data TEXT,
-  timestamp INTEGER NOT NULL,
-  ...
-)
-```
-
-Store trace metadata separately so graph reads are simple:
-
-```sql
-event_traces (
-  event_id INTEGER PRIMARY KEY,
-  trace_id TEXT NOT NULL,
-  parent_event_id INTEGER,
-  visibility TEXT NOT NULL DEFAULT 'default' -- default | detail
-)
-```
-
-Store non-parent links separately:
-
-```sql
-event_trace_links (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  from_event_id INTEGER NOT NULL,
-  to_event_id INTEGER NOT NULL,
-  type TEXT NOT NULL DEFAULT 'reference', -- reference | closure
-  label TEXT NOT NULL DEFAULT '',
-  created_at INTEGER NOT NULL,
-  UNIQUE(from_event_id, to_event_id, type, label)
-)
-```
-
-Direction:
-
-```text
-parentEventId: parent -> child
-trace link:    from_event -> linked event
-closure link:  closing event -> opened event
-```
-
-For historical event-pair visualization, closure edges can be drawn from opened
-event to closing event, but storage keeps the retained event's declared links
-as written:
-
-```text
-escalation.resolved links to escalation.created with type=closure
-```
-
-## Existing DB Records
-
-The current SQLite DB already contains valuable operational history. The trace
-model must reuse it rather than replacing it.
-
-| Table                                                      | Role in the graph             | How to use it                                                                                                                                                                                          |
-| ---------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `events`                                                   | Canonical event nodes         | Keep append-only. Add trace metadata in side tables, not by rewriting event payloads.                                                                                                                  |
-| `event_pair_runs`                                          | Retained lifecycle projection | Backfill parent/closure edges for session, handler, CLI-task, and escalation lifecycles. Historical project-task and owner-inbox rows are read-only compatibility evidence, never live work authority. |
-| `sessions`                                                 | Execution span projection     | Link session events and detail nodes by `sessionId`; do not duplicate full transcripts into event payloads.                                                                                            |
-| `workflow_runs`                                            | Workflow span projection      | Link handler/workflow/session events by `workflowRunId`, `parentWorkflowRunId`, and `projectId`.                                                                                                       |
-| `notification_messages`                                    | Transport projection          | Link Telegram/Web delivery records to the event that caused the notification and to the human reply that followed.                                                                                     |
-| `metrics`, `metric_alerts`, `metric_snapshots`             | Metric signal projection      | Link `metric.breach`, `metric.recovered`, alert rows, App/task dispositions, and follow-up evidence.                                                                                                   |
-| `session_digests`, `evaluations`, `guard.triggered` events | Detail evidence               | Expose as detail nodes or side-panel evidence without dropping them from the graph.                                                                                                                    |
-
-The migration rule is additive:
-
-- keep existing tables and fields;
-- keep legacy context fields such as `sessionId`, `workflowRunId`,
-  `taskId`, `attemptId`, `metricId`, `alertId`, `conversationId`,
-  `originalIssue`, and `escalationId`;
-- prefer new `trace` metadata for exact event-to-event relations when the
-  related event id is known;
-- use compatibility projections to make older records graphable.
-
-### Referential Retention
-
-Retention must preserve events referenced by an unfinished App request or
-dependency, active task/Condition/session, historical open lifecycle pair, or
-a retained trace link. Event identity is trace evidence, not the lifecycle
-identity for new App requests/tasks. After closure, prune high-volume detail
-before root, boundary, delivery, and closure evidence. If full detail cannot
-remain in the operational database, archive a compact trace manifest before
-deleting it.
-
-The normal age window applies only after these referential protections. Trace
-cleanup must not silently null a still-live causal parent or delete the only
-closure edge for retained work.
-
-## Backfill Strategy
-
-Backfill should populate `event_traces` and `event_trace_links` from existing
-records. It should be deterministic and safe to rerun.
-
-Baseline rule:
-
-```text
-event without known parent -> trace_id = event:<event_id>
-```
-
-Then apply stronger relations:
-
-| Existing evidence                                    | Backfill action                                                                                                                                                                             |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `event_pair_runs.open_event_id` and `close_event_id` | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
-| Payload has `openEventId` / `open_event_id`          | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise.                                                        |
-| Same `sessionId`                                     | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace.                                        |
-| Same `workflowRunId`                                 | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace.                                                                                |
-| Same `taskId` plus `attemptId`                       | Link reconciliation start/result events, managed sessions or native-worker evidence, and any retained historical task-attempt records.                                                      |
-| Same `metricId` / `alertId`                          | Link metric alert, `metric.breach`, responsible workflow/session, `metric.recovered`, and review events.                                                                                    |
-| Telegram message coordinates and reply context       | Link current `conversation.message.created` input/output to provider message IDs; retain historical `human.input.received` reply links only as compatibility evidence.                      |
-| Legacy `escalationId`                                | Resolve to the historical opening `escalation.created` event when possible. Keep that event id only as compatibility trace identity.                                                        |
-
-Backfill should not invent domain outcomes. If a historical escalation pair has
-no closer, the graph shows it as an open compatibility chain; it does not create
-new App work. Current work truth comes from App requests/dependencies and
-tasks.
-
-## Write Path
-
-New event producers may include `trace` in the event envelope. The DB writer
-should:
-
-1. Insert the `events` row as it does today.
-2. Resolve the inserted event id.
-3. Insert or update `event_traces` for that event.
-4. Insert `event_trace_links` for `trace.links`.
-
-Event producers normally do not copy trace metadata manually. While a handler
-is processing an event, events it emits inherit the triggering event's
-`traceId` and use the triggering event id as `parentEventId`. The event bus
-preserves this context across asynchronous handler continuations. Producers
-provide explicit trace metadata only when starting a new trace, linking to
-additional events, or overriding the natural parent.
-
-All host-owned event insertion paths use the same trace helper. App
-request/task/dependency writes retain their own stable identities and add trace
-references rather than manufacturing follow-up events solely for graph shape.
-
-If an event has no explicit trace, the writer can still create a local trace row
-with `trace_id = event:<event_id>`. Later backfill can merge it into a stronger
-trace by updating the side table.
+Historical inspection and additive backfill procedure belong to
+[Event Runtime Audit](../2b-manual/event-runtime-audit.md), not this contract.
 
 ## Branches, Conditions, Loops, And Merges
 
-Branches are natural fan-out: several events can have the same parent event.
+The graph uses ordinary relationships:
 
-```text
-metric.breach
-  -> project.owner.requested
-  -> message.created
-  -> project.runtime.review.requested
-```
+| Shape     | Representation                                                     |
+| --------- | ------------------------------------------------------------------ |
+| Branch    | several child Events share one direct parent                       |
+| Condition | a Task wait and the exact Event that satisfies or challenges it    |
+| Loop      | repeated immutable wake/attempt/result Events                       |
+| Merge     | one Event has a direct parent plus explicit non-parent references   |
 
-Conditions are event attributes or link labels:
+A loop never mutates an old Event. An aggregate view may summarize repeated
+iterations, but the audit graph retains every bounded Event in scope.
 
-```text
-conversation.message.created (author.kind=human)
-  -> app.dependency.completed  data.outcome=answered
+Cross-App work is owned by App request, dependency, and Task records. The graph
+only explains their causal Events. Human attention follows the same model:
+May publishes shared Conversation context, the human replies with a new root or
+explicit reference, and the exact owning Task receives typed input. Console,
+Telegram, and Web remain independent best-effort adapters.
 
-project.test_run.completed
-  -> project.task.reconcile.started  data.reason=condition-satisfied
-```
+## Sessions, Turns, And Tools
 
-Loops are repeated events, not mutation of the same node:
+One new session has one terminal fact: `session.end`. Its payload carries the
+runtime outcome, summary, duration, structured finish data, and correlation
+fields. The Runtime does not manufacture normal `session.completed` and
+`session.receipt` copies. Historical derivative records remain visible as
+compatibility detail and cannot drive current routing.
 
-```text
-project.task.reconcile.started -> project.task.reconciled -> later wake -> ...
-```
+Available transcript turns, tool calls, and tool results are projected beneath
+their session. Store compact attributes and references, not full prompts,
+tokens, or large tool output in Event payloads. A projected transcript node
+keeps its session, turn/tool identity, order, and provenance; it is not a
+persisted Event unless the Runtime actually emitted one.
 
-The read model may provide a separate aggregate view for repeated loop slices,
-but the event graph itself keeps every event. An aggregate can be labeled:
+## Review Contract
 
-```text
-spec-loop x37 iterations
-```
+A trace review should answer:
 
-Merges are multiple incoming parent/reference relationships:
+| Question                                | Evidence                                                        |
+| --------------------------------------- | --------------------------------------------------------------- |
+| What started this chain?                | persisted trace root or explicitly labeled compatibility root   |
+| What accepted responsibility?           | exact App request/Task admission or explicit rejection/no-op     |
+| What execution happened?                | workflow/session/turn/tool nodes with their provenance           |
+| What durable work changed?              | authoritative Task/request links and accepted result Events      |
+| Did May answer?                         | correlated result in Conversation                                |
+| Did an adapter render it?               | optional adapter/provider diagnostic; never semantic completion  |
+| Where did it stop?                      | missing edge, open Condition, failed attempt, or absent result    |
 
-```text
-project.owner.requested
-  <- metric.breach
-  <- project.task.reconciled  data.disposition=attention
-  <- app.dependency.completed
-```
+Integrity checks report at least:
 
-## App Delegation And Human-Attention Example
+- a lifecycle closer without its persisted closure link;
+- opener and closer split across traces;
+- a new non-root lifecycle Event isolated in a singleton trace;
+- admitted human intent with no execution, rejection, no-op, or result;
+- a May result absent from its correlated Conversation;
+- a child result not observed by its exact dependency; and
+- bookkeeping-only acceptance where a declared semantic route was required.
 
-Cross-App work is identified by App request/dependency records, not an
-opening event:
+One syntactically valid trace row per Event is necessary but insufficient.
+Transport delivery or human silence never turns a valid result into unfinished
+App work.
 
-```text
-domain App request/task
-  -> typed human-attention event to May
-  -> outbound delivery operation
-  -> conversation.message.created (author.kind=human)
-  -> May conversation Task routes the answer
-  -> app.dependency.completed fact
-  -> source App request/task resumes
-```
+## API And Presentation
 
-The graph renders the App request, dependency, delivery, task, session, and
-event nodes with their persisted relations. Telegram/Web remain transports.
-Trace IDs explain causality, while the child App item ID and parent dependency
-are the durable escalation identity. Historical `escalation.created` /
-`escalation.resolved` pairs remain graphable as compatibility evidence only.
-
-## LLM Turns And Tool Calls
-
-LLM turns and tool calls should also be traceable. When a transcript is
-available, the graph endpoint projects them into the complete graph.
-
-Use `visibility`:
-
-| Visibility | Display role                     | Examples                                                                                       |
-| ---------- | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `default`  | primary event                    | `app.dependency.completed`, `project.task.reconciled`, `message.created`, `workflow.completed` |
-| `detail`   | supporting evidence, still shown | `llm.turn.completed`, `tool.call.completed`, `context.read`                                    |
-
-Do not store full prompts or large tool output as graph node payloads. Store
-compact attributes and references:
-
-```json
-{
-  "type": "llm.turn.completed",
-  "visibility": "detail",
-  "trace": {
-    "traceId": "event:100",
-    "parentEventId": 102
-  },
-  "data": {
-    "sessionId": "s_123",
-    "turnIndex": 4,
-    "model": "gpt-5.6-sol",
-    "summary": "Interpreted human approval and returned the correlated May App result.",
-    "transcriptRef": ".state/sessions/s_123/session.jsonl#turn=4"
-  }
-}
-```
-
-```json
-{
-  "type": "tool.call.completed",
-  "visibility": "detail",
-  "trace": {
-    "traceId": "event:100",
-    "parentEventId": 104
-  },
-  "data": {
-    "sessionId": "s_123",
-    "toolName": "emit_event",
-    "status": "success",
-    "resultEventId": 103
-  }
-}
-```
-
-Projected trace:
-
-```text
-conversation.message.created
-  -> session.start
-  -> llm.turn.completed
-  -> tool.call.completed
-  -> app result / app.dependency.completed
-```
-
-## Review And Debugging
-
-The trace should make review concrete:
-
-| Question                                | Trace answer                                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Did the event reach its declared route? | Event delivery records show input-to-task admission, exact wake, or observation.                                 |
-| Did May receive the human reply?        | A human `conversation.message.created` exists with its reply/context anchor and bounded May request.             |
-| Did May answer the human request?       | Conversation contains the correlated May result; adapter rendering is not semantic work.                        |
-| Did the source consume the result?      | Its dependency is completed and the exact parent App request/task resumed.                                       |
-| Did the LLM/tool fail?                  | Detail nodes show missing or failed `tool.call.completed`.                                                       |
-
-Broken chains should be visible without guessing:
-
-```text
-event persisted, required declared route not admitted
-child App request admitted, parent dependency missing
-human reply received, May App request not resumed
-child result stored, source dependency not completed
-tool call failed before emitting expected event
-```
-
-Trace integrity checks must test meaning as well as schema shape. At minimum,
-report:
-
-- a closed lifecycle pair without a persisted closure link;
-- an opener and closer in different traces;
-- a human semantic intent with no child execution, rejection, or no-op;
-- a human result generated but not delivered to its channel;
-- a non-root lifecycle event isolated in a singleton trace;
-- an event accepted only by bookkeeping when a domain or owner reaction was
-  required.
-
-Having one syntactically valid `event_traces` row per event is necessary but is
-not sufficient evidence that causal propagation or loop closure works.
-
-## API And UI
-
-The graph API should return nodes and edges directly:
+The graph endpoint returns one complete bounded server-resolved graph:
 
 ```text
 GET /api/events/:eventId/graph
 ```
 
-The API should prefer persisted trace rows and fall back to `event_pair_runs`
-when traces have not been backfilled yet. This keeps existing DB history useful
-immediately after deployment.
+Its stable contract includes the focused Event, revision, nodes, edges, resolved
+scope, raw persisted Events/relations, and diagnostics. Nodes carry stable keys,
+kind, role, optional display parent, identity references, time, label, summary,
+and a bounded data preview. Edges carry stable keys, endpoints, kind, label,
+and provenance. The focused persisted Event additionally exposes its complete
+stored envelope and data.
 
-Response shape:
+The endpoint prefers persisted trace relationships and may add visibly marked
+compatibility projections for retained history. The browser renders every
+returned node and edge, distinguishes detail and diagnostics, and exposes raw
+evidence without applying another semantic filter.
 
-```typescript
-type EventGraphResponse = {
-  focusEventId: number;
-  traceId?: string;
-  revision: string;
-  nodes: EventGraphDisplayNode[];
-  edges: EventGraphDisplayEdge[];
-  events: EventGraphNode[];
-  relations: EventGraphEdge[];
-  scope: {
-    kind: "session" | "workflow" | "task" | "graph";
-    ids: string[];
-    label: string;
-    graphEventIds: number[];
-    timelineEventIds: number[];
-  };
-  diagnostics: string[];
-};
-```
+## Current Implementation Boundary
 
-UI defaults:
+Implemented behavior includes additive trace/link storage, transactional Event
+and trace writes, inherited async trace context, closure links, bounded graph
+reads, transcript projection, diagnostic provenance, and backend-authored UI
+hierarchy. App requests and Tasks remain the mutable work authorities.
 
-- render every node and edge returned by the endpoint
-- visually distinguish supporting `detail` evidence without hiding it
-- label `closure` links distinctly
-- show raw event envelope and transcript/tool references in the inspector
-- preserve all nodes returned by the API, including skipped/unhandled
-  diagnostics
-
-The renderer is an implementation detail. It must honor backend node keys,
-hierarchy, chronology, edge kinds, and provenance rather than deriving a second
-graph model in the browser.
-
-## Current Implementation
-
-- `event_traces` and `event_trace_links` are additive side tables.
-- New event rows get a default `trace_id = event:<event_id>`.
-- Explicit envelope `trace` writes parent and link metadata.
-- Historical owner-inbox follow-up rows retain projected closure links; new App
-  work writes canonical request/dependency links instead.
-- `backfillEventPairTraces(...)` can project existing `event_pair_runs` into
-  trace rows and closure links.
-- `GET /api/events/:eventId/graph` returns the complete resolved graph and
-  diagnostics.
-- Graph `nodes` and `edges` are the canonical display contract. Raw facts appear
-  once as `events` and `relations`; `scope.graphEventIds` and
-  `scope.timelineEventIds` select the graph and timeline projections without
-  duplicating event objects.
-- The endpoint projects available transcript turns and tools for every session
-  in the resolved graph.
-- The UI renders backend node keys, hierarchy, edge kinds, and provenance. It
-  owns only selection and layout.
-- `bun run check:event-graph -- --state-dir /app/.state` checks trace storage
-  integrity. Add `--backfill` to create baseline trace rows for existing events
-  and project lifecycle pair records into closure links.
-- Live event insertion, pair closure, trace alignment, and closure-link writes
-  commit in one database transaction.
-- Persistent chat turns carry their intent trace through send/cold resume,
-  agent calls/forks, workflows, CLI delegation, terminal events, and delivery.
-- The integrity checker reports missing live closure links, opener/closer trace
-  splits, malformed human roots, undelivered human results, and invalid
-  bookkeeping-only acceptance.
+Retained history can still lack exact trace propagation. Its bounded audit and
+optional additive backfill are operational procedures; they are not another
+runtime path or a prerequisite for new Events.
 
 ## Non-Goals
 
-- Do not add a second request/commitment lifecycle. The canonical task owns App
-  work; its linked request correlates caller delivery, and the root event,
+- Do not add a second request/commitment lifecycle. The canonical Task owns App
+  work; its linked request correlates the caller and result, and the root Event,
   trace, and graph only explain cause and evidence.
-- Do not replace task trees, metrics, sessions, or workflow run records.
+- Do not replace Task views, metrics, sessions, or workflow run records.
 - Do not make the event trace a workflow engine.
 - Do not store every token or large tool output in event rows.
 - Do not create escalation-specific relation fields when trace metadata

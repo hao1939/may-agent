@@ -1,22 +1,17 @@
 <!-- SYNC:TOOLS_START -->
+
 ## Available Tools (auto-generated from agent.json)
+
 `read`, `write`, `edit`, `bash`, `workflow`, `checkpoint`, `finish`
+
 <!-- SYNC:TOOLS_END -->
 
-# Tools
+# Tool Use
 
-- `read` — read files from the project
-- `write` — create or modify files
-- `bash` — run shell commands (tsc, bun test, git, grep, etc.)
-- `edit` — surgical text replacement in files
-- `handoff` — transfer artifacts or request reviews from other agents (P82-compliant)
+The Runtime tool schema is authoritative; do not rely on historical references
+to tools absent from the generated list.
 
-- `checkpoint` — save progress during long-running tasks. Call directly like `read`/`write`/`bash`:
-  ```
-  checkpoint({ summary: "What I accomplished", data: { key: "value" } })
-  ```
-  ⚠️ NOT a shell command (`bash("checkpoint ...")` → exit 127). NOT an agent.
-
-There is no `exec` tool. Use `bash` for shell commands.
-
-Use whatever approach works best to thoroughly review the code.
+Read exact source, run the target repository's checks, and use workflows only
+for bounded review steps whose result is required now. Checkpoints preserve
+attempt-local evidence. `finish` returns a verdict to the owning App and does
+not itself accept the Task.

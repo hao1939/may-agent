@@ -1,7 +1,12 @@
 # Human Control Surfaces
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for May Console and Telegram.
+**Implementation status:** The shared commands, Conversation reads, Task reads,
+and one-watch interaction are implemented for May Console and Telegram.
+Canonical message identity across bounded fallback projections is implemented.
+Exact attempt-scoped progress and suppression of unchanged watch output are
+also implemented. Console correlates a canonical Conversation result with its
+exact watched Task and suppresses the equivalent supporting terminal card.
 
 **Aligned with:** [system-model.md](system-model.md),
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
@@ -39,19 +44,19 @@ selected by an App.
 
 Every human adapter exposes the same small meanings:
 
-| Meaning                | Console form                                   | Telegram form                                         |
-| ---------------------- | ---------------------------------------------- | ----------------------------------------------------- |
-| list or select App     | `/apps [app]`                                  | native `/apps [app]`                                  |
-| list Topics            | `/topics`                                      | native `/topics`                                      |
-| show or follow Topic   | `/topic [ref\|clear]`                         | native `/topic [ref\|clear]`                         |
-| list Tasks             | `/tasks [all] [history]`, then `/tasks more`   | native `/tasks [all] [history]`, then `/tasks more`   |
-| show human actions     | `/todo [all]`, `/todo more`                    | native `/todo [all]`, `/todo more`                    |
-| read one Task          | `/task <ref>`                                  | native `/task <ref>`                                  |
-| watch one Task         | `/watch [ref]`                                 | `/watch [ref]`, later buttons allowed                 |
-| stop watching          | `/unwatch`                                     | `/unwatch`                                            |
-| cancel one Task        | `/cancel [ref]`                                | `/cancel [ref]`                                       |
-| reload definitions     | `/reload`                                      | native `/reload`                                      |
-| talk or give feedback  | bare text                                      | ordinary message                                      |
+| Meaning               | Console form                                 | Telegram form                                       |
+| --------------------- | -------------------------------------------- | --------------------------------------------------- |
+| list or select App    | `/apps [app]`                                | native `/apps [app]`                                |
+| list Topics           | `/topics`                                    | native `/topics`                                    |
+| show or follow Topic  | `/topic [ref\|clear]`                        | native `/topic [ref\|clear]`                        |
+| list Tasks            | `/tasks [all] [history]`, then `/tasks more` | native `/tasks [all] [history]`, then `/tasks more` |
+| show human actions    | `/todo [all]`, `/todo more`                  | native `/todo [all]`, `/todo more`                  |
+| read one Task         | `/task <ref>`                                | native `/task <ref>`                                |
+| watch one Task        | `/watch [ref]`                               | `/watch [ref]`, later buttons allowed               |
+| stop watching         | `/unwatch`                                   | `/unwatch`                                          |
+| cancel one Task       | `/cancel [ref]`                              | `/cancel [ref]`                                     |
+| reload definitions    | `/reload`                                    | native `/reload`                                    |
+| talk or give feedback | bare text                                    | ordinary message                                    |
 
 Adapters may render these resources differently. Console uses aligned text and
 tab completion. Telegram uses compact messages and may add native buttons.
@@ -234,7 +239,8 @@ what the human actually saw. Reload creates no Task, queue entry, or model turn.
 
 Each Console process or Telegram chat/topic may watch at most one Task. Watch
 state belongs to the adapter surface; it is not a Task field and does not force
-another surface to watch. Console follows a newly assigned owner Task by default.
+another surface to watch. Console follows the newly assigned responsible Task
+by default.
 An explicit `/watch`, a newer assignment, or an App-context switch replaces or
 ends that local watch without changing either Task.
 
@@ -296,7 +302,8 @@ Watch does not poll and owns no timer, workflow, session, or model turn.
 1. persists a cancellation record;
 2. advances the Task resource fence;
 3. removes it from ready and recovery indexes;
-4. interrupts the current local session when one exists; and
+4. aborts the exact current attempt, whose adapter releases its session,
+   workflow, Codex turn, or CLI process tree; and
 5. retains a cancellation result distinct from accepted achievement.
 
 An in-flight stale result cannot cross the new resource fence. A maintained

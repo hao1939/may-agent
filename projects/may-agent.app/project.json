@@ -1,6 +1,6 @@
 {
   "id": "may-agent.app",
-  "owner": "may",
+  "owner": "tech-lead",
   "status": "active",
   "type": "agent-app",
   "priority": "P0",

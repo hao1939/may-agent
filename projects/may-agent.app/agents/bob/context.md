@@ -1,52 +1,25 @@
 # Bob Context
 
-## Environment (activation: every session start)
+## Environment
 
-- Project root: `/app`. App-owned agents live under `projects/may-agent.app/agents/`. No `src/` or `package.json` at root.
-- bun: `.state/.bun/bin/bun`. No npx — use `bun x`. No sudo.
-- query_db for DB. KB search: `bash shared/scripts/kb-find.sh DD-770`
-- Commit: `bash shared/scripts/commit-and-merge.sh "message"`
-- Gym: `export GYM_AGENT_BIN=/usr/local/bin/may-agent`. Use `--timeout 600` single / `--timeout 1800` batch 10+.
+- Workspace root: `/app`
+- Host Operations App: `/app/projects/may-agent.app`
+- Host Runtime: `/app/projects/may-agent`
+- Bob source: `/app/projects/may-agent.app/agents/bob`
 
-## Session Discipline (activation: throughout session)
+The current Task is the work authority. Read linked design, source, evaluation,
+and knowledge only when they help that outcome. Historical experiments and
+skills are evidence or optional guidance; they do not require a workflow,
+minimum tool count, mandatory edit, new project, or persistent loop.
 
-- **Budget**: ≤80 tool calls (C6.1). Bash streak limit: 5.
-- **Turn discipline**: Assess at ~20, wrap at ~25, finish by 30.
-- **C12.1**: First 3-5 calls = read/ls/grep orientation.
-- **Anti-shallow**: ≥5 tool calls before finish(). Write within first 5 productive calls.
-- **Active project?** → run persistent-task workflow. Don't work inline.
+## Useful references
 
-## When Editing Files (activation: before any edit/write call)
+- System model: `projects/may-agent.app/docs/2a-design/system-model.md`
+- Core principles: `projects/may-agent.app/docs/1-principles/core-principles.md`
+- Work model: `projects/may-agent.app/docs/1-principles/work-model.md`
+- Evidence-first process: `projects/may-agent.app/docs/1-principles/evidence-first.md`
+- Bob skills: `projects/may-agent.app/agents/bob/skills/`
 
-- **Before edit()**: read() the file first. Always.
-- **After write()/edit()**: read() to verify content is correct.
-- **Post-Fix Review Guard** (EXP-263, +40pp): Tests pass → re-read ALL modified files for secondary bugs before finish().
-
-## When Finishing Sessions (activation: before calling finish())
-
-- **Verification**: Last 5 calls must include verification evidence. `verification_evidence` array required.
-- **Deliverables tracking**: EVERY file you wrote/edited MUST appear in `deliverables`. If summary mentions a file, it MUST be in deliverables. Zero-file sessions: `deliverables: []`.
-
-## When Doing Research (activation: designing experiments, writing KEs)
-
-- Design docs: `projects/may-agent.app/docs/2a-design/`
-- Scaffold scripts: `projects/may-agent.app/agents/bob/workspace/scripts/new-hypothesis.sh`, `new-ke.sh`, `new-experiment.sh`
-- Briefs to tech-lead: use `workflow reviewed-delivery`
-- **Pre-Work Discovery Check**: `grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md`
-
-## Key Findings (activation: when designing interventions)
-
-- SOUL.md text ≠ judgment fix (0/18). Use workflows/structural fixes.
-- Never stack interventions (KE-123, -12-15pp). Few-shot harms discovery (KE-133, -67pp).
-- Forced verification guards harm complex/creative tasks (KE-091).
-- KE-008: Don't restructure heartbeat steps.
-- Mandatory failure analysis (H-EXP-014): Why? What learned? Different hypothesis?
-
-📘 Requirement Conflict Check, Obstacle Persistence, Baseline-Before-Change, Decompose-Before-Acting, Impact-Radius-Check (shared skills)
-
-## Required Skills
-📘 `projects/may-agent.app/agents/bob/skills/` — gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
-📘 `shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
-
-## Shared Toolkit
-See `shared/README-shared-toolkit.md`.
+Use the target repository's declared checks. Do not mutate Host persistence or
+start a generic project loop. Return evidence and proposed Task changes through
+the supplied attempt boundary.

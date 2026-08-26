@@ -10,7 +10,7 @@ The audit answers three questions:
 
 1. Which event types are currently emitted?
 2. Which handlers or runtime components consume them?
-3. Which events are accepted, unhandled, or waiting for a paired close?
+3. Which events are admitted, unhandled, or waiting for a paired close?
 
 The event table has retention, so counts are windowed facts. A zero count means
 "not seen in the retained window", not "impossible".
@@ -71,10 +71,10 @@ Before adding a new event type to `SystemEvent`:
 2. Identify the consumer or owner route.
 3. Decide whether the event needs pair tracking.
 
-## Delivery Health
+## Admission Health
 
-Delivery acceptance is not work completion. Use delivery fields to find routing
-gaps:
+Event admission is not work completion. The current schema still calls its
+routing fields `delivery_*`; use them to find admission gaps:
 
 ```sql
 SELECT id, event_type, owner, source, timestamp, delivery_status,
@@ -146,17 +146,19 @@ not expected to own every asynchronous attempt:
 
 ```text
 conversation.message.created (target.appId=may, author.kind=human)
-  -> exact May request and linked task
-    -> bounded reconciliation attempt and optional child task dependency
-      -> accepted task result and Conversation message
-        -> independent channel rendering attempt
+  -> exact bounded May frontend request
+    -> direct Conversation answer, or typed follow-up event
+      -> May conversation Task links or continues exact responsible Tasks
+        -> accepted Task result and Conversation update
+          -> independent adapter rendering attempt
 ```
 
-Also check that each May request has one human intent, one linked task, and a
-persisted result readable from Conversation regardless of transport state.
-Trace identity supplies causality inside and between observed attempts; task
-and dependency IDs supply eventual-handling authority across restarts. Delivery
-IDs diagnose adapter attempts only. Direct-agent
+Also check that each human semantic message has one bounded May frontend
+request and either a direct persisted answer or one typed follow-up event. The
+frontend request does not stay open for destination work and does not require a
+Task link. Follow-up identity, Topic links, and exact Task references preserve
+durable work across restarts. Adapter attempt IDs diagnose presentation only.
+Direct-agent
 persistent-chat turns, if used, must have distinct traces unless reply context
 links them.
 
@@ -166,9 +168,39 @@ appended as seen human context only after the adapter actually rendered it;
 May results require no delivery receipt to enter Conversation.
 
 Trace tests should cover new May requests, later/corrective requests, approval,
-cancellation, cross-App task dependencies and delivery, failure, and recovery. Compatibility
+cancellation, cross-App Task dependencies and results, failure, and recovery. Compatibility
 execution tests separately cover async fork/workflow/CLI events and direct-chat
 cold resume.
+
+## Historical Trace Audit And Backfill
+
+Run the bounded structural and semantic audit against a retained state directory:
+
+```bash
+bun run check:event-graph -- --state-dir /app/.state
+```
+
+Without `--backfill`, the command does not add historical trace relationships.
+It opens the canonical database through the normal schema boundary, then
+reports missing trace rows, invalid parents or links, lifecycle closure gaps,
+split opener/closer traces, and other relationships that cannot be proved from
+retained evidence. Current Conversation checks start at
+`conversation.message.created`; pre-cutover direct control-socket requests
+remain compatibility history rather than false current-Conversation failures.
+
+When the report identifies historical rows whose relationships can be derived
+exactly from existing lifecycle or correlation records, an operator may run:
+
+```bash
+bun run check:event-graph -- --state-dir /app/.state --backfill
+```
+
+Backfill is additive and idempotent: repeated runs preserve the same trace and
+link facts. Review the initial report first and rerun it afterward. Backfill
+must not invent semantic parents, App results, or closure; change a Task or App
+request; satisfy a Condition; or become authority for current routing. If the
+retained evidence cannot prove a relationship, leave it disconnected and fix
+the live producer or propagation path instead.
 
 ## Audit Smells
 
@@ -180,8 +212,8 @@ Treat these as follow-up tasks:
   correlation key, or explicit exception.
 - A closed pair has no persisted closure link or its opener/closer traces differ.
 - A persistent chat session reuses one trace for unrelated human turns.
-- A human semantic intent has no linked task or its persisted result is absent
-  from Conversation.
+- A human semantic message has neither a direct answer nor a typed follow-up,
+  or its persisted result is absent from Conversation.
 - A targeted domain event is accepted only by lifecycle bookkeeping rather
   than durable admission or a bounded internal handler.
 - A handler subscribes to a legacy or shortcut event when a canonical event
