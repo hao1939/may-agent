@@ -91,6 +91,12 @@ Evaluation because they share the same owner-request event contract. Their two
 App queries preserve the original ratio, oldest pending age, and sample counts
 while replacing three Host queries.
 
+The failed-session triage rate is now Evaluation-owned as well. Its source
+query retains the three-hour window, seven-minute grace period, recovery and
+cleanup exclusions, any-verdict coverage rule, neutral small-sample behavior,
+and bounded session-ID evidence. Host Operations no longer defines or computes
+that coverage meaning.
+
 Runtime also honors each source definition's `measureInterval` as a minimum
 normal cadence. This removes the prior behavior where a six-hour Scout command
 was executed and sampled on every five-minute wake; forced operational samples
@@ -186,6 +192,7 @@ archive. It is not a second design authority.
 | Evaluation triage-closure metric                                                                                              | Evaluation declares the needs-triage route and closure ratio with its routed denominator; Runtime measures it on the shared Cron event, replacing two Host event scans                                                                                                                                  |
 | Evaluation false-good metric                                                                                                  | Evaluation declares the reviewed-good and false-good event ratio with its reviewed-good denominator; Runtime measures the original uncapped ratio on the shared Cron event, replacing two Host event scans                                                                                              |
 | Evaluation project-finding delivery metrics                                                                                    | Evaluation declares delivery-rate and oldest-pending-age queries over its project-owner request contract; Runtime preserves their values and sample counts on the shared Cron event, replacing three Host queries                                                                                        |
+| Evaluation failed-session triage metric                                                                                     | Evaluation declares the failed-session eligibility, triage coverage, grace period, neutral small-sample rule, and bounded evidence query; Runtime measures it on the shared Cron event with no Host definition or handwritten calculation                                                               |
 | Scout App test boundary                                                                                                   | The App check runs Scout-owned tests only. Cached third-party source repositories under the agent workspace remain inspectable evidence but are not treated as part of Scout App verification                                                                                                             |
 | Whole-system document scope                                                                                                | `system-model.md` retains the public nouns, May/App/agent boundary, one flow, record map, and governing rules; detailed persistence, dependency, recovery, presentation, and code contracts link to their owning subsystem documents instead of being restated                                            |
 | Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic, conversation-Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |

@@ -10,6 +10,8 @@ import {
 import app, {
   AFTERMATH_COVERAGE_METRIC_ID,
   AFTERMATH_COVERAGE_SOURCE_QUERY,
+  FAILED_TRIAGE_RATE_3H_METRIC_ID,
+  FAILED_TRIAGE_RATE_3H_SOURCE_QUERY,
   FALSE_GOOD_RATE_SAMPLE_METRIC_ID,
   FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
   LLM_COVERAGE_LAG_METRIC_ID,
@@ -184,9 +186,16 @@ describe("canonical evaluation App", () => {
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toHaveLength(10);
+    expect(app.metrics).toHaveLength(11);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          id: FAILED_TRIAGE_RATE_3H_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: FAILED_TRIAGE_RATE_3H_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
         expect.objectContaining({
           id: AFTERMATH_COVERAGE_METRIC_ID,
           owner: "evaluator",
@@ -263,6 +272,140 @@ describe("canonical evaluation App", () => {
 });
 
 describe("evaluation metrics", () => {
+  function failedTriageDb(): Database {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE sessions (
+        sessionId TEXT PRIMARY KEY,
+        agent TEXT NOT NULL,
+        status TEXT NOT NULL,
+        startedAt INTEGER NOT NULL,
+        endedAt INTEGER,
+        outcome TEXT,
+        error TEXT
+      )`,
+    );
+    db.run(
+      `CREATE TABLE evaluations (
+        sessionId TEXT NOT NULL,
+        verdict TEXT
+      )`,
+    );
+    return db;
+  }
+
+  function addFailedSession(
+    db: Database,
+    sessionId: string,
+    options: {
+      agent?: string;
+      status?: string;
+      endedAt?: number;
+      outcome?: string | null;
+      error?: string | null;
+    } = {},
+  ): void {
+    const endedAt = options.endedAt ?? Date.now() - 20 * 60_000;
+    db.run(
+      `INSERT INTO sessions (
+        sessionId, agent, status, startedAt, endedAt, outcome, error
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        sessionId,
+        options.agent ?? "worker",
+        options.status ?? "error",
+        endedAt - 60_000,
+        endedAt,
+        options.outcome ?? null,
+        options.error === undefined ? "boom" : options.error,
+      ],
+    );
+  }
+
+  test("measures only actionable failed sessions after the grace period", () => {
+    const db = failedTriageDb();
+    const old = Date.now() - 4 * 60 * 60_000;
+    const recent = Date.now() - 2 * 60_000;
+
+    addFailedSession(db, "eligible-error");
+    addFailedSession(db, "eligible-done-with-error", { status: "done" });
+    addFailedSession(db, "clean-start", { error: "Clean start (fresh)" });
+    addFailedSession(db, "legacy-task-handoff", {
+      error:
+        "Task-bound project session recovery is owned by the app task reconciler",
+    });
+    addFailedSession(db, "current-task-handoff", {
+      error:
+        "Task-bound execution is recovered through its Task, not by resuming the old session",
+    });
+    addFailedSession(db, "owner-session-recovery", {
+      error:
+        "Recovered task runtime/example interrupted an orphaned owner session from a previous runtime",
+    });
+    addFailedSession(db, "agent-session-recovery", {
+      error:
+        "Recovered task runtime/example interrupted an orphaned agent session from a previous runtime",
+    });
+    addFailedSession(db, "cancelled-cleanup", {
+      status: "done",
+      outcome: "done",
+      error: "Cancelled",
+    });
+    addFailedSession(db, "interrupted-without-error", {
+      status: "interrupted",
+      error: null,
+    });
+    addFailedSession(db, "evaluator-self", { agent: "evaluator" });
+    addFailedSession(db, "judge-self", { agent: "judge" });
+    addFailedSession(db, "outside-window", { endedAt: old });
+    addFailedSession(db, "inside-grace", { endedAt: recent });
+    addFailedSession(db, "successful", {
+      status: "done",
+      outcome: "done",
+      error: null,
+    });
+
+    const sample = db.query(FAILED_TRIAGE_RATE_3H_SOURCE_QUERY).get() as {
+      value: number;
+      sampleSize: number;
+      measuredAt: number;
+      note: string;
+    };
+    expect(sample.value).toBe(1);
+    expect(sample.sampleSize).toBe(2);
+    expect(sample.measuredAt).toBeGreaterThanOrEqual(Date.now() - 2_000);
+    expect(sample.measuredAt).toBeLessThanOrEqual(Date.now());
+    expect(JSON.parse(sample.note)).toEqual({
+      failed: 2,
+      triaged: 0,
+      failedIds: ["eligible-done-with-error", "eligible-error"],
+    });
+  });
+
+  test("counts any evaluation verdict and exposes ratio evidence", () => {
+    const db = failedTriageDb();
+    for (let index = 1; index <= 5; index += 1) {
+      addFailedSession(db, `failed-${index}`);
+    }
+    db.run(
+      "INSERT INTO evaluations (sessionId, verdict) VALUES (?, ?), (?, ?)",
+      ["failed-1", "good", "failed-2", "acceptable"],
+    );
+
+    const sample = db.query(FAILED_TRIAGE_RATE_3H_SOURCE_QUERY).get() as {
+      value: number;
+      sampleSize: number;
+      note: string;
+    };
+    expect(sample.value).toBe(0.4);
+    expect(sample.sampleSize).toBe(5);
+    expect(JSON.parse(sample.note)).toEqual({
+      failed: 5,
+      triaged: 2,
+      failedIds: ["failed-1", "failed-2", "failed-3", "failed-4", "failed-5"],
+    });
+  });
+
   test("measures lag from the newest non-heuristic evaluation", () => {
     const db = new Database(":memory:");
     db.run(

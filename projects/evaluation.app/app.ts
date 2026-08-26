@@ -186,6 +186,64 @@ SELECT CASE
        END AS value,
        total - delivered AS sampleSize
 FROM counts`;
+export const FAILED_TRIAGE_RATE_3H_METRIC_ID = "session.failed-triage-rate-3h";
+export const FAILED_TRIAGE_RATE_3H_SOURCE_QUERY = `WITH bounds AS (
+  SELECT (strftime('%s','now') * 1000) AS measured_at
+), failed_rows AS (
+  SELECT s.sessionId,
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM evaluations e
+             WHERE e.sessionId = s.sessionId
+           ) THEN 1
+           ELSE 0
+         END AS triaged
+  FROM sessions s
+  CROSS JOIN bounds b
+  WHERE s.agent NOT IN ('evaluator', 'judge')
+    AND COALESCE(s.endedAt, s.startedAt) > b.measured_at - 10800000
+    AND COALESCE(s.endedAt, s.startedAt) <= b.measured_at - 420000
+    AND COALESCE(s.error, '') != 'Clean start (fresh)'
+    AND COALESCE(s.error, '') NOT IN (
+      'Task-bound project session recovery is owned by the app task reconciler',
+      'Task-bound execution is recovered through its Task, not by resuming the old session'
+    )
+    AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
+    AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
+    AND NOT (
+      s.status = 'done'
+      AND COALESCE(s.outcome, '') = 'done'
+      AND COALESCE(s.error, '') = 'Cancelled'
+    )
+    AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
+    AND NOT (s.status = 'interrupted' AND s.error IS NULL)
+), counts AS (
+  SELECT COUNT(*) AS failed,
+         COALESCE(SUM(triaged), 0) AS triaged
+  FROM failed_rows
+)
+SELECT CASE
+         WHEN counts.failed < 5 THEN 1
+         ELSE ROUND(1.0 * counts.triaged / counts.failed, 4)
+       END AS value,
+       counts.failed AS sampleSize,
+       bounds.measured_at AS measuredAt,
+       json_object(
+         'failed', counts.failed,
+         'triaged', counts.triaged,
+         'failedIds', json(COALESCE((
+           SELECT json_group_array(sessionId)
+           FROM (
+             SELECT sessionId
+             FROM failed_rows
+             ORDER BY sessionId
+             LIMIT 20
+           )
+         ), '[]'))
+       ) AS note
+FROM counts
+CROSS JOIN bounds`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -782,6 +840,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: FAILED_TRIAGE_RATE_3H_METRIC_ID,
+    name: "Failed session triage rate (3h)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 1,
+    threshold: 0.8,
+    unit: "ratio",
+    priority: "P1" as const,
+    status: "active",
+    source: "recent failed sessions and evaluations",
+    sourceQuery: FAILED_TRIAGE_RATE_3H_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: "<" as const,
+    speed: "fast",
+    description:
+      "Share of failed non-evaluator sessions outside the seven-minute grace period that have any durable evaluation; windows below five failures remain neutral.",
+  },
   {
     id: PROJECT_FEEDBACK_PENDING_AGE_METRIC_ID,
     name: "Oldest pending evaluation finding delivery (hours)",

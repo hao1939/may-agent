@@ -7,18 +7,6 @@ function metricsSnapshotSource(): string {
   return readFileSync(resolve(__dirname, "./metrics-snapshot.ts"), "utf8");
 }
 
-function sourceBlock(
-  source: string,
-  startMarker: string,
-  endMarker: string,
-): string {
-  const start = source.indexOf(startMarker);
-  const end = source.indexOf(endMarker, start);
-  expect(start).toBeGreaterThanOrEqual(0);
-  expect(end).toBeGreaterThan(start);
-  return source.slice(start, end);
-}
-
 describe("metrics-snapshot registry and queries", () => {
   it("assigns former May operations metrics to the platform app owner", () => {
     expect(
@@ -111,9 +99,7 @@ describe("metrics-snapshot registry and queries", () => {
     expect(activeRegistry).not.toContain(
       'id: "evaluator.project-feedback-pending-age-h"',
     );
-    expect(source).not.toContain(
-      'record("eval.llm-coverage-lag-h"',
-    );
+    expect(source).not.toContain('record("eval.llm-coverage-lag-h"');
     expect(source).not.toContain('record(\n        "eval.llm-evals-24h"');
     expect(source).not.toContain(
       'record(\n        "evaluator.low-quality-rate-24h"',
@@ -184,49 +170,19 @@ describe("metrics-snapshot registry and queries", () => {
     );
   });
 
-  it("excludes Clean start (fresh) interruptions from session.failed-triage-rate-3h denominator and numerator", () => {
+  it("leaves failed-session triage semantics and measurement to Evaluation", () => {
     const source = metricsSnapshotSource();
-    const failedTriageBlock = sourceBlock(
-      source,
-      "const failedRows = db",
+    const activeRegistry = source.slice(
+      source.indexOf("const ALL_METRICS"),
+      source.indexOf("const RETIRED_METRIC_IDS"),
+    );
+
+    expect(activeRegistry).not.toContain('id: "session.failed-triage-rate-3h"');
+    expect(source).not.toContain(
+      'record(\n        "session.failed-triage-rate-3h"',
+    );
+    expect(source).not.toContain(
       "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
-    );
-
-    expect(
-      failedTriageBlock.match(
-        /COALESCE\(s\.error, ''\) != 'Clean start \(fresh\)'/g,
-      ),
-    ).toHaveLength(1);
-    expect(failedTriageBlock).toContain("GROUP BY s.sessionId");
-    expect(failedTriageBlock).toContain("const failed = failedRows.length");
-  });
-
-  it("counts any evaluated session as triaged for session.failed-triage-rate-3h (no verdict filter)", () => {
-    const source = metricsSnapshotSource();
-    const triageBlock = sourceBlock(
-      source,
-      "const failedRows = db",
-      "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
-    );
-    // Any evaluation row in the grouped candidate set means triaged.
-    // There must be NO verdict filter that would exclude acceptable/good sessions.
-    expect(triageBlock).not.toContain("e.verdict IN");
-    expect(triageBlock).toContain(
-      "LEFT JOIN evaluations e ON e.sessionId = s.sessionId",
-    );
-  });
-
-  it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {
-    const source = metricsSnapshotSource();
-    const failedTriageBlock = sourceBlock(
-      source,
-      "const failedRows = db",
-      "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
-    );
-
-    expect(failedTriageBlock).toContain('"session.failed-triage-rate-3h"');
-    expect(failedTriageBlock).toContain(
-      "failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1",
     );
   });
 });

@@ -39,7 +39,7 @@ describe("metrics-snapshot session health metrics", () => {
     return testRuntime(root, emit).sdk;
   }
 
-  it("measures Host-owned failure triage without redefining Evaluation coverage", async () => {
+  it("measures Host-owned session health without redefining Evaluation coverage", async () => {
     const root = join(
       tmpdir(),
       `metrics-session-health-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -210,19 +210,7 @@ describe("metrics-snapshot session health metrics", () => {
         )
         .get(id) as any;
 
-    expect(metric("session.failed-triage-rate-3h")).toMatchObject({
-      current: 1,
-      target: 1,
-      threshold: 0.8,
-      priority: "P1",
-    });
-    expect(
-      db
-        .prepare(
-          "SELECT sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1",
-        )
-        .get("session.failed-triage-rate-3h"),
-    ).toMatchObject({ sample_size: 2 });
+    expect(metric("session.failed-triage-rate-3h")).toBeNull();
     expect(metric("eval.llm-evals-24h")).toBeNull();
     expect(metric("evaluator.low-quality-rate-24h")).toBeNull();
     expect(metric("runtime.stale-running-session-count")).toMatchObject({

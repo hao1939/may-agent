@@ -217,17 +217,6 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 2 } },
   },
   {
-    id: "session.failed-triage-rate-3h",
-    name: "Failed session triage rate (3h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 1.0,
-    threshold: 0.8,
-    unit: "ratio",
-    alert_op: "<",
-    priority: "P1",
-  },
-  {
     id: "runtime.stale-running-session-count",
     name: "Stale running sessions (non-evaluator)",
     owner: "may",
@@ -852,12 +841,10 @@ export const create: HandlerModule["create"] = (
     // ── Measure: Handler (with error isolation) ──────────────────────
 
     const sixH = now - 6 * 3600000;
-    const threeH = now - 3 * 3600000;
     const twoH = now - 2 * 3600000;
     const oneH = now - 3600000;
     const fifteenMinutesAgo = now - 15 * 60_000;
     const twentyFourH = now - 24 * 3600000;
-    const sevenMinutesAgo = now - 7 * 60_000;
     const staleRunningCutoff = now - 30 * 60_000;
 
     let completed = 0,
@@ -1300,74 +1287,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring guard trigger metrics: ${e}`,
-      );
-    }
-
-    try {
-      const failedRows = db
-        .prepare(
-          `SELECT s.sessionId,
-                  MAX(CASE WHEN e.sessionId IS NOT NULL THEN 1 ELSE 0 END) as triaged
-         FROM sessions s
-         LEFT JOIN evaluations e ON e.sessionId = s.sessionId
-         WHERE s.agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(s.endedAt, s.startedAt) > ?
-           AND COALESCE(s.endedAt, s.startedAt) <= ?
-           AND COALESCE(s.error, '') != 'Clean start (fresh)'
-           -- Task-bound recovery handoffs are owned by the Task reconciler,
-           -- not evaluator aftermath. Preserve the historical literal while
-           -- matching the current runtime contract emitted by cron-startup.
-           AND COALESCE(s.error, '') NOT IN (
-             'Task-bound project session recovery is owned by the app task reconciler',
-             'Task-bound execution is recovered through its Task, not by resuming the old session'
-           )
-           -- Runtime recovery may interrupt orphaned task sessions from a
-           -- previous process after safely handing ownership back to the Task.
-           -- Preserve the historical owner-session spelling for old rows.
-           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
-           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
-           -- A terminal successful result can retain Cancelled as cleanup
-           -- residue after the outcome has already been committed. COALESCE
-           -- keeps unrelated terminal rows with nullable outcome/error eligible.
-           AND NOT (
-             s.status = 'done'
-             AND COALESCE(s.outcome, '') = 'done'
-             AND COALESCE(s.error, '') = 'Cancelled'
-           )
-           AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
-           AND NOT (s.status = 'interrupted' AND s.error IS NULL)
-         GROUP BY s.sessionId`,
-        )
-        .all(threeH, sevenMinutesAgo) as Array<{
-        sessionId: string;
-        triaged: number;
-      }>;
-      const failed = failedRows.length;
-      // Any evaluation row — regardless of verdict — means the failure was
-      // triaged. The old filter `IN ('needs_improvement', 'skipped')` excluded
-      // sessions whose verdict was 'acceptable' or 'good', deflating the rate
-      // even though the evaluator did look at them.
-      const triaged = failedRows.filter(
-        (row) => Number(row.triaged) > 0,
-      ).length;
-      // Small failure counts cause this metric to flap around a single recently-ended
-      // session before evaluator aftermath catches up. Keep the signal meaningful by
-      // treating windows with fewer than 5 failed sessions as neutral while still
-      // recording the denominator in sample_size for operator visibility.
-      record(
-        "session.failed-triage-rate-3h",
-        failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1,
-        failed,
-        JSON.stringify({
-          failed,
-          triaged,
-          failedIds: failedRows.slice(0, 20).map((row) => row.sessionId),
-        }),
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
       );
     }
 
