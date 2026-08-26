@@ -1534,12 +1534,14 @@ export function repairRunningAppTasksWithoutAttempt(
 }
 
 export function pendingAppTaskRecoveryAttention(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   candidateTaskIds?: Iterable<string>,
 ): AppTaskRecoveryAttention[] {
   return withTaskStateLock(config, () => {
     const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
+    const tree = candidates
+      ? config.resourceStore.readTaskContext({ taskIds: candidates })
+      : config.resourceStore.readSnapshot();
     return Object.values(tree.resources ?? {}).flatMap((resource) => {
       const attempts = Object.values(tree.attempts ?? {})
         .filter((attempt) => attempt.taskId === resource.metadata.id)
