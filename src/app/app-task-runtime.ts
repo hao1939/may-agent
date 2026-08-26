@@ -57,7 +57,6 @@ import {
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
   cacheTaskStateReads,
-  readTaskState,
   ResourceTaskMutationStaleError,
   type ResourceTaskStateConfig,
   type TaskTree,
@@ -716,7 +715,7 @@ function readPersistedTerminalAgentResult(persistDir: string | undefined, sessio
 
 export function consumePersistedTerminalAgentResult(input: {
   persistDir?: string;
-  config: ReturnType<typeof taskReconciliationConfig>;
+  config: ResourceTaskStateConfig;
   descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
   sessionId: string;
@@ -726,7 +725,7 @@ export function consumePersistedTerminalAgentResult(input: {
   if (raw === undefined) return null;
   const claim = terminalAgentSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
   if (!claim) return null;
-  const defaultParentId = readTaskState(input.config).root_task_id;
+  const defaultParentId = input.config.resourceStore.rootTaskId();
   if (!defaultParentId) return null;
   try {
     const result = normalizeTaskHandlerResult(
@@ -1401,11 +1400,8 @@ export function admitTaskAppDependencies(input: {
   return input.dependencies.map((dependency) => matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!);
 }
 
-function openTaskAppDependencyConditions(
-  config: ReturnType<typeof taskReconciliationConfig>,
-  taskId: string,
-): AppTaskConditionSpec[] {
-  const tree = readTaskState(config, { taskIds: [taskId] });
+function openTaskAppDependencyConditions(config: ResourceTaskStateConfig, taskId: string): AppTaskConditionSpec[] {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
   return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
     const condition = tree.conditions?.[conditionId];
@@ -1437,7 +1433,7 @@ export function projectAppTaskWaitPromptContext(
   }>;
   note: string;
 } {
-  const tree = readTaskState(appTaskConfig(descriptor), { taskIds: [taskId] });
+  const tree = descriptor.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
   const db = opts.persistDir ? getDb(opts.persistDir) : null;
   const open = (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
@@ -2951,7 +2947,7 @@ async function reconcileTask(input: {
     timing.claimMs = Math.max(0, performance.now() - claimStartedAt);
     if (primary.kind !== "claimed") {
       if (primary.kind === "busy") {
-        const active = readTaskState(config, { taskIds: [input.taskId] }).attempts?.[primary.attemptId ?? ""];
+        const active = primary.attemptId ? config.resourceStore.readAttempt(primary.attemptId) : null;
         const terminalSession =
           active?.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, active.sessionId) : null;
         if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
@@ -3115,7 +3111,9 @@ async function reconcileTask(input: {
           if (descriptor.app.workspace?.kind !== "git") {
             throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
           }
-          const previous = Object.values(readTaskState(config, { taskIds: [primary.taskId] }).attempts ?? {})
+          const previous = Object.values(
+            config.resourceStore.readTaskContext({ taskIds: [primary.taskId] }).attempts ?? {},
+          )
             .filter(
               (attempt) =>
                 attempt.taskId === primary.taskId &&
@@ -3181,7 +3179,9 @@ async function reconcileTask(input: {
     } else if (executorKey) {
       if (descriptor.app.workspace?.kind === "git") {
         try {
-          const previous = Object.values(readTaskState(config, { taskIds: [primary.taskId] }).attempts ?? {})
+          const previous = Object.values(
+            config.resourceStore.readTaskContext({ taskIds: [primary.taskId] }).attempts ?? {},
+          )
             .filter(
               (attempt) =>
                 attempt.taskId === primary.taskId &&
@@ -4278,9 +4278,8 @@ export function publishLoadedAppTaskEvent(input: {
   const appId = input.binding.appId.trim().replace(/\.app$/, "");
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === appId);
   if (!descriptor) throw new Error(`App ${input.binding.appId} has no loaded Task runtime`);
-  const state = readTaskState(appTaskConfig(descriptor), { taskIds: [input.binding.taskId] });
-  const resource = state.resources?.[input.binding.taskId];
-  const attempt = state.attempts?.[input.binding.attemptId];
+  const resource = descriptor.resourceStore.readTask(input.binding.taskId);
+  const attempt = descriptor.resourceStore.readAttempt(input.binding.attemptId);
   if (
     !resource ||
     resource.metadata.generation !== input.binding.generation ||
