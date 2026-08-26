@@ -113,7 +113,6 @@ import {
   listHandlerUnavailableAppTasks,
   markAppTaskAttention,
   pendingAppTaskRecoveryAttention,
-  listAppTaskIntents,
   isAppTaskActionStaleError,
   isAppTaskConverged,
   observeAppTaskIntent,
