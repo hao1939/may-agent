@@ -196,7 +196,10 @@ starts from the resource recovery index and reads only its bounded candidate
 Task contexts. Canonical dependency, attempt, wait, lane, priority, and trigger
 state decides whether and when each candidate runs; there is no whole-App JSON
 scan. A generation change also prunes a detached Condition only after its final
-Task reference is gone. Broader recovery repairs remain in a later batch.
+Task reference is gone. Previous-runtime, missing-attempt, orphaned-dependency,
+attention-notification, unavailable-handler, and failed-execution recovery now
+require the exact candidate IDs selected by the resource index; none can fall
+back to a whole-App snapshot.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
