@@ -2476,9 +2476,9 @@ export function listHandlerUnavailableAppTasks(
 }
 
 /** Release attention only after the host has proved the named workflow resolves again. */
-export function releaseHandlerUnavailableAppTask(config: TaskStateConfig, taskId: string): boolean {
+export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig, taskId: string): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     const task = tree.tasks[taskId];
     if (!resource || !task || resource.status.phase !== "attention") return false;
