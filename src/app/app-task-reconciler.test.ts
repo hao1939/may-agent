@@ -2607,7 +2607,8 @@ describe("App task reconciler state", () => {
   });
 
   it("never releases a healthy live agent session or a stale fenced observation", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -2639,11 +2640,12 @@ describe("App task reconciler state", () => {
     });
     attempt.lease.expiresAt = "2020-01-01T00:00:00.000Z";
     saveTaskState(config, tree);
+    const resourceConfig = resourceFixture(state, "expired-agent-session").config;
     const activeAt = Date.now();
     const activity = { sessionId: "live-agent-session", lastActivityAt: activeAt - 1_000 };
-    expect(expiredAgentSessionAppTaskAttempt(config, claim.taskId, activeAt, activity)).toBeNull();
+    expect(expiredAgentSessionAppTaskAttempt(resourceConfig, claim.taskId, activeAt, activity)).toBeNull();
     expect(
-      expiredAgentSessionAppTaskAttempt(config, claim.taskId, activeAt, {
+      expiredAgentSessionAppTaskAttempt(resourceConfig, claim.taskId, activeAt, {
         sessionId: "unrelated-session",
         lastActivityAt: activeAt,
       }),
