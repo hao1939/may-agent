@@ -136,6 +136,10 @@ requires resource authority, reads only the exact Task, parent, dependency,
 admission, and Condition routes involved, and commits through their resource
 fences. Its Runtime and Codex fixtures now begin under resource authority
 instead of mutating a whole JSON Task tree.
+Claiming an attempt and accepting its completed or waiting result now use the
+same exact resource context and require resource authority. The reconciler no
+longer enters those lifecycle transitions through the generic JSON-capable
+reader or runs JSON-only attempt pruning after them.
 Rejected stale reconciliation results are released from the exact resource
 context through their claim fences; that production path no longer reads or
 prunes JSON attempt state.
