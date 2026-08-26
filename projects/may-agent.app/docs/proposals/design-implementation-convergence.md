@@ -156,6 +156,8 @@ and fresh-lease fences, and retires a stale duplicate only through its matching
 completion receipt. Releasing one discovered interrupted attempt now requires
 that exact resource observation and its generation, version, attempt, and lease
 fences; the Task is requeued through the same bounded resource transaction.
+Startup repair of retained previous-runtime attention state also reads the
+indexed candidate resources and commits only their fenced requeue mutations.
 Broader recovery repairs remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
