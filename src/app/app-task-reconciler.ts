@@ -1064,14 +1064,16 @@ function syncTaskProjection(task: TaskNode, resource: AppTaskResource, owner: st
 }
 
 export function recoverableAppTaskAttempts(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   nowMs = Date.now(),
   includeFreshLeases = false,
   candidateTaskIds?: Iterable<string>,
 ): AppTaskAttemptRecovery[] {
   return withTaskStateLock(config, () => {
     const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
+    const tree = candidates
+      ? config.resourceStore.readTaskContext({ taskIds: candidates })
+      : config.resourceStore.readSnapshot();
     let changed = false;
     const mutationScope = emptyResourceMutationScope();
     const recoveries = Object.values(tree.resources ?? {}).flatMap((resource) => {
