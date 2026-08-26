@@ -5,7 +5,7 @@ import type { IndexedTaskCandidate, IndexedTaskRecoveryCursor } from "./app-task
 describe("AppTaskRecoveryScheduler", () => {
   it("performs one bounded startup query and preserves the trusted lane", () => {
     const calls: Array<{ now?: number; limit?: number }> = [];
-    const queued: Array<{ taskId: string; lane: string; front: boolean }> = [];
+    const queued: Array<{ taskId: string; lane: string }> = [];
     const candidates: IndexedTaskCandidate[] = [
       { taskId: "human", lane: "human", ready: true, changed: true, nextCheckAt: null, leaseUntil: null },
       { taskId: "normal", lane: "normal", ready: false, changed: true, nextCheckAt: null, leaseUntil: null },
@@ -26,8 +26,8 @@ describe("AppTaskRecoveryScheduler", () => {
     scheduler.start();
     expect(calls).toEqual([{ now: 100, limit: 32 }]);
     expect(queued).toEqual([
-      { taskId: "human", lane: "human", front: true },
-      { taskId: "normal", lane: "normal", front: true },
+      { taskId: "human", lane: "human" },
+      { taskId: "normal", lane: "normal" },
     ]);
     scheduler.close();
   });

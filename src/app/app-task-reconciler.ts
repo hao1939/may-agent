@@ -19,6 +19,7 @@ import {
   taskState,
   withTaskStateLock,
   type TaskNode,
+  type ResourceTaskStateConfig,
   type TaskTree,
   type TaskStateConfig,
 } from "./app-task-store.js";
@@ -35,6 +36,7 @@ import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persist
 import { readLatestCheckpoint, type CheckpointEntry } from "../lib/tools/checkpoint.js";
 import { applyAppTaskConditionEvent } from "./app-task-condition-tracker.js";
 import { normalizeTaskAgent } from "./app-agent-selection.js";
+import type { AppTaskResourceStore } from "./app-task-resource-store.js";
 
 export const APP_TASK_RECOVERY_OWNER = "app-task-reconciler";
 const MAX_UNCHANGED_CONDITION_REVIEWS = 3;
@@ -768,7 +770,7 @@ function pruneTaskAttempts(tree: TaskTree, limit = 1_000): void {
     .forEach(([attemptId]) => delete tree.attempts?.[attemptId]);
 }
 
-export function taskReconciliationConfig(input: {
+type TaskReconciliationConfigInput = {
   appDir: string;
   /** Stable writable App root when appDir is an immutable definition release. */
   stateAppDir?: string;
@@ -777,8 +779,14 @@ export function taskReconciliationConfig(input: {
   /** @deprecated Compatibility for Host callers not yet migrated. */
   owner?: string;
   maxConcurrent: number;
-  resourceStore?: import("./app-task-resource-store.js").AppTaskResourceStore;
-}): TaskStateConfig {
+  resourceStore?: AppTaskResourceStore;
+};
+
+export function taskReconciliationConfig(
+  input: TaskReconciliationConfigInput & { resourceStore: AppTaskResourceStore },
+): ResourceTaskStateConfig;
+export function taskReconciliationConfig(input: TaskReconciliationConfigInput): TaskStateConfig;
+export function taskReconciliationConfig(input: TaskReconciliationConfigInput): TaskStateConfig {
   const paths = projectRuntimePaths(input.resourceStore && input.stateAppDir ? input.stateAppDir : input.appDir);
   const agent = input.agent?.trim() || input.owner?.trim();
   if (!agent) throw new Error("Task reconciliation requires a default agent");
@@ -2336,7 +2344,6 @@ function hasSatisfiedConditionReconciliation(tree: TaskTree, resource: AppTaskRe
 export type AppTaskQueueEntry = {
   taskId: string;
   options: {
-    front: boolean;
     priority: "P0" | "P1" | "P2" | "P3";
     lane: "human" | "normal";
   };
@@ -2393,7 +2400,6 @@ export function listRunnableAppTaskQueueEntries(config: TaskStateConfig): AppTas
       .map((resource) => ({
         taskId: resource.metadata.id,
         options: {
-          front: hasPersistedTrigger(resource),
           priority: effectivePriority(resource),
           lane: resource.status.lane ?? taskTriggerLane(tree.taskTriggers?.[resource.metadata.id]?.event),
         },
@@ -2419,7 +2425,6 @@ export function appTaskQueueEntries(config: TaskStateConfig, taskIds: Iterable<s
         {
           taskId,
           options: {
-            front: Boolean(trigger?.event),
             priority:
               triggerHasDirectProjectComment(trigger?.event) || hasSatisfiedConditionReconciliation(tree, resource)
                 ? "P0"
@@ -4081,6 +4086,7 @@ export function completeAppTask(
             ? "waiting"
             : "converged",
         observedGeneration: claim.generation,
+        observedAttemptId: claim.attemptId,
         currentAttemptId: undefined,
         summary: input.summary,
         response: input.response,
@@ -4241,6 +4247,7 @@ export function deferAppTask(
     touchResource(resource, {
       phase: input.disposition,
       observedGeneration: claim.generation,
+      observedAttemptId: claim.attemptId,
       currentAttemptId: undefined,
       summary: input.summary,
       response: input.response,

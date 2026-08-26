@@ -5,6 +5,88 @@ import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
 
 describe("workflow execution timeout", () => {
+  it("uses the canonical App read capability supplied by its owning Runtime", async () => {
+    const root = mkdtempSync(join(tmpdir(), "workflow-app-read-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "read.ts"),
+      `
+export const name = "read";
+export const description = "Canonical App read test";
+export async function execute(ctx) {
+  const task = await ctx.read.tasks.get("current");
+  return ctx.done(task?.outcome ?? "missing");
+}
+`,
+    );
+    const read = {
+      appResult: async () => null,
+      tasks: {
+        list: async () => ({ items: [] }),
+        outcomes: async () => ({ outcomes: [] }),
+        get: async () => ({ id: "current", status: "pending", generation: 1, outcome: "resource task" }),
+      },
+      execution: async () => null,
+      metric: async () => null,
+    } as any;
+    const runner = createWorkflowRunner({ manager: {} as any, workflowDir, agentName: "owner", read });
+
+    await expect(runner.run("read", "test")).resolves.toMatchObject({ type: "done", summary: "resource task" });
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("cancels the active step when its owning Task attempt is aborted", async () => {
+    const root = mkdtempSync(join(tmpdir(), "workflow-cancel-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "cancel.ts"),
+      `
+export const name = "cancel";
+export const description = "Cancellation test workflow";
+export async function execute(ctx) {
+  await ctx.runAgent("worker", "wait forever");
+  return ctx.done("must not complete");
+}
+`,
+    );
+    let workflowRunId = "";
+    let resolveStep!: (result: any) => void;
+    let cancelled = 0;
+    const manager = {
+      callAgent: (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
+        workflowRunId = opts.workflowRunId ?? "";
+        return new Promise((resolve) => {
+          resolveStep = resolve;
+        });
+      },
+      status: () => (workflowRunId ? [{ sessionId: "step-session", workflowRunId }] : []),
+      cancel: () => {
+        cancelled += 1;
+        resolveStep({
+          sessionId: "step-session",
+          status: "interrupted",
+          lastAssistantText: null,
+          messages: [],
+          duration: "0s",
+          outputDir: "",
+        });
+      },
+    } as any;
+    const controller = new AbortController();
+    const runner = createWorkflowRunner({ manager, workflowDir, agentName: "owner", signal: controller.signal });
+
+    const running = runner.run("cancel", "test");
+    while (!workflowRunId) await Bun.sleep(1);
+    controller.abort(new Error("Task was cancelled"));
+    const result = await running;
+
+    expect(result.type).toBe("error");
+    expect(result.type === "error" ? result.error : "").toContain("Task was cancelled");
+    expect(cancelled).toBe(1);
+  });
+
   it("cancels the active step and rejects late workflow effects", async () => {
     const root = mkdtempSync(join(tmpdir(), "workflow-timeout-"));
     const workflowDir = join(root, "workflows");

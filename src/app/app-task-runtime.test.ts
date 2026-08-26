@@ -52,6 +52,7 @@ import { HostCapacity } from "./host-capacity.js";
 import { getDb } from "../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { HumanTaskService } from "./human-task-service.js";
 import {
   addSessionBashProcessGroup,
   readSessionBashProcessGroups,
@@ -1072,6 +1073,7 @@ describe("canonical App task runtime", () => {
       registry,
       db,
       bus,
+      hostCapacity: new HostCapacity(2),
       attachTask: async (input) => {
         const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
         attachedDependencyTaskId ??= taskId;
@@ -2860,14 +2862,33 @@ describe("canonical App task runtime", () => {
 
     await installAppTaskRuntimes({
       ...options(f, bus),
+      agentDefinitions: new Map([
+        [
+          "sample-owner",
+          {
+            name: "sample-owner",
+            description: "Sample owner",
+            domain: "sample",
+            systemPrompt: "Use the immutable sample owner role.",
+            tools: [],
+            model: {},
+          } as never,
+        ],
+      ]),
       executors: {
         reviewer: async (attempt) => {
           calls += 1;
           expect(attempt.appId).toBe("sample");
           expect(attempt.task.id).toBe("work/registered-executor");
           expect(attempt.cwd).toBe(f.appDir);
+          expect(attempt.role).toEqual({
+            agent: "sample-owner",
+            instructions: "Use the immutable sample owner role.",
+          });
           expect(attempt.declaredOutputPaths).toEqual([]);
           expect(attempt.children).toEqual({ live: [], completed: [] });
+          expect(attempt.waits).toMatchObject({ open: [] });
+          expect(attempt.resultSchema).toMatchObject({ type: "object" });
           expect(
             await attempt.publish(`pass-${calls}`, {
               type: "sample.progress",
@@ -2955,6 +2976,114 @@ describe("canonical App task runtime", () => {
       executor: "reviewer",
       summary: "Registered executor completed the Task",
       evidence: ["test:reviewer:1"],
+    });
+  });
+
+  it("aborts the exact registered executor attempt after durable Task cancellation", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let startedAttemptId = "";
+    let activeSignal: AbortSignal | undefined;
+    let markStarted = () => {};
+    let markAborted = () => {};
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const aborted = new Promise<void>((resolve) => {
+      markAborted = resolve;
+    });
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        reviewer: async (attempt) => {
+          startedAttemptId = attempt.attemptId;
+          activeSignal = attempt.signal;
+          markStarted();
+          await new Promise<never>((_, reject) => {
+            const stop = () => {
+              markAborted();
+              reject(attempt.signal.reason);
+            };
+            attempt.signal.addEventListener("abort", stop, { once: true });
+            if (attempt.signal.aborted) stop();
+          });
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:registered-executor-cancel",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/cancel-executor",
+          parentId: "operations",
+          outcome: "Cancel one replaceable executor",
+          acceptance: ["The active attempt stops"],
+          mode: "achieve",
+          agent: "sample-owner",
+          executor: "reviewer",
+        },
+      },
+      idempotencyKey: "attach:cancel-executor",
+      request: {
+        id: "request-cancel-executor",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+    await started;
+    bus.emit({
+      type: "app.task.cancelled",
+      source: "human-task-service",
+      owner: "human:operator",
+      target: { appId: "sample", taskId: "work/cancel-executor" },
+      data: {
+        appId: "sample",
+        taskId: "work/cancel-executor",
+        attemptId: "older-attempt",
+        reason: "stale cancellation signal",
+      },
+    });
+    await Bun.sleep(1);
+    expect(activeSignal?.aborted).toBeFalse();
+
+    const humanTasks = new HumanTaskService(
+      getDb(join(f.root, "state")),
+      {
+        snapshot: () => ({
+          id: "test:cancel",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        }),
+      },
+      {
+        onCancelled: ({ appId, taskId, attemptId, reason }) => {
+          bus.emit({
+            type: "app.task.cancelled",
+            source: "human-task-service",
+            owner: "human:operator",
+            target: { appId, taskId },
+            data: { appId, taskId, attemptId, reason },
+          });
+        },
+      },
+    );
+    expect(humanTasks.cancelTask({ appId: "sample", taskId: "work/cancel-executor" })).toMatchObject({
+      status: "cancelled",
+      terminal: true,
+    });
+    await aborted;
+    expect(startedAttemptId).not.toBe("");
+    expect(humanTasks.getTask({ appId: "sample", taskId: "work/cancel-executor" })).toMatchObject({
+      status: "cancelled",
     });
   });
 

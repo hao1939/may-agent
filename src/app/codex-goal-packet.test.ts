@@ -1,16 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { taskReconcileResultSchema } from "@may-agent/sdk";
 import {
-  buildCanonicalTaskAttemptPacket,
   MAX_CODEX_GOAL_OBJECTIVE_CHARS,
   readCodexGoalTaskAttempt,
   renderCodexGoalTaskAttempt,
-  renderNativeTaskAttempt,
   type CanonicalTaskAttemptPacket,
 } from "./codex-goal-packet.js";
 
 function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalTaskAttemptPacket {
-  return buildCanonicalTaskAttemptPacket({
+  return {
     identity: {
       appId: "sample",
       taskId: "review:design",
@@ -27,7 +25,6 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
     role: {
       agent: "reviewer",
       instructions: "Prefer direct evidence and keep changes bounded.",
-      capabilities: ["read-workspace", "publish-task-event"],
     },
     events: {
       items: [
@@ -60,27 +57,31 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
           },
         ],
       },
-      dependencies: [{ taskId: "collect:evidence", status: "done" }],
+      waits: {
+        open: [
+          {
+            conditionId: "wait:collect-evidence",
+            type: "task.completed",
+            subject: "task:sample/collect:evidence@g1",
+            state: "unknown",
+          },
+        ],
+        note: "Preserve this accepted wait while it remains valid.",
+      },
     },
     workspace: { cwd: "/tmp/sample", declaredOutputPaths: ["docs/design.md"] },
     contract: { resultSchema: structuredClone(taskReconcileResultSchema) as Record<string, unknown> },
-    limits: {
-      deadlineAt: "2026-08-23T08:15:00.000Z",
-      remainingTaskTokens: 20_000,
-      sandbox: "workspace-write",
-    },
     ...overrides,
-  });
+  };
 }
 
 describe("Codex goal Task packet", () => {
-  it("gives native May and Codex the same semantic fields", () => {
+  it("renders every Runtime-selected semantic field into Codex transport", () => {
     const canonical = packet();
-    const nativeInput = renderNativeTaskAttempt(canonical);
     const codexInput = readCodexGoalTaskAttempt(renderCodexGoalTaskAttempt(canonical).developerInstructions);
-    expect(codexInput).toEqual(nativeInput);
+    expect(codexInput).toEqual(canonical);
     expect(Object.keys(codexInput).sort()).toEqual(
-      ["contract", "desired", "events", "identity", "limits", "observations", "role", "workspace"].sort(),
+      ["contract", "desired", "events", "identity", "observations", "role", "workspace"].sort(),
     );
   });
 

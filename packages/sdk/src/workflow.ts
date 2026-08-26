@@ -53,6 +53,32 @@ export type TaskPage = {
   nextCursor?: string;
 };
 
+/** Opt-in, read-only shadow grouping. Legacy Task identities remain the traceability authority. */
+export type TaskOutcomeProjection = {
+  /** Include immutable completed receipts. Omitted means active Tasks only. */
+  includeDone?: boolean;
+};
+
+export type TaskOutcomeView = {
+  id: string;
+  outcome: string;
+  status: TaskView["status"];
+  memberCount: number;
+  memberTaskIds: string[];
+  /** Exact legacy views; callers may use tasks.get(id) for full detail and linked records. */
+  members: TaskView[];
+  /** True when no reviewed manifest mapping exists; lossless fallback prevents hidden Tasks. */
+  ungrouped?: boolean;
+};
+
+export type TaskOutcomePage = {
+  projection: "outcomes";
+  manifestVersion: number | null;
+  sourceCount: number;
+  outcomeCount: number;
+  outcomes: TaskOutcomeView[];
+};
+
 export type ExecutionView = {
   id: string;
   kind: "agent" | "workflow";
@@ -81,6 +107,7 @@ export type MetricDefinition = {
   priority?: "P0" | "P1" | "P2" | "P3";
   status?: "active" | "retired" | string;
   source?: string;
+  sourceQuery?: string;
   sourceCommand?: string;
   measureInterval?: number;
   alertOp?: "<" | ">" | "above" | "below";
@@ -117,6 +144,8 @@ export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
+    /** Opt-in shadow view. Omission keeps every existing list/get behavior unchanged. */
+    outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
     get(taskId: string): Promise<TaskDetail | null>;
   };
   execution(executionId: string): Promise<ExecutionView | null>;
@@ -233,8 +262,18 @@ export type TaskAttempt = {
   appId: string;
   /** Runtime-owned identity for this fenced execution attempt. */
   attemptId: string;
+  /**
+   * Best-effort resource-control signal for this exact attempt. Durable Task
+   * state remains authoritative; executors should stop promptly when aborted.
+   */
+  signal: AbortSignal;
   /** Task resource version observed when this attempt was claimed. */
   resourceVersion: number;
+  /** Runtime-resolved role shared unchanged by every executor adapter. */
+  role: {
+    agent: string;
+    instructions: string;
+  };
   task: TaskDetail;
   /** Attempt-scoped working directory selected by Runtime. */
   cwd: string;
@@ -245,8 +284,27 @@ export type TaskAttempt = {
     live: TaskReconciliationChild[];
     completed: TaskReconciliationChild[];
   };
+  /** Exact accepted waits that currently keep this Task from converging. */
+  waits: {
+    open: Array<{
+      conditionId: string;
+      type: string;
+      subject: string;
+      state: string;
+      dependency?: {
+        requestId: string;
+        appId: string;
+        status: string;
+        targetTaskId?: string;
+        resolvedTaskId?: string;
+      };
+    }>;
+    note: string;
+  };
   /** Ordered durable Task input not yet accepted by this Task generation. */
   events: TaskReconciliationEvents;
+  /** Runtime-selected schema for the one admitted executor result. */
+  resultSchema: Record<string, unknown>;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
   /**

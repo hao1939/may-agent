@@ -13,11 +13,8 @@ import {
   createAppInboxItem,
   findConversationTopics,
   getAppInboxItem,
-  listAppInboxAssociatedSessionClaims,
   listAppInboxHealth,
-  listAppInboxDeliveries,
   listAppInboxItems,
-  listAppInboxSessionWaits,
   listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
   readAppConversationResource,
@@ -284,12 +281,16 @@ describe("App inbox store", () => {
       cursor: first.nextCursor,
     });
 
-    expect(first.items.map((topic) => topic.title)).toEqual(["Topic 14", "Topic 13", "Topic 12", "Topic 11", "Topic 10"]);
+    expect(first.items.map((topic) => topic.title)).toEqual([
+      "Topic 14",
+      "Topic 13",
+      "Topic 12",
+      "Topic 11",
+      "Topic 10",
+    ]);
     expect(second.items.map((topic) => topic.title)).toEqual(["Topic 9", "Topic 8", "Topic 7", "Topic 6", "Topic 5"]);
     expect(readConversationTopic(db, "may", "may:primary", "00000000")?.title).toBe("Topic 0");
-    expect(findConversationTopics(db, "may", "may:primary", "terminal design")).toMatchObject([
-      { title: "Topic 0" },
-    ]);
+    expect(findConversationTopics(db, "may", "may:primary", "terminal design")).toMatchObject([{ title: "Topic 0" }]);
     expect(readConversationMessageTopicId(db, "may", "may:primary", "human:old-topic")).toBe(
       "topic_00000000abcdef0123456789",
     );
@@ -408,6 +409,7 @@ describe("App inbox store", () => {
         JSON.stringify({
           appId: "may",
           conversationId: "may:primary",
+          messageId: "result:request-with-message",
           author: { kind: "agent", id: "may" },
           text: "I’m applying the additive first stage.",
           metadata: { channel: "may-console", requestId: "request-with-message" },
@@ -420,11 +422,72 @@ describe("App inbox store", () => {
     );
     expect(agentMessages).toEqual([
       expect.objectContaining({
-        id: "event:1000",
+        id: "result:request-with-message",
         text: "I’m applying the additive first stage.",
         metadata: expect.objectContaining({ requestId: "request-with-message" }),
       }),
     ]);
+  });
+
+  it("keeps one response identity when explicit and fallback rows fall into different bounded windows", () => {
+    createAppInboxItem(db, {
+      id: "bounded-request",
+      appId: "may",
+      source: { kind: "human", id: "human:bounded-request" },
+      input: { kind: "message", data: { message: "show the result once" } },
+      conversationId: "may:primary",
+      conversationSequence: 100,
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "bounded-request", "worker", 1_000, 101)!;
+    expect(
+      completeAppInboxClaim(db, claim, { summary: "One stable response", response: "One stable response" }, 102),
+    ).toBe(true);
+    const insert = db.prepare(
+      `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+       VALUES (?, 'conversation.message.created', 'app-inbox', 'app:may', ?, ?)`,
+    );
+    insert.run(
+      1000,
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        messageId: "result:bounded-request",
+        author: { kind: "agent", id: "may" },
+        text: "One stable response",
+        metadata: { requestId: "bounded-request" },
+      }),
+      103,
+    );
+
+    expect(readAppConversationResource(db, "may", "may:primary", { limit: 2 }).messages.at(-1)).toMatchObject({
+      id: "result:bounded-request",
+      sequence: 1000,
+      text: "One stable response",
+    });
+
+    // Transient rows are intentionally absent from Conversation context, but
+    // still consume the bounded Event query. They push the explicit row out
+    // while the compatibility inbox projection remains in its own window.
+    for (const id of [1001, 1002]) {
+      insert.run(
+        id,
+        JSON.stringify({
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "tool", id: "runtime" },
+          text: `transient ${id}`,
+          transient: true,
+        }),
+        103 + id,
+      );
+    }
+
+    expect(readAppConversationResource(db, "may", "may:primary", { limit: 2 }).messages.at(-1)).toMatchObject({
+      id: "result:bounded-request",
+      sequence: 100,
+      text: "One stable response",
+    });
   });
 
   it("does not treat a cross-App id collision as an idempotent create", () => {
@@ -489,7 +552,6 @@ describe("App inbox store", () => {
         done: 0,
         ready: 2,
         waitingOnDependency: 1,
-        waitingOnDelivery: 0,
         activeLeases: 0,
         expiredLeases: 1,
         oldestPendingAgeMs: 81,
@@ -522,7 +584,7 @@ describe("App inbox store", () => {
     expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
   });
 
-  it("keeps historical delivery evidence read-only after semantic completion", () => {
+  it("ignores retained historical delivery rows after semantic completion", () => {
     createAppInboxItem(db, {
       id: "human-delivery",
       appId: "may",
@@ -555,17 +617,14 @@ describe("App inbox store", () => {
     expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
       status: "done",
       result: { summary: "finished", response: "Hello back" },
-      delivery: { status: "pending" },
     });
+    expect(getAppInboxItem(db, "human-delivery")).not.toHaveProperty("delivery");
     expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
       expect.objectContaining({ author: { kind: "human", id: "event:42" }, text: "hello" }),
       expect.objectContaining({ author: { kind: "agent", id: "may" }, text: "Hello back" }),
     ]);
     expect(claimAppInboxItem(db, "human-delivery", "worker-2", 50, 200)).toBeNull();
-    expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]?.waitingOnDelivery).toBe(0);
-    expect(listAppInboxDeliveries(db, "human-delivery")).toMatchObject([
-      { kind: "final", status: "pending", text: "Hello back" },
-    ]);
+    expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]).not.toHaveProperty("waitingOnDelivery");
   });
 
   it("wakes dependency waits and also requeues them at review time", () => {
@@ -639,29 +698,25 @@ describe("App inbox store", () => {
     expect(getAppInboxItem(db, "aks-1")?.availableAt).toBeUndefined();
   });
 
-  it("fences recovered session waits by the exact claim generation", () => {
+  it("fences session association and waits by the exact claim generation", () => {
     create("session-fence", { now: 100 });
     const stale = claimAppInboxItem(db, "session-fence", "old-runtime", 10, 100)!;
     expect(associateAppInboxClaimSession(db, stale, "session-old", 101)).toBe(true);
-    expect(listAppInboxAssociatedSessionClaims(db)).toMatchObject([
-      {
-        sessionId: "session-old",
-        claim: { generation: 1, owner: "old-runtime", item: { id: "session-fence" } },
-      },
-    ]);
+    expect(getAppInboxItem(db, "session-fence")).toMatchObject({
+      sessionId: "session-old",
+      lease: { generation: 1, owner: "old-runtime" },
+    });
 
     const current = claimAppInboxItem(db, "session-fence", "new-runtime", 50, 111)!;
     expect(waitAppInboxClaim(db, stale, { kind: "session", id: "session-old" }, { now: 112 })).toBe(false);
     expect(associateAppInboxClaimSession(db, current, "session-current", 113)).toBe(true);
     expect(waitAppInboxClaim(db, current, { kind: "session", id: "session-current" }, { now: 114 })).toBe(true);
 
-    expect(listAppInboxSessionWaits(db)).toMatchObject([
-      {
-        id: "session-fence",
-        waitingOn: { kind: "session", id: "session-current" },
-        lease: undefined,
-      },
-    ]);
+    expect(getAppInboxItem(db, "session-fence")).toMatchObject({
+      id: "session-fence",
+      waitingOn: { kind: "session", id: "session-current" },
+      lease: undefined,
+    });
   });
 
   it("admits and completes unrelated items independently", () => {

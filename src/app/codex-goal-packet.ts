@@ -22,14 +22,13 @@ export type CanonicalTaskAttemptPacket = {
   role: {
     agent: string;
     instructions: string;
-    capabilities: string[];
   };
   events: TaskReconciliationEvents & {
     checkpoint?: { summary: string; evidence: string[] };
   };
   observations: {
     children: TaskAttempt["children"];
-    dependencies: JsonRecord[];
+    waits: TaskAttempt["waits"];
   };
   workspace: {
     cwd: string;
@@ -38,20 +37,36 @@ export type CanonicalTaskAttemptPacket = {
   contract: {
     resultSchema: JsonRecord;
   };
-  limits: {
-    deadlineAt: string;
-    remainingTaskTokens: number | null;
-    sandbox: "read-only" | "workspace-write" | "danger-full-access";
-  };
 };
 
-/** Copy the one semantic projection every executor renderer consumes whole. */
-export function buildCanonicalTaskAttemptPacket(input: CanonicalTaskAttemptPacket): CanonicalTaskAttemptPacket {
-  return structuredClone(input);
-}
-
-export function renderNativeTaskAttempt(packet: CanonicalTaskAttemptPacket): CanonicalTaskAttemptPacket {
-  return structuredClone(packet);
+/** Strip live capabilities from the Runtime-built TaskAttempt for transport. */
+export function projectCanonicalTaskAttempt(attempt: TaskAttempt): CanonicalTaskAttemptPacket {
+  return {
+    identity: {
+      appId: attempt.appId,
+      taskId: attempt.task.id,
+      generation: attempt.task.generation,
+      resourceVersion: attempt.resourceVersion,
+      attemptId: attempt.attemptId,
+    },
+    desired: {
+      outcome: attempt.task.outcome,
+      acceptance: structuredClone(attempt.task.acceptance),
+      mode: attempt.task.mode ?? "achieve",
+      input: structuredClone(attempt.task.input),
+    },
+    role: structuredClone(attempt.role),
+    events: structuredClone(attempt.events),
+    observations: {
+      children: structuredClone(attempt.children),
+      waits: structuredClone(attempt.waits),
+    },
+    workspace: {
+      cwd: attempt.cwd,
+      declaredOutputPaths: structuredClone(attempt.declaredOutputPaths),
+    },
+    contract: { resultSchema: structuredClone(attempt.resultSchema) },
+  };
 }
 
 export function renderCodexGoalTaskAttempt(packet: CanonicalTaskAttemptPacket): {
@@ -69,6 +84,8 @@ export function renderCodexGoalTaskAttempt(packet: CanonicalTaskAttemptPacket): 
       "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
+      "The workspace is read-only; cite exact evidence and do not mutate files or external systems.",
+      "Progress commentary may become a durable Task event, so omit secret values, raw command output, tool payloads, and diffs.",
       "",
       CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(packet),
     ].join("\n"),

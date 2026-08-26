@@ -1,7 +1,7 @@
 import { Type, type Static, type TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
-import type { ObserverContext, TaskDetail } from "./workflow.js";
+import type { MetricDefinition, ObserverContext, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
@@ -23,6 +23,9 @@ export type {
   TaskView,
   TaskListOptions,
   TaskPage,
+  TaskOutcomeProjection,
+  TaskOutcomeView,
+  TaskOutcomePage,
   TaskReconciliationChild,
   TaskReconciliationContext,
   TaskReconciliationEvent,
@@ -385,6 +388,11 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
   observations?: EventSelector[];
   schedules?: AppSchedule[];
   observers?: AppObserver[];
+  /**
+   * App-owned metric definitions. Runtime measures declared sources on the
+   * shared Host cadence.
+   */
+  metrics?: MetricDefinition[];
   actions?: Record<string, AppAction>;
   workspace?: AppWorkspace;
   tasks?: AppTaskPolicy;

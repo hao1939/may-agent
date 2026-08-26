@@ -37,6 +37,7 @@ let todoReadDirty = false;
 const pendingInputLines = [];
 
 const renderedConversationMessages = new Set();
+const conversationResultsByTask = new Map();
 function rememberRenderedConversationMessage(messageId) {
   renderedConversationMessages.add(messageId);
   // Passive reads contain 30 messages. Retain several windows for reconnect
@@ -904,6 +905,16 @@ function taskPresentationKey(task) {
   return taskIdentity(task) ? `${task.appId}\0${task.taskId}` : "";
 }
 
+function rememberConversationResultTask(task, messageId) {
+  const key = taskPresentationKey(task);
+  if (!key) return;
+  if (conversationResultsByTask.has(key)) conversationResultsByTask.delete(key);
+  conversationResultsByTask.set(key, messageId);
+  while (conversationResultsByTask.size > 128) {
+    conversationResultsByTask.delete(conversationResultsByTask.keys().next().value);
+  }
+}
+
 function taskPresentationRevision(task) {
   return JSON.stringify({
     status: task?.status,
@@ -943,6 +954,7 @@ function renderWatchSnapshot(task, options = {}) {
 
 function setWatchedTask(task) {
   watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
+  if (watchedTask) conversationResultsByTask.delete(taskPresentationKey(watchedTask));
   const appChanged = watchedTask ? selectAppContext(watchedTask.appId) : false;
   watchedTaskDirty = false;
   if (!appChanged) subscribe();
@@ -1036,6 +1048,9 @@ function renderConversation(messages) {
     else printConversationText(speaker, renderedText);
     rememberRenderedConversationMessage(id);
     if (kind === "agent") lastRenderedMayMessageId = id;
+    if (kind === "agent" && id.startsWith("result:")) {
+      for (const task of metadataTaskRefs) rememberConversationResultTask(task, id);
+    }
     const followTask = message.metadata?.followTask;
     if (
       (kind === "agent" || taskActivity) &&
@@ -1258,7 +1273,13 @@ function handleEvent(event) {
           requestDesiredAutoFollow();
         } else if (pending?.kind === "watch-refresh") {
           watchedTaskReadInFlight = false;
-          if (task) renderWatchSnapshot(task);
+          const taskKey = taskPresentationKey(task);
+          const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
+          if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
+          else if (task && conversationAlreadyPresentedResult) {
+            rememberTaskRevision(taskKey, taskPresentationRevision(task));
+            conversationResultsByTask.delete(taskKey);
+          }
           if (!task || task.terminal) {
             setWatchedTask(null);
             if (task?.terminal) printNotice(`[watch] ${task.ref} finished; watch ended.`);

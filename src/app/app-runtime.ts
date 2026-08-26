@@ -6,6 +6,7 @@ import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
+import { syncAppMetricDefinitions } from "./app-metric-definitions.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
@@ -143,10 +144,10 @@ export async function runAppRuntime(opts: {
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
 
   const bus = new EventBus();
-  const configuredHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
-  const hostCapacity = new HostCapacity(
-    Number.isInteger(configuredHostConcurrency) && configuredHostConcurrency > 0 ? configuredHostConcurrency : 4,
-  );
+  const requestedHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
+  const configuredHostConcurrency =
+    Number.isInteger(requestedHostConcurrency) && requestedHostConcurrency > 0 ? requestedHostConcurrency : 4;
+  const hostCapacity = new HostCapacity(configuredHostConcurrency);
   attachEventPersistence({ bus, persistDir: opts.persistDir });
   markStartupPhase("database");
 
@@ -191,14 +192,13 @@ export async function runAppRuntime(opts: {
     message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
   });
   const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry, {
-    onCancelled: ({ appId, taskId, sessionId, reason }) => {
-      if (sessionId && manager.hasActiveSession(sessionId)) manager.cancel(sessionId);
+    onCancelled: ({ appId, taskId, attemptId, reason }) => {
       bus.emit({
         type: "app.task.cancelled",
         source: "human-task-service",
         owner: "human:operator",
         target: { appId, taskId },
-        data: { appId, taskId, reason },
+        data: { appId, taskId, attemptId, reason },
       } as unknown as AgentEvent);
       bus.emit({
         type: "app.dependency.updated",
@@ -239,13 +239,15 @@ export async function runAppRuntime(opts: {
     bus,
     runtime: appTaskOptions,
   });
-  const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
+  const appMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
+  syncAppMetricDefinitions(appRegistry.snapshot().entries, appMetrics);
 
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
     db: getDb(opts.persistDir),
     bus,
     persistDir: opts.persistDir,
+    hostCapacity,
     maxConcurrentRequests: configuredHostConcurrency,
     attachTask: appTasks.attach,
     resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
@@ -274,7 +276,12 @@ export async function runAppRuntime(opts: {
       return {
         read: createRuntimeAppRead({
           getDb: () => getDb(opts.persistDir),
-          metrics: observerMetrics,
+          metrics: appMetrics,
+          taskRead: {
+            list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
+            outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
+            get: async (taskId) => appTasks.get({ appId, taskId }),
+          },
           executionPaths: { appDir, projectDir },
         }),
         workspace: { appRoot: appDir, projectRoot: projectDir },
@@ -350,6 +357,7 @@ export async function runAppRuntime(opts: {
               try {
                 publishAgents();
                 commit();
+                syncAppMetricDefinitions(snapshot.entries, appMetrics);
               } catch (error) {
                 if (previous) appSources.activate(previous);
                 throw error;

@@ -122,7 +122,13 @@ function parseJson<T>(value: string | null | undefined): T | null {
   }
 }
 
-function latestTaskProgress(db: SqliteDb, appId: string, taskId: string): HumanTaskProgress | null {
+function latestTaskProgress(
+  db: SqliteDb,
+  appId: string,
+  taskId: string,
+  attemptId: string | undefined,
+): HumanTaskProgress | null {
+  if (!attemptId) return null;
   let row: TaskProgressRow | null;
   try {
     row = db
@@ -130,12 +136,12 @@ function latestTaskProgress(db: SqliteDb, appId: string, taskId: string): HumanT
         `SELECT data, timestamp
          FROM events
          WHERE event_type = 'project.task.executor.progress'
-           AND project_id = ? AND task_id = ?
+           AND project_id = ? AND task_id = ? AND attempt_id = ?
            AND length(trim(coalesce(json_extract(data, '$.message'), ''))) > 0
          ORDER BY id DESC
          LIMIT 1`,
       )
-      .get(appId, taskId) as TaskProgressRow | null;
+      .get(appId, taskId, attemptId) as TaskProgressRow | null;
   } catch {
     // Progress is optional observation. A missing or unavailable Event store
     // must not break the authoritative Task read or cancellation path.
@@ -371,13 +377,11 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (!resource) return null;
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
   const status = taskStatus(row.phase, false);
-  const observationUpdatedAt = Date.parse(resource.status.updatedAt);
-  const attemptStartedAt = Date.parse(attempt?.startedAt ?? "");
   const observationIsCurrent =
     status !== "running" ||
-    attempt?.state !== "running" ||
-    !Number.isFinite(attemptStartedAt) ||
-    (Number.isFinite(observationUpdatedAt) && observationUpdatedAt >= attemptStartedAt);
+    (attempt?.state === "running" &&
+      resource.status.observedGeneration === resource.metadata.generation &&
+      resource.status.observedAttemptId === resource.status.currentAttemptId);
   const view: HumanTaskView = {
     appId,
     taskId,
@@ -547,7 +551,12 @@ export class HumanTaskService {
     private readonly db: SqliteDb,
     private readonly registry: Pick<AppRegistry, "snapshot">,
     private readonly options: {
-      onCancelled?: (input: { appId: string; taskId: string; sessionId?: string; reason: string }) => void;
+      onCancelled?: (input: {
+        appId: string;
+        taskId: string;
+        attemptId?: string;
+        reason: string;
+      }) => void;
     } = {},
   ) {
     ensureTaskReferenceIndex(db);
@@ -768,7 +777,7 @@ export class HumanTaskService {
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
     const linkedView = requestedBy ? { ...view, requestedBy } : view;
     if (view.terminal) return linkedView;
-    const progress = latestTaskProgress(this.db, identity.appId, identity.taskId);
+    const progress = latestTaskProgress(this.db, identity.appId, identity.taskId, view.execution?.attemptId);
     const waitingOn = view.status === "waiting" ? taskWaits(this.db, identity.appId, identity.taskId) : [];
     const detail = {
       ...linkedView,
@@ -782,7 +791,7 @@ export class HumanTaskService {
   cancelTask(input: { ref?: string; appId?: string; taskId?: string; reason?: string }): HumanTaskView {
     const resolved = this.getTask(input);
     if (!resolved) throw new Error("Task was not found");
-    let cancelledSessionId: string | undefined;
+    let cancelledAttemptId: string | undefined;
     let reason = input.reason?.trim() || "human requested cancellation";
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -861,7 +870,7 @@ export class HumanTaskService {
           )
           .run(JSON.stringify(attempt), current.appId, attempt.metadata.id);
       }
-      cancelledSessionId = attempt?.sessionId;
+      cancelledAttemptId = attempt?.metadata.id;
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");
@@ -870,7 +879,7 @@ export class HumanTaskService {
     this.options.onCancelled?.({
       appId: resolved.appId,
       taskId: resolved.taskId,
-      ...(cancelledSessionId ? { sessionId: cancelledSessionId } : {}),
+      ...(cancelledAttemptId ? { attemptId: cancelledAttemptId } : {}),
       reason,
     });
     return this.getTask({ appId: resolved.appId, taskId: resolved.taskId })!;

@@ -478,9 +478,7 @@ describe("May Console", () => {
     );
     await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
     await waitFor(() => output.includes("  Task 8f12ac90 · evaluation · working ·"));
-    expect(output).toContain(
-      "Reviewing current behavior\n\n  Task 8f12ac90 · evaluation · working ·",
-    );
+    expect(output).toContain("Reviewing current behavior\n\n  Task 8f12ac90 · evaluation · working ·");
     expect(output).toContain("  You: Approve deployment or ask for another verification pass.\n\n");
     child.stdin.write("/unwatch\n");
     await waitFor(() => output.includes("[watch] Watch ended. The Task continues.\n\n"));
@@ -620,6 +618,25 @@ describe("May Console", () => {
     expect(output.split("Checking the final evidence").length - 1).toBe(1);
 
     taskTerminal = true;
+    remoteConversationMessages.push({
+      id: "result:review-docs",
+      sequence: 5,
+      author: { kind: "agent", id: "may" },
+      text: "The design and implementation now align.",
+      metadata: {
+        taskRefs: [{ appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" }],
+      },
+      createdAt: 5,
+    });
+    client?.write(
+      `${JSON.stringify({
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      })}\n`,
+    );
+    await waitFor(() => output.includes("\nmay> The design and implementation now align."));
     client?.write(
       `${JSON.stringify({
         type: "app.task.updated",
@@ -632,6 +649,7 @@ describe("May Console", () => {
         frames.filter((frame) => frame.type === "subscribe").at(-1)?.task === null &&
         output.includes("[watch] 8f12ac90 finished; watch ended."),
     );
+    expect(output.split("The design and implementation now align.").length - 1).toBe(1);
 
     const beforeTelegramSync = frames.filter((frame) => frame.type === "app.conversation.get").length;
     remoteConversationMessages.push({

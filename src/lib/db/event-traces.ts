@@ -25,7 +25,8 @@ export type EventTraceIntegrity = {
   closedPairMissingClosureCount: number;
   pairTraceSplitCount: number;
   humanRootWithoutSingleIntentCount: number;
-  humanResultUndeliveredCount: number;
+  conversationHumanWithoutSingleRequestCount: number;
+  mayResultWithoutConversationCount: number;
   bookkeepingOnlyAcceptanceCount: number;
   structuralOk: boolean;
   semanticOk: boolean;
@@ -581,26 +582,38 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
              )
          )`,
     ),
-    humanResultUndeliveredCount: count(
+    conversationHumanWithoutSingleRequestCount: count(
       db,
       `SELECT COUNT(*) AS c
-       FROM events terminal
-       JOIN event_traces terminal_trace ON terminal_trace.event_id = terminal.id
-       WHERE terminal.event_type IN ('session.idle', 'session.end')
-         AND EXISTS (
-           SELECT 1
-           FROM events root
-           JOIN event_traces root_trace ON root_trace.event_id = root.id
-           WHERE root.event_type = 'human.input.received'
-             AND root_trace.trace_id = terminal_trace.trace_id
-         )
-         AND NOT EXISTS (
-           SELECT 1
-           FROM events delivery
-           JOIN event_traces delivery_trace ON delivery_trace.event_id = delivery.id
-           WHERE delivery.event_type = 'channel.delivery.completed'
-             AND delivery_trace.trace_id = terminal_trace.trace_id
-       )`,
+       FROM (
+         SELECT root.id
+         FROM events root
+         LEFT JOIN app_inbox_items request
+           ON request.origin_event_id = root.id
+          AND request.app_id = 'may'
+          AND request.source_kind = 'human'
+         WHERE root.event_type = 'conversation.message.created'
+           AND json_extract(root.data, '$.appId') = 'may'
+           AND json_extract(root.data, '$.author.kind') = 'human'
+           AND COALESCE(json_extract(root.data, '$.transient'), 0) != 1
+         GROUP BY root.id
+         HAVING COUNT(request.id) != 1
+       ) unmatched`,
+    ),
+    mayResultWithoutConversationCount: count(
+      db,
+      `SELECT COUNT(*) AS c
+       FROM app_inbox_items request
+       JOIN events root ON root.id = request.origin_event_id
+       WHERE request.app_id = 'may'
+         AND request.source_kind = 'human'
+         AND request.status = 'done'
+         AND request.result IS NOT NULL
+         AND trim(request.result) NOT IN ('', '{}')
+         AND root.event_type = 'conversation.message.created'
+         AND json_extract(root.data, '$.appId') = 'may'
+         AND json_extract(root.data, '$.author.kind') = 'human'
+         AND (request.conversation_id IS NULL OR trim(request.conversation_id) = '')`,
     ),
     bookkeepingOnlyAcceptanceCount: count(
       db,
@@ -627,7 +640,8 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
     result.closedPairMissingClosureCount === 0 &&
     result.pairTraceSplitCount === 0 &&
     result.humanRootWithoutSingleIntentCount === 0 &&
-    result.humanResultUndeliveredCount === 0 &&
+    result.conversationHumanWithoutSingleRequestCount === 0 &&
+    result.mayResultWithoutConversationCount === 0 &&
     result.bookkeepingOnlyAcceptanceCount === 0;
   result.ok = result.structuralOk && result.semanticOk;
   return result;

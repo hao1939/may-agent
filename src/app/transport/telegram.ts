@@ -255,6 +255,25 @@ export function renderTelegramTask(task: HumanTaskView): string {
   ].join("\n");
 }
 
+function taskPresentationRevision(task: HumanTaskView): string {
+  return JSON.stringify({
+    status: task.status,
+    statusDetail: task.statusDetail,
+    outcome: task.outcome,
+    acceptance: task.acceptance,
+    updatedAt: task.updatedAt,
+    summary: task.summary,
+    response: task.response,
+    evidence: task.evidence,
+    progress: task.progress,
+    waitingOn: task.waitingOn,
+    requestedBy: task.requestedBy,
+    execution: task.execution,
+    humanAction: task.humanAction,
+    terminal: task.terminal,
+  });
+}
+
 function representedTaskIdentities(task: HumanTaskView): Array<{ appId: string; taskId: string }> {
   return [
     { appId: task.appId, taskId: task.taskId },
@@ -386,6 +405,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const watchReads = new Set<string>();
   const dirtyWatches = new Set<string>();
   const scheduledWatches = new Set<string>();
+  const shownWatchRevisions = new Map<string, string>();
+  const stopWatching = (surface: string): boolean => {
+    shownWatchRevisions.delete(surface);
+    return watchedTasks.delete(surface);
+  };
   const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
   const sharedConversationId = primaryConversationId(opts.interfaceAgent);
   const nextTodoPageBySurface = new Map<string, { appId?: string; cursor: string }>();
@@ -499,18 +523,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     try {
       const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
       if (!task) {
-        watchedTasks.delete(surface);
+        stopWatching(surface);
         await sendMessage(watched.chatId, `Task ${watched.ref} is no longer available; watch ended.`, undefined, {
           messageThreadId: watched.topicId,
         });
         return;
       }
-      await sendMessage(watched.chatId, renderTelegramTask(task), undefined, {
+      const revision = taskPresentationRevision(task);
+      if (shownWatchRevisions.get(surface) === revision) return;
+      const delivered = await sendMessage(watched.chatId, renderTelegramTask(task), undefined, {
         eventType: "task.watch",
         agent: opts.interfaceAgent,
         messageThreadId: watched.topicId,
       });
-      if (task.terminal) watchedTasks.delete(surface);
+      if (!delivered) return;
+      shownWatchRevisions.set(surface, revision);
+      if (task.terminal) {
+        stopWatching(surface);
+      }
     } finally {
       watchReads.delete(surface);
       if (dirtyWatches.delete(surface) && watchedTasks.has(surface)) void refreshWatch(surface);
@@ -879,7 +909,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           shownTodoActions.delete(surface);
           nextTodoPageBySurface.delete(surface);
           const watched = watchedTasks.get(surface);
-          if (watched && watched.appId !== nextApp) watchedTasks.delete(surface);
+          if (watched && watched.appId !== nextApp) stopWatching(surface);
           selectedChanged = true;
         }
         const selected = selectedApps.get(surface) ?? opts.interfaceAgent;
@@ -951,7 +981,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (rest[0]) {
         const linked = new Set(topic.taskRefs.map((task) => `${task.appId}\0${task.taskId}`));
         const watched = watchedTasks.get(surface);
-        if (watched && !linked.has(`${watched.appId}\0${watched.taskId}`)) watchedTasks.delete(surface);
+        if (watched && !linked.has(`${watched.appId}\0${watched.taskId}`)) stopWatching(surface);
         selectedTopics.set(surface, topic);
       }
       await deliverCommandView(renderTelegramTopic(topic, conversation.messages), topic.taskRefs);
@@ -1058,11 +1088,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (!watched) await deliverCommandView("No Task is watched. Use /watch <ref>.");
         else {
           const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
-          await deliverCommandView(
+          const delivered = await deliverCommandView(
             task ? renderTelegramTask(task) : `Task ${watched.ref} was not found; watch ended.`,
             task ? representedTaskIdentities(task) : [],
           );
-          if (!task || task.terminal) watchedTasks.delete(surface);
+          if (task && delivered) shownWatchRevisions.set(surface, taskPresentationRevision(task));
+          if (!task || task.terminal) {
+            stopWatching(surface);
+          }
         }
         return true;
       }
@@ -1070,7 +1103,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!task) {
         await deliverCommandView(`Task ${rest[0]} was not found.`);
       } else if (task.terminal) {
-        watchedTasks.delete(surface);
+        stopWatching(surface);
         await deliverCommandView(`${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched.`, [
           ...representedTaskIdentities(task),
         ]);
@@ -1082,18 +1115,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           chatId: chatIdStr,
           ...(topicId === undefined ? {} : { topicId }),
         });
-        await deliverCommandView(
+        const delivered = await deliverCommandView(
           `${renderTelegramTask(task)}\n\nWatching ${task.ref}. May receives replies with this Task in context.`,
           representedTaskIdentities(task),
         );
+        if (delivered) shownWatchRevisions.set(surface, taskPresentationRevision(task));
       }
       return true;
     }
 
     if (command === "/unwatch") {
       if (rest.length > 0) await deliverCommandView("Use: /unwatch");
-      else if (watchedTasks.delete(surface)) await deliverCommandView("Stopped watching. The Task is unchanged.");
-      else await deliverCommandView("No Task is watched.");
+      else if (stopWatching(surface)) {
+        await deliverCommandView("Stopped watching. The Task is unchanged.");
+      } else await deliverCommandView("No Task is watched.");
       return true;
     }
 
@@ -1117,7 +1152,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                 reason: "human requested cancellation from Telegram",
               },
         );
-        watchedTasks.delete(surface);
+        stopWatching(surface);
         await deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task));
       } catch (error) {
         await deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
