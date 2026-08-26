@@ -201,11 +201,14 @@ attention-notification, unavailable-handler, and failed-execution recovery now
 require the exact candidate IDs selected by the resource index; none can fall
 back to a whole-App snapshot.
 
-`app-task-store.ts`, the reconciler config, and cutover helpers still compile a
-JSON path used by the guarded offline importer and many focused fixtures. Keep
-that compatibility explicit and outside installed Runtime construction, then
-migrate fixtures in bounded slices before deleting it. Retain old files as
-read-only evidence; do not add a legacy/modern abstraction.
+The reconciler config is now resource-only: constructing it requires an
+`AppTaskResourceStore`, and it cannot create or fall back to JSON state. The
+JSON store exposes one explicitly named `legacyTaskStateConfig` used only by
+guarded offline cutover and fixture setup; those fixtures activate resources
+before exercising reconciliation. Continue migrating fixtures in bounded
+slices, then delete the JSON constructor with the offline importer when no
+supported cutover remains. Retain old state files as read-only evidence; do not
+add a legacy/modern Runtime abstraction.
 
 ### 3. Host Operations exposes historical incidents as public inputs
 
@@ -301,8 +304,8 @@ Resolved rows do not remain implementation steps in this tracker.
 ## Repair order
 
 1. Reduce the central metrics catalog in bounded App-owned steps.
-2. Move retained JSON import/test compatibility out of normal Task code, then
-   retire it as fixtures migrate.
+2. Retire the isolated JSON import/test constructor as fixtures and supported
+   cutovers migrate.
 3. Remove incident-specific public contracts.
 4. Run a final document-by-document status, link, and code-reference audit.
 
