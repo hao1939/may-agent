@@ -279,6 +279,9 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
   );
   const text = taskLines.length > 0 ? `${message.text}\n\n${taskLines.join("\n")}` : message.text;
   if (channel === "telegram" && message.author.kind === "agent") return text;
+  if (message.author.kind === "tool" && message.metadata?.command === "task-admitted") {
+    return `Task activity\n${text}`;
+  }
   const surface = channel === "may-console" ? "Console" : channel;
   const speaker =
     message.author.kind === "human"

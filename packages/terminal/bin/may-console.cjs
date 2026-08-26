@@ -188,6 +188,22 @@ function printConversationText(speaker, text = "", onRendered) {
   refreshPrompt();
 }
 
+function printActivityText(label, text = "") {
+  try {
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+  } catch {
+    // Non-TTY output is fine in tests and logs.
+  }
+  const value = String(text || "").trimEnd();
+  if (!value) {
+    refreshPrompt();
+    return;
+  }
+  writeStdout(`\n[${label}] ${value}\n\n`);
+  refreshPrompt();
+}
+
 function printResponseText(text = "", onRendered) {
   printConversationText("may", text, onRendered);
 }
@@ -913,12 +929,16 @@ function renderConversation(messages) {
         ? [`Task ${task.ref.trim()} (${task.appId || "unknown App"})`]
         : [],
     );
-    printConversationText(speaker, taskRefs.length > 0 ? `${text}\n\n${taskRefs.join("\n")}` : text);
+    const taskActivity = kind === "tool" && message.metadata?.command === "task-admitted";
+    const renderedText =
+      taskRefs.length > 0 ? `${text}${taskActivity ? "\n" : "\n\n"}${taskRefs.join("\n")}` : text;
+    if (taskActivity) printActivityText("task", renderedText);
+    else printConversationText(speaker, renderedText);
     rememberRenderedConversationMessage(id);
     if (kind === "agent") lastRenderedMayMessageId = id;
     const followTask = message.metadata?.followTask;
     if (
-      kind === "agent" &&
+      (kind === "agent" || taskActivity) &&
       followTask &&
       typeof followTask.appId === "string" &&
       followTask.appId.trim() &&

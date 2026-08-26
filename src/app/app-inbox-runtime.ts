@@ -738,6 +738,35 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!delivery) {
           throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
         }
+        if (String(event.type) === "app.follow-up.requested" && command.kind === "task" && command.intent) {
+          const data = eventData(event);
+          const conversationId = typeof data.conversationId === "string" ? data.conversationId.trim() : "";
+          const topicId = typeof data.topicId === "string" ? data.topicId.trim() : "";
+          const requestId = typeof data.requestId === "string" ? data.requestId.trim() : "";
+          const followUp = record(data.followUp);
+          const outcome = typeof followUp.outcome === "string" ? followUp.outcome.trim() : "";
+          if (conversationId && requestId && outcome) {
+            options.bus.emit({
+              type: "conversation.message.created",
+              source: "app-task-admission",
+              owner: `app:${command.appId}`,
+              data: {
+                appId: command.appId,
+                conversationId,
+                author: { kind: "tool", id: "runtime" },
+                text: `Accepted durable work: ${outcome}`,
+                metadata: {
+                  requestId,
+                  command: "task-admitted",
+                  ...(topicId ? { topicId } : {}),
+                  taskRefs: [{ appId: command.appId, taskId: command.intent.id }],
+                  followTask: { appId: command.appId, taskId: command.intent.id },
+                },
+                idempotencyKey: `conversation-task-admitted:${conversationId}:${requestId}:${command.appId}:${command.intent.id}`,
+              },
+            });
+          }
+        }
       }
       markAppEventAdmissionCommandAdmitted(options.db, {
         eventId: plan.eventId,
