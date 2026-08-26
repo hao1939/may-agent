@@ -11,7 +11,7 @@ import {
   type TaskIntent as AppTaskIntent,
 } from "@may-agent/sdk";
 import {
-  buildAppTaskTreeProjection,
+  appTaskReadinessById,
   isLeaf,
   normalizeStringArray,
   readTaskState,
@@ -20,6 +20,7 @@ import {
   withTaskStateLock,
   type TaskNode,
   type ResourceTaskStateConfig,
+  type AppTaskReadiness,
   type TaskTree,
 } from "./app-task-store.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
@@ -2001,7 +2002,7 @@ function boundedChildEvidence(evidence: string[]): string[] {
 function liveTaskContext(
   tree: TaskTree,
   resource: AppTaskResource,
-  readiness: ReturnType<typeof buildAppTaskTreeProjection>["tasks"][string]["readiness"],
+  readiness: AppTaskReadiness | undefined,
 ): AppTaskChildContext["live"][number] {
   const attempt = currentResourceAttempt(tree, resource);
   return {
@@ -2038,9 +2039,7 @@ function liveTaskContext(
           },
         }
       : {}),
-    hasLiveChildren: (tree.tasks[resource.metadata.id]?.children ?? []).some((childId) =>
-      Boolean(tree.resources?.[childId]),
-    ),
+    hasLiveChildren: Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === resource.metadata.id),
     updatedAt: resource.status.updatedAt,
     ...(resource.status.summary ? { summary: boundedChildContextText(resource.status.summary) } : {}),
     evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
@@ -2050,7 +2049,7 @@ function liveTaskContext(
 function liveTaskSnapshotContext(
   tree: TaskTree,
   resource: AppTaskResource,
-  readiness: ReturnType<typeof buildAppTaskTreeProjection>["tasks"][string]["readiness"],
+  readiness: AppTaskReadiness | undefined,
 ): AppTaskSnapshotContext {
   return {
     taskId: resource.metadata.id,
@@ -2086,9 +2085,7 @@ function liveTaskSnapshotContext(
           },
         }
       : {}),
-    hasLiveChildren: (tree.tasks[resource.metadata.id]?.children ?? []).some((childId) =>
-      Boolean(tree.resources?.[childId]),
-    ),
+    hasLiveChildren: Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === resource.metadata.id),
     updatedAt: resource.status.updatedAt,
   };
 }
@@ -2097,13 +2094,12 @@ function liveTaskSnapshotContext(
 export function readAppTaskChildContext(config: ResourceTaskStateConfig, taskId: string): AppTaskChildContext {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-    const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
-    const live = (tree.tasks[taskId]?.children ?? [])
-      .map((childId) => tree.resources?.[childId])
-      .filter((resource): resource is AppTaskResource => Boolean(resource))
+    const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
+    const live = Object.values(tree.resources ?? {})
+      .filter((resource) => resource.spec.parentId === taskId)
       .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
       .slice(0, MAX_LIVE_CHILD_CONTEXT)
-      .map((resource) => liveTaskContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness));
+      .map((resource) => liveTaskContext(tree, resource, readinessById[resource.metadata.id]));
     const completed = Object.values(tree.receipts ?? {})
       .filter((receipt) => receipt.parentId === taskId)
       .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
@@ -2138,14 +2134,14 @@ export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, current
   return withTaskStateLock(config, () => {
     const indexedIds = config.resourceStore.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
     const tree = config.resourceStore.readTaskContext({ taskIds: indexedIds });
-    const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
+    const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
     const candidates = Object.values(tree.resources ?? {})
       .filter((resource) => resource.metadata.id !== currentTaskId && resource.status.phase !== "converged")
       .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id));
     return {
       live: candidates
         .slice(0, MAX_APP_TASK_LIVE_SNAPSHOT)
-        .map((resource) => liveTaskSnapshotContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness)),
+        .map((resource) => liveTaskSnapshotContext(tree, resource, readinessById[resource.metadata.id])),
       truncated: indexedIds.length > MAX_APP_TASK_LIVE_SNAPSHOT,
     };
   });

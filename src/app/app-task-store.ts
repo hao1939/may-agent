@@ -1010,7 +1010,10 @@ function appTaskReadiness(
   const satisfiedConditionIds = conditionIds.filter((id) => tree.conditions?.[id]?.status.state === "true");
   const conditionWokeTask = resource.status.phase === "waiting" && satisfiedConditionIds.length > 0;
   if (resource.status.phase === "waiting" && !conditionWokeTask) {
-    const childIds = (tree.tasks[resource.metadata.id]?.children ?? []).filter((id) => Boolean(tree.resources?.[id]));
+    const childIds = Object.values(tree.resources ?? {})
+      .filter((child) => child.spec.parentId === resource.metadata.id)
+      .map((child) => child.metadata.id)
+      .sort();
     if (!conditionIds.length && childIds.length) {
       return {
         state: "child-blocked",
@@ -1058,6 +1061,24 @@ function appTaskReadiness(
     : { state: "ready", reason: "Dependencies and capacity allow claim", related_ids: [] };
 }
 
+export function appTaskReadinessById(
+  tree: TaskTree,
+  configuredMaxConcurrent: number,
+): Record<string, AppTaskReadiness> {
+  const maxConcurrent =
+    Number.isInteger(configuredMaxConcurrent) && configuredMaxConcurrent > 0 ? configuredMaxConcurrent : 1;
+  const satisfied = new Set(satisfiedDependencyIds(tree));
+  const activeCount = Object.values(tree.resources ?? {}).filter(
+    (resource) => resource.status.phase === "running",
+  ).length;
+  return Object.fromEntries(
+    Object.values(tree.resources ?? {}).map((resource) => [
+      resource.metadata.id,
+      appTaskReadiness(tree, resource, satisfied, maxConcurrent, activeCount),
+    ]),
+  );
+}
+
 export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurrent: number): AppTaskTreeProjection {
   const maxConcurrent =
     Number.isInteger(configuredMaxConcurrent) && configuredMaxConcurrent > 0 ? configuredMaxConcurrent : 1;
@@ -1067,6 +1088,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
     .filter((resource) => resource.status.phase === "running")
     .map((resource) => resource.metadata.id)
     .sort();
+  const readinessById = appTaskReadinessById(tree, maxConcurrent);
   const attempts = Object.values(tree.attempts ?? {});
   const attemptsByTask = new Map<string, AppTaskAttempt[]>();
   for (const attempt of attempts) {
@@ -1118,7 +1140,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       phase: status.phase,
       observed_generation: status.observedGeneration,
       synchronized: status.observedGeneration === metadata.generation,
-      readiness: appTaskReadiness(tree, resource, satisfied, maxConcurrent, activeTaskIds.length),
+      readiness: readinessById[taskId],
       depends_on: [...(spec.dependsOn ?? [])],
       outputs: [...(spec.outputs ?? [])],
       acceptance: [...spec.acceptance],
