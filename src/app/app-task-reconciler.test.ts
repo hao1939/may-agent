@@ -714,7 +714,7 @@ describe("App task reconciler state", () => {
 
   it("lists pending and explicit agent handoff tasks but keeps unavailable workflows asleep", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "runnable-agent-handoff");
     const attentionIntent = {
       ...intent(),
       id: "work/attention",
@@ -794,8 +794,7 @@ describe("App task reconciler state", () => {
     completeAppTask(config, maintainClaim, { summary: "monitor converged" });
 
     expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
-    const resourceConfig = resourceFixture(state, "handler-unavailable").config;
-    expect(listHandlerUnavailableAppTasks(resourceConfig, "app-owner", [unavailableIntent.id])).toEqual([
+    expect(listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id])).toEqual([
       { taskId: "work/unavailable", agent: "branch-owner", workflow: "missing-workflow" },
     ]);
 
@@ -818,10 +817,10 @@ describe("App task reconciler state", () => {
       "work/pending",
     ]);
 
-    expect(releaseHandlerUnavailableAppTask(resourceConfig, "work/unavailable")).toBe(true);
+    expect(releaseHandlerUnavailableAppTask(config, "work/unavailable")).toBe(true);
     expect(
-      resourceConfig.resourceStore.readTaskContext({ taskIds: ["work/unavailable"] }).resources?.["work/unavailable"]
-        ?.status.phase,
+      config.resourceStore.readTaskContext({ taskIds: ["work/unavailable"] }).resources?.["work/unavailable"]?.status
+        .phase,
     ).toBe("pending");
   });
 
@@ -3839,7 +3838,8 @@ describe("App task reconciler state", () => {
   });
 
   it("rejects stale results after a fallback attempt takes ownership", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "fallback-attempt-ownership");
     const primary = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3881,7 +3881,8 @@ describe("App task reconciler state", () => {
   });
 
   it("does not reclaim attention tasks during plain resync", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "attention-passive-resync");
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3925,7 +3926,8 @@ describe("App task reconciler state", () => {
   });
 
   it("allows a new trigger to reclaim an attention task", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "attention-trigger-reclaim");
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4426,7 +4428,7 @@ describe("App task reconciler state", () => {
 
   it("requeues only the exact failed attention generation and retains immutable attempt evidence", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "retry-failed-task");
     const failed = declareAndClaimTask(config, {
       intent: {
         id: "reviewed-failure",
@@ -4445,19 +4447,18 @@ describe("App task reconciler state", () => {
       reason: "retained-input-review",
       evidence: ["failure-log:811"],
     });
-    const resourceConfig = resourceFixture(state, "retry-failed-task").config;
-    const before = resourceConfig.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
+    const before = config.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
     const attemptsBefore = structuredClone(before.attempts);
     const taskIdsBefore = Object.keys(before.tasks);
 
     expect(() =>
-      retryFailedAppTask(resourceConfig, {
+      retryFailedAppTask(config, {
         appId: "sample",
         taskId: failed.taskId,
         expectedGeneration: failed.generation + 1,
       }),
     ).toThrow("generation changed");
-    const receipt = retryFailedAppTask(resourceConfig, {
+    const receipt = retryFailedAppTask(config, {
       appId: "sample",
       taskId: failed.taskId,
       expectedGeneration: failed.generation,
@@ -4472,14 +4473,14 @@ describe("App task reconciler state", () => {
       previousAttemptId: failed.attemptId,
     });
     expect(receipt.resourceVersion).toBeGreaterThan(receipt.previousResourceVersion);
-    const after = resourceConfig.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
+    const after = config.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
     expect(Object.keys(after.tasks)).toEqual(taskIdsBefore);
     expect(after.attempts).toEqual(attemptsBefore);
     expect(after.resources?.[failed.taskId]).toMatchObject({
       metadata: { id: failed.taskId, generation: failed.generation },
       status: { phase: "pending", evidence: ["failure-log:811"] },
     });
-    expect(readAppTaskTrigger(resourceConfig, failed.taskId)).toMatchObject({
+    expect(readAppTaskTrigger(config, failed.taskId)).toMatchObject({
       type: "project.comment.created",
       eventId: 811,
     });
@@ -4525,7 +4526,8 @@ describe("App task reconciler state", () => {
   });
 
   it("lets a controller retry a known transient attention task without changing its generation", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "transient-attention-retry");
     const retryIntent = {
       id: "retry-after-base-race",
       parentId: "operations",
