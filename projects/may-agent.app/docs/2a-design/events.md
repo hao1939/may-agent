@@ -198,7 +198,7 @@ May human adapters use a more expressive required event:
 conversation.message.created target.appId=may
   + conversationId=may:primary
   + author.kind=human
-  -> create or find one durable May request
+  -> admit one bounded May frontend request
 ```
 
 The human message is both shared Conversation context and the fenced ingress
@@ -235,19 +235,19 @@ external input and nonexistent required targets create no event receipt.
 
 ## Results and correlation
 
-Requests and delivery operations carry their own durable correlation instead of
-opening event pairs:
+Requests and Tasks carry durable correlation instead of opening event pairs:
 
 ```text
-May request -> Topic link -> child App request/task -> child result
-            -> May review -> persisted response -> request completion
-                                          -> Conversation update
-                                          -> adapters render independently
+May frontend request -> answer, or durable follow-up event -> request complete
+follow-up event -> standing May Task -> responsible App Task
+Task event/result -> standing May Task -> Conversation update
+                                      -> adapters render independently
 ```
 
-An App Task waits on exact child work or Conditions. A May request waits on its
-exact child App requests without becoming a Task. A persisted May response completes the linked caller
-request and enters Conversation; channel adapters may render it independently.
+An App Task waits on exact child work or Conditions. A May frontend request
+does not wait on destination work. The standing follow-up Task preserves that
+obligation, and a persisted May response enters Conversation independently of
+channel rendering.
 Events provide causal evidence and wakes along those relationships; they do
 not recreate the relationships as opener/closer pairs.
 
@@ -264,11 +264,11 @@ for audit but cannot replace inbox/task/delivery completion.
 conversation.message.created target.appId=may
   conversationId=may:primary
   author.kind=human
-  -> linked May request (not a Task)
-  -> first-attempt result or child App task dependency
-  -> May result review
-  -> May request done
-  -> persisted Conversation result
+  -> bounded May frontend request
+  -> answer/clarification, or typed follow-up event
+  -> frontend request done
+  -> standing follow-up Task links and follows exact App Tasks
+  -> useful result persisted in Conversation
   -> Console and Telegram independently observe and render
 ```
 

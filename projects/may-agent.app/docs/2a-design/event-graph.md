@@ -74,17 +74,19 @@ must show the session as disconnected; the UI must not repair it heuristically.
 
 Ordinary free-form input has one semantic root. The adapter publishes
 `conversation.message.created` for `Conversation may:primary` and attaches
-trusted human/channel provenance. That event admits one durable May App request
-whose identity, not the trace or Conversation projection, owns eventual
-handling:
+trusted human/channel provenance. That event admits one bounded May frontend
+request. Durable follow-through, if needed, moves to the standing May Task:
 
 ```text
 conversation.message.created (target.appId=may, author.kind=human)
-  -> linked May App request
+  -> bounded May frontend request
     -> bounded agent session
-      -> App result
-        -> conversation.updated
-          -> independent adapter read/render
+      -> direct App result, or app.follow-up.requested
+        -> frontend request complete
+          -> standing May follow-up Task
+            -> responsible App Task events/results
+              -> conversation.updated
+                -> independent adapter read/render
 ```
 
 Historical `human.input.received -> app.input.requested` and direct
@@ -667,10 +669,10 @@ opening event:
 
 ```text
 domain App request/task
-  -> child May App request
+  -> typed human-attention event to May
   -> outbound delivery operation
   -> conversation.message.created (author.kind=human)
-  -> correlated May App result
+  -> May follow-up Task routes the answer
   -> app.dependency.completed fact
   -> source App request/task resumes
 ```
@@ -748,8 +750,8 @@ The trace should make review concrete:
 | Question                                | Trace answer                                                                                                     |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Did the event reach its declared route? | Event delivery records show input-to-task admission, exact wake, or observation.                                 |
-| Did May receive the human reply?        | A human `conversation.message.created` exists with its reply/context anchor and linked May request.              |
-| Did May answer the human request?       | The exact May request has a correlated persisted result in Conversation; adapter rendering is not semantic work. |
+| Did May receive the human reply?        | A human `conversation.message.created` exists with its reply/context anchor and bounded May request.             |
+| Did May answer the human request?       | Conversation contains the correlated May result; adapter rendering is not semantic work.                        |
 | Did the source consume the result?      | Its dependency is completed and the exact parent App request/task resumed.                                       |
 | Did the LLM/tool fail?                  | Detail nodes show missing or failed `tool.call.completed`.                                                       |
 

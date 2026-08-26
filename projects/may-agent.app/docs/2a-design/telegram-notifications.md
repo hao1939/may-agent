@@ -17,9 +17,9 @@ escalation lifecycle, or completion rule.
 human Telegram message
   -> normalize chat/topic/message/reply identity
   -> Conversation may:primary
-  -> one fenced May request and optional Topic
-  -> direct answer or typed child App Task dependencies
-  -> May review
+  -> one bounded May frontend request and optional Topic
+  -> direct answer or typed follow-up event
+  -> standing May follow-up Task reviews responsible App Tasks
   -> persisted result in Conversation
   -> Telegram independently renders unseen messages
 ```
@@ -88,7 +88,7 @@ state does not change the request result.
 
 ## Reply Context
 
-Every ordinary inbound Telegram message creates its own fenced May request. A
+Every ordinary inbound Telegram message creates its own bounded May frontend request. A
 Telegram reply anchor does not reopen, steer, or replace another request. The
 adapter attaches only the provider message ID and at most 2,000 characters of
 quoted text. It does not reopen notification rows, reconstruct a session or
@@ -120,7 +120,7 @@ type ChannelMessageLink = {
 ```
 
 Legacy context fields remain read-only history. New admission uses the shared
-Conversation and canonical May request identity.
+Conversation and canonical message/request identity.
 
 ## May Execution And Session Loss
 
@@ -131,24 +131,27 @@ relevant preferences.
 A session is replaceable execution context. If its original session is gone:
 
 ```text
-unfinished May request
-  -> recover exact request, dependency, and Conversation state
+unfinished May frontend request
+  -> recover exact request and Conversation state
   -> prepare a fresh bounded May session
-  -> continue the same request
+  -> finish the same bounded decision
+
+standing May follow-up Task
+  -> Runtime retries the same Task from durable Events and links
 ```
 
 Do not replay the last prompt or steer an unrelated current session. Session
-loss cannot lose, duplicate, or complete the May request.
+loss cannot lose or duplicate the bounded request or standing follow-up Task.
 
 ## Answers And Cross-App Dependencies
 
 May may answer in one decision or request typed child outcomes from accountable
 Apps. In the latter case:
 
-- the child request is persisted before it is woken;
-- the May request remains correlated with the exact child request and Task;
-- the child App reconciles its task;
-- the child result wakes the May request through the canonical dependency path; and
+- the frontend follow-up Event is persisted before its request completes;
+- the standing May Task requests or continues the exact responsible App Task;
+- the child App reconciles its Task;
+- meaningful child events wake the standing May Task; and
 - May reviews the result before producing the human-facing response.
 
 An agent message, owner label, `escalation.created` event, or source-session
@@ -208,9 +211,9 @@ blindly duplicate it.
 ## Reply Target
 
 For an immediate answer, reply to the incoming Telegram message. For a later
-dependency result, use the persisted channel link of the May request that owns
-the response. If the exact reply anchor is unavailable, send visibly as a
-standalone message in the same chat/topic and retain the May request link.
+Task result, use the Conversation message's persisted Topic and channel
+coordinates. If the exact reply anchor is unavailable, send visibly as a
+standalone message in the same chat/topic and retain the Topic and Task links.
 
 The durable return address is the request's opaque `channelTargetId`
 (Telegram chat), optional `channelThreadId` (topic), and `channelMessageId`

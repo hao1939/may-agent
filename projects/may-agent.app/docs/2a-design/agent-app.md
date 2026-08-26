@@ -344,23 +344,31 @@ for an ownership decision.
 Code then supplies the bounded visible Conversation, the immediately preceding
 proposal or answer, recent Topic candidates and their exact Task links,
 canonical snapshots for Tasks represented by recent command/tool views,
-unfinished human requests already associated with those Topics and their exact
-delegated inputs, accepted child results, durable preferences, and compact
+current Topic-to-Task links, durable preferences, and compact
 installed App input contracts. The LLM decides what the human means and returns
 one schema-validated request decision with four small parts:
 
 - an optional plain-language message for an answer, clarification, or useful
   immediate explanation;
-- no work, one exact existing Task target, or genuinely new typed App work;
+- no work, or one typed durable intent/feedback event for the May follow-up Task;
 - optional narrow human-authorized controls for exact Tasks already supplied
   in context; and
 - no Topic, one new plain-language Topic, or one exact existing Topic.
 
-A message without work completes the Turn. A message with work is shown once
-immediately while the request remains open for the final result. Continuing an
-existing Task includes its exact `taskId`; creating new work omits it. May does
-not need another request-continuation identity because Topic and Task identities
-already say what is continuing.
+A message without work completes the Turn. A message with durable intent is
+shown once and completes after its follow-up event is accepted. The standing
+May follow-up Task then continues an exact Task or requests genuinely new App
+work. Topic and Task identities say what is continuing; the frontend request
+does not become the coordinator.
+
+Direct advice is the ordinary fast path, including when a Task is focused. May
+may explain whether a wait makes sense, recommend a next step, or give an
+opinion from the supplied evidence without producing a Task effect. If the
+human also asks for action, the same decision may answer now and publish typed
+feedback naming the exact existing Task. The follow-up Task applies that
+decision and requests new work only when no supplied unfinished Task can
+fulfill the desired outcome. These are LLM decisions over
+structured context, not keyword branches in Runtime.
 
 Code validates every identity and typed input; it never picks a Topic or Task by
 keyword.
@@ -403,6 +411,13 @@ exact context. May still decides whether the human is asking about it, steering
 it, or starting something new. Relevant feedback becomes typed input to the
 existing owner Task; unrelated text does not mutate it.
 
+Task recovery does not pass through May. Runtime repairs expired attempts and
+wakes the same Task; the owning App reconciles its meaning and execution. May
+contributes only information the owner does not already have--the human's
+intent, feedback, decision, or a semantic challenge to an invalid wait--and
+then explains the accepted result. It never creates replacement work merely
+because a Task looks stale.
+
 The visible scope is the default subject of ordinary pronouns and unqualified
 scope. "Do it" normally refers to the preceding proposal; "all tasks" while
 working in a Gym cleanup Topic normally refers to that bounded Gym concern.
@@ -410,19 +425,12 @@ Only the human's meaning—not a keyword or the mere presence of focus—may wid
 ownership or create new work. A completed historical Task stays immutable;
 May may use its Topic as context and create a distinct follow-up when needed.
 
-An earlier request remains visible during the short handoff before its
-destination Task is attached. A confirming follow-up continues that request;
-it does not create a sibling Task. If the open Topic work changes while May is
-deciding, the Host discards a decision that would create untargeted work and
-asks May to reconsider the current exact context. This is an identity and
-freshness fence, not semantic deduplication: May still decides whether the goal
-is the same, and one Topic may legitimately link several distinct Tasks.
-
-When May delegates, Runtime creates deterministic child App requests and keeps
-the original May request open. Destination Task events wake those child
-requests; their accepted results wake May to review all current observations.
-No May Task, Topic scheduler, polling loop, or transport acknowledgement is
-inserted between them.
+An accepted follow-up event carries the Topic and exact identity selected from
+the current bounded context. The standing follow-up Task serializes linkage,
+reuses the fitting unfinished primary Task, and asks a destination App for new
+work only when needed. Destination Task events wake that same follow-up Task.
+There is no open per-turn child-wait loop, Topic scheduler, polling loop, or
+transport acknowledgement between them.
 
 Runtime projects the current installed App IDs, descriptions, and compact input
 contracts into the bounded executor prompt. A contract contains its kind,
@@ -437,9 +445,9 @@ the dependency. A missing owner or capability goes to the Host Operations App
 (`may-agent`) for resolution rather than becoming hidden May work.
 
 A clarification completes the current request with the question. The next
-human message is a new request carrying the bounded Conversation and Topic
-context. Durable work waits only through exact child App requests and their
-Tasks. This keeps human conversation natural and wait correlation real.
+human message is a new request carrying bounded Conversation and Topic context.
+Durable work is followed by the standing May Task and owned by exact App Tasks.
+This keeps human conversation natural without turning the dialogue into work.
 
 The **Host Operations App** (stable `appId: may-agent`) is a different App. It
 owns platform/runtime Tasks such as a correlated Host deployment. May may route
@@ -629,8 +637,8 @@ declarations at load time, but it must not run both paths for the same input.
 11. Recovery preserves obligation identity and does not invent desired state.
 12. Read projections, event delivery rows, and queue entries never become
     mutation authority.
-13. Human results remain correlated to the originating May request and enter
-    Conversation without waiting for an adapter receipt.
+13. Human results retain their Topic and Task references and enter Conversation
+    without waiting for an adapter receipt.
 14. The public authoring surface contains no `defineProjectApp`,
     `@may-agent/sdk/legacy`, owner-inbox fallback, or imperative event execution.
 

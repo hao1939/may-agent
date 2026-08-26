@@ -29,9 +29,11 @@ The ordinary human objects are:
 
 A Host request correlates one caller with its eventual result. A session is a
 replaceable execution attempt. Neither is the ordinary human control target.
-May creates no generic Conversation Task. The Host Operations App (`may-agent`)
-owns platform Tasks. An agent run named `may` is only a bounded turn decision
-or an attempt selected by an App.
+May has one hidden standing follow-up Task per Conversation, not one generic
+Task per human request. It also may own ordinary visible goal Tasks when no
+other App is responsible. The Host Operations App (`may-agent`) owns platform
+Tasks. An agent run named `may` is only a bounded turn decision or an attempt
+selected by an App.
 
 ## Shared resource interface
 

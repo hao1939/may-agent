@@ -90,21 +90,25 @@ Host request record, delivery state, claim, lease, channel, or retry metadata.
 The resolver must not call an agent, inspect mutable context, or guess semantic
 references. Exact structured task references may wake their task directly.
 
-A conversational App may instead declare `requests: { mode: "agent" }`. The
+A conversational App may declare `requests: { mode: "agent" }`. The
 Host supplies the bounded Conversation, Topic candidates, exact focused Task,
 canonical snapshots for Tasks represented by recent command/tool views,
-accepted child results, and installed App contracts to one structured agent
-decision. It answers, returns typed destination dependencies, or requests a
+and installed App contracts to one structured agent decision. It answers,
+returns a typed follow-up event for its standing Task, or requests a
 narrow human-authorized cancellation of an exact supplied Task without
-creating a tracking Task. The Host applies that control through its Task API;
-the App receives no persistence capability. An App cannot apply both `requests`
-and `task` to the same inbox.
+creating per-turn tracking work. The Host applies that control through its Task
+API; the App receives no persistence capability. Request policy handles the
+bounded frontend input; other declared inputs and events may resolve to the
+App's ordinary Tasks.
 
 If the App also receives addressed events or API requests outside a channel
 adapter, it may declare one default Conversation, for example
 `requests: { mode: "agent", conversationId: "may:primary" }`. The Host places
 those requests and their accepted responses in that same Conversation using the
 origin event identity. The non-human input is not presented as a human Turn.
+For May, one maintain-mode follow-up Task consumes typed frontend decisions and
+meaningful Task events. It is ordinary Task infrastructure and replaces the
+former rule that kept every frontend request open for child results.
 
 For Task-owning Apps, this rule has no fast-path exception. A simple input resolves to a task whose
 first bounded attempt can converge immediately. A hard input resolves to a task

@@ -57,20 +57,21 @@ The ordinary interaction model has four nouns:
 
 - an **App** owns a responsibility;
 - an **event** is durable new information that can create or wake work;
-- a **request** is the Host's record that a caller still needs a result;
+- a **request** is the Host's short-lived correlation for one admitted input;
 - a **task** is the work an App reconciles toward an accepted outcome.
 
 ```text
 human or caller
-  -> Host event and request
-  -> App task
+  -> Host event and bounded request
+  -> App task when durable work is required
   -> event-driven execution until completion or an exact wait
   -> accepted result
   -> Host projection to the caller
 ```
 
-The request remains the caller-facing identity. The task is the App-facing work
-identity. The selected executor keeps working while it can make safe progress;
+The request proves that one input was accepted and answered or handed off. A
+Task is the durable work identity and may outlive any one caller request. The
+selected executor keeps working while it can make safe progress;
 internal model turns do not end the attempt. Crashes and restarts resume the
 same Task. A request may attach to an
 existing stable task, and a task may outlive any one caller request.
@@ -90,29 +91,33 @@ detail.
 
 ```text
 human talks to May (`app:may`)
-  -> May understands the turn in its Conversation Topic
-  -> May answers now, clarifies, or selects accountable installed Apps
-  -> those Apps own and reconcile the durable Tasks
-  -> May reviews their results and answers the human
+  -> May frontend understands one turn
+  -> it answers or publishes typed durable intent/feedback
+  -> May's standing follow-up Task links and follows responsible App Tasks
+  -> task events wake follow-up and May updates the Conversation
 ```
 
 May is the App; “May App” is only the precise name used when contrasting May
 with another App or with the Host. That is the complete ordinary mental model.
 The Host may run a bounded executor such as `agent:may` to decide one turn, but
-the executor is not another service or owner. The request remembers who is owed
-an answer; a Topic only links related turns and App Tasks.
+the executor is not another service or owner. A Topic only links related turns
+and App Tasks.
 
-May is the human's deputy rather than a forwarding layer. It uses Conversation,
-preferences, and focused resources to understand the intention; answers or
-asks for the smallest irreducible decision when it can; delegates only a clear
-outcome; and reviews the exact App result before closing with the human. Focus
-is context, not automatic mutation authority.
+May is the human's deputy rather than a forwarding layer. Its frontend uses Conversation,
+preferences, and focused resources to understand the intention. When current
+evidence is enough, May answers, suggests, reviews, or gives an opinion in that
+bounded turn without creating or changing a Task. When durable work is needed,
+May publishes only a clear durable outcome or exact feedback. One standing
+follow-up Task performs Task linkage, watches meaningful Task events, and
+brings useful results back to Conversation. A mixed request may receive a
+useful immediate answer and continue exact work. Focus is context, not
+automatic mutation authority.
 
 The names describe different responsibilities:
 
 | Name                                      | Meaning                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **May** (`app:may`)                       | The human-facing deputy that understands turns, links Topics, routes Tasks, and returns results. |
+| **May** (`app:may`)                       | The deputy: a bounded conversational frontend plus one standing follow-up Task.                  |
 | **Agent** (for example `agent:may`)       | A named reasoning profile for one bounded attempt. It owns no durable work.                      |
 | **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
 | **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
@@ -151,10 +156,12 @@ For example:
 - changing the Host belongs to `app:may-agent`; May may route the request but
   neither May nor the selected agent owns that Host Operations Task.
 
-The Host request preserves the obligation to answer across retries and
-restarts. Destination Apps preserve durable goals in their Tasks. The May
-executor can change, fail, or be replaced without creating a May wrapper Task.
-Durable Task identity remains namespaced by its owning App.
+The Conversation preserves what the human said. The standing May follow-up
+Task preserves durable follow-through, and destination Apps preserve goals in
+their Tasks. The May executor can change, fail, or be replaced without creating
+per-turn wrapper Tasks. Durable Task identity remains namespaced by its owning
+App. When May is the best owner of a goal, it owns an ordinary goal Task in
+addition to its standing follow-up Task.
 
 The public SDK calls the execution selection `agent`. The Host accepts the old
 `owner` spelling at one migration boundary and still stores it in retained Task
@@ -331,7 +338,9 @@ queue, retry, scheduler, or result of its own.
 
 - Every state-changing input first becomes one event.
 - A human `conversation.message.created` event adds shared May Conversation
-  context and creates one fenced May App request, not a May Task.
+  context and creates one bounded May frontend request.
+- A typed durable May decision emits one event to the standing follow-up Task;
+  the frontend request does not wait on destination Tasks.
 - An addressed `app.input.requested` event creates one durable App request.
 - A declared subscription translates a fact into typed input and then one task.
 - An exact task target wakes only that task.
@@ -405,6 +414,15 @@ inputs and task intent remain durable. Resuming queues the retained work.
 On restart, the Host reads durable requests and tasks, repairs stale attempts,
 and continues only work that still has an owner and acceptance contract. It
 does not reconstruct desired work from logs or invent a replacement task.
+
+Mechanical liveness follows the same ownership boundary. Apps report useful
+progress, an exact wait, a real blocker, or completion; they do not declare
+their own Task stale. The Host detects interrupted or expired attempts and
+wakes the same owning App on the same Task. May may explain the state, add human
+context, or steer that exact Task, but May is not a second recovery daemon. If
+the owner cannot recover after Host retry, the existing Task becomes visible
+for attention; a separate repair Task is justified only when repairing the App
+or Host is itself a different durable outcome.
 
 ## Code shape
 
