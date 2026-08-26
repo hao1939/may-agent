@@ -4097,7 +4097,7 @@ export function retryLoadedFailedAppTask(input: {
 
 function enqueueAppTask(
   controller: AppTaskController,
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: ResourceTaskStateConfig,
   taskId: string,
   overrides: AppTaskQueueOptions = {},
 ): boolean {

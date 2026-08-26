@@ -914,7 +914,8 @@ describe("App task reconciler state", () => {
   });
 
   it("uses persisted age when enqueuing selected task IDs", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/aged-p2", priority: "P2" },
       appAgent: "app-owner",
@@ -925,7 +926,7 @@ describe("App task reconciler state", () => {
     resource.status.updatedAt = new Date(Date.now() - 10 * 60_000 - 1_000).toISOString();
     saveTaskState(config, tree);
 
-    expect(appTaskQueueEntries(config, ["work/aged-p2"])).toEqual([
+    expect(appTaskQueueEntries(resourceFixture(state, "selected-task-age").config, ["work/aged-p2"])).toEqual([
       { taskId: "work/aged-p2", options: { priority: "P1", lane: "normal" } },
     ]);
   });
@@ -1000,7 +1001,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps an unresolved human task control ahead of a later automated wake", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const ownerReview = { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" as const };
     const humanComment = {
       type: "project.comment.created",
@@ -1023,14 +1025,15 @@ describe("App task reconciler state", () => {
     });
 
     expect(readAppTaskTrigger(config, ownerReview.id)).toEqual(humanComment);
-    expect(appTaskQueueEntries(config, [ownerReview.id])).toEqual([
+    expect(appTaskQueueEntries(resourceFixture(state, "human-control-queue").config, [ownerReview.id])).toEqual([
       { taskId: ownerReview.id, options: { priority: "P0", lane: "human" } },
     ]);
     expect(listRunnableAppTaskIds(config)[0]).toBe(ownerReview.id);
   });
 
   it("retains trusted human scheduling origin on the admitted task resource", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const humanTask = { ...intent("achieve"), id: "conversation/request-42", priority: "P0" as const };
     observeAppTaskIntent(config, {
       intent: humanTask,
@@ -1045,7 +1048,7 @@ describe("App task reconciler state", () => {
     });
 
     expect(readTaskState(config).resources?.[humanTask.id]?.status.lane).toBe("human");
-    expect(appTaskQueueEntries(config, [humanTask.id])).toEqual([
+    expect(appTaskQueueEntries(resourceFixture(state, "human-lane-queue").config, [humanTask.id])).toEqual([
       {
         taskId: humanTask.id,
         options: { priority: "P0", lane: "human" },
@@ -1164,7 +1167,8 @@ describe("App task reconciler state", () => {
   });
 
   it("persists the exact Condition observation as the next attempt trigger", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const waitingIntent = {
       ...intent(),
       id: "work/condition-trigger",
@@ -1201,7 +1205,7 @@ describe("App task reconciler state", () => {
     expect(wake?.taskId).toBe(waitingIntent.id);
 
     expect(readAppTaskTrigger(config, waitingIntent.id)).toEqual(event);
-    expect(appTaskQueueEntries(config, [waitingIntent.id])).toEqual([
+    expect(appTaskQueueEntries(resourceFixture(state, "condition-queue").config, [waitingIntent.id])).toEqual([
       {
         taskId: waitingIntent.id,
         options: { priority: "P0", lane: "normal" },

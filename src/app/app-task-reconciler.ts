@@ -2406,11 +2406,11 @@ export function listRunnableAppTaskIds(config: TaskStateConfig): string[] {
   return listRunnableAppTaskQueueEntries(config).map((entry) => entry.taskId);
 }
 
-export function appTaskQueueEntries(config: TaskStateConfig, taskIds: Iterable<string>): AppTaskQueueEntry[] {
+export function appTaskQueueEntries(config: ResourceTaskStateConfig, taskIds: Iterable<string>): AppTaskQueueEntry[] {
   const requested = new Set(taskIds);
   if (requested.size === 0) return [];
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: requested });
+    const tree = config.resourceStore.readTaskContext({ taskIds: requested });
     const nowMs = Date.now();
     return [...requested].flatMap((taskId) => {
       const resource = tree.resources?.[taskId];
