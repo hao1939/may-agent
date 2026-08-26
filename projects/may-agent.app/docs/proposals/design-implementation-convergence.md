@@ -146,7 +146,9 @@ Condition preflight now reads the normalized resource route index, and selected
 Condition observations mutate only their exact resource contexts. Live routing
 no longer repairs or falls back to the JSON Condition index, and its unused
 legacy index reader is removed. The offline writer remains only with JSON
-import/test compatibility.
+import/test compatibility. The unused whole-App Condition tracking API is also
+removed; tests now exercise the same indexed preflight and exact selected-Task
+mutation used by Runtime.
 Rejected stale reconciliation results are released from the exact resource
 context through their claim fences; that production path no longer reads or
 prunes JSON attempt state.
