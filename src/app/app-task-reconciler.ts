@@ -2633,7 +2633,7 @@ export function retryFailedAppTask(
 
 /** Release one execution failure after structured evidence from a newer successful agent session. */
 export function releaseHandlerExecutionFailedAppTask(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   taskId: string,
   evidence: {
     agent: string;
@@ -2643,7 +2643,7 @@ export function releaseHandlerExecutionFailedAppTask(
   },
 ): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     const task = tree.tasks[taskId];
     if (!resource || !task || resource.status.phase !== "attention") return false;
