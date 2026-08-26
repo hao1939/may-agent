@@ -784,6 +784,7 @@ describe("canonical App task runtime", () => {
       eventId: 42,
       data: { kind: "app", id: "earlier-review" },
     });
+    const resourceStore = activateTaskResources(config, join(f.root, "state"));
 
     const emitted: AgentEvent[] = [];
     bus.subscribe((event) => emitted.push(event));
@@ -797,6 +798,7 @@ describe("canonical App task runtime", () => {
           agent: "sample-owner",
           app: definition(),
           reconciliationPaused: true,
+          resourceStore,
         },
         claim,
         dependencies: [
@@ -1428,6 +1430,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const resourceStore = activateTaskResources(config, persistDir);
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1435,6 +1438,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
+      resourceStore,
     };
     const first = admitTaskAppDependencies({
       opts: { ...options(f, bus), persistDir },
@@ -1659,6 +1663,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const resourceStore = activateTaskResources(config, persistDir);
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1666,6 +1671,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
+      resourceStore,
     };
     const dependency = { kind: "deep-scan", data: { reason: "original" } };
     const first = admitTaskAppDependencies({
@@ -1816,6 +1822,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const resourceStore = activateTaskResources(config, join(f.root, "state"));
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1823,6 +1830,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
+      resourceStore,
     };
 
     const conditions = admitTaskAppDependencies({
@@ -1889,6 +1897,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const resourceStore = activateTaskResources(config, join(f.root, "state"));
 
     expect(() =>
       admitTaskAppDependencies({
@@ -1900,6 +1909,7 @@ describe("canonical App task runtime", () => {
           agent: "sample-owner",
           app: definition(),
           reconciliationPaused: false,
+          resourceStore,
         },
         claim,
         dependencies: [
@@ -1912,7 +1922,7 @@ describe("canonical App task runtime", () => {
       }),
     ).toThrow("was not accepted by installed App evaluation; the Task remains runnable");
     expect(emitted.some((event) => event.type === "app.input.requested")).toBe(true);
-    expect(readTaskState(config).conditions).toBeUndefined();
+    expect(Object.keys(readTaskState(config).conditions ?? {})).toEqual([]);
   });
 
   it("projects the exact ordered claimed event batch into workflow context", () => {
