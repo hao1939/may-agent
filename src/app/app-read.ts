@@ -9,8 +9,7 @@ import type {
   TaskPage,
   TaskView,
 } from "@may-agent/sdk/app";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
-import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
+import type { ResourceTaskStateConfig, TaskTree } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";
@@ -20,71 +19,29 @@ import { projectTaskOutcomes, readTaskOutcomeManifest } from "./task-outcome-pro
 export type RuntimeAppReadOptions = {
   getDb(): SqliteDb;
   metrics: MetricService;
-  /** Canonical loaded-App Task reader. Installed Runtime contexts must supply it or taskStateConfig. */
+  /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
   taskRead?: AppRead["tasks"];
-  executionPaths?: {
-    appDir: string;
-    projectDir: string;
-  };
-  taskStateConfig?: TaskStateConfig;
+  taskStateConfig?: ResourceTaskStateConfig;
 };
 
-function taskConfig(paths: NonNullable<RuntimeAppReadOptions["executionPaths"]>): TaskStateConfig {
-  const runtimePaths = projectRuntimePaths(paths.appDir);
-  return {
-    appDir: paths.appDir,
-    projectDir: paths.projectDir,
-    statePath: runtimePaths.taskStatePath,
-    journalPath: runtimePaths.journalPath,
-    worker: "app-read",
-    maxConcurrent: 1,
-  };
-}
-
 export function readRuntimeTaskView(
-  opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
+  opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
   taskId: string,
 ): TaskDetail | null {
-  if (opts.taskStateConfig?.resourceStore) {
-    const receipt = opts.taskStateConfig.resourceStore.readReceipt(taskId);
-    if (receipt) return receiptTaskDetail(receipt);
-    const resource = opts.taskStateConfig.resourceStore.readTask(taskId);
-    return resource
-      ? resourceTaskDetail(
-          resource,
-          opts.taskStateConfig.resourceStore.readTaskConditions(taskId).map((condition) => ({
-            id: condition.metadata.id,
-            ...structuredClone(condition.spec),
-          })),
-        )
-      : null;
-  }
-  if (!opts.executionPaths) return null;
-  const tree = readTaskState(taskConfig(opts.executionPaths));
-  return taskDetail(tree, taskId);
-}
-
-/** Reuse one parsed canonical tree across a bounded sequence of Task reads. */
-export function createRuntimeTaskReader(
-  executionPaths: NonNullable<RuntimeAppReadOptions["executionPaths"]>,
-): (taskId: string) => TaskDetail | null {
-  const config = taskConfig(executionPaths);
-  cacheTaskStateReads(config);
-  return (taskId) => taskDetail(readTaskState(config), taskId);
-}
-
-function taskDetail(tree: TaskTree, taskId: string): TaskDetail | null {
-  const receipt = tree.receipts?.[taskId];
+  const store = opts.taskStateConfig?.resourceStore;
+  if (!store) return null;
+  const receipt = store.readReceipt(taskId);
   if (receipt) return receiptTaskDetail(receipt);
-  const resource = tree.resources?.[taskId];
-  if (!resource) return null;
-  return resourceTaskDetail(
-    resource,
-    (resource.status.conditionIds ?? []).flatMap((conditionId) => {
-      const condition = tree.conditions?.[conditionId];
-      return condition ? [{ id: condition.metadata.id, ...structuredClone(condition.spec) }] : [];
-    }),
-  );
+  const resource = store.readTask(taskId);
+  return resource
+    ? resourceTaskDetail(
+        resource,
+        store.readTaskConditions(taskId).map((condition) => ({
+          id: condition.metadata.id,
+          ...structuredClone(condition.spec),
+        })),
+      )
+    : null;
 }
 
 function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
@@ -165,10 +122,9 @@ function decodeTaskCursor(cursor: string): string {
 }
 
 export function listRuntimeTaskViews(
-  opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
+  opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
   options: TaskListOptions = {},
 ): TaskPage {
-  if (!opts.executionPaths) return { items: [] };
   const limit = options.limit ?? 50;
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
     throw new Error("Task list limit must be an integer between 1 and 100");
@@ -179,42 +135,26 @@ export function listRuntimeTaskViews(
   }
   const statuses = options.status ? new Set(options.status) : null;
   const after = options.cursor === undefined ? null : decodeTaskCursor(options.cursor);
-  if (opts.taskStateConfig?.resourceStore) {
-    const ids = opts.taskStateConfig.resourceStore.listTaskIds({ after, statuses, limit: limit + 1 });
-    const pageIds = ids.slice(0, limit);
-    return {
-      items: pageIds.flatMap((id) => {
-        const receipt = opts.taskStateConfig!.resourceStore!.readReceipt(id);
-        if (receipt) return [receiptTaskView(receipt)];
-        const resource = opts.taskStateConfig!.resourceStore!.readTask(id);
-        return resource ? [resourceTaskView(resource)] : [];
-      }),
-      ...(ids.length > limit && pageIds.length > 0 ? { nextCursor: encodeTaskCursor(pageIds.at(-1)!) } : {}),
-    };
-  }
-  const tree = readTaskState(taskConfig(opts.executionPaths));
-  const ids = [...new Set([...Object.keys(tree.resources ?? {}), ...Object.keys(tree.receipts ?? {})])].sort();
-  const visible = ids
-    .filter((id) => after === null || id > after)
-    .map((id) => {
-      const receipt = tree.receipts?.[id];
-      if (receipt) return receiptTaskView(receipt);
-      const resource = tree.resources?.[id];
-      return resource ? resourceTaskView(resource) : null;
-    })
-    .filter((task): task is TaskView => Boolean(task && (!statuses || statuses.has(task.status))));
-  const page = visible.slice(0, limit);
+  const store = opts.taskStateConfig?.resourceStore;
+  if (!store) return { items: [] };
+  const ids = store.listTaskIds({ after, statuses, limit: limit + 1 });
+  const pageIds = ids.slice(0, limit);
   return {
-    items: page,
-    ...(visible.length > limit && page.length > 0 ? { nextCursor: encodeTaskCursor(page.at(-1)!.id) } : {}),
+    items: pageIds.flatMap((id) => {
+      const receipt = store.readReceipt(id);
+      if (receipt) return [receiptTaskView(receipt)];
+      const resource = store.readTask(id);
+      return resource ? [resourceTaskView(resource)] : [];
+    }),
+    ...(ids.length > limit && pageIds.length > 0 ? { nextCursor: encodeTaskCursor(pageIds.at(-1)!) } : {}),
   };
 }
 
 export function listRuntimeTaskOutcomeViews(
-  opts: Pick<RuntimeAppReadOptions, "executionPaths" | "taskStateConfig">,
+  opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
   projection: TaskOutcomeProjection = {},
 ): TaskOutcomePage {
-  if (!opts.executionPaths) return projectTaskOutcomes([], null, projection);
+  if (!opts.taskStateConfig) return projectTaskOutcomes([], null, projection);
   const items: TaskView[] = [];
   let cursor: string | undefined;
   do {
@@ -222,7 +162,7 @@ export function listRuntimeTaskOutcomeViews(
     items.push(...page.items);
     cursor = page.nextCursor;
   } while (cursor);
-  return projectTaskOutcomes(items, readTaskOutcomeManifest(opts.executionPaths.appDir), projection);
+  return projectTaskOutcomes(items, readTaskOutcomeManifest(opts.taskStateConfig.appDir), projection);
 }
 
 export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {

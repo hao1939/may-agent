@@ -1497,7 +1497,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       createRuntimeAppRead({
         getDb: runtimeCtx.getDb,
         metrics: runtimeCtx.metrics,
-        ...(opts.executionPaths ? { executionPaths: opts.executionPaths } : {}),
       });
     const workflowLog = Object.assign((message: string) => runtimeCtx.log(message), {
       debug: (message: string) => runtimeCtx.log(`[debug] ${message}`),

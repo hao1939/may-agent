@@ -888,7 +888,6 @@ async function executeTaskCapability(input: {
       read: createRuntimeAppRead({
         getDb: runtimeCtx.getDb,
         metrics: runtimeCtx.metrics,
-        executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
         taskStateConfig: appTaskConfig(descriptor),
       }),
       agentName,
@@ -1104,7 +1103,6 @@ function runtimeTaskAttempt(input: {
   const { opts, descriptor, claim } = input;
   const task = readRuntimeTaskView(
     {
-      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
       taskStateConfig: appTaskConfig(descriptor),
     },
     claim.taskId,
@@ -4222,7 +4220,6 @@ export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; ta
   if (!descriptor) return null;
   return readRuntimeTaskView(
     {
-      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
       taskStateConfig: appTaskConfig(descriptor),
     },
     input.taskId,
@@ -4236,7 +4233,6 @@ export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; op
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return listRuntimeTaskViews(
     {
-      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
       taskStateConfig: appTaskConfig(descriptor),
     },
     input.options,
@@ -4254,7 +4250,6 @@ export function listLoadedAppTaskOutcomeViews(input: {
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return listRuntimeTaskOutcomeViews(
     {
-      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
       taskStateConfig: appTaskConfig(descriptor),
     },
     input.projection,
@@ -4268,7 +4263,6 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return readRuntimeTaskView(
     {
-      executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir },
       taskStateConfig: appTaskConfig(descriptor),
     },
     input.taskId,
