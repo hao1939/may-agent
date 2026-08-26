@@ -114,6 +114,27 @@ function fixture() {
   return { root, appDir, config };
 }
 
+function resourceFixture(
+  input: ReturnType<typeof fixture>,
+  sourceRevision: string,
+): { config: ReturnType<typeof taskReconciliationConfig>; store: AppTaskResourceStore } {
+  const tree = readTaskState(input.config);
+  tree.project = "sample";
+  tree.project_lifecycle = "active";
+  const store = AppTaskResourceStore.openStandalone(join(input.root, "host.sqlite"), "sample");
+  store.bootstrapSnapshot(tree, sourceRevision);
+  return {
+    config: taskReconciliationConfig({
+      appDir: input.appDir,
+      projectDir: input.appDir,
+      agent: "app-owner",
+      maxConcurrent: 3,
+      resourceStore: store,
+    }),
+    store,
+  };
+}
+
 function intent(mode: "achieve" | "maintain" = "achieve") {
   return {
     id: mode === "achieve" ? "evaluate:session-1" : "pipeline-monitor",
@@ -2029,7 +2050,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps reconciliation child history small and decision-ready", () => {
-    const { config } = fixture();
+    const f = fixture();
+    const { config } = f;
     const tree = readTaskState(config);
     const longText = "x".repeat(700);
     tree.receipts = Object.fromEntries(
@@ -2056,7 +2078,9 @@ describe("App task reconciler state", () => {
     );
     saveTaskState(config, tree);
 
-    const context = readAppTaskChildContext(config, "pipeline-monitor");
+    const resource = resourceFixture(f, "test:child-context");
+    const context = readAppTaskChildContext(resource.config, "pipeline-monitor");
+    resource.store.close();
 
     expect(context.completed).toHaveLength(8);
     expect(context.completed.map(({ taskId }) => taskId)).toEqual([
@@ -2076,7 +2100,8 @@ describe("App task reconciler state", () => {
   });
 
   it("supplies a bounded App-wide live snapshot without the reviewing task", () => {
-    const { root, appDir, config } = fixture();
+    const f = fixture();
+    const { config } = f;
     for (let index = 0; index < 65; index += 1) {
       observeAppTaskIntent(config, {
         intent: {
@@ -2094,21 +2119,9 @@ describe("App task reconciler state", () => {
       });
     }
 
-    const tree = readTaskState(config);
-    tree.project = "sample";
-    tree.project_lifecycle = "active";
-    const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
-    store.bootstrapSnapshot(tree, "test:live-snapshot");
-    const resourceConfig = taskReconciliationConfig({
-      appDir,
-      projectDir: appDir,
-      agent: "app-owner",
-      maxConcurrent: 3,
-      resourceStore: store,
-    });
-
-    const snapshot = readAppTaskLiveSnapshot(resourceConfig, "snapshot-task-64");
-    store.close();
+    const resource = resourceFixture(f, "test:live-snapshot");
+    const snapshot = readAppTaskLiveSnapshot(resource.config, "snapshot-task-64");
+    resource.store.close();
 
     expect(snapshot.truncated).toBe(true);
     expect(snapshot.live).toHaveLength(64);

@@ -2125,9 +2125,9 @@ function liveTaskSnapshotContext(
 }
 
 /** Bounded current child state supplied to an executable parent reconciliation. */
-export function readAppTaskChildContext(config: TaskStateConfig, taskId: string): AppTaskChildContext {
+export function readAppTaskChildContext(config: ResourceTaskStateConfig, taskId: string): AppTaskChildContext {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
     const live = (tree.tasks[taskId]?.children ?? [])
       .map((childId) => tree.resources?.[childId])
