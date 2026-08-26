@@ -138,7 +138,9 @@ Startup recovery discovers unreported attention Tasks from the bounded resource
 context and acknowledges the exact reported attempt through a fenced resource
 mutation. A persisted terminal Agent result also reconstructs its exact current
 claim from resource context before applying the ordinary fenced result path.
-Broader recovery repairs remain in a later batch.
+Expired Agent-session recovery now judges the exact resource attempt and its
+lease against observed session activity. Broader recovery repairs remain in a
+later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
