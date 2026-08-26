@@ -135,7 +135,8 @@ trigger API remains explicit fixture compatibility for a later bounded batch.
 The externally visible effect fence also reads the exact resource context, so a
 generation change or newer unaccepted Event is checked without a JSON path.
 Startup recovery discovers unreported attention Tasks from the bounded resource
-context as well; acknowledgment and repair mutations remain in a later batch.
+context and acknowledges the exact reported attempt through a fenced resource
+mutation. Broader recovery repairs remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
