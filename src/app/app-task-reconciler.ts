@@ -2196,11 +2196,11 @@ export function readAppTaskTrigger(config: TaskStateConfig, taskId: string): Rec
 
 /** Return only a wake that is still pending beyond the active attempt. */
 export function readPendingAppTaskTrigger(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   taskId: string,
 ): Record<string, unknown> | undefined {
   return withTaskStateLock(config, () => {
-    const event = readTaskState(config, { taskIds: [taskId] }).taskTriggers?.[taskId]?.event;
+    const event = config.resourceStore.readTrigger(taskId)?.event;
     return event ? structuredClone(event) : undefined;
   });
 }
