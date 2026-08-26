@@ -595,6 +595,7 @@ describe("App Task agent prompt context", () => {
         ],
       }),
     ).toMatchObject({ status: "applied" });
+    const resourceStore = activateTaskResources(config, persistDir);
 
     expect(
       projectAppTaskWaitPromptContext(
@@ -606,6 +607,7 @@ describe("App Task agent prompt context", () => {
           agent: "sample-owner",
           app: definition(),
           reconciliationPaused: false,
+          resourceStore,
         },
         taskIntent.id,
       ),
@@ -1524,6 +1526,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (initial.kind !== "claimed") throw new Error("expected initial claim");
+    const resourceStore = activateTaskResources(config, persistDir);
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1531,6 +1534,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
+      resourceStore,
     };
     const dependency = {
       id: "review",
@@ -3700,6 +3704,7 @@ describe("canonical App task runtime", () => {
         },
       }),
     );
+    const resourceStore = activateTaskResources(config, persistDir);
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -3707,6 +3712,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       app: definition(),
       reconciliationPaused: false,
+      resourceStore,
     };
     expect(
       consumePersistedTerminalAgentResult({
@@ -3785,6 +3791,7 @@ describe("canonical App task runtime", () => {
       }),
     );
 
+    const resourceStore = activateTaskResources(config, persistDir);
     let rejection = "";
     expect(
       consumePersistedTerminalAgentResult({
@@ -3797,6 +3804,7 @@ describe("canonical App task runtime", () => {
           agent: "sample-owner",
           app: definition(),
           reconciliationPaused: false,
+          resourceStore,
         },
         taskId: intent.id,
         sessionId: "session-invalid-terminal",
