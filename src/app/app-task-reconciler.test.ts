@@ -2893,7 +2893,8 @@ describe("App task reconciler state", () => {
   });
 
   it("returns orphaned agent-session ids when requeueing a previous-runtime attempt without a trigger", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -2925,7 +2926,7 @@ describe("App task reconciler state", () => {
     });
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
-    expect(pendingAppTaskRecoveryAttention(config)).toEqual([]);
+    expect(pendingAppTaskRecoveryAttention(resourceFixture(state, "released").config)).toEqual([]);
     expect(acknowledgeAppTaskRecoveryAttention(config, claim.taskId)).toBe(false);
   });
 
@@ -3242,7 +3243,8 @@ describe("App task reconciler state", () => {
   });
 
   it("repairs existing previous-runtime attention records on startup", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3276,7 +3278,7 @@ describe("App task reconciler state", () => {
       status: { phase: "pending", observedGeneration: 0 },
     });
     expect(repaired.tasks["evaluate:session-1"].state).toBe("backlog");
-    expect(pendingAppTaskRecoveryAttention(config)).toEqual([]);
+    expect(pendingAppTaskRecoveryAttention(resourceFixture(state, "repaired").config)).toEqual([]);
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
