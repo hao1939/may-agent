@@ -1916,9 +1916,9 @@ export function readAppTaskIntent(config: TaskStateConfig, taskId: string): AppT
  * A live resource takes precedence over an older immutable receipt with the
  * same task id, so a newly revised generation cannot look complete by accident.
  */
-export function isAppTaskConverged(config: TaskStateConfig, taskId: string, generation?: number): boolean {
+export function isAppTaskConverged(config: ResourceTaskStateConfig, taskId: string, generation?: number): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (resource) {
       return (
@@ -2274,13 +2274,6 @@ export function recordAppTaskTrigger(
       },
     });
     return { kind: "recorded" };
-  });
-}
-
-export function listAppTaskIntents(config: TaskStateConfig): AppTaskIntent[] {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    return Object.values(tree.resources ?? {}).map(resourceIntent);
   });
 }
 
