@@ -121,6 +121,7 @@ export type AppTaskResourceMutation = {
   deleteAttemptIds?: string[];
   conditions?: AppTaskCondition[];
   deleteConditionIds?: string[];
+  pruneConditionIds?: string[];
   receipts?: TaskCompletionReceipt[];
   deleteReceiptIds?: string[];
   groups?: TaskNode[];
@@ -1189,6 +1190,19 @@ export class AppTaskResourceStore {
           .run(this.appId, condition.metadata.id, condition.status.state, json(condition));
       }
       for (const write of mutation.tasks ?? []) this.putTaskConditionRoutes(write.resource);
+      for (const conditionId of new Set(mutation.pruneConditionIds ?? [])) {
+        this.db
+          .prepare(
+            `DELETE FROM app_task_conditions
+             WHERE app_id = ? AND condition_id = ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_condition_routes route
+                 WHERE route.app_id = app_task_conditions.app_id
+                   AND route.condition_id = app_task_conditions.condition_id
+               )`,
+          )
+          .run(this.appId, conditionId);
+      }
       for (const receiptId of new Set(mutation.deleteReceiptIds ?? [])) {
         this.db.prepare("DELETE FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?").run(this.appId, receiptId);
       }

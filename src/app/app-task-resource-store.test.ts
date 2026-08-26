@@ -197,6 +197,44 @@ describe("AppTaskResourceStore", () => {
     db.close();
   });
 
+  it("prunes a detached Condition only after its final Task reference is gone", () => {
+    const store = open();
+    const tree = fixture();
+    const shared = resource("shared", "waiting");
+    tree.resources!.normal!.status.conditionIds = ["shared-condition"];
+    shared.status.conditionIds = ["shared-condition"];
+    tree.resources!.shared = shared;
+    tree.conditions = {
+      "shared-condition": {
+        metadata: { id: "shared-condition", generation: 1, resourceVersion: 1 },
+        spec: { type: "review.completed", subject: "shared", expected: "done" },
+        status: {
+          observedGeneration: 0,
+          state: "unknown",
+          createdAt: "2026-08-21T00:00:00.000Z",
+          observedAt: "2026-08-21T00:00:00.000Z",
+        },
+      },
+    };
+    store.bootstrapSnapshot(tree, "revision-1");
+
+    for (const taskId of ["normal", "shared"]) {
+      const current = store.readTask(taskId)!;
+      const next = structuredClone(current);
+      next.metadata.resourceVersion += 1;
+      next.status.conditionIds = [];
+      expect(
+        store.commit({
+          fences: [{ taskId, resourceVersion: current.metadata.resourceVersion }],
+          tasks: [{ resource: next, ready: false }],
+          pruneConditionIds: ["shared-condition"],
+        }),
+      ).toBeTrue();
+      expect(store.readSnapshot().conditions?.["shared-condition"] !== undefined).toBe(taskId === "normal");
+    }
+    store.close();
+  });
+
   it("imports and shadow-compares a paused App snapshot", () => {
     const store = open();
     const tree = fixture();

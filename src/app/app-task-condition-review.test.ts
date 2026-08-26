@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { readTaskState, saveTaskState } from "./app-task-store.js";
+import { readTaskState } from "./app-task-store.js";
 import {
   claimObservedAppTask,
   deferAppTask,
@@ -45,11 +45,23 @@ function fixture() {
       2,
     )}\n`,
   );
-  return taskReconciliationConfig({
+  const legacyConfig = taskReconciliationConfig({
     appDir,
     projectDir: appDir,
     owner: "app-owner",
     maxConcurrent: 1,
+  });
+  const tree = readTaskState(legacyConfig);
+  tree.project = "sample";
+  tree.project_lifecycle = "active";
+  const resourceStore = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
+  resourceStore.bootstrapSnapshot(tree, "condition-review-fixture");
+  return taskReconciliationConfig({
+    appDir,
+    projectDir: appDir,
+    agent: "app-owner",
+    maxConcurrent: 1,
+    resourceStore,
   });
 }
 
@@ -62,6 +74,28 @@ function claim(config: ReturnType<typeof fixture>) {
   });
   if (result.kind !== "claimed") throw new Error(`expected claimed, got ${result.kind}`);
   return result;
+}
+
+function makeConditionReviewDue(config: ReturnType<typeof fixture>, conditionId: string): void {
+  const tree = config.resourceStore.readTaskContext({ taskIds: ["human-request"] });
+  const resource = tree.resources?.["human-request"];
+  const condition = tree.conditions?.[conditionId];
+  if (!resource || !condition) throw new Error("expected resource-backed Condition fixture");
+  condition.status.observedAt = new Date(Date.now() - 120_000).toISOString();
+  condition.metadata.resourceVersion += 1;
+  expect(
+    config.resourceStore.commit({
+      fences: [
+        {
+          taskId: resource.metadata.id,
+          resourceVersion: resource.metadata.resourceVersion,
+          generation: resource.metadata.generation,
+        },
+      ],
+      conditions: [condition],
+    }),
+  ).toBe(true);
+  expect(config.resourceStore.setRecoveryState(resource.metadata.id, { nextCheckAt: Date.now() - 1 })).toBe(true);
 }
 
 afterEach(() => {
@@ -95,9 +129,7 @@ describe("App task Condition review checkpoint", () => {
       }).kind,
     ).toBe("waiting");
 
-    const stale = readTaskState(config);
-    stale.conditions![condition.id]!.status.observedAt = new Date(Date.now() - 120_000).toISOString();
-    saveTaskState(config, stale);
+    makeConditionReviewDue(config, condition.id);
 
     expect(listRunnableAppTaskIds(config)).toEqual(["human-request"]);
     const review = claim(config);
@@ -137,9 +169,7 @@ describe("App task Condition review checkpoint", () => {
     });
 
     for (let reviewAttempt = 1; reviewAttempt <= 3; reviewAttempt += 1) {
-      const stale = readTaskState(config);
-      stale.conditions![condition.id]!.status.observedAt = new Date(Date.now() - 120_000).toISOString();
-      saveTaskState(config, stale);
+      makeConditionReviewDue(config, condition.id);
 
       const review = claim(config);
       expect(review.trigger).toMatchObject({
@@ -164,19 +194,8 @@ describe("App task Condition review checkpoint", () => {
   });
 
   it("clears a consumed stale due index when the Condition remains event-driven", () => {
-    const legacyConfig = fixture();
-    const store = AppTaskResourceStore.openStandalone(
-      join(legacyConfig.appDir, ".state", "resource-store.sqlite"),
-      "sample",
-    );
-    store.bootstrapSnapshot(readTaskState(legacyConfig), "seed:test");
-    const config = taskReconciliationConfig({
-      appDir: legacyConfig.appDir,
-      projectDir: legacyConfig.projectDir,
-      owner: legacyConfig.worker,
-      maxConcurrent: legacyConfig.maxConcurrent,
-      resourceStore: store,
-    });
+    const config = fixture();
+    const store = config.resourceStore;
 
     deferAppTask(config, claim(config), {
       disposition: "waiting",
