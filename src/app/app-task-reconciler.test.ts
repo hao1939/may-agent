@@ -557,7 +557,8 @@ describe("App task reconciler state", () => {
   });
 
   it("carries observed workspace lineage from the attempt into its completion receipt", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
@@ -573,10 +574,15 @@ describe("App task reconciler state", () => {
       headCommit: "b".repeat(40),
       disposition: "branch-retained" as const,
     };
+    const resourceConfig = resourceFixture(state, "attempt-workspace").config;
 
-    expect(recordAppTaskAttemptWorkspace(config, claim, workspace)).toBe(true);
-    expect(completeAppTask(config, claim, { summary: "completed in isolated workspace" }).status).toBe("applied");
-    expect(readTaskState(config).receipts?.[claim.taskId]?.workspace).toEqual(workspace);
+    expect(recordAppTaskAttemptWorkspace(resourceConfig, claim, workspace)).toBe(true);
+    expect(completeAppTask(resourceConfig, claim, { summary: "completed in isolated workspace" }).status).toBe(
+      "applied",
+    );
+    expect(
+      resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).receipts?.[claim.taskId]?.workspace,
+    ).toEqual(workspace);
   });
   it("rejects a missing or completed parent instead of creating an orphan", () => {
     const { config } = fixture();
