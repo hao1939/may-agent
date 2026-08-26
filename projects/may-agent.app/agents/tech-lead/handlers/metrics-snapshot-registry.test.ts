@@ -90,10 +90,16 @@ describe("metrics-snapshot registry and queries", () => {
 
     expect(activeRegistry).not.toContain('id: "eval.llm-coverage-lag-h"');
     expect(activeRegistry).not.toContain('id: "eval.llm-evals-24h"');
+    expect(activeRegistry).not.toContain(
+      'id: "evaluator.low-quality-rate-24h"',
+    );
     expect(source).not.toContain(
       'record("eval.llm-coverage-lag-h"',
     );
     expect(source).not.toContain('record(\n        "eval.llm-evals-24h"');
+    expect(source).not.toContain(
+      'record(\n        "evaluator.low-quality-rate-24h"',
+    );
   });
 
   it("keeps the stale trace-completeness metric retired", () => {

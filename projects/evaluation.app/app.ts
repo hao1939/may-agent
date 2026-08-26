@@ -31,6 +31,29 @@ FROM evaluations
 WHERE evaluatedByHeuristic = 0
   AND createdAt > (strftime('%s','now') * 1000 - 86400000)
   AND agent NOT IN ('evaluator', 'judge')`;
+export const LOW_QUALITY_RATE_24H_METRIC_ID = "evaluator.low-quality-rate-24h";
+export const LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
+  SELECT COUNT(*) AS total,
+         SUM(
+           CASE
+             WHEN verdict IN ('needs_improvement', 'low_quality')
+               OR quality < 0.4
+               OR efficiency < 0.4
+             THEN 1
+             ELSE 0
+           END
+         ) AS low_quality
+  FROM evaluations
+  WHERE createdAt > (strftime('%s','now') * 1000 - 86400000)
+    AND agent NOT IN ('evaluator', 'judge')
+    AND verdict != 'skipped'
+)
+SELECT CASE
+         WHEN total = 0 THEN 0
+         ELSE ROUND(1.0 * low_quality / total, 4)
+       END AS value,
+       total AS sampleSize
+FROM counts`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -627,6 +650,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: LOW_QUALITY_RATE_24H_METRIC_ID,
+    name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 0.1,
+    threshold: 0.8,
+    unit: "ratio",
+    priority: "P3" as const,
+    status: "active",
+    source: "recent non-skipped evaluations",
+    sourceQuery: LOW_QUALITY_RATE_24H_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: ">" as const,
+    speed: "fast",
+    description:
+      "Dashboard share of recent non-skipped evaluations with a needs-improvement verdict or quality or efficiency below 0.4.",
+  },
   {
     id: LLM_EVALUATIONS_24H_METRIC_ID,
     name: "LLM-evaluated sessions (24h)",

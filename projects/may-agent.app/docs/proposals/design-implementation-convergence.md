@@ -66,6 +66,10 @@ definitions and measurement blocks are removed. Continue moving the remaining
 Evaluation metrics one exact meaning at a time rather than introducing a second
 catalog or a bulk compatibility layer.
 
+The broad 24-hour Evaluation quality-rate dashboard metric follows the same
+path and retains its denominator as sample evidence. Host Operations no longer
+defines or calculates that Evaluation-owned ratio.
+
 Runtime also honors each source definition's `measureInterval` as a minimum
 normal cadence. This removes the prior behavior where a six-hour Scout command
 was executed and sampled on every five-minute wake; forced operational samples
@@ -155,6 +159,7 @@ archive. It is not a second design authority.
 | Evaluation aftermath-coverage metric                                                                                     | Evaluation declares one evidence-bearing source query; Runtime measures it on the shared Cron event. Per-snapshot Tasks, agent aggregation, the Host catalog entry, and Host's duplicate generic source executor are removed                                                                                 |
 | Evaluation LLM-coverage-lag metric                                                                                        | Evaluation declares the exact non-heuristic-evaluation lag query; Runtime measures it on the shared Cron event, and the Host catalog plus handwritten measurement block no longer own that domain meaning                                                                                                  |
 | Evaluation 24-hour LLM activity metric                                                                                     | Evaluation declares the exact recent non-heuristic evaluation-count query; Runtime measures it on the shared Cron event, and the Host catalog plus handwritten measurement block no longer own that domain meaning                                                                                         |
+| Evaluation broad quality-rate metric                                                                                        | Evaluation declares the exact recent non-skipped quality-rate query and preserves its denominator; Runtime measures it on the shared Cron event, with no Host definition or handwritten calculation                                                                                                      |
 | Scout App test boundary                                                                                                   | The App check runs Scout-owned tests only. Cached third-party source repositories under the agent workspace remain inspectable evidence but are not treated as part of Scout App verification                                                                                                             |
 | Whole-system document scope                                                                                                | `system-model.md` retains the public nouns, May/App/agent boundary, one flow, record map, and governing rules; detailed persistence, dependency, recovery, presentation, and code contracts link to their owning subsystem documents instead of being restated                                            |
 | Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic, conversation-Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |

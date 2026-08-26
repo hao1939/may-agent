@@ -14,6 +14,8 @@ import app, {
   LLM_COVERAGE_LAG_SOURCE_QUERY,
   LLM_EVALUATIONS_24H_METRIC_ID,
   LLM_EVALUATIONS_24H_SOURCE_QUERY,
+  LOW_QUALITY_RATE_24H_METRIC_ID,
+  LOW_QUALITY_RATE_24H_SOURCE_QUERY,
   taskForEvaluationInput,
   taskInputForEvent,
   taskIntentForEvent,
@@ -170,7 +172,7 @@ describe("canonical evaluation App", () => {
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toHaveLength(3);
+    expect(app.metrics).toHaveLength(4);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -192,6 +194,13 @@ describe("canonical evaluation App", () => {
           owner: "evaluator",
           project: "evaluation",
           sourceQuery: LLM_EVALUATIONS_24H_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: LOW_QUALITY_RATE_24H_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: LOW_QUALITY_RATE_24H_SOURCE_QUERY,
           measureInterval: 300_000,
         }),
       ]),
@@ -258,6 +267,42 @@ describe("evaluation metrics", () => {
       (db.query(LLM_EVALUATIONS_24H_SOURCE_QUERY).get() as { value: number })
         .value,
     ).toBe(2);
+  });
+
+  test("preserves the broad quality-rate denominator as sample evidence", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE evaluations (
+        createdAt INTEGER NOT NULL,
+        agent TEXT NOT NULL,
+        verdict TEXT NOT NULL,
+        quality REAL NOT NULL,
+        efficiency REAL NOT NULL
+      )`,
+    );
+    const now = Date.now();
+    db.run(
+      `INSERT INTO evaluations (createdAt, agent, verdict, quality, efficiency)
+       VALUES (?, 'may', 'good', 0.8, 0.8),
+              (?, 'gym', 'needs_improvement', 0.8, 0.8),
+              (?, 'scout', 'acceptable', 0.3, 0.8),
+              (?, 'evaluator', 'low_quality', 0.1, 0.1),
+              (?, 'may', 'skipped', 0.1, 0.1),
+              (?, 'may', 'low_quality', 0.1, 0.1)`,
+      [
+        now - 60_000,
+        now - 60_000,
+        now - 60_000,
+        now - 60_000,
+        now - 60_000,
+        now - 25 * 60 * 60_000,
+      ],
+    );
+
+    expect(db.query(LOW_QUALITY_RATE_24H_SOURCE_QUERY).get()).toMatchObject({
+      value: 0.6667,
+      sampleSize: 3,
+    });
   });
 
   test("counts canonical eligible sessions and preserves count evidence", () => {

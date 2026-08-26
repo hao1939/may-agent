@@ -224,12 +224,7 @@ describe("metrics-snapshot session health metrics", () => {
         .get("session.failed-triage-rate-3h"),
     ).toMatchObject({ sample_size: 2 });
     expect(metric("eval.llm-evals-24h")).toBeNull();
-    expect(metric("evaluator.low-quality-rate-24h")).toMatchObject({
-      current: 0.5,
-      target: 0.1,
-      threshold: 0.8,
-      priority: "P3",
-    });
+    expect(metric("evaluator.low-quality-rate-24h")).toBeNull();
     expect(metric("runtime.stale-running-session-count")).toMatchObject({
       current: 1,
       target: 0,

@@ -228,17 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "evaluator.low-quality-rate-24h",
-    name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0.1,
-    threshold: 0.8,
-    unit: "ratio",
-    alert_op: ">",
-    priority: "P3",
-  },
-  {
     id: "evaluator.substantive-low-quality-rate-24h",
     name: "Substantive evaluator quality failures (24h)",
     owner: "evaluator",
@@ -1445,38 +1434,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      const total = count(
-        `SELECT COUNT(*) as c
-         FROM evaluations
-         WHERE createdAt > ?
-           AND agent NOT IN ('evaluator', 'judge')
-           AND verdict != 'skipped'`,
-        twentyFourH,
-      );
-      const needsImprovementOrLowScore = count(
-        `SELECT COUNT(*) as c
-         FROM evaluations
-         WHERE createdAt > ?
-           AND agent NOT IN ('evaluator', 'judge')
-           AND verdict != 'skipped'
-           AND (verdict IN ('needs_improvement', 'low_quality') OR quality < 0.4 OR efficiency < 0.4)`,
-        twentyFourH,
-      );
-      record(
-        "evaluator.low-quality-rate-24h",
-        total > 0
-          ? parseFloat((needsImprovementOrLowScore / total).toFixed(4))
-          : 0,
-        total,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`,
       );
     }
 
