@@ -118,6 +118,11 @@ only through the loaded App reader or `AppTaskResourceStore`; ordinary workflow
 execution paths no longer imply a JSON Task reader, and the focused read
 fixtures now bootstrap resource authority directly.
 
+The loaded Runtime completion probe is resource-only as well. Its callers pass
+the installed resource config, and its bounded Task/receipt read no longer
+accepts offline JSON state. An unused whole-App intent scan was removed instead
+of preserving another compatibility surface.
+
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
 that compatibility explicit and outside installed Runtime construction, then
