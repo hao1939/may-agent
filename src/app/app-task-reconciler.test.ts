@@ -3015,7 +3015,8 @@ describe("App task reconciler state", () => {
   });
 
   it("requeues an orphaned App dependency wait and leaves admitted waits alone", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const makeWaiting = (taskId: string, requestId: string) => {
       const taskIntent = { ...intent(), id: taskId };
       const claim = declareAndClaimTask(config, {
@@ -3039,12 +3040,18 @@ describe("App task reconciler state", () => {
     };
     makeWaiting("work/orphaned", "missing-request");
     makeWaiting("work/admitted", "accepted-request");
+    const resourceConfig = resourceFixture(state, "unadmitted-dependency-waits").config;
+    const candidateTaskIds = ["work/orphaned", "work/admitted"];
 
-    expect(repairUnadmittedAppDependencyWaits(config, (requestId) => requestId === "accepted-request")).toEqual([
-      expect.objectContaining({ taskId: "work/orphaned", disposition: "requeued" }),
-    ]);
+    expect(
+      repairUnadmittedAppDependencyWaits(
+        resourceConfig,
+        (requestId) => requestId === "accepted-request",
+        candidateTaskIds,
+      ),
+    ).toEqual([expect.objectContaining({ taskId: "work/orphaned", disposition: "requeued" })]);
 
-    const repaired = readTaskState(config);
+    const repaired = resourceConfig.resourceStore.readTaskContext({ taskIds: candidateTaskIds });
     expect(repaired.resources?.["work/orphaned"]?.status).toMatchObject({
       phase: "pending",
       conditionIds: [],
@@ -3055,7 +3062,13 @@ describe("App task reconciler state", () => {
       phase: "waiting",
       conditionIds: ["app-request:accepted-request"],
     });
-    expect(repairUnadmittedAppDependencyWaits(config, (requestId) => requestId === "accepted-request")).toEqual([]);
+    expect(
+      repairUnadmittedAppDependencyWaits(
+        resourceConfig,
+        (requestId) => requestId === "accepted-request",
+        candidateTaskIds,
+      ),
+    ).toEqual([]);
   });
 
   it("claims running tasks whose current attempt record is missing", () => {

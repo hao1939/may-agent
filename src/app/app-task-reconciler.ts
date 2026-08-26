@@ -1428,13 +1428,15 @@ export function repairPreviousRuntimeRecoveryAttention(
  * same Task must be judged again from its current evidence.
  */
 export function repairUnadmittedAppDependencyWaits(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   isAdmitted: (requestId: string) => boolean,
   candidateTaskIds?: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
     const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
+    const tree = candidates
+      ? config.resourceStore.readTaskContext({ taskIds: candidates })
+      : config.resourceStore.readSnapshot();
     const repairs: AppTaskRecoveryRepair[] = [];
     const mutationScope = emptyResourceMutationScope();
     for (const resource of Object.values(tree.resources ?? {})) {
@@ -1471,7 +1473,6 @@ export function repairUnadmittedAppDependencyWaits(
     }
     if (repairs.length > 0) {
       refreshActiveTaskProjection(tree);
-      if (!config.resourceStore) pruneTaskAttempts(tree);
       saveTaskState(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
