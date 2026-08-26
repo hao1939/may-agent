@@ -27,6 +27,13 @@ function fingerprint(value: unknown): string {
     .slice(0, 16);
 }
 
+function byteFingerprint(value: unknown): string {
+  return createHash("sha256")
+    .update(JSON.stringify(value) ?? "null")
+    .digest("hex")
+    .slice(0, 16);
+}
+
 /** Stable identity for one maintain-task wake, independent of its retry. */
 function reconciliationCycleKey(reconciliation: ReconciliationView): string {
   const events = reconciliation.events;
@@ -47,13 +54,20 @@ function reconciliationCycleKey(reconciliation: ReconciliationView): string {
 /**
  * Task generation scopes achieve-task keys. Maintain tasks additionally need
  * the exact wake identity because one generation can reconcile many cycles.
+ * When supplied, materialFact binds the key to the exact serialized event data,
+ * so a reused key implies byte-equivalent data while changed facts get new keys.
  */
 export function taskEmissionKey(
   ctx: Pick<WorkflowContext, "reconciliation">,
   logicalKey: string,
+  materialFact?: unknown,
 ): string {
   const reconciliation = ctx.reconciliation;
-  return reconciliation?.mode === "maintain"
-    ? `${reconciliationCycleKey(reconciliation)}:${logicalKey}`
-    : logicalKey;
+  const wakeKey =
+    reconciliation?.mode === "maintain"
+      ? `${reconciliationCycleKey(reconciliation)}:${logicalKey}`
+      : logicalKey;
+  return materialFact === undefined
+    ? wakeKey
+    : `${wakeKey}:fact-${byteFingerprint(materialFact)}`;
 }

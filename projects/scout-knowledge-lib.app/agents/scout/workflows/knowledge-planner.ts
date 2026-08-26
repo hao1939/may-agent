@@ -169,17 +169,29 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     }
     agentResult = admitted.result;
   }
-  await ctx.events.emit({
-    type: "project.knowledge.maintained",
-    localKey: taskEmissionKey(ctx, "knowledge-maintained"),
-    target: { appId: "scout-knowledge-lib", project: "scout-knowledge-lib" },
-    data: {
-      project: "scout-knowledge-lib",
-      summary: agentResult.summary,
-      state: agentResult.state,
-      proposedActions: agentResult.actions ?? [],
-      evidence: agentResult.evidence,
-    },
-  });
+  const maintenanceFact = {
+    project: "scout-knowledge-lib",
+    summary: agentResult.summary,
+    state: agentResult.state,
+    proposedActions: agentResult.actions ?? [],
+    evidence: agentResult.evidence,
+  };
+  try {
+    await ctx.events.emit({
+      type: "project.knowledge.maintained",
+      localKey: taskEmissionKey(ctx, "knowledge-maintained", maintenanceFact),
+      target: { appId: "scout-knowledge-lib", project: "scout-knowledge-lib" },
+      data: maintenanceFact,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("Idempotency key") && message.includes("different")) {
+      return ctx.blocked(
+        "Knowledge maintenance emission has a deterministic idempotency conflict and requires repair rather than immediate retry",
+        { error: message },
+      );
+    }
+    throw error;
+  }
   return ctx.done(agentResult.summary, agentResult);
 }

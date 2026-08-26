@@ -128,7 +128,9 @@ describe("Scout owner reconciliation boundary", () => {
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",
-      localKey: "state-1:knowledge-maintained",
+      localKey: expect.stringMatching(
+        /^state-1:knowledge-maintained:fact-[a-f0-9]{16}$/,
+      ),
       data: {
         proposedActions: [{ kind: "create-task", id: "repair-navigation" }],
       },
@@ -149,6 +151,120 @@ describe("Scout owner reconciliation boundary", () => {
       id: "repair-navigation",
       mode: "achieve",
       priority: "P2",
+    });
+  });
+
+  it("keeps repeated maintenance emissions byte-stable and gives changed facts distinct identities", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+    const baseResult = {
+      state: "converged" as const,
+      summary: "No navigation repair is needed.",
+      evidence: ["knowledge/README.md exists"],
+      actions: [],
+    };
+    const run = (agentOutput: typeof baseResult) =>
+      execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "library-maintenance",
+            generation: 1,
+            resourceVersion: 9,
+            agent: "scout",
+            mode: "maintain",
+            outcome: "Maintain the library",
+            acceptance: ["One bounded decision is recorded"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: {
+            appRoot: "/app/projects/scout-knowledge-lib.app",
+            projectRoot: "/app/projects/scout-knowledge-lib",
+            root: "/app/projects/scout-knowledge-lib",
+            output: "/app/projects/scout-knowledge-lib.app/.state/output",
+          },
+          callAgent: (async () => ({
+            id: "s_owner",
+            kind: "agent",
+            status: "done",
+            summary: agentOutput.summary,
+            output: agentOutput,
+          })) as WorkflowContext["agents"]["call"],
+          emit: async (event) => {
+            emitted.push(event as unknown as Record<string, unknown>);
+          },
+        }),
+      );
+
+    await run(baseResult);
+    await run({ ...baseResult });
+    await run({
+      ...baseResult,
+      summary: "The landing page needs one canonical link.",
+      evidence: ["knowledge/README.md omits the canonical index"],
+    });
+
+    expect(emitted).toHaveLength(3);
+    expect(emitted[0]?.localKey).toBe(emitted[1]?.localKey);
+    expect(JSON.stringify(emitted[0]?.data)).toBe(
+      JSON.stringify(emitted[1]?.data),
+    );
+    expect(emitted[2]?.localKey).not.toBe(emitted[0]?.localKey);
+    expect(String(emitted[0]?.localKey)).toStartWith(
+      "state-9:knowledge-maintained:fact-",
+    );
+  });
+
+  it("contains a deterministic emission conflict instead of throwing for retry", async () => {
+    const result = await execute(
+      createTestAppWorkflowContext({
+        input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "library-maintenance",
+          generation: 1,
+          resourceVersion: 10,
+          agent: "scout",
+          mode: "maintain",
+          outcome: "Maintain the library",
+          acceptance: ["One bounded decision is recorded"],
+          input: {},
+          children: { live: [], completed: [] },
+          events: { items: [], truncated: false },
+        },
+        workspace: {
+          appRoot: "/app/projects/scout-knowledge-lib.app",
+          projectRoot: "/app/projects/scout-knowledge-lib",
+          root: "/app/projects/scout-knowledge-lib",
+          output: "/app/projects/scout-knowledge-lib.app/.state/output",
+        },
+        callAgent: (async () => ({
+          id: "s_owner",
+          kind: "agent",
+          status: "done",
+          summary: "No maintenance needed.",
+          output: {
+            state: "converged",
+            summary: "No maintenance needed.",
+            evidence: ["bounded packet is unchanged"],
+            actions: [],
+          },
+        })) as WorkflowContext["agents"]["call"],
+        emit: async () => {
+          throw new Error(
+            "Idempotency key task:key was already used with different event input",
+          );
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      summary: expect.stringContaining(
+        "requires repair rather than immediate retry",
+      ),
     });
   });
 
