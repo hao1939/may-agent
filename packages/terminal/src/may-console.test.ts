@@ -449,9 +449,35 @@ describe("May Console", () => {
       ),
     ).toBe(true);
 
+    const activityMessage = {
+      id: "task-activity-1",
+      sequence: 3,
+      author: { kind: "tool", id: "runtime" },
+      text: "Accepted durable work: Review the docs",
+      metadata: {
+        command: "task-admitted",
+        taskRefs: [{ appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" }],
+        followTask: { appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" },
+      },
+      createdAt: 3,
+    };
+    remoteConversationMessages.push(activityMessage);
+    client?.write(
+      `${JSON.stringify({
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      })}\n`,
+    );
+    await waitFor(() => output.includes("[task] Accepted durable work: Review the docs\nTask 8f12ac90 (evaluation)"));
+    await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
+    child.stdin.write("/unwatch\n");
+    await waitFor(() => output.includes("Stopped watching. The Task is unchanged."));
+
     const assignmentMessage = {
       id: "assignment-1",
-      sequence: 3,
+      sequence: 4,
       author: { kind: "agent", id: "may" },
       text: "Assigned to evaluation.",
       metadata: {
@@ -462,7 +488,7 @@ describe("May Console", () => {
         ],
         followTask: { appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" },
       },
-      createdAt: 3,
+      createdAt: 4,
     };
     remoteConversationMessages.push(assignmentMessage);
     // A durable message can arrive as a raw event before the Conversation

@@ -856,7 +856,7 @@ describe("Telegram May input", () => {
     }
   });
 
-  it("mirrors a Console conversation message without replaying Telegram's own human input", async () => {
+  it("mirrors Console speech and Task activity without replaying Telegram's own human input", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-telegram-conversation-mirror-"));
     const priorFetch = globalThis.fetch;
     const priorToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -903,6 +903,24 @@ describe("Telegram May input", () => {
         input: { kind: "message", data: { message: "Telegram should not echo this" } },
         now: 2,
       });
+      db.prepare(
+        `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+         VALUES (?, 'conversation.message.created', 'app-task-admission', 'app:may', ?, ?)`,
+      ).run(
+        10,
+        JSON.stringify({
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "tool", id: "runtime" },
+          text: "Accepted durable work: Review the docs",
+          metadata: {
+            command: "task-admitted",
+            taskRefs: [{ appId: "may", taskId: "conversation/follow-up" }],
+            followTask: { appId: "may", taskId: "conversation/follow-up" },
+          },
+        }),
+        3,
+      );
       bus.emit({
         type: "conversation.updated",
         source: "app-inbox",
@@ -910,8 +928,9 @@ describe("Telegram May input", () => {
         data: { appId: "may", conversationId: "may:primary" },
       } as any);
 
-      await waitFor(() => sent.length === 1);
+      await waitFor(() => sent.length === 2);
       expect(sent[0]).toBe("Console · You\nMessage sent from Console");
+      expect(sent[1]).toStartWith("Task activity\nAccepted durable work: Review the docs");
     } finally {
       bot.close();
       closeDb(root);

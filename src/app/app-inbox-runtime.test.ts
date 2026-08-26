@@ -272,6 +272,12 @@ describe("App inbox runtime", () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const taskAdmissions: Array<Record<string, any>> = [];
+    const taskActivities: Array<Record<string, any>> = [];
+    bus.subscribe((event) => {
+      if (event.type === "conversation.message.created" && event.source === "app-task-admission") {
+        taskActivities.push(event as unknown as Record<string, any>);
+      }
+    });
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
       db,
@@ -319,6 +325,21 @@ describe("App inbox runtime", () => {
       intent: { id: "conversation/follow-up", mode: "maintain" },
       event: { type: "app.follow-up.requested" },
     });
+    expect(taskActivities).toContainEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          appId: "may",
+          conversationId: "may:primary",
+          author: { kind: "tool", id: "runtime" },
+          text: "Accepted durable work: Review the design",
+          metadata: expect.objectContaining({
+            command: "task-admitted",
+            taskRefs: [{ appId: "may", taskId: "conversation/follow-up" }],
+            followTask: { appId: "may", taskId: "conversation/follow-up" },
+          }),
+        }),
+      }),
+    );
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
       count: 1,
     });
