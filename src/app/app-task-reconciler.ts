@@ -21,9 +21,8 @@ import {
   type TaskNode,
   type ResourceTaskStateConfig,
   type TaskTree,
-  type TaskStateConfig,
 } from "./app-task-store.js";
-import { ensureTaskState, projectRuntimePaths } from "./app-task-runtime-state.js";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
 import type {
   AppTaskCondition as AppTaskCondition,
@@ -764,26 +763,22 @@ type TaskReconciliationConfigInput = {
   /** @deprecated Compatibility for Host callers not yet migrated. */
   owner?: string;
   maxConcurrent: number;
-  resourceStore?: AppTaskResourceStore;
+  resourceStore: AppTaskResourceStore;
 };
 
-export function taskReconciliationConfig(
-  input: TaskReconciliationConfigInput & { resourceStore: AppTaskResourceStore },
-): ResourceTaskStateConfig;
-export function taskReconciliationConfig(input: TaskReconciliationConfigInput): TaskStateConfig;
-export function taskReconciliationConfig(input: TaskReconciliationConfigInput): TaskStateConfig {
-  const paths = projectRuntimePaths(input.resourceStore && input.stateAppDir ? input.stateAppDir : input.appDir);
+export function taskReconciliationConfig(input: TaskReconciliationConfigInput): ResourceTaskStateConfig {
+  const paths = projectRuntimePaths(input.stateAppDir ?? input.appDir);
   const agent = input.agent?.trim() || input.owner?.trim();
   if (!agent) throw new Error("Task reconciliation requires a default agent");
   return {
     appDir: input.appDir,
     ...(input.stateAppDir ? { stateAppDir: input.stateAppDir } : {}),
     projectDir: input.projectDir,
-    statePath: input.resourceStore ? paths.taskStatePath : ensureTaskState(input.appDir).path,
+    statePath: paths.taskStatePath,
     journalPath: paths.journalPath,
     worker: agent,
     maxConcurrent: input.maxConcurrent,
-    ...(input.resourceStore ? { resourceStore: input.resourceStore } : {}),
+    resourceStore: input.resourceStore,
   };
 }
 

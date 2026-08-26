@@ -9,7 +9,7 @@ import {
   taskReconciliationConfig,
 } from "./app-task-reconciler.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { readTaskState } from "./app-task-store.js";
+import { legacyTaskStateConfig, readTaskState } from "./app-task-store.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
 
 const roots: string[] = [];
@@ -29,7 +29,7 @@ function fixture() {
       },
     })}\n`,
   );
-  const legacyConfig = taskReconciliationConfig({ appDir, projectDir: appDir, owner: "app-owner", maxConcurrent: 1 });
+  const legacyConfig = legacyTaskStateConfig({ appDir, projectDir: appDir, worker: "app-owner", maxConcurrent: 1 });
   const tree = readTaskState(legacyConfig);
   tree.project = "sample";
   tree.project_lifecycle = "active";

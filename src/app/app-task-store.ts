@@ -18,7 +18,7 @@ import type {
   AppTaskTrigger as AppTaskTrigger,
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { ensureTaskState, projectRuntimePaths } from "./app-task-runtime-state.js";
 import { writeAppTaskConditionRouteIndex } from "./app-task-condition-index.js";
 import { currentProcessInstance, isProcessInstanceAlive } from "../lib/process-identity.js";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "./app-task-resource-store.js";
@@ -230,6 +230,24 @@ export type TaskStateConfig = {
 
 /** Installed App runtimes always use the canonical resource authority. */
 export type ResourceTaskStateConfig = TaskStateConfig & { resourceStore: AppTaskResourceStore };
+
+/** JSON source configuration retained only for offline cutover and fixtures. */
+export function legacyTaskStateConfig(input: {
+  appDir: string;
+  projectDir: string;
+  worker: string;
+  maxConcurrent: number;
+}): TaskStateConfig {
+  const paths = projectRuntimePaths(input.appDir);
+  return {
+    appDir: input.appDir,
+    projectDir: input.projectDir,
+    statePath: ensureTaskState(input.appDir).path,
+    journalPath: paths.journalPath,
+    worker: input.worker,
+    maxConcurrent: input.maxConcurrent,
+  };
+}
 
 type TaskStateReadCache = {
   ino?: number;
