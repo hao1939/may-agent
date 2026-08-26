@@ -1170,13 +1170,13 @@ export function terminalAgentSessionAppTaskClaim(
 }
 
 export function expiredAgentSessionAppTaskAttempt(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   taskId: string,
   nowMs = Date.now(),
   sessionActivity?: AttemptSessionActivity,
 ): AppTaskAttemptRecovery | null {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "running") return null;
     const attempt = currentResourceAttempt(tree, resource);
