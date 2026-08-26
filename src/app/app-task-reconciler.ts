@@ -2448,13 +2448,15 @@ export type AppTaskExecutionRepairCandidate = {
 
 /** Bindings to retry once their owning app reload proves the workflow now resolves. */
 export function listHandlerUnavailableAppTasks(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   appAgent: string,
   candidateTaskIds?: Iterable<string>,
 ): AppTaskHandlerRepairCandidate[] {
   return withTaskStateLock(config, () => {
     const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = readTaskState(config, candidates ? { taskIds: candidates } : undefined);
+    const tree = candidates
+      ? config.resourceStore.readTaskContext({ taskIds: candidates })
+      : config.resourceStore.readSnapshot();
     return Object.values(tree.resources ?? {})
       .filter((resource) => {
         if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return false;
