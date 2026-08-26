@@ -264,8 +264,7 @@ describe("App inbox runtime", () => {
           subscriptions: [{ type: "app.follow-up.requested", project: "may" }],
           resolve(event) { return event.type === "app.follow-up.requested" ? {
             id: "conversation/follow-up", parentId: "may", outcome: "Follow conversation work",
-            acceptance: ["Every follow-up is linked and reported"], mode: "maintain", agent: "may",
-            category: "internal"
+            acceptance: ["Every follow-up is linked and reported"], mode: "maintain", agent: "may"
           } : null; }
         }
       };\n`,
@@ -317,7 +316,7 @@ describe("App inbox runtime", () => {
     });
     expect(taskAdmissions[0]).toMatchObject({
       appId: "may",
-      intent: { id: "conversation/follow-up", mode: "maintain", category: "internal" },
+      intent: { id: "conversation/follow-up", mode: "maintain" },
       event: { type: "app.follow-up.requested" },
     });
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
@@ -864,8 +863,7 @@ describe("App inbox runtime", () => {
     });
     await waitUntil(() => {
       const row = db.prepare("SELECT status FROM app_inbox_items WHERE app_id = 'may'").get() as
-        | { status: string }
-        | undefined;
+        { status: string } | undefined;
       return row?.status === "done";
     });
 

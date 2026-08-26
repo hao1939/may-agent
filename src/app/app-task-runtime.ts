@@ -76,6 +76,7 @@ import {
   trackAppTaskConditionEventForTasks,
   trackAppTaskConditionEvents,
 } from "./app-task-condition-tracker.js";
+import { appTaskConditionRoutesByEventType } from "./app-task-condition-index.js";
 import {
   childEventTrace,
   EVENT_DELIVERY_RESULT,
@@ -3358,6 +3359,8 @@ async function reconcileTask(input: {
           });
           if (apply.status === "applied" && appliedDisposition === "converged") {
             emitAppTaskDependencyCompleted(opts, descriptor, intent.id);
+          } else if (apply.status === "applied") {
+            emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
           }
           return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
         } catch (error) {
@@ -3467,6 +3470,7 @@ async function reconcileTask(input: {
                 conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
               })
             : [];
+        if (apply.status === "applied") emitAppTaskDependencyUpdated(opts, descriptor, intent.id);
         return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
       } catch (error) {
         const stale = recoverStaleTaskActionResult(config, primary, error);
@@ -3616,6 +3620,34 @@ function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, n
   };
 }
 
+function appDependencyUpdateSubject(event: Record<string, unknown>): string | null {
+  if (event.type !== "app.dependency.updated") return null;
+  const data = isRecord(event.data) ? event.data : {};
+  const id = data.kind === "app" && typeof data.id === "string" ? data.id.trim() : "";
+  return id ? `id:${id}` : null;
+}
+
+function appDependencyUpdateWakeTaskIds(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  event: Record<string, unknown>,
+  allowedTaskIds?: Iterable<string>,
+): string[] {
+  const subject = appDependencyUpdateSubject(event);
+  if (!subject) return [];
+  const allowed = allowedTaskIds ? new Set(allowedTaskIds) : null;
+  const routes = config.resourceStore
+    ? config.resourceStore.readConditionRoutes("app.dependency.completed")
+    : (appTaskConditionRoutesByEventType(readTaskState(config))["app.dependency.completed"] ?? []);
+  return [
+    ...new Set(
+      routes
+        .filter(({ condition }) => condition.spec.subject === subject)
+        .flatMap(({ taskIds }) => taskIds)
+        .filter((taskId) => !allowed || allowed.has(taskId)),
+    ),
+  ].sort();
+}
+
 function admitResolvedAppTaskEvent(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
@@ -3632,9 +3664,15 @@ function admitResolvedAppTaskEvent(input: {
     ...new Set((input.conditionTaskIds ?? []).map((taskId) => taskId.trim()).filter(Boolean)),
   ];
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
+  const dependencyUpdateWakes = appDependencyUpdateWakeTaskIds(config, event, selectedConditionTaskIds).flatMap(
+    (taskId) => {
+      const wake = recordAppTaskTrigger(config, taskId, { ...event, overrideWait: true });
+      return wake.kind === "recorded" ? [taskId] : [];
+    },
+  );
   if (controller) {
-    for (const wake of conditionWakes) {
-      enqueueAppTask(controller, config, wake.taskId, { front: true });
+    for (const taskId of new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes])) {
+      enqueueAppTask(controller, config, taskId, { front: true });
     }
   }
   // A frozen Condition route is idempotent admission authority. On recovery,
@@ -3644,8 +3682,13 @@ function admitResolvedAppTaskEvent(input: {
   const conditionDelivery = selectedConditionTaskIds.length
     ? appTaskDelivery(
         descriptor,
-        (conditionWakes.length ? conditionWakes.map((wake) => wake.taskId) : selectedConditionTaskIds).join(","),
-        conditionWakes.length ? "task Condition event accepted" : "task Condition event already observed",
+        (conditionWakes.length || dependencyUpdateWakes.length
+          ? [...new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes])]
+          : selectedConditionTaskIds
+        ).join(","),
+        conditionWakes.length || dependencyUpdateWakes.length
+          ? "task dependency event accepted"
+          : "task dependency event already observed",
       )
     : undefined;
   if (targetedTaskId) {
@@ -3741,6 +3784,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   const descriptors = (appRouterDescriptorsByBus.get(input.bus) ?? []).filter((descriptor) => descriptor.app.tasks);
   if (descriptors.length === 0) return [];
   const event = canonicalTaskEvent(input.event);
+  const updateSubject = appDependencyUpdateSubject(event);
   const matchesByApp = new Map<string, Set<string>>();
   const resourceDescriptors = descriptors.filter(
     (descriptor): descriptor is AppTaskRuntimeDescriptor & { resourceStore: AppTaskResourceStore } =>
@@ -3754,11 +3798,24 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
       for (const taskId of route.taskIds) taskIds.add(taskId);
       matchesByApp.set(route.appId, taskIds);
     }
+    if (updateSubject) {
+      for (const route of resourceDescriptors[0]!.resourceStore.readConditionRoutesForAllApps(
+        "app.dependency.completed",
+      )) {
+        if (!loadedResourceApps.has(route.appId) || route.condition.spec.subject !== updateSubject) continue;
+        const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
+        for (const taskId of route.taskIds) taskIds.add(taskId);
+        matchesByApp.set(route.appId, taskIds);
+      }
+    }
   }
   // Transitional JSON-backed Apps retain their existing projection lookup.
   for (const descriptor of descriptors) {
     if (descriptor.resourceStore) continue;
-    const taskIds = matchingAppTaskConditionTaskIds(appTaskConfig(descriptor), event);
+    const config = appTaskConfig(descriptor);
+    const taskIds = [
+      ...new Set([...matchingAppTaskConditionTaskIds(config, event), ...appDependencyUpdateWakeTaskIds(config, event)]),
+    ];
     if (taskIds.length > 0) matchesByApp.set(descriptor.id, new Set(taskIds));
   }
   return [...matchesByApp]
