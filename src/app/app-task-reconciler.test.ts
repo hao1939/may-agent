@@ -2503,7 +2503,8 @@ describe("App task reconciler state", () => {
   });
 
   it("consumes a terminal direct-agent result exactly once even while its lease is fresh", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -2514,7 +2515,8 @@ describe("App task reconciler state", () => {
 
     const before = readTaskState(config);
     expect(Date.parse(before.attempts![claim.attemptId].lease!.expiresAt)).toBeGreaterThan(Date.now());
-    const recovered = terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session");
+    const resourceConfig = resourceFixture(state, "terminal-agent-result").config;
+    const recovered = terminalAgentSessionAppTaskClaim(resourceConfig, claim.taskId, "terminal-agent-session");
     expect(recovered).toMatchObject({
       kind: "claimed",
       taskId: claim.taskId,
@@ -2524,7 +2526,7 @@ describe("App task reconciler state", () => {
     if (!recovered) throw new Error("expected terminal agent claim");
 
     expect(
-      deferAppTask(config, recovered, {
+      deferAppTask(resourceConfig, recovered, {
         disposition: "waiting",
         summary: "terminal result requires one bounded child",
         evidence: ["session:terminal-agent-session"],
@@ -2541,13 +2543,17 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toMatchObject({ status: "applied", actionsApplied: ["created terminal-result-child"] });
-    expect(terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session")).toBeNull();
-    expect(readTaskState(config)).toMatchObject({
+    expect(terminalAgentSessionAppTaskClaim(resourceConfig, claim.taskId, "terminal-agent-session")).toBeNull();
+    expect(resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] })).toMatchObject({
       resources: { [claim.taskId]: { status: { phase: "waiting" } } },
       attempts: { [claim.attemptId]: { state: "completed", sessionId: "terminal-agent-session" } },
       tasks: { "terminal-result-child": { parent_id: claim.taskId } },
     });
-    expect(Object.keys(readTaskState(config).tasks).filter((id) => id === "terminal-result-child")).toHaveLength(1);
+    expect(
+      Object.keys(resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).tasks).filter(
+        (id) => id === "terminal-result-child",
+      ),
+    ).toHaveLength(1);
   });
 
   it("releases only the exact expired agent attempt after its session is terminal", () => {
