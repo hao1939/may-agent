@@ -1052,13 +1052,12 @@ export function recoverableAppTaskAttempts(
   config: ResourceTaskStateConfig,
   nowMs = Date.now(),
   includeFreshLeases = false,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskAttemptRecovery[] {
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const candidates = [...candidateTaskIds];
+    if (candidates.length === 0) return [];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     let changed = false;
     const mutationScope = emptyResourceMutationScope();
     const recoveries = Object.values(tree.resources ?? {}).flatMap((resource) => {
@@ -1356,13 +1355,12 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
 
 export function repairPreviousRuntimeRecoveryAttention(
   config: ResourceTaskStateConfig,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const candidates = [...candidateTaskIds];
+    if (candidates.length === 0) return [];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     const repairs: AppTaskRecoveryRepair[] = [];
     const mutationScope = emptyResourceMutationScope();
     for (const resource of Object.values(tree.resources ?? {})) {
@@ -1413,13 +1411,12 @@ export function repairPreviousRuntimeRecoveryAttention(
 export function repairUnadmittedAppDependencyWaits(
   config: ResourceTaskStateConfig,
   isAdmitted: (requestId: string) => boolean,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const candidates = [...candidateTaskIds];
+    if (candidates.length === 0) return [];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     const repairs: AppTaskRecoveryRepair[] = [];
     const mutationScope = emptyResourceMutationScope();
     for (const resource of Object.values(tree.resources ?? {})) {
@@ -1466,13 +1463,12 @@ export function repairUnadmittedAppDependencyWaits(
 
 export function repairRunningAppTasksWithoutAttempt(
   config: ResourceTaskStateConfig,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const candidates = [...candidateTaskIds];
+    if (candidates.length === 0) return [];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     const repairs: AppTaskRecoveryRepair[] = [];
     const mutationScope = emptyResourceMutationScope();
     const now = new Date().toISOString();
@@ -1521,13 +1517,12 @@ export function repairRunningAppTasksWithoutAttempt(
 
 export function pendingAppTaskRecoveryAttention(
   config: ResourceTaskStateConfig,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryAttention[] {
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const candidates = [...candidateTaskIds];
+    if (candidates.length === 0) return [];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     return Object.values(tree.resources ?? {}).flatMap((resource) => {
       const attempts = Object.values(tree.attempts ?? {})
         .filter((attempt) => attempt.taskId === resource.metadata.id)
@@ -2435,13 +2430,12 @@ export type AppTaskExecutionRepairCandidate = {
 export function listHandlerUnavailableAppTasks(
   config: ResourceTaskStateConfig,
   appAgent: string,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskHandlerRepairCandidate[] {
   return withTaskStateLock(config, () => {
-    const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const candidates = [...candidateTaskIds];
+    if (candidates.length === 0) return [];
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     return Object.values(tree.resources ?? {})
       .filter((resource) => {
         if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return false;
@@ -2490,14 +2484,12 @@ export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig
 /** Executions to retry only after a later successful session proves their selected agent is runnable again. */
 export function listHandlerExecutionFailedAppTasks(
   config: ResourceTaskStateConfig,
-  candidateTaskIds?: Iterable<string>,
+  candidateTaskIds: Iterable<string>,
 ): AppTaskExecutionRepairCandidate[] {
-  const candidates = candidateTaskIds ? [...candidateTaskIds] : undefined;
-  if (candidates?.length === 0) return [];
+  const candidates = [...candidateTaskIds];
+  if (candidates.length === 0) return [];
   return withTaskStateLock(config, () => {
-    const tree = candidates
-      ? config.resourceStore.readTaskContext({ taskIds: candidates })
-      : config.resourceStore.readSnapshot();
+    const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     return Object.values(tree.resources ?? {})
       .flatMap((resource): AppTaskExecutionRepairCandidate[] => {
         if (resource.status.phase !== "attention") return [];
