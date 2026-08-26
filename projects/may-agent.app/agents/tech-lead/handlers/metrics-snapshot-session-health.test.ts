@@ -393,12 +393,7 @@ describe("metrics-snapshot session health metrics", () => {
         .get(id) as any;
     expect(metric("evaluator.meaningful-review-rate-24h")).toBeNull();
     expect(metric("evaluator.triage-closure-rate-24h")).toBeNull();
-    expect(metric("evaluator.false-good-rate-sample")).toMatchObject({
-      current: 1,
-      target: 0.05,
-      threshold: 0.6,
-      priority: "P2",
-    });
+    expect(metric("evaluator.false-good-rate-sample")).toBeNull();
     expect(metric("evaluator.project-finding-delivery-rate-24h")).toMatchObject(
       {
         current: 0.5,

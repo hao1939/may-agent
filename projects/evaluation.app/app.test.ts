@@ -10,6 +10,8 @@ import {
 import app, {
   AFTERMATH_COVERAGE_METRIC_ID,
   AFTERMATH_COVERAGE_SOURCE_QUERY,
+  FALSE_GOOD_RATE_SAMPLE_METRIC_ID,
+  FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
   LLM_COVERAGE_LAG_METRIC_ID,
   LLM_COVERAGE_LAG_SOURCE_QUERY,
   LLM_EVALUATIONS_24H_METRIC_ID,
@@ -178,7 +180,7 @@ describe("canonical evaluation App", () => {
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toHaveLength(7);
+    expect(app.metrics).toHaveLength(8);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -228,6 +230,13 @@ describe("canonical evaluation App", () => {
           owner: "evaluator",
           project: "evaluation",
           sourceQuery: TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: FALSE_GOOD_RATE_SAMPLE_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
           measureInterval: 300_000,
         }),
       ]),
@@ -430,6 +439,41 @@ describe("evaluation metrics", () => {
     db.run("DELETE FROM events");
     expect(db.query(TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY).get()).toMatchObject({
       value: 1,
+      sampleSize: 0,
+    });
+  });
+
+  test("measures false-good overturns against reviewed good verdicts", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE events (
+        event_type TEXT NOT NULL,
+        data TEXT,
+        timestamp INTEGER NOT NULL
+      )`,
+    );
+    const now = Date.now();
+    for (const [eventType, verdict, timestamp] of [
+      ["evaluation.reviewed", "good", now - 60_000],
+      ["evaluation.reviewed", "good", now - 60_000],
+      ["evaluation.reviewed", "needs_improvement", now - 60_000],
+      ["evaluation.false_good", "needs_improvement", now - 60_000],
+      ["evaluation.false_good", "needs_improvement", now - 25 * 60 * 60_000],
+    ] as const) {
+      db.run(
+        "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+        [eventType, JSON.stringify({ verdict }), timestamp],
+      );
+    }
+
+    expect(db.query(FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY).get()).toMatchObject({
+      value: 0.5,
+      sampleSize: 2,
+    });
+
+    db.run("DELETE FROM events");
+    expect(db.query(FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY).get()).toMatchObject({
+      value: 0,
       sampleSize: 0,
     });
   });

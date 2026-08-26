@@ -228,17 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "evaluator.false-good-rate-sample",
-    name: "Reviewed good sessions overturned (24h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0.05,
-    threshold: 0.6,
-    unit: "ratio",
-    alert_op: ">",
-    priority: "P2",
-  },
-  {
     id: "evaluator.project-finding-delivery-rate-24h",
     name: "Evaluation findings handled by target owner workflows (24h)",
     owner: "evaluator",
@@ -1401,33 +1390,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      const reviewedGood = count(
-        `SELECT COUNT(*) as c
-         FROM events
-         WHERE event_type = 'evaluation.reviewed'
-           AND timestamp > ?
-           AND json_extract(data, '$.verdict') = 'good'`,
-        twentyFourH,
-      );
-      const falseGood = count(
-        "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.false_good' AND timestamp > ?",
-        twentyFourH,
-      );
-      record(
-        "evaluator.false-good-rate-sample",
-        reviewedGood > 0
-          ? parseFloat((falseGood / reviewedGood).toFixed(4))
-          : 0,
-        reviewedGood,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator.false-good-rate-sample: ${e}`,
       );
     }
 

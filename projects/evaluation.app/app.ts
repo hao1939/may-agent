@@ -124,6 +124,28 @@ SELECT CASE
        END AS value,
        routed AS sampleSize
 FROM counts`;
+export const FALSE_GOOD_RATE_SAMPLE_METRIC_ID =
+  "evaluator.false-good-rate-sample";
+export const FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY = `WITH counts AS (
+  SELECT COALESCE(SUM(
+           CASE
+             WHEN event_type = 'evaluation.reviewed'
+               AND json_extract(data, '$.verdict') = 'good'
+             THEN 1
+             ELSE 0
+           END
+         ), 0) AS reviewed_good,
+         COALESCE(SUM(CASE WHEN event_type = 'evaluation.false_good' THEN 1 ELSE 0 END), 0) AS false_good
+  FROM events
+  WHERE timestamp > (strftime('%s','now') * 1000 - 86400000)
+    AND event_type IN ('evaluation.reviewed', 'evaluation.false_good')
+)
+SELECT CASE
+         WHEN reviewed_good = 0 THEN 0
+         ELSE ROUND(1.0 * false_good / reviewed_good, 4)
+       END AS value,
+       reviewed_good AS sampleSize
+FROM counts`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -720,6 +742,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: FALSE_GOOD_RATE_SAMPLE_METRIC_ID,
+    name: "Reviewed good sessions overturned (24h)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 0.05,
+    threshold: 0.6,
+    unit: "ratio",
+    priority: "P2" as const,
+    status: "active",
+    source: "evaluation review and false-good events",
+    sourceQuery: FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: ">" as const,
+    speed: "fast",
+    description:
+      "Ratio of recent false-good overturn events to review events whose verdict was good.",
+  },
   {
     id: TRIAGE_CLOSURE_RATE_24H_METRIC_ID,
     name: "Evaluator triage closure rate (24h)",
