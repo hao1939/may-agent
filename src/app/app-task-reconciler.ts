@@ -2187,9 +2187,12 @@ export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, current
   });
 }
 
-export function readAppTaskTrigger(config: TaskStateConfig, taskId: string): Record<string, unknown> | undefined {
+export function readAppTaskTrigger(
+  config: ResourceTaskStateConfig,
+  taskId: string,
+): Record<string, unknown> | undefined {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const pending = tree.taskTriggers?.[taskId];
     if (pending) return structuredClone(pending.event);
     const resource = tree.resources?.[taskId];

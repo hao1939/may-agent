@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { cacheTaskStateReads, readTaskState, saveTaskState, type TaskStateConfig } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
   matchingAppTaskConditionTaskIds,
@@ -1044,7 +1043,7 @@ describe("App task reconciler state", () => {
 
   it("keeps an unresolved human task control ahead of a later automated wake", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "human-control");
     const ownerReview = { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" as const };
     const humanComment = {
       type: "project.comment.created",
@@ -1067,7 +1066,7 @@ describe("App task reconciler state", () => {
     });
 
     expect(readAppTaskTrigger(config, ownerReview.id)).toEqual(humanComment);
-    expect(appTaskQueueEntries(resourceFixture(state, "human-control-queue").config, [ownerReview.id])).toEqual([
+    expect(appTaskQueueEntries(config, [ownerReview.id])).toEqual([
       { taskId: ownerReview.id, options: { priority: "P0", lane: "human" } },
     ]);
     expect(listRunnableAppTaskIds(config)[0]).toBe(ownerReview.id);
@@ -1185,7 +1184,8 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps triggered work behind unresolved dependencies during passive resync", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "triggered-dependency");
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/dependency" },
       appAgent: "app-owner",
@@ -1268,7 +1268,8 @@ describe("App task reconciler state", () => {
   });
 
   it("preflights Condition routes without mutation and admits only selected exact tasks", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "condition-route-preflight");
     for (const taskId of ["work/first", "work/second"]) {
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: taskId },
@@ -1295,22 +1296,10 @@ describe("App task reconciler state", () => {
     }
     const event = { type: "provider.state", provider: "shared", state: "ready" };
 
-    const conditionRoutesPath = projectRuntimePaths(config.appDir).taskConditionRoutesPath;
-    expect(JSON.parse(readFileSync(conditionRoutesPath, "utf-8"))).toMatchObject({
-      schemaVersion: 1,
-      eventTypes: {
-        "provider.state": [{ taskIds: ["work/first"] }, { taskIds: ["work/second"] }],
-      },
-    });
-
     expect(matchingAppTaskConditionTaskIds(config, event)).toEqual(["work/first", "work/second"]);
     expect(readAppTaskTrigger(config, "work/first")).toBeUndefined();
     expect(readAppTaskTrigger(config, "work/second")).toBeUndefined();
     expect(matchingAppTaskConditionTaskIds(config, event, ["work/first"])).toEqual(["work/first"]);
-
-    rmSync(conditionRoutesPath);
-    expect(matchingAppTaskConditionTaskIds(config, event)).toEqual(["work/first", "work/second"]);
-    expect(existsSync(conditionRoutesPath)).toBe(true);
 
     expect(trackAppTaskConditionEventForTasks(config, event, ["work/first"])).toEqual([
       { conditionId: "shared-ready:work/first", taskId: "work/first" },
@@ -1353,7 +1342,8 @@ describe("App task reconciler state", () => {
   });
 
   it("preserves an explicit retry over lower-priority task wakes", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "explicit-retry-precedence");
     const monitor = intent("maintain");
     observeAppTaskIntent(config, {
       intent: monitor,
@@ -1385,7 +1375,7 @@ describe("App task reconciler state", () => {
 
   it("returns trigger snapshots that cannot mutate a long-lived cached task tree", () => {
     const f = fixture();
-    const { config } = f;
+    const { config, store } = resourceFixture(f, "immutable-trigger-snapshots");
     cacheTaskStateReads(config);
     const monitor = intent("maintain");
     observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
@@ -1394,9 +1384,8 @@ describe("App task reconciler state", () => {
       data: { metricId: "may.failure-rate" },
     });
 
-    const resource = resourceFixture(f, "test:pending-trigger");
     const trigger = readAppTaskTrigger(config, monitor.id);
-    const pending = readPendingAppTaskTrigger(resource.config, monitor.id);
+    const pending = readPendingAppTaskTrigger(config, monitor.id);
     if (!trigger || !pending) throw new Error("expected trigger snapshots");
     (trigger.data as Record<string, unknown>).metricId = "mutated-trigger";
     (pending.data as Record<string, unknown>).metricId = "mutated-pending";
@@ -1405,11 +1394,11 @@ describe("App task reconciler state", () => {
       type: "metric.breach",
       data: { metricId: "may.failure-rate" },
     });
-    expect(readPendingAppTaskTrigger(resource.config, monitor.id)).toEqual({
+    expect(readPendingAppTaskTrigger(config, monitor.id)).toEqual({
       type: "metric.breach",
       data: { metricId: "may.failure-rate" },
     });
-    resource.store.close();
+    store.close();
   });
 
   it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
@@ -3433,7 +3422,8 @@ describe("App task reconciler state", () => {
   });
 
   it("wakes a maintain task once per canonical App admission", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "maintain-admission");
     const monitor = intent("maintain");
     const trigger = (key: string) => ({
       type: "app.task.requested",
@@ -3513,7 +3503,8 @@ describe("App task reconciler state", () => {
   });
 
   it("replays a queued maintain trigger after the older attempt completes", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "maintain-trigger-replay");
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review" },
       appAgent: "app-owner",
@@ -3562,7 +3553,7 @@ describe("App task reconciler state", () => {
 
   it("preserves a queued project comment through child completion and interrupted-attempt recovery", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "queued-comment-recovery");
     const parentIntent = {
       ...intent("maintain"),
       id: "runtime/owner-review",
@@ -3607,20 +3598,20 @@ describe("App task reconciler state", () => {
     ).toMatchObject({ status: "applied", dependentTaskIds: [parentIntent.id] });
     expect(readAppTaskTrigger(config, parentIntent.id)).toEqual(commentTrigger);
 
-    const interruptedTree = readTaskState(config);
+    const interruptedTree = config.resourceStore.readTaskContext({ taskIds: [parentIntent.id] });
     const currentAttemptId = interruptedTree.resources?.[parentIntent.id]?.status.currentAttemptId;
     if (!currentAttemptId) throw new Error("expected current parent attempt");
-    interruptedTree.attempts![currentAttemptId]!.runtimeId = "previous-runtime";
-    saveTaskState(config, interruptedTree);
-    const resourceConfig = resourceFixture(state, "queued-comment-recovery").config;
-    const [recovery] = recoverableAppTaskAttempts(resourceConfig);
+    mutateAttemptFixture(config, parentIntent.id, currentAttemptId, (attempt) => {
+      attempt.runtimeId = "previous-runtime";
+    });
+    const [recovery] = recoverableAppTaskAttempts(config);
 
-    expect(releaseInterruptedAppTaskAttempt(resourceConfig, recovery, "Process restarted")).toMatchObject({
+    expect(releaseInterruptedAppTaskAttempt(config, recovery, "Process restarted")).toMatchObject({
       released: true,
     });
-    expect(readAppTaskTrigger(resourceConfig, parentIntent.id)).toEqual(commentTrigger);
+    expect(readAppTaskTrigger(config, parentIntent.id)).toEqual(commentTrigger);
 
-    const recoveredClaim = claimObservedAppTask(resourceConfig, {
+    const recoveredClaim = claimObservedAppTask(config, {
       taskId: parentIntent.id,
       appAgent: "app-owner",
       handler: "agent:app-owner",
@@ -5283,7 +5274,8 @@ describe("App task reconciler state", () => {
   });
 
   it("consumes an unrelated trigger queued while the task installs a wait", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "unrelated-trigger-during-wait");
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/queued-pulse" },
       appAgent: "app-owner",
@@ -5322,7 +5314,8 @@ describe("App task reconciler state", () => {
   });
 
   it("preserves a queued trigger that satisfies the wait installed by the attempt", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "satisfying-trigger-during-wait");
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/queued-completion" },
       appAgent: "app-owner",
