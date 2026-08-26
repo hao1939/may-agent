@@ -160,8 +160,10 @@ Startup repair of retained previous-runtime attention state also reads the
 indexed candidate resources and commits only their fenced requeue mutations.
 Orphaned cross-App dependency waits are checked against admitted requests from
 their indexed waiting resource contexts and requeue the same Task without a
-JSON repair path.
-Broader recovery repairs remain in a later batch.
+JSON repair path. Running Tasks whose current attempt is missing or no longer
+running are likewise repaired from the indexed resource candidates and requeue
+the same Task through one fenced mutation. Broader recovery repairs remain in
+a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
