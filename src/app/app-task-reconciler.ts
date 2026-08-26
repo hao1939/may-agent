@@ -3150,12 +3150,12 @@ export function releaseStaleAppTaskResult(
 
 /** Attach observed workspace lineage to the current attempt without changing desired task state. */
 export function recordAppTaskAttemptWorkspace(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   workspace: AppTaskWorkspace,
 ): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTask(tree, claim);
     if (!match) return false;
     match.attempt.metadata.resourceVersion += 1;
