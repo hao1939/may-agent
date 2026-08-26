@@ -100,8 +100,6 @@ export type AppTaskObservationResult =
     }
   | { kind: "completed"; taskId: string; generation: number; supersededSessionIds?: string[] };
 
-const MAX_APP_TASK_ADMISSIONS = 4_096;
-
 export type AppTaskSessionAssociation = {
   status: "recorded" | "superseded" | "missing";
   taskId: string;
@@ -1662,7 +1660,7 @@ function upsertTask(tree: TaskTree, resource: AppTaskResource, owner: string): T
 }
 
 export function observeAppTaskIntent(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   input: {
     intent: AppTaskIntent;
     appAgent: string;
@@ -1677,7 +1675,7 @@ export function observeAppTaskIntent(
     throw new Error("Task admission key must be non-empty when provided");
   }
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, {
+    const tree = config.resourceStore.readTaskContext({
       taskIds: [input.intent.id, input.intent.parentId, ...(input.intent.dependsOn ?? [])],
       ...(admissionKey ? { admissionIds: [admissionKey] } : {}),
     });
@@ -1721,14 +1719,6 @@ export function observeAppTaskIntent(
           admittedAt: new Date().toISOString(),
         },
       };
-      if (config.resourceStore) return;
-      const admissions = Object.entries(tree.appTaskAdmissions);
-      if (admissions.length <= MAX_APP_TASK_ADMISSIONS) return;
-      for (const [key] of admissions
-        .sort((left, right) => left[1].admittedAt.localeCompare(right[1].admittedAt))
-        .slice(0, admissions.length - MAX_APP_TASK_ADMISSIONS)) {
-        delete tree.appTaskAdmissions[key];
-      }
     };
     const receipt = tree.receipts?.[input.intent.id];
     const existingResource = tree.resources?.[input.intent.id];
@@ -1848,7 +1838,6 @@ export function observeAppTaskIntent(
     tree.resources = { ...(tree.resources ?? {}), [input.intent.id]: resource };
     const task = upsertTask(tree, resource, agent);
     if (generation > previousGeneration) {
-      if (!config.resourceStore) pruneUnlinkedConditions(tree);
       // A new desired generation supersedes pending wakes that were fenced to
       // the older specification. The event store retains their causal history;
       // only the old task-generation link is retired.
@@ -1882,7 +1871,6 @@ export function observeAppTaskIntent(
     }
     recordAdmission(task.id, generation);
     syncTaskProjection(task, resource, agent);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     refreshActiveTaskProjection(tree);
     const relevantConditionIds = new Set([...initialConditionIds, ...(resource.status.conditionIds ?? [])]);
     saveTaskState(config, tree, {
@@ -3566,6 +3554,19 @@ function validateTaskActions(
   }
 }
 
+function taskActionContextIds(actions: unknown[]): string[] {
+  return actions.flatMap((rawAction) => {
+    if (!isRecord(rawAction)) return [];
+    const values =
+      rawAction.kind === "create-task"
+        ? [rawAction.id, rawAction.parentId, ...(Array.isArray(rawAction.dependsOn) ? rawAction.dependsOn : [])]
+        : rawAction.kind === "update-task"
+          ? [rawAction.taskId, rawAction.parentId, ...(Array.isArray(rawAction.dependsOn) ? rawAction.dependsOn : [])]
+          : [rawAction.taskId];
+    return values.filter((value): value is string => typeof value === "string" && Boolean(value.trim()));
+  });
+}
+
 function validateConditions(
   conditions: AppTaskConditionSpec[] | undefined,
   input: { required: boolean; taskId: string },
@@ -3911,7 +3912,7 @@ function beginResourceMutationScope(
   track(tree.resources?.[claim.taskId]?.spec.parentId);
   for (const action of actions) {
     if (action.kind === "create-task") {
-      scope.createdTaskIds.add(action.id);
+      if (!tree.resources?.[action.id] && !tree.receipts?.[action.id]) scope.createdTaskIds.add(action.id);
       track(action.id);
       track(action.parentId);
     } else {
@@ -3989,16 +3990,7 @@ export function completeAppTask(
   return withTaskStateLock(config, () => {
     const actions = input.actions ?? [];
     const tree = readTaskState(config, {
-      taskIds: [
-        claim.taskId,
-        ...actions.flatMap((action) =>
-          action.kind === "create-task"
-            ? [action.id, action.parentId, ...(action.dependsOn ?? [])]
-            : action.kind === "update-task"
-              ? [action.taskId, ...(action.parentId ? [action.parentId] : []), ...(action.dependsOn ?? [])]
-              : [action.taskId],
-        ),
-      ],
+      taskIds: [claim.taskId, ...taskActionContextIds(actions)],
     });
     const match = matchingTask(tree, claim);
     if (!match) {
@@ -4193,16 +4185,10 @@ export function deferAppTask(
   return withTaskStateLock(config, () => {
     const actions = input.actions ?? [];
     const tree = readTaskState(config, {
-      taskIds: [
-        claim.taskId,
-        ...actions.flatMap((action) =>
-          action.kind === "create-task"
-            ? [action.id, action.parentId, ...(action.dependsOn ?? [])]
-            : action.kind === "update-task"
-              ? [action.taskId, ...(action.parentId ? [action.parentId] : []), ...(action.dependsOn ?? [])]
-              : [action.taskId],
-        ),
-      ],
+      taskIds: [claim.taskId, ...taskActionContextIds(actions)],
+      conditionIds: (input.conditions as unknown[] | undefined)?.flatMap((condition) =>
+        isRecord(condition) && typeof condition.id === "string" && condition.id.trim() ? [condition.id] : [],
+      ),
     });
     const match = matchingTask(tree, claim);
     if (!match) return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };

@@ -589,12 +589,7 @@ describe("App Task agent prompt context", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const taskIntent = {
       id: "work/focused-feedback",
       parentId: "operations",
@@ -642,7 +637,7 @@ describe("App Task agent prompt context", () => {
         ],
       }),
     ).toMatchObject({ status: "applied" });
-    const resourceStore = activateTaskResources(config, persistDir);
+    const resourceStore = config.resourceStore;
 
     expect(
       projectAppTaskWaitPromptContext(
@@ -687,12 +682,7 @@ describe("canonical App task runtime", () => {
   it("rejects a dependency that is not accepted by the installed App contract", () => {
     const f = fixture();
     const bus = eventBus();
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/invalid-owner",
@@ -758,12 +748,7 @@ describe("canonical App task runtime", () => {
   it("rejects a dependency when the configured registry has no target Apps", () => {
     const f = fixture();
     const bus = eventBus();
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/missing-owner",
@@ -913,12 +898,7 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const intent = {
       id: "work/credential",
       parentId: "operations",
@@ -950,7 +930,6 @@ describe("canonical App task runtime", () => {
       readTaskState(config).conditions?.["credential-ready:xhs"]?.status.observedAt ?? "",
     );
     expect(Number.isFinite(establishedAt)).toBeTrue();
-    activateTaskResources(config, persistDir);
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
@@ -1454,12 +1433,7 @@ describe("canonical App task runtime", () => {
         return { accepted: true, by: "test-app-inbox", route: "direct" };
       }
     });
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/cross-app-conflict",
@@ -1477,7 +1451,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const resourceStore = activateTaskResources(config, persistDir);
+    const resourceStore = config.resourceStore;
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1556,12 +1530,7 @@ describe("canonical App task runtime", () => {
         return { accepted: true, by: "test-app-inbox", route: "direct" };
       }
     });
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const intent = {
       id: "work/rejected-attempt-retry",
       parentId: "operations",
@@ -1577,7 +1546,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (initial.kind !== "claimed") throw new Error("expected initial claim");
-    const resourceStore = activateTaskResources(config, persistDir);
+    const resourceStore = config.resourceStore;
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1687,12 +1656,7 @@ describe("canonical App task runtime", () => {
       event.type === "app.input.requested" ? { accepted: true, by: "test-app-inbox", route: "direct" } : undefined,
     );
     const persistDir = join(f.root, "state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/reuse-created-task",
@@ -1710,7 +1674,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const resourceStore = activateTaskResources(config, persistDir);
+    const resourceStore = config.resourceStore;
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1764,12 +1728,7 @@ describe("canonical App task runtime", () => {
     const persistDir = join(f.root, "state");
     const emitted: Array<Record<string, unknown>> = [];
     bus.subscribe((event) => emitted.push(event as unknown as Record<string, unknown>));
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/reattach-request",
@@ -1846,12 +1805,7 @@ describe("canonical App task runtime", () => {
         return { accepted: true, by: "test-app-inbox", route: "direct" };
       }
     });
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/cross-app",
@@ -1869,7 +1823,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const resourceStore = activateTaskResources(config, join(f.root, "state"));
+    const resourceStore = config.resourceStore;
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -1921,12 +1875,7 @@ describe("canonical App task runtime", () => {
     const bus = eventBus();
     const emitted: AgentEvent[] = [];
     bus.subscribe((event) => emitted.push(event));
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/unaccepted-dependency",
@@ -1944,7 +1893,7 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const resourceStore = activateTaskResources(config, join(f.root, "state"));
+    const resourceStore = config.resourceStore;
 
     expect(() =>
       admitTaskAppDependencies({
@@ -1974,12 +1923,7 @@ describe("canonical App task runtime", () => {
 
   it("projects the exact ordered claimed event batch into workflow context", () => {
     const f = fixture();
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f);
     const observedAt = ["2026-08-19T00:00:01.000Z", "2026-08-19T00:00:02.000Z"];
     const intent = {
       id: "work/event-context",
@@ -1998,33 +1942,49 @@ describe("canonical App task runtime", () => {
     });
     if (initial.kind !== "claimed") throw new Error("expected initial claim");
 
-    const tree = readTaskState(config);
-    tree.taskTriggers = {
-      [intent.id]: {
-        taskId: intent.id,
-        taskGeneration: initial.generation,
-        resourceVersion: 2,
-        event: { type: "sample.second", eventId: 12, data: { value: "second" } },
-        events: [
-          {
-            event: { type: "sample.first", eventId: 11, data: { value: "first" } },
-            observedAt: observedAt[0]!,
-          },
-          {
-            event: { type: "sample.second", eventId: 12, data: { value: "second" } },
-            observedAt: observedAt[1]!,
-          },
-        ],
-        observedAt: observedAt[1]!,
-      },
+    const tree = config.resourceStore.readTaskContext({ taskIds: [intent.id] });
+    const resource = tree.resources?.[intent.id];
+    const attempt = tree.attempts?.[initial.attemptId];
+    if (!resource || !attempt) throw new Error("expected event-context resource fixture");
+    const trigger = {
+      taskId: intent.id,
+      taskGeneration: initial.generation,
+      resourceVersion: 2,
+      event: { type: "sample.second", eventId: 12, data: { value: "second" } },
+      events: [
+        {
+          event: { type: "sample.first", eventId: 11, data: { value: "first" } },
+          observedAt: observedAt[0]!,
+        },
+        {
+          event: { type: "sample.second", eventId: 12, data: { value: "second" } },
+          observedAt: observedAt[1]!,
+        },
+      ],
+      observedAt: observedAt[1]!,
     };
-    tree.attempts![initial.attemptId]!.state = "completed";
-    tree.resources![intent.id]!.status = {
-      ...tree.resources![intent.id]!.status,
+    attempt.metadata.resourceVersion += 1;
+    attempt.state = "completed";
+    resource.metadata.resourceVersion += 1;
+    resource.status = {
+      ...resource.status,
       phase: "pending",
       currentAttemptId: undefined,
     };
-    saveTaskState(config, tree);
+    expect(
+      config.resourceStore.commit({
+        fences: [
+          {
+            taskId: intent.id,
+            resourceVersion: resource.metadata.resourceVersion - 1,
+            generation: resource.metadata.generation,
+            currentAttemptId: initial.attemptId,
+          },
+        ],
+        tasks: [{ resource, trigger, ready: true }],
+        attempts: [attempt],
+      }),
+    ).toBe(true);
 
     const claim = claimObservedAppTask(config, {
       taskId: intent.id,
@@ -2209,7 +2169,24 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       maxConcurrent: 1,
     });
-    observeAppTaskIntent(legacyConfig, {
+    const tree = readTaskState(legacyConfig);
+    tree.project = "sample";
+    tree.project_lifecycle = "paused";
+    saveTaskState(legacyConfig, tree, { projectLifecycleReason: "test migration pause" });
+
+    const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
+    store.importPausedSnapshot(tree, "test-source-revision");
+    store.activate("test-source-revision");
+    store.setProjectLifecycle("active");
+    rmSync(legacyConfig.statePath);
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+      resourceStore: store,
+    });
+    observeAppTaskIntent(config, {
       intent: {
         id: "work/resource-dependency",
         parentId: "operations",
@@ -2221,16 +2198,6 @@ describe("canonical App task runtime", () => {
       appAgent: "sample-owner",
       admissionKey: "attach:resource-dependency",
     });
-    const tree = readTaskState(legacyConfig);
-    tree.project = "sample";
-    tree.project_lifecycle = "paused";
-    saveTaskState(legacyConfig, tree, { projectLifecycleReason: "test migration pause" });
-
-    const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
-    store.importPausedSnapshot(tree, "test-source-revision");
-    store.activate("test-source-revision");
-    store.setProjectLifecycle("active");
-    rmSync(legacyConfig.statePath);
 
     const result = await installAppTaskRuntimes({
       ...options(f, bus),
