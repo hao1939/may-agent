@@ -12,7 +12,6 @@ import {
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
   matchingAppTaskConditionTaskIds,
-  trackAppTaskConditionEvent,
   trackAppTaskConditionEventForTasks,
 } from "./app-task-condition-tracker.ts";
 import { AppTaskQueue } from "./app-task-queue.ts";
@@ -57,6 +56,10 @@ import {
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
+
+function trackAppTaskConditionEvent(config: ResourceTaskStateConfig, event: Record<string, unknown>) {
+  return trackAppTaskConditionEventForTasks(config, event, matchingAppTaskConditionTaskIds(config, event));
+}
 
 function seedFixture() {
   const root = join(tmpdir(), `task-reconciler-${Date.now()}-${Math.random().toString(36).slice(2)}`);
