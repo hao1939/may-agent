@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import {
   cacheTaskStateReads,
+  legacyTaskStateConfig,
   readTaskState,
   type ResourceTaskStateConfig,
   type TaskStateConfig,
@@ -112,10 +113,10 @@ function seedFixture() {
       2,
     )}\n`,
   );
-  const config = taskReconciliationConfig({
+  const config = legacyTaskStateConfig({
     appDir,
     projectDir: appDir,
-    owner: "app-owner",
+    worker: "app-owner",
     maxConcurrent: 3,
   });
   return { root, appDir, config };
