@@ -364,14 +364,12 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
     });
 }
 
-/** Human conversations currently awaiting one exact App Task. */
-export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
+/** Open App requests currently awaiting one exact Task. */
+export function listAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
   return db
     .prepare(
       `SELECT * FROM app_inbox_items
        WHERE app_id = ?
-         AND source_kind = 'human'
-         AND conversation_id IS NOT NULL
          AND status = 'handling'
          AND waiting_on_kind = 'task'
          AND waiting_on_id = ?
@@ -379,6 +377,13 @@ export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string,
     )
     .all(requiredText(appId, "appId"), requiredText(taskId, "taskId"))
     .map(rowToItem);
+}
+
+/** Human conversations currently awaiting one exact Task. */
+export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
+  return listAppInboxItemsWaitingOnTask(db, appId, taskId).filter(
+    (item) => item.source.kind === "human" && item.conversationId !== undefined,
+  );
 }
 
 /** Human Conversation requests whose current Task is waiting on one exact App request. */

@@ -263,14 +263,8 @@ describe("App Task agent prompt context", () => {
         truncated: false,
       }) as any;
 
-    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(
-      true,
-    );
-    expect(
-      hasDeployReceiptWake(
-        events("please inspect the restart-aware deploy receipt"),
-      ),
-    ).toBe(false);
+    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(true);
+    expect(hasDeployReceiptWake(events("please inspect the restart-aware deploy receipt"))).toBe(false);
   });
 
   it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
@@ -1053,6 +1047,7 @@ describe("canonical App task runtime", () => {
 
     let nextEventId = 1;
     const dependencyEvents: Array<Record<string, unknown>> = [];
+    const dependencyUpdateEvents: Array<Record<string, unknown>> = [];
     const dependencyRequests: Array<Record<string, unknown>> = [];
     const conditionPreviews: string[][] = [];
     bus.setPersistenceSubscriber((event) => {
@@ -1064,6 +1059,9 @@ describe("canonical App task runtime", () => {
       }
       if (event.type === "app.dependency.completed" && event.data.kind === "app") {
         dependencyEvents.push(event as unknown as Record<string, unknown>);
+      }
+      if (event.type === "app.dependency.updated" && event.data.kind === "app") {
+        dependencyUpdateEvents.push(event as unknown as Record<string, unknown>);
       }
     });
     const db = openDatabase(":memory:");
@@ -1286,6 +1284,43 @@ describe("canonical App task runtime", () => {
         status: "handling",
         waitingOn: { kind: "task", id: attachedDependencyTaskId },
       });
+
+      bus.emit({
+        type: "app.dependency.updated",
+        source: "test:evaluation-task",
+        owner: "app:evaluation",
+        data: { kind: "task", id: attachedDependencyTaskId, appId: "evaluation" },
+      });
+      const progressDeadline = Date.now() + 5_000;
+      while (!readTaskState(config).taskTriggers?.[initial.taskId] && Date.now() < progressDeadline) {
+        await Bun.sleep(5);
+      }
+      expect(dependencyUpdateEvents).toContainEqual(
+        expect.objectContaining({
+          data: expect.objectContaining({ kind: "app", id: requestId, appId: "sample" }),
+        }),
+      );
+      const progressReview = claimObservedAppTask(config, {
+        taskId: initial.taskId,
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
+        reason: "dependency-progress",
+      });
+      if (progressReview.kind !== "claimed") {
+        throw new Error(`expected progress review claim, got ${progressReview.kind}`);
+      }
+      expect(progressReview.events).toHaveLength(1);
+      expect(progressReview.events[0]?.event).toMatchObject({
+        type: "app.dependency.updated",
+        data: { kind: "app", id: requestId },
+      });
+      expect(
+        deferAppTask(config, progressReview, {
+          disposition: "waiting",
+          summary: "The linked reviews remain in progress",
+          conditions: expanded,
+        }).status,
+      ).toBe("applied");
 
       const resumedTarget = claimObservedAppTask(evaluationConfig, {
         taskId: attachedDependencyTaskId,
@@ -1592,9 +1627,7 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     bus.subscribe((event) =>
-      event.type === "app.input.requested"
-        ? { accepted: true, by: "test-app-inbox", route: "direct" }
-        : undefined,
+      event.type === "app.input.requested" ? { accepted: true, by: "test-app-inbox", route: "direct" } : undefined,
     );
     const persistDir = join(f.root, "state");
     const config = taskReconciliationConfig({
@@ -1646,9 +1679,7 @@ describe("canonical App task runtime", () => {
     });
     const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
     if (!requestClaim) throw new Error("expected request claim");
-    expect(
-      waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 }),
-    ).toBe(true);
+    expect(waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 })).toBe(true);
 
     expect(
       admitTaskAppDependencies({
@@ -1710,9 +1741,7 @@ describe("canonical App task runtime", () => {
     });
     const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
     if (!requestClaim) throw new Error("expected request claim");
-    expect(
-      waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 }),
-    ).toBe(true);
+    expect(waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 })).toBe(true);
     const emittedBeforeReuse = emitted.length;
 
     expect(
@@ -3159,9 +3188,7 @@ describe("canonical App task runtime", () => {
       summary: "The same Task resumed and completed",
       evidence: ["test:same-task-resumed"],
     });
-    expect(
-      Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "work/resume-codex-goal"),
-    ).toEqual(
+    expect(Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "work/resume-codex-goal")).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ state: "interrupted" }),
         expect.objectContaining({ state: "completed" }),

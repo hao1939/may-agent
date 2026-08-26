@@ -80,15 +80,24 @@ function insertTask(
   ).run(input.appId, input.taskId, input.phase, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource));
 }
 
-test("hides internal maintenance Tasks from ordinary human lists and App counts", () => {
+test("shows every live Task regardless of descriptive category", () => {
   const db = database();
-  insertTask(db, { appId: "may", taskId: "conversation/follow-up", phase: "waiting", updatedAt: 2, category: "internal" });
+  insertTask(db, {
+    appId: "may",
+    taskId: "conversation/follow-up",
+    phase: "waiting",
+    updatedAt: 2,
+    category: "conversation",
+  });
   insertTask(db, { appId: "may", taskId: "goal/review", phase: "running", updatedAt: 1 });
   const service = new HumanTaskService(db, registry("may"));
 
-  expect(service.listTasks({ appId: "may" }).items.map((task) => task.taskId)).toEqual(["goal/review"]);
+  expect(service.listTasks({ appId: "may" }).items.map((task) => task.taskId)).toEqual([
+    "conversation/follow-up",
+    "goal/review",
+  ]);
   expect(service.listApps("may")).toEqual([
-    expect.objectContaining({ id: "may", activeTasks: 1, runningTasks: 1, waitingTasks: 0 }),
+    expect.objectContaining({ id: "may", activeTasks: 2, runningTasks: 1, waitingTasks: 1 }),
   ]);
   expect(service.getTask({ appId: "may", taskId: "conversation/follow-up" })).toMatchObject({
     taskId: "conversation/follow-up",
