@@ -135,6 +135,33 @@ function resourceFixture(
   };
 }
 
+function mutateAttemptFixture(
+  config: ReturnType<typeof resourceFixture>["config"],
+  taskId: string,
+  attemptId: string,
+  mutate: (attempt: NonNullable<ReturnType<typeof readTaskState>["attempts"]>[string]) => void,
+): void {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  const resource = tree.resources?.[taskId];
+  const attempt = tree.attempts?.[attemptId];
+  if (!resource || !attempt) throw new Error("expected resource-backed attempt fixture");
+  mutate(attempt);
+  attempt.metadata.resourceVersion += 1;
+  expect(
+    config.resourceStore.commit({
+      fences: [
+        {
+          taskId,
+          resourceVersion: resource.metadata.resourceVersion,
+          generation: resource.metadata.generation,
+          currentAttemptId: attemptId,
+        },
+      ],
+      attempts: [attempt],
+    }),
+  ).toBe(true);
+}
+
 function intent(mode: "achieve" | "maintain" = "achieve") {
   return {
     id: mode === "achieve" ? "evaluate:session-1" : "pipeline-monitor",
@@ -179,7 +206,8 @@ function reclaimInterruptedSession(
   transcript: unknown[],
   checkpoint?: Record<string, unknown>,
 ) {
-  const { config, root } = state;
+  const { root } = state;
+  const { config } = resourceFixture(state, `interrupted-session-${sessionId}`);
   const claim = declareAndClaimTask(config, {
     intent: intent(),
     appAgent: "app-owner",
@@ -199,14 +227,13 @@ function reclaimInterruptedSession(
     writeFileSync(join(checkpointDir, `${sessionId}.jsonl`), `${JSON.stringify(checkpoint)}\n`);
   }
 
-  const interrupted = readTaskState(config);
-  interrupted.attempts![claim.attemptId].runtimeId = "previous-runtime";
-  saveTaskState(config, interrupted);
-  const resourceConfig = resourceFixture(state, `interrupted-session-${sessionId}`).config;
-  const [recovery] = recoverableAppTaskAttempts(resourceConfig);
-  expect(releaseInterruptedAppTaskAttempt(resourceConfig, recovery, "previous runtime stopped").released).toBe(true);
+  mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+    attempt.runtimeId = "previous-runtime";
+  });
+  const [recovery] = recoverableAppTaskAttempts(config);
+  expect(releaseInterruptedAppTaskAttempt(config, recovery, "previous runtime stopped").released).toBe(true);
 
-  const reclaimed = declareAndClaimTask(resourceConfig, {
+  const reclaimed = declareAndClaimTask(config, {
     intent: intent(),
     appAgent: "app-owner",
     handler: "workflow:known-workflow",
@@ -2527,7 +2554,7 @@ describe("App task reconciler state", () => {
 
   it("consumes a terminal direct-agent result exactly once even while its lease is fresh", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "terminal-agent-result");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -2538,8 +2565,7 @@ describe("App task reconciler state", () => {
 
     const before = readTaskState(config);
     expect(Date.parse(before.attempts![claim.attemptId].lease!.expiresAt)).toBeGreaterThan(Date.now());
-    const resourceConfig = resourceFixture(state, "terminal-agent-result").config;
-    const recovered = terminalAgentSessionAppTaskClaim(resourceConfig, claim.taskId, "terminal-agent-session");
+    const recovered = terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session");
     expect(recovered).toMatchObject({
       kind: "claimed",
       taskId: claim.taskId,
@@ -2549,7 +2575,7 @@ describe("App task reconciler state", () => {
     if (!recovered) throw new Error("expected terminal agent claim");
 
     expect(
-      deferAppTask(resourceConfig, recovered, {
+      deferAppTask(config, recovered, {
         disposition: "waiting",
         summary: "terminal result requires one bounded child",
         evidence: ["session:terminal-agent-session"],
@@ -2566,14 +2592,14 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toMatchObject({ status: "applied", actionsApplied: ["created terminal-result-child"] });
-    expect(terminalAgentSessionAppTaskClaim(resourceConfig, claim.taskId, "terminal-agent-session")).toBeNull();
-    expect(resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] })).toMatchObject({
+    expect(terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session")).toBeNull();
+    expect(config.resourceStore.readTaskContext({ taskIds: [claim.taskId] })).toMatchObject({
       resources: { [claim.taskId]: { status: { phase: "waiting" } } },
       attempts: { [claim.attemptId]: { state: "completed", sessionId: "terminal-agent-session" } },
       tasks: { "terminal-result-child": { parent_id: claim.taskId } },
     });
     expect(
-      Object.keys(resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).tasks).filter(
+      Object.keys(config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).tasks).filter(
         (id) => id === "terminal-result-child",
       ),
     ).toHaveLength(1);
@@ -2581,7 +2607,7 @@ describe("App task reconciler state", () => {
 
   it("releases only the exact expired agent attempt after its session is terminal", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "release-expired-agent-session");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -2590,13 +2616,14 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     recordAppTaskAttemptSession(config, claim, "terminal-agent-session");
 
-    const stale = readTaskState(config);
-    const resource = stale.resources?.[claim.taskId];
-    const attempt = stale.attempts?.[claim.attemptId];
+    mutateAttemptFixture(config, claim.taskId, claim.attemptId, (current) => {
+      if (!current.lease) throw new Error("expected leased attempt");
+      current.lease.expiresAt = "2026-08-15T23:57:29.078Z";
+    });
+    const expired = readTaskState(config);
+    const resource = expired.resources?.[claim.taskId];
+    const attempt = expired.attempts?.[claim.attemptId];
     if (!resource || !attempt?.lease) throw new Error("expected leased attempt");
-    attempt.lease.expiresAt = "2026-08-15T23:57:29.078Z";
-    saveTaskState(config, stale);
-    const resourceConfig = resourceFixture(state, "release-expired-agent-session").config;
     const recovery = {
       taskId: claim.taskId,
       intent: claim.intent,
@@ -2613,7 +2640,7 @@ describe("App task reconciler state", () => {
 
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        resourceConfig,
+        config,
         recovery,
         "Fresh lease must preserve ownership",
         Date.parse("2026-08-15T23:00:00.000Z"),
@@ -2621,13 +2648,13 @@ describe("App task reconciler state", () => {
     ).toEqual({ released: false, sessionIds: [] });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        resourceConfig,
+        config,
         recovery,
         "Synchronous caller disappeared during rollback",
         Date.parse("2026-08-16T01:00:00.000Z"),
       ),
     ).toEqual({ released: true, sessionIds: ["terminal-agent-session"] });
-    expect(resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] })).toMatchObject({
+    expect(config.resourceStore.readTaskContext({ taskIds: [claim.taskId] })).toMatchObject({
       resources: { [claim.taskId]: { status: { phase: "pending", observedGeneration: 0 } } },
       attempts: {
         [claim.attemptId]: {
@@ -2641,7 +2668,7 @@ describe("App task reconciler state", () => {
 
   it("never releases a healthy live agent session or a stale fenced observation", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "expired-agent-session");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -2649,6 +2676,10 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     recordAppTaskAttemptSession(config, claim, "live-agent-session");
+    mutateAttemptFixture(config, claim.taskId, claim.attemptId, (current) => {
+      if (!current.lease) throw new Error("expected leased attempt");
+      current.lease.expiresAt = "2020-01-01T00:00:00.000Z";
+    });
     const tree = readTaskState(config);
     const resource = tree.resources?.[claim.taskId];
     const attempt = tree.attempts?.[claim.attemptId];
@@ -2666,22 +2697,18 @@ describe("App task reconciler state", () => {
       sessionId: "live-agent-session",
       terminalStatus: "done" as const,
     };
-
-    attempt.lease.expiresAt = "2020-01-01T00:00:00.000Z";
-    saveTaskState(config, tree);
-    const resourceConfig = resourceFixture(state, "expired-agent-session").config;
     const activeAt = Date.now();
     const activity = { sessionId: "live-agent-session", lastActivityAt: activeAt - 1_000 };
-    expect(expiredAgentSessionAppTaskAttempt(resourceConfig, claim.taskId, activeAt, activity)).toBeNull();
+    expect(expiredAgentSessionAppTaskAttempt(config, claim.taskId, activeAt, activity)).toBeNull();
     expect(
-      expiredAgentSessionAppTaskAttempt(resourceConfig, claim.taskId, activeAt, {
+      expiredAgentSessionAppTaskAttempt(config, claim.taskId, activeAt, {
         sessionId: "unrelated-session",
         lastActivityAt: activeAt,
       }),
     ).toMatchObject({ taskId: claim.taskId, sessionId: "live-agent-session" });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        resourceConfig,
+        config,
         recovery,
         "recent session activity must preserve ownership",
         activeAt,
@@ -2690,20 +2717,20 @@ describe("App task reconciler state", () => {
     ).toEqual({ released: false, sessionIds: [] });
     expect(
       releaseTerminalSessionExpiredAppTaskAttempt(
-        resourceConfig,
+        config,
         { ...recovery, attemptResourceVersion: recovery.attemptResourceVersion + 1 },
         "stale fence must fail",
         Date.now(),
       ),
     ).toEqual({ released: false, sessionIds: [] });
     expect(
-      resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).resources?.[claim.taskId].status.phase,
+      config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).resources?.[claim.taskId].status.phase,
     ).toBe("running");
   });
 
   it("requeues the same task when a late workflow result reaches its still-running attempt", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "late-workflow-result");
     const trigger = {
       type: "project.task.tick",
       data: { project: "sample", taskId: "maintain" },
@@ -2716,18 +2743,16 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected workflow claim");
     expect(recordAppTaskAttemptSession(config, claim, "session-resumed-after-restart")).toBe(true);
-    const resourceConfig = resourceFixture(state, "late-workflow-result").config;
-
     expect(
       releaseLateTerminalWorkflowAppTaskAttempt(
-        resourceConfig,
+        config,
         { taskId: claim.taskId, generation: claim.generation },
         "session-resumed-after-restart",
         "Late terminal result cannot reattach to restart-interrupted workflow workflow-run-1",
       ),
     ).toEqual({ released: true, taskId: claim.taskId });
 
-    const released = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const released = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(released.resources?.[claim.taskId].status).toMatchObject({
       phase: "pending",
       observedGeneration: claim.generation - 1,
@@ -2738,10 +2763,10 @@ describe("App task reconciler state", () => {
       failureReason: "late-terminal-workflow-result-requeued",
       sessionId: "session-resumed-after-restart",
     });
-    expect(readAppTaskTrigger(resourceConfig, claim.taskId)).toEqual(trigger);
+    expect(readAppTaskTrigger(config, claim.taskId)).toEqual(trigger);
     expect(
       releaseLateTerminalWorkflowAppTaskAttempt(
-        resourceConfig,
+        config,
         { taskId: claim.taskId, generation: claim.generation },
         "session-resumed-after-restart",
         "duplicate terminal delivery",
@@ -2875,7 +2900,8 @@ describe("App task reconciler state", () => {
   });
 
   it("returns superseded agent-session ids when reclaiming a previous-runtime attempt", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = resourceFixture(state, "superseded-agent-session");
     const first = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -2884,9 +2910,9 @@ describe("App task reconciler state", () => {
     if (first.kind !== "claimed") throw new Error("expected claim");
     expect(recordAppTaskAttemptSession(config, first, "session-old")).toBe(true);
 
-    const interrupted = readTaskState(config);
-    interrupted.attempts![first.attemptId].runtimeId = "previous-runtime";
-    saveTaskState(config, interrupted);
+    mutateAttemptFixture(config, first.taskId, first.attemptId, (attempt) => {
+      attempt.runtimeId = "previous-runtime";
+    });
 
     const reclaimed = declareAndClaimTask(config, {
       intent: intent(),
@@ -2949,7 +2975,7 @@ describe("App task reconciler state", () => {
 
   it("returns orphaned agent-session ids when requeueing a previous-runtime attempt without a trigger", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "orphaned-agent-session");
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -2958,23 +2984,22 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     expect(recordAppTaskAttemptSession(config, claim, "session-old")).toBe(true);
 
-    const interrupted = readTaskState(config);
-    interrupted.attempts![claim.attemptId].runtimeId = "previous-runtime";
-    delete interrupted.attempts![claim.attemptId].trigger;
-    saveTaskState(config, interrupted);
-    const interruptedResourceConfig = resourceFixture(state, "orphaned-agent-session").config;
+    mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+      attempt.runtimeId = "previous-runtime";
+      delete attempt.trigger;
+    });
 
-    const [recovery] = recoverableAppTaskAttempts(interruptedResourceConfig);
+    const [recovery] = recoverableAppTaskAttempts(config);
     expect(recovery.taskId).toBe(claim.taskId);
     expect(recovery.trigger).toBeUndefined();
     expect(
-      releaseInterruptedAppTaskAttempt(interruptedResourceConfig, recovery, "trigger packet was not persisted"),
+      releaseInterruptedAppTaskAttempt(config, recovery, "trigger packet was not persisted"),
     ).toEqual({
       released: true,
       sessionIds: ["session-old"],
     });
 
-    const released = interruptedResourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const released = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(released.tasks[claim.taskId]).toMatchObject({
       state: "backlog",
     });
@@ -2984,8 +3009,8 @@ describe("App task reconciler state", () => {
     });
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
-    expect(pendingAppTaskRecoveryAttention(interruptedResourceConfig)).toEqual([]);
-    expect(acknowledgeAppTaskRecoveryAttention(interruptedResourceConfig, claim.taskId)).toBe(false);
+    expect(pendingAppTaskRecoveryAttention(config)).toEqual([]);
+    expect(acknowledgeAppTaskRecoveryAttention(config, claim.taskId)).toBe(false);
   });
 
   it("requeues running tasks whose current attempt record is missing", () => {
@@ -3214,7 +3239,8 @@ describe("App task reconciler state", () => {
 
   it("atomically fences an interrupted orphan claim and accepts exactly one later wake (events 5446564 and 5446878)", () => {
     const fixtureState = fixture();
-    const { root, config } = fixtureState;
+    const { root } = fixtureState;
+    const { config } = resourceFixture(fixtureState, "interrupted-orphan-fence");
     const taskIntent = { ...intent("maintain"), id: "ops/orphan-claim-fence" };
     const oldClaim = declareAndClaimTask(config, {
       intent: taskIntent,
@@ -3237,17 +3263,16 @@ describe("App task reconciler state", () => {
         data: { next_step: "replacement owner decides the unchanged generation" },
       })}\n`,
     );
-    const interrupted = readTaskState(config);
-    interrupted.attempts![oldClaim.attemptId].runtimeId = "runtime-before-event-5446564";
-    saveTaskState(config, interrupted);
-    const resourceConfig = resourceFixture(fixtureState, "interrupted-orphan-fence").config;
-    const [recovery] = recoverableAppTaskAttempts(resourceConfig);
+    mutateAttemptFixture(config, oldClaim.taskId, oldClaim.attemptId, (attempt) => {
+      attempt.runtimeId = "runtime-before-event-5446564";
+    });
+    const [recovery] = recoverableAppTaskAttempts(config);
 
-    expect(releaseInterruptedAppTaskAttempt(resourceConfig, recovery, "restart event 5446564")).toEqual({
+    expect(releaseInterruptedAppTaskAttempt(config, recovery, "restart event 5446564")).toEqual({
       released: true,
       sessionIds: ["r_1_f85fb905-old-session"],
     });
-    const replacement = declareAndClaimTask(resourceConfig, {
+    const replacement = declareAndClaimTask(config, {
       intent: taskIntent,
       appAgent: "app-owner",
       handler: "workflow:known-workflow",
@@ -3262,16 +3287,16 @@ describe("App task reconciler state", () => {
       ]),
     );
 
-    expect(completeAppTask(resourceConfig, oldClaim, { summary: "late old disposition" }).status).toBe("stale");
+    expect(completeAppTask(config, oldClaim, { summary: "late old disposition" }).status).toBe("stale");
     expect(
-      claimObservedAppTask(resourceConfig, {
+      claimObservedAppTask(config, {
         taskId: replacement.taskId,
         appAgent: "app-owner",
         handler: "workflow:known-workflow",
         reason: "duplicate-reclaim",
       }),
     ).toMatchObject({ kind: "busy", attemptId: replacement.attemptId });
-    expect(completeAppTask(resourceConfig, replacement, { summary: "replacement disposition accepted" }).status).toBe(
+    expect(completeAppTask(config, replacement, { summary: "replacement disposition accepted" }).status).toBe(
       "applied",
     );
 
@@ -3283,13 +3308,13 @@ describe("App task reconciler state", () => {
       reason: "explicit-later-wake",
     };
     expect(
-      observeAppTaskIntent(resourceConfig, {
+      observeAppTaskIntent(config, {
         intent: taskIntent,
         appAgent: "app-owner",
         trigger: laterWake,
       }),
     ).toMatchObject({ kind: "observed", generation: replacement.generation, changed: false });
-    const fresh = claimObservedAppTask(resourceConfig, {
+    const fresh = claimObservedAppTask(config, {
       taskId: taskIntent.id,
       appAgent: "app-owner",
       handler: "workflow:known-workflow",
@@ -3299,7 +3324,7 @@ describe("App task reconciler state", () => {
     expect(fresh.trigger).toEqual(laterWake);
     expect(fresh.attemptId).not.toBe(replacement.attemptId);
     expect(
-      claimObservedAppTask(resourceConfig, {
+      claimObservedAppTask(config, {
         taskId: taskIntent.id,
         appAgent: "app-owner",
         handler: "workflow:known-workflow",
@@ -3307,7 +3332,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ kind: "busy", attemptId: fresh.attemptId });
 
-    const finalState = resourceConfig.resourceStore.readTaskContext({ taskIds: [taskIntent.id] });
+    const finalState = config.resourceStore.readTaskContext({ taskIds: [taskIntent.id] });
     const acceptedAttempts = Object.values(finalState.attempts ?? {}).filter(
       (attempt) => attempt.taskId === taskIntent.id && attempt.state === "completed",
     );
@@ -3933,7 +3958,7 @@ describe("App task reconciler state", () => {
 
   it("releases execution failure only after newer success from the same agent", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "execution-failed");
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3950,8 +3975,7 @@ describe("App task reconciler state", () => {
       reason: "HandlerExecutionFailed",
     });
 
-    const resourceConfig = resourceFixture(state, "execution-failed").config;
-    const [candidate] = listHandlerExecutionFailedAppTasks(resourceConfig);
+    const [candidate] = listHandlerExecutionFailedAppTasks(config);
     expect(candidate).toMatchObject({
       taskId: claim.taskId,
       agent: "branch-owner",
@@ -3959,37 +3983,37 @@ describe("App task reconciler state", () => {
       sessionId: "failed-agent-session",
     });
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, claim.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
         agent: "other-owner",
         sessionId: "unrelated-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(false);
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, claim.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
         agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "invalid",
       }),
     ).toBe(false);
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, claim.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
         agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2000-01-01T00:00:00.000Z",
       }),
     ).toBe(false);
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, claim.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
         agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(true);
     expect(
-      resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).resources?.[claim.taskId].status.phase,
+      config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).resources?.[claim.taskId].status.phase,
     ).toBe("pending");
-    expect(readAppTaskTrigger(resourceConfig, claim.taskId)).toEqual({
+    expect(readAppTaskTrigger(config, claim.taskId)).toEqual({
       type: "project.task.child-transitioned",
       childTaskId: "work/recovered-evidence",
     });
@@ -3997,7 +4021,7 @@ describe("App task reconciler state", () => {
 
   it("preserves newer human steering while releasing one execution failure", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "execution-failure-human-steering");
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4016,21 +4040,19 @@ describe("App task reconciler state", () => {
         data: { project: "sample", comment: "Use the exact evidence paths" },
       }),
     ).toEqual({ kind: "recorded" });
-    const resourceConfig = resourceFixture(state, "execution-failure-human-steering").config;
-
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, claim.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
         agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(true);
-    expect(readAppTaskTrigger(resourceConfig, claim.taskId)).toEqual({
+    expect(readAppTaskTrigger(config, claim.taskId)).toEqual({
       type: "project.comment.created",
       data: { project: "sample", comment: "Use the exact evidence paths" },
     });
 
-    const recovered = claimObservedAppTask(resourceConfig, {
+    const recovered = claimObservedAppTask(config, {
       taskId: claim.taskId,
       appAgent: "app-owner",
       handler: "agent:branch-owner",
@@ -4048,7 +4070,7 @@ describe("App task reconciler state", () => {
 
   it("replays a failed attempt batch before every newer pending event", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "execution-failure-event-replay");
     observeAppTaskIntent(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -4079,16 +4101,14 @@ describe("App task reconciler state", () => {
         eventId: 703,
       }),
     ).toEqual({ kind: "recorded" });
-    const resourceConfig = resourceFixture(state, "execution-failure-event-replay").config;
-
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, claim.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
         agent: "branch-owner",
         sessionId: "new-success",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(true);
-    const replay = claimObservedAppTask(resourceConfig, {
+    const replay = claimObservedAppTask(config, {
       taskId: claim.taskId,
       appAgent: "app-owner",
       handler: "agent:branch-owner",
@@ -4100,7 +4120,7 @@ describe("App task reconciler state", () => {
 
   it("does not revive repeated execution failures from unrelated agent success", () => {
     const state = fixture();
-    const { config } = state;
+    const { config } = resourceFixture(state, "repeated-execution-failure");
     const first = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4113,37 +4133,36 @@ describe("App task reconciler state", () => {
       summary: "first agent execution failure",
       reason: "HandlerExecutionFailed",
     });
-    const resourceConfig = resourceFixture(state, "repeated-execution-failure").config;
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, first.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, first.taskId, {
         agent: "branch-owner",
         sessionId: "first-health-proof",
         observedAt: "2099-01-01T00:00:00.000Z",
       }),
     ).toBe(true);
 
-    const second = declareAndClaimTask(resourceConfig, {
+    const second = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
       handler: "agent:branch-owner",
       trigger: { type: "project.task.tick", data: { reason: "automatic-retry" } },
     });
     if (second.kind !== "claimed") throw new Error("expected second claim");
-    recordAppTaskAttemptSession(resourceConfig, second, "second-failed-session");
-    markAppTaskAttention(resourceConfig, second, {
+    recordAppTaskAttemptSession(config, second, "second-failed-session");
+    markAppTaskAttention(config, second, {
       summary: "second agent execution failure",
       reason: "HandlerExecutionFailed",
     });
 
     expect(
-      releaseHandlerExecutionFailedAppTask(resourceConfig, second.taskId, {
+      releaseHandlerExecutionFailedAppTask(config, second.taskId, {
         agent: "branch-owner",
         sessionId: "unrelated-success",
         observedAt: "2100-01-01T00:00:00.000Z",
       }),
     ).toBe(false);
     expect(
-      resourceConfig.resourceStore.readTaskContext({ taskIds: [second.taskId] }).resources?.[second.taskId].status
+      config.resourceStore.readTaskContext({ taskIds: [second.taskId] }).resources?.[second.taskId].status
         .phase,
     ).toBe("attention");
   });

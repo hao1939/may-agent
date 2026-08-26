@@ -158,6 +158,53 @@ function activateTaskResources(
   return active;
 }
 
+function loadedTaskConfig(f: ReturnType<typeof fixture>, persistDir = join(f.root, "state")) {
+  let resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
+  if (!resourceStore) {
+    const legacyConfig = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+    });
+    resourceStore = activateTaskResources(legacyConfig, persistDir);
+  }
+  return taskReconciliationConfig({
+    appDir: f.appDir,
+    projectDir: f.appDir,
+    agent: "sample-owner",
+    maxConcurrent: 1,
+    resourceStore,
+  });
+}
+
+function mutateRuntimeAttemptFixture(
+  config: ReturnType<typeof loadedTaskConfig>,
+  taskId: string,
+  attemptId: string,
+  mutate: (attempt: NonNullable<ReturnType<typeof readTaskState>["attempts"]>[string]) => void,
+): void {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  const resource = tree.resources?.[taskId];
+  const attempt = tree.attempts?.[attemptId];
+  if (!resource || !attempt) throw new Error("expected resource-backed attempt fixture");
+  mutate(attempt);
+  attempt.metadata.resourceVersion += 1;
+  expect(
+    config.resourceStore.commit({
+      fences: [
+        {
+          taskId,
+          resourceVersion: resource.metadata.resourceVersion,
+          generation: resource.metadata.generation,
+          currentAttemptId: attemptId,
+        },
+      ],
+      attempts: [attempt],
+    }),
+  ).toBe(true);
+}
+
 afterEach(async () => {
   await Promise.all(buses.splice(0).map((bus) => closeInstalledAppTaskRuntimes(bus)));
   for (const root of roots.splice(0)) {
@@ -2016,12 +2063,7 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     });
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/progress",
@@ -2042,7 +2084,7 @@ describe("canonical App task runtime", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     expect(recordAppTaskAttemptSession(config, claim, "session-progress")).toBe(true);
 
-    const before = readFileSync(config.statePath, "utf8");
+    const before = config.resourceStore.revision();
     for (let index = 0; index < 100; index += 1) {
       bus.emit({
         type: "tool_call",
@@ -2052,7 +2094,7 @@ describe("canonical App task runtime", () => {
         args: { index },
       });
     }
-    expect(readFileSync(config.statePath, "utf8")).toBe(before);
+    expect(config.resourceStore.revision()).toBe(before);
   });
 
   it("limits successful-session recovery reads to the session's bound App", async () => {
@@ -2474,12 +2516,7 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     };
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/resumable",
@@ -2499,13 +2536,11 @@ describe("canonical App task runtime", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     expect(recordAppTaskAttemptSession(config, claim, "session-resumable")).toBe(true);
-    const previousRuntimeTree = readTaskState(config);
-    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
-    if (!previousAttempt?.lease) throw new Error("expected leased attempt");
-    previousAttempt.runtimeId = "previous-runtime";
-    previousAttempt.lease.runtimeId = "previous-runtime";
-    saveTaskState(config, previousRuntimeTree);
-    activateTaskResources(config, persistDir);
+    mutateRuntimeAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+      if (!attempt.lease) throw new Error("expected leased attempt");
+      attempt.runtimeId = "previous-runtime";
+      attempt.lease.runtimeId = "previous-runtime";
+    });
     writeSessionMeta(persistDir, "session-resumable", {
       agent: "sample-owner",
       task: "resume",
@@ -2531,12 +2566,7 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, ".state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const intent = {
       id: "work/orphan-owner",
       parentId: "operations",
@@ -2554,13 +2584,12 @@ describe("canonical App task runtime", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected orphan agent claim");
     expect(recordAppTaskAttemptSession(config, claim, "owner-old")).toBe(true);
-    const previousRuntimeTree = readTaskState(config);
-    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
-    if (!previousAttempt?.lease) throw new Error("expected leased orphan agent attempt");
-    previousAttempt.runtimeId = "previous-runtime";
-    previousAttempt.lease.runtimeId = "previous-runtime";
-    previousAttempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
-    saveTaskState(config, previousRuntimeTree);
+    mutateRuntimeAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+      if (!attempt.lease) throw new Error("expected leased orphan agent attempt");
+      attempt.runtimeId = "previous-runtime";
+      attempt.lease.runtimeId = "previous-runtime";
+      attempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
+    });
     writeSessionMeta(persistDir, "owner-old", {
       agent: "sample-owner",
       task: "Recover orphan agent session",
@@ -2610,8 +2639,6 @@ describe("canonical App task runtime", () => {
     addSessionBashProcessGroup(persistDir, "owner-old", stalePgid);
     expect(readSessionBashProcessGroups(persistDir, "owner-old")).toEqual([stalePgid]);
     execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
-    activateTaskResources(config, persistDir);
-
     let replacementCalls = 0;
     let preReplacementState:
       | { groupDead: boolean; pgids: number[]; mutated: boolean; sessionStatus?: string; resultPersisted: boolean }
@@ -2705,12 +2732,7 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, ".state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const intent = {
       id: "work/undrained-owner",
       parentId: "operations",
@@ -2728,13 +2750,12 @@ describe("canonical App task runtime", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected undrained agent claim");
     expect(recordAppTaskAttemptSession(config, claim, "owner-undrained")).toBe(true);
-    const previousRuntimeTree = readTaskState(config);
-    const previousAttempt = previousRuntimeTree.attempts?.[claim.attemptId];
-    if (!previousAttempt?.lease) throw new Error("expected leased undrained attempt");
-    previousAttempt.runtimeId = "previous-runtime";
-    previousAttempt.lease.runtimeId = "previous-runtime";
-    previousAttempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
-    saveTaskState(config, previousRuntimeTree);
+    mutateRuntimeAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+      if (!attempt.lease) throw new Error("expected leased undrained attempt");
+      attempt.runtimeId = "previous-runtime";
+      attempt.lease.runtimeId = "previous-runtime";
+      attempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
+    });
     writeSessionMeta(persistDir, "owner-undrained", {
       agent: "sample-owner",
       task: "Do not overlap an undrained owner",
@@ -2747,8 +2768,6 @@ describe("canonical App task runtime", () => {
     });
     addSessionBashProcessGroup(persistDir, "owner-undrained", 424_242);
     execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
-    activateTaskResources(config, persistDir);
-
     let replacementCalls = 0;
     let sessionEndEvents = 0;
     bus.subscribe((event) => {
@@ -3662,12 +3681,7 @@ describe("canonical App task runtime", () => {
   it("recovers one persisted terminal direct-agent result despite a fresh renewed lease", () => {
     const f = fixture();
     const persistDir = join(f.root, ".state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const intent = {
       id: "work/terminal",
       parentId: "operations",
@@ -3714,7 +3728,7 @@ describe("canonical App task runtime", () => {
         },
       }),
     );
-    const resourceStore = activateTaskResources(config, persistDir);
+    const resourceStore = config.resourceStore;
     const descriptor = {
       id: "sample",
       appDir: f.appDir,
@@ -3752,12 +3766,7 @@ describe("canonical App task runtime", () => {
   it("rejects an invalid persisted terminal result without crashing recovery", () => {
     const f = fixture();
     const persistDir = join(f.root, ".state");
-    const config = taskReconciliationConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const config = loadedTaskConfig(f, persistDir);
     const intent = {
       id: "work/invalid-terminal",
       parentId: "operations",
@@ -3801,7 +3810,7 @@ describe("canonical App task runtime", () => {
       }),
     );
 
-    const resourceStore = activateTaskResources(config, persistDir);
+    const resourceStore = config.resourceStore;
     let rejection = "";
     expect(
       consumePersistedTerminalAgentResult({

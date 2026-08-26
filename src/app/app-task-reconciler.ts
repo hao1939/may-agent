@@ -3222,9 +3222,13 @@ export function renewAppTaskAttemptLease(
 }
 
 /** Attach the launched agent-session id and refresh the current attempt lease. */
-export function recordAppTaskAttemptSession(config: TaskStateConfig, claim: AppTaskClaim, sessionId: string): boolean {
+export function recordAppTaskAttemptSession(
+  config: ResourceTaskStateConfig,
+  claim: AppTaskClaim,
+  sessionId: string,
+): boolean {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTask(tree, claim);
     if (!match) return false;
     if (match.attempt.sessionId === sessionId && match.attempt.lease) return true;
