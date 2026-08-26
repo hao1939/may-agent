@@ -3333,11 +3333,11 @@ describe("App task reconciler state", () => {
     expect(acknowledgeAppTaskRecoveryAttention(resourceConfig, claim.taskId)).toBe(true);
     expect(pendingAppTaskRecoveryAttention(resourceConfig, [claim.taskId])).toEqual([]);
 
-    expect(repairPreviousRuntimeRecoveryAttention(config)).toMatchObject([
+    expect(repairPreviousRuntimeRecoveryAttention(resourceConfig, [claim.taskId])).toMatchObject([
       { taskId: "evaluate:session-1", disposition: "requeued" },
     ]);
 
-    const repaired = readTaskState(config);
+    const repaired = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(repaired.resources?.["evaluate:session-1"]).toMatchObject({
       status: { phase: "pending", observedGeneration: 0 },
     });
