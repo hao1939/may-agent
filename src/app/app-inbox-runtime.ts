@@ -28,6 +28,7 @@ import {
 } from "./app-inbox-host.js";
 import {
   linkConversationTopicTask,
+  listAppInboxItemsWaitingOnTask,
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
   readConversationTopic,
@@ -952,6 +953,23 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const id = typeof data.id === "string" ? data.id.trim() : "";
       if ((kind === "app" || kind === "task" || kind === "session") && id) {
         const taskAppId = kind === "task" && typeof data.appId === "string" ? data.appId.trim() : undefined;
+        if (event.type === "app.dependency.updated" && kind === "task" && taskAppId) {
+          for (const request of listAppInboxItemsWaitingOnTask(options.db, taskAppId, id)) {
+            if (request.source.kind !== "app") continue;
+            options.bus.emit({
+              type: "app.dependency.updated",
+              source: "app-inbox",
+              owner: `app:${request.source.id}`,
+              target: { appId: request.source.id, project: request.source.id },
+              data: {
+                kind: "app",
+                id: request.id,
+                appId: request.source.id,
+                idempotencyKey: `app-request-updated:${request.id}:${eventRowId(event)}`,
+              },
+            } as unknown as AgentEvent);
+          }
+        }
         for (const appId of host.wakeAppIds({ kind, id }, taskAppId || undefined)) schedule(appId);
         // One dependency Event may advance both an inbox request and one or
         // more Tasks. Preserve the direct inbox wake, then continue through

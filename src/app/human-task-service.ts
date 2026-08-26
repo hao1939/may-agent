@@ -557,7 +557,6 @@ export class HumanTaskService {
            SUM(CASE WHEN phase = 'waiting' THEN 1 ELSE 0 END) AS waiting_tasks
          FROM app_tasks
          WHERE phase IN ('pending', 'running', 'waiting', 'attention')
-           AND coalesce(json_extract(resource_json, '$.spec.category'), '') != 'internal'
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r
              WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
@@ -623,7 +622,6 @@ export class HumanTaskService {
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
          WHERE t.phase IN (${livePhases.map(() => "?").join(", ")})
-           AND coalesce(json_extract(t.resource_json, '$.spec.category'), '') != 'internal'
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
            )
@@ -704,7 +702,6 @@ export class HumanTaskService {
                 `SELECT COUNT(*) AS count
                  FROM app_tasks t
                  WHERE t.phase IN ('pending', 'running', 'waiting', 'attention')
-                   AND coalesce(json_extract(t.resource_json, '$.spec.category'), '') != 'internal'
                    AND NOT EXISTS (
                      SELECT 1 FROM app_task_receipts r
                      WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
