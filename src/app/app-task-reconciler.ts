@@ -4323,7 +4323,7 @@ export function deferAppTask(
 }
 
 export function markAppTaskAttention(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   input: {
     summary: string;
@@ -4334,7 +4334,7 @@ export function markAppTaskAttention(
   },
 ): { status: "applied" | "stale"; parentTaskId?: string } {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTask(tree, claim);
     if (!match) return { status: "stale" };
     const { task, resource, attempt } = match;
@@ -4369,7 +4369,6 @@ export function markAppTaskAttention(
     trackResourceMutationTask(mutationScope, tree, parentTaskId);
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     return { status: "applied", ...(parentTaskId ? { parentTaskId } : {}) };
   });

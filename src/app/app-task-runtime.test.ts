@@ -2436,6 +2436,7 @@ describe("canonical App task runtime", () => {
       agent: "sample-owner",
       maxConcurrent: 1,
     });
+    activateTaskResources(config, persistDir);
     observeAppTaskIntent(config, {
       intent: {
         id: "work/retry-workspace",
@@ -2459,8 +2460,6 @@ describe("canonical App task runtime", () => {
       summary: "workspace preparation failed",
       reason: "WorkspacePreparationFailed",
     });
-    activateTaskResources(config, persistDir);
-
     let openControllerGate = () => {};
     const controllerGate = new Promise<void>((resolve) => {
       openControllerGate = resolve;
