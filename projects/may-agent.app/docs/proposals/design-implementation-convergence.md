@@ -141,6 +141,7 @@ claim from resource context before applying the ordinary fenced result path.
 Expired Agent-session recovery now judges the exact resource attempt and its
 lease against observed session activity. Failed-execution discovery likewise
 reads only the bounded resource candidates selected by the recovery index.
+Unavailable-workflow discovery uses the same indexed, bounded resource path.
 Broader recovery repairs remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
