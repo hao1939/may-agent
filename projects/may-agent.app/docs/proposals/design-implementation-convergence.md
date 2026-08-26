@@ -2,7 +2,7 @@
 
 **Status:** Active convergence tracker
 
-**Last reviewed:** 2026-08-26
+**Last reviewed:** 2026-08-27
 
 **Scope:** Keep the complete May Host, Apps, executors, Conversation adapters,
 and documentation aligned with the accepted event-driven Task model.
@@ -175,8 +175,12 @@ resource fixtures no longer pass that ordinary read through JSON state. A
 launched Agent session and a nested workflow session are likewise attached only
 to their exact current attempt through the resource fence, without a JSON
 session path. The affected recovery fixtures now start under resource authority
-and perturb only the exact fenced attempt. Broader recovery repairs remain in a
-later batch.
+and perturb only the exact fenced attempt. Passive runnable discovery now
+starts from the resource recovery index and reads only its bounded candidate
+Task contexts. Canonical dependency, attempt, wait, lane, priority, and trigger
+state decides whether and when each candidate runs; there is no whole-App JSON
+scan. A generation change also prunes a detached Condition only after its final
+Task reference is gone. Broader recovery repairs remain in a later batch.
 
 `app-task-store.ts`, the reconciler config, and cutover helpers still compile a
 JSON path used by the guarded offline importer and many focused fixtures. Keep
