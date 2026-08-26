@@ -309,12 +309,12 @@ function hasUnacceptedLiveTaskEvents(tree: TaskTree, taskId: string, eventIds: r
 
 /** Reject an externally visible effect when newer Task evidence is still unaccepted. */
 export function assertAppTaskEffectFresh(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   acceptedLiveEventIds?: readonly number[],
 ): void {
   withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTask(tree, claim);
     if (!match) {
       const resource = tree.resources?.[claim.taskId];
