@@ -32,6 +32,16 @@ function incidentKey(details: Record<string, unknown>): string {
     .slice(0, 20);
 }
 
+export function incidentReviewEmissionLocalKey(
+  details: Record<string, unknown>,
+): string {
+  const identityHash = createHash("sha256")
+    .update(incidentKey(details))
+    .digest("hex")
+    .slice(0, 20);
+  return `incident-${identityHash}-review-requested`;
+}
+
 export async function execute(
   ctx: WorkflowContext,
 ): Promise<ExecutionResult> {
@@ -60,12 +70,15 @@ export async function execute(
     );
   }
 
-  await emitGymEvent(ctx, gymEvent("gym.review.requested", {
-    kind: "incident",
-    requestKey: `incident-${key}`,
-    incidentId: key,
-    incidentPath,
-  }));
+  await emitGymEvent(ctx, {
+    ...gymEvent("gym.review.requested", {
+      kind: "incident",
+      requestKey: `incident-${key}`,
+      incidentId: key,
+      incidentPath,
+    }),
+    localKey: incidentReviewEmissionLocalKey(details),
+  });
 
   const summary = `Captured incident ${key} at ${incidentPath}.`;
   return ctx.done(summary, {
