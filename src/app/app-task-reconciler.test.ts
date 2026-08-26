@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { cacheTaskStateReads, readTaskState, saveTaskState, type TaskStateConfig } from "./app-task-store.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
   matchingAppTaskConditionTaskIds,
   trackAppTaskConditionEvent,
@@ -2075,7 +2076,7 @@ describe("App task reconciler state", () => {
   });
 
   it("supplies a bounded App-wide live snapshot without the reviewing task", () => {
-    const { config } = fixture();
+    const { root, appDir, config } = fixture();
     for (let index = 0; index < 65; index += 1) {
       observeAppTaskIntent(config, {
         intent: {
@@ -2093,7 +2094,21 @@ describe("App task reconciler state", () => {
       });
     }
 
-    const snapshot = readAppTaskLiveSnapshot(config, "snapshot-task-64");
+    const tree = readTaskState(config);
+    tree.project = "sample";
+    tree.project_lifecycle = "active";
+    const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
+    store.bootstrapSnapshot(tree, "test:live-snapshot");
+    const resourceConfig = taskReconciliationConfig({
+      appDir,
+      projectDir: appDir,
+      agent: "app-owner",
+      maxConcurrent: 3,
+      resourceStore: store,
+    });
+
+    const snapshot = readAppTaskLiveSnapshot(resourceConfig, "snapshot-task-64");
+    store.close();
 
     expect(snapshot.truncated).toBe(true);
     expect(snapshot.live).toHaveLength(64);

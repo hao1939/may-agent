@@ -2165,10 +2165,10 @@ export type AppTaskLiveSnapshot = {
 };
 
 /** Bounded App-wide live-task facts, excluding the task performing the review. */
-export function readAppTaskLiveSnapshot(config: TaskStateConfig, currentTaskId: string): AppTaskLiveSnapshot {
+export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, currentTaskId: string): AppTaskLiveSnapshot {
   return withTaskStateLock(config, () => {
-    const indexedIds = config.resourceStore?.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
-    const tree = readTaskState(config, indexedIds ? { taskIds: indexedIds } : undefined);
+    const indexedIds = config.resourceStore.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
+    const tree = config.resourceStore.readTaskContext({ taskIds: indexedIds });
     const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
     const candidates = Object.values(tree.resources ?? {})
       .filter((resource) => resource.metadata.id !== currentTaskId && resource.status.phase !== "converged")
@@ -2177,7 +2177,7 @@ export function readAppTaskLiveSnapshot(config: TaskStateConfig, currentTaskId: 
       live: candidates
         .slice(0, MAX_APP_TASK_LIVE_SNAPSHOT)
         .map((resource) => liveTaskSnapshotContext(tree, resource, projection.tasks[resource.metadata.id]?.readiness)),
-      truncated: (indexedIds ? indexedIds.length : candidates.length) > MAX_APP_TASK_LIVE_SNAPSHOT,
+      truncated: indexedIds.length > MAX_APP_TASK_LIVE_SNAPSHOT,
     };
   });
 }
