@@ -1213,13 +1213,13 @@ export function expiredAgentSessionAppTaskAttempt(
 }
 
 export function releaseInterruptedAppTaskAttempt(
-  config: TaskStateConfig,
-  recovery: AppTaskAttemptRecovery | string,
+  config: ResourceTaskStateConfig,
+  recovery: AppTaskAttemptRecovery,
   summary: string,
 ): { released: boolean; sessionIds: string[] } {
   return withTaskStateLock(config, () => {
-    const taskId = typeof recovery === "string" ? recovery : recovery.taskId;
-    const tree = readTaskState(config, { taskIds: [taskId] });
+    const taskId = recovery.taskId;
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const task = tree.tasks[taskId];
     if (!task) return { released: false, sessionIds: [] };
     const resource = tree.resources?.[taskId];
@@ -1227,15 +1227,14 @@ export function releaseInterruptedAppTaskAttempt(
     const attempt = currentResourceAttempt(tree, resource);
     if (!attempt || attempt.runtimeId === reconcilerRuntimeId) return { released: false, sessionIds: [] };
     if (
-      typeof recovery !== "string" &&
-      (resource.metadata.generation !== recovery.taskGeneration ||
-        resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
-        resource.status.currentAttemptId !== recovery.attemptId ||
-        attempt.metadata.id !== recovery.attemptId ||
-        attempt.metadata.resourceVersion !== recovery.attemptResourceVersion ||
-        (recovery.legacyLeaseLess
-          ? attempt.lease !== undefined
-          : !attempt.lease || attempt.lease.id !== recovery.leaseId || attempt.lease.version !== recovery.leaseVersion))
+      resource.metadata.generation !== recovery.taskGeneration ||
+      resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
+      resource.status.currentAttemptId !== recovery.attemptId ||
+      attempt.metadata.id !== recovery.attemptId ||
+      attempt.metadata.resourceVersion !== recovery.attemptResourceVersion ||
+      (recovery.legacyLeaseLess
+        ? attempt.lease !== undefined
+        : !attempt.lease || attempt.lease.id !== recovery.leaseId || attempt.lease.version !== recovery.leaseVersion)
     )
       return { released: false, sessionIds: [] };
     const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
@@ -1253,7 +1252,6 @@ export function releaseInterruptedAppTaskAttempt(
     });
     syncTaskProjection(task, resource, attempt.owner);
     refreshActiveTaskProjection(tree);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
