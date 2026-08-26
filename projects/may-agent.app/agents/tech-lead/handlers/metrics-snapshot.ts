@@ -228,17 +228,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "evaluator.substantive-low-quality-rate-24h",
-    name: "Substantive evaluator quality failures (24h)",
-    owner: "evaluator",
-    type: "gauge",
-    target: 0.1,
-    threshold: 0.3,
-    unit: "ratio",
-    alert_op: ">",
-    priority: "P1",
-  },
-  {
     id: "evaluator.meaningful-review-rate-24h",
     name: "Evaluator meaningful review rate (24h)",
     owner: "evaluator",
@@ -1434,43 +1423,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
-      );
-    }
-
-    try {
-      const total = count(
-        `SELECT COUNT(*) as c
-         FROM evaluations
-         WHERE createdAt > ?
-           AND agent NOT IN ('evaluator', 'judge')
-           AND verdict != 'skipped'`,
-        twentyFourH,
-      );
-      const substantiveLowQuality = count(
-        `SELECT COUNT(*) as c
-         FROM evaluations e
-         LEFT JOIN sessions s ON s.sessionId = e.sessionId
-         WHERE e.createdAt > ?
-           AND e.agent NOT IN ('evaluator', 'judge')
-           AND e.verdict != 'skipped'
-           AND (
-             lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
-             OR lower(COALESCE(e.issues, '')) LIKE '%verification failure%'
-             OR lower(COALESCE(e.issues, '')) LIKE '%blind overwrite%'
-             OR lower(COALESCE(e.issues, '')) LIKE '%fabricated%'
-             OR lower(COALESCE(e.issues, '')) LIKE '%hallucinated path%'
-           )`,
-        twentyFourH,
-      );
-      record(
-        "evaluator.substantive-low-quality-rate-24h",
-        total > 0 ? parseFloat((substantiveLowQuality / total).toFixed(4)) : 0,
-        total,
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator.substantive-low-quality-rate-24h: ${e}`,
       );
     }
 

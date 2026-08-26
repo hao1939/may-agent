@@ -54,6 +54,32 @@ SELECT CASE
        END AS value,
        total AS sampleSize
 FROM counts`;
+export const SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID =
+  "evaluator.substantive-low-quality-rate-24h";
+export const SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
+  SELECT COUNT(*) AS total,
+         SUM(
+           CASE
+             WHEN lower(COALESCE(issues, '')) LIKE '%tool hallucination%'
+               OR lower(COALESCE(issues, '')) LIKE '%verification failure%'
+               OR lower(COALESCE(issues, '')) LIKE '%blind overwrite%'
+               OR lower(COALESCE(issues, '')) LIKE '%fabricated%'
+               OR lower(COALESCE(issues, '')) LIKE '%hallucinated path%'
+             THEN 1
+             ELSE 0
+           END
+         ) AS substantive_low_quality
+  FROM evaluations
+  WHERE createdAt > (strftime('%s','now') * 1000 - 86400000)
+    AND agent NOT IN ('evaluator', 'judge')
+    AND verdict != 'skipped'
+)
+SELECT CASE
+         WHEN total = 0 THEN 0
+         ELSE ROUND(1.0 * substantive_low_quality / total, 4)
+       END AS value,
+       total AS sampleSize
+FROM counts`;
 export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
 ), eligible AS (
@@ -650,6 +676,25 @@ export function taskIntentForEvent(
 }
 
 export const evaluationMetricDefinitions = [
+  {
+    id: SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
+    name: "Substantive evaluator quality failures (24h)",
+    owner: "evaluator",
+    project: projectId,
+    type: "gauge" as const,
+    target: 0.1,
+    threshold: 0.3,
+    unit: "ratio",
+    priority: "P1" as const,
+    status: "active",
+    source: "recent non-skipped evaluation issues",
+    sourceQuery: SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
+    measureInterval: 300_000,
+    alertOp: ">" as const,
+    speed: "fast",
+    description:
+      "Share of recent non-skipped evaluations whose issues name a substantive hallucination, verification, fabrication, or overwrite failure.",
+  },
   {
     id: LOW_QUALITY_RATE_24H_METRIC_ID,
     name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",

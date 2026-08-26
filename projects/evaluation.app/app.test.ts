@@ -16,6 +16,8 @@ import app, {
   LLM_EVALUATIONS_24H_SOURCE_QUERY,
   LOW_QUALITY_RATE_24H_METRIC_ID,
   LOW_QUALITY_RATE_24H_SOURCE_QUERY,
+  SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
+  SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
   taskForEvaluationInput,
   taskInputForEvent,
   taskIntentForEvent,
@@ -172,7 +174,7 @@ describe("canonical evaluation App", () => {
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
     expect(app.tasks?.maxConcurrent).toBe(16);
-    expect(app.metrics).toHaveLength(4);
+    expect(app.metrics).toHaveLength(5);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -201,6 +203,13 @@ describe("canonical evaluation App", () => {
           owner: "evaluator",
           project: "evaluation",
           sourceQuery: LOW_QUALITY_RATE_24H_SOURCE_QUERY,
+          measureInterval: 300_000,
+        }),
+        expect.objectContaining({
+          id: SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
+          owner: "evaluator",
+          project: "evaluation",
+          sourceQuery: SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
           measureInterval: 300_000,
         }),
       ]),
@@ -305,6 +314,40 @@ describe("evaluation metrics", () => {
     });
   });
 
+  test("matches only the established substantive issue families", () => {
+    const db = new Database(":memory:");
+    db.run(
+      `CREATE TABLE evaluations (
+        createdAt INTEGER NOT NULL,
+        agent TEXT NOT NULL,
+        verdict TEXT NOT NULL,
+        issues TEXT
+      )`,
+    );
+    const now = Date.now();
+    db.run(
+      `INSERT INTO evaluations (createdAt, agent, verdict, issues)
+       VALUES (?, 'may', 'needs_improvement', 'Verification Failure after tool use'),
+              (?, 'gym', 'good', 'Minor wording issue'),
+              (?, 'scout', 'acceptable', 'Hallucinated path in report'),
+              (?, 'evaluator', 'needs_improvement', 'Fabricated result'),
+              (?, 'may', 'skipped', 'Tool hallucination'),
+              (?, 'may', 'needs_improvement', 'Blind overwrite')`,
+      [
+        now - 60_000,
+        now - 60_000,
+        now - 60_000,
+        now - 60_000,
+        now - 60_000,
+        now - 25 * 60 * 60_000,
+      ],
+    );
+
+    expect(
+      db.query(SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY).get(),
+    ).toMatchObject({ value: 0.6667, sampleSize: 3 });
+  });
+
   test("counts canonical eligible sessions and preserves count evidence", () => {
     const db = new Database(":memory:");
     db.run(
@@ -349,7 +392,12 @@ describe("evaluation metrics", () => {
     db.run("INSERT INTO evaluations (sessionId) VALUES ('evaluated')");
     db.run(
       "INSERT INTO events (event_type, session_id, source, data) VALUES ('session.end', 'resumable', 'watchdog', ?)",
-      [JSON.stringify({ sessionId: "resumable", interruptionKind: "observation-timeout" })],
+      [
+        JSON.stringify({
+          sessionId: "resumable",
+          interruptionKind: "observation-timeout",
+        }),
+      ],
     );
 
     const sample = db.query(AFTERMATH_COVERAGE_SOURCE_QUERY).get() as {
