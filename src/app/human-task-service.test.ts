@@ -565,6 +565,54 @@ describe("Human Task service", () => {
     ]);
   });
 
+  test("does not present the previous observation as progress for a newer running attempt", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "maintained", phase: "running", updatedAt: 200, mode: "maintain" });
+    const row = db
+      .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'alpha' AND task_id = 'maintained'")
+      .get() as { resource_json: string };
+    const resource = JSON.parse(row.resource_json);
+    resource.status.updatedAt = new Date(100).toISOString();
+    resource.status.summary = "The previous proposal is complete.";
+    resource.status.response = "Adopt the previous proposal.";
+    resource.status.evidence = ["previous proof"];
+    db.prepare(
+      `INSERT INTO app_task_attempts(
+         app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
+       ) VALUES ('alpha', 'attempt-current', 'maintained', 2, 'running', 150, ?)`,
+    ).run(
+      JSON.stringify({
+        metadata: { id: "attempt-current", resourceVersion: 1 },
+        taskId: "maintained",
+        taskGeneration: 2,
+        specHash: "hash",
+        owner: "alpha-owner",
+        handler: "agent:alpha-owner",
+        runtimeId: "runtime",
+        state: "running",
+        reason: "new input",
+        startedAt: new Date(150).toISOString(),
+      }),
+    );
+    db.prepare(
+      `UPDATE app_tasks
+       SET current_attempt_id = 'attempt-current', resource_json = ?
+       WHERE app_id = 'alpha' AND task_id = 'maintained'`,
+    ).run(JSON.stringify(resource));
+    const service = new HumanTaskService(db, registry("alpha"));
+
+    expect(service.getTask({ appId: "alpha", taskId: "maintained" })).toMatchObject({
+      status: "running",
+      statusDetail: "An attempt is working on it now.",
+      terminal: false,
+    });
+    expect(service.getTask({ appId: "alpha", taskId: "maintained" })).not.toMatchObject({
+      summary: expect.anything(),
+      response: expect.anything(),
+      evidence: expect.anything(),
+    });
+  });
+
   test("persists Task-level cancellation, fences the attempt, and removes it from active work", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "work", phase: "running", updatedAt: 10 });
