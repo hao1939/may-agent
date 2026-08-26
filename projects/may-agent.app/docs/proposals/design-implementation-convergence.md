@@ -130,8 +130,9 @@ The installed Task Runtime now has no generic `readTaskState` call: accepted
 waits, active attempts, prior workspaces, executor event fences, and persisted
 terminal-result recovery all read their exact resource rows or bounded resource
 contexts. Focused Runtime fixtures activate resource authority before invoking
-those paths. The verifier's pending-wake read is resource-only too; the broader
-trigger API remains explicit fixture compatibility for a later bounded batch.
+those paths. The verifier's pending-wake read and the reconciler's exact trigger
+inspection are resource-only too; trigger admission and mutation remain
+explicit fixture compatibility for a later bounded batch.
 The externally visible effect fence also reads the exact resource context, so a
 generation change or newer unaccepted Event is checked without a JSON path.
 Startup recovery discovers unreported attention Tasks from the bounded resource
