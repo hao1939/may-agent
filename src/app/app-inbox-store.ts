@@ -526,6 +526,27 @@ export function listAppConversationMessages(
   }
 
   const messages: AppConversationMessage[] = [];
+  const eventRows = db
+    .prepare(
+      `SELECT id, data, timestamp FROM events
+       WHERE event_type = 'conversation.message.created'
+         AND json_extract(data, '$.appId') = ?
+         AND json_extract(data, '$.conversationId') = ?
+         AND json_extract(data, '$.author.kind') IN ('agent', 'tool')
+         ${exactTopicId ? "AND json_extract(data, '$.metadata.topicId') = ?" : ""}
+       ORDER BY id DESC
+       LIMIT ?`,
+    )
+    .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
+  const eventMessages = eventRows.flatMap((row) => {
+    const message = conversationEventMessage(row);
+    return message ? [message] : [];
+  });
+  const durablyPublishedRequestIds = new Set(
+    eventMessages.flatMap((message) =>
+      message.author.kind === "agent" && message.metadata?.requestId ? [message.metadata.requestId] : [],
+    ),
+  );
   const conversationRows = db
     .prepare(
       `SELECT * FROM app_inbox_items
@@ -558,6 +579,11 @@ export function listAppConversationMessages(
         createdAt: item.createdAt,
       });
     }
+    // A request response explicitly appended to the Conversation is the
+    // canonical message. The inbox result remains durable execution state,
+    // but synthesizing it again would give one response two message identities
+    // and every adapter would correctly render both.
+    if (durablyPublishedRequestIds.has(item.id)) continue;
     const resultText = item.continuesRequestId
       ? item.result?.response?.trim()
       : item.result?.response?.trim() || item.result?.summary?.trim();
@@ -594,18 +620,6 @@ export function listAppConversationMessages(
   // each adapter surface belongs in the current Conversation projection.
   // Otherwise repeated `/tasks` renders evict the actual human/May dialogue
   // from this bounded view.
-  const eventRows = db
-    .prepare(
-      `SELECT id, data, timestamp FROM events
-       WHERE event_type = 'conversation.message.created'
-         AND json_extract(data, '$.appId') = ?
-         AND json_extract(data, '$.conversationId') = ?
-         AND json_extract(data, '$.author.kind') IN ('agent', 'tool')
-         ${exactTopicId ? "AND json_extract(data, '$.metadata.topicId') = ?" : ""}
-       ORDER BY id DESC
-       LIMIT ?`,
-    )
-    .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
   const commandRows = db
     .prepare(
       `SELECT id, data, timestamp FROM (
@@ -629,8 +643,8 @@ export function listAppConversationMessages(
        LIMIT ?`,
     )
     .all(appId, conversationId, ...(exactTopicId ? [exactTopicId] : []), limit) as ConversationEventRow[];
-  eventRows.push(...commandRows);
-  for (const row of eventRows) {
+  messages.push(...eventMessages);
+  for (const row of commandRows) {
     const message = conversationEventMessage(row);
     if (message) messages.push(message);
   }

@@ -371,6 +371,13 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (!resource) return null;
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
   const status = taskStatus(row.phase, false);
+  const observationUpdatedAt = Date.parse(resource.status.updatedAt);
+  const attemptStartedAt = Date.parse(attempt?.startedAt ?? "");
+  const observationIsCurrent =
+    status !== "running" ||
+    attempt?.state !== "running" ||
+    !Number.isFinite(attemptStartedAt) ||
+    (Number.isFinite(observationUpdatedAt) && observationUpdatedAt >= attemptStartedAt);
   const view: HumanTaskView = {
     appId,
     taskId,
@@ -381,9 +388,9 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     outcome: resource.spec.outcome,
     acceptance: [...resource.spec.acceptance],
     statusDetail: taskStatusDetail(status, { ready: row.ready, attempt }),
-    ...(resource.status.summary ? { summary: resource.status.summary } : {}),
-    ...(resource.status.response ? { response: resource.status.response } : {}),
-    ...(resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
+    ...(observationIsCurrent && resource.status.summary ? { summary: resource.status.summary } : {}),
+    ...(observationIsCurrent && resource.status.response ? { response: resource.status.response } : {}),
+    ...(observationIsCurrent && resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
     terminal: false,
     cancellable: resource.spec.mode !== "maintain",
