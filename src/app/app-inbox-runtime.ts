@@ -1038,8 +1038,22 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             return refAppId && refTaskId ? [{ appId: refAppId, taskId: refTaskId }] : [];
           }).slice(0, 100)
         : [];
-      if (appId && conversationId && topicId && followUpId && text) {
-        const topic = readConversationTopic(options.db, appId, conversationId, topicId);
+      const followUp = followUpId ? host.get(followUpId) : null;
+      const followUpContext = record(record(followUp?.input.data).conversationContext);
+      const correlatedConversationId =
+        followUp?.source.kind === "app" && followUp.source.id === appId &&
+        typeof followUpContext.conversationId === "string"
+          ? followUpContext.conversationId.trim()
+          : "";
+      const correlatedTopicId =
+        followUp?.source.kind === "app" && followUp.source.id === appId &&
+        typeof followUpContext.topicId === "string"
+          ? followUpContext.topicId.trim()
+          : "";
+      const targetConversationId = correlatedConversationId || conversationId;
+      const targetTopicId = correlatedTopicId || topicId;
+      if (appId && targetConversationId && targetTopicId && followUpId && text) {
+        const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
         if (topic) {
           for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
           options.bus.emit({
@@ -1048,11 +1062,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             owner: `app:${appId}`,
             data: {
               appId,
-              conversationId,
+              conversationId: targetConversationId,
               author: { kind: "agent", id: appId },
               text,
               metadata: {
-                topicId,
+                topicId: targetTopicId,
                 taskRefs,
                 ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
               },
@@ -1061,6 +1075,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                 .digest("hex")
                 .slice(0, 16)}`,
             },
+          });
+        } else {
+          options.bus.emit({
+            type: "info",
+            message: `[app-inbox:${appId}] Follow-up ${followUpId} result names unavailable Topic ${targetTopicId}`,
           });
         }
       }

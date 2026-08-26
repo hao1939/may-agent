@@ -171,6 +171,79 @@ function printLine(text = "") {
   refreshPrompt();
 }
 
+function printNotice(text) {
+  printLine(`${String(text || "").trimEnd()}\n`);
+}
+
+function outputWidth() {
+  const columns = Number(process.stdout.columns);
+  return Number.isSafeInteger(columns) ? Math.max(60, Math.min(columns, 140)) : 100;
+}
+
+function wrapPrefixedLine(text, firstPrefix, continuationPrefix = firstPrefix) {
+  const raw = String(text || "").trimEnd();
+  if (!raw.trim()) return [""];
+  if (/^(?: {4}|\t|\s*```)/.test(raw)) return [`${firstPrefix}${raw}`];
+  const relativeIndent = raw.match(/^\s*/)?.[0] || "";
+  const value = raw.slice(relativeIndent.length);
+  const firstLinePrefix = `${firstPrefix}${relativeIndent}`;
+  let nextLinePrefix = `${continuationPrefix}${relativeIndent}`;
+  const listMarker = value.match(/^(?:[-*+] |\d+[.)] )/);
+  if (listMarker) nextLinePrefix += " ".repeat(listMarker[0].length);
+  const words = value.split(/\s+/);
+  const lines = [];
+  let prefix = firstLinePrefix;
+  let current = prefix;
+  for (const word of words) {
+    const separator = current === prefix ? "" : " ";
+    if (current.length > prefix.length && current.length + separator.length + word.length > outputWidth()) {
+      lines.push(current);
+      prefix = nextLinePrefix;
+      current = `${prefix}${word}`;
+    } else {
+      current += `${separator}${word}`;
+    }
+  }
+  lines.push(current);
+  return lines;
+}
+
+function indentedLines(text, spaces) {
+  const indentation = " ".repeat(spaces);
+  return String(text || "")
+    .split("\n")
+    .map((line) => (line ? `${indentation}${line}` : ""));
+}
+
+function indentText(text, spaces) {
+  const indentation = " ".repeat(spaces);
+  return String(text || "")
+    .split("\n")
+    .flatMap((line) => wrapPrefixedLine(line, indentation))
+    .join("\n");
+}
+
+function labeledText(label, text) {
+  const indentation = " ".repeat(label.length);
+  return String(text || "")
+    .split("\n")
+    .flatMap((line, index) => wrapPrefixedLine(line, index === 0 ? label : indentation, indentation))
+    .join("\n");
+}
+
+function renderedLines(lines) {
+  return lines
+    .flatMap((line) => {
+      const value = String(line || "");
+      if (!value) return [""];
+      const indentation = value.match(/^\s*/)?.[0] || "";
+      const content = value.slice(indentation.length);
+      const continuation = content.startsWith("- ") ? `${indentation}  ` : indentation;
+      return wrapPrefixedLine(content, indentation, continuation);
+    })
+    .join("\n");
+}
+
 function printConversationText(speaker, text = "", onRendered) {
   try {
     readline.clearLine(process.stdout, 0);
@@ -184,7 +257,7 @@ function printConversationText(speaker, text = "", onRendered) {
     if (onRendered) onRendered();
     return;
   }
-  writeStdout(`\n${speaker}> ${value}\n\n`, onRendered);
+  writeStdout(`\n${labeledText(`${speaker}> `, value)}\n\n`, onRendered);
   refreshPrompt();
 }
 
@@ -200,7 +273,7 @@ function printActivityText(label, text = "") {
     refreshPrompt();
     return;
   }
-  writeStdout(`\n[${label}] ${value}\n\n`);
+  writeStdout(`\n[${label}]\n${indentText(value, 2)}\n\n`);
   refreshPrompt();
 }
 
@@ -584,7 +657,7 @@ function renderApps(apps, pending) {
     selectAppContext(nextApp);
     nextTaskPage = null;
   }
-  const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:"];
+  const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:", ""];
   if (apps.length === 0) lines.push("  Nothing found.");
   for (const app of apps) {
     if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
@@ -600,26 +673,32 @@ function renderApps(apps, pending) {
     if (pending?.select && typeof app.description === "string" && app.description.trim()) {
       lines.push(`    ${app.description.trim()}`);
     }
+    lines.push("");
   }
   if (stoppedWatch) lines.push(`  Stopped following ${stoppedWatch}; the Task continues unchanged.`);
-  lines.push("");
-  presentView(pending?.command || "/apps", lines.join("\n"));
+  if (lines.at(-1) !== "") lines.push("");
+  presentView(pending?.command || "/apps", renderedLines(lines));
 }
 
 function renderTasks(page, pending) {
   const tasks = Array.isArray(page?.items) ? page.items : [];
   const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
   const title = pending?.includeDone ? `Tasks${scope} (active and recent):` : `Active Tasks${scope}:`;
-  const lines = ["", title];
+  const lines = ["", title, ""];
   if (tasks.length === 0) lines.push("  Nothing found.");
   for (const task of tasks) {
     if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
     if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
     const result = taskResult(task);
     lines.push(
-      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${taskStatusLabel(task).padEnd(12)} · ${updatedAgeText(task.updatedAt)}  ${String(task.outcome || task.taskId || "Task")} · ${task.humanAction ? "needs you" : "no action from you"}`,
+      `  ${String(task.ref || "????????")} · ${String(task.appId || "?")} · ${taskStatusLabel(task)} · ${updatedAgeText(task.updatedAt)}`,
     );
-    if (task.terminal && result) lines.push(...result.split("\n").map((line) => `    ${line}`));
+    lines.push(...indentedLines(task.outcome || task.taskId || "Task", 4));
+    lines.push(`    You: ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`);
+    if (task.terminal && result) {
+      lines.push("    Result:", ...indentedLines(result, 6));
+    }
+    lines.push("");
   }
   nextTaskPage = page?.nextCursor
     ? {
@@ -628,9 +707,9 @@ function renderTasks(page, pending) {
         cursor: page.nextCursor,
       }
     : null;
-  if (nextTaskPage) lines.push("  More Tasks are available; run /tasks more for the next page.");
-  lines.push("");
-  presentView(pending?.command || "/tasks", lines.join("\n"), {
+  if (nextTaskPage) lines.push("  More Tasks are available; run /tasks more for the next page.", "");
+  if (lines.at(-1) !== "") lines.push("");
+  presentView(pending?.command || "/tasks", renderedLines(lines), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
   });
 }
@@ -707,21 +786,22 @@ function renderTodos(page, pending) {
   const tasks = Array.isArray(page?.items) ? page.items : [];
   const total = Number.isSafeInteger(page?.total) ? page.total : tasks.length;
   const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
-  const lines = ["", `Actions needed${scope}:`];
+  const lines = ["", `Actions needed${scope}:`, ""];
   if (tasks.length === 0) lines.push("  Nothing needs your action.");
   for (const task of tasks) {
     if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
     const since = Number(task?.humanAction?.since);
     lines.push(
-      `  ${String(task.ref || "????????").padEnd(16)} ${String(task.appId || "?").padEnd(20)} ${humanActionText(task)}${Number.isFinite(since) ? ` · ${elapsedText(since)}` : ""}`,
+      `  ${String(task.ref || "????????")} · ${String(task.appId || "?")}${Number.isFinite(since) ? ` · ${elapsedText(since)}` : ""}`,
     );
+    lines.push(...indentedLines(humanActionText(task), 4), "");
   }
   nextTodoPage = page?.nextCursor ? { appId: pending?.appId || null, cursor: page.nextCursor } : null;
   if (total > tasks.length) {
     lines.push(`  ${total - tasks.length} more action(s) are not shown.${nextTodoPage ? " Run /todo more." : ""}`);
   }
-  lines.push("");
-  presentView(pending?.command || "/todo", lines.join("\n"), {
+  if (lines.at(-1) !== "") lines.push("");
+  presentView(pending?.command || "/todo", renderedLines(lines), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
   });
 }
@@ -757,47 +837,67 @@ function renderTask(task, command, options = {}) {
   }
   if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
   if (typeof task.appId === "string" && task.appId.trim()) rememberCompletion(knownAppIds, task.appId.trim(), 256);
-  const lines = ["", `Task ${task.ref} · ${task.appId}`, "", "Goal", `  ${task.outcome}`, "", "State"];
-  lines.push(`  ${taskStatusLabel(task)}. ${task.statusDetail || ""}`.trimEnd());
+  const lines = [
+    "",
+    `Task ${task.ref} · ${task.appId}`,
+    "",
+    "  Goal",
+    ...indentedLines(task.outcome || "Task", 4),
+    "",
+    "  State",
+  ];
+  lines.push(`    ${taskStatusLabel(task)}. ${task.statusDetail || ""}`.trimEnd());
   const currentHeading =
     !task.terminal && Number.isSafeInteger(task.progress?.updatedAt)
-      ? `Current · ${formatWorkTime(task.progress.updatedAt)}`
-      : "Current";
-  lines.push(
-    "",
-    currentHeading,
-    ...currentTaskText(task)
-      .split("\n")
-      .map((line) => `  ${line}`),
-  );
+      ? `  Current · ${formatWorkTime(task.progress.updatedAt)}`
+      : "  Current";
+  lines.push("", currentHeading, ...indentedLines(currentTaskText(task), 4));
   for (const wait of Array.isArray(task.waitingOn) ? task.waitingOn : []) {
     if (wait?.kind === "task") {
-      lines.push(`  Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)} — ${wait.outcome}`);
+      lines.push(`    Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)} — ${wait.outcome}`);
     } else if (wait?.kind === "app") {
-      lines.push(`  Waiting on App ${wait.appId} · ${taskStatusLabel(wait)}`);
+      lines.push(`    Waiting on App ${wait.appId} · ${taskStatusLabel(wait)}`);
     } else if (wait?.kind === "condition") {
-      lines.push(`  Waiting for ${wait.type} — ${wait.subject}`);
+      lines.push(`    Waiting for ${wait.type} — ${wait.subject}`);
     }
   }
-  lines.push("", "Expected result");
+  lines.push("", "  Expected result");
   const acceptance = Array.isArray(task.acceptance)
     ? task.acceptance.filter((item) => typeof item === "string" && item.trim())
     : [];
-  if (acceptance.length > 0) lines.push(...acceptance.map((item) => `  - ${item.trim()}`));
-  else lines.push("  No separate completion criteria were recorded.");
-  lines.push("", "You", `  ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`);
+  if (acceptance.length > 0) lines.push(...acceptance.map((item) => `    - ${item.trim()}`));
+  else lines.push("    No separate completion criteria were recorded.");
+  lines.push("", "  You", `    ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`);
   if (task.requestedBy) {
     lines.push(
       "",
-      "Related",
-      `  Requested by ${task.requestedBy.ref} · ${task.requestedBy.appId} — ${task.requestedBy.outcome}`,
+      "  Related",
+      `    Requested by ${task.requestedBy.ref} · ${task.requestedBy.appId} — ${task.requestedBy.outcome}`,
     );
   }
-  lines.push("", "Updated", `  ${formatWorkTime(task.updatedAt)}`, "", "Details", `  ID: ${task.taskId}`);
-  if (task.execution?.sessionId) lines.push(`  Session: ${task.execution.sessionId}`);
+  lines.push("", "  Updated", `    ${formatWorkTime(task.updatedAt)}`, "", "  Details", `    ID: ${task.taskId}`);
+  if (task.execution?.sessionId) lines.push(`    Session: ${task.execution.sessionId}`);
   lines.push("");
-  if (options.transient) printLine(lines.join("\n"));
-  else presentView(command, lines.join("\n"), { taskRefs: representedTaskIdentities(task) });
+  const text = renderedLines(lines);
+  if (options.transient) printLine(text);
+  else presentView(command, text, { taskRefs: representedTaskIdentities(task) });
+}
+
+function renderTaskSummary(task) {
+  const current = currentTaskText(task);
+  const lines = ["", ...String(current).split("\n"), ""];
+  lines.push(`  Task ${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${updatedAgeText(task.updatedAt)}`);
+  for (const wait of Array.isArray(task.waitingOn) ? task.waitingOn : []) {
+    if (wait?.kind === "task") {
+      lines.push(...indentedLines(`Related: ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)} — ${wait.outcome}`, 2));
+    } else if (wait?.kind === "app") {
+      lines.push(`  Related: App ${wait.appId} · ${taskStatusLabel(wait)}`);
+    } else if (wait?.kind === "condition") {
+      lines.push(...indentedLines(`Waiting for: ${wait.type} — ${wait.subject}`, 2));
+    }
+  }
+  lines.push(...indentedLines(`You: ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`, 2), "");
+  printLine(renderedLines(lines));
 }
 
 function taskPresentationKey(task) {
@@ -835,8 +935,8 @@ function renderWatchSnapshot(task, options = {}) {
   const revision = taskPresentationRevision(task);
   const previous = shownTaskRevisions.get(key);
   if (previous === revision) return { rendered: false, seenBefore: true };
-  if (options.catchUp && previous) printLine(`[catch-up] ${task.ref} changed while it was not followed.`);
-  renderTask(task, `/watch ${task.ref}`, { transient: true });
+  if (options.catchUp && previous) printNotice(`[catch-up] ${task.ref} changed while it was not followed.`);
+  renderTaskSummary(task);
   rememberTaskRevision(key, revision);
   return { rendered: true, seenBefore: previous !== undefined };
 }
@@ -1126,14 +1226,14 @@ function handleEvent(event) {
           if (task?.terminal) {
             renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(null);
-            printLine("[watch] Task is already terminal.");
+            printNotice("[watch] Task is already terminal.");
           } else if (task) {
             const snapshot = renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(task);
-            printLine(
+            printNotice(
               snapshot.rendered || !snapshot.seenBefore
-                ? `[watch] Watching ${task.ref}. May receives bare text with this Task in context.`
-                : `[watch] Watching ${task.ref}; there is no new progress since it was last shown.`,
+                ? `[watch] Following ${task.ref} · ${task.appId}.`
+                : `[watch] Following ${task.ref} · ${task.appId}; no new progress.`,
             );
           }
         } else if (pending?.kind === "auto-follow") {
@@ -1149,17 +1249,11 @@ function handleEvent(event) {
             desiredAutoFollow = null;
             renderWatchSnapshot(task, { catchUp: Boolean(shownTaskRevisions.has(taskPresentationKey(task))) });
             setWatchedTask(task);
-            printLine(
-              `${
-                pending.assignedFrom?.ref
-                  ? `[watch] Following assigned Task ${task.ref} (${task.appId}) for Task ${pending.assignedFrom.ref} (${pending.assignedFrom.appId}).`
-                  : `[watch] Following assigned Task ${task.ref}.`
-              }${
-                previous && autoFollowKey(previous) !== autoFollowKey(task)
-                  ? ` Stopped following ${previous.ref}.`
-                  : " May receives bare text with this Task in context."
-              }`,
-            );
+            const origin = pending.assignedFrom?.ref
+              ? ` (from ${pending.assignedFrom.ref} · ${pending.assignedFrom.appId})`
+              : "";
+            const prior = previous && autoFollowKey(previous) !== autoFollowKey(task) ? ` Previous: ${previous.ref}.` : "";
+            printNotice(`[watch] Following ${task.ref} · ${task.appId}${origin}.${prior}`);
           }
           requestDesiredAutoFollow();
         } else if (pending?.kind === "watch-refresh") {
@@ -1167,7 +1261,7 @@ function handleEvent(event) {
           if (task) renderWatchSnapshot(task);
           if (!task || task.terminal) {
             setWatchedTask(null);
-            if (task?.terminal) printLine("[watch] Task finished; watch ended.");
+            if (task?.terminal) printNotice(`[watch] ${task.ref} finished; watch ended.`);
           } else if (watchedTask) {
             watchedTask.ref = task.ref;
           }
@@ -1470,7 +1564,7 @@ function handleCommand(input) {
     case "watch": {
       if (!rest) {
         if (!watchedTask) {
-          printLine("[watch] No Task is watched. Use /watch <ref>.");
+          printNotice("[watch] No Task is watched. Use /watch <ref>.");
           return;
         }
         requestTask({
@@ -1495,12 +1589,12 @@ function handleCommand(input) {
         return;
       }
       if (!watchedTask && !desiredAutoFollow) {
-        printLine("[watch] No Task is watched.");
+        printNotice("[watch] No Task is watched.");
         return;
       }
       desiredAutoFollow = null;
       if (watchedTask) setWatchedTask(null);
-      printLine("Stopped watching. The Task is unchanged.");
+      printNotice("[watch] Watch ended. The Task continues.");
       return;
     case "cancel": {
       if (restParts.length > 1) {

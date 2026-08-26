@@ -99,7 +99,7 @@ describe("May Console", () => {
                       id: "delivery:history",
                       sequence: 2,
                       author: { kind: "agent", id: "may" },
-                      text: "Earlier answer",
+                      text: `Earlier answer\n${"detail ".repeat(20).trim()}`,
                       metadata: { topicId: "topic_0df0c0edbf95b5bbc5c87598" },
                       createdAt: 2,
                     },
@@ -324,7 +324,8 @@ describe("May Console", () => {
     cleanups.push(() => child.kill("SIGKILL"));
 
     await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get"));
-    await waitFor(() => output.includes("\nyou> Earlier question\n\n") && output.includes("\nmay> Earlier answer\n\n"));
+    await waitFor(() => output.includes("\nyou> Earlier question\n\n") && output.includes("\nmay> Earlier answer\n"));
+    expect(output.split("\n").filter((line) => line.startsWith("     detail")).length).toBeGreaterThan(1);
     expect(frames.some((frame) => frame.type === "status")).toBe(false);
     expect(output).not.toContain("Active work:");
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
@@ -360,6 +361,8 @@ describe("May Console", () => {
         output.includes("8f12ac90") &&
         output.includes("Review the docs"),
     );
+    expect(output).toContain("Active Tasks for evaluation:\n\n  8f12ac90 · evaluation · working ·");
+    expect(output).toContain("    Review the docs\n    You: Nothing needed right now.\n\n");
     expect(
       frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.limit === 10),
     ).toBe(true);
@@ -375,12 +378,12 @@ describe("May Console", () => {
     await waitFor(
       () =>
         output.includes("Task 8f12ac90 · evaluation") &&
-        output.includes("Goal\n  Review the docs") &&
-        output.includes("State\n  working. An attempt is working on it now.") &&
+        output.includes("  Goal\n    Review the docs") &&
+        output.includes("  State\n    working. An attempt is working on it now.") &&
         output.includes("Current") &&
         output.includes("Reviewing current behavior") &&
-        output.includes("Expected result\n  - Report the exact findings.\n  - Show the verification evidence.") &&
-        output.includes("You\n  Nothing needed right now."),
+        output.includes("  Expected result\n    - Report the exact findings.\n    - Show the verification evidence.") &&
+        output.includes("  You\n    Nothing needed right now."),
     );
 
     const taskReadsBeforeReconnect = frames.filter(
@@ -470,10 +473,17 @@ describe("May Console", () => {
         data: { appId: "may", conversationId: "may:primary" },
       })}\n`,
     );
-    await waitFor(() => output.includes("[task] Accepted durable work: Review the docs\nTask 8f12ac90 (evaluation)"));
+    await waitFor(() =>
+      output.includes("[task]\n  Accepted durable work: Review the docs\n  Task 8f12ac90 (evaluation)"),
+    );
     await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
+    await waitFor(() => output.includes("  Task 8f12ac90 · evaluation · working ·"));
+    expect(output).toContain(
+      "Reviewing current behavior\n\n  Task 8f12ac90 · evaluation · working ·",
+    );
+    expect(output).toContain("  You: Approve deployment or ask for another verification pass.\n\n");
     child.stdin.write("/unwatch\n");
-    await waitFor(() => output.includes("Stopped watching. The Task is unchanged."));
+    await waitFor(() => output.includes("[watch] Watch ended. The Task continues.\n\n"));
 
     const assignmentMessage = {
       id: "assignment-1",
@@ -516,9 +526,7 @@ describe("May Console", () => {
       })}\n`,
     );
     await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
-    await waitFor(() =>
-      output.includes("[watch] Following assigned Task 8f12ac90 (evaluation) for Task 1a2b3c4d (may)."),
-    );
+    await waitFor(() => output.includes("[watch] Following 8f12ac90 · evaluation (from 1a2b3c4d · may).\n\n"));
     expect(output.split("Assigned to evaluation.").length - 1).toBe(1);
 
     child.stdin.write("please keep the compatibility alias\n");
@@ -564,9 +572,7 @@ describe("May Console", () => {
         data: { appId: "evaluation", taskId: "review/docs" },
       })}\n`,
     );
-    await waitFor(
-      () => output.includes("Current · 2026-08-17 09:03:04 UTC") && output.includes("Inspecting exact evidence"),
-    );
+    await waitFor(() => output.includes("Inspecting exact evidence\n\n  Task 8f12ac90 · evaluation · working ·"));
     client?.write(
       `${JSON.stringify({
         type: "app.task.updated",
@@ -624,7 +630,7 @@ describe("May Console", () => {
     await waitFor(
       () =>
         frames.filter((frame) => frame.type === "subscribe").at(-1)?.task === null &&
-        output.includes("[watch] Task finished; watch ended."),
+        output.includes("[watch] 8f12ac90 finished; watch ended."),
     );
 
     const beforeTelegramSync = frames.filter((frame) => frame.type === "app.conversation.get").length;
