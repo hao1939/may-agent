@@ -2693,7 +2693,7 @@ export function releaseHandlerExecutionFailedAppTask(
 }
 
 export function claimObservedAppTask(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   input: {
     taskId: string;
     appAgent: string;
@@ -2703,10 +2703,10 @@ export function claimObservedAppTask(
   },
 ): AppTaskClaimResult {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: [input.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
     const task = tree.tasks[input.taskId];
     const resource = tree.resources?.[input.taskId];
-    if (config.resourceStore?.isCancelled(input.taskId)) {
+    if (config.resourceStore.isCancelled(input.taskId)) {
       return {
         kind: "completed",
         taskId: input.taskId,
@@ -2827,7 +2827,6 @@ export function claimObservedAppTask(
       });
       syncTaskProjection(task, resource, agent);
       refreshActiveTaskProjection(tree);
-      if (!config.resourceStore) pruneTaskAttempts(tree);
     }
     const canRecoverPreviousRuntime = Boolean(
       previousAttempt &&
@@ -2870,7 +2869,6 @@ export function claimObservedAppTask(
       });
       syncTaskProjection(task, resource, resolvedAgent(tree, intent, input.appAgent));
       refreshActiveTaskProjection(tree);
-      if (!config.resourceStore) pruneTaskAttempts(tree);
     }
     if (resource.status.phase === "running" && previousAttempt && !canRecoverPreviousRuntime) {
       return { kind: "busy", taskId: task.id, attemptId: previousAttempt.metadata.id };
@@ -3969,7 +3967,7 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
 }
 
 export function completeAppTask(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   input: {
     summary: string;
@@ -3989,7 +3987,7 @@ export function completeAppTask(
 } {
   return withTaskStateLock(config, () => {
     const actions = input.actions ?? [];
-    const tree = readTaskState(config, {
+    const tree = config.resourceStore.readTaskContext({
       taskIds: [claim.taskId, ...taskActionContextIds(actions)],
     });
     const match = matchingTask(tree, claim);
@@ -4034,7 +4032,6 @@ export function completeAppTask(
       if (!revised || revised.metadata.generation <= claim.generation) {
         throw new Error(`Handler self-update for ${claim.taskId} must change task execution intent`);
       }
-      if (!config.resourceStore) pruneTaskAttempts(tree);
       refreshActiveTaskProjection(tree);
       saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
       return {
@@ -4148,7 +4145,6 @@ export function completeAppTask(
       if (tree.resources) delete tree.resources[task.id];
       if (tree.taskTriggers) delete tree.taskTriggers[task.id];
     }
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     return {
@@ -4164,7 +4160,7 @@ export function completeAppTask(
 }
 
 export function deferAppTask(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   claim: AppTaskClaim,
   input: {
     disposition: "waiting";
@@ -4184,7 +4180,7 @@ export function deferAppTask(
 } {
   return withTaskStateLock(config, () => {
     const actions = input.actions ?? [];
-    const tree = readTaskState(config, {
+    const tree = config.resourceStore.readTaskContext({
       taskIds: [claim.taskId, ...taskActionContextIds(actions)],
       conditionIds: (input.conditions as unknown[] | undefined)?.flatMap((condition) =>
         isRecord(condition) && typeof condition.id === "string" && condition.id.trim() ? [condition.id] : [],
@@ -4293,7 +4289,6 @@ export function deferAppTask(
     }
     syncTaskProjection(task, resource, claim.agent);
     refreshActiveTaskProjection(tree);
-    if (!config.resourceStore) pruneTaskAttempts(tree);
     saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     const satisfiedTaskIds = actions.filter((action) => action.kind === "close-task").map((action) => action.taskId);
     const reconcileTaskIds = [
