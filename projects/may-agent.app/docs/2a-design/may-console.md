@@ -162,7 +162,9 @@ Task or dependency. A durable follow-up result is correlated through its exact
 follow-up request to the existing Conversation and Topic; model-written Topic
 labels cannot make an otherwise valid result disappear. The resulting `may>`
 turn is the answer. A watch update is supporting execution evidence, not a
-substitute for that turn.
+substitute for that turn. The shared Conversation projection gives an explicit
+May response one canonical message identity; its inbox result is not projected
+again as a second reply.
 
 ## Watch
 
@@ -189,6 +191,10 @@ surface. Repeated wakes for an unchanged revision render nothing. Returning
 with `/watch <ref>` shows one compact catch-up snapshot only when the Task has
 changed; it does not replay intermediate updates. An explicit `/task <ref>` is
 an intentional read and may repeat current information.
+
+The shared Task view reports only observations belonging to the active attempt.
+When a maintained Task begins new work, a result from its prior attempt remains
+history and is not rendered as the current watch update.
 
 Reconnect preserves the in-process watch preference, resubscribes, and reads
 current truth. A missed wake is harmless.

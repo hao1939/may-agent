@@ -221,12 +221,20 @@ label cannot redirect or silently discard a valid answer. If neither that
 correlation nor the named Topic resolves, Runtime reports the rejected
 projection instead of treating it as successful human communication. Direct
 frontend answers follow the same rule: storing the request receipt is not
-enough; the response is appended as one Conversation message.
+enough; the response is appended as one Conversation message. When that
+explicit message exists, the inbox result remains execution evidence but is
+not synthesized as a second Conversation message. Message identity, not text
+comparison, establishes the one canonical presentation.
 
 Progress is deduplicated by stable event or result identity and appears at most
 once in durable Conversation. Adapters may render faster transient progress
 while watching a Task, but transient output is not later used as conversational
 memory.
+
+An active Task exposes observations from its current attempt. Starting a newer
+attempt does not relabel the previous attempt's summary, response, or evidence
+as current progress; those facts remain in Task history until the new attempt
+reports its own observation.
 
 No component tracks “delivery to web-ui.” Conversation persistence is semantic
 completion. Console and Telegram independently observe `conversation.updated`
