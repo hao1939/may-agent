@@ -665,7 +665,8 @@ describe("App task reconciler state", () => {
   });
 
   it("lists pending and explicit agent handoff tasks but keeps unavailable workflows asleep", () => {
-    const { config } = fixture();
+    const state = fixture();
+    const { config } = state;
     const attentionIntent = {
       ...intent(),
       id: "work/attention",
@@ -745,7 +746,8 @@ describe("App task reconciler state", () => {
     completeAppTask(config, maintainClaim, { summary: "monitor converged" });
 
     expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
-    expect(listHandlerUnavailableAppTasks(config, "app-owner")).toEqual([
+    const resourceConfig = resourceFixture(state, "handler-unavailable").config;
+    expect(listHandlerUnavailableAppTasks(resourceConfig, "app-owner", [unavailableIntent.id])).toEqual([
       { taskId: "work/unavailable", agent: "branch-owner", workflow: "missing-workflow" },
     ]);
 
