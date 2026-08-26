@@ -344,7 +344,7 @@ export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T
 
 export function readTaskState(
   config: TaskStateConfig,
-  scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string> },
+  scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string>; conditionIds?: Iterable<string> },
 ): TaskTree {
   if (config.resourceStore) {
     if (scope) {
