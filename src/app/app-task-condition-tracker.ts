@@ -1,16 +1,10 @@
 import {
-  readTaskState,
   saveTaskState,
   withTaskStateLock,
-  type TaskStateConfig,
+  type ResourceTaskStateConfig,
   type TaskTree,
 } from "./app-task-store.js";
 import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
-import {
-  appTaskConditionRoutesByEventType,
-  readAppTaskConditionRoutes,
-  writeAppTaskConditionRouteIndex,
-} from "./app-task-condition-index.js";
 
 export type AppTaskConditionWake = {
   conditionId: string;
@@ -336,7 +330,7 @@ function applyConditionEvent(
 }
 
 function saveConditionMutation(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   tree: TaskTree,
   wakes: ReadonlyMap<string, AppTaskConditionWake>,
   changedConditionIds: ReadonlySet<string>,
@@ -391,11 +385,11 @@ export function applyAppTaskConditionEvent(tree: TaskTree, event: Record<string,
 
 /** Correlate semantic observations with durable Conditions in one state transaction. */
 export function trackAppTaskConditionEvents(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   events: Iterable<Record<string, unknown>>,
 ): AppTaskConditionWake[] {
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
+    const tree = config.resourceStore.readSnapshot();
     const wakes = new Map<string, AppTaskConditionWake>();
     const changedConditionIds = new Set<string>();
     let changed = false;
@@ -410,7 +404,7 @@ export function trackAppTaskConditionEvents(
 
 /** Correlate one semantic observation with durable Conditions; never observes the domain source itself. */
 export function trackAppTaskConditionEvent(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   event: Record<string, unknown>,
 ): AppTaskConditionWake[] {
   return trackAppTaskConditionEvents(config, [event]);
@@ -418,22 +412,13 @@ export function trackAppTaskConditionEvent(
 
 /** Read-only canonical-state preflight used before the App router chooses a route. */
 export function matchingAppTaskConditionTaskIds(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   event: Record<string, unknown>,
   allowedTaskIds?: Iterable<string>,
 ): string[] {
   const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
   const eventType = typeof event.type === "string" ? event.type : "";
-  let routes = config.resourceStore
-    ? config.resourceStore.readConditionRoutes(eventType)
-    : readAppTaskConditionRoutes(config, eventType);
-  if (routes === null && !config.resourceStore) {
-    const tree = readTaskState(config);
-    routes = appTaskConditionRoutesByEventType(tree)[eventType] ?? [];
-    // Repair missing projections lazily for task states created before this
-    // index existed. This does not mutate canonical task state.
-    writeAppTaskConditionRouteIndex(config, tree);
-  }
+  const routes = config.resourceStore.readConditionRoutes(eventType);
   const matched = new Set<string>();
   for (const { condition, taskIds } of routes ?? []) {
     if (!matchesAppTaskCondition(condition, event)) continue;
@@ -447,14 +432,14 @@ export function matchingAppTaskConditionTaskIds(
 
 /** Persist one fact only for the exact task Conditions selected in preflight. */
 export function trackAppTaskConditionEventForTasks(
-  config: TaskStateConfig,
+  config: ResourceTaskStateConfig,
   event: Record<string, unknown>,
   taskIds: Iterable<string>,
 ): AppTaskConditionWake[] {
   const allowed = new Set(taskIds);
   if (allowed.size === 0) return [];
   return withTaskStateLock(config, () => {
-    const tree = readTaskState(config, { taskIds: allowed });
+    const tree = config.resourceStore.readTaskContext({ taskIds: allowed });
     const wakes = new Map<string, AppTaskConditionWake>();
     const changedConditionIds = new Set<string>();
     if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {
