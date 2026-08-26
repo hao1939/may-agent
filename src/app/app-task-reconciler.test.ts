@@ -2926,8 +2926,9 @@ describe("App task reconciler state", () => {
     });
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
-    expect(pendingAppTaskRecoveryAttention(resourceFixture(state, "released").config)).toEqual([]);
-    expect(acknowledgeAppTaskRecoveryAttention(config, claim.taskId)).toBe(false);
+    const resourceConfig = resourceFixture(state, "released").config;
+    expect(pendingAppTaskRecoveryAttention(resourceConfig)).toEqual([]);
+    expect(acknowledgeAppTaskRecoveryAttention(resourceConfig, claim.taskId)).toBe(false);
   });
 
   it("requeues running tasks whose current attempt record is missing", () => {
@@ -3269,6 +3270,13 @@ describe("App task reconciler state", () => {
     stale.active_task_id = null;
     saveTaskState(config, stale);
 
+    const resourceConfig = resourceFixture(state, "attention").config;
+    expect(pendingAppTaskRecoveryAttention(resourceConfig, [claim.taskId])).toEqual([
+      { taskId: claim.taskId, summary: `old attention ${claim.taskId}` },
+    ]);
+    expect(acknowledgeAppTaskRecoveryAttention(resourceConfig, claim.taskId)).toBe(true);
+    expect(pendingAppTaskRecoveryAttention(resourceConfig, [claim.taskId])).toEqual([]);
+
     expect(repairPreviousRuntimeRecoveryAttention(config)).toMatchObject([
       { taskId: "evaluate:session-1", disposition: "requeued" },
     ]);
@@ -3278,7 +3286,6 @@ describe("App task reconciler state", () => {
       status: { phase: "pending", observedGeneration: 0 },
     });
     expect(repaired.tasks["evaluate:session-1"].state).toBe("backlog");
-    expect(pendingAppTaskRecoveryAttention(resourceFixture(state, "repaired").config)).toEqual([]);
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
