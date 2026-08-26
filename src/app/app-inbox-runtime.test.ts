@@ -345,7 +345,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("projects a standing Task result into Conversation and links its exact work", async () => {
+  it("projects a standing Task result through its durable follow-up correlation", async () => {
     mkdirSync(join(root, "may.app"), { recursive: true });
     writeFileSync(
       join(root, "may.app", "app.js"),
@@ -365,6 +365,24 @@ describe("App inbox runtime", () => {
       openedBy: "human",
       originMessageId: "message-review",
       now: 1,
+    });
+    createAppInboxItem(db, {
+      id: "turn-review",
+      appId: "evaluation",
+      source: { kind: "app", id: "may" },
+      input: {
+        kind: "probe",
+        data: {
+          value: "Review the design",
+          conversationContext: {
+            conversationId: "may:primary",
+            topicId: "topic-review",
+            followUpId: "human-turn-review",
+          },
+        },
+      },
+      idempotencyKey: "turn-review",
+      now: 2,
     });
     const bus = persistentBus();
     const task = capabilities(bus);
@@ -395,8 +413,8 @@ describe("App inbox runtime", () => {
         summary: "The design review is running.",
         result: {
           conversation: {
-            conversationId: "may:primary",
-            topicId: "topic-review",
+            conversationId: "invented-conversation",
+            topicId: "invented-topic",
             followUpId: "turn-review",
             text: "The design review is running in Evaluation Task 1234abcd.",
             taskRefs: [{ appId: "evaluation", taskId: "review/design" }],

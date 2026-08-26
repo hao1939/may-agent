@@ -500,6 +500,49 @@ describe("App inbox host", () => {
     });
   });
 
+  it("publishes a direct conversational answer instead of only storing its receipt", async () => {
+    const messages: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          id: "may",
+          version: 1,
+          agent: "may",
+          inputSchema: probeInput,
+          requests: { mode: "agent" },
+        }),
+      ],
+      resolveRequest: async () => ({
+        summary: "The review is complete.",
+        response: "The review is complete; no action is needed from you.",
+        topic: { kind: "new", title: "Review progress" },
+      }),
+      onRequestMessage: (item, text, topicId) => messages.push({ item: item.id, text, topicId }),
+    });
+    host.admit({
+      id: "turn-progress",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "message-progress" },
+      input: { kind: "probe", data: { value: "what is the current progress?" } },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(messages).toEqual([
+      {
+        item: "turn-progress",
+        text: "The review is complete; no action is needed from you.",
+        topicId: expect.stringMatching(/^topic_/),
+      },
+    ]);
+    expect(host.get("turn-progress")).toMatchObject({
+      status: "done",
+      result: { response: "The review is complete; no action is needed from you." },
+    });
+  });
+
   it("answers a mixed request now and steers the exact focused Task", async () => {
     const conversationalInput = Type.Object({
       kind: Type.Literal("probe"),
