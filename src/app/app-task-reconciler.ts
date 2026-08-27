@@ -1203,8 +1203,6 @@ export function releaseInterruptedAppTaskAttempt(
   return withTaskStateLock(config, () => {
     const taskId = recovery.taskId;
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-    const task = tree.tasks[taskId];
-    if (!task) return { released: false, sessionIds: [] };
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "running") return { released: false, sessionIds: [] };
     const attempt = currentResourceAttempt(tree, resource);
@@ -1233,8 +1231,6 @@ export function releaseInterruptedAppTaskAttempt(
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
     });
-    syncTaskProjection(task, resource, attempt.owner);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -1257,9 +1253,8 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
 ): { released: boolean; sessionIds: string[] } {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [recovery.taskId] });
-    const task = tree.tasks[recovery.taskId];
     const resource = tree.resources?.[recovery.taskId];
-    if (!task || !resource || resource.status.phase !== "running") {
+    if (!resource || resource.status.phase !== "running") {
       return { released: false, sessionIds: [] };
     }
     const attempt = currentResourceAttempt(tree, resource);
@@ -1297,8 +1292,6 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
       summary: recoveredSummary,
       conditionIds: [],
     });
-    syncTaskProjection(task, resource, attempt.owner);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -1314,14 +1307,8 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
 ): { released: boolean; taskId: string } {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
-    const task = tree.tasks[binding.taskId];
     const resource = tree.resources?.[binding.taskId];
-    if (
-      !task ||
-      !resource ||
-      resource.metadata.generation !== binding.generation ||
-      resource.status.phase !== "running"
-    ) {
+    if (!resource || resource.metadata.generation !== binding.generation || resource.status.phase !== "running") {
       return { released: false, taskId: binding.taskId };
     }
     const attempt = currentResourceAttempt(tree, resource);
@@ -1343,8 +1330,6 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
       summary: recoveredSummary,
       conditionIds: [],
     });
-    syncTaskProjection(task, resource, attempt.owner);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -1364,8 +1349,6 @@ export function repairPreviousRuntimeRecoveryAttention(
     const mutationScope = emptyResourceMutationScope();
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "attention") continue;
-      const task = tree.tasks[resource.metadata.id];
-      if (!task) continue;
       const attempt = Object.values(tree.attempts ?? {})
         .filter((candidate) => candidate.taskId === resource.metadata.id)
         .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
@@ -1385,7 +1368,6 @@ export function repairPreviousRuntimeRecoveryAttention(
         summary,
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, attempt.owner);
       repairs.push({
         taskId: resource.metadata.id,
         disposition: "requeued",
@@ -1393,7 +1375,6 @@ export function repairPreviousRuntimeRecoveryAttention(
       });
     }
     if (repairs.length > 0) {
-      refreshActiveTaskProjection(tree);
       saveTaskState(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
@@ -1420,8 +1401,6 @@ export function repairUnadmittedAppDependencyWaits(
     const mutationScope = emptyResourceMutationScope();
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "waiting") continue;
-      const task = tree.tasks[resource.metadata.id];
-      if (!task) continue;
       const missingRequestId = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
         const condition = tree.conditions?.[conditionId];
         if (
@@ -1447,11 +1426,9 @@ export function repairUnadmittedAppDependencyWaits(
         summary,
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, resolvedAgent(tree, resourceIntent(resource), config.worker));
       repairs.push({ taskId: resource.metadata.id, disposition: "requeued", summary });
     }
     if (repairs.length > 0) {
-      refreshActiveTaskProjection(tree);
       saveTaskState(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
@@ -1473,14 +1450,11 @@ export function repairRunningAppTasksWithoutAttempt(
     const now = new Date().toISOString();
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "running") continue;
-      const task = tree.tasks[resource.metadata.id];
-      if (!task) continue;
       const attemptId = resource.status.currentAttemptId;
       const attempt = attemptId ? tree.attempts?.[attemptId] : undefined;
       if (attempt?.state === "running") continue;
 
       trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
-      const agent = resolvedAgent(tree, resourceIntent(resource), config.worker);
       const summary = attemptId
         ? `Running reconciliation ${resource.metadata.id} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
         : `Running reconciliation ${resource.metadata.id} had no current attempt; retrying from current task evidence`;
@@ -1497,7 +1471,6 @@ export function repairRunningAppTasksWithoutAttempt(
         summary,
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, agent);
       repairs.push({
         taskId: resource.metadata.id,
         disposition: "requeued",
@@ -1505,7 +1478,6 @@ export function repairRunningAppTasksWithoutAttempt(
       });
     }
     if (repairs.length > 0) {
-      refreshActiveTaskProjection(tree);
       saveTaskState(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
