@@ -413,6 +413,7 @@ describe("project runtime state paths", () => {
     expect(canonical.attempts).toHaveProperty("attempt-active");
     expect(canonical.receipts).toHaveProperty("completed-dependency");
     expect(canonical.taskTriggers).toHaveProperty("consumer");
+    expect(canonical).not.toHaveProperty("satisfied_dependency_ids");
     expect(projection).not.toHaveProperty("resources");
     expect(projection).not.toHaveProperty("attempts");
     expect(projection).not.toHaveProperty("receipts");

@@ -379,7 +379,6 @@ export class AppTaskResourceStore {
           updated_at: tree.updated_at,
           project_lifecycle: options.finalLifecycle ?? tree.project_lifecycle,
           root_task_id: tree.root_task_id,
-          satisfied_dependency_ids: tree.satisfied_dependency_ids ?? [],
         }),
       );
       this.setMeta("source_revision", sourceRevision);
@@ -674,9 +673,6 @@ export class AppTaskResourceStore {
       ...(typeof metadata.updated_at === "string" ? { updated_at: metadata.updated_at } : {}),
       ...(typeof metadata.project_lifecycle === "string" ? { project_lifecycle: metadata.project_lifecycle } : {}),
       ...(typeof metadata.root_task_id === "string" ? { root_task_id: metadata.root_task_id } : {}),
-      satisfied_dependency_ids: Array.isArray(metadata.satisfied_dependency_ids)
-        ? metadata.satisfied_dependency_ids.filter((value): value is string => typeof value === "string")
-        : [],
       resources,
       taskTriggers,
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json"),
@@ -900,7 +896,6 @@ export class AppTaskResourceStore {
       ...(typeof metadata.updated_at === "string" ? { updated_at: metadata.updated_at } : {}),
       ...(typeof metadata.project_lifecycle === "string" ? { project_lifecycle: metadata.project_lifecycle } : {}),
       ...(typeof metadata.root_task_id === "string" ? { root_task_id: metadata.root_task_id } : {}),
-      satisfied_dependency_ids: [],
       resources,
       taskTriggers,
       attempts,
