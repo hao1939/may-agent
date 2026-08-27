@@ -30,7 +30,7 @@ let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 let conversationReady = false;
 let lastRenderedMayMessageId = null;
-let appSelectionInFlight = false;
+let appSelectionVersion = 0;
 let todoCount = 0;
 let todoReadInFlight = false;
 let todoReadDirty = false;
@@ -383,8 +383,8 @@ function readWillComplete(sent) {
   return true;
 }
 
-function requestApps(appId = null, command = "/apps", select = false) {
-  const pending = { appId, command, select };
+function requestApps(appId = null, command = "/apps", select = false, selection = {}) {
+  const pending = { appId, command, select, ...selection };
   pendingAppReads.push(pending);
   const sent = sendAppRead(pending);
   if (!readWillComplete(sent)) pendingAppReads.pop();
@@ -648,20 +648,24 @@ function taskProgress(task) {
 
 function renderApps(apps, pending) {
   if (!Array.isArray(apps)) return;
-  let stoppedWatch = null;
-  if (pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim()) {
+  if (pending?.select && pending.selectionVersion !== appSelectionVersion) return;
+  const selected = pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim();
+  if (selected) {
     const nextApp = apps[0].id.trim();
-    if (nextApp !== selectedApp) {
-      desiredAutoFollow = null;
-      if (watchedTask) {
-        stoppedWatch = watchedTask.ref;
-        setWatchedTask(null);
-      }
-    }
     selectAppContext(nextApp);
     nextTaskPage = null;
+  } else if (pending?.select) {
+    selectAppContext(pending.previousAppId);
   }
-  const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:", ""];
+  const lines = [
+    "",
+    pending?.select
+      ? selected
+        ? `Selected App: ${selectedApp}`
+        : `App ${pending.appId} was not found; restored ${selectedApp}.`
+      : "Apps:",
+    "",
+  ];
   if (apps.length === 0) lines.push("  Nothing found.");
   for (const app of apps) {
     if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
@@ -679,7 +683,9 @@ function renderApps(apps, pending) {
     }
     lines.push("");
   }
-  if (stoppedWatch) lines.push(`  Stopped following ${stoppedWatch}; the Task continues unchanged.`);
+  if (pending?.stoppedWatch) {
+    lines.push(`  Stopped following ${pending.stoppedWatch}; the Task continues unchanged.`);
+  }
   if (lines.at(-1) !== "") lines.push("");
   presentView(pending?.command || "/apps", renderedLines(lines));
 }
@@ -1242,11 +1248,6 @@ function handleEvent(event) {
       if (event.command === "apps.list") {
         const pending = pendingAppReads.shift();
         renderApps(event.apps, pending);
-        if (pending?.select) {
-          appSelectionInFlight = false;
-          flushPendingCommands();
-          flushPendingInput();
-        }
       }
       if (event.command === "tasks.list") {
         const pending = pendingTaskListReads.shift();
@@ -1342,10 +1343,8 @@ function handleEvent(event) {
       }
       if (event.command === "apps.list") {
         const pending = pendingAppReads.shift();
-        if (pending?.select) {
-          appSelectionInFlight = false;
-          flushPendingCommands();
-          flushPendingInput();
+        if (pending?.select && pending.selectionVersion === appSelectionVersion) {
+          selectAppContext(pending.previousAppId);
         }
       }
       if (event.command === "tasks.list") {
@@ -1523,8 +1522,23 @@ function handleCommand(input) {
         printLine("Usage: /apps [app]");
         return;
       }
-      if (rest) appSelectionInFlight = true;
-      if (!requestApps(rest || null, input, Boolean(rest))) appSelectionInFlight = false;
+      if (rest) {
+        const previousAppId = selectedApp;
+        let stoppedWatch = null;
+        if (rest !== selectedApp) {
+          desiredAutoFollow = null;
+          if (watchedTask) {
+            stoppedWatch = watchedTask.ref;
+            setWatchedTask(null);
+          }
+          selectAppContext(rest);
+        }
+        const selectionVersion = ++appSelectionVersion;
+        printNotice(`[apps] Selecting ${rest}…`);
+        requestApps(rest, input, true, { previousAppId, selectionVersion, stoppedWatch });
+      } else {
+        requestApps(null, input, false);
+      }
       return;
     case "topics":
       if (restParts.length > 1 || (restParts.length === 1 && restParts[0].toLowerCase() !== "more")) {
@@ -1712,7 +1726,7 @@ function commandNeedsConnection(input) {
 }
 
 function flushPendingCommands() {
-  while (pendingCommandLines.length > 0 && !appSelectionInFlight) {
+  while (pendingCommandLines.length > 0) {
     const input = pendingCommandLines[0];
     if (commandNeedsConnection(input) && !connected) return;
     pendingCommandLines.shift();
@@ -1729,10 +1743,11 @@ function handleInput(line) {
 
   // Commands are structured control reads/actions and do not depend on the
   // Conversation transcript. Reconnect-safe reads register immediately;
-  // direct controls wait only for a live socket. App selection is the one
-  // ordering boundary because it changes the meaning of following commands.
+  // direct controls wait only for a live socket. App selection is local
+  // presentation state, so following commands can use it without waiting for
+  // the asynchronous App read that validates and describes it.
   if (input.startsWith("/")) {
-    if (appSelectionInFlight || (commandNeedsConnection(input) && !connected)) {
+    if (commandNeedsConnection(input) && !connected) {
       pendingCommandLines.push(input);
       printLine("[waiting for daemon; command queued]");
       return;
@@ -1747,15 +1762,6 @@ function handleInput(line) {
   if (!connected || !conversationReady) {
     pendingInputLines.push(input);
     printLine("[waiting for May; input queued]");
-    return;
-  }
-
-  // A selected App changes the meaning of the next bare turn and /tasks.
-  // Keep terminal input ordered across that one asynchronous lookup while
-  // leaving the daemon's event handlers independent and non-blocking.
-  if (appSelectionInFlight) {
-    pendingInputLines.push(input);
-    refreshPrompt();
     return;
   }
 

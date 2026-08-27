@@ -933,6 +933,120 @@ describe("May Console", () => {
     await once(child, "exit");
   });
 
+  test("uses App context immediately while selection validation remains asynchronous", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-app-selection-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    const frames: Array<Record<string, any>> = [];
+    const appReads: Array<{ frame: Record<string, any>; socket: Socket }> = [];
+    let client: Socket | null = null;
+    const server: Server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      let inputBuffer = "";
+      socket.on("data", (chunk) => {
+        inputBuffer += chunk.toString();
+        const lines = inputBuffer.split("\n");
+        inputBuffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "app.conversation.get") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "app.conversation.get",
+                conversation: { id: "may:primary", owner: "may", version: 1, topics: [], messages: [] },
+              })}\n`,
+            );
+          } else if (frame.type === "apps.list") {
+            appReads.push({ frame, socket });
+          } else if (frame.type === "tasks.list") {
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [], nextCursor: null } })}\n`,
+            );
+          } else {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
+      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => output.includes("you[may]>"));
+    child.stdin.write("/apps gym\n/tasks\nhello\n/apps evaluation\n/tasks\n");
+
+    await waitFor(
+      () =>
+        appReads.length === 2 &&
+        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly) &&
+        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly),
+    );
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello" &&
+          frame.event?.data?.context?.focusedApp === "gym",
+      ),
+    ).toBe(true);
+    expect(output).toContain("[apps] Selecting gym…");
+    expect(output).toContain("you[gym]>");
+    expect(output).toContain("you[evaluation]>");
+    expect(output).not.toContain("[waiting for daemon; command queued]");
+
+    // The older validation is stale and must not move the Console away from
+    // the more recent local selection.
+    appReads[0].socket.write(
+      `${JSON.stringify({
+        type: "ok",
+        command: "apps.list",
+        apps: [{ id: "gym", description: "Evaluates behavior", activeTasks: 0 }],
+      })}\n`,
+    );
+    appReads[1].socket.write(
+      `${JSON.stringify({
+        type: "ok",
+        command: "apps.list",
+        apps: [{ id: "evaluation", description: "Reviews behavior", activeTasks: 0 }],
+      })}\n`,
+    );
+    await waitFor(() => output.includes("Selected App: evaluation"));
+    expect(output).not.toContain("Selected App: gym");
+
+    child.stdin.write("/apps missing\n");
+    await waitFor(() => appReads.length === 3 && output.includes("you[missing]>"));
+    appReads[2].socket.write(`${JSON.stringify({ type: "ok", command: "apps.list", apps: [] })}\n`);
+    await waitFor(() => output.includes("App missing was not found; restored evaluation."));
+    expect(output).toContain("you[evaluation]>");
+
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  });
+
   test("uses a distinct durable message identity for each Console process", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-identity-"));
     const instance = "test";
