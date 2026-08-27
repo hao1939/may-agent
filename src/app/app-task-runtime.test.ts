@@ -239,18 +239,18 @@ function gitResidueFixture() {
 }
 
 describe("canonical direct-agent residue cleanup", () => {
-  it("restores agent file and index edits that remain unchanged since planning", () => {
+  it("restores agent file and index edits that remain unchanged since planning", async () => {
     const projectDir = gitResidueFixture();
     writeFileSync(join(projectDir, "preexisting.txt"), "preexisting baseline\n");
-    const guard = beginCanonicalAgentResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
+    const guard = await beginCanonicalAgentResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
 
     writeFileSync(join(projectDir, "tracked.txt"), "agent edit\n");
     writeFileSync(join(projectDir, "preexisting.txt"), "agent changed preexisting\n");
     writeFileSync(join(projectDir, "created.txt"), "agent created\n");
     execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
 
-    const plan = planCanonicalAgentResidueCleanup(guard);
-    const restored = applyCanonicalAgentResidueCleanup(plan);
+    const plan = await planCanonicalAgentResidueCleanup(guard);
+    const restored = await applyCanonicalAgentResidueCleanup(plan);
 
     expect(restored).toContain("file:tracked.txt");
     expect(restored).toContain("file:preexisting.txt");
@@ -264,19 +264,19 @@ describe("canonical direct-agent residue cleanup", () => {
     );
   });
 
-  it("preserves concurrent file and index edits while applying other planned cleanup", () => {
+  it("preserves concurrent file and index edits while applying other planned cleanup", async () => {
     const projectDir = gitResidueFixture();
-    const guard = beginCanonicalAgentResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
+    const guard = await beginCanonicalAgentResidueGuard({ appDir: projectDir, projectDir, workspaceDir: projectDir });
 
     writeFileSync(join(projectDir, "tracked.txt"), "agent edit\n");
     writeFileSync(join(projectDir, "created.txt"), "agent created\n");
     execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
-    const plan = planCanonicalAgentResidueCleanup(guard);
+    const plan = await planCanonicalAgentResidueCleanup(guard);
 
     writeFileSync(join(projectDir, "tracked.txt"), "concurrent file edit\n");
     writeFileSync(join(projectDir, "concurrent-index.txt"), "concurrent index edit\n");
     execFileSync("git", ["-C", projectDir, "add", "concurrent-index.txt"]);
-    const restored = applyCanonicalAgentResidueCleanup(plan);
+    const restored = await applyCanonicalAgentResidueCleanup(plan);
 
     expect(restored).toEqual(["file:created.txt"]);
     expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("concurrent file edit\n");
@@ -285,7 +285,7 @@ describe("canonical direct-agent residue cleanup", () => {
     );
   });
 
-  it("rejects only converged direct-agent results whose edits were restored", () => {
+  it("rejects only converged direct-agent results whose edits were restored", async () => {
     const converged = {
       state: "converged" as const,
       summary: "claimed convergence",
@@ -300,7 +300,7 @@ describe("canonical direct-agent residue cleanup", () => {
 
     const worktree = join(projectDirForBypass(), "workflow-output.txt");
     writeFileSync(worktree, "mutation-capable output\n");
-    expect(finishCanonicalAgentResidueGuard(null)).toEqual([]);
+    expect(await finishCanonicalAgentResidueGuard(null)).toEqual([]);
     expect(readFileSync(worktree, "utf8")).toBe("mutation-capable output\n");
   });
 });

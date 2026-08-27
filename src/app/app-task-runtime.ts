@@ -1,20 +1,26 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
+import { isDeepStrictEqual, promisify } from "node:util";
 import {
-  chmodSync,
   existsSync,
-  lstatSync,
   mkdirSync,
   readFileSync,
-  readlinkSync,
   readdirSync,
   rmSync,
-  rmdirSync,
-  symlinkSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
+import {
+  chmod as chmodAsync,
+  lstat as lstatAsync,
+  mkdir as mkdirAsync,
+  readFile as readFileAsync,
+  readlink as readlinkAsync,
+  rm as rmAsync,
+  rmdir as rmdirAsync,
+  symlink as symlinkAsync,
+  writeFile as writeFileAsync,
+} from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Check } from "typebox/value";
 import type { SubagentManager } from "../lib/index.js";
@@ -1718,6 +1724,8 @@ type PlannedResidueFileRestore = {
   restore: ResidueFileSnapshot | "index";
 };
 
+const execFileAsync = promisify(execFile);
+
 export type CanonicalAgentResidueCleanupPlan = {
   guard: CanonicalUntrackedResidueGuard;
   expectedIndexData: Buffer;
@@ -1725,20 +1733,25 @@ export type CanonicalAgentResidueCleanupPlan = {
   files: Map<string, PlannedResidueFileRestore>;
 };
 
-function gitPathSet(projectDir: string, args: string[]): Set<string> {
-  const output = execFileSync("git", ["-C", projectDir, ...args]);
+async function gitPathSet(projectDir: string, args: string[]): Promise<Set<string>> {
+  const { stdout } = await execFileAsync("git", ["-C", projectDir, ...args], {
+    encoding: "buffer",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const output = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout);
   return new Set(output.toString("utf8").split("\0").filter(Boolean));
 }
 
-function canonicalUntrackedFiles(projectDir: string): Set<string> {
+async function canonicalUntrackedFiles(projectDir: string): Promise<Set<string>> {
   return gitPathSet(projectDir, ["ls-files", "--others", "--exclude-standard", "--full-name", "-z"]);
 }
 
-function canonicalDirtyTrackedFiles(projectDir: string): Set<string> {
-  return new Set([
-    ...gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]),
-    ...gitPathSet(projectDir, ["diff", "--cached", "--name-only", "-z"]),
+async function canonicalDirtyTrackedFiles(projectDir: string): Promise<Set<string>> {
+  const [modified, staged] = await Promise.all([
+    gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]),
+    gitPathSet(projectDir, ["diff", "--cached", "--name-only", "-z"]),
   ]);
+  return new Set([...modified, ...staged]);
 }
 
 function safeResiduePath(projectDir: string, relativePath: string): string {
@@ -1750,25 +1763,34 @@ function safeResiduePath(projectDir: string, relativePath: string): string {
   return absolutePath;
 }
 
-function snapshotResidueFile(projectDir: string, relativePath: string): ResidueFileSnapshot {
+async function snapshotResidueFile(projectDir: string, relativePath: string): Promise<ResidueFileSnapshot> {
   const absolutePath = safeResiduePath(projectDir, relativePath);
-  if (!existsSync(absolutePath)) return { exists: false };
-  const stat = lstatSync(absolutePath);
-  if (stat.isSymbolicLink()) return { exists: true, kind: "symlink", target: readlinkSync(absolutePath) };
-  return { exists: true, kind: "file", data: readFileSync(absolutePath), mode: stat.mode };
+  let stat;
+  try {
+    stat = await lstatAsync(absolutePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { exists: false };
+    throw error;
+  }
+  if (stat.isSymbolicLink()) return { exists: true, kind: "symlink", target: await readlinkAsync(absolutePath) };
+  return { exists: true, kind: "file", data: await readFileAsync(absolutePath), mode: stat.mode };
 }
 
-function restoreResidueFile(projectDir: string, relativePath: string, snapshot: ResidueFileSnapshot): void {
+async function restoreResidueFile(
+  projectDir: string,
+  relativePath: string,
+  snapshot: ResidueFileSnapshot,
+): Promise<void> {
   const absolutePath = safeResiduePath(projectDir, relativePath);
-  if (existsSync(absolutePath)) rmSync(absolutePath, { recursive: true, force: true });
+  await rmAsync(absolutePath, { recursive: true, force: true });
   if (!snapshot.exists) return;
-  mkdirSync(dirname(absolutePath), { recursive: true });
+  await mkdirAsync(dirname(absolutePath), { recursive: true });
   if (snapshot.kind === "symlink") {
-    symlinkSync(snapshot.target, absolutePath);
+    await symlinkAsync(snapshot.target, absolutePath);
     return;
   }
-  writeFileSync(absolutePath, snapshot.data);
-  chmodSync(absolutePath, snapshot.mode);
+  await writeFileAsync(absolutePath, snapshot.data);
+  await chmodAsync(absolutePath, snapshot.mode);
 }
 
 function residueSnapshotsEqual(left: ResidueFileSnapshot, right: ResidueFileSnapshot): boolean {
@@ -1786,31 +1808,40 @@ function residueSnapshotsEqual(left: ResidueFileSnapshot, right: ResidueFileSnap
  * disturbing dirt that predated the attempt. Workflow task worktrees have a
  * distinct workspaceDir and bypass this guard.
  */
-export function beginCanonicalAgentResidueGuard(paths: AppTaskExecutionPaths): CanonicalUntrackedResidueGuard | null {
+export async function beginCanonicalAgentResidueGuard(
+  paths: AppTaskExecutionPaths,
+): Promise<CanonicalUntrackedResidueGuard | null> {
   if (paths.workspaceDir !== paths.projectDir) return null;
   try {
-    const topLevel = resolve(
-      execFileSync("git", ["-C", paths.projectDir, "rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim(),
-    );
-    if (topLevel !== resolve(paths.projectDir)) return null;
-    const rawIndexPath = execFileSync("git", ["-C", paths.projectDir, "rev-parse", "--git-path", "index"], {
+    const topLevelResult = await execFileAsync("git", ["-C", paths.projectDir, "rev-parse", "--show-toplevel"], {
       encoding: "utf8",
-    }).trim();
+    });
+    const topLevel = resolve(topLevelResult.stdout.trim());
+    if (topLevel !== resolve(paths.projectDir)) return null;
+    const indexResult = await execFileAsync("git", ["-C", paths.projectDir, "rev-parse", "--git-path", "index"], {
+      encoding: "utf8",
+    });
+    const rawIndexPath = indexResult.stdout.trim();
     const indexPath = isAbsolute(rawIndexPath) ? rawIndexPath : resolve(paths.projectDir, rawIndexPath);
-    const dirtyTrackedPaths = canonicalDirtyTrackedFiles(paths.projectDir);
-    const untrackedPaths = canonicalUntrackedFiles(paths.projectDir);
-    const indexData = readFileSync(indexPath);
-    const dirtyTracked = new Map(
-      [...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)] as const),
-    );
-    const untracked = new Map(
-      [...untrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)] as const),
-    );
+    const [dirtyTrackedPaths, untrackedPaths, indexData, indexStat] = await Promise.all([
+      canonicalDirtyTrackedFiles(paths.projectDir),
+      canonicalUntrackedFiles(paths.projectDir),
+      readFileAsync(indexPath),
+      lstatAsync(indexPath),
+    ]);
+    const dirtyTracked = new Map<string, ResidueFileSnapshot>();
+    for (const path of dirtyTrackedPaths) {
+      dirtyTracked.set(path, await snapshotResidueFile(paths.projectDir, path));
+    }
+    const untracked = new Map<string, ResidueFileSnapshot>();
+    for (const path of untrackedPaths) {
+      untracked.set(path, await snapshotResidueFile(paths.projectDir, path));
+    }
     return {
       projectDir: paths.projectDir,
       indexPath,
       indexData,
-      indexMode: lstatSync(indexPath).mode,
+      indexMode: indexStat.mode,
       dirtyTracked,
       untracked,
     };
@@ -1905,14 +1936,16 @@ export function hasDeployReceiptWake(events: TaskAttempt["events"]): boolean {
   return events.items.some(({ event }) => event.data?.reason === "restart-aware-deploy-receipt");
 }
 
-export function planCanonicalAgentResidueCleanup(
+export async function planCanonicalAgentResidueCleanup(
   guard: CanonicalUntrackedResidueGuard | null,
-): CanonicalAgentResidueCleanupPlan | null {
+): Promise<CanonicalAgentResidueCleanupPlan | null> {
   if (!guard || !existsSync(guard.indexPath)) return null;
 
-  const expectedIndexData = readFileSync(guard.indexPath);
-  const dirtyTrackedPaths = canonicalDirtyTrackedFiles(guard.projectDir);
-  const untrackedPaths = canonicalUntrackedFiles(guard.projectDir);
+  const [expectedIndexData, dirtyTrackedPaths, untrackedPaths] = await Promise.all([
+    readFileAsync(guard.indexPath),
+    canonicalDirtyTrackedFiles(guard.projectDir),
+    canonicalUntrackedFiles(guard.projectDir),
+  ]);
   const currentPaths = new Set([
     ...guard.dirtyTracked.keys(),
     ...guard.untracked.keys(),
@@ -1921,7 +1954,7 @@ export function planCanonicalAgentResidueCleanup(
   ]);
   const files = new Map<string, PlannedResidueFileRestore>();
   for (const path of currentPaths) {
-    const expected = snapshotResidueFile(guard.projectDir, path);
+    const expected = await snapshotResidueFile(guard.projectDir, path);
     const baseline = guard.dirtyTracked.get(path) ?? guard.untracked.get(path);
     if (baseline) {
       if (!residueSnapshotsEqual(expected, baseline)) files.set(path, { expected, restore: baseline });
@@ -1937,38 +1970,43 @@ export function planCanonicalAgentResidueCleanup(
   };
 }
 
-function restoreResidueFileFromBaselineIndex(guard: CanonicalUntrackedResidueGuard, relativePath: string): void {
+async function restoreResidueFileFromBaselineIndex(
+  guard: CanonicalUntrackedResidueGuard,
+  relativePath: string,
+): Promise<void> {
   const temporaryIndex = `${guard.indexPath}.agent-residue-${process.pid}-${Date.now()}`;
   try {
-    writeFileSync(temporaryIndex, guard.indexData);
-    chmodSync(temporaryIndex, guard.indexMode);
-    execFileSync("git", ["-C", guard.projectDir, "checkout-index", "--force", "--", relativePath], {
+    await writeFileAsync(temporaryIndex, guard.indexData);
+    await chmodAsync(temporaryIndex, guard.indexMode);
+    await execFileAsync("git", ["-C", guard.projectDir, "checkout-index", "--force", "--", relativePath], {
       env: { ...process.env, GIT_INDEX_FILE: temporaryIndex },
     });
   } finally {
-    rmSync(temporaryIndex, { force: true });
+    await rmAsync(temporaryIndex, { force: true });
   }
 }
 
-export function applyCanonicalAgentResidueCleanup(plan: CanonicalAgentResidueCleanupPlan | null): string[] {
+export async function applyCanonicalAgentResidueCleanup(
+  plan: CanonicalAgentResidueCleanupPlan | null,
+): Promise<string[]> {
   if (!plan) return [];
   const { guard } = plan;
   const restored: string[] = [];
 
   for (const [relativePath, filePlan] of plan.files) {
-    const current = snapshotResidueFile(guard.projectDir, relativePath);
+    const current = await snapshotResidueFile(guard.projectDir, relativePath);
     if (!residueSnapshotsEqual(current, filePlan.expected)) continue;
     if (filePlan.restore === "index") {
-      restoreResidueFileFromBaselineIndex(guard, relativePath);
+      await restoreResidueFileFromBaselineIndex(guard, relativePath);
     } else {
-      restoreResidueFile(guard.projectDir, relativePath, filePlan.restore);
+      await restoreResidueFile(guard.projectDir, relativePath, filePlan.restore);
     }
     restored.push(`file:${relativePath}`);
     if (filePlan.restore === "index" || filePlan.restore.exists) continue;
     let parent = dirname(safeResiduePath(guard.projectDir, relativePath));
     while (parent !== guard.projectDir) {
       try {
-        rmdirSync(parent);
+        await rmdirAsync(parent);
       } catch {
         break;
       }
@@ -1979,17 +2017,19 @@ export function applyCanonicalAgentResidueCleanup(plan: CanonicalAgentResidueCle
   if (
     plan.restoreIndex &&
     existsSync(guard.indexPath) &&
-    readFileSync(guard.indexPath).equals(plan.expectedIndexData)
+    (await readFileAsync(guard.indexPath)).equals(plan.expectedIndexData)
   ) {
-    writeFileSync(guard.indexPath, guard.indexData);
-    chmodSync(guard.indexPath, guard.indexMode);
+    await writeFileAsync(guard.indexPath, guard.indexData);
+    await chmodAsync(guard.indexPath, guard.indexMode);
     restored.push("index");
   }
   return restored;
 }
 
-export function finishCanonicalAgentResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
-  return applyCanonicalAgentResidueCleanup(planCanonicalAgentResidueCleanup(guard));
+export async function finishCanonicalAgentResidueGuard(
+  guard: CanonicalUntrackedResidueGuard | null,
+): Promise<string[]> {
+  return applyCanonicalAgentResidueCleanup(await planCanonicalAgentResidueCleanup(guard));
 }
 
 export function rejectConvergedDirectAgentResidue(
@@ -2386,7 +2426,7 @@ async function executeTaskAgent(input: {
           }
         })()
       : await opts.manager.callAgent(claim.agent, prompt, agentOptions);
-  const residueGuard = beginCanonicalAgentResidueGuard(input.executionPaths);
+  const residueGuard = await beginCanonicalAgentResidueGuard(input.executionPaths);
   let restoredAgentResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchAgent>>;
   try {
@@ -2394,8 +2434,8 @@ async function executeTaskAgent(input: {
     result = await dispatchAgent();
   } finally {
     input.observer?.providerFinished();
-    const cleanupPlan = planCanonicalAgentResidueCleanup(residueGuard);
-    restoredAgentResidue = applyCanonicalAgentResidueCleanup(cleanupPlan);
+    const cleanupPlan = await planCanonicalAgentResidueCleanup(residueGuard);
+    restoredAgentResidue = await applyCanonicalAgentResidueCleanup(cleanupPlan);
   }
   const done = result.status === "done";
   const handlerResult = rejectConvergedDirectAgentResidue(
@@ -2513,7 +2553,7 @@ async function executeTaskCli(input: {
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
   ].join("\n");
-  const residueGuard = beginCanonicalAgentResidueGuard(input.executionPaths);
+  const residueGuard = await beginCanonicalAgentResidueGuard(input.executionPaths);
   let restoredResidue: string[] = [];
   let execution: Awaited<ReturnType<typeof executeTaskWithCli>>;
   try {
@@ -2535,7 +2575,7 @@ async function executeTaskCli(input: {
     });
   } finally {
     input.observer?.providerFinished();
-    restoredResidue = finishCanonicalAgentResidueGuard(residueGuard);
+    restoredResidue = await finishCanonicalAgentResidueGuard(residueGuard);
   }
   if (execution.status === "failed") {
     return {

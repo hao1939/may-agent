@@ -16,6 +16,24 @@ function configFor(statePath: string): TaskStateConfig {
 }
 
 describe("task state lock recovery", () => {
+  test("uses resource-store fencing without creating a blocking file lock", () => {
+    const root = mkdtempSync(join(tmpdir(), "task-resource-lock-"));
+    const statePath = join(root, "state.json");
+    const lockPath = `${statePath}.lock`;
+    try {
+      const config = {
+        ...configFor(statePath),
+        resourceStore: {} as NonNullable<TaskStateConfig["resourceStore"]>,
+      };
+      expect(withTaskStateLock(config, () => "fenced by resource transaction")).toBe(
+        "fenced by resource transaction",
+      );
+      expect(existsSync(lockPath)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("records ownership while held and removes the lock on release", () => {
     const root = mkdtempSync(join(tmpdir(), "task-state-lock-"));
     const statePath = join(root, "state.json");
