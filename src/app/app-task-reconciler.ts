@@ -3662,7 +3662,7 @@ type ResourceMutationScope = {
   conditionIds: Set<string>;
   originalConditionVersions: Map<string, number>;
   originalAttemptVersions: Map<string, number>;
-  originalReceiptVersions: Map<string, number>;
+  originalReceiptIds: Set<string>;
   fences: Array<{
     taskId: string;
     resourceVersion: number;
@@ -3685,9 +3685,7 @@ function emptyResourceMutationScope(tree: TaskTree): ResourceMutationScope {
     originalAttemptVersions: new Map(
       Object.values(tree.attempts ?? {}).map((attempt) => [attempt.metadata.id, attempt.metadata.resourceVersion]),
     ),
-    originalReceiptVersions: new Map(
-      Object.values(tree.receipts ?? {}).map((receipt) => [receipt.metadata.id, receipt.metadata.resourceVersion]),
-    ),
+    originalReceiptIds: new Set(Object.keys(tree.receipts ?? {})),
     fences: [],
   };
 }
@@ -3753,7 +3751,7 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
   });
   const receipts = [...scope.taskIds].flatMap((taskId) => {
     const receipt = tree.receipts?.[taskId];
-    return receipt && scope.originalReceiptVersions.get(taskId) !== receipt.metadata.resourceVersion ? [receipt] : [];
+    return receipt && !scope.originalReceiptIds.has(taskId) ? [receipt] : [];
   });
   return {
     fences: scope.fences,
