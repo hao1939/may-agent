@@ -233,6 +233,7 @@ describe("project runtime state paths", () => {
     expect(canonical.tasks).toBeUndefined();
     expect(canonical.groups.root).toMatchObject({ id: "root" });
     expect(canonical.groups.root.state).toBeUndefined();
+    expect(canonical.groups.root.children).toBeUndefined();
     expect(projection.groups).toBeUndefined();
     expect(projection.tasks.root).toMatchObject({ id: "root", children: [] });
   });
