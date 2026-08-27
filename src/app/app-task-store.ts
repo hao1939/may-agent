@@ -429,8 +429,6 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
   if (config.statePath !== runtimePaths.taskStatePath) {
     throw new Error(`Task state must be written to canonical state.json: ${runtimePaths.taskStatePath}`);
   }
-  normalizeTaskStateInPlace(tree);
-
   if (config.resourceStore) {
     if (!options?.resourceMutation) {
       throw new Error("Resource-backed task state requires an exact resourceMutation");
@@ -451,6 +449,8 @@ export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?:
     }
     return;
   }
+
+  normalizeTaskStateInPlace(tree);
 
   const cache = taskStateReadCaches.get(config);
   let existingTree: TaskTree | null = null;
