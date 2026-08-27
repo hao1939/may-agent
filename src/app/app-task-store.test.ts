@@ -474,9 +474,7 @@ describe("project runtime state paths", () => {
       tasks: { projectionEdit: { id: "projectionEdit", state: "done", children: [] } },
     });
 
-    expect(readTaskState(config).tasks).toEqual({
-      canonical: { id: "canonical", parent_id: null, state: "backlog", children: [] },
-    });
+    expect(readTaskState(config).tasks).toBeUndefined();
     const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
     expect(canonical.tasks).toBeUndefined();
     expect(canonical.groups.projectionEdit).toBeUndefined();

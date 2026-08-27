@@ -24,30 +24,6 @@ import { currentProcessInstance, isProcessInstanceAlive } from "../lib/process-i
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "./app-task-resource-store.js";
 import type { TaskExecutorName } from "@may-agent/sdk";
 
-export type TaskNode = {
-  id: string;
-  revision?: number;
-  parent_id?: string | null;
-  state?: string;
-  kind?: string;
-  priority?: "P0" | "P1" | "P2" | "P3";
-  owner?: string;
-  workflow?: string;
-  executor?: TaskExecutorName;
-  goal?: string;
-  children?: string[];
-  depends_on?: string[] | string;
-  outputs?: string[];
-  acceptance?: string[];
-  context?: Record<string, unknown>;
-  summary?: string;
-  strategy_context?: string;
-  progress?: Record<string, unknown>;
-  evidence?: string[];
-  tags?: string[];
-  reconcile_mode?: "achieve" | "maintain";
-};
-
 /** A structural container. It never carries executable Task lifecycle state. */
 export type TaskGroup = {
   id: string;
@@ -203,7 +179,8 @@ export type TaskTree = {
   receipts?: Record<string, TaskCompletionReceipt>;
   /** Structural labels/containers only. Executable task nodes are projected from resources. */
   groups?: Record<string, TaskGroup>;
-  tasks: Record<string, TaskNode>;
+  /** Obsolete read projection accepted only so old state can be normalized away. */
+  tasks?: Record<string, unknown>;
 };
 
 export type TaskStateConfig = {
@@ -688,7 +665,6 @@ export function migrateTaskState(
 }
 
 export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
-  const resources = tree.resources ?? {};
   const groups: Record<string, TaskGroup> = Object.fromEntries(
     Object.entries(tree.groups ?? {}).map(([id, group]) => {
       const { children: _derivedChildren, ...structural } = group;
@@ -696,27 +672,11 @@ export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
     }),
   );
   tree.groups = groups;
-  tree.tasks = buildTaskTreeProjection(groups, resources);
-  tree.active_task_ids = Object.values(resources)
-    .filter((resource) => resource.status.phase === "running")
-    .map((resource) => resource.metadata.id)
-    .sort();
-  tree.active_task_id = tree.active_task_ids[0] ?? null;
+  delete tree.tasks;
+  delete tree.active_task_ids;
+  delete tree.active_task_id;
   tree.root_task_id ??= Object.values(groups).find((group) => group.parent_id === null)?.id;
   return tree;
-}
-
-function projectedTaskState(resource: AppTaskResource): string {
-  switch (resource.status.phase) {
-    case "running":
-      return "active";
-    case "waiting":
-      return "blocked";
-    case "attention":
-      return "review";
-    default:
-      return "backlog";
-  }
 }
 
 function projectedTaskOwner(
@@ -756,43 +716,6 @@ function projectedTaskChildren(
   return Object.fromEntries(
     Object.entries(childSetsById).map(([parentId, children]) => [parentId, [...children].sort()]),
   );
-}
-
-function buildTaskTreeProjection(
-  groups: Record<string, TaskGroup>,
-  resources: Record<string, AppTaskResource>,
-): Record<string, TaskNode> {
-  const childrenById = projectedTaskChildren(groups, resources);
-  const tasks: Record<string, TaskNode> = {};
-  for (const [id, group] of Object.entries(groups)) {
-    tasks[id] = { ...group, id, state: group.state ?? "backlog", children: childrenById[id] ?? [] };
-  }
-
-  for (const resource of Object.values(resources)) {
-    const { spec, status, metadata } = resource;
-    const owner = projectedTaskOwner(resource, groups, resources);
-    tasks[metadata.id] = {
-      id: metadata.id,
-      revision: metadata.generation,
-      parent_id: spec.parentId,
-      state: projectedTaskState(resource),
-      ...(spec.category ? { kind: spec.category } : {}),
-      priority: spec.priority ?? "P2",
-      ...(owner ? { owner } : {}),
-      ...(spec.workflow ? { workflow: spec.workflow } : {}),
-      ...(spec.executor ? { executor: spec.executor } : {}),
-      goal: spec.outcome,
-      children: childrenById[metadata.id] ?? [],
-      depends_on: [...(spec.dependsOn ?? [])],
-      outputs: [...(spec.outputs ?? [])],
-      acceptance: [...spec.acceptance],
-      ...(status.summary ? { summary: status.summary } : {}),
-      ...(status.evidence ? { evidence: [...status.evidence] } : {}),
-      reconcile_mode: spec.mode,
-    };
-  }
-
-  return tasks;
 }
 
 // Reconciliation exposes at most eight completed children to a live parent.
