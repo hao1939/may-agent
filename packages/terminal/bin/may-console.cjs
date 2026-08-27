@@ -1690,6 +1690,15 @@ function handleInput(line) {
     return;
   }
 
+  // Commands are structured control reads/actions and do not depend on the
+  // Conversation transcript. Let them run as soon as the socket is available
+  // so a slow initial Conversation projection cannot hold /apps, /tasks,
+  // /task, /watch, or /help behind May.
+  if (input.startsWith("/") && connected && !appSelectionInFlight) {
+    handleCommand(input);
+    return;
+  }
+
   // Ordinary turns should follow the Conversation history the human is about
   // to see. Preserve early keystrokes until the initial Conversation snapshot
   // arrives instead of executing them against an empty local view.
@@ -1705,11 +1714,6 @@ function handleInput(line) {
   if (appSelectionInFlight) {
     pendingInputLines.push(input);
     refreshPrompt();
-    return;
-  }
-
-  if (input.startsWith("/")) {
-    handleCommand(input);
     return;
   }
 
