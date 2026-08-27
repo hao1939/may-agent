@@ -2588,7 +2588,6 @@ export function claimObservedAppTask(
 ): AppTaskClaimResult {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
-    const task = tree.tasks[input.taskId];
     const resource = tree.resources?.[input.taskId];
     if (config.resourceStore.isCancelled(input.taskId)) {
       return {
@@ -2597,7 +2596,7 @@ export function claimObservedAppTask(
         generation: resource?.metadata.generation ?? tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
       };
     }
-    if (!task || !resource) {
+    if (!resource) {
       return {
         kind: "completed",
         taskId: input.taskId,
@@ -2651,7 +2650,7 @@ export function claimObservedAppTask(
       // This wake was evaluated and produced a durable attention result. Keeping
       // it pending would make passive resync immediately retry the same invalid
       // task forever; a later external wake can record a fresh trigger.
-      if (tree.taskTriggers) delete tree.taskTriggers[task.id];
+      if (tree.taskTriggers) delete tree.taskTriggers[input.taskId];
       touchResource(resource, {
         phase: "attention",
         observedGeneration: resource.metadata.generation,
@@ -2659,14 +2658,12 @@ export function claimObservedAppTask(
         summary,
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, agent);
-      refreshActiveTaskProjection(tree);
       saveTaskState(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
       return {
         kind: "attention",
-        taskId: task.id,
+        taskId: input.taskId,
         generation: resource.metadata.generation,
         summary,
       };
@@ -2692,8 +2689,8 @@ export function claimObservedAppTask(
       const now = new Date().toISOString();
       const attemptId = resource.status.currentAttemptId;
       const summary = attemptId
-        ? `Running reconciliation ${task.id} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
-        : `Running reconciliation ${task.id} had no current attempt; retrying from current task evidence`;
+        ? `Running reconciliation ${input.taskId} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
+        : `Running reconciliation ${input.taskId} had no current attempt; retrying from current task evidence`;
       const staleAttempt = attemptId ? tree.attempts?.[attemptId] : undefined;
       if (staleAttempt) {
         staleAttempt.metadata.resourceVersion += 1;
@@ -2709,16 +2706,14 @@ export function claimObservedAppTask(
         summary,
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, agent);
-      refreshActiveTaskProjection(tree);
     }
     const canRecoverPreviousRuntime = Boolean(
       previousAttempt &&
       previousAttempt.runtimeId !== reconcilerRuntimeId &&
-      (input.reason === `attempt-recovery:${task.id}` || attemptTrigger(previousAttempt)),
+      (input.reason === `attempt-recovery:${input.taskId}` || attemptTrigger(previousAttempt)),
     );
     const supersededSessionIds = new Set<string>();
-    const pendingTrigger = tree.taskTriggers?.[task.id];
+    const pendingTrigger = tree.taskTriggers?.[input.taskId];
     const previousUnacceptedEvents =
       previousAttempt && previousAttempt.state !== "completed"
         ? previousAttempt.events?.length
@@ -2751,11 +2746,9 @@ export function claimObservedAppTask(
         summary,
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, resolvedAgent(tree, intent, input.appAgent));
-      refreshActiveTaskProjection(tree);
     }
     if (resource.status.phase === "running" && previousAttempt && !canRecoverPreviousRuntime) {
-      return { kind: "busy", taskId: task.id, attemptId: previousAttempt.metadata.id };
+      return { kind: "busy", taskId: input.taskId, attemptId: previousAttempt.metadata.id };
     }
     if (
       resource.status.phase === "converged" &&
@@ -2764,7 +2757,7 @@ export function claimObservedAppTask(
     ) {
       return {
         kind: "completed",
-        taskId: task.id,
+        taskId: input.taskId,
         generation: resource.metadata.generation,
       };
     }
@@ -2777,7 +2770,7 @@ export function claimObservedAppTask(
     ) {
       return {
         kind: "attention",
-        taskId: task.id,
+        taskId: input.taskId,
         generation: resource.metadata.generation,
         summary: resource.status.summary ?? "Task is waiting for agent/reviewer attention",
       };
@@ -2791,25 +2784,25 @@ export function claimObservedAppTask(
       );
     });
     if (dependencyIds.length > 0) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
-      return { kind: "waiting", taskId: task.id, conditionIds: [], dependencyIds };
+      acknowledgeIndexedRecoveryWait(config, input.taskId);
+      return { kind: "waiting", taskId: input.taskId, conditionIds: [], dependencyIds };
     }
 
     if (resource.metadata.generation > resource.status.observedGeneration && resource.status.conditionIds?.length) {
-      unlinkTaskConditions(tree, task.id);
+      unlinkTaskConditions(tree, input.taskId);
     }
-    const openConditionIds = openTaskConditionIds(tree, task.id);
-    const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, task.id);
-    const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, task.id);
+    const openConditionIds = openTaskConditionIds(tree, input.taskId);
+    const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);
+    const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, input.taskId);
     const conditionReviewAttempt =
       missedCheckpointConditionIds.length > 0
         ? Math.max(
             ...missedCheckpointConditionIds.map(
-              (conditionId) => completedConditionReviewCount(tree, task.id, conditionId) + 1,
+              (conditionId) => completedConditionReviewCount(tree, input.taskId, conditionId) + 1,
             ),
           )
         : 0;
-    const childIds = liveChildTaskIds(tree, task.id);
+    const childIds = liveChildTaskIds(tree, input.taskId);
     if (
       resource.status.phase === "waiting" &&
       childIds.length > 0 &&
@@ -2817,8 +2810,8 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
-      return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds, childIds };
+      acknowledgeIndexedRecoveryWait(config, input.taskId);
+      return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds, childIds };
     }
     if (
       resource.status.phase === "waiting" &&
@@ -2827,15 +2820,15 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
-      return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
+      acknowledgeIndexedRecoveryWait(config, input.taskId);
+      return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
     }
 
     if (resource.status.phase === "waiting" && hasSatisfiedCondition) {
       // Consume only the Conditions represented by this attempt. Other waits
       // stay linked while it runs so a later matching fact can still find the
       // task and remain pending for the next attempt.
-      unlinkSatisfiedTaskConditions(tree, task.id);
+      unlinkSatisfiedTaskConditions(tree, input.taskId);
     }
 
     const generation = resource.metadata.generation;
@@ -2851,12 +2844,12 @@ export function claimObservedAppTask(
       (previousAttempt ? attemptTrigger(previousAttempt) : undefined) ??
       (missedCheckpointConditionIds.length > 0
         ? {
-            ...syntheticAttemptTrigger(config, task.id, "condition-review-checkpoint-missed"),
+            ...syntheticAttemptTrigger(config, input.taskId, "condition-review-checkpoint-missed"),
             type: "project.task.condition-review.missed",
             data: {
               project: projectIdFromAppDir(config.appDir) || "unknown-app",
-              taskId: task.id,
-              task_id: task.id,
+              taskId: input.taskId,
+              task_id: input.taskId,
               reason: "condition-review-checkpoint-missed",
               conditionIds: missedCheckpointConditionIds,
               reviewAttempt: conditionReviewAttempt,
@@ -2864,11 +2857,11 @@ export function claimObservedAppTask(
               synthetic: "controller-review-trigger",
             },
           }
-        : syntheticAttemptTrigger(config, task.id, input.reason));
+        : syntheticAttemptTrigger(config, input.taskId, input.reason));
     const specHash = appTaskSpecHash(intent, agent);
     const attempt: AppTaskAttempt = {
       metadata: { id: attemptId, resourceVersion: 1 },
-      taskId: task.id,
+      taskId: input.taskId,
       taskGeneration: generation,
       specHash,
       owner: agent,
@@ -2893,22 +2886,20 @@ export function claimObservedAppTask(
     changedAttempts.add(attempt);
     if (tree.taskTriggers) {
       if (remainingEvents.length > 0 && pendingTrigger) {
-        tree.taskTriggers[task.id] = {
+        tree.taskTriggers[input.taskId] = {
           ...pendingTrigger,
           event: structuredClone(preferredTriggerFromEvents(remainingEvents, agent)),
           events: structuredClone(remainingEvents),
           observedAt: remainingEvents[remainingEvents.length - 1]!.observedAt,
         };
       } else {
-        delete tree.taskTriggers[task.id];
+        delete tree.taskTriggers[input.taskId];
       }
     }
     touchResource(resource, {
       phase: "running",
       currentAttemptId: attemptId,
     });
-    syncTaskProjection(task, resource, agent);
-    refreshActiveTaskProjection(tree);
     const currentConditionIds = new Set(resource.status.conditionIds ?? []);
     const relevantConditionIds = new Set([...initialConditionIds, ...currentConditionIds]);
     saveTaskState(config, tree, {
@@ -2922,7 +2913,7 @@ export function claimObservedAppTask(
     });
     return {
       kind: "claimed",
-      taskId: task.id,
+      taskId: input.taskId,
       generation,
       resourceVersion: resource.metadata.resourceVersion,
       specHash,
