@@ -5,7 +5,9 @@
 reads, one Task watch per chat/topic, focused context, human-action projection,
 and Task cancellation are implemented. Outbound sends are best effort; there
 is no durable per-surface replay cursor. Watch refreshes suppress unchanged
-semantic Task revisions and render only meaningful changes.
+semantic Task revisions and render only meaningful changes. Follow-up
+admission now presents the responsible Task directly, and human-action reads
+follow exact dependency links to the Task that owns the action.
 
 ## Purpose
 
@@ -19,8 +21,9 @@ human Telegram message
   -> normalize chat/topic/message/reply identity
   -> Conversation may:primary
   -> one bounded May frontend request and optional Topic
-  -> direct answer or typed follow-up event
-  -> May conversation Task reviews Tasks owned by responsible Apps
+  -> direct answer or typed App request/exact Task feedback
+  -> Topic links the responsible Task
+  -> meaningful Task events wake May's supervision Task
   -> persisted result in Conversation
   -> Telegram independently renders unseen messages
 ```
@@ -62,9 +65,9 @@ It does not:
 - retry uncertain sends blindly; or
 - turn a notification into durable work.
 
-May owns conversation, clarification, cross-App task dependencies, human
-preferences, and final reply wording. Domain Apps own project meaning and
-durable desired outcomes.
+May owns conversation, clarification, human-purpose review of linked Tasks,
+human preferences, and final reply wording. Domain Apps own project meaning,
+Task dependencies, and durable desired outcomes.
 
 ## Inbound Admission
 
@@ -143,22 +146,24 @@ unfinished May frontend request
   -> prepare a fresh bounded May session
   -> finish the same bounded decision
 
-May conversation Task
-  -> Runtime retries the same Task from durable Events and links
+missed linked-Task review
+  -> recover from Topic links, canonical Task state, and durable Events
 ```
 
 Do not replay the last prompt or steer an unrelated current session. Session
-loss cannot lose or duplicate the bounded request or May conversation Task.
+loss cannot lose or duplicate the bounded request or responsible Task link.
 
 ## Answers And Cross-App Dependencies
 
-May may answer in one decision or request typed child outcomes from accountable
-Apps. In the latter case:
+May may answer in one decision or request typed work from accountable Apps. In
+the latter case:
 
-- the frontend follow-up Event is persisted before its request completes;
-- the standing May Task requests or continues the exact responsible App Task;
-- the child App reconciles its Task;
-- meaningful child events wake the standing May Task; and
+- the responsible Task admission and Topic link are durable before the
+  frontend request completes;
+- the target App reuses or creates the fitting Task;
+- the target App reconciles that Task;
+- meaningful Task events wake one bounded reconciliation of May's supervision
+  Task; and
 - May reviews the result before producing the human-facing response.
 
 An agent message, owner label, `escalation.created` event, or source-session
@@ -250,9 +255,11 @@ session. Semantic Task events wake one coalesced exact
 read. Passive Conversation synchronization reads bounded messages only. Idle
 watch has no poller, timer, workflow, session, or model call.
 
-`/todo` returns up to 50 Tasks with explicit open human-owned Conditions,
-`/todo more` follows the current opaque cursor, and `/todo all` crosses App
-scope. Reconciliation and cancellation events trigger
+`/todo` returns up to 50 Tasks that own explicit open human Conditions or are
+exact reachable dependency leaves for the selected App. Rows point to and
+deduplicate by the Task that owns the Condition; no action state is copied to a
+parent. `/todo more` follows the current opaque cursor, and `/todo all` crosses
+App scope. Reconciliation and cancellation events trigger
 one coalesced App-scoped reread for active chat/topic surfaces. Executor
 progress refreshes an exact watch only and does not rescan `/todo`. A new or
 changed off-watch action may produce one best-effort compact notification on
@@ -323,7 +330,7 @@ Telegram integration tests prove:
 - reply anchors add context while each inbound message keeps its own request;
 - ambiguous references clarify instead of guessing;
 - persisted direct answers close semantic work without delivery evidence;
-- child task completion wakes and resumes the exact May parent task;
+- child Task completion wakes and resumes its exact requester Task;
 - restart during May handling or delivery preserves identity;
 - original session loss creates a fresh session for the same request;
 - proactive attention is one May child request, not an event-pair lifecycle;
@@ -331,8 +338,9 @@ Telegram integration tests prove:
 - Task controls target exact identities and never list-position/session guesses;
 - focused watch feedback reaches May with exact canonical Task context;
 - idle watch performs no polling and coalesces concurrent wakes;
-- `/todo` membership comes only from open human-owned Conditions, remains
-  bounded, and clears without delivery acknowledgement;
+- `/todo` membership comes only from open human-owned Conditions on the exact
+  Task or a reachable dependency leaf, remains bounded, and clears without
+  delivery acknowledgement;
 - secrets never enter prompts, facts, traces, or outbound diagnostics;
 - persisted output is readable from Console even if Telegram delivery fails;
 - restart reconstructs the same Conversation projection; and

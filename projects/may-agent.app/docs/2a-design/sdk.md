@@ -94,21 +94,27 @@ A conversational App may declare `requests: { mode: "agent" }`. The
 Host supplies the bounded Conversation, Topic candidates, exact focused Task,
 canonical snapshots for Tasks represented by recent command/tool views,
 and installed App contracts to one structured agent decision. It answers,
-returns a typed follow-up event for its standing Task, or requests a
+returns one typed durable App request or exact Task feedback, or requests a
 narrow human-authorized cancellation of an exact supplied Task without
-creating per-turn tracking work. The Host applies that control through its Task
-API; the App receives no persistence capability. Request policy handles the
-bounded frontend input; other declared inputs and events may resolve to the
-App's ordinary Tasks.
+creating tracking work. Runtime records the accepted responsible Task on the
+Topic and applies control through its Task API; the App receives no persistence
+capability. Request policy handles the bounded frontend input; other declared
+inputs and events may resolve to the App's ordinary Tasks.
 
 If the App also receives addressed events or API requests outside a channel
 adapter, it may declare one default Conversation, for example
 `requests: { mode: "agent", conversationId: "may:primary" }`. The Host places
 those requests and their accepted responses in that same Conversation using the
 origin event identity. The non-human input is not presented as a human Turn.
-For May, one normal maintain-mode conversation Task consumes typed frontend decisions and
-meaningful Task events. It is ordinary Task infrastructure and replaces the
-former rule that kept every frontend request open for child results.
+For May, Runtime filters Task events against exact Topic links before invoking
+its normal supervision Task. One bounded reconciliation may append a
+Conversation result, send feedback to the same Task, or do nothing. The
+supervision Task never becomes a parent or dependency owner for linked work.
+The Task read capability can read one exact Task in another App when the wake
+names its App and Task ID; list remains scoped to the current App. A bounded
+recovery read selects only unfinished Topic-linked Tasks that stayed quiet for
+the review interval, so a missed wake is recoverable without a fleet-wide read,
+per-Task watcher, or model polling loop.
 
 For Task-owning Apps, this rule has no fast-path exception. A simple input resolves to a task whose
 first bounded attempt can converge immediately. A hard input resolves to a task

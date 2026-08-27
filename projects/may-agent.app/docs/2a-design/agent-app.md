@@ -239,8 +239,8 @@ requester. Runtime re-observes persisted waits after restart.
 
 May's human-facing behavior is one use of this generic contract, not part of
 the App authoring model. [Message Lifecycle](message-lifecycle.md) owns its
-bounded frontend decision, clarification quality, Topic linkage, one visible
-conversation Task, direct advice, exact feedback, follow-through, and
+bounded frontend decision, clarification quality, direct Topic-to-Task
+linkage, the normal May supervision Task, direct advice, exact feedback, and
 plain-language response rules. [Human Control Surfaces](human-control-surfaces.md)
 owns focused App/Task context and supported human controls.
 

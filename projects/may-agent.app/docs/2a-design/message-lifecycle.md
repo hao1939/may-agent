@@ -1,37 +1,36 @@
 # Message Lifecycle
 
 **Design status:** Accepted.
-**Implementation status:** The frontend/backend split, visible
-`may/conversation/follow-up` Task, linked-Task wakes, explicit terminal
-Conversation append, and window-independent response identity are implemented.
-The shared Task projection also filters progress and accepted observations by
-exact attempt identity; prior-attempt observations remain history.
+**Implementation status:** The bounded frontend, visible
+`may/conversation/follow-up` maintain Task, direct responsible-Task admission,
+linked-Task wakes, explicit terminal Conversation append, and
+window-independent response identity are implemented. The supervision Task no
+longer mediates, parents, or waits on destination work. The shared Task
+projection filters progress and accepted observations by exact attempt
+identity; prior-attempt observations remain history.
 
 ## Mental model
 
-> May talks with the human in the frontend and keeps durable follow-through
-> moving in one normal Task.
+> May handles each human turn promptly. One normal May Task supervises the
+> responsible Tasks without becoming their proxy owner.
 
 ```text
 Human
   <-> May frontend
         |- answer or clarify now
-        `- publish one typed durable intent or feedback event
+        `- request or steer one exact responsible Task
                               |
                               v
-                    May conversation Task
-                      |- continue an exact Task
-                      |- request another App's Task
-                      `- create an ordinary May goal Task
+                    Topic -> exact Task
                               |
                               v
-                  Task events and results
+                    Task events/results
                               |
                               v
-                    May conversation Task
-                              |
-                              v
-                 Conversation message -> Human
+                 May supervision Task
+                    |- no-op
+                    |- steer exact Task
+                    `- Conversation update -> Human
 ```
 
 There are four durable resources:
@@ -48,16 +47,18 @@ and “child” describe a Task's goal or relationship, never a different resour
 or lifecycle. An App owns and reconciles Tasks; an agent, workflow, Codex, or
 Claude is only a replaceable way to perform one attempt.
 
-The May App has two deliberately separate roles:
+The May App has two deliberately separate execution paths:
 
 - the **frontend** handles one conversational turn; and
-- one long-lived **conversation Task** maintains Topic-to-Task follow-through.
+- one normal visible **supervision Task** maintains the ongoing goal of keeping
+  human-linked work aligned and useful.
 
-The conversation Task is a normal visible Task owned by May. It has the same
-resource, lifecycle, events, reconciliation, retry, recovery, and presentation
-as every other Task. Its goal is Conversation follow-through rather than a
-copy of a delegated goal. A durable goal that May itself must perform is a
-separate May-owned Task.
+The supervision Task is not a wrapper for a Conversation turn or a parent of
+delegated Tasks. Conversation, Topic links, the actual responsible Tasks, and
+the event log preserve each human promise and its state. The supervision Task
+owns only May's recurring responsibility to observe those links, challenge
+stale or drifting work, and return useful updates. Other concrete outcomes
+that belong to May use separate normal May-owned Tasks.
 
 ## Frontend: one bounded turn
 
@@ -94,21 +95,22 @@ The frontend makes one of three decisions:
    requests finish in this turn and create no Task.
 2. **Clarify.** Ask one high-quality question only when the missing choice
    materially changes outcome, owner, risk, proof, or authority.
-3. **Continue durably.** Answer anything useful now, then publish one typed
-   follow-up event containing the chosen Topic, desired outcome, constraints,
-   acceptance, and an exact Task reference when this is feedback for existing
-   work.
+3. **Continue durably.** Answer anything useful now, then publish one typed App
+   request or exact-Task feedback containing the chosen Topic, desired outcome,
+   constraints, acceptance, and an exact Task reference when one already fits.
 
-Publishing the follow-up event completes the frontend turn. The human request
-does not remain open waiting for child work, and it does not become a generic
-Conversation Task.
+Durable admission to the responsible Task completes the frontend turn. The
+human request does not remain open waiting for destination work and does not
+become a generic Conversation Task.
 
 Speech and action remain visibly distinct. May's message explains what it
 understood, recommends, or intends. Once Runtime has durably admitted the
 follow-up to an exact Task, it appends one structured tool-authored activity to
 Conversation with that Task identity. The activity is evidence of what the
 system actually accepted; it is not another May reply. An adapter may use the
-identity to begin a local watch immediately.
+identity to begin a local watch immediately. This activity references only the
+responsible Task; the supervision Task is not an intermediate assignment or
+automatic watch target.
 
 Only human-relevant semantic activity is presented by default: Task admission,
 meaningful progress, a real wait or human decision, recovery that changes the
@@ -135,84 +137,118 @@ hidden state machine. May preserves answers already given, does not ask for
 discoverable facts, recommends a safe default, and proceeds when the human
 delegates the choice back to May.
 
-## Backend: one normal conversation Task
+## Backend: one normal supervision Task
 
-May owns one ordinary maintain-mode Task per Conversation:
+May owns one ordinary maintain-mode Task for its supervision responsibility.
+It is one Task for the May App, not one per Conversation, Topic, human turn, or
+delegated Task. The current stable identity is:
 
 ```text
 may/conversation/follow-up
 ```
 
-The current shared Conversation is `may:primary`, so this is its one Task.
-If independent Conversations are introduced later, each receives one stable
-Task identity derived from its Conversation identity.
+Its outcome is to keep human-linked Tasks aligned with their Topics and surface
+useful progress, decisions, and results. It is visible in `/tasks`, uses the
+same reconciliation, fencing, retry, recovery, and presentation as every other
+Task, and normally rests in `converged` when linked work is healthy.
+Human views render that live state as `up to date`, not terminal `done`.
 
-It is visible in `/tasks` and wakes on:
+It is converged at an observed event checkpoint when every changed linked Task
+has one evidence-backed disposition: healthy/no-op, exact feedback accepted,
+human action exposed, useful update appended, or terminal result handled. This
+acceptance concerns May's reaction only; it does not claim that unfinished
+linked Tasks are complete.
 
-- a typed durable intent or feedback event from the frontend;
-- a linked Task's meaningful progress, wait, attention, or result;
+The first accepted Topic link resolves this stable Task intent. Later link and
+Task-change Events reuse the same identity and generation instead of creating
+another background object. With no linked Topics, no supervision work needs to
+be admitted.
+
+The supervision Task itself is not automatically linked into human Topics.
+Doing so would make it appear to own the delegated outcome and could create a
+self-wake. It remains discoverable through May's normal Task list and can be
+watched explicitly for diagnostics.
+
+The frontend and supervision Task never call or wait for each other. Both react
+to persisted Events and update durable resources. An Event says what changed
+and wakes interested consumers; Conversation, Topic, and Task resources remain
+the truth they reread. Publishers do not wait for subscribers, and repeated
+wakes are safe to coalesce by Task identity.
+
+The supervision Task wakes on:
+
+- meaningful progress, wait, attention, or results from Tasks linked to a
+  Topic;
 - a Topic-to-Task link change; and
 - a coalesced low-frequency recovery tick.
 
-The frontend and backend never call or wait for each other. Both react to
-persisted Events and update durable resources. An Event says what changed and
-wakes interested consumers; Conversation, Topic, and Task resources remain the
-truth they reread. Publishers do not wait for subscribers, and repeated wakes
-are safe to coalesce by Task identity.
+Routing is structural. When Runtime admits a Topic-to-Task link, it indexes the
+exact Task reference. A meaningful event or new canonical revision on that
+Task creates one identity-only wake for the supervision Task containing the
+Topic ID, Task reference, and event or revision identity. Repeated wakes for
+the same Task revision coalesce. No keyword matching, child dependency, or
+copied status is involved.
 
-It never waits synchronously inside event delivery and never creates an
-in-memory watcher or polling loop for an individual Task. Events are persisted
-quickly; Task reconciliation runs asynchronously. The recovery tick performs
-one bounded read of unfinished Tasks linked to this Conversation and only
-repairs missed wakes or stale relationships from durable truth.
+Code prepares a bounded supervision context from the referenced Topic, recent
+human Turns, and event identity. The exact Task reference grants May a
+single-resource cross-App read; it is not permission to list another App's
+work. The LLM makes the semantic decision and code validates and applies its
+selected effects. Acceptance advances the supervision Task's ordinary event
+checkpoint, so retry and restart cannot silently lose or duplicate the
+reaction.
 
-For each follow-up, the backend:
+Each reconciliation is bounded. It rereads the exact Topic and Task, then makes
+one decision:
 
-1. reads the Topic and current exact Task links;
-2. reuses an unfinished fitting primary Task when one exists;
-3. otherwise requests work from the accountable App;
-4. creates an ordinary May-owned goal Task only when May is the best owner;
-5. links the accepted Task identity to the Topic;
-6. sends later human feedback or decisions to that exact Task;
-7. reviews meaningful progress and terminal evidence; and
-8. appends a useful May message to the Conversation when the human should be
-   updated.
+1. do nothing when work is healthy and no human update is useful;
+2. send feedback or a decision to that same Task when human intent can move it
+   forward;
+3. surface a concrete human action when the Task needs one; or
+4. append useful progress or a terminal result to Conversation; or
+5. when the exact Task is terminal and evidence proves the human outcome is
+   still unmet, request the smallest genuinely new responsible Task and link it
+   to the same Topic.
 
-The same pass performs the semantic health check for linked unfinished Tasks:
+The supervision Task never adopts the responsible Task as a child or
+dependency, copies its status, or waits for it to finish. May does not perform
+the owning App's domain work or create replacement work because a Task paused.
+Recent progress or a valid explicit wait is healthy. An expired lease or
+interrupted attempt belongs to Runtime recovery on the same Task. A
+semantically stalled or drifting Task receives bounded feedback on its exact
+identity; its owning App remains responsible for reconciling it.
+Waiting, age, or slow progress alone never justifies a sibling Task.
 
-- recent progress or a valid explicit wait is healthy and needs no steering;
-- an expired lease or interrupted attempt is mechanical and belongs to Runtime
-  recovery on the same Task;
-- a Task with neither active execution nor a valid wait is woken or steered by
-  exact identity; and
-- work moving away from the human's goal receives feedback on that same Task,
-  rather than a replacement Task.
+The supervision Task never waits synchronously inside event delivery and never
+creates an in-memory watcher or polling loop for an individual Task. Events are
+persisted quickly and reconciliation runs asynchronously. Every 15 minutes, a
+recovery tick selects at most 100 unfinished Topic-linked Tasks that have
+reported no update during that interval and emits the normal exact-Task wake
+for each one. The supervision Task can then read that exact Task across the App
+boundary. It never scans or exposes unrelated Tasks.
 
-When no linked Task changed, the recovery pass reschedules without an LLM
-turn. It never scans unrelated Apps or Tasks.
+Human frontend requests use the higher-priority interactive lane. Supervision
+wakes may coalesce while a human turn is running and then reread current truth;
+they never delay an immediate answer merely to process older progress.
 
-The target App decides whether a new request maps to an existing or new Task.
-Once a primary Task exists, that App owns execution and child decomposition.
-The Runtime validates and persists effects but does not infer semantic
-relationships.
-
-The conversation Task stores only compact correlation needed to avoid losing a
-promise: Topic, follow-up identity, primary Task identity, and the last
-meaningful update already surfaced. Canonical Task resources remain the source
-of status, progress, waits, and results. It does not copy Task state.
+For new durable work, the target App decides whether the typed request maps to
+an existing or new Task. Once admitted, that App owns execution and child
+decomposition. Runtime validates and persists effects but does not infer
+semantic relationships. The Topic records the accepted exact Task link; Task
+resources remain the source of status, progress, waits, and results.
 
 ### May-owned durable work
 
-When no installed App is a better owner, the backend creates a normal May goal
+When no installed App is a better owner, May may request a normal May goal
 Task. That Task uses the same Task interface, events, recovery, and executor
 choices as every other Task. It may run the May agent, a workflow, Codex, or
-Claude. It is not the conversation Task.
+Claude. It exists for its concrete outcome, not to shadow a Conversation or a
+delegated Task.
 
 ## Results and human updates
 
-Task events wake the backend; they do not directly manufacture chat text. The
-backend decides whether an event matters to the human and publishes a typed
-backend result containing the Topic, exact Task references, and useful text.
+Task events wake the supervision Task; they do not directly manufacture chat
+text. May decides whether an event matters to the human and publishes a typed
+result containing the Topic, exact Task references, and useful text.
 Runtime validates and appends that text to the shared Conversation. The
 frontend is not invoked again.
 
@@ -262,39 +298,42 @@ Conversation or Topic identity.
 
 ## Ownership boundary
 
-| Component             | Owns                                                                       | Does not own                                           |
-| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
-| May frontend          | understanding one Turn, direct answer, clarification, typed durable intent | long-running work, child waits, recovery               |
-| May conversation Task | Topic-to-Task linkage, follow-through, steering, human updates             | domain execution, copied Task status, adapter delivery |
-| Target App            | goal interpretation inside its domain, Task execution and decomposition    | human Conversation presentation                        |
-| Runtime               | event persistence, validation, scheduling, retry, mechanical recovery      | semantic ownership or intent inference                 |
-| Adapter               | input/output presentation and local selection                              | work state or delivery-gated completion                |
+| Component      | Owns                                                                          | Does not own                                      |
+| -------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- |
+| May frontend   | understanding one Turn, direct answer, clarification, typed request/feedback   | long-running work, child waits, recovery          |
+| May supervision Task | human-purpose review of linked Task events, exact steering, useful updates | domain execution, parenting delegated work, copied Task state, adapter delivery |
+| Target App     | goal interpretation inside its domain, Task execution and decomposition       | human Conversation presentation                   |
+| Runtime        | event persistence, validation, scheduling, retry, mechanical recovery         | semantic ownership or intent inference            |
+| Adapter        | input/output presentation and local selection                                 | work state or delivery-gated completion           |
 
 ## Recovery and performance
 
 - Event publication persists and returns without running a long handler inline.
 - Repeated wakes coalesce by Task identity.
-- One conversation Task replaces per-request coordination loops; it is not added
-  beside them.
+- One May supervision Task replaces per-request coordination loops. It owns the
+  recurring supervision goal but never proxies the linked work.
 - Runtime retries interrupted attempts on the same Task.
 - The owning App resolves semantic waits; May supplies human context or
   steering but does not create replacement work merely because a Task paused.
-- A periodic recovery event is bounded and infrequent. It compares compact
-  follow-up links with canonical Tasks and wakes only discrepancies.
+- A periodic recovery event is bounded and infrequent. It wakes only unfinished
+  Topic-linked Tasks that stayed quiet for the review interval, at most 100 per
+  tick.
 - Conversation and Task reads are bounded; no full-history or full-fleet scan
   belongs in the conversational fast path.
 
 ## Invariants
 
 1. Only human-authored Turns invoke the May frontend.
-2. One frontend turn finishes after its answer, clarification, or durable
-   follow-up event is accepted.
+2. One frontend turn finishes after its answer, clarification, or responsible
+   Task admission is accepted.
 3. Direct Q&A creates no Task.
-4. There is one normal, visible conversation Task per Conversation.
-5. The conversation Task replaces the old open-request child-wait loop.
-6. Every durable goal is an ordinary Task owned by its responsible App.
-7. May-owned goal Tasks and the conversation Task are ordinary Tasks with
-   different goals.
+4. One normal visible May maintain Task owns recurring supervision across
+   human-linked Topics.
+5. That Task observes and steers exact responsible Tasks but never parents,
+   waits on, copies, or automatically replaces them in Topic/watch context.
+6. Every other durable goal is an ordinary Task owned by its responsible App.
+7. A May-owned Task represents a concrete May-owned outcome, never a proxy for
+   another App's Task or a Conversation turn.
 8. Topic carries context and exact links only; it never carries work state.
 9. Existing unfinished work is continued by exact identity when it can still
    fulfill the outcome.
@@ -302,7 +341,7 @@ Conversation or Topic identity.
 11. The target App chooses its Task shape; Runtime validates rather than
     guessing.
 12. Task progress and results remain authoritative in Task resources.
-13. The backend emits only useful human updates, never transport bookkeeping.
+13. May emits only useful human updates, never transport bookkeeping.
 14. Conversation persistence, not adapter acknowledgement, completes the
     semantic response.
 15. Runtime recovery resumes the same Task; it does not invent substitute
@@ -310,23 +349,21 @@ Conversation or Topic identity.
 16. Code collects context and applies validated effects; the LLM decides
     meaning.
 
-## Cutover and recovery
+## Migration and recovery
 
-The cutover is complete. The conversation Task does not coexist with the old
-rule that kept each May human request open for child results. The completed
-cutover order was:
+The implementation retained `may/conversation/follow-up` and refined that same
+Task without creating a replacement:
 
-1. admit and verify the conversation Task;
-2. publish typed follow-up events from bounded frontend decisions;
-3. project backend results into Conversation;
-4. stop frontend requests from waiting on child App work; and
-5. retire legacy Conversation wrapper Tasks and request coordination.
+1. admit typed frontend decisions directly to an exact responsible Task and
+   record the Topic link atomically;
+2. revise the existing May Task's goal and reconciliation so meaningful events
+   on linked Tasks wake it for bounded supervision;
+3. recover missed supervision from Topic links, canonical Tasks, and consumed
+   event/message identities;
+4. project useful results into Conversation with stable identities; and
+5. remove delegated Tasks from its child/dependency waits and keep it
+   `converged` whenever supervision is healthy.
 
-Live verification on 2026-08-26 used Runtime source
-`978c3e9c8997e658547358dbe9f7b720394c2ada` and App-definition source
-`9850fca0b5b8fed32c24c977f50e66a9145f652c`. One existing
-`may/conversation/follow-up` Task was visible, survived Runtime restart,
-reconciled from the legacy stored spec to the ordinary spec on the same
-identity, reused one fitting Host Task, woke on its progress without treating
-progress as completion, and appended one terminal result without creating a
-sibling Task.
+Any later migration must preserve existing Conversation messages, Topic links, Task
+identities, results, and audit events. The stable May Task identity is revised
+in place; it must not create sibling Tasks merely to replace old semantics.

@@ -19,10 +19,11 @@ The target remains small:
 ```text
 human turn or event
   -> persist and return
-  -> May answers, clarifies, or publishes typed durable intent
+  -> May answers, clarifies, or admits typed input to the responsible Task
   -> one Task owned by the accountable App represents each durable outcome
   -> one fenced attempt keeps working until done, exactly waiting, or unsafe
   -> Task events carry progress, facts, feedback, and steering
+  -> one bounded reconciliation of May's supervision Task protects the human purpose
   -> Conversation and Task reads feed independent presentation adapters
 ```
 
@@ -36,6 +37,57 @@ The governing rules are:
 - adapters are best-effort event listeners and resource readers, not work
   owners or guaranteed-delivery services; and
 - extensions attach to events and release resources after bounded work.
+
+## Recently resolved convergence gaps
+
+### May supervision proxy semantics
+
+The frontend previously emitted `app.follow-up.requested` to the standing
+`may/conversation/follow-up` Task, which then requested or followed the real
+owner Task. That duplicated ownership and changed Console focus.
+
+The implemented direct path now:
+
+1. the bounded frontend returns a typed App request or exact-Task feedback;
+2. Runtime admits it to the responsible Task and records the Topic link in the
+   same durable operation;
+3. meaningful events on that linked Task wake one bounded reconciliation of
+   May's supervision Task; and
+4. every 15 minutes, one bounded read wakes at most 100 unfinished Topic-linked
+   Tasks that have stayed quiet for the interval.
+
+The existing Task owns only the recurring supervision outcome. It must not
+parent, wait on, or copy destination Tasks; healthy supervision converges until
+another event or recovery interval wakes it. Do not add another supervisor
+resource, watcher per Task, model polling loop, or replacement sibling. Revise
+the existing Task in place after accounting for its current links.
+
+The human Task projection now renders a live converged maintain Task as `up to
+date`; it remains discoverable and wakes again, while only a receipt is
+terminal `done`.
+
+Completion proof for this gap is one focused end-to-end sequence:
+
+1. a human durable request admits and watches only the responsible Task;
+2. its Topic link causes meaningful progress to wake the same May supervision
+   Task once, without adding a child or dependency;
+3. May either no-ops, steers the exact Task, or appends one useful message, then
+   the supervision Task returns to `up to date`;
+4. a burst coalesces while a new human turn is answered first; and
+5. the bounded recovery event rechecks an intentionally quiet linked Task
+   without producing duplicate work or Conversation output.
+
+### Lost wait recovery and human visibility
+
+Runtime previously removed `reviewAfterMs` after repeated unchanged reviews
+and cleared the indexed `next_check_at` when acknowledging a wait. Human views
+inspected only direct Conditions and missed legacy display owner `Hao`.
+
+The repair now preserves the next review, follows exact dependency leaves for
+human action, points `/todo` at the Task that owns the action, and keeps legacy
+`Hao` approvals visible during canonical-owner migration. The remaining
+contract tightening is to require canonical owners on every newly admitted
+Condition without breaking retained legacy Conditions.
 
 ## Open simplification gaps
 
@@ -264,7 +316,6 @@ archive. It is not a second design authority.
 | Pre-cutover `may/conversation/app_*` wrapper Tasks                                                                      | Cancelled through normal Task control; retained only as history                                                                                                                                                                                   |
 | Exact old-Topic lookup                                                                                                  | Implemented with pagination and exact reads; candidate retrieval does not choose semantic intent                                                                                                                                                  |
 | Referenced-Task context and narrow human Task control                                                                   | Implemented through bounded canonical reads and validated exact control                                                                                                                                                                           |
-| Per-request May follow-through loop                                                                                     | Replaced by one normal visible Conversation Task plus bounded frontend turns                                                                                                                                                                      |
 | Explicit response plus fallback inbox result                                                                            | Both projections now use the request- or follow-up-derived `result:<requestId>` message identity; bounded-window regression coverage proves the identity remains stable while explicit data wins when both are present                            |
 | Current Task observation scope                                                                                          | Progress reads now require the exact active `attemptId`; accepted Task status records its producing attempt, timestamp inference is removed, terminal results win, and multi-attempt coverage keeps prior progress historical                     |
 | Host Operations source check                                                                                            | The App now installs its declared Node/Bun types, consumes the bounded reconciliation Event batch, uses the current `needs-agent` handoff state, and passes its complete syntax, type, format, and manifest-test check                            |
@@ -286,7 +337,7 @@ archive. It is not a second design authority.
 | Evaluation failed-session triage metric                                                                                     | Evaluation declares the failed-session eligibility, triage coverage, grace period, neutral small-sample rule, and bounded evidence query; Runtime measures it on the shared Cron event with no Host definition or handwritten calculation                                                               |
 | Scout App test boundary                                                                                                   | The App check runs Scout-owned tests only. Cached third-party source repositories under the agent workspace remain inspectable evidence but are not treated as part of Scout App verification                                                                                                             |
 | Whole-system document scope                                                                                                | `system-model.md` retains the public nouns, May/App/agent boundary, one flow, record map, and governing rules; detailed persistence, dependency, recovery, presentation, and code contracts link to their owning subsystem documents instead of being restated                                            |
-| Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic, conversation-Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |
+| Generic App document scope                                                                                                 | `agent-app.md` owns package declaration, admission, typed dependencies, event attachments, reconciliation, and Host boundaries. May-specific understanding, clarification, Topic linkage, supervision Task, follow-through, and plain-language behavior live in `message-lifecycle.md`                          |
 | Event graph document scope                                                                                                  | `event-graph.md` owns trace identity, causality, closure, provenance, storage, and graph-read invariants. Historical audit and additive backfill commands live in `event-runtime-audit.md`; neither trace nor backfill becomes work authority                                                                    |
 | Event trace audit semantics and runtime cost                                                                                 | The checker audits the current `conversation.message.created` to May-request boundary and correlated Conversation result instead of adapter delivery. An indexed close-event lookup removes the retained-history quadratic scan; the 249k-event live audit now completes in under one second with structural and semantic integrity passing                  |
 | Native coding worker document scope                                                                                           | The accepted adapter contract now records current failure, validation, worktree, and inspection boundaries instead of maintaining a speculative UI/metric/parser wishlist. New worker features require concrete evidence and extend the existing adapter/read models rather than creating another execution path                                      |
@@ -303,11 +354,13 @@ Resolved rows do not remain implementation steps in this tracker.
 
 ## Repair order
 
-1. Reduce the central metrics catalog in bounded App-owned steps.
-2. Retire the isolated JSON import/test constructor as fixtures and supported
+1. Require canonical owners on newly admitted Conditions while retaining
+   readable legacy waits.
+2. Reduce the central metrics catalog in bounded App-owned steps.
+3. Retire the isolated JSON import/test constructor as fixtures and supported
    cutovers migrate.
-3. Remove incident-specific public contracts.
-4. Run a final document-by-document status, link, and code-reference audit.
+4. Remove incident-specific public contracts.
+5. Run a final document-by-document status, link, and code-reference audit.
 
 Each step is independently reviewable and reversible. Do not combine them into
 a broad rewrite.

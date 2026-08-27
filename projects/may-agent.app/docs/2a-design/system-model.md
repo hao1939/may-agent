@@ -4,8 +4,10 @@
 **Implementation status:** Durable App outcomes use the shared Task path.
 May's bounded conversational frontend is the deliberate non-Task path: it may
 answer, clarify, or publish typed durable intent, but it does not perform the
-destination work. Pure selectors and input-to-Task mappings run during
-admission coordination. Scoped Task list/get reads are implemented in the SDK,
+destination work. Direct Topic-to-responsible-Task admission, event-driven
+non-proxy May supervision, and the live `up to date` maintain-Task view are
+implemented. Pure selectors and input-to-Task mappings run during admission
+coordination. Scoped Task list/get reads are implemented in the SDK,
 agent tool, control socket, and HTTP adapter. Remaining implementation gaps are
 tracked in
 [design-implementation-convergence.md](../proposals/design-implementation-convergence.md).
@@ -101,8 +103,9 @@ does not.
 human talks to May (`app:may`)
   -> May frontend understands one turn
   -> it answers or publishes typed durable intent/feedback
-  -> May's conversation Task links and follows Tasks owned by responsible Apps
-  -> Task events wake it and May updates the Conversation
+  -> Runtime links the Topic to the actual Task owned by the responsible App
+  -> meaningful Task events wake May's supervision Task
+  -> one bounded reconciliation steers that same Task or updates Conversation
 ```
 
 May is the App; “May App” is only the precise name used when contrasting May
@@ -111,21 +114,24 @@ The Host may run a bounded executor such as `agent:may` to decide one turn, but
 the executor is not another service or owner. A Topic only links related turns
 and Tasks.
 
-May is the human's deputy rather than a forwarding layer. Its frontend uses Conversation,
-preferences, and focused resources to understand the intention. When current
+May is the human's deputy rather than a forwarding layer. Its frontend uses
+Conversation, preferences, and focused resources to understand the intention. When current
 evidence is enough, May answers, suggests, reviews, or gives an opinion in that
 bounded turn without creating or changing a Task. When durable work is needed,
-May publishes only a clear durable outcome or exact feedback. One normal,
-visible conversation Task performs Task linkage, observes meaningful Task events, and
-brings useful results back to Conversation. A mixed request may receive a
-useful immediate answer and continue exact work. Focus is context, not
-automatic mutation authority.
+May publishes only a clear durable outcome or exact feedback. Runtime records
+the actual responsible Task on the Topic. Code filters later Task events against
+those exact links; only a meaningful linked change wakes May's normal maintain
+Task for one bounded reconciliation. May may then explain progress, protect the
+human's intent by steering the same Task, or do nothing. The maintain Task does
+not parent, wait on, or copy the responsible Task. A mixed request may receive a
+useful immediate answer and continue exact work. Focus is context, not automatic
+mutation authority.
 
 The names describe different responsibilities:
 
 | Name                                      | Meaning                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **May** (`app:may`)                       | The deputy: a bounded conversational frontend plus one normal conversation Task.                 |
+| **May** (`app:may`)                       | The deputy: bounded conversational decisions plus one normal Task supervising human-linked work. |
 | **Agent** (for example `agent:may`)       | A named reasoning profile for one bounded attempt. It owns no durable work.                      |
 | **Host**                                  | The generic machinery that persists, schedules, runs, recovers, and delivers work for every App. |
 | **Host Operations App** (`app:may-agent`) | The ordinary App that owns desired changes to the Host itself.                                   |
@@ -164,12 +170,15 @@ For example:
 - changing the Host belongs to `app:may-agent`; May may route the request but
   neither May nor the selected agent owns that Host Operations Task.
 
-The Conversation preserves what the human said. May's conversation
-Task preserves durable follow-through, and destination Apps preserve goals in
-their Tasks. The May executor can change, fail, or be replaced without creating
-per-turn wrapper Tasks. Durable Task identity remains namespaced by its owning
-App. When May is the best owner of a goal, it owns an ordinary goal Task in
-addition to its conversation Task.
+The Conversation preserves what the human said, the Topic preserves exact Task
+links, the Task preserves the goal, and the event log preserves relevant
+changes. Together they provide durable follow-through without copying the goal
+into a May wrapper. The May executor can change, fail, or be replaced without
+creating per-turn or conversation wrapper Tasks. Durable Task identity remains
+namespaced by its owning App. When May is genuinely the best owner of a goal,
+it owns an ordinary goal Task like any other App. An explicit durable request
+to monitor or coordinate work may therefore be a normal May-owned Task; routine
+supervision of work May just delegated is not.
 
 The public SDK calls the execution selection `agent`. The Host accepts the old
 `owner` spelling at one migration boundary and still stores it in retained Task

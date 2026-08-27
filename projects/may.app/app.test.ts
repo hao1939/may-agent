@@ -50,10 +50,10 @@ describe("canonical May conversation App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
-  test("maps every follow-up event to one ordinary conversation Task", () => {
+  test("maps linked Task changes to one ordinary supervision Task", () => {
     expect(
       mayFollowUpTask({
-        type: "app.follow-up.requested",
+        type: "conversation.task.linked",
         target: { appId: "may", project: "may" },
         data: { requestId: "turn-1" },
       }),
@@ -64,11 +64,19 @@ describe("canonical May conversation App", () => {
     });
     expect(
       mayFollowUpTask({
-        type: "app.follow-up.requested",
+        type: "conversation.task.changed",
         target: { appId: "may", project: "may" },
         data: { requestId: "turn-1" },
       }),
     ).not.toHaveProperty("category");
+    expect(
+      mayFollowUpTask({
+        type: "conversation.supervision.review",
+        target: { appId: "may", project: "may" },
+        data: {},
+      }),
+    ).toBeNull();
+    expect(mayFollowUpTask({ type: "unrelated", data: {} })).toBeNull();
   });
 
   test("maps durable May goals to ordinary visible goal Tasks", () => {

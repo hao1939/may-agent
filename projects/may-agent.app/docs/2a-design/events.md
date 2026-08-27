@@ -4,7 +4,9 @@
 **Implementation status:** Event persistence, frozen admission journaling,
 deferred request-to-Task coordination, exact wakes, Condition wakes, and
 ordered per-attempt Event batches are implemented. All current Apps use that
-single path; request dispositions have been removed.
+single path; request dispositions have been removed. May's current supervision
+Task still mediates delegation and waits on destination work instead of
+observing direct Topic-to-responsible-Task links.
 
 ## Purpose
 
@@ -243,14 +245,22 @@ external input and nonexistent required targets create no event receipt.
 Requests and Tasks carry durable correlation instead of opening event pairs:
 
 ```text
-May frontend request -> answer, or durable follow-up event -> request complete
-follow-up event -> standing May Task -> responsible App Task
-Task event/result -> standing May Task -> Conversation update
-                                      -> adapters render independently
+May frontend request -> answer, or responsible Task admission -> request complete
+Topic -> exact responsible Task
+Task event/result -> May supervision Task -> optional Conversation update
+                                  `-----> adapters render independently
 ```
 
-After the follow-up event is durably admitted, Runtime records one structured
-tool-authored Conversation activity containing the admitted Task identity. It
+The Topic-to-Task index is the subscription selector. A meaningful canonical
+Task revision produces an identity-only wake for the one May supervision Task;
+the wake names the exact Topic, Task, and event/revision identity. Runtime may
+coalesce equivalent wakes, while the supervision Task's normal event checkpoint
+makes accepted handling durable. The Task is not a parent or dependent of the
+work it observes.
+
+After the responsible Task and Topic link are durably admitted, Runtime records
+one structured tool-authored Conversation activity containing that Task
+identity. It
 is the human-visible admission receipt and lets an adapter watch canonical Task
 state immediately. It does not claim completion, replace Task state, or turn
 low-level Runtime events into Conversation messages. Meaningful progress is
@@ -258,9 +268,9 @@ read from the Task after identity-only wakes; routine execution events remain
 outside ordinary conversation.
 
 An App Task waits on exact child work or Conditions. A May frontend request
-does not wait on destination work. May's conversation Task preserves that
-obligation, and a persisted May response enters Conversation independently of
-channel rendering.
+does not wait on destination work. The Topic's exact Task link preserves the
+relationship, and a persisted May response enters Conversation independently
+of channel rendering.
 Events provide causal evidence and wakes along those relationships; they do
 not recreate the relationships as opener/closer pairs.
 
@@ -278,9 +288,10 @@ conversation.message.created target.appId=may
   conversationId=may:primary
   author.kind=human
   -> bounded May frontend request
-  -> answer/clarification, or typed follow-up event
+  -> answer/clarification, or typed App request/exact Task feedback
   -> frontend request done
-  -> May conversation Task links and follows exact Tasks
+  -> Topic links the exact responsible Task
+  -> meaningful Task events wake May's supervision Task
   -> useful result persisted in Conversation
   -> Console and Telegram independently observe and render
 ```

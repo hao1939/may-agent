@@ -12,7 +12,9 @@ storage boundary and does not expose it as Task ownership. Normal Runtime
 descriptor construction requires resource authority, and routing and recovery
 have no JSON fallback. The generic store/reconciler still compiles retained
 JSON support for the guarded offline importer and focused fixtures; separating
-and then retiring that compatibility boundary remains open.
+and then retiring that compatibility boundary remains open. Condition owner
+and review fields are still optional, and current recovery can remove a review
+deadline from an unresolved wait; those are convergence gaps.
 
 The task engine is the single Host execution path for App-owned work. Read
 [agent-app.md](agent-app.md) first.
@@ -157,12 +159,24 @@ tasks.get({ appId, taskId })
 
 ```
 
-The current App/agent read capability also exposes an opt-in shadow view:
+The programmatic App read capability also exposes an opt-in shadow view:
 
 ```text
 tasks.outcomes({ includeDone? })
   -> TaskOutcomePage
 ```
+
+The model-facing Task tool requires an exact Task identity and returns only the
+outcome containing that Task:
+
+```text
+tasks.outcomes({ taskId, includeDone? })
+  -> TaskOutcomePage
+```
+
+This prevents a reconciliation attempt that already knows its Task or accepted
+wait from loading the App's complete outcome projection into model context.
+Use bounded `tasks.list` for discovery and `tasks.get` for exact Task detail.
 
 The current shared `TaskView` is deliberately small:
 
@@ -221,11 +235,14 @@ event and reread current resource state. The read API does not add a second
 watch cursor or delivery guarantee.
 
 Human surfaces may ask the same Host reader for `humanActionOnly`. This is a
-derived filter over live Tasks with at least one unsatisfied Condition owned by
-`human` or `human:<role>`; it is not another resource or lifecycle. The bounded
-card adds `{ requestedAction, since? }`. `since` is present only when the
-current Condition start is known; later observation time is not a substitute.
-Generic `attention`, age, and adapter state never satisfy this filter.
+derived filter over live Tasks and their exact dependency leaves with at least
+one unsatisfied Condition owned by canonical identity `human` or
+`human:<role>`; it is not another resource or lifecycle. The result is
+deduplicated by the leaf Task that owns the Condition and the bounded card adds
+`{ requestedAction, since? }`. `since` is present only when the current
+Condition start is known; later observation time is not a substitute. Generic
+`attention`, age, display-name owners, and adapter state never satisfy this
+filter.
 
 There is deliberately no generic task write API. A caller asks the accountable
 App for an outcome, optionally naming the observed task. App policy then keeps,
@@ -428,6 +445,7 @@ A Condition names one exact external observation, for example:
   type: "credential.state",
   subject: "credential:xhs",
   expected: { field: "state", equals: "ready" },
+  owner: "app:credential-provider",
   reviewAfterMs: 300_000,
 }
 ```
@@ -441,7 +459,8 @@ A Condition that explicitly belongs to a human adds one plain action:
   subject: "approval:rollout-v4",
   expected: { field: "decision", anyOf: ["approve", "reject", "hold"] },
   owner: "human:operator",
-  requestedAction: "Approve, reject, or hold rollout v4."
+  requestedAction: "Approve, reject, or hold rollout v4.",
+  reviewAfterMs: 3_600_000,
 }
 ```
 
@@ -450,6 +469,12 @@ request. The Host records when the current Condition specification began
 waiting; adapters use that time for age. Changing the specification starts a
 new wait, while rereconciling the same Condition does not create another human
 obligation.
+
+For newly admitted Conditions, `owner` and `reviewAfterMs` are required.
+`owner` uses a canonical responsibility identity such as `app:<id>` or
+`human:<role>`; a person's display name is not an identity. Legacy Conditions
+that omit either field remain readable but are not a model for new waits and
+must be repaired or moved to attention when reviewed.
 
 A watcher reads an external source and publishes a fact. It does not know task
 storage or invoke an agent. The generic Condition tracker atomically updates
@@ -462,6 +487,18 @@ source, or a human decision. “Deploy this change” is unfinished work, not a
 `deployment.completed` Condition. The owning App must perform or durably submit
 that work first. A self-owned requested action is rejected by the App boundary;
 without a real external wait, the same Task remains runnable.
+
+Every admitted wait must identify:
+
+- the exact fact or Task result being awaited;
+- the accountable external owner;
+- a durable event or dependency route that wakes this same Task; and
+- a next review time that protects against missed wakes or a disappeared
+  producer.
+
+Omitting the wake route or review deadline does not turn an incomplete state
+into a valid indefinite wait. If Runtime cannot establish who can produce the
+fact and how it will arrive, the Task needs attention instead.
 
 ## Event input and checkpoints
 
@@ -487,10 +524,19 @@ attempt persists the ordered batch only—the most relevant `trigger` is derived
 in memory. Retained pre-migration attempts and synthetic controller attempts
 without a durable event batch may still carry a compatibility trigger.
 
-`reviewAfterMs` is a bounded supervision checkpoint, never proof that the
-Condition became true. Repeated unchanged reviews are capped; after the final
-review the task remains on its exact event-driven wait rather than becoming a
-polling loop. Provider observation time and monotonic source revision, when
+`reviewAfterMs` is recovery insurance, never proof that the Condition became
+true and never the primary execution loop. At review time Runtime first checks
+deterministic liveness: whether the dependency or producer still exists,
+whether a matching event was missed, and whether the human action remains
+open. A healthy wait stays waiting with a later bounded review. A satisfied
+Condition wakes the same Task. A missing producer, wake route, or accountable
+owner moves the Task to attention.
+
+The review deadline is never silently removed merely because several checks
+found no change. The owning App may revise the interval with evidence or
+replace the wait with attention. Human waits remain visible to `/todo` between
+reviews and do not invoke an LLM repeatedly just to rediscover the same pending
+approval. Provider observation time and monotonic source revision, when
 available, prevent known older facts from replacing newer Condition state.
 
 Human approval or action uses a human-owned Condition on the exact source Task,

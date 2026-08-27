@@ -77,18 +77,20 @@ must show the session as disconnected; the UI must not repair it heuristically.
 Ordinary free-form input has one semantic root. The adapter publishes
 `conversation.message.created` for `Conversation may:primary` and attaches
 trusted human/channel provenance. That event admits one bounded May frontend
-request. Durable follow-through, if needed, moves to the standing May Task:
+request. Durable follow-through, if needed, moves directly to the responsible
+Task and remains linked through the Topic:
 
 ```text
 conversation.message.created (target.appId=may, author.kind=human)
   -> bounded May frontend request
     -> bounded agent session
-      -> direct App result, or app.follow-up.requested
+      -> direct App result, or typed App request/exact Task feedback
         -> frontend request complete
-          -> May conversation Task
-            -> responsible App Task events/results
-              -> conversation.updated
-                -> independent adapter read/render
+          -> responsible App Task linked to the Topic
+            -> meaningful Task event/result
+              -> bounded reconciliation of May's supervision Task
+                -> exact Task feedback or conversation.updated
+                  -> independent adapter read/render
 ```
 
 Historical `human.input.received -> app.input.requested` and direct
@@ -238,7 +240,7 @@ Around the selected event, show direct evidence:
 - direct parent and direct children;
 - lifecycle open/close pair;
 - closure/reference links directly attached to the selected event;
-- direct emitted follow-up events;
+- direct emitted causal events;
 - all detail events associated with the resolved trace or correlation keys;
 - all sessions in a resolved workflow;
 - available transcript turns, tool calls, and tool results for those sessions.

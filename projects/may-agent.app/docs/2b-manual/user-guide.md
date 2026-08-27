@@ -68,14 +68,14 @@ Console, Web, Telegram, and control-socket text all add one durable human Turn
 to May's Conversation and admit one recoverable May request. The request
 remembers which Turn needs an answer; it is not executable work and does not
 become a per-Turn Task. May answers directly or publishes one typed follow-up
-for the existing conversation Task. May may also create an ordinary goal Task
-when it is the accountable App.
+to an exact responsible Task. May may also own an ordinary goal Task when it is
+the accountable App.
 
 ```
 may> implement a retry mechanism for failed API calls
       ↓
-  one May request -> direct answer or typed durable follow-up
-                  -> existing conversation Task -> responsible Task
+  one May request -> direct answer, or responsible Task admission
+                  -> Topic links exact Task; May's supervision Task reviews events
 
 may> now add tests for it
       ↓
@@ -102,7 +102,7 @@ agent run named `may`.
 | `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
 | `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps or recent terminal Tasks |
 | `/tasks more`         | Continue the exact prior Task list when another page exists |
-| `/todo [all]`         | Show Tasks with an explicit open human-owned Condition      |
+| `/todo [all]`         | Show open human actions on selected or reachable Tasks      |
 | `/todo more`          | Continue the exact prior human-action page                  |
 | `/task <ref>`         | Read one exact Task                                       |
 | `/watch [ref]`        | Watch or show one Task                                    |

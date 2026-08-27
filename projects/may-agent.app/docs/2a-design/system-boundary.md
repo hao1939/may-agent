@@ -94,8 +94,12 @@ request -> Task owned by the App -> accepted result
 ```
 
 A conversational frontend request may instead answer directly or publish typed
-follow-up intent. It does not remain open merely to watch destination work;
-May's normal conversation Task owns that follow-through.
+durable intent or feedback. Runtime binds durable intent to the actual Task
+owned by the responsible App and records that exact Task on the Topic. May then
+reconciles one normal maintain Task on meaningful events from Topic-linked
+Tasks and may steer the same Task or update the Conversation. This supervision
+Task owns follow-through but never parents, waits on, or copies the responsible
+Tasks.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:

@@ -65,26 +65,30 @@ const mayInputSchema = Type.Union([
 
 export const MAY_FOLLOW_UP_TASK_ID = "conversation/follow-up";
 
+const MAY_SUPERVISION_EVENTS = new Set([
+  "conversation.task.linked",
+  "conversation.task.changed",
+]);
+
 export function mayFollowUpTask(
   event: AppEvent<Record<string, unknown>>,
 ): TaskIntent | null {
-  if (event.type !== "app.follow-up.requested") return null;
+  if (!MAY_SUPERVISION_EVENTS.has(event.type)) return null;
   return {
     id: MAY_FOLLOW_UP_TASK_ID,
     parentId: "may",
     outcome:
-      "Keep every accepted May conversation follow-up moving through its exact responsible Task and return useful results to the shared Conversation.",
+      "Keep human-linked Tasks aligned with their Topics and return useful progress, decisions, and results to the shared Conversation.",
     acceptance: [
-      "Every newly observed follow-up is either linked to one fitting unfinished Task, requested from the accountable App, or represented by one direct May-owned child goal.",
-      "Existing work is continued by exact identity; a new sibling is never created merely because work is waiting, stale, or slow.",
-      "Every linked unfinished Task is checked when it changes and during bounded recovery; healthy work is left alone, mechanical failure is left to Runtime recovery, and missing or semantically stalled progress is steered through the same Task.",
-      "Useful progress, a concrete human decision, or a terminal result is returned in result.conversation with conversationId, topicId, followUpId, text, and exact taskRefs; transport state is never mentioned.",
+      "Each changed Topic-linked Task is left healthy, steered by exact identity, exposed for a human decision, or reported usefully in its Conversation.",
+      "The supervision Task never parents, waits on, copies, or replaces the responsible Task.",
+      "Repeated Task events are safe to coalesce, and healthy linked work returns this maintain Task to an up-to-date state.",
+      "Useful progress, a concrete human decision, or a terminal result is returned in result.conversation with exact conversation, Topic, event, and Task identities.",
     ],
     mode: "maintain",
     agent: "may",
     input: {
-      role: "conversation-follow-up",
-      conversationId: "may:primary",
+      role: "conversation-supervision",
       resultContract: {
         conversation: {
           conversationId: "string",
@@ -177,9 +181,25 @@ export default defineApp({
     inputKinds: ["message", "human-decision"],
     conversationId: "may:primary",
   },
+  schedules: [
+    {
+      id: "conversation-supervision-recovery",
+      intervalMs: 900_000,
+      event: {
+        type: "conversation.supervision.review",
+        source: "app:may:schedule:conversation-supervision-recovery",
+        owner: "app:may",
+        target: { appId: "may", project: "may" },
+        data: { project: "may", minQuietMs: 900_000, limit: 100 },
+      },
+    },
+  ],
   task: taskForMayInput,
   tasks: {
-    subscriptions: [{ type: "app.follow-up.requested", project: "may" }],
+    subscriptions: [
+      { type: "conversation.task.linked", project: "may" },
+      { type: "conversation.task.changed", project: "may" },
+    ],
     resolve: mayFollowUpTask,
     maxConcurrent: 4,
   },

@@ -147,17 +147,18 @@ not expected to own every asynchronous attempt:
 ```text
 conversation.message.created (target.appId=may, author.kind=human)
   -> exact bounded May frontend request
-    -> direct Conversation answer, or typed follow-up event
-      -> May conversation Task links or continues exact responsible Tasks
-        -> accepted Task result and Conversation update
+    -> direct Conversation answer, or responsible Task admission and Topic link
+      -> meaningful Task event wakes May's supervision Task
+        -> accepted Task result and optional Conversation update
           -> independent adapter rendering attempt
 ```
 
 Also check that each human semantic message has one bounded May frontend
-request and either a direct persisted answer or one typed follow-up event. The
-frontend request does not stay open for destination work and does not require a
-Task link. Follow-up identity, Topic links, and exact Task references preserve
-durable work across restarts. Adapter attempt IDs diagnose presentation only.
+request and either a direct persisted answer or one accepted typed request or
+exact-Task feedback. The frontend request does not stay open for destination
+work. Topic links, exact Task references, and event identities preserve durable
+work and supervision across restarts. Adapter attempt IDs diagnose
+presentation only.
 Direct-agent
 persistent-chat turns, if used, must have distinct traces unless reply context
 links them.

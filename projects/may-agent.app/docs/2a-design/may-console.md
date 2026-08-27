@@ -4,7 +4,9 @@
 **Implementation status:** Commands, shared Conversation reads, focused App,
 one Task watch, and readable Task cards are implemented. Equivalent terminal
 content can still appear once as May speech and again as a watched Task summary;
-canonical semantic-revision suppression remains open.
+canonical semantic-revision suppression remains open. Current May follow-up
+admission can briefly watch the supervision Task before the responsible Task;
+the direct path described below remains open.
 
 May Console is a small terminal adapter for the running daemon. It owns
 readline, rendering, reconnect, completion, one local Task watch, and typed
@@ -139,19 +141,21 @@ tool-authored Task activity to the shared Conversation. Console renders it as
 an indented `[task]` block, shows the exact Task reference, and automatically
 watches that Task.
 This is separate from `may>` speech: May explains the decision; `[task]` proves
-what was accepted. A downstream assignment may move the local watch from May's
-conversation Task to the responsible App Task. Watch refreshes stay transient
-and are coalesced by canonical Task revision, so internal event volume does not
-become terminal noise.
+what was accepted. The accepted responsible Task is the only automatic watch
+target; Task assignment therefore does not first switch the Console into a May
+wrapper context. Watch refreshes stay transient and are coalesced by canonical
+Task revision, so internal event volume does not become terminal noise.
 
 `/tasks` uses small, separated blocks. The first line identifies the Task, App,
 state, and last-change age; indented lines show its concrete goal and what the
 human needs to do. `/todo` follows the same hierarchy. `/task <ref>` puts the
 useful answers first in consistently indented sections: `Goal`, `State`,
 `Current`, `Expected result`, and `You`. When no open human-owned Condition
-exists, `You` explicitly says `Nothing needed right now.` Task ID and
-diagnostic session appear last. Console derives this from the shared Task view
-and does not invent a second status model.
+exists on the Task or an exact dependency leaf, `You` explicitly says `Nothing
+needed right now.` For a wait, `Current` still names the next actor, resume
+event, and recovery review. Task ID and diagnostic session appear last. Console
+derives this from the shared Task view and does not invent a second status
+model.
 
 Starting or refreshing `/watch` renders a compact Task update rather than the
 full `/task` view. The latest useful progress or result comes first as the

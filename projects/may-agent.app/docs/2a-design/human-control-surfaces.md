@@ -7,6 +7,10 @@ Canonical message identity across bounded fallback projections is implemented.
 Exact attempt-scoped progress and suppression of unchanged watch output are
 also implemented. Console correlates a canonical Conversation result with its
 exact watched Task and suppresses the equivalent supporting terminal card.
+Human-action projection follows exact dependency leaves and preserves legacy
+`Hao` approval visibility while canonical `human:<role>` ownership is adopted.
+Durable May admission exposes the responsible Task directly; the supervision
+Task remains separately visible for diagnostics.
 
 **Aligned with:** [system-model.md](system-model.md),
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
@@ -34,11 +38,14 @@ The ordinary human objects are:
 
 A Host request correlates one caller with its eventual result. A session is a
 replaceable execution attempt. Neither is the ordinary human control target.
-May has one normal visible conversation Task per Conversation, not one generic
-Task per human request. It also may own other goal Tasks when no other App is
-responsible. The Host Operations App (`may-agent`) owns platform
-Tasks. An agent run named `may` is only a bounded turn decision or an attempt
-selected by an App.
+May does not create a wrapper Task for a Conversation or human request. The
+Conversation, Topic-to-Task link, actual responsible Task, and event log
+preserve each promise. One ordinary visible May maintain Task owns recurring
+supervision across those links without parenting, waiting on, or copying the
+responsible Tasks. May may own other ordinary goal Tasks when no other App is
+responsible.
+The Host Operations App (`may-agent`) owns platform Tasks. An agent run named
+`may` is only a bounded turn decision or an attempt selected by an App.
 
 ## Shared resource interface
 
@@ -88,11 +95,12 @@ identity so May can return the answer to the same work even when the human
 responds from another surface.
 
 Each adapter surface keeps one selected App, initially `may`. `/apps` lists
-Apps and `/apps <app>` changes that local selection. `/tasks` reads active
-Tasks for the selected App, `all` widens the read to every App, and `history`
-adds retained terminal Tasks. Selection is a small Console-process or Telegram
-chat/topic variable, not another durable resource. An exact `/task <ref>` may
-cross the selected App boundary. An adapter preserves the human's local input
+Apps and `/apps <app>` changes that local selection. `/tasks` reads live Tasks
+for the selected App, including `maintain` Tasks that are currently converged;
+`all` widens the read to every App, and `history` adds retained terminal Tasks.
+Selection is a small Console-process or Telegram chat/topic variable, not
+another durable resource. An exact `/task <ref>` may cross the selected App
+boundary. An adapter preserves the human's local input
 order across an asynchronous selection read, so a following command or message
 uses the newly selected App without serializing Host event handling.
 
@@ -129,9 +137,9 @@ The admission activity causes Console to follow the Task immediately. Later
 Task wakes make the adapter re-read canonical Task state; they do not append a
 message for every internal event. Adapters render meaningful states in their
 native style: queued, working with the latest useful progress, waiting with an
-exact blocker and resume condition, needs-human-action, or done with the
-result. A claim that work is active must come from Task/execution state, never
-from May's prose alone.
+exact blocker and resume condition, needs-human-action, up to date for a live
+converged maintain Task, or done with a terminal result. A claim that work is
+active must come from Task/execution state, never from May's prose alone.
 
 An explicitly requested App or Task view is appended as a command-authored
 Conversation message only after it is shown successfully. Its bounded metadata
@@ -151,8 +159,10 @@ does not recover a hidden goal from arbitrary App input and does not ask a model
 to rewrite generic Task text.
 
 Each compact Task row shows the stable reference, owning App, a plain state
-(`queued`, `working`, `waiting`, `needs review`, `done`, or `cancelled`), how
-recently it changed, its goal, and either `needs you` or `no action from you`.
+(`queued`, `working`, `waiting`, `needs review`, `up to date`, `done`, or
+`cancelled`), how recently it changed, its goal, and either `needs you` or `no
+action from you`. `up to date` means a live `maintain` Task is converged and
+will wake again; `done` is terminal.
 `attention` alone means App review or recovery; only an open human-owned
 Condition means `needs you`.
 
@@ -165,22 +175,30 @@ An exact Task view answers five questions directly from the existing resource:
 4. `Expected result` — how completion is judged (`spec.acceptance`); and
 5. `You` — the requested human action, or `Nothing needed right now.`
 
-The exact updated time follows those answers. Canonical Task ID and diagnostic
-session remain available last as secondary details. This is one bounded read
-projection of Task truth: it adds no presentation record, lifecycle, polling,
-delivery acknowledgement, or model turn.
+For a wait, `Current` also names who or what acts next, the exact resume event,
+and the next recovery review. `Nothing needed right now` is valid only when no
+unresolved dependency leaf needs human action; it never means that an
+ownerless or unreviewed wait is healthy. The exact updated time follows those
+answers. Canonical Task ID and diagnostic session remain available last as
+secondary details. This is one bounded read projection of Task truth: it adds
+no presentation record, lifecycle, polling, delivery acknowledgement, or model
+turn.
 
 ## Human actions
 
 Human attention is a derived Task view, not another inbox. A live Task appears
-in `/todo` only while it has an unsatisfied Condition whose owner is `human` or
-`human:<role>`. Generic `attention`, failure, elapsed time, and provider
-delivery state do not qualify.
+in `/todo` while it or an exact reachable dependency leaf has an unsatisfied
+Condition whose canonical owner is `human` or `human:<role>`. Display names
+such as `Hao` are labels, not owner identities. Generic `attention`, failure,
+elapsed time, and provider delivery state do not qualify.
 
 `/todo` reads the selected App and `/todo all` widens the read to every App.
-Each row shows one stable Task reference, App, plain requested action, and,
-when the Condition records it, the age of the current human wait. An unknown
-start time is omitted rather than inferred from later observation. A
+Each row is deduplicated by the Task that owns the Condition and shows its
+stable reference, App, plain requested action, and, when the Condition records
+it, the age of the current human wait. A selected App's view includes human
+blockers reachable through its exact dependencies, while still pointing to the
+leaf Task that the human will update. No state is copied onto the parent. An
+unknown start time is omitted rather than inferred from later observation. A
 human-owned Condition should set
 `requestedAction`; existing approval Conditions are rendered from their
 allowed decisions and approval identity, and older generic Conditions fall

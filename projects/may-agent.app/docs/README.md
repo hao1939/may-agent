@@ -18,8 +18,11 @@ workflow, but neither becomes another work owner.
 For May, the ordinary model is simply: a human talks to **May** (`app:may`),
 which answers directly or links the Conversation Topic to typed work in the
 responsible App. The bounded frontend request ends after May answers or
-publishes typed follow-up intent; May's normal visible conversation Task then
-follows durable work and returns useful updates to Conversation. Execution
+durably admits typed input or feedback to the responsible Task. Meaningful
+events from Tasks linked to the Topic wake May's one normal supervision Task
+for a bounded reconciliation, which may steer the same Task or return a useful
+update to Conversation. That Task owns the recurring supervision goal but is
+not a proxy parent for delegated work. Execution
 diagnostics may name the bounded executor, for example `agent:may`; that
 executor owns no Task. The **Host Operations App** (`app:may-agent`) owns Tasks
 that change the Host. There is no separate architectural component called
