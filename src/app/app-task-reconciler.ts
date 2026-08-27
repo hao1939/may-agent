@@ -24,6 +24,7 @@ import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
   AppTaskResource as AppTaskResource,
+  AppTaskTrigger as AppTaskTrigger,
   AppTaskTriggerEvent,
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
@@ -290,14 +291,20 @@ function consumeAcceptedLiveTaskEvents(
   };
 }
 
-function hasUnacceptedLiveTaskEvents(tree: TaskTree, taskId: string, eventIds: readonly number[] | undefined): boolean {
-  const pending = tree.taskTriggers?.[taskId];
+function hasUnacceptedLiveEvents(
+  pending: AppTaskTrigger | undefined,
+  eventIds: readonly number[] | undefined,
+): boolean {
   if (!pending) return false;
   const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
   return taskTriggerEvents(pending).some(({ event }) => {
     const eventId = Number(event.eventId);
     return !Number.isSafeInteger(eventId) || eventId <= 0 || !accepted.has(eventId);
   });
+}
+
+function hasUnacceptedLiveTaskEvents(tree: TaskTree, taskId: string, eventIds: readonly number[] | undefined): boolean {
+  return hasUnacceptedLiveEvents(tree.taskTriggers?.[taskId], eventIds);
 }
 
 /** Reject an externally visible effect when newer Task evidence is still unaccepted. */
@@ -307,10 +314,10 @@ export function assertAppTaskEffectFresh(
   acceptedLiveEventIds?: readonly number[],
 ): void {
   withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTaskAttempt(tree, claim);
+    const resource = config.resourceStore.readTask(claim.taskId);
+    const attempt = config.resourceStore.readAttempt(claim.attemptId);
+    const match = matchingClaimAttempt(resource, attempt, claim);
     if (!match) {
-      const resource = tree.resources?.[claim.taskId];
       throw new AppTaskActionStaleError({
         taskId: claim.taskId,
         expectedGeneration: claim.generation,
@@ -318,7 +325,7 @@ export function assertAppTaskEffectFresh(
         currentPhase: resource?.status.phase,
       });
     }
-    if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, acceptedLiveEventIds)) {
+    if (hasUnacceptedLiveEvents(config.resourceStore.readTrigger(claim.taskId) ?? undefined, acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
         taskId: claim.taskId,
         expectedGeneration: claim.generation,
@@ -2917,14 +2924,13 @@ export function claimObservedAppTask(
   });
 }
 
-function matchingTaskAttempt(
-  tree: TaskTree,
+function matchingClaimAttempt(
+  resource: AppTaskResource | null | undefined,
+  attempt: AppTaskAttempt | null | undefined,
   claim: AppTaskClaim,
 ): { resource: AppTaskResource; attempt: AppTaskAttempt } | null {
-  const resource = tree.resources?.[claim.taskId];
   if (!resource || resource.metadata.generation !== claim.generation) return null;
   if (resource.status.currentAttemptId !== claim.attemptId) return null;
-  const attempt = tree.attempts?.[claim.attemptId];
   if (
     !attempt ||
     attempt.state !== "running" ||
@@ -2935,6 +2941,13 @@ function matchingTaskAttempt(
     return null;
   }
   return { resource, attempt };
+}
+
+function matchingTaskAttempt(
+  tree: TaskTree,
+  claim: AppTaskClaim,
+): { resource: AppTaskResource; attempt: AppTaskAttempt } | null {
+  return matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
 }
 
 export function releaseStaleAppTaskResult(
