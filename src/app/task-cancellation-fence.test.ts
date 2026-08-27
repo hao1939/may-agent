@@ -30,7 +30,7 @@ describe("Task cancellation fence", () => {
       project: "sample",
       project_lifecycle: "paused",
       root_task_id: "root",
-      groups: { root: { id: "root", parent_id: null, goal: "sample" } },
+      groups: { root: { id: "root", parent_id: null } },
       resources: {
         work: {
           metadata: { id: "work", generation: 1, resourceVersion: 1 },

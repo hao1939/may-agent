@@ -38,7 +38,7 @@ function harness(input: { running?: boolean } = {}): {
     project: "sample",
     project_lifecycle: "active",
     root_task_id: "root",
-    groups: { root: { id: "root", parent_id: null, goal: "sample" } },
+    groups: { root: { id: "root", parent_id: null } },
     resources: {
       work: {
         metadata: { id: "work", generation: 1, resourceVersion: 1 },

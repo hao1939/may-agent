@@ -60,7 +60,7 @@ function fixture(): TaskTree {
     project: "example",
     project_lifecycle: "paused",
     root_task_id: "project",
-    groups: { project: { id: "project", parent_id: null, goal: "example" } },
+    groups: { project: { id: "project", parent_id: null } },
     resources: { human: resource("human"), normal: resource("normal", "waiting"), active },
     attempts: {
       "attempt-1": {
@@ -240,9 +240,11 @@ describe("AppTaskResourceStore", () => {
     const tree = fixture() as TaskTree & { satisfied_dependency_ids?: string[] };
     const legacyGroup = tree.groups!.project as TaskTree["groups"][string] & {
       children?: string[];
+      goal?: string;
       state?: string;
     };
     legacyGroup.children = ["human", "normal", "active"];
+    legacyGroup.goal = "legacy group task";
     legacyGroup.state = "backlog";
     tree.satisfied_dependency_ids = ["legacy-derived-copy"];
     store.importPausedSnapshot(tree, "revision-1", ["human"]);
@@ -262,6 +264,7 @@ describe("AppTaskResourceStore", () => {
     expect(snapshot.resources).toEqual(tree.resources);
     expect(snapshot.groups?.project).not.toHaveProperty("state");
     expect(snapshot.groups?.project).not.toHaveProperty("children");
+    expect(snapshot.groups?.project).not.toHaveProperty("goal");
     expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
   });
@@ -510,7 +513,7 @@ describe("AppTaskResourceStore", () => {
     const context = store.readTaskContext({ taskIds: ["first-request", "project"] });
 
     expect(context.groups).toEqual({
-      project: { id: "project", parent_id: null, goal: "example" },
+      project: { id: "project", parent_id: null },
     });
     expect(context.resources).toEqual({});
     store.close();
