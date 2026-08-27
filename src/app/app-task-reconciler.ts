@@ -2424,8 +2424,7 @@ export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
-    const task = tree.tasks[taskId];
-    if (!resource || !task || resource.status.phase !== "attention") return false;
+    if (!resource || resource.status.phase !== "attention") return false;
     const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
     if (!attempt?.handler.startsWith("workflow:") || attempt.failureReason !== "HandlerUnavailable") return false;
     const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
@@ -2437,8 +2436,6 @@ export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig
       summary,
       conditionIds: [],
     });
-    syncTaskProjection(task, resource, attempt.owner);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -2524,9 +2521,8 @@ export function retryFailedAppTask(
 ): AppTaskRetryReceipt {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
-    const task = tree.tasks[input.taskId];
     const resource = tree.resources?.[input.taskId];
-    if (!task || !resource) throw new Error(`Task ${input.appId}/${input.taskId} was not found`);
+    if (!resource) throw new Error(`Task ${input.appId}/${input.taskId} was not found`);
     if (resource.metadata.generation !== input.expectedGeneration) {
       throw new Error(
         `Task ${input.appId}/${input.taskId} generation changed: expected ${input.expectedGeneration}, current ${resource.metadata.generation}`,
@@ -2553,8 +2549,6 @@ export function retryFailedAppTask(
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
     });
-    syncTaskProjection(task, resource, attempt.owner);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
@@ -2587,8 +2581,7 @@ export function releaseHandlerExecutionFailedAppTask(
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
-    const task = tree.tasks[taskId];
-    if (!resource || !task || resource.status.phase !== "attention") return false;
+    if (!resource || resource.status.phase !== "attention") return false;
     const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
     if (!attempt?.finishedAt || attempt.owner !== evidence.agent) return false;
     const executionFailed = attempt.failureReason === "HandlerExecutionFailed";
@@ -2625,8 +2618,6 @@ export function releaseHandlerExecutionFailedAppTask(
     // Replay the unaccepted attempt batch before any newer event that arrived
     // after the failed attempt; neither source may erase the other.
     restoreAttemptEvents(tree, taskId, resource, attempt, evidence.observedAt);
-    syncTaskProjection(task, resource, attempt.owner);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
