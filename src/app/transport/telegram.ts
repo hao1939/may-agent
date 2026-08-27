@@ -153,6 +153,8 @@ function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): s
       return "waiting";
     case "attention":
       return task.humanAction ? "needs you" : "needs review";
+    case "up-to-date":
+      return "up to date";
     case "done":
       return "done";
     case "cancelled":
@@ -174,6 +176,8 @@ function currentTaskText(task: HumanTaskView): string {
       return "No new progress has been reported while the Task waits.";
     case "attention":
       return "No recovery update has been reported yet.";
+    case "up-to-date":
+      return "Current linked work is reconciled; this Task will wake when relevant facts change.";
     case "done":
       return "No result summary was recorded.";
     case "cancelled":
@@ -183,6 +187,11 @@ function currentTaskText(task: HumanTaskView): string {
 
 function humanActionText(task: HumanTaskView): string {
   return task.humanAction?.requestedAction.trim() || task.summary?.trim() || task.outcome;
+}
+
+function humanActionLine(task: HumanTaskView): string {
+  const owner = task.humanAction?.task;
+  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${humanActionText(task)}` : humanActionText(task);
 }
 
 function elapsedText(value: number): string {
@@ -243,7 +252,7 @@ export function renderTelegramTask(task: HumanTaskView): string {
       ? acceptance.map((item) => `• ${item}`)
       : ["No separate completion criteria were recorded."]),
     "",
-    `You\n${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`,
+    `You\n${task.humanAction ? humanActionLine(task) : "Nothing needed right now."}`,
     ...(task.requestedBy
       ? ["", `Related\nRequested by ${task.requestedBy.ref} · ${task.requestedBy.appId}\n${task.requestedBy.outcome}`]
       : []),

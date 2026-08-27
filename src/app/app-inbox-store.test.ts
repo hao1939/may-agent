@@ -119,6 +119,29 @@ describe("App inbox store", () => {
     });
   });
 
+  it("lets derived App work retain Conversation context without reusing a human sequence", () => {
+    create("human-turn", { conversationId: "may:primary", conversationSequence: 7, now: 1 });
+    const derived = createAppInboxItem(db, {
+      id: "derived-work",
+      appId: "may",
+      source: { kind: "app", id: "may" },
+      input: { kind: "goal", data: { outcome: "Review the design" } },
+      conversationId: "may:primary",
+      now: 2,
+    });
+
+    expect(derived.item).toMatchObject({ conversationId: "may:primary" });
+    expect(derived.item.conversationSequence).toBeUndefined();
+    expect(() =>
+      createAppInboxItem(db, {
+        appId: "may",
+        source: { kind: "human", id: "human-without-sequence" },
+        input: { kind: "message", data: { message: "hello" } },
+        conversationId: "may:primary",
+      }),
+    ).toThrow("Human App inbox conversationId and conversationSequence must be provided together");
+  });
+
   it("projects one conversation resource and excludes transient events from context", () => {
     createAppInboxItem(db, {
       id: "human-1",

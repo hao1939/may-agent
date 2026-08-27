@@ -888,29 +888,6 @@ function completedConditionReviewCount(tree: TaskTree, taskId: string, condition
   return Math.max(highestRecordedAttempt, legacyAttemptCount);
 }
 
-function boundedReviewConditions(
-  claim: AppTaskClaim,
-  conditions: AppTaskConditionSpec[] | undefined,
-): AppTaskConditionSpec[] | undefined {
-  if (!conditions?.length || claim.trigger?.type !== "project.task.condition-review.missed") {
-    return conditions;
-  }
-  const data = isRecord(claim.trigger.data) ? claim.trigger.data : {};
-  if (data.finalReview !== true) return conditions;
-  const exhaustedIds = new Set(
-    Array.isArray(data.conditionIds)
-      ? data.conditionIds.filter((value): value is string => typeof value === "string")
-      : [],
-  );
-  return conditions.map((condition) => {
-    if (!exhaustedIds.has(condition.id) || condition.reviewAfterMs === undefined) {
-      return condition;
-    }
-    const { reviewAfterMs: _reviewAfterMs, ...conditionWithoutReview } = condition;
-    return conditionWithoutReview;
-  });
-}
-
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
   return taskConditionEntries(tree, taskId).some(
     ([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true",
@@ -2076,8 +2053,8 @@ export function readPendingAppTaskTrigger(
   });
 }
 
-function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false) {
-  const nextCheckAt = taskConditionEntries(tree, resource.metadata.id)
+function nextTaskConditionReviewAt(tree: TaskTree, taskId: string): number | null {
+  return taskConditionEntries(tree, taskId)
     .flatMap(([, condition]) => {
       if (!isOpenCondition(condition)) return [];
       const reviewAfterMs = Number(condition.spec.reviewAfterMs);
@@ -2088,12 +2065,16 @@ function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false)
         ? [observedAt + reviewAfterMs]
         : [];
     })
-    .sort((left, right) => left - right)[0];
+    .sort((left, right) => left - right)[0] ?? null;
+}
+
+function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false) {
+  const nextCheckAt = nextTaskConditionReviewAt(tree, resource.metadata.id);
   return {
     resource,
     ...(tree.taskTriggers?.[resource.metadata.id] ? { trigger: tree.taskTriggers[resource.metadata.id] } : {}),
     ready,
-    nextCheckAt: nextCheckAt ?? null,
+    nextCheckAt,
   };
 }
 
@@ -2182,10 +2163,11 @@ function acknowledgeIndexedRecoveryWait(config: ResourceTaskStateConfig, taskId:
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
   // wake; leaving any recovery signal set would make safety recovery retry a no-op.
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   config.resourceStore.setRecoveryState(taskId, {
     ready: false,
     changed: false,
-    nextCheckAt: null,
+    nextCheckAt: nextTaskConditionReviewAt(tree, taskId),
   });
 }
 
@@ -4029,7 +4011,9 @@ export function deferAppTask(
       });
     }
     consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
-    const conditions = boundedReviewConditions(claim, input.conditions);
+    // A review checkpoint is recovery insurance for an event-driven wait. It
+    // never makes the awaited fact true, so preserve the owner's Conditions.
+    const conditions = input.conditions;
     const waitsForChildren =
       liveChildTaskIds(tree, claim.taskId).length > 0 ||
       actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);

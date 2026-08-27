@@ -85,7 +85,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List/get Tasks owned by the current App, read the outcome containing one exact task, or publish a fenced fact from the current Task attempt. Publishing never mutates Task state.",
+      "List Tasks owned by the current App, get one exact Task (optionally in target.appId), read the outcome containing an owned task, or publish a fenced fact from the current Task attempt. Publishing never mutates Task state.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -144,11 +144,12 @@ export function createAppTaskReadTool(options: {
         if (params.action === "get") {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for get" });
+          const readAppId = params.target?.appId?.trim() || appId;
           const reader = options.reader ?? (await import("./app-task-runtime.js"));
           const value =
             "get" in reader
-              ? await reader.get({ bus: options.bus, appId, taskId })
-              : await reader.getLoadedAppTaskView({ bus: options.bus, appId, taskId });
+              ? await reader.get({ bus: options.bus, appId: readAppId, taskId })
+              : await reader.getLoadedAppTaskView({ bus: options.bus, appId: readAppId, taskId });
           return result(value);
         }
         const listOptions: TaskListOptions = {
