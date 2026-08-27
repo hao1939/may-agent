@@ -12,7 +12,7 @@ import {
   withTaskStateLock,
   type AppTaskAdmission,
   type TaskCompletionReceipt,
-  type TaskNode,
+  type TaskGroup,
   type TaskStateConfig,
   type TaskTree,
 } from "./app-task-store.js";
@@ -124,7 +124,7 @@ export type AppTaskResourceMutation = {
   pruneConditionIds?: string[];
   receipts?: TaskCompletionReceipt[];
   deleteReceiptIds?: string[];
-  groups?: TaskNode[];
+  groups?: TaskGroup[];
   deleteGroupIds?: string[];
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
@@ -678,7 +678,7 @@ export class AppTaskResourceStore {
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json"),
       conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
-      groups: this.jsonMap<TaskNode>("app_task_groups", "group_id", "group_json"),
+      groups: this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json"),
       appTaskAdmissions: this.jsonMap<AppTaskAdmission>("app_task_admissions", "task_id", "admission_json"),
       tasks: {},
     });
@@ -863,7 +863,7 @@ export class AppTaskResourceStore {
         )
       : {};
 
-    const groups: Record<string, TaskNode> = {};
+    const groups: Record<string, TaskGroup> = {};
     let pendingGroupIds = [
       ...new Set([
         ...[...requested].filter((id) => !resources[id]),
@@ -882,7 +882,7 @@ export class AppTaskResourceStore {
       pendingGroupIds = [];
       for (const row of rows) {
         if (!row.group_id || !row.group_json || groups[row.group_id]) continue;
-        const group = parseJson<TaskNode>(row.group_json);
+        const group = parseJson<TaskGroup>(row.group_json);
         groups[row.group_id] = group;
         if (group.parent_id && !groups[group.parent_id] && !resources[group.parent_id]) {
           pendingGroupIds.push(group.parent_id);

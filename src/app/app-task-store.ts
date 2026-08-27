@@ -71,6 +71,24 @@ export type TaskNode = {
   };
 };
 
+/** A structural container. It never carries executable Task lifecycle state. */
+export type TaskGroup = {
+  id: string;
+  parent_id?: string | null;
+  state?: string;
+  kind?: string;
+  priority?: "P0" | "P1" | "P2" | "P3";
+  owner?: string;
+  goal?: string;
+  /** Accepted from old seeds and discarded when canonical state is normalized. */
+  children?: string[];
+  context?: Record<string, unknown>;
+  summary?: string;
+  strategy_context?: string;
+  progress?: Record<string, unknown>;
+  tags?: string[];
+};
+
 export type AppTaskPhase = AppTaskResource["status"]["phase"];
 
 export type AppTaskReadiness = {
@@ -207,7 +225,7 @@ export type TaskTree = {
   appTaskAdmissions?: Record<string, AppTaskAdmission>;
   receipts?: Record<string, TaskCompletionReceipt>;
   /** Structural labels/containers only. Executable task nodes are projected from resources. */
-  groups?: Record<string, TaskNode>;
+  groups?: Record<string, TaskGroup>;
   tasks: Record<string, TaskNode>;
 };
 
@@ -694,7 +712,7 @@ export function migrateTaskState(
 
 export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
   const resources = tree.resources ?? {};
-  const groups: Record<string, TaskNode> = Object.fromEntries(
+  const groups: Record<string, TaskGroup> = Object.fromEntries(
     Object.entries(tree.groups ?? {}).map(([id, group]) => {
       const { children: _derivedChildren, ...structural } = group;
       return [id, { ...structural, id }];
@@ -726,7 +744,7 @@ function projectedTaskState(resource: AppTaskResource): string {
 
 function projectedTaskOwner(
   resource: AppTaskResource,
-  groups: Record<string, TaskNode>,
+  groups: Record<string, TaskGroup>,
   resources: Record<string, AppTaskResource>,
 ): string | undefined {
   if (resource.spec.owner?.trim()) return resource.spec.owner.trim();
@@ -740,7 +758,7 @@ function projectedTaskOwner(
       parentId = parentResource.spec.parentId;
       continue;
     }
-    const group: TaskNode | undefined = groups[parentId];
+    const group: TaskGroup | undefined = groups[parentId];
     if (group?.owner?.trim()) return group.owner.trim();
     parentId = group?.parent_id ?? undefined;
   }
@@ -748,7 +766,7 @@ function projectedTaskOwner(
 }
 
 function projectedTaskChildren(
-  groups: Record<string, TaskNode>,
+  groups: Record<string, TaskGroup>,
   resources: Record<string, AppTaskResource>,
 ): Record<string, string[]> {
   const childSetsById: Record<string, Set<string>> = {};
@@ -764,7 +782,7 @@ function projectedTaskChildren(
 }
 
 function buildTaskTreeProjection(
-  groups: Record<string, TaskNode>,
+  groups: Record<string, TaskGroup>,
   resources: Record<string, AppTaskResource>,
 ): Record<string, TaskNode> {
   const childrenById = projectedTaskChildren(groups, resources);
