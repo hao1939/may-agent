@@ -28,6 +28,7 @@ import {
   observeAppTaskIntent,
   listRunnableAppTaskQueueEntries,
   listRunnableAppTaskIds,
+  isAppTaskConverged,
   readAppTaskIntent,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
@@ -978,6 +979,29 @@ describe("App task reconciler state", () => {
       events: [{ event: { type: "pipeline.changed" } }],
     });
     expect(claimedTree.attempts?.[claim.attemptId]?.trigger).toBeUndefined();
+  });
+
+  it("reads exact live intent and completion state without confusing an older receipt", () => {
+    const { config } = fixture();
+    const original = intent();
+    const claim = declareAndClaimTask(config, {
+      intent: original,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(completeAppTask(config, claim, { summary: "original goal completed" }).status).toBe("applied");
+    expect(isAppTaskConverged(config, original.id, 1)).toBe(true);
+
+    const revised = { ...original, outcome: "Evaluate revised session 1" };
+    expect(observeAppTaskIntent(config, { intent: revised, appAgent: "app-owner" })).toMatchObject({
+      kind: "observed",
+      generation: 2,
+    });
+
+    expect(readAppTaskIntent(config, original.id)?.outcome).toBe(revised.outcome);
+    expect(isAppTaskConverged(config, original.id)).toBe(false);
+    expect(isAppTaskConverged(config, original.id, 1)).toBe(false);
   });
 
   it("orders runnable tasks by declared priority before lower-priority work", () => {

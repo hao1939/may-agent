@@ -1759,8 +1759,7 @@ export function observeAppTaskIntent(
 
 export function readAppTaskIntent(config: ResourceTaskStateConfig, taskId: string): AppTaskIntent | null {
   return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-    const resource = tree.resources?.[taskId];
+    const resource = config.resourceStore.readTask(taskId);
     return resource ? resourceIntent(resource) : null;
   });
 }
@@ -1772,8 +1771,7 @@ export function readAppTaskIntent(config: ResourceTaskStateConfig, taskId: strin
  */
 export function isAppTaskConverged(config: ResourceTaskStateConfig, taskId: string, generation?: number): boolean {
   return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-    const resource = tree.resources?.[taskId];
+    const resource = config.resourceStore.readTask(taskId);
     if (resource) {
       return (
         (generation === undefined || resource.metadata.generation === generation) &&
@@ -1781,7 +1779,7 @@ export function isAppTaskConverged(config: ResourceTaskStateConfig, taskId: stri
         resource.status.observedGeneration === resource.metadata.generation
       );
     }
-    const receipt = tree.receipts?.[taskId];
+    const receipt = config.resourceStore.readReceipt(taskId);
     return Boolean(receipt && (generation === undefined || receipt.metadata.generation === generation));
   });
 }
