@@ -206,8 +206,6 @@ export type TaskTree = {
   /** Retry fence for canonical App inbox attachments. Host-private state. */
   appTaskAdmissions?: Record<string, AppTaskAdmission>;
   receipts?: Record<string, TaskCompletionReceipt>;
-  /** Satisfied dependencies referenced by current live tasks. Projection only. */
-  satisfied_dependency_ids?: string[];
   /** Structural labels/containers only. Executable task nodes are projected from resources. */
   groups?: Record<string, TaskNode>;
   tasks: Record<string, TaskNode>;
@@ -985,7 +983,12 @@ function canonicalTaskStateForWrite(tree: TaskTree): Record<string, unknown> {
   compactHistoricalReceipts(tree);
   compactHistoricalAttemptTriggers(tree);
   compactPendingTaskTriggers(tree);
-  const { tasks: _tasks, active_task_id: _activeTaskId, active_task_ids: _activeTaskIds, ...state } = tree;
+  const state: Record<string, unknown> = { ...tree };
+  delete state.tasks;
+  delete state.active_task_id;
+  delete state.active_task_ids;
+  // Older state files stored this derived read-model field alongside live state.
+  delete state.satisfied_dependency_ids;
   return state;
 }
 
