@@ -930,6 +930,84 @@ describe("App inbox runtime", () => {
     await waitUntil(() => runtime?.host.get("parallel-3")?.waitingOn?.kind === "task");
   });
 
+  it("serializes May in the message handler per Conversation while running independent Conversations concurrently", async () => {
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may", version: 1, agent: "may",
+        inputSchema: {
+          type: "object", additionalProperties: false, required: ["kind", "data"],
+          properties: {
+            kind: { const: "message" },
+            data: {
+              type: "object", additionalProperties: true, required: ["message"],
+              properties: { message: { type: "string" } }
+            }
+          }
+        },
+        task(input) { return { kind: "desired", intent: {
+          id: "message/" + input.input.data.message, parentId: "may", outcome: "Answer " + input.input.data.message,
+          acceptance: ["Answered"], mode: "achieve"
+        }}; },
+        tasks: {}
+      };\n`,
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const started: string[] = [];
+    const releases = new Map<string, () => void>();
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      hostCapacity: new HostCapacity(3),
+      maxConcurrentRequests: 3,
+      attachTask: async (input: any) => {
+        const taskId = input.attachment.intent.id as string;
+        started.push(taskId);
+        await new Promise<void>((resolve) => releases.set(taskId, resolve));
+        return { taskId };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    const publish = (conversationId: string, text: string) =>
+      bus.emit({
+        type: "conversation.message.created",
+        source: "may-console",
+        owner: "app:may",
+        data: {
+          appId: "may",
+          conversationId,
+          author: { kind: "human", id: `human-${text}` },
+          text,
+        },
+      });
+    publish("conversation-a", "first-a");
+    publish("conversation-a", "second-a");
+    publish("conversation-b", "first-b");
+
+    await waitUntil(() => started.length === 2);
+    expect(started).toEqual(["message/first-a", "message/first-b"]);
+    expect(started).not.toContain("message/second-a");
+
+    releases.get("message/first-b")?.();
+    await Bun.sleep(20);
+    expect(started).not.toContain("message/second-a");
+
+    releases.get("message/first-a")?.();
+    await waitUntil(() => started.includes("message/second-a"));
+    releases.get("message/second-a")?.();
+    await waitUntil(() => {
+      const row = db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE lease_owner IS NOT NULL").get() as {
+        count: number;
+      };
+      return row.count === 0;
+    });
+  });
+
   it("recovers an exact Task wait after restart", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);

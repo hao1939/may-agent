@@ -691,7 +691,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const foregroundActive = active.get("may") ?? 0;
     const backgroundActive = totalActive - foregroundActive;
     const backgroundLimit = maxConcurrentRequests === 1 ? 1 : maxConcurrentRequests - 1;
-    const foregroundIndex = pending.findIndex((appId) => appId === "may" && (active.get(appId) ?? 0) === 0);
+    const foregroundIndex = pending.findIndex((appId) => appId === "may");
     const backgroundIndex = pending.findIndex((appId) => appId !== "may");
     const nextIndex =
       foregroundIndex >= 0 && totalActive < maxConcurrentRequests
@@ -735,7 +735,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const remaining = (active.get(appId) ?? 1) - 1;
         if (remaining > 0) active.set(appId, remaining);
         else active.delete(appId);
-        if (dirty.has(appId)) schedule(appId);
+        // A later Turn in the same Conversation becomes claimable only after
+        // this handler releases its lease. Recheck here rather than keeping a
+        // fake ready item spinning while the earlier Turn is still active.
+        if (dirty.has(appId) || host.readyCount(appId) > 0) schedule(appId);
         armPump();
       });
     armPump();

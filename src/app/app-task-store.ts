@@ -267,9 +267,14 @@ function taskStateLockOwnerIsDead(lockPath: string): boolean {
 }
 
 export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T): T {
+  // Resource-backed Tasks commit through one SQLite transaction with exact
+  // resource-version fences. A second filesystem lock adds no correctness:
+  // it only makes a contending worker spin with synchronous sleeps, freezing
+  // the daemon event loop and therefore unrelated event admission and reads.
+  // Legacy state.json mutation still needs the cross-process file lock below.
+  if (config.resourceStore) return operation();
+
   const lockPath = `${config.statePath}.lock`;
-  // Resource-backed Apps intentionally have no canonical state.json, but the
-  // short cross-process transition lock still needs its parent directory.
   ensureDir(dirname(lockPath));
   const waitMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_WAIT_MS", "AKS_RP_E2E_TREE_LOCK_WAIT_MS"], 30_000);
   const staleMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_STALE_MS", "AKS_RP_E2E_TREE_LOCK_STALE_MS"], 2 * 60_000);
