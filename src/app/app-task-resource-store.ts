@@ -1267,32 +1267,40 @@ export class AppTaskResourceStore {
     input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null },
   ): boolean {
     const assignments: string[] = [];
-    const values: unknown[] = [];
+    const assignmentValues: unknown[] = [];
+    const changedPredicates: string[] = [];
+    const expectedValues: unknown[] = [];
     if (input.ready !== undefined) {
       assignments.push("ready = ?");
-      values.push(input.ready ? 1 : 0);
+      assignmentValues.push(input.ready ? 1 : 0);
+      changedPredicates.push("ready IS NOT ?");
+      expectedValues.push(input.ready ? 1 : 0);
     }
     if (input.changed !== undefined) {
       assignments.push("changed = ?");
-      values.push(input.changed ? 1 : 0);
+      assignmentValues.push(input.changed ? 1 : 0);
+      changedPredicates.push("changed IS NOT ?");
+      expectedValues.push(input.changed ? 1 : 0);
     }
     if (input.nextCheckAt !== undefined) {
       assignments.push("next_check_at = ?");
-      values.push(input.nextCheckAt);
+      assignmentValues.push(input.nextCheckAt);
+      changedPredicates.push("next_check_at IS NOT ?");
+      expectedValues.push(input.nextCheckAt);
     }
     if (!assignments.length) return false;
-    values.push(this.appId, taskId);
     const changed =
       this.db
         .prepare(
           `UPDATE app_tasks SET ${assignments.join(", ")}
            WHERE app_id = ? AND task_id = ?
+             AND (${changedPredicates.join(" OR ")})
              AND NOT EXISTS (
                SELECT 1 FROM app_task_cancellations cancelled
                WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
              )`,
         )
-        .run(...values).changes > 0;
+        .run(...assignmentValues, this.appId, taskId, ...expectedValues).changes > 0;
     return changed;
   }
 
