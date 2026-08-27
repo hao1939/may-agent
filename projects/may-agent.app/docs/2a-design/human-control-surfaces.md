@@ -101,8 +101,11 @@ for the selected App, including `maintain` Tasks that are currently converged;
 Selection is a small Console-process or Telegram chat/topic variable, not
 another durable resource. An exact `/task <ref>` may cross the selected App
 boundary. An adapter preserves the human's local input
-order across an asynchronous selection read, so a following command or message
-uses the newly selected App without serializing Host event handling.
+order by changing the local selection immediately, so a following command or
+message uses the newly selected App without waiting for its asynchronous
+validation read or serializing Host event handling. Failed validation restores
+the prior selection, and a stale validation response cannot overwrite a newer
+selection.
 
 Host request history is diagnostic data, not a second work interface.
 `/session`, `/sessions`, and `/steer` are not ordinary human commands.

@@ -79,8 +79,11 @@ processes ignore the fact unless they issued that exact request; they receive
 the eventual shared Conversation message normally.
 
 The selected App defaults to `may`; `/apps <app>` switches it for this Console
-process. If a switch and the next input arrive together, Console waits only for
-the selection read before interpreting that next input. The normal prompt is:
+process immediately. The App read validates and describes that selection
+asynchronously; it does not block later commands or human turns. If validation
+fails, Console restores the prior App. If another switch happens first, the old
+validation result is stale and cannot change the newer selection. The normal
+prompt is:
 
 ```text
 you[may]>
@@ -241,7 +244,10 @@ startup replay or May prompt history.
 
 ## Failure behavior
 
-- disconnected input is queued only until the initial Conversation snapshot;
+- an ordinary human turn entered before startup completes is queued only until
+  the initial Conversation snapshot;
+- local App selection and reconnect-safe reads do not wait in the command
+  queue; only controls that require a live daemon connection do;
 - reconnect uses bounded backoff;
 - ambiguous or invalid Task refs fail locally with no mutation;
 - a slow socket client is disconnected before it can block the daemon; and
