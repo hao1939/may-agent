@@ -24,8 +24,8 @@ function fixture() {
     `${JSON.stringify({
       root_task_id: "root",
       groups: {
-        root: { id: "root", parent_id: null, state: "backlog", owner: "app-owner", children: ["operations"] },
-        operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+        root: { id: "root", parent_id: null, owner: "app-owner" },
+        operations: { id: "operations", parent_id: "root" },
       },
     })}\n`,
   );
