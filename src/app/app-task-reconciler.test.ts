@@ -76,16 +76,12 @@ function seedFixture(operationsOwner?: string) {
           root: {
             id: "root",
             parent_id: null,
-            state: "backlog",
             owner: "branch-owner",
-            children: ["operations"],
           },
           operations: {
             id: "operations",
             parent_id: "root",
             ...(operationsOwner ? { owner: operationsOwner } : {}),
-            state: "backlog",
-            children: [],
           },
         },
         resources: {
