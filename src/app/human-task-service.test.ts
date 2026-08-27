@@ -106,6 +106,23 @@ test("shows every live Task regardless of descriptive category", () => {
   });
 });
 
+test("shows a converged maintain Task as live and up to date", () => {
+  const db = database();
+  insertTask(db, {
+    appId: "may",
+    taskId: "conversation/follow-up",
+    phase: "converged",
+    updatedAt: 2,
+    mode: "maintain",
+  });
+  const service = new HumanTaskService(db, registry("may"));
+
+  expect(service.listTasks({ appId: "may" }).items).toEqual([
+    expect.objectContaining({ taskId: "conversation/follow-up", status: "up-to-date", terminal: false }),
+  ]);
+  expect(service.listApps("may")).toEqual([expect.objectContaining({ id: "may", activeTasks: 1 })]);
+});
+
 function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt: number): void {
   db.prepare(
     `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
@@ -359,6 +376,67 @@ describe("Human Task service", () => {
       "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id = 'human-approval'",
     ).run();
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({ total: 0, items: [] });
+  });
+
+  test("finds a legacy human approval on an exact dependency leaf", () => {
+    const db = database();
+    insertTask(db, { appId: "evaluation", taskId: "parent", phase: "waiting", updatedAt: 20 });
+    insertTask(db, { appId: "may-agent", taskId: "approval", phase: "waiting", updatedAt: 10 });
+    insertCondition(db, {
+      appId: "may-agent",
+      taskId: "approval",
+      conditionId: "approval-needed",
+      owner: "Hao",
+      requestedAction: "Approve or reject commit 50e4cc0d.",
+      createdAt: "2026-08-20T01:02:03.000Z",
+    });
+    createAppInboxItem(db, {
+      id: "dependency-request",
+      appId: "may-agent",
+      source: { kind: "app", id: "evaluation" },
+      input: { kind: "test", data: {} },
+      now: 1,
+    });
+    const request = claimNextAppInboxItem(db, "may-agent", "test", 1_000, 2)!;
+    expect(waitAppInboxClaim(db, request, { kind: "task", id: "approval" }, { now: 3 })).toBe(true);
+    const dependency = {
+      metadata: { id: "app-request:dependency-request", generation: 1, resourceVersion: 1 },
+      spec: {
+        type: "app.dependency.completed",
+        subject: "id:dependency-request",
+        expected: { field: "status", equals: "done" },
+        owner: "app:may-agent",
+        reviewAfterMs: 60_000,
+      },
+      status: { observedGeneration: 1, state: "unknown" },
+    };
+    db.prepare("INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, ?, ?)").run(
+      "evaluation",
+      "app-request:dependency-request",
+      "unknown",
+      JSON.stringify(dependency),
+    );
+    db.prepare("INSERT INTO app_task_condition_routes(app_id, task_id, condition_id) VALUES (?, ?, ?)").run(
+      "evaluation",
+      "parent",
+      "app-request:dependency-request",
+    );
+    const service = new HumanTaskService(db, registry("evaluation", "may-agent"));
+
+    expect(service.listTasks({ appId: "evaluation", humanActionOnly: true })).toMatchObject({
+      total: 1,
+      items: [
+        {
+          appId: "may-agent",
+          taskId: "approval",
+          humanAction: { requestedAction: "Approve or reject commit 50e4cc0d." },
+        },
+      ],
+    });
+    expect(service.getTask({ appId: "evaluation", taskId: "parent" })?.humanAction).toMatchObject({
+      requestedAction: "Approve or reject commit 50e4cc0d.",
+      task: { appId: "may-agent", taskId: "approval" },
+    });
   });
 
   test("lists Apps and bounded Tasks from indexed resource rows", () => {

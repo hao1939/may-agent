@@ -28,9 +28,12 @@ import {
 } from "./app-inbox-host.js";
 import {
   linkConversationTopicTask,
+  listConversationTopicLinksForTask,
+  listStaleConversationTopicTasks,
   listAppInboxItemsWaitingOnTask,
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
+  readAppConversationResource,
   readConversationTopic,
   type AppInboxItem,
 } from "./app-inbox-store.js";
@@ -331,6 +334,50 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       data: { appId: normalizedAppId, conversationId: normalizedConversationId },
     });
   };
+
+  const emitConversationTaskChanged = (
+    link: { appId: string; conversationId: string; topicId: string },
+    taskRef: { appId: string; taskId: string },
+    change: {
+      followUpId: string;
+      idempotencyKey: string;
+      disposition?: string;
+      summary?: string;
+      reason?: string;
+    },
+  ): void => {
+    const topic = readConversationTopic(options.db, link.appId, link.conversationId, link.topicId);
+    const conversation = readAppConversationResource(options.db, link.appId, link.conversationId, {
+      limit: 20,
+      topicId: link.topicId,
+    });
+    options.bus.emit({
+      type: "conversation.task.changed",
+      source: change.reason ? "conversation-supervision-recovery" : "app-task",
+      owner: `app:${link.appId}`,
+      target: { appId: link.appId, project: link.appId },
+      data: {
+        appId: link.appId,
+        conversationId: link.conversationId,
+        topicId: link.topicId,
+        followUpId: change.followUpId,
+        taskRef,
+        ...(change.disposition ? { disposition: change.disposition } : {}),
+        ...(change.summary ? { summary: change.summary } : {}),
+        ...(change.reason ? { reason: change.reason } : {}),
+        topicTitle: topic?.title,
+        messages: conversation.messages
+          .filter((message) => message.metadata?.topicId === link.topicId)
+          .slice(-12)
+          .map((message) => ({
+            messageId: message.id,
+            author: message.author,
+            text: message.text,
+          })),
+      },
+      idempotencyKey: change.idempotencyKey,
+    } as unknown as AgentEvent);
+  };
   const oneItemPerConversationTask = (items: AppInboxItem[]): AppInboxItem[] => {
     const selected = new Map<string, AppInboxItem>();
     for (const item of items) {
@@ -391,24 +438,67 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (!item.conversationId) {
         throw new Error(`App follow-up ${item.id} requires a Conversation`);
       }
-      options.bus.emit({
-        type: "app.follow-up.requested",
-        source: "app-inbox",
-        owner: `app:${item.appId}`,
-        target: { appId: item.appId, project: item.appId },
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          topicId,
-          requestId: item.id,
-          sourceMessageId: item.source.id,
-          followUp,
-        },
-        idempotencyKey: `may-follow-up:${item.id}`,
-      } as unknown as AgentEvent);
+      const requestId = `appreq_${createHash("sha256")
+        .update(`${item.id}\0follow-up`)
+        .digest("hex")
+        .slice(0, 24)}`;
+      const admitted = host.admit({
+        id: requestId,
+        appId: followUp.appId,
+        ...(followUp.task ? { targetTaskId: followUp.task.taskId } : {}),
+        topicId,
+        conversationId: item.conversationId,
+        channel: item.channel,
+        channelTargetId: item.channelTargetId,
+        channelThreadId: item.channelThreadId,
+        channelMessageId: item.channelMessageId,
+        replyToSourceId: item.id,
+        source: { kind: "app", id: item.appId },
+        input: followUp.input,
+        idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
+      });
+      if (admitted.item.status !== "done") schedule(admitted.item.appId);
     },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
+      if (item.conversationId && item.topicId && !item.parentId) {
+        options.bus.emit({
+          type: "conversation.message.created",
+          source: "app-task-admission",
+          owner: `app:${item.source.id}`,
+          data: {
+            appId: item.source.id,
+            conversationId: item.conversationId,
+            author: { kind: "tool", id: "runtime" },
+            text: assignmentText(item),
+            metadata: {
+              channel: item.channel,
+              channelTargetId: item.channelTargetId,
+              channelThreadId: item.channelThreadId,
+              requestId: item.replyToSourceId ?? item.id,
+              topicId: item.topicId,
+              taskRefs: [{ appId: item.appId, taskId }],
+              followTask: { appId: item.appId, taskId },
+            },
+            idempotencyKey: `conversation-task-assigned:${item.conversationId}:${item.id}:${item.appId}:${taskId}`,
+          },
+        });
+        options.bus.emit({
+          type: "conversation.task.linked",
+          source: "app-inbox",
+          owner: `app:${item.source.id}`,
+          target: { appId: item.source.id, project: item.source.id },
+          data: {
+            appId: item.source.id,
+            conversationId: item.conversationId,
+            topicId: item.topicId,
+            requestId: item.id,
+            taskRef: { appId: item.appId, taskId },
+          },
+          idempotencyKey: `conversation-task-linked:${item.conversationId}:${item.topicId}:${item.appId}:${taskId}`,
+        } as unknown as AgentEvent);
+        return;
+      }
       const directParent = item.parentId ? host.get(item.parentId) : null;
       if (directParent?.conversationId) {
         options.bus.emit({
@@ -951,6 +1041,34 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: data.transient === true ? "transient conversation transport" : "durable conversation context",
         };
       }
+      if (String(event.type) === "conversation.supervision.review") {
+        const appId = typeof data.project === "string" ? data.project.trim() : "";
+        const minQuietMs = Math.max(60_000, Math.floor(Number(data.minQuietMs) || 900_000));
+        const limit = Math.min(100, Math.max(1, Math.floor(Number(data.limit) || 100)));
+        if (!appId) throw new Error("Conversation supervision review requires its App");
+        const links = listStaleConversationTopicTasks(options.db, appId, {
+          updatedBefore: now() - minQuietMs,
+          limit,
+        });
+        for (const link of links) {
+          const reviewId = eventRowId(event) ?? eventIdentity(event) ?? "review";
+          emitConversationTaskChanged(
+            link,
+            { appId: link.taskAppId, taskId: link.taskId },
+            {
+              followUpId: `recovery:${reviewId}:${link.taskAppId}:${link.taskId}`,
+              reason: "No Task update was observed during the review interval.",
+              idempotencyKey: `conversation-task-recovery:${reviewId}:${link.topicId}:${link.taskAppId}:${link.taskId}`,
+            },
+          );
+        }
+        return {
+          accepted: true,
+          by: `conversation-supervision:${appId}`,
+          route: "direct",
+          note: `${links.length} quiet linked Task(s) selected for bounded review`,
+        };
+      }
       if (event.type === "app.input.requested") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
         const identity = eventIdentity(event);
@@ -1037,6 +1155,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
         const summary = typeof data.summary === "string" ? data.summary.trim() : "";
+        if (appId && taskId && !(appId === "may" && taskId === "conversation/follow-up")) {
+          for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
+            emitConversationTaskChanged(link, { appId, taskId }, {
+              followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
+              disposition,
+              summary,
+              idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
+            });
+          }
+        }
         const conversationResult = record(record(data.result).conversation);
         const conversationId =
           typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";

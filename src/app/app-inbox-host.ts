@@ -89,6 +89,8 @@ export type AdmitAppInput = {
   parentId?: string;
   /** Attach this request to one exact existing Task in the target App. */
   targetTaskId?: string;
+  /** Existing Conversation Topic that this admitted work belongs to. */
+  topicId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;

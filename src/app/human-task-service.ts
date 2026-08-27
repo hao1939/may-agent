@@ -11,7 +11,14 @@ import {
   type ResolvedTaskReference,
 } from "./task-reference-index.js";
 
-export type HumanTaskStatus = "pending" | "running" | "waiting" | "attention" | "done" | "cancelled";
+export type HumanTaskStatus =
+  | "pending"
+  | "running"
+  | "waiting"
+  | "attention"
+  | "up-to-date"
+  | "done"
+  | "cancelled";
 
 export type HumanTaskProgress = {
   stage: string;
@@ -25,6 +32,8 @@ export type HumanTaskAction = {
   requestedAction: string;
   /** When the current human-owned Condition began, when known. */
   since?: number;
+  /** Exact Task that owns the Condition when it is below the viewed Task. */
+  task?: { appId: string; taskId: string; ref: string };
 };
 
 export type HumanTaskView = {
@@ -191,7 +200,8 @@ function normalizeAppId(value: string | undefined): string | undefined {
 }
 
 function taskStatus(phase: string | undefined, terminal: boolean): HumanTaskStatus {
-  if (terminal || phase === "converged") return "done";
+  if (terminal) return "done";
+  if (phase === "converged") return "up-to-date";
   if (phase === "pending" || phase === "running" || phase === "waiting" || phase === "attention") return phase;
   throw new Error(`Invalid Task phase: ${String(phase)}`);
 }
@@ -235,6 +245,8 @@ function taskStatusDetail(
       return "Waiting for the facts or work shown below.";
     case "attention":
       return "The App needs review or recovery.";
+    case "up-to-date":
+      return "Current work is reconciled; this maintained Task will wake when relevant facts change.";
     case "done":
       return "Completed.";
     case "cancelled":
@@ -242,20 +254,9 @@ function taskStatusDetail(
   }
 }
 
-const OPEN_HUMAN_CONDITION_SQL = `EXISTS (
-  SELECT 1
-  FROM app_task_condition_routes human_route
-  JOIN app_task_conditions human_condition
-    ON human_condition.app_id = human_route.app_id
-   AND human_condition.condition_id = human_route.condition_id
-  WHERE human_route.app_id = t.app_id
-    AND human_route.task_id = t.task_id
-    AND human_condition.state != 'true'
-    AND (
-      lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'human'
+const HUMAN_OWNER_SQL = `(lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'human'
       OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) LIKE 'human:%'
-    )
-)`;
+      OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'hao')`;
 
 const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.condition_json))
   FROM app_task_condition_routes human_route
@@ -265,10 +266,7 @@ const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.cond
   WHERE human_route.app_id = t.app_id
     AND human_route.task_id = t.task_id
     AND human_condition.state != 'true'
-    AND (
-      lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'human'
-      OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) LIKE 'human:%'
-    )
+    AND ${HUMAN_OWNER_SQL}
   ORDER BY human_route.condition_id)`;
 
 function humanConditions(row: TaskRow): AppTaskCondition[] {
@@ -326,6 +324,87 @@ function withHumanAction(view: HumanTaskView, conditions: AppTaskCondition[]): H
       ...(timestamps.length > 0 ? { since: Math.min(...timestamps) } : {}),
     },
   };
+}
+
+type HumanConditionOwner = { appId: string; taskId: string; conditions: AppTaskCondition[] };
+
+/** Follow only exact App-request Task links in one bounded database read. */
+function reachableHumanConditionOwners(
+  db: SqliteDb,
+  roots: { appId: string; taskId: string } | { activeAppId?: string },
+): HumanConditionOwner[] {
+  const explicitRoot = "taskId" in roots;
+  const rows = db
+    .prepare(
+      `WITH RECURSIVE reachable(app_id, task_id) AS (
+         ${explicitRoot
+           ? "SELECT ? AS app_id, ? AS task_id"
+           : `SELECT task.app_id, task.task_id
+              FROM app_tasks task
+              WHERE task.phase IN ('pending', 'running', 'waiting', 'attention', 'converged')
+                AND NOT EXISTS (
+                  SELECT 1 FROM app_task_receipts receipt
+                  WHERE receipt.app_id = task.app_id AND receipt.receipt_id = task.task_id
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM app_task_cancellations cancellation
+                  WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
+                )
+                ${roots.activeAppId ? "AND task.app_id = ?" : ""}`}
+         UNION
+         SELECT request.app_id, request.waiting_on_id
+         FROM reachable parent
+         JOIN app_task_condition_routes route
+           ON route.app_id = parent.app_id AND route.task_id = parent.task_id
+         JOIN app_task_conditions condition
+           ON condition.app_id = route.app_id AND condition.condition_id = route.condition_id
+         JOIN app_inbox_items request
+           ON condition.condition_id = 'app-request:' || request.id
+          AND json_extract(condition.condition_json, '$.spec.subject') = 'id:' || request.id
+         WHERE condition.state != 'true'
+           AND request.waiting_on_kind = 'task' AND request.waiting_on_id IS NOT NULL
+         LIMIT 1000
+       )
+       SELECT reachable.app_id, reachable.task_id, human_condition.condition_json
+       FROM reachable
+       JOIN app_task_condition_routes human_route
+         ON human_route.app_id = reachable.app_id AND human_route.task_id = reachable.task_id
+       JOIN app_task_conditions human_condition
+         ON human_condition.app_id = human_route.app_id
+        AND human_condition.condition_id = human_route.condition_id
+       WHERE human_condition.state != 'true' AND ${HUMAN_OWNER_SQL}
+       ORDER BY reachable.app_id, reachable.task_id, human_route.condition_id`,
+    )
+    .all(...(explicitRoot ? [roots.appId, roots.taskId] : roots.activeAppId ? [roots.activeAppId] : [])) as Array<{
+    app_id?: string;
+    task_id?: string;
+    condition_json?: string;
+  }>;
+  const owners = new Map<string, HumanConditionOwner>();
+  for (const row of rows) {
+    if (!row.app_id || !row.task_id) continue;
+    const condition = parseJson<AppTaskCondition>(row.condition_json);
+    if (!condition) continue;
+    const key = `${row.app_id}\0${row.task_id}`;
+    const owner = owners.get(key) ?? { appId: row.app_id, taskId: row.task_id, conditions: [] };
+    owner.conditions.push(condition);
+    owners.set(key, owner);
+  }
+  return [...owners.values()];
+}
+
+function descendantHumanAction(db: SqliteDb, view: HumanTaskView): HumanTaskAction | undefined {
+  const owners = reachableHumanConditionOwners(db, { appId: view.appId, taskId: view.taskId });
+  const owner = owners.find((candidate) => candidate.appId !== view.appId || candidate.taskId !== view.taskId);
+  if (!owner) return undefined;
+  const refs = displayTaskReferences(db, [{ appId: owner.appId, taskId: owner.taskId }]);
+  const leaf = readTaskRow(db, owner.appId, owner.taskId);
+  const ref = refs.get(`${owner.appId}\0${owner.taskId}`);
+  if (!leaf || !ref) return undefined;
+  const leafView = projectTask(leaf, ref, false);
+  if (!leafView) return undefined;
+  const projected = withHumanAction(leafView, owner.conditions).humanAction;
+  return projected ? { ...projected, task: { appId: owner.appId, taskId: owner.taskId, ref } } : undefined;
 }
 
 function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | null {
@@ -573,7 +652,7 @@ export class HumanTaskService {
            SUM(CASE WHEN phase = 'running' THEN 1 ELSE 0 END) AS running_tasks,
            SUM(CASE WHEN phase = 'waiting' THEN 1 ELSE 0 END) AS waiting_tasks
          FROM app_tasks
-         WHERE phase IN ('pending', 'running', 'waiting', 'attention')
+         WHERE phase IN ('pending', 'running', 'waiting', 'attention', 'converged')
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r
              WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
@@ -618,7 +697,15 @@ export class HumanTaskService {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
       throw new Error("Task list limit must be an integer between 1 and 100");
     }
-    const valid = new Set<HumanTaskStatus>(["pending", "running", "waiting", "attention", "done", "cancelled"]);
+    const valid = new Set<HumanTaskStatus>([
+      "pending",
+      "running",
+      "waiting",
+      "attention",
+      "up-to-date",
+      "done",
+      "cancelled",
+    ]);
     if (input.status?.some((status) => !valid.has(status))) throw new Error("Invalid Task status filter");
     const statuses = input.status ? new Set(input.status) : null;
     const humanActionOnly = input.humanActionOnly === true;
@@ -626,9 +713,25 @@ export class HumanTaskService {
     const includeDone = !humanActionOnly && (input.includeDone === true || statuses?.has("done") === true);
     const includeCancelled = !humanActionOnly && (input.includeDone === true || statuses?.has("cancelled") === true);
     const livePhases = statuses
-      ? [...statuses].flatMap((status) => (status === "done" || status === "cancelled" ? [] : [status]))
-      : ["pending", "running", "waiting", "attention"];
+      ? [...statuses].flatMap((status) =>
+          status === "done" || status === "cancelled" ? [] : [status === "up-to-date" ? "converged" : status],
+        )
+      : ["pending", "running", "waiting", "attention", "converged"];
     const appId = normalizeAppId(input.appId);
+    const humanOwners = humanActionOnly
+      ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
+      : [];
+    const humanOwnerKeys = new Set(humanOwners.map((owner) => `${owner.appId}\0${owner.taskId}`));
+    if (humanActionOnly && humanOwnerKeys.size === 0) return { items: [], total: 0 };
+    const humanOwnerClause = humanActionOnly
+      ? ` AND (${[...humanOwnerKeys].map(() => "(t.app_id = ? AND t.task_id = ?)").join(" OR ")})`
+      : "";
+    const humanOwnerValues = humanActionOnly
+      ? [...humanOwnerKeys].flatMap((key) => {
+          const [ownerAppId, ownerTaskId] = key.split("\0");
+          return [ownerAppId, ownerTaskId];
+        })
+      : [];
     const parts: string[] = [];
     const values: unknown[] = [];
     if (includeLive && livePhases.length > 0) {
@@ -644,9 +747,9 @@ export class HumanTaskService {
            )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
-           )${appId ? " AND t.app_id = ?" : ""}${humanActionOnly ? ` AND ${OPEN_HUMAN_CONDITION_SQL}` : ""}`,
+           )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${humanOwnerClause}`,
       );
-      values.push(...livePhases, ...(appId ? [appId] : []));
+      values.push(...livePhases, ...(appId && !humanActionOnly ? [appId] : []), ...humanOwnerValues);
     }
     if (includeDone) {
       parts.push(
@@ -711,29 +814,7 @@ export class HumanTaskService {
       const conditions = row.terminal === 0 ? humanConditions(row) : [];
       return [conditions.length > 0 ? withHumanAction(view, conditions) : view];
     });
-    const total = humanActionOnly
-      ? Number(
-          (
-            this.db
-              .prepare(
-                `SELECT COUNT(*) AS count
-                 FROM app_tasks t
-                 WHERE t.phase IN ('pending', 'running', 'waiting', 'attention')
-                   AND NOT EXISTS (
-                     SELECT 1 FROM app_task_receipts r
-                     WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
-                   )
-                   AND NOT EXISTS (
-                     SELECT 1 FROM app_task_cancellations c
-                     WHERE c.app_id = t.app_id AND c.task_id = t.task_id
-                   )
-                   ${appId ? "AND t.app_id = ?" : ""}
-                   AND ${OPEN_HUMAN_CONDITION_SQL}`,
-              )
-              .get(...(appId ? [appId] : [])) as { count?: number }
-          ).count ?? 0,
-        )
-      : undefined;
+    const total = humanActionOnly ? humanOwnerKeys.size : undefined;
     const last = pageRows.at(-1);
     return {
       items,
@@ -786,7 +867,9 @@ export class HumanTaskService {
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };
     const conditions = humanConditions(row);
-    return conditions.length > 0 ? withHumanAction(detail, conditions) : detail;
+    if (conditions.length > 0) return withHumanAction(detail, conditions);
+    const inheritedAction = descendantHumanAction(this.db, detail);
+    return inheritedAction ? { ...detail, humanAction: inheritedAction } : detail;
   }
 
   cancelTask(input: { ref?: string; appId?: string; taskId?: string; reason?: string }): HumanTaskView {

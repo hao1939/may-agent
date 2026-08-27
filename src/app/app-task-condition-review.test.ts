@@ -151,7 +151,7 @@ describe("App task Condition review checkpoint", () => {
     expect(listRunnableAppTaskIds(config)).toEqual([]);
   });
 
-  it("retires an unchanged checkpoint timer after three owner reviews", () => {
+  it("keeps an unchanged checkpoint recoverable after repeated owner reviews", () => {
     const config = fixture();
     const condition = {
       id: "external-review-finished",
@@ -189,11 +189,12 @@ describe("App task Condition review checkpoint", () => {
     }
 
     const state = readTaskState(config);
-    expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBeUndefined();
+    expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
     expect(listRunnableAppTaskIds(config)).toEqual([]);
+    expect(config.resourceStore.nextDueAt()).not.toBeNull();
   });
 
-  it("clears a consumed stale due index when the Condition remains event-driven", () => {
+  it("clears an obsolete recovery date when an event-driven Condition has no review", () => {
     const config = fixture();
     const store = config.resourceStore;
 
