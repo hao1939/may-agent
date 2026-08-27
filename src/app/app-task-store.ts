@@ -275,15 +275,6 @@ function timeoutFromAnyEnv(names: string[], fallbackMs: number): number {
   return fallbackMs;
 }
 
-export function taskState(task: TaskNode | undefined): string {
-  return task?.state ?? "backlog";
-}
-
-export function taskRevision(task: TaskNode | undefined): number {
-  const value = task?.revision;
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0;
-}
-
 export function normalizeStringArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && Boolean(item));
   if (typeof value === "string" && value) return [value];
@@ -735,36 +726,58 @@ function projectedTaskState(resource: AppTaskResource): string {
   }
 }
 
+function projectedTaskOwner(
+  resource: AppTaskResource,
+  groups: Record<string, TaskNode>,
+  resources: Record<string, AppTaskResource>,
+): string | undefined {
+  if (resource.spec.owner?.trim()) return resource.spec.owner.trim();
+  let parentId: string | undefined = resource.spec.parentId;
+  const seen = new Set<string>();
+  while (parentId && !seen.has(parentId)) {
+    seen.add(parentId);
+    const parentResource: AppTaskResource | undefined = resources[parentId];
+    if (parentResource?.spec.owner?.trim()) return parentResource.spec.owner.trim();
+    if (parentResource) {
+      parentId = parentResource.spec.parentId;
+      continue;
+    }
+    const group: TaskNode | undefined = groups[parentId];
+    if (group?.owner?.trim()) return group.owner.trim();
+    parentId = group?.parent_id ?? undefined;
+  }
+  return undefined;
+}
+
+function projectedTaskChildren(
+  groups: Record<string, TaskNode>,
+  resources: Record<string, AppTaskResource>,
+): Record<string, string[]> {
+  const childSetsById: Record<string, Set<string>> = {};
+  const add = (parentId: string | null | undefined, childId: string): void => {
+    if (!parentId) return;
+    (childSetsById[parentId] ??= new Set()).add(childId);
+  };
+  for (const [id, group] of Object.entries(groups)) add(group.parent_id, id);
+  for (const [id, resource] of Object.entries(resources)) add(resource.spec.parentId, id);
+  return Object.fromEntries(
+    Object.entries(childSetsById).map(([parentId, children]) => [parentId, [...children].sort()]),
+  );
+}
+
 function buildTaskTreeProjection(
   groups: Record<string, TaskNode>,
   resources: Record<string, AppTaskResource>,
 ): Record<string, TaskNode> {
+  const childrenById = projectedTaskChildren(groups, resources);
   const tasks: Record<string, TaskNode> = {};
   for (const [id, group] of Object.entries(groups)) {
-    tasks[id] = { ...group, id, state: group.state ?? "backlog", children: [] };
+    tasks[id] = { ...group, id, state: group.state ?? "backlog", children: childrenById[id] ?? [] };
   }
-
-  const inheritedOwner = (resource: AppTaskResource): string | undefined => {
-    if (resource.spec.owner?.trim()) return resource.spec.owner.trim();
-    let parentId: string | undefined = resource.spec.parentId;
-    const seen = new Set<string>();
-    while (parentId && !seen.has(parentId)) {
-      seen.add(parentId);
-      const parentResource: AppTaskResource | undefined = resources[parentId];
-      if (parentResource?.spec.owner?.trim()) return parentResource.spec.owner.trim();
-      if (parentResource) {
-        parentId = parentResource.spec.parentId;
-        continue;
-      }
-      const group: TaskNode | undefined = groups[parentId];
-      if (group?.owner?.trim()) return group.owner.trim();
-      parentId = group?.parent_id ?? undefined;
-    }
-    return undefined;
-  };
 
   for (const resource of Object.values(resources)) {
     const { spec, status, metadata } = resource;
+    const owner = projectedTaskOwner(resource, groups, resources);
     tasks[metadata.id] = {
       id: metadata.id,
       revision: metadata.generation,
@@ -772,11 +785,11 @@ function buildTaskTreeProjection(
       state: projectedTaskState(resource),
       ...(spec.category ? { kind: spec.category } : {}),
       priority: spec.priority ?? "P2",
-      ...(inheritedOwner(resource) ? { owner: inheritedOwner(resource) } : {}),
+      ...(owner ? { owner } : {}),
       ...(spec.workflow ? { workflow: spec.workflow } : {}),
       ...(spec.executor ? { executor: spec.executor } : {}),
       goal: spec.outcome,
-      children: [],
+      children: childrenById[metadata.id] ?? [],
       depends_on: [...(spec.dependsOn ?? [])],
       outputs: [...(spec.outputs ?? [])],
       acceptance: [...spec.acceptance],
@@ -786,11 +799,6 @@ function buildTaskTreeProjection(
     };
   }
 
-  for (const task of Object.values(tasks)) {
-    const parent = task.parent_id ? tasks[task.parent_id] : undefined;
-    if (parent) parent.children = [...(parent.children ?? []), task.id];
-  }
-  for (const task of Object.values(tasks)) task.children = [...new Set(task.children ?? [])].sort();
   return tasks;
 }
 
@@ -1096,15 +1104,17 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
     current.push(attempt);
     attemptsByTask.set(attempt.taskId, current);
   }
+  const groups = tree.groups ?? {};
+  const resources = tree.resources ?? {};
+  const childrenById = projectedTaskChildren(groups, resources);
 
   const tasks: Record<string, AppTaskProjectionItem> = {};
-  for (const [id, group] of Object.entries(tree.groups ?? {})) {
-    const projected = tree.tasks[id];
+  for (const [id, group] of Object.entries(groups)) {
     tasks[id] = {
       item_type: "group",
       id,
       parent_id: group.parent_id ?? null,
-      children: [...(projected?.children ?? [])],
+      children: childrenById[id] ?? [],
       ...(group.goal ? { outcome: group.goal } : {}),
       ...(group.kind ? { category: group.kind } : {}),
       ...(group.priority ? { priority: group.priority } : {}),
@@ -1117,9 +1127,9 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
     };
   }
 
-  for (const [taskId, resource] of Object.entries(tree.resources ?? {})) {
+  for (const [taskId, resource] of Object.entries(resources)) {
     const { metadata, spec, status } = resource;
-    const task = tree.tasks[taskId];
+    const owner = projectedTaskOwner(resource, groups, resources);
     const activeAttempt = resource.status.currentAttemptId
       ? tree.attempts?.[resource.status.currentAttemptId]
       : undefined;
@@ -1127,11 +1137,11 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       item_type: "task",
       id: taskId,
       parent_id: spec.parentId,
-      children: [...(task?.children ?? [])],
+      children: childrenById[taskId] ?? [],
       outcome: spec.outcome,
       ...(spec.category ? { category: spec.category } : {}),
       priority: spec.priority ?? "P2",
-      ...(task?.owner ? { owner: task.owner } : {}),
+      ...(owner ? { owner } : {}),
       ...(spec.workflow ? { workflow: spec.workflow } : {}),
       ...(spec.executor ? { executor: spec.executor } : {}),
       mode: spec.mode,
@@ -1162,10 +1172,6 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
             },
           }
         : {}),
-      ...(task?.context ? { context: structuredClone(task.context) } : {}),
-      ...(task?.strategy_context ? { strategy_context: task.strategy_context } : {}),
-      ...(task?.progress ? { progress: structuredClone(task.progress) } : {}),
-      ...(task?.tags ? { tags: [...task.tags] } : {}),
     };
   }
 
@@ -1261,8 +1267,4 @@ export function refreshAppTaskTreeProjection(config: TaskStateConfig, options: {
     renameSync(tempPath, projectionPath);
     return projectionPath;
   });
-}
-
-export function isLeaf(task: TaskNode): boolean {
-  return normalizeStringArray(task.children).length === 0;
 }
