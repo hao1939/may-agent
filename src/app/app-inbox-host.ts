@@ -1110,6 +1110,33 @@ export class AppInboxHost {
       if (followUp.task && followUp.task.appId.trim().replace(/\.app$/, "") !== target.id) {
         throw new Error(`App follow-up Task owner must match target App ${target.id}`);
       }
+      if (followUp.task && this.#readDependency) {
+        const taskId = followUp.task.taskId.trim();
+        const observed =
+          (await this.#observeDependency(target.id, { kind: "task", id: taskId })) ??
+          ({ kind: "task", id: taskId, status: "unknown" } as const);
+        if (TERMINAL_TASK_INPUT_STATUSES.has(observed.status)) {
+          if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
+            throw new Error(
+              `App ${app.id} repeatedly selected unavailable Task ${target.id}/${taskId}; retry with current Task evidence`,
+            );
+          }
+          const fresh = await this.#authorRequest(claim.item);
+          const prior = fresh.referencedTasks?.find(
+            (candidate) => candidate.appId === target.id && candidate.task.id === taskId,
+          );
+          const reconsidered: AppRequest = {
+            ...fresh,
+            referencedTasks: [
+              { appId: target.id, ...(prior?.ref ? { ref: prior.ref } : {}), task: observed },
+              ...(fresh.referencedTasks ?? []).filter(
+                (candidate) => candidate.appId !== target.id || candidate.task.id !== taskId,
+              ),
+            ],
+          };
+          return this.#resolveDirectRequest(app, claim, deepFreeze(reconsidered), reconsiderations + 1);
+        }
+      }
     }
     const dependencyIds = new Set<string>();
     const reviewedCompletedChildren = new Set(
