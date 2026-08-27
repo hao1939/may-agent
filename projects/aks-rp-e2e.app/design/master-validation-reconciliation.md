@@ -332,7 +332,12 @@ verify, and resume protocol; they must not restore this retired migration.
   campaign run is integration evidence and cannot substitute for verification
   of the PR branch and commit.
 - Draft means the PR head is still unverified. Publish only when the affected
-  spec passes from the exact source branch and commit still at the PR head.
+  spec passes from the exact source branch and commit still at the PR head,
+  and the referenced run is terminal so its cleanup has finished. The app
+  re-reads the provider run before publication and rejects an active, canceled,
+  different-branch, or different-commit run. Other specs may still report real
+  product failures in that terminal run; they do not invalidate this spec's
+  exact pass.
   Every later commit, including a review fix, invalidates the prior proof and
   requires a fresh run. A fully green campaign leaves any individually
   unverified PRs draft. The app never merges a focused PR
@@ -343,7 +348,8 @@ verify, and resume protocol; they must not restore this retired migration.
   exact PR-head proof and publication belong to the app, while policy
   approval and merge belong to the human/provider boundary. This exact
   verified-pass event explicitly wakes the standing cycle through its open
-  aggregate-run wait; it does not wait for unrelated slices to finish.
+  aggregate-run wait; publication waits for that referenced run to finish, not
+  for a separate campaign run or later schedule.
 - Draft is temporary state, not archival state. Every focused PR eventually
   becomes review-ready after exact proof or is explicitly abandoned when the
   task rejects its candidate.

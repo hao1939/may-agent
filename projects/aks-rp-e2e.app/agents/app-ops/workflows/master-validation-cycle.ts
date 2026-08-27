@@ -433,6 +433,21 @@ export function fixVerificationTrigger(
     : null;
 }
 
+export function verificationRunMatchesTrigger(
+  trigger: FixVerificationTrigger,
+  run: PipelineRun,
+): boolean {
+  const result = text(run.result).toLowerCase();
+  return (
+    text(run.status).toLowerCase() === "completed" &&
+    Boolean(result) &&
+    result !== "canceled" &&
+    text(run.sourceBranch).replace(/^refs\/heads\//, "") ===
+      trigger.sourceBranch.replace(/^refs\/heads\//, "") &&
+    text(run.sourceVersion) === trigger.sourceCommit
+  );
+}
+
 function eventData(event: Record<string, unknown>): Record<string, unknown> {
   if (
     event.data &&
@@ -883,6 +898,18 @@ async function publishVerifiedFixes(
 ): Promise<string[]> {
   if (!campaign || !trigger) {
     return [];
+  }
+  const verificationRun = record(
+    azJson(
+      ["pipelines", "runs", "show", "--id", trigger.pipelineRunId],
+      repoDir,
+    ),
+  ) as PipelineRun;
+  if (!verificationRunMatchesTrigger(trigger, verificationRun)) {
+    return [
+      `fix-verification-run:${trigger.pipelineRunId}:${text(verificationRun.status) || "unknown"}/${text(verificationRun.result) || "pending"}`,
+      "fix-publication:waiting-for-terminal-exact-head-proof",
+    ];
   }
   const exactVerified = new Set(
     campaign.integratedFixes
