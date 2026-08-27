@@ -2221,6 +2221,47 @@ describe("App task reconciler state", () => {
     expect(context.completed[0]?.evidence[0]?.length).toBeLessThanOrEqual(512);
   });
 
+  it("keeps child readiness aware of running tasks outside the parent graph", () => {
+    const { config } = fixture();
+    config.maxConcurrent = 1;
+    const running = {
+      ...intent(),
+      id: "unrelated-running-task",
+      outcome: "Keep unrelated work running",
+    };
+    const claim = declareAndClaimTask(config, {
+      intent: running,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    observeAppTaskIntent(config, {
+      intent: {
+        ...intent(),
+        id: "parent-task",
+        outcome: "Coordinate child work",
+      },
+      appAgent: "app-owner",
+    });
+    observeAppTaskIntent(config, {
+      intent: {
+        ...intent(),
+        id: "pending-child-task",
+        parentId: "parent-task",
+        outcome: "Complete the child work",
+      },
+      appAgent: "app-owner",
+    });
+
+    const context = readAppTaskChildContext(config, "parent-task");
+
+    expect(context.live).toHaveLength(1);
+    expect(context.live[0]).toMatchObject({
+      taskId: "pending-child-task",
+      readiness: { state: "capacity-blocked", relatedTaskIds: [] },
+    });
+  });
+
   it("supplies a bounded App-wide live snapshot without the reviewing task", () => {
     const f = fixture();
     const { config } = f;
