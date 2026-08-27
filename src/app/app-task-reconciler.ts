@@ -18,7 +18,6 @@ import {
   saveTaskState,
   taskState,
   withTaskStateLock,
-  type TaskNode,
   type ResourceTaskStateConfig,
   type AppTaskReadiness,
   type TaskTree,
@@ -772,18 +771,6 @@ export function taskReconciliationConfig(input: TaskReconciliationConfigInput): 
   };
 }
 
-function activeTaskIds(tree: TaskTree): string[] {
-  return Object.values(tree.resources ?? {})
-    .filter((resource) => resource.status.phase === "running")
-    .map((resource) => resource.metadata.id)
-    .sort();
-}
-
-function refreshActiveTaskProjection(tree: TaskTree): void {
-  tree.active_task_ids = activeTaskIds(tree);
-  tree.active_task_id = tree.active_task_ids[0] ?? null;
-}
-
 function resolvedAgent(tree: TaskTree, intent: AppTaskIntent, appAgent: string): string {
   if (intent.owner?.trim()) return intent.owner.trim();
   let parentId: string | null | undefined = intent.parentId;
@@ -796,7 +783,7 @@ function resolvedAgent(tree: TaskTree, intent: AppTaskIntent, appAgent: string):
       parentId = parentResource.spec.parentId;
       continue;
     }
-    const parentGroup: TaskNode | undefined = tree.groups?.[parentId];
+    const parentGroup: NonNullable<TaskTree["groups"]>[string] | undefined = tree.groups?.[parentId];
     if (!parentGroup) break;
     if (parentGroup.owner?.trim()) return parentGroup.owner.trim();
     parentId = parentGroup.parent_id;
@@ -1012,31 +999,6 @@ function materializeWaitingConditions(
   const resource = tree.resources?.[taskId];
   if (resource) touchResource(resource, { conditionIds: ids });
   pruneUnlinkedConditions(tree);
-}
-
-function syncTaskProjection(task: TaskNode, resource: AppTaskResource, owner: string): void {
-  const intent = resourceIntent(resource);
-  task.revision = resource.metadata.generation;
-  task.parent_id = intent.parentId;
-  task.goal = intent.outcome;
-  task.acceptance = [...intent.acceptance];
-  task.outputs = [...(intent.outputs ?? [])];
-  task.depends_on = [...(intent.dependsOn ?? [])];
-  task.priority = intent.priority ?? task.priority ?? "P2";
-  task.owner = owner;
-  task.workflow = intent.workflow;
-  task.executor = intent.executor;
-  task.reconcile_mode = intent.mode;
-  task.kind = intent.category;
-  task.summary = resource.status.summary;
-  task.state =
-    resource.status.phase === "running"
-      ? "active"
-      : resource.status.phase === "waiting"
-        ? "blocked"
-        : resource.status.phase === "attention"
-          ? "review"
-          : "backlog";
 }
 
 export function recoverableAppTaskAttempts(
@@ -3201,11 +3163,9 @@ function requireExpectedGeneration(value: unknown, label: string): void {
 function mutableActionResource(
   tree: TaskTree,
   action: Exclude<AppTaskAction, { kind: "create-task" }>,
-): { task: TaskNode; resource: AppTaskResource } {
-  const task = tree.tasks[action.taskId];
-  if (!task) throw new Error(`Handler action task not found: ${action.taskId}`);
+): AppTaskResource {
   const resource = tree.resources?.[action.taskId];
-  if (!resource) throw new Error(`Handler action resource not found: ${action.taskId}`);
+  if (!resource) throw new Error(`Handler action task not found: ${action.taskId}`);
   if (resource.metadata.generation !== action.expectedGeneration) {
     throw new AppTaskActionStaleError({
       taskId: action.taskId,
@@ -3213,14 +3173,14 @@ function mutableActionResource(
       currentGeneration: resource.metadata.generation,
     });
   }
-  return { task, resource };
+  return resource;
 }
 
 function actionTargetAlreadyReceipted(
   tree: TaskTree,
   action: Exclude<AppTaskAction, { kind: "create-task" }>,
 ): boolean {
-  return Boolean(!tree.tasks[action.taskId] && !tree.resources?.[action.taskId] && tree.receipts?.[action.taskId]);
+  return Boolean(!tree.resources?.[action.taskId] && tree.receipts?.[action.taskId]);
 }
 
 function validateTaskActions(
@@ -3276,18 +3236,11 @@ function validateTaskActions(
       if (tree.receipts?.[action.id]) {
         throw new Error(`Handler action task already exists or completed: ${action.id}`);
       }
-      if (tree.tasks[action.id] || tree.resources?.[action.id]) {
+      if (tree.resources?.[action.id] || tree.groups?.[action.id]) {
         if (createActionMatchesLiveTask(tree, action)) continue;
         throw new Error(`Handler action task already exists with a different specification: ${action.id}`);
       }
       validateParentReference(validationTree, action.id, action.parentId);
-      const parent = validationTree.tasks[action.parentId];
-      validationTree.tasks[action.id] = {
-        id: action.id,
-        parent_id: action.parentId,
-        children: [],
-        state: "backlog",
-      };
       validationTree.resources = {
         ...(validationTree.resources ?? {}),
         [action.id]: {
@@ -3310,7 +3263,6 @@ function validateTaskActions(
           status: { observedGeneration: 0, phase: "pending", updatedAt: "" },
         },
       };
-      parent.children = [...new Set([...(parent.children ?? []), action.id])];
       continue;
     }
 
@@ -3366,12 +3318,12 @@ function validateTaskActions(
         `Handler ${action.kind} action cannot mutate completed task ${action.taskId}; create a new linked task`,
       );
     }
-    const { task, resource } = mutableActionResource(validationTree, action);
+    const resource = mutableActionResource(validationTree, action);
     if (action.kind === "close-task") {
-      const liveChildren = liveChildTaskIds(validationTree, task.id);
+      const liveChildren = liveChildTaskIds(validationTree, action.taskId);
       if (liveChildren.length > 0) {
         throw new Error(
-          `Handler close action cannot absorb ${task.id} while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
+          `Handler close action cannot absorb ${action.taskId} while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
             liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
           }`,
         );
@@ -3404,19 +3356,11 @@ function validateTaskActions(
         });
       }
     }
-    if (action.kind === "update-task" && action.parentId !== undefined && action.parentId !== task.parent_id) {
-      const previousParent = task.parent_id ? validationTree.tasks[task.parent_id] : undefined;
-      if (previousParent) previousParent.children = (previousParent.children ?? []).filter((id) => id !== task.id);
-      const nextParent = validationTree.tasks[action.parentId];
-      nextParent.children = [...new Set([...(nextParent.children ?? []), task.id])];
-      task.parent_id = action.parentId;
-      if (resource.spec) resource.spec.parentId = action.parentId;
+    if (action.kind === "update-task" && action.parentId !== undefined) {
+      resource.spec.parentId = action.parentId;
     }
     if (action.kind === "close-task") {
-      const parent = task.parent_id ? validationTree.tasks[task.parent_id] : undefined;
-      if (parent) parent.children = (parent.children ?? []).filter((id) => id !== task.id);
-      delete validationTree.tasks[task.id];
-      delete validationTree.resources?.[task.id];
+      delete validationTree.resources?.[action.taskId];
     }
   }
 }
@@ -3510,7 +3454,6 @@ function applyTaskActions(
           applied.push(`already exists ${action.id}`);
           break;
         }
-        const parent = tree.tasks[action.parentId];
         const intent = createActionIntent(action);
         const resource: AppTaskResource = {
           metadata: { id: action.id, generation: 1, resourceVersion: 1 },
@@ -3521,21 +3464,12 @@ function applyTaskActions(
             updatedAt: now,
           },
         };
-        const task: TaskNode = {
-          id: action.id,
-          parent_id: action.parentId,
-          children: [],
-          state: "backlog",
-        };
         tree.resources = { ...(tree.resources ?? {}), [action.id]: resource };
-        tree.tasks[action.id] = task;
-        parent.children = [...new Set([...(parent.children ?? []), action.id])];
-        syncTaskProjection(task, resource, action.owner ?? claim.agent);
-        applied.push(`created ${task.id}`);
+        applied.push(`created ${action.id}`);
         break;
       }
       case "update-task": {
-        const { task, resource } = mutableActionResource(tree, action);
+        const resource = mutableActionResource(tree, action);
         const current = resourceIntent(resource);
         const nextIntent: AppTaskIntent = {
           ...current,
@@ -3585,9 +3519,8 @@ function applyTaskActions(
               now,
             );
           }
-          unlinkTaskConditions(tree, task.id);
+          unlinkTaskConditions(tree, action.taskId);
         }
-        const previousParentId = task.parent_id;
         const nextResource: AppTaskResource = {
           metadata: {
             id: resource.metadata.id,
@@ -3605,21 +3538,15 @@ function applyTaskActions(
               }
             : { ...resource.status, updatedAt: now },
         };
-        tree.resources![task.id] = nextResource;
-        syncTaskProjection(task, nextResource, nextAgent);
-        if (previousParentId && previousParentId !== nextIntent.parentId) {
-          const previousParent = tree.tasks[previousParentId];
-          if (previousParent) previousParent.children = (previousParent.children ?? []).filter((id) => id !== task.id);
-          const nextParent = tree.tasks[nextIntent.parentId];
-          nextParent.children = [...new Set([...(nextParent.children ?? []), task.id])];
-        }
-        applied.push(`updated ${task.id}`);
+        tree.resources![action.taskId] = nextResource;
+        applied.push(`updated ${action.taskId}`);
         break;
       }
       case "close-task": {
-        const { task, resource } = mutableActionResource(tree, action);
+        const resource = mutableActionResource(tree, action);
         const intent = resourceIntent(resource);
-        unlinkTaskConditions(tree, task.id);
+        const agent = resolvedAgent(tree, intent, claim.agent);
+        unlinkTaskConditions(tree, action.taskId);
         if (resource.status.currentAttemptId) {
           const supersededSessionId = tree.attempts?.[resource.status.currentAttemptId]?.sessionId;
           if (supersededSessionId) supersededSessionIds.add(supersededSessionId);
@@ -3628,23 +3555,23 @@ function applyTaskActions(
         const failureFingerprints = [
           ...new Set(
             Object.values(tree.attempts ?? {})
-              .filter((attempt) => attempt.taskId === task.id && attempt.failureReason)
+              .filter((attempt) => attempt.taskId === action.taskId && attempt.failureReason)
               .map((attempt) => String(attempt.failureReason)),
           ),
         ];
         tree.receipts = {
           ...(tree.receipts ?? {}),
-          [task.id]: {
+          [action.taskId]: {
             metadata: {
-              id: task.id,
+              id: action.taskId,
               generation: resource.metadata.generation,
               resourceVersion: 1,
             },
-            specHash: appTaskSpecHash(intent, intent.owner ?? task.owner ?? claim.agent),
+            specHash: appTaskSpecHash(intent, agent),
             parentId: intent.parentId,
             outcome: intent.outcome,
             acceptance: [...intent.acceptance],
-            owner: intent.owner ?? task.owner ?? claim.agent,
+            owner: agent,
             ...(intent.workflow ? { workflow: intent.workflow } : {}),
             ...(intent.executor ? { executor: intent.executor } : {}),
             input: structuredClone(intent.input ?? {}),
@@ -3655,26 +3582,23 @@ function applyTaskActions(
             acceptanceBasis: structuredClone(acceptanceBasis),
             failureFingerprints,
             completedAt: now,
-            ...(latestTaskAttempt(tree, task.id, resource.metadata.generation)?.workspace
+            ...(latestTaskAttempt(tree, action.taskId, resource.metadata.generation)?.workspace
               ? {
                   workspace: structuredClone(
-                    latestTaskAttempt(tree, task.id, resource.metadata.generation)!.workspace!,
+                    latestTaskAttempt(tree, action.taskId, resource.metadata.generation)!.workspace!,
                   ),
                 }
               : {}),
           },
         };
-        const parent = task.parent_id ? tree.tasks[task.parent_id] : undefined;
-        if (parent) parent.children = (parent.children ?? []).filter((id) => id !== task.id);
-        delete tree.tasks[task.id];
-        delete tree.resources?.[task.id];
-        delete tree.taskTriggers?.[task.id];
-        applied.push(`closed ${task.id}`);
+        delete tree.resources?.[action.taskId];
+        delete tree.taskTriggers?.[action.taskId];
+        applied.push(`closed ${action.taskId}`);
         break;
       }
       case "unblock-task": {
-        const { task, resource } = mutableActionResource(tree, action);
-        unlinkTaskConditions(tree, task.id);
+        const resource = mutableActionResource(tree, action);
+        unlinkTaskConditions(tree, action.taskId);
         touchResource(resource, {
           phase: "pending",
           observedGeneration: Math.max(0, resource.metadata.generation - 1),
@@ -3682,8 +3606,7 @@ function applyTaskActions(
           summary: action.reason.trim(),
           conditionIds: [],
         });
-        syncTaskProjection(task, resource, resource.spec.owner ?? task.owner ?? claim.agent);
-        applied.push(`unblocked ${task.id}`);
+        applied.push(`unblocked ${action.taskId}`);
         break;
       }
     }
@@ -3812,7 +3735,7 @@ function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
     if (attempt.taskId === taskId) scope.attemptIds.add(attempt.metadata.id);
   }
   scope.receiptIds.add(taskId);
-  const parentId = tree.tasks[taskId]?.parent_id ?? resource.spec.parentId;
+  const parentId = resource.spec.parentId;
   if (parentId && tree.groups?.[parentId]) scope.groupIds.add(parentId);
 }
 
