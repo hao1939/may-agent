@@ -311,7 +311,6 @@ describe("saveTaskState shrinkage guard", () => {
       groups: {
         root: {
           id: "root",
-          state: "backlog",
           children: ["live-child", "receipt-only-child", "missing-child"],
         },
         "live-child": {

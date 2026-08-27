@@ -2247,13 +2247,6 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    mutateTaskGroupFixture(config, "root", (group) => {
-      group.state = "active";
-    });
-    mutateTaskGroupFixture(config, "operations", (group) => {
-      group.state = "active";
-    });
-
     completeAppTask(config, claim, { summary: "session evaluated" });
 
     const completed = readTaskState(config);

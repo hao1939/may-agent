@@ -28,8 +28,6 @@ import type { TaskExecutorName } from "@may-agent/sdk";
 export type TaskGroup = {
   id: string;
   parent_id?: string | null;
-  /** Accepted from old seeds and discarded at the canonical boundary. */
-  state?: string;
   kind?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
@@ -679,7 +677,9 @@ export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
 
 /** Keep legacy group input structural before it enters canonical state. */
 export function normalizeTaskGroup(id: string, group: TaskGroup): TaskGroup {
-  const { children: _derivedChildren, state: _legacyLifecycle, ...structural } = group;
+  const { children: _derivedChildren, state: _legacyLifecycle, ...structural } = group as TaskGroup & {
+    state?: unknown;
+  };
   return { ...structural, id };
 }
 

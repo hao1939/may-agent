@@ -220,7 +220,9 @@ describe("project runtime state paths", () => {
       config,
       {
         project_lifecycle: "active",
-        groups: { root: { id: "root", parent_id: null, state: "backlog", children: [] } },
+        groups: {
+          root: { id: "root", parent_id: null, state: "backlog", children: [] },
+        } as unknown as TaskTree["groups"],
         tasks: {},
       },
       { projectLifecycleReason: "activate test project" },
