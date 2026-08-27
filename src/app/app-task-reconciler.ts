@@ -2018,7 +2018,7 @@ export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, current
   return withTaskStateLock(config, () => {
     const indexedIds = config.resourceStore.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
     const indexedIdSet = new Set(indexedIds);
-    const tree = config.resourceStore.readTaskContext({ taskIds: indexedIds });
+    const tree = config.resourceStore.readTaskContext({ taskIds: indexedIds }, { includeHistory: false });
     const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
     const candidates = Object.values(tree.resources ?? {})
       .filter((resource) => indexedIdSet.has(resource.metadata.id) && resource.status.phase !== "converged")
