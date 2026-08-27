@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 import {
   ensureTaskReferenceIndex,
@@ -739,6 +740,8 @@ describe("Human Task service", () => {
     const service = new HumanTaskService(db, registry("alpha"), {
       onCancelled: (input) => cancelled.push(input),
     });
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    const revision = store.revision();
 
     const result = service.cancelTask({
       ref: taskReferenceDigest("alpha", "work").slice(0, 8),
@@ -761,6 +764,7 @@ describe("Human Task service", () => {
     expect(db.prepare("SELECT state FROM app_task_attempts WHERE attempt_id = 'attempt-1'").get()).toEqual({
       state: "interrupted",
     });
+    expect(store.revision()).toBe(revision + 1);
     expect(service.cancelTask({ appId: "alpha", taskId: "work" })).toMatchObject({ status: "cancelled" });
     expect(cancelled).toHaveLength(1);
   });

@@ -2,6 +2,7 @@ import type { AppRegistry } from "./app-registry.js";
 import type { AppTaskAttempt, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
 import type { TaskCompletionReceipt } from "./app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
+import { advanceTaskResourceRevision } from "./app-task-resource-store.js";
 import {
   displayTaskReferences,
   ensureTaskReferenceIndex,
@@ -870,6 +871,7 @@ export class HumanTaskService {
           )
           .run(JSON.stringify(attempt), current.appId, attempt.metadata.id);
       }
+      advanceTaskResourceRevision(this.db, current.appId);
       cancelledAttemptId = attempt?.metadata.id;
       this.db.exec("COMMIT");
     } catch (error) {
