@@ -240,6 +240,26 @@ describe("shared agent execution preparation", () => {
     expect(prepared.tools.find((candidate) => candidate.name === "checkpoint")?.executionMode).toBe("sequential");
   });
 
+  test("removes Host-private task inspection while preserving full task-executor tools", () => {
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample",
+        description: "sample",
+        domain: "tests",
+        systemPrompt: "identity",
+        model: { contextWindow: 10_000 } as any,
+        tools: [tool("read"), tool("tasks"), tool("finish")],
+      },
+      projectRoot: "/tmp",
+      sessionId: "supplied-dependency-observation",
+      task: "judge the supplied observation",
+      toolPolicy: "full-no-tasks",
+      createCheckpoint: () => tool("checkpoint"),
+    });
+
+    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(["read", "finish", "checkpoint"]);
+  });
+
   test("preserves one existing checkpoint without synthesizing a duplicate", () => {
     let checkpointCreations = 0;
     const existingCheckpoint = tool("checkpoint");

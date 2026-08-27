@@ -24,6 +24,7 @@ import {
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   finishCanonicalAgentResidueGuard,
   hasDeployReceiptWake,
+  hasSuppliedDependencyObservation,
   installAppTaskRuntimes,
   mergeTaskConditions,
   normalizeTaskHandlerResult,
@@ -339,6 +340,32 @@ describe("App Task agent prompt context", () => {
   });
 
   it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {
+    expect(
+      hasSuppliedDependencyObservation({
+        items: [
+          {
+            event: {
+              type: "app.task.requested",
+              data: {
+                request: {
+                  dependency: {
+                    kind: "task",
+                    id: "runtime/platform-owner-review",
+                    status: "attention",
+                    summary: "Use this supplied state",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      }),
+    ).toBeTrue();
+    expect(
+      hasSuppliedDependencyObservation({
+        items: [{ event: { type: "app.task.requested", data: { request: {} } } }],
+      }),
+    ).toBeFalse();
     expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("treat that exact read-only observation");
     expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
       "as complete authority for the dependency in this attempt",
