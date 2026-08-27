@@ -125,8 +125,6 @@ export type AppTaskResourceMutation = {
   pruneConditionIds?: string[];
   receipts?: TaskCompletionReceipt[];
   deleteReceiptIds?: string[];
-  groups?: TaskGroup[];
-  deleteGroupIds?: string[];
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
 };
@@ -1245,18 +1243,6 @@ export class AppTaskResourceStore {
           )
           .run(this.appId, receipt.metadata.id, receipt.parentId, epoch(receipt.completedAt) ?? 0, json(receipt));
         indexTaskReference(this.db, this.appId, receipt.metadata.id);
-      }
-      for (const groupId of new Set(mutation.deleteGroupIds ?? [])) {
-        this.db.prepare("DELETE FROM app_task_groups WHERE app_id = ? AND group_id = ?").run(this.appId, groupId);
-      }
-      for (const group of mutation.groups ?? []) {
-        const structural = normalizeTaskGroup(group.id, group);
-        this.db
-          .prepare(
-            `INSERT INTO app_task_groups(app_id, group_id, group_json) VALUES (?, ?, ?)
-           ON CONFLICT(app_id, group_id) DO UPDATE SET group_json=excluded.group_json`,
-          )
-          .run(this.appId, group.id, json(structural));
       }
       for (const admissionId of new Set(mutation.deleteAdmissionIds ?? [])) {
         this.db

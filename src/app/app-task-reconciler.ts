@@ -3661,7 +3661,6 @@ type ResourceMutationScope = {
   createdTaskIds: Set<string>;
   conditionIds: Set<string>;
   attemptIds: Set<string>;
-  groupIds: Set<string>;
   receiptIds: Set<string>;
   fences: Array<{
     taskId: string;
@@ -3678,7 +3677,6 @@ function emptyResourceMutationScope(): ResourceMutationScope {
     createdTaskIds: new Set(),
     conditionIds: new Set(),
     attemptIds: new Set(),
-    groupIds: new Set(),
     receiptIds: new Set(),
     fences: [],
   };
@@ -3731,8 +3729,6 @@ function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
     if (attempt.taskId === taskId) scope.attemptIds.add(attempt.metadata.id);
   }
   scope.receiptIds.add(taskId);
-  const parentId = resource.spec.parentId;
-  if (parentId && tree.groups?.[parentId]) scope.groupIds.add(parentId);
 }
 
 function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTree) {
@@ -3752,8 +3748,6 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
     deleteConditionIds: [...scope.conditionIds].filter((id) => !tree.conditions?.[id]),
     receipts,
     deleteReceiptIds: [...scope.receiptIds].filter((id) => !tree.receipts?.[id]),
-    groups: [...scope.groupIds].flatMap((id) => (tree.groups?.[id] ? [tree.groups[id]] : [])),
-    deleteGroupIds: [...scope.groupIds].filter((id) => !tree.groups?.[id]),
   };
 }
 
