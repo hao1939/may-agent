@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { getDb } from "../lib/requests.js";
-import { ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
+import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
 import type { AppTaskAttempt, AppTaskCondition, AppTaskResource, AppTaskTrigger } from "./app-task-state.js";
 import {
@@ -64,14 +64,6 @@ function transaction<T>(db: SqliteDb, operation: () => T): T {
     }
     throw error;
   }
-}
-
-/** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
-export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
-  db.prepare(
-    `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
-     ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
-  ).run(appId);
 }
 
 function eventKey(event: Record<string, unknown>): string {

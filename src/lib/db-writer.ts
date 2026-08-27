@@ -25,6 +25,7 @@ import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/e
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
+import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
 import type { TaskBinding } from "./persistence.js";
@@ -887,10 +888,7 @@ export class DbWriter {
        SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?
        WHERE app_id = ? AND task_id = ?`,
     ).run(JSON.stringify(trigger), observedAt, appId, taskId);
-    this.db.prepare(
-      `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
-       ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
-    ).run(appId);
+    advanceTaskResourceRevision(this.db, appId);
   }
 
   private closePairForFollowup(payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {
