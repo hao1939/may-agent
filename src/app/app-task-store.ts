@@ -32,8 +32,6 @@ export type TaskGroup = {
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   goal?: string;
-  /** Accepted from old seeds and discarded when canonical state is normalized. */
-  children?: string[];
   context?: Record<string, unknown>;
   summary?: string;
   strategy_context?: string;
@@ -678,6 +676,7 @@ export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
 /** Keep legacy group input structural before it enters canonical state. */
 export function normalizeTaskGroup(id: string, group: TaskGroup): TaskGroup {
   const { children: _derivedChildren, state: _legacyLifecycle, ...structural } = group as TaskGroup & {
+    children?: unknown;
     state?: unknown;
   };
   return { ...structural, id };
