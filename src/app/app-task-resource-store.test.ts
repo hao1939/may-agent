@@ -320,6 +320,20 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("updates the private recovery index without invalidating the canonical snapshot", () => {
+    const store = open();
+    store.importPausedSnapshot(fixture(), "revision-1");
+    const revision = store.revision();
+
+    expect(store.setRecoveryState("normal", { ready: true, changed: false, nextCheckAt: null })).toBeTrue();
+
+    expect(store.revision()).toBe(revision);
+    expect(store.listRecoveryCandidates().items).toContainEqual(
+      expect.objectContaining({ taskId: "normal", ready: true, changed: false }),
+    );
+    store.close();
+  });
+
   it("pages through every indexed recovery candidate", () => {
     const store = open();
     store.importPausedSnapshot(fixture(), "revision-1", ["human"]);
