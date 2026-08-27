@@ -748,7 +748,20 @@ describe("May Console", () => {
       id: "may:primary",
       owner: "may",
       version: 1,
-      messages: [],
+      messages: [
+        {
+          id: "historical-task-assignment",
+          sequence: 1,
+          author: { kind: "tool", id: "runtime" },
+          text: "Accepted durable work: old review",
+          metadata: {
+            command: "task-admitted",
+            taskRefs: [{ appId: "evaluation", taskId: "old/review", ref: "deadbeef" }],
+            followTask: { appId: "evaluation", taskId: "old/review" },
+          },
+          createdAt: 1,
+        },
+      ],
     };
     const server: Server = createServer((socket) => {
       client = socket;
@@ -804,6 +817,8 @@ describe("May Console", () => {
         conversation,
       })}\n`,
     );
+    await Bun.sleep(25);
+    expect(frames.some((frame) => frame.type === "task.get" && frame.taskId === "old/review")).toBe(false);
     await waitFor(() =>
       frames.some(
         (frame) =>

@@ -1034,7 +1034,7 @@ function formatWorkTime(value) {
     .replace(/\.\d{3}Z$/, " UTC");
 }
 
-function renderConversation(messages) {
+function renderConversation(messages, options = {}) {
   if (!Array.isArray(messages)) return;
   let latestFollowTask = null;
   for (const message of messages) {
@@ -1084,7 +1084,10 @@ function renderConversation(messages) {
       };
     }
   }
-  if (latestFollowTask) autoFollowTask(latestFollowTask);
+  // Catch-up history restores context for the human, but it must not change
+  // the current App or start watching old work. Only a live Conversation wake
+  // may turn a newly observed assignment into an automatic follow.
+  if (latestFollowTask && options.autoFollow === true) autoFollowTask(latestFollowTask);
 }
 
 function runtimeFrame(type) {
@@ -1213,7 +1216,7 @@ function handleEvent(event) {
           conversationReady = true;
           flushPendingInput();
         } else if (pending?.kind === "sync") {
-          renderConversation(event.conversation?.messages);
+          renderConversation(event.conversation?.messages, { autoFollow: true });
         } else if (pending?.kind === "topics") {
           renderTopics(event.conversation, pending);
         } else if (pending?.kind === "topic") {
