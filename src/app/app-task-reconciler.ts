@@ -3709,24 +3709,24 @@ function beginResourceMutationScope(
 ): ResourceMutationScope {
   const scope = emptyResourceMutationScope(tree);
   const track = (taskId: string | undefined) => trackResourceMutationTask(scope, tree, taskId);
+  const fence = (taskId: string | undefined) => fenceResourceMutationTask(scope, tree, taskId);
   track(claim.taskId);
-  track(tree.resources?.[claim.taskId]?.spec.parentId);
+  fence(tree.resources?.[claim.taskId]?.spec.parentId);
   for (const action of actions) {
     if (action.kind === "create-task") {
       if (!tree.resources?.[action.id] && !tree.receipts?.[action.id]) scope.createdTaskIds.add(action.id);
       track(action.id);
-      track(action.parentId);
+      fence(action.parentId);
     } else {
       track(action.taskId);
-      if (action.kind === "update-task") track(action.parentId);
+      if (action.kind === "update-task") fence(action.parentId);
     }
   }
   return scope;
 }
 
-function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree, taskId: string | undefined): void {
+function fenceResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree, taskId: string | undefined): void {
   if (!taskId) return;
-  scope.taskIds.add(taskId);
   const resource = tree.resources?.[taskId];
   if (!resource) return;
   if (!scope.createdTaskIds.has(taskId) && !scope.fences.some((candidate) => candidate.taskId === taskId)) {
@@ -3738,6 +3738,14 @@ function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
       currentAttemptId: resource.status.currentAttemptId ?? null,
     });
   }
+}
+
+function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree, taskId: string | undefined): void {
+  if (!taskId) return;
+  scope.taskIds.add(taskId);
+  fenceResourceMutationTask(scope, tree, taskId);
+  const resource = tree.resources?.[taskId];
+  if (!resource) return;
   for (const id of resource.status.conditionIds ?? []) scope.conditionIds.add(id);
   for (const attempt of Object.values(tree.attempts ?? {})) {
     if (attempt.taskId === taskId) scope.attemptIds.add(attempt.metadata.id);

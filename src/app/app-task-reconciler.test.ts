@@ -340,6 +340,46 @@ describe("App task reconciler state", () => {
     expect(committed?.receipts?.map((receipt) => receipt.metadata.id)).toEqual([second.taskId]);
   });
 
+  it("fences an unchanged parent without rewriting it", () => {
+    const state = seedFixture();
+    const { config, store } = resourceFixture(state, "bounded-parent-write");
+    const parent = { ...intent("maintain"), id: "work/parent" };
+    observeAppTaskIntent(config, { intent: parent, appAgent: "app-owner" });
+    const child = { ...intent("achieve"), id: "work/child", parentId: parent.id };
+    const claim = declareAndClaimTask(config, {
+      intent: child,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    let committed: AppTaskResourceMutation | undefined;
+    const commit = store.commit.bind(store);
+    store.commit = (mutation) => {
+      committed = mutation;
+      return commit(mutation);
+    };
+
+    expect(
+      deferAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting for the exact session",
+        conditions: [
+          {
+            id: "bounded-parent-write-condition",
+            type: "session.end",
+            subject: "session:s_bounded_parent_write",
+            expected: "done",
+          },
+        ],
+      }).status,
+    ).toBe("applied");
+    expect(committed?.fences.map((fence) => fence.taskId)).toEqual(
+      expect.arrayContaining([claim.taskId, parent.id]),
+    );
+    expect(committed?.tasks?.map((write) => write.resource.metadata.id)).toEqual([claim.taskId]);
+  });
+
   it("renews only the current bounded workflow attempt lease", () => {
     const state = fixture();
     const { config } = state;
