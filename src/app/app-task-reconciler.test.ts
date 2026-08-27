@@ -10,7 +10,7 @@ import {
   type ResourceTaskStateConfig,
   type TaskStateConfig,
 } from "./app-task-store.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
 import {
   matchingAppTaskConditionTaskIds,
   trackAppTaskConditionEventForTasks,
@@ -308,6 +308,36 @@ describe("App task reconciler state", () => {
     expect(attempt?.sessionId).toBeUndefined();
     expect(attempt?.lease?.sessionId).toBeUndefined();
     expect(Date.parse(attempt?.lease?.expiresAt ?? "")).toBeGreaterThan(Date.now());
+  });
+
+  it("writes only attempts changed by a reconciliation", () => {
+    const state = seedFixture();
+    const { config, store } = resourceFixture(state, "bounded-attempt-write");
+    const first = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    expect(releaseStaleAppTaskResult(config, first).status).toBe("released");
+
+    const second = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (second.kind !== "claimed") throw new Error("expected second claim");
+
+    let committed: AppTaskResourceMutation | undefined;
+    const commit = store.commit.bind(store);
+    store.commit = (mutation) => {
+      committed = mutation;
+      return commit(mutation);
+    };
+
+    expect(completeAppTask(config, second, { summary: "completed after retry" }).status).toBe("applied");
+    expect(committed?.attempts?.map((attempt) => attempt.metadata.id)).toEqual([second.attemptId]);
+    expect(committed?.receipts?.map((receipt) => receipt.metadata.id)).toEqual([second.taskId]);
   });
 
   it("renews only the current bounded workflow attempt lease", () => {
