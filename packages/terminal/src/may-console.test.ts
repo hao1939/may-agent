@@ -787,9 +787,13 @@ describe("May Console", () => {
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
-    child.stdin.write("hello\n");
     await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get"));
     expect(frames.filter((frame) => frame.type === "app.conversation.get")).toHaveLength(1);
+
+    child.stdin.write("/apps gym\n");
+    await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
+
+    child.stdin.write("hello\n");
     await waitFor(() => output.includes("[waiting for May; input queued]"));
     expect(output).toContain("[waiting for May; input queued]");
 
