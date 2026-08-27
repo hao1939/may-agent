@@ -205,8 +205,11 @@ function validateCreate(input: CreateAppInboxItem): void {
   }
   const hasConversation = input.conversationId !== undefined;
   const hasSequence = input.conversationSequence !== undefined;
-  if (hasConversation !== hasSequence) {
-    throw new Error("App inbox conversationId and conversationSequence must be provided together");
+  if (hasSequence && !hasConversation) {
+    throw new Error("App inbox conversationSequence requires conversationId");
+  }
+  if (input.source.kind === "human" && hasConversation !== hasSequence) {
+    throw new Error("Human App inbox conversationId and conversationSequence must be provided together");
   }
   if (
     input.conversationSequence !== undefined &&
@@ -935,6 +938,84 @@ export function linkConversationTopicTask(
       requiredText(taskId, "topic taskId"),
       now,
     ],
+  );
+}
+
+export function listConversationTopicLinksForTask(
+  db: SqliteDb,
+  appId: string,
+  taskId: string,
+): Array<{ appId: string; conversationId: string; topicId: string }> {
+  return (db
+    .prepare(
+      `SELECT topic.app_id, topic.conversation_id, topic.id AS topic_id
+       FROM conversation_topic_tasks linked
+       JOIN conversation_topics topic ON topic.id = linked.topic_id
+       WHERE linked.app_id = ? AND linked.task_id = ?
+       ORDER BY topic.created_at, topic.id`,
+    )
+    .all(requiredText(appId, "topic task appId"), requiredText(taskId, "topic taskId")) as Array<{
+    app_id?: string;
+    conversation_id?: string;
+    topic_id?: string;
+  }>).flatMap((row) =>
+    row.app_id && row.conversation_id && row.topic_id
+      ? [{ appId: row.app_id, conversationId: row.conversation_id, topicId: row.topic_id }]
+      : [],
+  );
+}
+
+export function listStaleConversationTopicTasks(
+  db: SqliteDb,
+  ownerAppId: string,
+  input: { updatedBefore: number; limit: number },
+): Array<{ appId: string; conversationId: string; topicId: string; taskAppId: string; taskId: string }> {
+  if (!Number.isFinite(input.updatedBefore)) throw new Error("Conversation Task review time must be finite");
+  if (!Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > 100) {
+    throw new Error("Conversation Task review limit must be an integer from 1 to 100");
+  }
+  return (db
+    .prepare(
+      `SELECT topic.app_id, topic.conversation_id, topic.id AS topic_id,
+              linked.app_id AS task_app_id, linked.task_id
+       FROM conversation_topics topic
+       JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
+       JOIN app_tasks task ON task.app_id = linked.app_id AND task.task_id = linked.task_id
+       WHERE topic.app_id = ? AND task.updated_at <= ?
+         AND task.phase IN ('pending', 'running', 'waiting', 'attention')
+         AND NOT EXISTS (
+           SELECT 1 FROM app_task_receipts receipt
+           WHERE receipt.app_id = task.app_id AND receipt.receipt_id = task.task_id
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM app_task_cancellations cancellation
+           WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
+         )
+       ORDER BY task.updated_at, linked.linked_at, linked.app_id, linked.task_id
+       LIMIT ?`,
+    )
+    .all(
+      requiredText(ownerAppId, "conversation owner appId"),
+      input.updatedBefore,
+      input.limit,
+    ) as Array<{
+    app_id?: string;
+    conversation_id?: string;
+    topic_id?: string;
+    task_app_id?: string;
+    task_id?: string;
+  }>).flatMap((row) =>
+    row.app_id && row.conversation_id && row.topic_id && row.task_app_id && row.task_id
+      ? [
+          {
+            appId: row.app_id,
+            conversationId: row.conversation_id,
+            topicId: row.topic_id,
+            taskAppId: row.task_app_id,
+            taskId: row.task_id,
+          },
+        ]
+      : [],
   );
 }
 

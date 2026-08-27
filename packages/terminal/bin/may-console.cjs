@@ -725,6 +725,8 @@ function taskStatusLabel(task) {
       return "waiting";
     case "attention":
       return task?.humanAction ? "needs you" : "needs review";
+    case "up-to-date":
+      return "up to date";
     case "done":
       return "done";
     case "cancelled":
@@ -746,6 +748,8 @@ function currentTaskText(task) {
       return "No new progress has been reported while the Task waits.";
     case "attention":
       return "No recovery update has been reported yet.";
+    case "up-to-date":
+      return "Current linked work is reconciled; this Task will wake when relevant facts change.";
     case "done":
       return "No result summary was recorded.";
     case "cancelled":
@@ -762,6 +766,12 @@ function humanActionText(task) {
     : typeof task?.summary === "string" && task.summary.trim()
       ? task.summary.trim()
       : String(task?.outcome || "Human input is required.");
+}
+
+function humanActionLine(task) {
+  const action = humanActionText(task);
+  const owner = task?.humanAction?.task;
+  return owner?.ref && owner?.appId ? `On Task ${owner.ref} · ${owner.appId}: ${action}` : action;
 }
 
 function elapsedText(value) {
@@ -868,7 +878,7 @@ function renderTask(task, command, options = {}) {
     : [];
   if (acceptance.length > 0) lines.push(...acceptance.map((item) => `    - ${item.trim()}`));
   else lines.push("    No separate completion criteria were recorded.");
-  lines.push("", "  You", `    ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`);
+  lines.push("", "  You", `    ${task.humanAction ? humanActionLine(task) : "Nothing needed right now."}`);
   if (task.requestedBy) {
     lines.push(
       "",

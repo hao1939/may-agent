@@ -10,7 +10,7 @@ function text(result: Awaited<ReturnType<ReturnType<typeof createAppTaskReadTool
 }
 
 describe("App Task read tool", () => {
-  it("binds list and get to the current App without accepting an App argument", async () => {
+  it("keeps list local and allows one exact cross-App get", async () => {
     const calls: unknown[] = [];
     const tool = createAppTaskReadTool({
       bus: new EventBus(),
@@ -34,9 +34,19 @@ describe("App Task read tool", () => {
       id: "review",
       status: "done",
     });
+    expect(
+      text(
+        await tool.execute("call-cross-app-get", {
+          action: "get",
+          taskId: "benchmark",
+          target: { appId: "gym" },
+        }),
+      ),
+    ).toMatchObject({ id: "benchmark", status: "done" });
     expect(calls).toEqual([
       expect.objectContaining({ appId: "evaluation", options: { status: ["running"], limit: 10 } }),
       expect.objectContaining({ appId: "evaluation", taskId: "review" }),
+      expect.objectContaining({ appId: "gym", taskId: "benchmark" }),
     ]);
   });
 
