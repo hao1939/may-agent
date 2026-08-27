@@ -3656,8 +3656,8 @@ function recordExecutableParentTrigger(
 }
 
 type ResourceMutationScope = {
-  taskIds: Set<string>;
-  originalTaskIds: Set<string>;
+  writeTaskIds: Set<string>;
+  fencedTaskIds: Set<string>;
   createdTaskIds: Set<string>;
   conditionIds: Set<string>;
   originalConditionVersions: Map<string, number>;
@@ -3673,8 +3673,8 @@ type ResourceMutationScope = {
 
 function emptyResourceMutationScope(tree: TaskTree): ResourceMutationScope {
   return {
-    taskIds: new Set(),
-    originalTaskIds: new Set(),
+    writeTaskIds: new Set(),
+    fencedTaskIds: new Set(),
     createdTaskIds: new Set(),
     conditionIds: new Set(),
     originalConditionVersions: new Map(
@@ -3724,7 +3724,7 @@ function fenceResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
   const resource = tree.resources?.[taskId];
   if (!resource) return;
   if (!scope.createdTaskIds.has(taskId) && !scope.fences.some((candidate) => candidate.taskId === taskId)) {
-    scope.originalTaskIds.add(taskId);
+    scope.fencedTaskIds.add(taskId);
     scope.fences.push({
       taskId,
       resourceVersion: resource.metadata.resourceVersion,
@@ -3736,7 +3736,7 @@ function fenceResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
 
 function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree, taskId: string | undefined): void {
   if (!taskId) return;
-  scope.taskIds.add(taskId);
+  scope.writeTaskIds.add(taskId);
   fenceResourceMutationTask(scope, tree, taskId);
   const resource = tree.resources?.[taskId];
   if (!resource) return;
@@ -3744,23 +3744,23 @@ function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
 }
 
 function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTree) {
-  for (const taskId of scope.taskIds) trackResourceMutationTask(scope, tree, taskId);
-  const tasks = [...scope.taskIds].flatMap((taskId) => {
+  for (const taskId of scope.writeTaskIds) trackResourceMutationTask(scope, tree, taskId);
+  const tasks = [...scope.writeTaskIds].flatMap((taskId) => {
     const resource = tree.resources?.[taskId];
     return resource ? [resourceWrite(tree, resource, isRunnableOnPassiveResync(tree, resource))] : [];
   });
-  const receipts = [...scope.taskIds].flatMap((taskId) => {
+  const receipts = [...scope.writeTaskIds].flatMap((taskId) => {
     const receipt = tree.receipts?.[taskId];
     return receipt && !scope.originalReceiptIds.has(taskId) ? [receipt] : [];
   });
   return {
     fences: scope.fences,
-    expectMissingTaskIds: [...scope.createdTaskIds].filter((taskId) => !scope.originalTaskIds.has(taskId)),
+    expectMissingTaskIds: [...scope.createdTaskIds].filter((taskId) => !scope.fencedTaskIds.has(taskId)),
     tasks,
-    deleteTaskIds: [...scope.originalTaskIds].filter((taskId) => !tree.resources?.[taskId]),
+    deleteTaskIds: [...scope.fencedTaskIds].filter((taskId) => !tree.resources?.[taskId]),
     attempts: Object.values(tree.attempts ?? {}).filter(
       (attempt) =>
-        scope.taskIds.has(attempt.taskId) &&
+        scope.writeTaskIds.has(attempt.taskId) &&
         scope.originalAttemptVersions.get(attempt.metadata.id) !== attempt.metadata.resourceVersion,
     ),
     conditions: [...scope.conditionIds].flatMap((id) => {
