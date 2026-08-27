@@ -374,6 +374,9 @@ describe("AppTaskResourceStore", () => {
     expect(context.resources?.active).toBeUndefined();
     expect(Object.keys(context.groups ?? {})).toEqual(["project"]);
     expect(Object.keys(context.attempts ?? {})).toHaveLength(16);
+    const currentOnly = store.readTaskContext({ taskIds: ["active"] }, { includeHistory: false });
+    expect(Object.keys(currentOnly.attempts ?? {})).toEqual([]);
+    expect(currentOnly.resources?.active?.status.currentAttemptId).toBe("attempt-1");
     store.close();
   });
 

@@ -685,13 +685,17 @@ export class AppTaskResourceStore {
   /**
    * Read the bounded graph needed to reconcile named tasks. This includes
    * their parent chain, direct children, dependencies, attempts, Conditions,
-   * and completed direct children, but never unrelated App history.
+   * and completed direct children, but never unrelated App history. A current
+   * projection may omit attempt and completed-child history.
    */
-  readTaskContext(input: {
-    taskIds: Iterable<string>;
-    admissionIds?: Iterable<string>;
-    conditionIds?: Iterable<string>;
-  }): TaskTree {
+  readTaskContext(
+    input: {
+      taskIds: Iterable<string>;
+      admissionIds?: Iterable<string>;
+      conditionIds?: Iterable<string>;
+    },
+    options: { includeHistory?: boolean } = {},
+  ): TaskTree {
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) throw new Error("Task resource store has no imported App metadata");
     const metadata = parseJson<Record<string, unknown>>(rawMetadata);
@@ -771,7 +775,7 @@ export class AppTaskResourceStore {
     }
 
     const taskIds = Object.keys(resources);
-    const attempts = taskIds.length
+    const attempts = options.includeHistory !== false && taskIds.length
       ? Object.fromEntries(
           (
             this.db
@@ -827,7 +831,7 @@ export class AppTaskResourceStore {
             )
             .all(this.appId, ...receiptIds) as Array<{ receipt_id?: string; receipt_json?: string }>)
         : []),
-      ...(requested.size
+      ...(options.includeHistory !== false && requested.size
         ? (this.db
             .prepare(
               `SELECT receipt_id, receipt_json FROM app_task_receipts
