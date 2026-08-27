@@ -238,7 +238,12 @@ describe("AppTaskResourceStore", () => {
   it("imports and shadow-compares a paused App snapshot", () => {
     const store = open();
     const tree = fixture() as TaskTree & { satisfied_dependency_ids?: string[] };
-    (tree.groups!.project as TaskTree["groups"][string] & { state?: string }).state = "backlog";
+    const legacyGroup = tree.groups!.project as TaskTree["groups"][string] & {
+      children?: string[];
+      state?: string;
+    };
+    legacyGroup.children = ["human", "normal", "active"];
+    legacyGroup.state = "backlog";
     tree.satisfied_dependency_ids = ["legacy-derived-copy"];
     store.importPausedSnapshot(tree, "revision-1", ["human"]);
 
@@ -255,7 +260,8 @@ describe("AppTaskResourceStore", () => {
     expect(store.isActive()).toBeTrue();
     const snapshot = store.readSnapshot();
     expect(snapshot.resources).toEqual(tree.resources);
-    expect(snapshot.groups?.project?.state).toBeUndefined();
+    expect(snapshot.groups?.project).not.toHaveProperty("state");
+    expect(snapshot.groups?.project).not.toHaveProperty("children");
     expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
   });
