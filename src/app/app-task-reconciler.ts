@@ -3774,7 +3774,6 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
     }),
     deleteConditionIds: [...scope.conditionIds].filter((id) => !tree.conditions?.[id]),
     receipts,
-    deleteReceiptIds: [...scope.taskIds].filter((id) => !tree.receipts?.[id]),
   };
 }
 

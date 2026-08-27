@@ -378,6 +378,7 @@ describe("App task reconciler state", () => {
       expect.arrayContaining([claim.taskId, parent.id]),
     );
     expect(committed?.tasks?.map((write) => write.resource.metadata.id)).toEqual([claim.taskId]);
+    expect(committed?.deleteReceiptIds).toBeUndefined();
   });
 
   it("renews only the current bounded workflow attempt lease", () => {
