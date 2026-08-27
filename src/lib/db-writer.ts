@@ -1,10 +1,9 @@
 /**
  * DbWriter — EventBus subscriber that persists events to SQLite.
  *
- * This is the ONLY component that writes to the DB.
- * Core emits events, DbWriter persists them.
- *
- * See: shared/may-agent-docs/events.md
+ * Core emits events; DbWriter persists the EventHub record and any exact
+ * Task wake that must be atomic with it. Other resource owners persist their
+ * own state in the same database.
  */
 
 import { createHash } from "node:crypto";

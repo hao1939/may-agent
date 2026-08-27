@@ -51,7 +51,7 @@ export type TaskAppDependency = {
   input: AppInput;
 };
 
-/** Desired task-tree mutations returned by one fenced reconciliation attempt. */
+/** Desired Task mutations returned by one fenced reconciliation attempt. */
 export type TaskAction =
   | {
       kind: "create-task";
