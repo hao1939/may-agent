@@ -6,8 +6,6 @@
  *
  * System logging (log.ts) is a separate, independent channel — never routed
  * through the bus — to avoid circular dependencies.
- *
- * See: shared/may-agent-docs/events.md
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -1018,8 +1016,6 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  *   - The required persistence subscriber runs first and fails closed.
  *   - "first" subscribers then run before "normal" subscribers, in registration order.
  * This guarantees that if a handler triggers work, the originating event is already on disk.
- *
- * See: shared/may-agent-docs/proposals/v2-architecture.md (Event Persistence as Invariant)
  */
 export class EventBus {
   private persistenceSubscriber: Subscriber | undefined;
