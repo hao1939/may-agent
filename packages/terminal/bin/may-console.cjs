@@ -58,6 +58,7 @@ let nextTaskPage = null;
 let nextTodoPage = null;
 let nextTopicPage = null;
 const pendingRuntimeControls = new Map();
+const pendingPublishReceipts = [];
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const knownTopicRefs = new Set();
@@ -303,6 +304,7 @@ function sendFrame(frame, opts = {}) {
   }
   try {
     socket.write(`${JSON.stringify(frame)}\n`);
+    if (frame?.type === "publish") pendingPublishReceipts.push(opts.receiptKind || null);
     return true;
   } catch (err) {
     if (!opts.silent) printLine(`[socket write failed] ${err && err.message ? err.message : String(err)}`);
@@ -1044,6 +1046,14 @@ function renderConversation(messages, options = {}) {
     if (!id || !text || renderedConversationMessages.has(id)) continue;
     const channel = message.metadata && typeof message.metadata.channel === "string" ? message.metadata.channel : "";
     const kind = message.author && typeof message.author.kind === "string" ? message.author.kind : "agent";
+    // Command results remain useful Conversation context for a later human
+    // reference, but they are interface views rather than conversation turns.
+    // The command already rendered where it was invoked; replaying it on
+    // startup produces a misleading duplicate `command>` message.
+    if (kind === "command") {
+      rememberRenderedConversationMessage(id);
+      continue;
+    }
     const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
     const metadataTaskRefs = Array.isArray(message.metadata?.taskRefs) ? message.metadata.taskRefs : [];
@@ -1205,10 +1215,14 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
+      const receiptKind = event.command === "publish" ? pendingPublishReceipts.shift() : null;
       if (event.command === "publish" && Number.isSafeInteger(event.eventId) && event.eventId > 0) {
         // Non-human Conversation events are projected by durable event row ID.
         // Marking every local publish receipt is harmless for other event kinds.
         rememberRenderedConversationMessage(`event:${event.eventId}`);
+      }
+      if (receiptKind === "human-turn") {
+        printNotice("[may] Working on your request…");
       }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
@@ -1318,6 +1332,7 @@ function handleEvent(event) {
       // answer is the human-visible response.
       return;
     case "error":
+      if (event.command === "publish") pendingPublishReceipts.shift();
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
@@ -1452,6 +1467,7 @@ function connectSocket() {
     connected = false;
     conversationReady = false;
     socket = null;
+    pendingPublishReceipts.length = 0;
     // Reads are idempotent. Preserve and replay them after reconnect so a
     // daemon restart cannot silently swallow /tasks, /task, /apps, or sync.
     if (pendingConversationReads.length > 0) {
@@ -1743,7 +1759,7 @@ function handleInput(line) {
     return;
   }
 
-  sendFrame(mayInputFrame(input));
+  sendFrame(mayInputFrame(input), { receiptKind: "human-turn" });
   refreshPrompt();
 }
 

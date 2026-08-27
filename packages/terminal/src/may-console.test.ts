@@ -103,6 +103,14 @@ describe("May Console", () => {
                       metadata: { topicId: "topic_0df0c0edbf95b5bbc5c87598" },
                       createdAt: 2,
                     },
+                    {
+                      id: "command:history",
+                      sequence: 3,
+                      author: { kind: "command", id: "may-console" },
+                      text: "Historical command output that must stay hidden",
+                      metadata: { channel: "may-console", command: "/tasks" },
+                      createdAt: 3,
+                    },
                     ...remoteConversationMessages,
                   ],
                 },
@@ -260,7 +268,9 @@ describe("May Console", () => {
             frame.event?.type === "conversation.message.created" &&
             frame.event?.data?.author?.kind === "human"
           ) {
-            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: frame.type, eventId: 42, delivery: "accepted" })}\n`,
+            );
             socket.write(
               `${JSON.stringify({
                 type: "text",
@@ -328,6 +338,7 @@ describe("May Console", () => {
     expect(output.split("\n").filter((line) => line.startsWith("     detail")).length).toBeGreaterThan(1);
     expect(frames.some((frame) => frame.type === "status")).toBe(false);
     expect(output).not.toContain("Active work:");
+    expect(output).not.toContain("Historical command output that must stay hidden");
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
       conversations: ["may:primary"],
@@ -529,6 +540,7 @@ describe("May Console", () => {
 
     child.stdin.write("please keep the compatibility alias\n");
     await waitFor(() => humanFrames().length === 1);
+    await waitFor(() => output.includes("[may] Working on your request…"));
     const input = humanFrames()[0];
     expect(input).toMatchObject({
       event: {
