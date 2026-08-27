@@ -986,8 +986,21 @@ describe("App inbox runtime", () => {
         },
       });
     publish("conversation-a", "first-a");
+    await waitUntil(() => started.includes("message/first-a"));
+
+    // Event admission is not serialized. The later Turn is durable while the
+    // first message-handler invocation is still running; only its handler
+    // claim waits for the preceding Turn in this Conversation.
     publish("conversation-a", "second-a");
     publish("conversation-b", "first-b");
+    const admitted = db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM app_inbox_items
+         WHERE app_id = 'may' AND conversation_id IN ('conversation-a', 'conversation-b')`,
+      )
+      .get() as { count: number };
+    expect(admitted.count).toBe(3);
 
     await waitUntil(() => started.length === 2);
     expect(started).toEqual(["message/first-a", "message/first-b"]);
