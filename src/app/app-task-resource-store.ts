@@ -66,6 +66,14 @@ function transaction<T>(db: SqliteDb, operation: () => T): T {
   }
 }
 
+/** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
+export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
+  db.prepare(
+    `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
+     ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
+  ).run(appId);
+}
+
 function eventKey(event: Record<string, unknown>): string {
   const eventId = Number(event.eventId);
   if (Number.isSafeInteger(eventId) && eventId > 0) return `event:${eventId}`;
@@ -410,12 +418,7 @@ export class AppTaskResourceStore {
   }
 
   private bumpRevision(): void {
-    this.db
-      .prepare(
-        `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
-         ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
-      )
-      .run(this.appId);
+    advanceTaskResourceRevision(this.db, this.appId);
   }
 
   activate(expectedSourceRevision: string): void {
