@@ -3660,8 +3660,6 @@ type ResourceMutationScope = {
   originalTaskIds: Set<string>;
   createdTaskIds: Set<string>;
   conditionIds: Set<string>;
-  attemptIds: Set<string>;
-  receiptIds: Set<string>;
   originalConditionVersions: Map<string, number>;
   originalAttemptVersions: Map<string, number>;
   originalReceiptVersions: Map<string, number>;
@@ -3679,8 +3677,6 @@ function emptyResourceMutationScope(tree: TaskTree): ResourceMutationScope {
     originalTaskIds: new Set(),
     createdTaskIds: new Set(),
     conditionIds: new Set(),
-    attemptIds: new Set(),
-    receiptIds: new Set(),
     originalConditionVersions: new Map(
       Object.values(tree.conditions ?? {}).flatMap((condition) =>
         isAppTaskCondition(condition) ? [[condition.metadata.id, condition.metadata.resourceVersion] as const] : [],
@@ -3747,10 +3743,6 @@ function trackResourceMutationTask(scope: ResourceMutationScope, tree: TaskTree,
   const resource = tree.resources?.[taskId];
   if (!resource) return;
   for (const id of resource.status.conditionIds ?? []) scope.conditionIds.add(id);
-  for (const attempt of Object.values(tree.attempts ?? {})) {
-    if (attempt.taskId === taskId) scope.attemptIds.add(attempt.metadata.id);
-  }
-  scope.receiptIds.add(taskId);
 }
 
 function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTree) {
@@ -3768,10 +3760,11 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
     expectMissingTaskIds: [...scope.createdTaskIds].filter((taskId) => !scope.originalTaskIds.has(taskId)),
     tasks,
     deleteTaskIds: [...scope.originalTaskIds].filter((taskId) => !tree.resources?.[taskId]),
-    attempts: [...scope.attemptIds].flatMap((id) => {
-      const attempt = tree.attempts?.[id];
-      return attempt && scope.originalAttemptVersions.get(id) !== attempt.metadata.resourceVersion ? [attempt] : [];
-    }),
+    attempts: Object.values(tree.attempts ?? {}).filter(
+      (attempt) =>
+        scope.taskIds.has(attempt.taskId) &&
+        scope.originalAttemptVersions.get(attempt.metadata.id) !== attempt.metadata.resourceVersion,
+    ),
     conditions: [...scope.conditionIds].flatMap((id) => {
       const condition = tree.conditions?.[id];
       return isAppTaskCondition(condition) &&
@@ -3781,7 +3774,7 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
     }),
     deleteConditionIds: [...scope.conditionIds].filter((id) => !tree.conditions?.[id]),
     receipts,
-    deleteReceiptIds: [...scope.receiptIds].filter((id) => !tree.receipts?.[id]),
+    deleteReceiptIds: [...scope.taskIds].filter((id) => !tree.receipts?.[id]),
   };
 }
 
