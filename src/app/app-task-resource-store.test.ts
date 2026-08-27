@@ -331,6 +331,7 @@ describe("AppTaskResourceStore", () => {
     expect(store.listRecoveryCandidates().items).toContainEqual(
       expect.objectContaining({ taskId: "normal", ready: true, changed: false }),
     );
+    expect(store.setRecoveryState("normal", { ready: true, changed: false, nextCheckAt: null })).toBeFalse();
     store.close();
   });
 
