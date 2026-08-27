@@ -746,7 +746,7 @@ describe("May Console", () => {
     await once(child, "exit");
   }, 10_000);
 
-  test("queues early input until the initial Conversation view arrives", async () => {
+  test("publishes early input without waiting for the initial Conversation view", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-early-input-"));
     const instance = "test";
     const socketDir = join(root, "instances", instance);
@@ -819,8 +819,15 @@ describe("May Console", () => {
     await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
 
     child.stdin.write("hello\n");
-    await waitFor(() => output.includes("[waiting for May; input queued]"));
-    expect(output).toContain("[waiting for May; input queued]");
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello",
+      ),
+    );
+    expect(output).not.toContain("input queued");
 
     client?.write(
       `${JSON.stringify({
@@ -831,14 +838,14 @@ describe("May Console", () => {
     );
     await Bun.sleep(25);
     expect(frames.some((frame) => frame.type === "task.get" && frame.taskId === "old/review")).toBe(false);
-    await waitFor(() =>
-      frames.some(
+    expect(
+      frames.filter(
         (frame) =>
           frame.type === "publish" &&
           frame.event?.type === "conversation.message.created" &&
           frame.event?.data?.text === "hello",
       ),
-    );
+    ).toHaveLength(1);
 
     child.stdin.write("/exit\n");
     await once(child, "exit");
@@ -917,14 +924,22 @@ describe("May Console", () => {
       frames.findIndex((frame) => frame.type === "tasks.list" && !frame.humanActionOnly),
     );
     expect(
-      frames.some(
+      frames.filter(
         (frame) =>
           frame.type === "publish" &&
           frame.event?.type === "conversation.message.created" &&
           frame.event?.data?.author?.kind === "human" &&
           frame.event?.data?.text === "hello",
       ),
-    ).toBe(false);
+    ).toHaveLength(1);
+    expect(
+      frames.find(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello",
+      )?.event?.data?.context?.focusedApp,
+    ).toBe("gym");
     await waitFor(() =>
       frames.some((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested"),
     );

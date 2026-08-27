@@ -578,16 +578,34 @@ export class AppInboxHost {
     const row = this.#db
       .prepare(
         `SELECT 1 AS ready FROM (
-           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_available
-             WHERE app_id = ? AND status != 'done' AND lease_owner IS NULL
-               AND available_at IS NOT NULL AND available_at <= ?
+           SELECT candidate.app_id
+             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_available
+             WHERE candidate.app_id = ? AND candidate.status != 'done' AND candidate.lease_owner IS NULL
+               AND candidate.available_at IS NOT NULL AND candidate.available_at <= ?
+               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
+                 SELECT 1 FROM app_inbox_items active
+                 WHERE active.app_id = candidate.app_id
+                   AND active.conversation_id = candidate.conversation_id
+                   AND active.id != candidate.id
+                   AND active.lease_owner IS NOT NULL
+                   AND active.lease_expires_at > ?
+               ))
            UNION ALL
-           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_expired
-             WHERE app_id = ? AND status != 'done'
-               AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?
+           SELECT candidate.app_id
+             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_expired
+             WHERE candidate.app_id = ? AND candidate.status != 'done'
+               AND candidate.lease_expires_at IS NOT NULL AND candidate.lease_expires_at <= ?
+               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
+                 SELECT 1 FROM app_inbox_items active
+                 WHERE active.app_id = candidate.app_id
+                   AND active.conversation_id = candidate.conversation_id
+                   AND active.id != candidate.id
+                   AND active.lease_owner IS NOT NULL
+                   AND active.lease_expires_at > ?
+               ))
          ) LIMIT 1`,
       )
-      .get(app.id, now, app.id, now);
+      .get(app.id, now, now, app.id, now, now);
     return row ? 1 : 0;
   }
 
@@ -598,16 +616,34 @@ export class AppInboxHost {
     const rows = this.#db
       .prepare(
         `SELECT DISTINCT app_id FROM (
-           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_available
-             WHERE status != 'done' AND lease_owner IS NULL
-               AND available_at IS NOT NULL AND available_at <= ?
+           SELECT candidate.app_id
+             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_available
+             WHERE candidate.status != 'done' AND candidate.lease_owner IS NULL
+               AND candidate.available_at IS NOT NULL AND candidate.available_at <= ?
+               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
+                 SELECT 1 FROM app_inbox_items active
+                 WHERE active.app_id = candidate.app_id
+                   AND active.conversation_id = candidate.conversation_id
+                   AND active.id != candidate.id
+                   AND active.lease_owner IS NOT NULL
+                   AND active.lease_expires_at > ?
+               ))
            UNION ALL
-           SELECT app_id FROM app_inbox_items INDEXED BY idx_app_inbox_expired
-             WHERE status != 'done'
-               AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?
+           SELECT candidate.app_id
+             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_expired
+             WHERE candidate.status != 'done'
+               AND candidate.lease_expires_at IS NOT NULL AND candidate.lease_expires_at <= ?
+               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
+                 SELECT 1 FROM app_inbox_items active
+                 WHERE active.app_id = candidate.app_id
+                   AND active.conversation_id = candidate.conversation_id
+                   AND active.id != candidate.id
+                   AND active.lease_owner IS NOT NULL
+                   AND active.lease_expires_at > ?
+               ))
          ) ORDER BY app_id`,
       )
-      .all(now, now) as Array<{ app_id?: unknown }>;
+      .all(now, now, now, now) as Array<{ app_id?: unknown }>;
     return rows.flatMap((row) => (typeof row.app_id === "string" && loaded.has(row.app_id) ? [row.app_id] : []));
   }
 

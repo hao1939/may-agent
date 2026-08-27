@@ -28,13 +28,13 @@ let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
 let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
-let conversationReady = false;
 let lastRenderedMayMessageId = null;
 let appSelectionVersion = 0;
 let todoCount = 0;
 let todoReadInFlight = false;
 let todoReadDirty = false;
-const pendingInputLines = [];
+const pendingInputFrames = [];
+const maxPendingInputFrames = 100;
 
 const renderedConversationMessages = new Set();
 const conversationResultsByTask = new Map();
@@ -1234,8 +1234,6 @@ function handleEvent(event) {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
-          conversationReady = true;
-          flushPendingInput();
         } else if (pending?.kind === "sync") {
           renderConversation(event.conversation?.messages, { autoFollow: true });
         } else if (pending?.kind === "topics") {
@@ -1336,10 +1334,6 @@ function handleEvent(event) {
       if (event.command === "publish") pendingPublishReceipts.shift();
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
-        if (pending?.kind === "startup") {
-          conversationReady = true;
-          flushPendingInput();
-        }
       }
       if (event.command === "apps.list") {
         const pending = pendingAppReads.shift();
@@ -1436,6 +1430,7 @@ function connectSocket() {
     }
     if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
     flushPendingCommands();
+    flushPendingInput();
     refreshPrompt();
   });
 
@@ -1464,7 +1459,6 @@ function connectSocket() {
 
   socket.on("close", () => {
     connected = false;
-    conversationReady = false;
     socket = null;
     pendingPublishReceipts.length = 0;
     // Reads are idempotent. Preserve and replay them after reconnect so a
@@ -1756,23 +1750,34 @@ function handleInput(line) {
     return;
   }
 
-  // Ordinary turns should follow the Conversation history the human is about
-  // to see. Preserve early keystrokes until the initial Conversation snapshot
-  // arrives instead of executing them against an empty local view.
-  if (!connected || !conversationReady) {
-    pendingInputLines.push(input);
-    printLine("[waiting for May; input queued]");
+  // Conversation history is presentation context, not an admission gate.
+  // The daemon owns authoritative context and orders message handling within
+  // the Conversation after this Event has been durably accepted.
+  const frame = mayInputFrame(input);
+  if (!connected) {
+    if (pendingInputFrames.length >= maxPendingInputFrames) {
+      printLine(`[offline] Message not saved; this Console already holds ${maxPendingInputFrames} unsent messages.`);
+      return;
+    }
+    pendingInputFrames.push(frame);
+    printLine("[offline] Message saved in this Console; it will send after reconnect.");
     return;
   }
 
-  sendFrame(mayInputFrame(input), { receiptKind: "human-turn" });
+  if (!sendFrame(frame, { receiptKind: "human-turn" })) {
+    pendingInputFrames.push(frame);
+    printLine("[offline] Message saved in this Console; it will send after reconnect.");
+  }
   refreshPrompt();
 }
 
 function flushPendingInput() {
-  if (!connected || !conversationReady || pendingInputLines.length === 0) return;
-  const queued = pendingInputLines.splice(0);
-  for (const input of queued) handleInput(input);
+  if (!connected || pendingInputFrames.length === 0) return;
+  while (connected && pendingInputFrames.length > 0) {
+    const frame = pendingInputFrames[0];
+    if (!sendFrame(frame, { receiptKind: "human-turn" })) return;
+    pendingInputFrames.shift();
+  }
 }
 
 function closeAndExit(code) {
