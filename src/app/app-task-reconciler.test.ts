@@ -62,7 +62,7 @@ function trackAppTaskConditionEvent(config: ResourceTaskStateConfig, event: Reco
   return trackAppTaskConditionEventForTasks(config, event, matchingAppTaskConditionTaskIds(config, event));
 }
 
-function seedFixture() {
+function seedFixture(operationsOwner?: string) {
   const root = join(tmpdir(), `task-reconciler-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -83,6 +83,7 @@ function seedFixture() {
           operations: {
             id: "operations",
             parent_id: "root",
+            ...(operationsOwner ? { owner: operationsOwner } : {}),
             state: "backlog",
             children: [],
           },
@@ -146,8 +147,8 @@ function resourceFixture(
   };
 }
 
-function fixture() {
-  const state = seedFixture();
+function fixture(operationsOwner?: string) {
+  const state = seedFixture(operationsOwner);
   return { ...state, config: resourceFixture(state, "default-resource-fixture").config };
 }
 
@@ -199,24 +200,6 @@ function mutateTaskResourceFixture(
     config.resourceStore.commit({
       fences: [{ taskId, resourceVersion: expectedResourceVersion }],
       tasks: [{ resource, trigger, ready }],
-    }),
-  ).toBe(true);
-}
-
-function mutateTaskGroupFixture(
-  config: ResourceTaskStateConfig,
-  groupId: string,
-  mutate: (group: NonNullable<ReturnType<typeof readTaskState>["groups"]>[string]) => void,
-): void {
-  const tree = config.resourceStore.readTaskContext({ taskIds: [groupId, "categorized-task"] });
-  const group = tree.groups?.[groupId];
-  const fence = tree.resources?.["categorized-task"];
-  if (!group || !fence) throw new Error(`expected resource-backed group fixture ${groupId}`);
-  mutate(group);
-  expect(
-    config.resourceStore.commit({
-      fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
-      groups: [group],
     }),
   ).toBe(true);
 }
@@ -1787,10 +1770,7 @@ describe("App task reconciler state", () => {
   });
 
   it("advances generation when a parent move changes the effective agent", () => {
-    const { config } = fixture();
-    mutateTaskGroupFixture(config, "operations", (group) => {
-      group.owner = "operations-owner";
-    });
+    const { config } = fixture("operations-owner");
     const original = { ...intent("maintain"), parentId: "operations" };
     const claim = declareAndClaimTask(config, {
       intent: original,
