@@ -1975,7 +1975,10 @@ function liveTaskSnapshotContext(
 /** Bounded current child state supplied to an executable parent reconciliation. */
 export function readAppTaskChildContext(config: ResourceTaskStateConfig, taskId: string): AppTaskChildContext {
   return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+    const tree = config.resourceStore.readTaskContext(
+      { taskIds: [taskId] },
+      { childLimit: MAX_LIVE_CHILD_CONTEXT },
+    );
     const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
     const live = Object.values(tree.resources ?? {})
       .filter((resource) => resource.spec.parentId === taskId)
@@ -2020,7 +2023,10 @@ export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, current
       Number.isInteger(config.maxConcurrent) && config.maxConcurrent > 0 ? config.maxConcurrent : 1;
     const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], concurrencyLimit);
     const contextIds = [...new Set([...indexedIds, ...runningIds])];
-    const tree = config.resourceStore.readTaskContext({ taskIds: contextIds }, { includeHistory: false });
+    const tree = config.resourceStore.readTaskContext(
+      { taskIds: contextIds },
+      { includeHistory: false, childLimit: 1 },
+    );
     const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
     const candidates = Object.values(tree.resources ?? {})
       .filter((resource) => indexedIdSet.has(resource.metadata.id) && resource.status.phase !== "converged")
