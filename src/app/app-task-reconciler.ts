@@ -2039,11 +2039,11 @@ export function readAppTaskTrigger(
   taskId: string,
 ): Record<string, unknown> | undefined {
   return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-    const pending = tree.taskTriggers?.[taskId];
+    const pending = config.resourceStore.readTrigger(taskId);
     if (pending) return structuredClone(pending.event);
-    const resource = tree.resources?.[taskId];
-    const attempt = resource ? currentResourceAttempt(tree, resource) : null;
+    const attemptId = config.resourceStore.readTask(taskId)?.status.currentAttemptId;
+    const current = attemptId ? config.resourceStore.readAttempt(attemptId) : null;
+    const attempt = current?.state === "running" ? current : null;
     const trigger = attempt ? attemptTrigger(attempt) : undefined;
     return trigger ? structuredClone(trigger) : undefined;
   });
