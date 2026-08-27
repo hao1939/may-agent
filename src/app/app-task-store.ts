@@ -28,15 +28,7 @@ import type { TaskExecutorName } from "@may-agent/sdk";
 export type TaskGroup = {
   id: string;
   parent_id?: string | null;
-  kind?: string;
-  priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
-  goal?: string;
-  context?: Record<string, unknown>;
-  summary?: string;
-  strategy_context?: string;
-  progress?: Record<string, unknown>;
-  tags?: string[];
 };
 
 export type AppTaskPhase = AppTaskResource["status"]["phase"];
@@ -675,11 +667,11 @@ export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
 
 /** Keep legacy group input structural before it enters canonical state. */
 export function normalizeTaskGroup(id: string, group: TaskGroup): TaskGroup {
-  const { children: _derivedChildren, state: _legacyLifecycle, ...structural } = group as TaskGroup & {
-    children?: unknown;
-    state?: unknown;
+  return {
+    id,
+    ...(typeof group.parent_id === "string" || group.parent_id === null ? { parent_id: group.parent_id } : {}),
+    ...(typeof group.owner === "string" && group.owner.trim() ? { owner: group.owner.trim() } : {}),
   };
-  return { ...structural, id };
 }
 
 function projectedTaskOwner(
@@ -1039,15 +1031,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       id,
       parent_id: group.parent_id ?? null,
       children: childrenById[id] ?? [],
-      ...(group.goal ? { outcome: group.goal } : {}),
-      ...(group.kind ? { category: group.kind } : {}),
-      ...(group.priority ? { priority: group.priority } : {}),
       ...(group.owner ? { owner: group.owner } : {}),
-      ...(group.summary ? { summary: group.summary } : {}),
-      ...(group.context ? { context: structuredClone(group.context) } : {}),
-      ...(group.strategy_context ? { strategy_context: group.strategy_context } : {}),
-      ...(group.progress ? { progress: structuredClone(group.progress) } : {}),
-      ...(group.tags ? { tags: [...group.tags] } : {}),
     };
   }
 
