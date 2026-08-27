@@ -1,5 +1,21 @@
-import { describe, expect, it } from "bun:test";
-import { buildProjectTasksReadModel, normalizeAppTaskPhase } from "../../src/app/http/server.js";
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  buildProjectTasksReadModel,
+  normalizeAppTaskPhase,
+  readProjectTaskProjection,
+} from "../../src/app/http/server.js";
+import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
+import type { AppTaskResource } from "../../src/app/app-task-state.js";
+import { openDatabase } from "../../src/lib/db.js";
+
+const roots: string[] = [];
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
 function group(children: string[]) {
   return { item_type: "group", id: "project", parent_id: null, children };
@@ -54,6 +70,64 @@ function projection(items: Record<string, unknown>, extra: Record<string, unknow
 }
 
 describe("project task read model", () => {
+  it("reads current Task resources while retaining only legacy presentation concurrency", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-http-task-resources-"));
+    roots.push(root);
+    const db = openDatabase(join(root, "may.db"));
+    const store = AppTaskResourceStore.fromDb(db, "example");
+    const current: AppTaskResource = {
+      metadata: { id: "current", generation: 1, resourceVersion: 1 },
+      spec: {
+        parentId: "project",
+        outcome: "Current resource",
+        acceptance: ["Current resource is visible"],
+        mode: "achieve",
+      },
+      status: { observedGeneration: 0, phase: "pending", updatedAt: "2026-08-27T00:00:00.000Z" },
+    };
+    store.bootstrapSnapshot(
+      {
+        project: "example",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        groups: { project: { id: "project", parent_id: null } },
+        resources: { current },
+        tasks: {},
+      },
+      "seed:test",
+    );
+    const legacyTreePath = join(root, "tree.json");
+    writeFileSync(
+      legacyTreePath,
+      JSON.stringify(projection({ project: group(["stale"]), stale: task("stale", "waiting") }, { max_concurrent: 4 })),
+    );
+
+    const result = readProjectTaskProjection(db, "example", legacyTreePath);
+
+    expect(result?.source).toBe("resources");
+    expect(result?.tree.max_concurrent).toBe(4);
+    expect(result?.tree.tasks.current).toMatchObject({ outcome: "Current resource", phase: "pending" });
+    expect(result?.tree.tasks.stale).toBeUndefined();
+    db.close();
+  });
+
+  it("keeps the generated projection as a fallback without resource authority", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-http-task-legacy-"));
+    roots.push(root);
+    const db = openDatabase(join(root, "may.db"));
+    AppTaskResourceStore.fromDb(db, "schema");
+    const legacyTreePath = join(root, "tree.json");
+    const legacy = projection({ project: group(["legacy"]), legacy: task("legacy", "pending") });
+    writeFileSync(legacyTreePath, JSON.stringify(legacy));
+
+    expect(readProjectTaskProjection(db, "example", legacyTreePath)).toEqual({
+      tree: legacy,
+      source: "legacy-file",
+    });
+    expect(readProjectTaskProjection(db, "missing", join(root, "missing.json"))).toBeNull();
+    db.close();
+  });
+
   it("accepts only canonical task phases", () => {
     expect(normalizeAppTaskPhase({ phase: "pending" })).toBe("pending");
     expect(normalizeAppTaskPhase({ phase: "attention" })).toBe("attention");
