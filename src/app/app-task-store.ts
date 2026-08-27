@@ -157,8 +157,6 @@ export type TaskTree = {
   updated_at?: string;
   project_lifecycle?: string;
   root_task_id?: string;
-  active_task_id?: string | null;
-  active_task_ids?: string[];
   conditions?: Record<string, AppTaskCondition>;
   resources?: Record<string, AppTaskResource>;
   attempts?: Record<string, AppTaskAttempt>;
@@ -658,9 +656,14 @@ export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
     Object.entries(tree.groups ?? {}).map(([id, group]) => [id, normalizeTaskGroup(id, group)]),
   );
   tree.groups = groups;
-  delete tree.tasks;
-  delete tree.active_task_ids;
-  delete tree.active_task_id;
+  const legacy = tree as TaskTree & {
+    active_task_id?: unknown;
+    active_task_ids?: unknown;
+    tasks?: unknown;
+  };
+  delete legacy.tasks;
+  delete legacy.active_task_ids;
+  delete legacy.active_task_id;
   tree.root_task_id ??= Object.values(groups).find((group) => group.parent_id === null)?.id;
   return tree;
 }
