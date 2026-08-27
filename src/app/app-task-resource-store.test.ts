@@ -237,7 +237,8 @@ describe("AppTaskResourceStore", () => {
 
   it("imports and shadow-compares a paused App snapshot", () => {
     const store = open();
-    const tree = fixture();
+    const tree = fixture() as TaskTree & { satisfied_dependency_ids?: string[] };
+    tree.satisfied_dependency_ids = ["legacy-derived-copy"];
     store.importPausedSnapshot(tree, "revision-1", ["human"]);
 
     expect(store.sourceRevision()).toBe("revision-1");
@@ -251,7 +252,9 @@ describe("AppTaskResourceStore", () => {
     ]);
     store.activate("revision-1");
     expect(store.isActive()).toBeTrue();
-    expect(store.readSnapshot().resources).toEqual(tree.resources);
+    const snapshot = store.readSnapshot();
+    expect(snapshot.resources).toEqual(tree.resources);
+    expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
   });
 
