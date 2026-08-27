@@ -2,7 +2,7 @@ import type { AppRegistry } from "./app-registry.js";
 import type { AppTaskAttempt, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
 import type { TaskCompletionReceipt } from "./app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
-import { advanceTaskResourceRevision } from "./app-task-resource-store.js";
+import { advanceTaskResourceRevision } from "../lib/db/task-resource-schema.js";
 import {
   displayTaskReferences,
   ensureTaskReferenceIndex,
