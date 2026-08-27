@@ -34,41 +34,18 @@ export type TaskNode = {
   owner?: string;
   workflow?: string;
   executor?: TaskExecutorName;
-  input?: Record<string, unknown>;
-  conflict_scope?: string[] | string;
   goal?: string;
   children?: string[];
   depends_on?: string[] | string;
-  inputs?: string[];
   outputs?: string[];
   acceptance?: string[];
-  forbidden?: string[];
   context?: Record<string, unknown>;
-  context_ref?: string;
   summary?: string;
-  rollup_summary?: string;
   strategy_context?: string;
   progress?: Record<string, unknown>;
-  result?: string;
   evidence?: string[];
-  verification?: unknown;
-  trace?: Record<string, unknown>;
-  resolution?: string;
-  replaced_by?: string[];
-  done_at?: string;
-  done_by?: string;
-  created_at?: string;
-  updated_at?: string;
   tags?: string[];
   reconcile_mode?: "achieve" | "maintain";
-  attempt_count?: number;
-  active_attempt?: {
-    id: string;
-    handler: string;
-    state: AppTaskAttempt["state"];
-    reason: string;
-    started_at: string;
-  };
 };
 
 /** A structural container. It never carries executable Task lifecycle state. */
