@@ -313,7 +313,7 @@ export function assertAppTaskEffectFresh(
 ): void {
   withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTask(tree, claim);
+    const match = matchingTaskAttempt(tree, claim);
     if (!match) {
       const resource = tree.resources?.[claim.taskId];
       throw new AppTaskActionStaleError({
@@ -3005,12 +3005,10 @@ export function claimObservedAppTask(
   });
 }
 
-function matchingTask(
+function matchingTaskAttempt(
   tree: TaskTree,
   claim: AppTaskClaim,
-): { task: TaskNode; resource: AppTaskResource; attempt: AppTaskAttempt } | null {
-  const task = tree.tasks[claim.taskId];
-  if (!task) return null;
+): { resource: AppTaskResource; attempt: AppTaskAttempt } | null {
   const resource = tree.resources?.[claim.taskId];
   if (!resource || resource.metadata.generation !== claim.generation) return null;
   if (resource.status.currentAttemptId !== claim.attemptId) return null;
@@ -3024,7 +3022,7 @@ function matchingTask(
   ) {
     return null;
   }
-  return { task, resource, attempt };
+  return { resource, attempt };
 }
 
 export function releaseStaleAppTaskResult(
@@ -3034,9 +3032,8 @@ export function releaseStaleAppTaskResult(
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const task = tree.tasks[claim.taskId];
     const resource = tree.resources?.[claim.taskId];
-    if (!task || !resource) return { status: "missing", taskId: claim.taskId };
+    if (!resource) return { status: "missing", taskId: claim.taskId };
     if (resource.status.currentAttemptId !== claim.attemptId) {
       return { status: "superseded", taskId: claim.taskId };
     }
@@ -3057,8 +3054,6 @@ export function releaseStaleAppTaskResult(
       // execution state instead of letting the retry detach accepted waits.
       ...(resource.status.conditionIds?.length ? { observedGeneration: resource.metadata.generation } : {}),
     });
-    syncTaskProjection(task, resource, claim.agent);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, {
       resourceMutation: {
         fences: [
@@ -3086,7 +3081,7 @@ export function recordAppTaskAttemptWorkspace(
 ): boolean {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTask(tree, claim);
+    const match = matchingTaskAttempt(tree, claim);
     if (!match) return false;
     match.attempt.metadata.resourceVersion += 1;
     match.attempt.workspace = structuredClone(workspace);
@@ -3127,7 +3122,7 @@ export function renewAppTaskAttemptLease(
 ): boolean {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTask(tree, claim);
+    const match = matchingTaskAttempt(tree, claim);
     if (!match) return false;
     match.attempt.metadata.resourceVersion += 1;
     refreshAttemptLease(match.attempt, match.attempt.sessionId, nowMs);
@@ -3156,7 +3151,7 @@ export function recordAppTaskAttemptSession(
 ): boolean {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTask(tree, claim);
+    const match = matchingTaskAttempt(tree, claim);
     if (!match) return false;
     if (match.attempt.sessionId === sessionId && match.attempt.lease) return true;
     match.attempt.metadata.resourceVersion += 1;
@@ -3192,9 +3187,8 @@ export function associateAppTaskSession(
 ): AppTaskSessionAssociation {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
-    const task = tree.tasks[binding.taskId];
     const resource = tree.resources?.[binding.taskId];
-    if (!task || !resource) return { status: "missing", taskId: binding.taskId };
+    if (!resource) return { status: "missing", taskId: binding.taskId };
     if (
       resource.metadata.generation !== binding.generation ||
       resource.status.phase !== "running" ||
@@ -3923,8 +3917,9 @@ export function completeAppTask(
     const tree = config.resourceStore.readTaskContext({
       taskIds: [claim.taskId, ...taskActionContextIds(actions)],
     });
-    const match = matchingTask(tree, claim);
-    if (!match) {
+    const match = matchingTaskAttempt(tree, claim);
+    const task = tree.tasks[claim.taskId];
+    if (!match || !task) {
       return {
         status: "stale",
         actionsApplied: [],
@@ -3932,7 +3927,7 @@ export function completeAppTask(
         supersededSessionIds: [],
       };
     }
-    const { task, resource } = match;
+    const { resource } = match;
     if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
         taskId: task.id,
@@ -4119,9 +4114,12 @@ export function deferAppTask(
         isRecord(condition) && typeof condition.id === "string" && condition.id.trim() ? [condition.id] : [],
       ),
     });
-    const match = matchingTask(tree, claim);
-    if (!match) return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };
-    const { task, resource } = match;
+    const match = matchingTaskAttempt(tree, claim);
+    const task = tree.tasks[claim.taskId];
+    if (!match || !task) {
+      return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };
+    }
+    const { resource } = match;
     if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
         taskId: task.id,
@@ -4255,9 +4253,10 @@ export function markAppTaskAttention(
 ): { status: "applied" | "stale"; parentTaskId?: string } {
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTask(tree, claim);
-    if (!match) return { status: "stale" };
-    const { task, resource, attempt } = match;
+    const match = matchingTaskAttempt(tree, claim);
+    const task = tree.tasks[claim.taskId];
+    if (!match || !task) return { status: "stale" };
+    const { resource, attempt } = match;
     if (hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
         taskId: task.id,
