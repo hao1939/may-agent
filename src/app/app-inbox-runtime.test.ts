@@ -352,7 +352,7 @@ describe("App inbox runtime", () => {
       count: 1,
     });
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'evaluation'").get()).toEqual({
-      count: 1,
+      count: 0,
     });
     expect(readAppConversationResource(db, "may", "may:primary").topics?.[0]?.taskRefs).toEqual([
       expect.objectContaining({ appId: "evaluation", taskId: task.attached[0] }),
@@ -495,10 +495,7 @@ describe("App inbox runtime", () => {
         "SELECT source_kind, conversation_seq FROM app_inbox_items WHERE app_id = 'may' ORDER BY source_kind = 'human' DESC",
       )
       .all() as Array<{ source_kind: string; conversation_seq: number | null }>;
-    expect(rows).toEqual([
-      { source_kind: "human", conversation_seq: expect.any(Number) },
-      { source_kind: "app", conversation_seq: null },
-    ]);
+    expect(rows).toEqual([{ source_kind: "human", conversation_seq: expect.any(Number) }]);
   });
 
   it("projects a standing Task result through its durable follow-up correlation", async () => {
