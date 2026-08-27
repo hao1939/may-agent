@@ -142,7 +142,7 @@ export type AppInboxHostOptions = {
   /** Immediate conversational text emitted once while delegated work continues. */
   onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
   /** Durable handoff from one bounded conversational turn to App-owned follow-up work. */
-  onRequestFollowUp?: (item: AppInboxItem, followUp: AppRequestFollowUp, topicId: string) => void;
+  onRequestFollowUp?: (item: AppInboxItem, followUp: AppRequestFollowUp, topicId: string) => void | Promise<void>;
 };
 
 type RegisteredApp = AppDefinition;
@@ -1188,16 +1188,17 @@ export class AppInboxHost {
         await this.#controlTask({ requestId: request.id, control });
       }
     }
-    this.#publishRequestMessage(claim.item, decision.response, topicId);
     if (followUp) {
       if (!this.#onRequestFollowUp) throw new Error("App follow-up event publication is not configured");
-      this.#onRequestFollowUp(claim.item, followUp, topicId!);
+      await this.#onRequestFollowUp(claim.item, followUp, topicId!);
+      this.#publishRequestMessage(claim.item, decision.response, topicId);
       return this.#completeRequest(claim, {
         summary: decision.summary,
         response: decision.response,
         evidence: decision.evidence,
       });
     }
+    this.#publishRequestMessage(claim.item, decision.response, topicId);
     if (dependencies.length === 0) {
       return this.#completeRequest(claim, {
         summary: decision.summary,
