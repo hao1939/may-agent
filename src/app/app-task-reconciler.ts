@@ -1549,7 +1549,7 @@ function validateIntent(intent: AppTaskIntent): void {
 }
 
 function validateParentReference(tree: TaskTree, taskId: string, parentId: string): void {
-  if (!tree.tasks[parentId]) {
+  if (!tree.resources?.[parentId] && !tree.groups?.[parentId]) {
     throw new Error(`Task ${taskId} parent does not exist in the live graph: ${parentId}`);
   }
   if (parentId === taskId) throw new Error(`Task ${taskId} cannot be its own parent`);
@@ -1559,45 +1559,9 @@ function validateParentReference(tree: TaskTree, taskId: string, parentId: strin
   while (cursor && !seen.has(cursor)) {
     if (cursor === taskId) throw new Error(`Task ${taskId} parent would create a containment cycle`);
     seen.add(cursor);
-    cursor = tree.tasks[cursor]?.parent_id ?? undefined;
+    cursor = tree.resources?.[cursor]?.spec.parentId ?? tree.groups?.[cursor]?.parent_id ?? undefined;
   }
   if (cursor) throw new Error(`Task ${taskId} parent chain already contains a containment cycle at ${cursor}`);
-}
-
-function upsertTask(tree: TaskTree, resource: AppTaskResource, owner: string): TaskNode {
-  const intent = resourceIntent(resource);
-  const parent = tree.tasks[intent.parentId];
-  if (!parent) {
-    throw new Error(`Task ${intent.id} parent does not exist in the live graph: ${intent.parentId}`);
-  }
-
-  const task = tree.tasks[intent.id] ?? {
-    id: intent.id,
-    parent_id: intent.parentId,
-    children: [],
-    state: "backlog",
-  };
-  const previousParentId = task.parent_id;
-  syncTaskProjection(task, resource, owner);
-  if (task.context) delete task.context.reconciliation;
-  task.trace = {
-    ...(task.trace ?? {}),
-    reconciliation: undefined,
-    current_attempt_id: undefined,
-    current_task_revision: undefined,
-    assigned_at: undefined,
-    assigned_by: undefined,
-    assigned_worker: undefined,
-    worker_started_attempt_id: undefined,
-    worker_started_at: undefined,
-  };
-  tree.tasks[intent.id] = task;
-  if (previousParentId && previousParentId !== intent.parentId) {
-    const previousParent = tree.tasks[previousParentId];
-    if (previousParent) previousParent.children = (previousParent.children ?? []).filter((id) => id !== task.id);
-  }
-  parent.children = [...new Set([...(parent.children ?? []), intent.id])];
-  return task;
 }
 
 export function observeAppTaskIntent(
@@ -1777,21 +1741,20 @@ export function observeAppTaskIntent(
       };
     }
     tree.resources = { ...(tree.resources ?? {}), [input.intent.id]: resource };
-    const task = upsertTask(tree, resource, agent);
     if (generation > previousGeneration) {
       // A new desired generation supersedes pending wakes that were fenced to
       // the older specification. The event store retains their causal history;
       // only the old task-generation link is retired.
-      if (tree.taskTriggers) delete tree.taskTriggers[task.id];
+      if (tree.taskTriggers) delete tree.taskTriggers[input.intent.id];
     }
     const suppressTrigger =
       input.trigger &&
       resource.status.phase === "waiting" &&
-      openTaskConditionIds(tree, task.id).length > 0 &&
-      !hasSatisfiedTaskCondition(tree, task.id) &&
+      openTaskConditionIds(tree, input.intent.id).length > 0 &&
+      !hasSatisfiedTaskCondition(tree, input.intent.id) &&
       !triggerOverridesWait(input.trigger);
     if (input.trigger && !suppressTrigger) {
-      const previousTrigger = tree.taskTriggers?.[task.id];
+      const previousTrigger = tree.taskTriggers?.[input.intent.id];
       const events = appendTaskTriggerEvent(
         previousTrigger ? taskTriggerEvents(previousTrigger) : [],
         input.trigger,
@@ -1800,8 +1763,8 @@ export function observeAppTaskIntent(
       const event = preferredTriggerFromEvents(events, agent);
       tree.taskTriggers = {
         ...(tree.taskTriggers ?? {}),
-        [task.id]: {
-          taskId: task.id,
+        [input.intent.id]: {
+          taskId: input.intent.id,
           taskGeneration: generation,
           resourceVersion: (previousTrigger?.resourceVersion ?? 0) + 1,
           events,
@@ -1810,9 +1773,7 @@ export function observeAppTaskIntent(
         },
       };
     }
-    recordAdmission(task.id, generation);
-    syncTaskProjection(task, resource, agent);
-    refreshActiveTaskProjection(tree);
+    recordAdmission(input.intent.id, generation);
     const relevantConditionIds = new Set([...initialConditionIds, ...(resource.status.conditionIds ?? [])]);
     saveTaskState(config, tree, {
       resourceMutation: {
@@ -1830,7 +1791,7 @@ export function observeAppTaskIntent(
     });
     return {
       kind: "observed",
-      taskId: task.id,
+      taskId: input.intent.id,
       generation,
       changed,
       ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
