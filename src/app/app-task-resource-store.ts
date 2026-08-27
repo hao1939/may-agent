@@ -667,7 +667,7 @@ export class AppTaskResourceStore {
       resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
       if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
     }
-    return normalizeTaskStateInPlace({
+    return {
       ...(typeof metadata.version === "number" ? { version: metadata.version } : {}),
       ...(typeof metadata.project === "string" ? { project: metadata.project } : {}),
       ...(typeof metadata.updated_at === "string" ? { updated_at: metadata.updated_at } : {}),
@@ -680,7 +680,7 @@ export class AppTaskResourceStore {
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
       groups: this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json"),
       appTaskAdmissions: this.jsonMap<AppTaskAdmission>("app_task_admissions", "task_id", "admission_json"),
-    });
+    };
   }
 
   /**
@@ -889,7 +889,7 @@ export class AppTaskResourceStore {
       }
     }
 
-    return normalizeTaskStateInPlace({
+    return {
       ...(typeof metadata.version === "number" ? { version: metadata.version } : {}),
       ...(typeof metadata.project === "string" ? { project: metadata.project } : {}),
       ...(typeof metadata.updated_at === "string" ? { updated_at: metadata.updated_at } : {}),
@@ -902,7 +902,7 @@ export class AppTaskResourceStore {
       receipts,
       groups,
       appTaskAdmissions,
-    });
+    };
   }
 
   listRecoveryCandidates(now = Date.now(), limit = 256, after?: IndexedTaskRecoveryCursor): IndexedTaskCandidatePage {
