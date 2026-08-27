@@ -83,6 +83,11 @@ because it protects conversational meaning; it does not belong in the EventHub.
 One Conversation therefore remains coherent, while independent Conversations
 may be handled concurrently within the interactive capacity bound.
 
+This is handler-local serialization, not serialized event delivery. A later
+Turn is already a durable, observable Event while an earlier Turn is being
+handled. It waits only for May's next claim in that Conversation; EventHub can
+continue admitting and fanning out every independent event.
+
 Code collects bounded structured context:
 
 - the current Turn and visible adapter scope;
