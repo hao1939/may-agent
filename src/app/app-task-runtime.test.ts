@@ -3819,9 +3819,11 @@ describe("canonical App task runtime", () => {
       }),
     ).toBeNull();
     expect(readTaskState(config)).toMatchObject({
-      resources: { [intent.id]: { status: { phase: "waiting" } } },
+      resources: {
+        [intent.id]: { status: { phase: "waiting" } },
+        "work/terminal-child": { spec: { parentId: intent.id } },
+      },
       attempts: { [claim.attemptId]: { state: "completed", sessionId: "session-terminal" } },
-      tasks: { "work/terminal-child": { parent_id: intent.id } },
     });
   });
 

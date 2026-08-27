@@ -680,7 +680,6 @@ export class AppTaskResourceStore {
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
       groups: this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json"),
       appTaskAdmissions: this.jsonMap<AppTaskAdmission>("app_task_admissions", "task_id", "admission_json"),
-      tasks: {},
     });
   }
 
@@ -903,7 +902,6 @@ export class AppTaskResourceStore {
       receipts,
       groups,
       appTaskAdmissions,
-      tasks: {},
     });
   }
 
