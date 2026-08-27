@@ -1873,6 +1873,10 @@ const MAX_CHILD_CONTEXT_TEXT = 512;
 const MAX_SNAPSHOT_CONTEXT_TEXT = 256;
 const MAX_SNAPSHOT_RELATED_TASK_IDS = 8;
 
+function appTaskConcurrencyLimit(config: ResourceTaskStateConfig): number {
+  return Number.isInteger(config.maxConcurrent) && config.maxConcurrent > 0 ? config.maxConcurrent : 1;
+}
+
 function boundedChildContextText(value: string): string {
   return value.length <= MAX_CHILD_CONTEXT_TEXT ? value : `${value.slice(0, MAX_CHILD_CONTEXT_TEXT - 3)}...`;
 }
@@ -1975,8 +1979,9 @@ function liveTaskSnapshotContext(
 /** Bounded current child state supplied to an executable parent reconciliation. */
 export function readAppTaskChildContext(config: ResourceTaskStateConfig, taskId: string): AppTaskChildContext {
   return withTaskStateLock(config, () => {
+    const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], appTaskConcurrencyLimit(config));
     const tree = config.resourceStore.readTaskContext(
-      { taskIds: [taskId] },
+      { taskIds: new Set([taskId, ...runningIds]) },
       { childLimit: MAX_LIVE_CHILD_CONTEXT },
     );
     const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
@@ -2019,9 +2024,7 @@ export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, current
   return withTaskStateLock(config, () => {
     const indexedIds = config.resourceStore.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
     const indexedIdSet = new Set(indexedIds);
-    const concurrencyLimit =
-      Number.isInteger(config.maxConcurrent) && config.maxConcurrent > 0 ? config.maxConcurrent : 1;
-    const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], concurrencyLimit);
+    const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], appTaskConcurrencyLimit(config));
     const contextIds = [...new Set([...indexedIds, ...runningIds])];
     const tree = config.resourceStore.readTaskContext(
       { taskIds: contextIds },
