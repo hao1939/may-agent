@@ -8,6 +8,7 @@ import { indexTaskReference } from "./task-reference-index.js";
 import type { AppTaskAttempt, AppTaskCondition, AppTaskResource, AppTaskTrigger } from "./app-task-state.js";
 import {
   normalizeTaskStateInPlace,
+  normalizeTaskGroup,
   readTaskState,
   withTaskStateLock,
   type AppTaskAdmission,
@@ -678,7 +679,12 @@ export class AppTaskResourceStore {
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json"),
       conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
-      groups: this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json"),
+      groups: Object.fromEntries(
+        Object.entries(this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json")).map(([id, group]) => [
+          id,
+          normalizeTaskGroup(id, group),
+        ]),
+      ),
       appTaskAdmissions: this.jsonMap<AppTaskAdmission>("app_task_admissions", "task_id", "admission_json"),
     };
   }
@@ -881,7 +887,7 @@ export class AppTaskResourceStore {
       pendingGroupIds = [];
       for (const row of rows) {
         if (!row.group_id || !row.group_json || groups[row.group_id]) continue;
-        const group = parseJson<TaskGroup>(row.group_json);
+        const group = normalizeTaskGroup(row.group_id, parseJson<TaskGroup>(row.group_json));
         groups[row.group_id] = group;
         if (group.parent_id && !groups[group.parent_id] && !resources[group.parent_id]) {
           pendingGroupIds.push(group.parent_id);
@@ -1244,12 +1250,13 @@ export class AppTaskResourceStore {
         this.db.prepare("DELETE FROM app_task_groups WHERE app_id = ? AND group_id = ?").run(this.appId, groupId);
       }
       for (const group of mutation.groups ?? []) {
+        const structural = normalizeTaskGroup(group.id, group);
         this.db
           .prepare(
             `INSERT INTO app_task_groups(app_id, group_id, group_json) VALUES (?, ?, ?)
            ON CONFLICT(app_id, group_id) DO UPDATE SET group_json=excluded.group_json`,
           )
-          .run(this.appId, group.id, json(group));
+          .run(this.appId, group.id, json(structural));
       }
       for (const admissionId of new Set(mutation.deleteAdmissionIds ?? [])) {
         this.db
