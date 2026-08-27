@@ -166,8 +166,6 @@ export type TaskTree = {
   receipts?: Record<string, TaskCompletionReceipt>;
   /** Structural labels/containers only. Executable task nodes are projected from resources. */
   groups?: Record<string, TaskGroup>;
-  /** Obsolete read projection accepted only so old state can be normalized away. */
-  tasks?: Record<string, unknown>;
 };
 
 export type TaskStateConfig = {
