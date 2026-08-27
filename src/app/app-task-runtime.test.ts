@@ -3248,6 +3248,9 @@ describe("canonical App task runtime", () => {
     } as AppDefinition;
     const runtimeOptions = {
       ...options(f, bus),
+      // Two Task attempts must be able to overlap while the Host still keeps
+      // its foreground slot available for a live May conversation.
+      hostCapacity: new HostCapacity(3),
       stateProjectsRoot: join(f.root, "canonical-projects"),
       executors: {
         reviewer: async (attempt: Parameters<TaskExecutor>[0]) => {
