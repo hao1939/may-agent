@@ -60,7 +60,7 @@ function fixture(): TaskTree {
     project: "example",
     project_lifecycle: "paused",
     root_task_id: "project",
-    groups: { project: { id: "project", parent_id: null, goal: "example" } },
+    groups: { project: { id: "project", parent_id: null, goal: "example", state: "backlog" } },
     resources: { human: resource("human"), normal: resource("normal", "waiting"), active },
     attempts: {
       "attempt-1": {
@@ -254,6 +254,7 @@ describe("AppTaskResourceStore", () => {
     expect(store.isActive()).toBeTrue();
     const snapshot = store.readSnapshot();
     expect(snapshot.resources).toEqual(tree.resources);
+    expect(snapshot.groups?.project?.state).toBeUndefined();
     expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
   });
