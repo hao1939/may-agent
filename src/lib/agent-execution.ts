@@ -321,11 +321,17 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   let tools = options.persistentChat
     ? definition.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name))
     : definition.tools;
-  if (options.toolPolicy === "full" && !options.persistentChat && !tools.some((tool) => tool.name === "checkpoint")) {
+  if (
+    (options.toolPolicy === "full" || options.toolPolicy === "full-no-tasks") &&
+    !options.persistentChat &&
+    !tools.some((tool) => tool.name === "checkpoint")
+  ) {
     const checkpoint = options.createCheckpoint?.();
     if (checkpoint) tools = [...tools, checkpoint];
   }
-  if (options.toolPolicy === "readonly") {
+  if (options.toolPolicy === "full-no-tasks") {
+    tools = tools.filter((tool) => tool.name !== "tasks");
+  } else if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   } else if (
     options.toolPolicy === "deputy" ||

@@ -1,6 +1,7 @@
 /** Runtime capability profile persisted with a session so recovery cannot broaden its tools. */
 export type ToolPolicy =
   | "full"
+  | "full-no-tasks"
   | "readonly"
   | "deputy"
   | "app-agent-full"

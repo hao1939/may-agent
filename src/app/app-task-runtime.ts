@@ -2008,6 +2008,15 @@ export function rejectConvergedDirectAgentResidue(
 export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
   "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
 
+export function hasSuppliedDependencyObservation(events: { items?: readonly unknown[] }): boolean {
+  return (events.items ?? []).some((item) => {
+    if (!isRecord(item) || !isRecord(item.event)) return false;
+    const event = item.event;
+    if (event.type !== "app.task.requested" || !isRecord(event.data) || !isRecord(event.data.request)) return false;
+    return isRecord(event.data.request.dependency) && Object.keys(event.data.request.dependency).length > 0;
+  });
+}
+
 function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnapshot["entries"] {
   return opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
 }
@@ -2314,7 +2323,7 @@ async function executeTaskAgent(input: {
     trace,
     requireFinish: true,
     outputSchema: appTaskAgentResultSchema,
-    toolPolicy: "full" as const,
+    toolPolicy: hasSuppliedDependencyObservation(reconciliationEvents) ? ("full-no-tasks" as const) : ("full" as const),
     timeout: APP_TASK_AGENT_TIMEOUT_MS,
     executionRoot: input.executionPaths.workspaceDir,
   };

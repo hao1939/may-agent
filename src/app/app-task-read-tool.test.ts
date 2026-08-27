@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { TaskOutcomeProjection } from "@may-agent/sdk";
 import { createAppTaskReadTool } from "./app-task-read-tool.js";
 import { EventBus } from "./event-bus.js";
 
@@ -37,6 +38,69 @@ describe("App Task read tool", () => {
       expect.objectContaining({ appId: "evaluation", options: { status: ["running"], limit: 10 } }),
       expect.objectContaining({ appId: "evaluation", taskId: "review" }),
     ]);
+  });
+
+  it("requires an exact task for outcome reads and returns only its containing outcome", async () => {
+    let requestedProjection: TaskOutcomeProjection | undefined;
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      appId: () => "evaluation",
+      reader: {
+        list: () => ({ items: [] }),
+        get: () => null,
+        outcomes: ({ projection }) => {
+          requestedProjection = projection;
+          return {
+            projection: "outcomes",
+            manifestVersion: 1,
+            sourceCount: 775,
+            outcomeCount: 2,
+            outcomes: [
+              {
+                id: "target-outcome",
+                outcome: "Resolve the accepted dependency",
+                status: "waiting",
+                memberCount: 1,
+                memberTaskIds: ["target-task"],
+                members: [
+                  {
+                    id: "target-task",
+                    status: "waiting",
+                    generation: 2,
+                    outcome: "Wait for the exact dependency",
+                  },
+                ],
+              },
+              {
+                id: "unrelated-outcome",
+                outcome: "Unrelated work",
+                status: "waiting",
+                memberCount: 774,
+                memberTaskIds: ["unrelated-task"],
+                members: [
+                  {
+                    id: "unrelated-task",
+                    status: "waiting",
+                    generation: 1,
+                    outcome: "Unrelated work",
+                  },
+                ],
+              },
+            ],
+          };
+        },
+      },
+    });
+
+    expect(text(await tool.execute("call-unbounded", { action: "outcomes" }))).toEqual({
+      error: "taskId is required for outcomes; use list for bounded discovery",
+    });
+    expect(text(await tool.execute("call-exact", { action: "outcomes", taskId: "target-task" }))).toMatchObject({
+      sourceCount: 1,
+      outcomeCount: 1,
+      outcomes: [{ id: "target-outcome", memberTaskIds: ["target-task"] }],
+    });
+    expect(requestedProjection).toEqual({ taskId: "target-task" });
   });
 
   it("refuses reads outside an App Task scope", async () => {
