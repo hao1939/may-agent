@@ -155,6 +155,16 @@ export function listRuntimeTaskOutcomeViews(
   projection: TaskOutcomeProjection = {},
 ): TaskOutcomePage {
   if (!opts.taskStateConfig) return projectTaskOutcomes([], null, projection);
+  const manifest = readTaskOutcomeManifest(opts.taskStateConfig.appDir);
+  const exactTaskId = projection.taskId?.trim();
+  if (exactTaskId) {
+    const group = manifest?.groups.find(({ taskIds }) => taskIds.includes(exactTaskId));
+    const items = (group?.taskIds ?? [exactTaskId]).flatMap((taskId) => {
+      const task = readRuntimeTaskView(opts, taskId);
+      return task ? [task] : [];
+    });
+    return projectTaskOutcomes(items, manifest, projection);
+  }
   const items: TaskView[] = [];
   let cursor: string | undefined;
   do {
@@ -162,7 +172,7 @@ export function listRuntimeTaskOutcomeViews(
     items.push(...page.items);
     cursor = page.nextCursor;
   } while (cursor);
-  return projectTaskOutcomes(items, readTaskOutcomeManifest(opts.taskStateConfig.appDir), projection);
+  return projectTaskOutcomes(items, manifest, projection);
 }
 
 export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
