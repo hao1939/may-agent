@@ -2245,6 +2245,52 @@ describe("App task reconciler state", () => {
     expect(Buffer.byteLength(JSON.stringify(snapshot), "utf8")).toBeLessThan(40_000);
   });
 
+  it("keeps bounded live snapshot readiness aware of older running tasks", () => {
+    const { config } = fixture();
+    config.maxConcurrent = 1;
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "older-running-task",
+        parentId: "operations",
+        outcome: "Keep one older task running",
+        acceptance: ["The running task completes"],
+        mode: "achieve",
+        owner: "app-owner",
+      },
+      appAgent: "app-owner",
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "older-running-task",
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    expect(claim.kind).toBe("claimed");
+    mutateTaskResourceFixture(config, "older-running-task", (resource) => {
+      resource.status.updatedAt = "2000-01-01T00:00:00.000Z";
+    });
+
+    for (let index = 0; index < 66; index += 1) {
+      observeAppTaskIntent(config, {
+        intent: {
+          id: `newer-pending-task-${String(index).padStart(2, "0")}`,
+          parentId: "operations",
+          outcome: `Review newer task ${index}`,
+          acceptance: ["The newer task converges"],
+          mode: "achieve",
+          owner: "app-owner",
+        },
+        appAgent: "app-owner",
+      });
+    }
+
+    const snapshot = readAppTaskLiveSnapshot(config, "newer-pending-task-65");
+
+    expect(snapshot.truncated).toBe(true);
+    expect(snapshot.live).toHaveLength(64);
+    expect(snapshot.live.some(({ taskId }) => taskId === "older-running-task")).toBe(false);
+    expect(snapshot.live.every(({ readiness }) => readiness.state === "capacity-blocked")).toBe(true);
+  });
+
   it("commits a receipt and identifies dependents in the same absorption transaction", () => {
     const { config } = fixture();
     const dependency = intent();
