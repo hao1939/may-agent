@@ -711,8 +711,7 @@ function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, ap
 
 function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource, summary: string): string[] {
   const taskId = resource.metadata.id;
-  const task = tree.tasks[taskId];
-  const liveChildren = (task?.children ?? []).filter((childId) => tree.tasks[childId]);
+  const liveChildren = liveChildTaskIds(tree, taskId);
   if (liveChildren.length > 0) {
     throw new Error(
       `Task ${taskId} has a matching completion receipt but its stale live duplicate cannot be pruned while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
@@ -739,18 +738,9 @@ function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource,
     attempt.failureReason = "matching-completion-receipt";
   }
   resource.status.currentAttemptId = undefined;
-  if (task) {
-    unlinkTaskConditions(tree, taskId);
-    const parent = task.parent_id ? tree.tasks[task.parent_id] : undefined;
-    if (parent) parent.children = (parent.children ?? []).filter((id) => id !== taskId);
-    delete tree.tasks[taskId];
-  } else if (resource.status.conditionIds?.length) {
-    touchResource(resource, { conditionIds: [] });
-    pruneUnlinkedConditions(tree);
-  }
+  unlinkTaskConditions(tree, taskId);
   delete tree.resources?.[taskId];
   delete tree.taskTriggers?.[taskId];
-  refreshActiveTaskProjection(tree);
   return [...sessionIds];
 }
 
