@@ -63,6 +63,7 @@ const knownTaskRefs = new Set();
 const knownTopicRefs = new Set();
 const shownTaskRevisions = new Map();
 let shownTodoActions = new Map();
+const pendingCommandLines = [];
 
 function rememberCompletion(set, value, limit) {
   if (set.has(value)) set.delete(value);
@@ -1229,6 +1230,7 @@ function handleEvent(event) {
         renderApps(event.apps, pending);
         if (pending?.select) {
           appSelectionInFlight = false;
+          flushPendingCommands();
           flushPendingInput();
         }
       }
@@ -1327,6 +1329,7 @@ function handleEvent(event) {
         const pending = pendingAppReads.shift();
         if (pending?.select) {
           appSelectionInFlight = false;
+          flushPendingCommands();
           flushPendingInput();
         }
       }
@@ -1418,6 +1421,7 @@ function connectSocket() {
       refreshWatchedTask();
     }
     if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
+    flushPendingCommands();
     refreshPrompt();
   });
 
@@ -1686,6 +1690,20 @@ function handleCommand(input) {
   }
 }
 
+function commandNeedsConnection(input) {
+  const command = input.slice(1).trim().split(/\s+/, 1)[0]?.toLowerCase();
+  return command === "cancel" || command === "reload" || command === "restart";
+}
+
+function flushPendingCommands() {
+  while (pendingCommandLines.length > 0 && !appSelectionInFlight) {
+    const input = pendingCommandLines[0];
+    if (commandNeedsConnection(input) && !connected) return;
+    pendingCommandLines.shift();
+    handleCommand(input);
+  }
+}
+
 function handleInput(line) {
   const input = line.trim();
   if (!input) {
@@ -1694,10 +1712,15 @@ function handleInput(line) {
   }
 
   // Commands are structured control reads/actions and do not depend on the
-  // Conversation transcript. Let them run as soon as the socket is available
-  // so a slow initial Conversation projection cannot hold /apps, /tasks,
-  // /task, /watch, or /help behind May.
-  if (input.startsWith("/") && connected && !appSelectionInFlight) {
+  // Conversation transcript. Reconnect-safe reads register immediately;
+  // direct controls wait only for a live socket. App selection is the one
+  // ordering boundary because it changes the meaning of following commands.
+  if (input.startsWith("/")) {
+    if (appSelectionInFlight || (commandNeedsConnection(input) && !connected)) {
+      pendingCommandLines.push(input);
+      printLine("[waiting for daemon; command queued]");
+      return;
+    }
     handleCommand(input);
     return;
   }

@@ -832,6 +832,95 @@ describe("May Console", () => {
     await once(child, "exit");
   });
 
+  test("runs disconnected read commands without waiting for Conversation startup", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-disconnected-commands-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    const frames: Array<Record<string, any>> = [];
+    let client: Socket | null = null;
+    const server: Server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      let inputBuffer = "";
+      socket.on("data", (chunk) => {
+        inputBuffer += chunk.toString();
+        const lines = inputBuffer.split("\n");
+        inputBuffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "apps.list") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "apps.list",
+                apps: [
+                  {
+                    id: frame.appId,
+                    owner: "gym",
+                    description: "Evaluates behavior",
+                    activeTasks: 0,
+                    runningTasks: 0,
+                    waitingTasks: 0,
+                    attentionTasks: 0,
+                  },
+                ],
+              })}\n`,
+            );
+          } else if (frame.type === "tasks.list") {
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [], nextCursor: null } })}\n`,
+            );
+          } else if (frame.type !== "app.conversation.get") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
+          }
+        }
+      });
+    });
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
+      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      stdio: "pipe",
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    child.stdin.write("/apps gym\n/tasks\nhello\n/reload\n");
+    await Bun.sleep(25);
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
+    await waitFor(() =>
+      frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly),
+    );
+    expect(frames.findIndex((frame) => frame.type === "apps.list")).toBeLessThan(
+      frames.findIndex((frame) => frame.type === "tasks.list" && !frame.humanActionOnly),
+    );
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.author?.kind === "human" &&
+          frame.event?.data?.text === "hello",
+      ),
+    ).toBe(false);
+    await waitFor(() =>
+      frames.some((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested"),
+    );
+
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  });
+
   test("uses a distinct durable message identity for each Console process", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-identity-"));
     const instance = "test";
