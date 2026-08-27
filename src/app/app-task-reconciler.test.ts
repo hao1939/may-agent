@@ -2200,11 +2200,22 @@ describe("App task reconciler state", () => {
   it("supplies a bounded App-wide live snapshot without the reviewing task", () => {
     const f = fixture();
     const { config } = f;
+    observeAppTaskIntent(config, {
+      intent: {
+        id: "old-indexed-task",
+        parentId: "operations",
+        outcome: "Keep one older indexed task visible",
+        acceptance: ["The indexed task remains represented"],
+        mode: "achieve",
+        owner: "app-owner",
+      },
+      appAgent: "app-owner",
+    });
     for (let index = 0; index < 65; index += 1) {
       observeAppTaskIntent(config, {
         intent: {
           id: `snapshot-task-${String(index).padStart(2, "0")}`,
-          parentId: "operations",
+          parentId: index === 0 ? "categorized-task" : "operations",
           outcome: `Review snapshot task ${index}`,
           acceptance: [`The task converges ${"a".repeat(2_000)}`],
           mode: "achieve",
@@ -2224,6 +2235,7 @@ describe("App task reconciler state", () => {
     expect(snapshot.truncated).toBe(true);
     expect(snapshot.live).toHaveLength(64);
     expect(snapshot.live.some(({ taskId }) => taskId === "snapshot-task-64")).toBe(false);
+    expect(snapshot.live.some(({ taskId }) => taskId === "categorized-task")).toBe(false);
     expect(snapshot.live.find(({ taskId }) => taskId === "snapshot-task-00")).toMatchObject({
       category: "focus_plan",
       priority: "P0",
