@@ -265,13 +265,13 @@ function taskEventIdentity(event: Record<string, unknown>): string {
  */
 function consumeAcceptedLiveTaskEvents(
   tree: TaskTree,
-  task: TaskNode,
-  resource: AppTaskResource,
+  taskId: string,
+  agent: string,
   eventIds: readonly number[] | undefined,
 ): void {
   const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
   if (accepted.size === 0) return;
-  const previous = tree.taskTriggers?.[task.id];
+  const previous = tree.taskTriggers?.[taskId];
   if (!previous) return;
   const pending = taskTriggerEvents(previous);
   const remaining = pending.filter((entry) => {
@@ -280,16 +280,16 @@ function consumeAcceptedLiveTaskEvents(
   });
   if (remaining.length === pending.length) return;
   if (remaining.length === 0) {
-    delete tree.taskTriggers?.[task.id];
+    delete tree.taskTriggers?.[taskId];
     return;
   }
   tree.taskTriggers = {
     ...(tree.taskTriggers ?? {}),
-    [task.id]: {
+    [taskId]: {
       ...previous,
       resourceVersion: previous.resourceVersion + 1,
       events: structuredClone(remaining),
-      event: structuredClone(preferredTriggerFromEvents(remaining, task.owner ?? resource.spec.owner ?? "")),
+      event: structuredClone(preferredTriggerFromEvents(remaining, agent)),
       observedAt: remaining[remaining.length - 1]!.observedAt,
     },
   };
@@ -521,9 +521,8 @@ function createActionIntent(action: CreateTaskAction): AppTaskIntent {
 }
 
 function createActionMatchesLiveTask(tree: TaskTree, action: CreateTaskAction): boolean {
-  const task = tree.tasks[action.id];
   const resource = tree.resources?.[action.id];
-  if (!task || !resource) return false;
+  if (!resource) return false;
   return (
     JSON.stringify(stableValue(resource.spec)) === JSON.stringify(stableValue(resourceSpec(createActionIntent(action))))
   );
@@ -741,7 +740,7 @@ function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource,
   }
   resource.status.currentAttemptId = undefined;
   if (task) {
-    unlinkTaskConditions(tree, task);
+    unlinkTaskConditions(tree, taskId);
     const parent = task.parent_id ? tree.tasks[task.parent_id] : undefined;
     if (parent) parent.children = (parent.children ?? []).filter((id) => id !== taskId);
     delete tree.tasks[taskId];
@@ -801,10 +800,16 @@ function resolvedAgent(tree: TaskTree, intent: AppTaskIntent, appAgent: string):
   const seen = new Set<string>();
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId);
-    const parent: TaskNode | undefined = tree.tasks[parentId];
-    if (!parent) break;
-    if (parent.owner?.trim()) return parent.owner.trim();
-    parentId = parent.parent_id;
+    const parentResource: AppTaskResource | undefined = tree.resources?.[parentId];
+    if (parentResource) {
+      if (parentResource.spec.owner?.trim()) return parentResource.spec.owner.trim();
+      parentId = parentResource.spec.parentId;
+      continue;
+    }
+    const parentGroup: TaskNode | undefined = tree.groups?.[parentId];
+    if (!parentGroup) break;
+    if (parentGroup.owner?.trim()) return parentGroup.owner.trim();
+    parentId = parentGroup.parent_id;
   }
   return appAgent;
 }
@@ -847,8 +852,8 @@ function taskConditionEntries(tree: TaskTree, taskId: string): Array<[string, Re
   return entries;
 }
 
-function openTaskConditionIds(tree: TaskTree, task: TaskNode): string[] {
-  const ids = taskConditionEntries(tree, task.id)
+function openTaskConditionIds(tree: TaskTree, taskId: string): string[] {
+  const ids = taskConditionEntries(tree, taskId)
     .filter(([, condition]) => isOpenCondition(condition))
     .map(([id]) => id);
   return [...new Set(ids)];
@@ -942,14 +947,14 @@ function pruneUnlinkedConditions(tree: TaskTree): void {
   }
 }
 
-function unlinkTaskConditions(tree: TaskTree, task: TaskNode): void {
-  const resource = tree.resources?.[task.id];
+function unlinkTaskConditions(tree: TaskTree, taskId: string): void {
+  const resource = tree.resources?.[taskId];
   if (resource?.status.conditionIds?.length) touchResource(resource, { conditionIds: [] });
   pruneUnlinkedConditions(tree);
 }
 
-function unlinkSatisfiedTaskConditions(tree: TaskTree, task: TaskNode): void {
-  const resource = tree.resources?.[task.id];
+function unlinkSatisfiedTaskConditions(tree: TaskTree, taskId: string): void {
+  const resource = tree.resources?.[taskId];
   if (!resource?.status.conditionIds?.length) return;
   const remaining = resource.status.conditionIds.filter((id) => {
     const condition = tree.conditions?.[id];
@@ -962,13 +967,13 @@ function unlinkSatisfiedTaskConditions(tree: TaskTree, task: TaskNode): void {
 
 function materializeWaitingConditions(
   tree: TaskTree,
-  task: TaskNode,
+  taskId: string,
   conditions: AppTaskConditionSpec[],
   now: string,
 ): void {
   const registry = conditionRegistry(tree);
   const ids: string[] = [];
-  const previousIds = new Set(taskConditionIds(tree, task.id));
+  const previousIds = new Set(taskConditionIds(tree, taskId));
   for (const raw of conditions) {
     const id = raw.id.trim();
     ids.push(id);
@@ -983,7 +988,7 @@ function materializeWaitingConditions(
     const current = registry[id];
     const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
     const linkedToAnotherTask = Object.values(tree.resources ?? {}).some(
-      (resource) => resource.metadata.id !== task.id && resource.status.conditionIds?.includes(id),
+      (resource) => resource.metadata.id !== taskId && resource.status.conditionIds?.includes(id),
     );
     if (current && !sameSpec && linkedToAnotherTask) {
       throw new Error(`Condition ${id} is already linked to another task with a different specification`);
@@ -1014,7 +1019,7 @@ function materializeWaitingConditions(
           },
         };
   }
-  const resource = tree.resources?.[task.id];
+  const resource = tree.resources?.[taskId];
   if (resource) touchResource(resource, { conditionIds: ids });
   pruneUnlinkedConditions(tree);
 }
@@ -1111,10 +1116,8 @@ export function terminalAgentSessionAppTaskClaim(
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "running") return null;
-    const task = tree.tasks[taskId];
     const attempt = currentResourceAttempt(tree, resource);
     if (
-      !task ||
       !attempt ||
       attempt.state !== "running" ||
       !isManagedAgentHandler(attempt.handler) ||
@@ -1436,7 +1439,7 @@ export function repairUnadmittedAppDependencyWaits(
 
       trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
       const summary = `App dependency request ${missingRequestId} was not admitted; retrying the same Task from current evidence`;
-      unlinkTaskConditions(tree, task);
+      unlinkTaskConditions(tree, resource.metadata.id);
       touchResource(resource, {
         phase: "pending",
         observedGeneration: Math.max(0, resource.metadata.generation - 1),
@@ -1822,7 +1825,7 @@ export function observeAppTaskIntent(
     const suppressTrigger =
       input.trigger &&
       resource.status.phase === "waiting" &&
-      openTaskConditionIds(tree, task).length > 0 &&
+      openTaskConditionIds(tree, task.id).length > 0 &&
       !hasSatisfiedTaskCondition(tree, task.id) &&
       !triggerOverridesWait(input.trigger);
     if (input.trigger && !suppressTrigger) {
@@ -2203,11 +2206,10 @@ export function recordAppTaskTrigger(
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
-    const task = tree.tasks[taskId];
-    if (!resource || !task) return { kind: "missing" };
+    if (!resource) return { kind: "missing" };
     if (
       resource.status.phase === "waiting" &&
-      openTaskConditionIds(tree, task).length > 0 &&
+      openTaskConditionIds(tree, taskId).length > 0 &&
       !hasSatisfiedTaskCondition(tree, taskId) &&
       !triggerOverridesWait(event)
     ) {
@@ -2216,7 +2218,7 @@ export function recordAppTaskTrigger(
     const previous = tree.taskTriggers?.[taskId];
     const observedAt = new Date().toISOString();
     const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, observedAt);
-    const next = preferredTriggerFromEvents(events, task.owner ?? resource.spec.owner ?? "");
+    const next = preferredTriggerFromEvents(events, resolvedAgent(tree, resourceIntent(resource), config.worker));
     tree.taskTriggers = {
       ...(tree.taskTriggers ?? {}),
       [taskId]: {
@@ -2257,19 +2259,19 @@ function dependenciesSatisfied(tree: TaskTree, intent: AppTaskIntent): boolean {
 }
 
 function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): boolean {
-  const task = tree.tasks[resource.metadata.id];
-  if (!task) return false;
+  const taskId = resource.metadata.id;
   const intent = resourceIntent(resource);
   if (!dependenciesSatisfied(tree, intent)) return false;
   if (currentResourceAttempt(tree, resource)) return false;
-  const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
+  const pendingTrigger = tree.taskTriggers?.[taskId]?.event;
   if (pendingTrigger) return true;
   if (resource.metadata.generation > resource.status.observedGeneration) return true;
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") {
-    if (hasSatisfiedTaskCondition(tree, task.id)) return true;
-    if (missedTaskConditionCheckpointIds(tree, task.id).length > 0) return true;
-    return liveChildTaskIds(tree, task).length === 0 && !(resource.status.conditionIds?.length ?? 0);
+    if (hasSatisfiedTaskCondition(tree, taskId)) return true;
+    if (missedTaskConditionCheckpointIds(tree, taskId).length > 0) return true;
+    const hasLiveChild = Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === taskId);
+    return !hasLiveChild && !(resource.status.conditionIds?.length ?? 0);
   }
   if (resource.status.phase === "attention") return needsAgentHandoff(tree, resource);
   if (resource.status.phase === "running") return true;
@@ -2880,9 +2882,9 @@ export function claimObservedAppTask(
     }
 
     if (resource.metadata.generation > resource.status.observedGeneration && resource.status.conditionIds?.length) {
-      unlinkTaskConditions(tree, task);
+      unlinkTaskConditions(tree, task.id);
     }
-    const openConditionIds = openTaskConditionIds(tree, task);
+    const openConditionIds = openTaskConditionIds(tree, task.id);
     const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, task.id);
     const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, task.id);
     const conditionReviewAttempt =
@@ -2919,7 +2921,7 @@ export function claimObservedAppTask(
       // Consume only the Conditions represented by this attempt. Other waits
       // stay linked while it runs so a later matching fact can still find the
       // task and remain pending for the next attempt.
-      unlinkSatisfiedTaskConditions(tree, task);
+      unlinkSatisfiedTaskConditions(tree, task.id);
     }
 
     const generation = resource.metadata.generation;
@@ -3684,7 +3686,7 @@ function applyTaskActions(
               now,
             );
           }
-          unlinkTaskConditions(tree, task);
+          unlinkTaskConditions(tree, task.id);
         }
         const previousParentId = task.parent_id;
         const nextResource: AppTaskResource = {
@@ -3718,7 +3720,7 @@ function applyTaskActions(
       case "close-task": {
         const { task, resource } = mutableActionResource(tree, action);
         const intent = resourceIntent(resource);
-        unlinkTaskConditions(tree, task);
+        unlinkTaskConditions(tree, task.id);
         if (resource.status.currentAttemptId) {
           const supersededSessionId = tree.attempts?.[resource.status.currentAttemptId]?.sessionId;
           if (supersededSessionId) supersededSessionIds.add(supersededSessionId);
@@ -3773,7 +3775,7 @@ function applyTaskActions(
       }
       case "unblock-task": {
         const { task, resource } = mutableActionResource(tree, action);
-        unlinkTaskConditions(tree, task);
+        unlinkTaskConditions(tree, task.id);
         touchResource(resource, {
           phase: "pending",
           observedGeneration: Math.max(0, resource.metadata.generation - 1),
@@ -4019,8 +4021,8 @@ export function completeAppTask(
       );
     }
     const now = new Date().toISOString();
-    consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
-    unlinkTaskConditions(tree, task);
+    consumeAcceptedLiveTaskEvents(tree, task.id, claim.agent, input.acceptedLiveEventIds);
+    unlinkTaskConditions(tree, task.id);
     finishAttempt(tree, resource, "completed", input.summary, now);
     const reconcileActionTaskIds = actions.flatMap((action) =>
       action.kind === "create-task"
@@ -4166,7 +4168,7 @@ export function deferAppTask(
         reason: "newer Task evidence is pending",
       });
     }
-    consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
+    consumeAcceptedLiveTaskEvents(tree, task.id, claim.agent, input.acceptedLiveEventIds);
     const conditions = boundedReviewConditions(claim, input.conditions);
     const waitsForChildren =
       liveChildTaskIds(tree, task).length > 0 ||
@@ -4208,9 +4210,9 @@ export function deferAppTask(
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "completed", input.summary, now);
     if (conditions?.length) {
-      materializeWaitingConditions(tree, task, conditions, now);
+      materializeWaitingConditions(tree, task.id, conditions, now);
     } else {
-      unlinkTaskConditions(tree, task);
+      unlinkTaskConditions(tree, task.id);
     }
     touchResource(resource, {
       phase: input.disposition,
@@ -4302,13 +4304,13 @@ export function markAppTaskAttention(
         reason: "newer Task evidence is pending",
       });
     }
-    consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
+    consumeAcceptedLiveTaskEvents(tree, task.id, claim.agent, input.acceptedLiveEventIds);
     const mutationScope = beginResourceMutationScope(tree, claim, []);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "failed", input.summary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = input.reason;
-    unlinkTaskConditions(tree, task);
+    unlinkTaskConditions(tree, task.id);
     touchResource(resource, {
       phase: "attention",
       observedGeneration: claim.generation,
