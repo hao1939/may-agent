@@ -1293,7 +1293,6 @@ export class AppTaskResourceStore {
              )`,
         )
         .run(...values).changes > 0;
-    if (changed) this.bumpRevision();
     return changed;
   }
 
