@@ -5,6 +5,7 @@ import {
   type AppEvent,
   type AppInput,
   type AppInputSource,
+  type AppRequest,
   type EventSelector,
   type ObserverContext,
   type TaskIntent,
@@ -434,7 +435,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         },
       });
     },
-    onRequestFollowUp(item, followUp, topicId) {
+    async onRequestFollowUp(item, followUp, topicId) {
       if (!item.conversationId) {
         throw new Error(`App follow-up ${item.id} requires a Conversation`);
       }
@@ -442,22 +443,64 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         .update(`${item.id}\0follow-up`)
         .digest("hex")
         .slice(0, 24)}`;
-      const admitted = host.admit({
+      const target = loadedById.get(followUp.appId);
+      if (!target?.definition.task || !target.definition.tasks) {
+        throw new Error(`App follow-up targets non-Task App ${followUp.appId}`);
+      }
+      if (!attachTask) throw new Error("App follow-up Task admission is not configured");
+      const source = { kind: "app" as const, id: item.appId };
+      const request: AppRequest = {
         id: requestId,
-        appId: followUp.appId,
-        ...(followUp.task ? { targetTaskId: followUp.task.taskId } : {}),
-        topicId,
-        conversationId: item.conversationId,
-        channel: item.channel,
-        channelTargetId: item.channelTargetId,
-        channelThreadId: item.channelThreadId,
-        channelMessageId: item.channelMessageId,
-        replyToSourceId: item.id,
-        source: { kind: "app", id: item.appId },
+        source,
+        ...(item.source.kind === "human" ? { humanRequested: true } : {}),
         input: followUp.input,
+      };
+      const attachment = followUp.task
+        ? ({ kind: "existing", taskId: followUp.task.taskId } as const)
+        : target.definition.task({ id: requestId, source, input: followUp.input });
+      if (!attachment) throw new Error(`App ${followUp.appId} returned no Task for conversational follow-up`);
+      const attached = await attachTask({
+        appId: followUp.appId,
+        attachment,
         idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
+        request,
       });
-      if (admitted.item.status !== "done") schedule(admitted.item.appId);
+      linkConversationTopicTask(options.db, topicId, followUp.appId, attached.taskId, now());
+      options.bus.emit({
+        type: "conversation.message.created",
+        source: "app-task-admission",
+        owner: `app:${item.appId}`,
+        data: {
+          appId: item.appId,
+          conversationId: item.conversationId,
+          author: { kind: "tool", id: "runtime" },
+          text: `Accepted durable work: ${followUp.outcome}`,
+          metadata: {
+            channel: item.channel,
+            channelTargetId: item.channelTargetId,
+            channelThreadId: item.channelThreadId,
+            requestId: item.id,
+            topicId,
+            taskRefs: [{ appId: followUp.appId, taskId: attached.taskId }],
+            followTask: { appId: followUp.appId, taskId: attached.taskId },
+          },
+          idempotencyKey: `conversation-task-assigned:${item.conversationId}:${requestId}:${followUp.appId}:${attached.taskId}`,
+        },
+      });
+      options.bus.emit({
+        type: "conversation.task.linked",
+        source: "app-inbox",
+        owner: `app:${item.appId}`,
+        target: { appId: item.appId, project: item.appId },
+        data: {
+          appId: item.appId,
+          conversationId: item.conversationId,
+          topicId,
+          requestId,
+          taskRef: { appId: followUp.appId, taskId: attached.taskId },
+        },
+        idempotencyKey: `conversation-task-linked:${item.conversationId}:${topicId}:${followUp.appId}:${attached.taskId}`,
+      } as unknown as AgentEvent);
     },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
