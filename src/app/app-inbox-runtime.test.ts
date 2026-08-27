@@ -342,6 +342,7 @@ describe("App inbox runtime", () => {
           conversationId: "may:primary",
           author: { kind: "tool", id: "runtime" },
           metadata: expect.objectContaining({
+            command: "task-admitted",
             taskRefs: [{ appId: "evaluation", taskId: task.attached[0] }],
             followTask: { appId: "evaluation", taskId: task.attached[0] },
           }),

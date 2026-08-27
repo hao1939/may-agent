@@ -476,6 +476,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           author: { kind: "tool", id: "runtime" },
           text: `Accepted durable work: ${followUp.outcome}`,
           metadata: {
+            command: "task-admitted",
             channel: item.channel,
             channelTargetId: item.channelTargetId,
             channelThreadId: item.channelThreadId,
