@@ -7,8 +7,6 @@
  *
  * Pi-agent-core owns the model loop and retry behavior. This coordinator owns
  * durable session state, recovery, guards, event bridging, and bounded calls.
- *
- * See: shared/may-agent-docs/architecture.md §3 "Agent Runs"
  */
 
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";

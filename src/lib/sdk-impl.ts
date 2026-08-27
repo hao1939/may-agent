@@ -3,8 +3,6 @@
  *
  * This is the bridge: handlers/workflows get an AgentSDK object,
  * which delegates to manager, bus, DB under the hood.
- *
- * Design: shared/may-agent-docs/sdk.md
  */
 
 import type {
