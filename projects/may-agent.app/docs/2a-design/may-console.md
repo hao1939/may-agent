@@ -66,6 +66,13 @@ Bare text always enters `Conversation may:primary` as one durable human
 message. It has no session target. Transport `ok` receipts stay hidden because
 they prove admission, not useful progress.
 
+When the socket is connected, Console publishes the message immediately. The
+initial Conversation snapshot is only for presentation and never gates input;
+the daemon supplies authoritative durable context to May's message handler.
+When disconnected, Console may retain a small bounded in-process outbox and
+labels it honestly as offline. That outbox is reconnect convenience, not
+durable admission.
+
 Console separates conversation turns with one blank line. A multiline turn
 keeps every continuation line aligned under the text after `you>` or `may>`;
 the speaker remains visually distinct without repeating it on every line.
@@ -244,8 +251,10 @@ startup replay or May prompt history.
 
 ## Failure behavior
 
-- an ordinary human turn entered before startup completes is queued only until
-  the initial Conversation snapshot;
+- a connected human turn is published without waiting for the initial
+  Conversation snapshot or May's prior work;
+- an offline human turn is retained only in a bounded Console-local outbox and
+  sent after reconnect; process exit may lose that unsent turn;
 - local App selection and reconnect-safe reads do not wait in the command
   queue; only controls that require a live daemon connection do;
 - reconnect uses bounded backoff;

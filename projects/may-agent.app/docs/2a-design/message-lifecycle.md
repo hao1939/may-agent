@@ -76,6 +76,13 @@ message starts conversational understanding. Agent, tool, command, and
 transient messages may update presentation or context but never recursively
 invoke May.
 
+Admission does not wait for a Conversation read or a previous May decision.
+After admission returns, May's message handler claims Turns in Conversation
+order and makes the bounded frontend decision. Serialization belongs here,
+because it protects conversational meaning; it does not belong in the EventHub.
+One Conversation therefore remains coherent, while independent Conversations
+may be handled concurrently within the interactive capacity bound.
+
 Code collects bounded structured context:
 
 - the current Turn and visible adapter scope;
@@ -309,6 +316,12 @@ Conversation or Topic identity.
 ## Recovery and performance
 
 - Event publication persists and returns without running a long handler inline.
+- Conversation snapshots are read models and never gate human-message
+  publication.
+- Conversation ordering is enforced by May's message handler after admission;
+  the EventHub never waits for that handler.
+- Task saturation delays Task attempts only. It cannot delay message admission,
+  Conversation or Task reads, Console commands, or unrelated event handlers.
 - Repeated wakes coalesce by Task identity.
 - One May supervision Task replaces per-request coordination loops. It owns the
   recurring supervision goal but never proxies the linked work.

@@ -95,6 +95,15 @@ but it cannot execute work. Request-to-Task coordination, model calls,
 workflows, commands, network I/O, presentation, broad reads, and other actual
 handling begin asynchronously after `publish` returns.
 
+The EventHub does not serialize semantic handling. It records event identity,
+sequence, and causal links, but those facts do not control execution order.
+Each consumer owns the ordering its resource requires. For example, May's
+message handler serializes decisions within one Conversation, while handlers
+for different Conversations and Task attempts may run concurrently within
+bounded capacity. A busy message handler or Task can delay only that handler's
+work; it cannot delay event publication, resource reads, or another independent
+handler.
+
 Passive listeners run afterward for persisted, non-replayed events. Each
 listener has its own filtered, bounded FIFO, so socket streams, Console
 rendering, Conversation mirroring, and similar presentation cannot add latency

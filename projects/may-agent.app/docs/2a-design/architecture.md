@@ -129,6 +129,12 @@ lifecycle.
 One `HostCapacity` object limits task attempts. Each App may declare a smaller
 local limit. Request correlation and delivery do not run a second App worker.
 
+Capacity applies after durable admission. A Task attempt or May decision may
+wait for execution capacity, but event publication, resource reads, and
+interface commands do not acquire that capacity. Conversation ordering is a
+message-handler concern; Task ordering is a Task-handler concern. Neither is an
+EventHub queue.
+
 ## Startup and reload
 
 ```text
