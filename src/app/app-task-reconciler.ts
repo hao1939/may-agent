@@ -2017,10 +2017,11 @@ export type AppTaskLiveSnapshot = {
 export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, currentTaskId: string): AppTaskLiveSnapshot {
   return withTaskStateLock(config, () => {
     const indexedIds = config.resourceStore.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
+    const indexedIdSet = new Set(indexedIds);
     const tree = config.resourceStore.readTaskContext({ taskIds: indexedIds });
     const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
     const candidates = Object.values(tree.resources ?? {})
-      .filter((resource) => resource.metadata.id !== currentTaskId && resource.status.phase !== "converged")
+      .filter((resource) => indexedIdSet.has(resource.metadata.id) && resource.status.phase !== "converged")
       .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id));
     return {
       live: candidates
