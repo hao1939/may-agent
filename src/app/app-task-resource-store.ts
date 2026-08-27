@@ -686,7 +686,8 @@ export class AppTaskResourceStore {
    * Read the bounded graph needed to reconcile named tasks. This includes
    * their parent chain, direct children, dependencies, attempts, Conditions,
    * and completed direct children, but never unrelated App history. A current
-   * projection may omit attempt and completed-child history.
+   * projection may bound direct children and omit attempt and completed-child
+   * history.
    */
   readTaskContext(
     input: {
@@ -694,7 +695,7 @@ export class AppTaskResourceStore {
       admissionIds?: Iterable<string>;
       conditionIds?: Iterable<string>;
     },
-    options: { includeHistory?: boolean } = {},
+    options: { includeHistory?: boolean; childLimit?: number } = {},
   ): TaskTree {
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) throw new Error("Task resource store has no imported App metadata");
@@ -730,16 +731,32 @@ export class AppTaskResourceStore {
 
     if (requested.size > 0) {
       const relatedTo = [...requested];
+      const childLimit =
+        Number.isInteger(options.childLimit) && Number(options.childLimit) > 0
+          ? Math.min(1_000, Number(options.childLimit))
+          : undefined;
       const rows = this.db
         .prepare(
-          `SELECT DISTINCT task.task_id, task.resource_json, task.trigger_json
-           FROM app_task_relations relation
-           JOIN app_tasks task
-             ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
-           WHERE relation.app_id = ?
-             AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})`,
+          childLimit === undefined
+            ? `SELECT DISTINCT task.task_id, task.resource_json, task.trigger_json
+               FROM app_task_relations relation
+               JOIN app_tasks task
+                 ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
+               WHERE relation.app_id = ?
+                 AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})`
+            : `SELECT task_id, resource_json, trigger_json FROM (
+                 SELECT task.task_id, task.resource_json, task.trigger_json,
+                   ROW_NUMBER() OVER (
+                     PARTITION BY relation.target_task_id ORDER BY relation.source_task_id
+                   ) AS position
+                 FROM app_task_relations relation
+                 JOIN app_tasks task
+                   ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
+                 WHERE relation.app_id = ? AND relation.relation_kind = 'parent'
+                   AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})
+               ) WHERE position <= ?`,
         )
-        .all(this.appId, ...relatedTo) as Array<{
+        .all(this.appId, ...relatedTo, ...(childLimit === undefined ? [] : [childLimit])) as Array<{
         task_id?: string;
         resource_json?: string;
         trigger_json?: string | null;

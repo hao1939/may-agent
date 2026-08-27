@@ -197,6 +197,33 @@ describe("AppTaskResourceStore", () => {
     db.close();
   });
 
+  it("bounds direct children for read-only context without loading dependents", () => {
+    const store = open();
+    const tree = fixture();
+    tree.resources = { normal: tree.resources!.normal! };
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    for (let index = 0; index < 20; index += 1) {
+      const suffix = String(index).padStart(2, "0");
+      const child = resource(`child-${suffix}`);
+      child.spec.parentId = "normal";
+      tree.resources[child.metadata.id] = child;
+      const dependent = resource(`dependent-${suffix}`);
+      dependent.spec.dependsOn = ["normal"];
+      tree.resources[dependent.metadata.id] = dependent;
+    }
+    store.importPausedSnapshot(tree, "revision-1");
+
+    const context = store.readTaskContext(
+      { taskIds: ["normal"] },
+      { includeHistory: false, childLimit: 2 },
+    );
+
+    expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child-00", "child-01", "normal"]);
+    expect(Object.keys(context.attempts ?? {})).toEqual([]);
+    store.close();
+  });
+
   it("prunes a detached Condition only after its final Task reference is gone", () => {
     const store = open();
     const tree = fixture();
