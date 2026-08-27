@@ -230,6 +230,7 @@ describe("project runtime state paths", () => {
     const projection = JSON.parse(await readFile(paths.taskTreePath, "utf8"));
     expect(canonical.tasks).toBeUndefined();
     expect(canonical.groups.root).toMatchObject({ id: "root" });
+    expect(canonical.groups.root.state).toBeUndefined();
     expect(projection.groups).toBeUndefined();
     expect(projection.tasks.root).toMatchObject({ id: "root", children: [] });
   });
