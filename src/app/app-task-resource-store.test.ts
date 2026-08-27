@@ -504,7 +504,6 @@ describe("AppTaskResourceStore", () => {
     expect(context.groups).toEqual({
       project: { id: "project", parent_id: null, goal: "example" },
     });
-    expect(context.tasks?.project).toMatchObject({ id: "project", parent_id: null });
     expect(context.resources).toEqual({});
     store.close();
   });

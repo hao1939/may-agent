@@ -55,8 +55,8 @@ describe("saveTaskState shrinkage guard", () => {
     config.mutationAuthority = { kind: "test-authority" };
     config.validateMutation = ({ current, next, authority }) => {
       observations.push({
-        current: Object.keys(current.tasks).length,
-        next: Object.keys(next.tasks).length,
+        current: Object.keys(current.groups ?? {}).length,
+        next: Object.keys(next.groups ?? {}).length,
         authority,
       });
     };
@@ -345,7 +345,8 @@ describe("saveTaskState shrinkage guard", () => {
     writeFileSync(config.statePath, JSON.stringify(existingTree));
 
     const normalized = readTaskState(config);
-    expect(normalized.tasks.root.children).toEqual(["live-child"]);
+    expect(normalized.groups?.root.children).toBeUndefined();
+    expect(normalized.groups?.["live-child"]?.parent_id).toBe("root");
 
     saveTaskState(config, normalized);
     const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
