@@ -36,9 +36,7 @@ describe("App read projections", () => {
           review: {
             id: "review",
             parent_id: null,
-            state: "backlog",
             owner: "evaluation",
-            children: [],
           },
         },
         resources: {},
