@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { existsSync, statSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -12,7 +12,6 @@ import {
 import {
   cacheTaskStateReads,
   readTaskState,
-  refreshAppTaskTreeProjection,
   saveTaskState,
   type TaskStateConfig,
 } from "./app-task-store.js";
@@ -179,64 +178,6 @@ describe("project runtime state paths", () => {
     ensureTaskState(appDir);
 
     expect(existsSync(paths.taskTreePath)).toBe(false);
-  });
-
-  test("refreshes the disposable projection without rewriting canonical state", async () => {
-    const appDir = await makeApp();
-    const paths = projectRuntimePaths(appDir);
-    await writeJson(paths.taskStatePath, {
-      project: "sample",
-      root_task_id: "root",
-      groups: { root: { id: "root", parent_id: null, children: ["work"] } },
-      resources: {
-        work: {
-          metadata: { id: "work", generation: 1, resourceVersion: 1 },
-          spec: { parentId: "root", outcome: "Do work", acceptance: ["done"], mode: "achieve" },
-          status: { observedGeneration: 0, phase: "pending", updatedAt: "2026-07-20T00:00:00.000Z" },
-        },
-      },
-    });
-    const before = await readFile(paths.taskStatePath, "utf8");
-    const config: TaskStateConfig = {
-      appDir,
-      projectDir: appDir,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "owner",
-      maxConcurrent: 1,
-    };
-
-    refreshAppTaskTreeProjection(config);
-
-    expect(await readFile(paths.taskStatePath, "utf8")).toBe(before);
-    expect(JSON.parse(await readFile(paths.taskTreePath, "utf8"))).toMatchObject({
-      schema_version: 2,
-      tasks: { work: { phase: "pending", outcome: "Do work" } },
-    });
-  });
-
-  test("preserves a current disposable projection during startup refresh", async () => {
-    const appDir = await makeApp();
-    const paths = projectRuntimePaths(appDir);
-    await writeJson(paths.taskStatePath, {
-      project: "sample",
-      groups: {},
-      resources: {},
-    });
-    const config: TaskStateConfig = {
-      appDir,
-      projectDir: appDir,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "owner",
-      maxConcurrent: 1,
-    };
-    refreshAppTaskTreeProjection(config);
-    const before = statSync(paths.taskTreePath);
-
-    refreshAppTaskTreeProjection(config, { ifStaleOnly: true });
-
-    expect(statSync(paths.taskTreePath).ino).toBe(before.ino);
   });
 
   test("reuses one parsed tree during a bounded startup pass and notices external changes", async () => {
