@@ -2858,7 +2858,7 @@ export function claimObservedAppTask(
             ),
           )
         : 0;
-    const childIds = liveChildTaskIds(tree, task);
+    const childIds = liveChildTaskIds(tree, task.id);
     if (
       resource.status.phase === "waiting" &&
       childIds.length > 0 &&
@@ -3426,7 +3426,7 @@ function validateTaskActions(
     }
     const { task, resource } = mutableActionResource(validationTree, action);
     if (action.kind === "close-task") {
-      const liveChildren = liveChildTaskIds(validationTree, task);
+      const liveChildren = liveChildTaskIds(validationTree, task.id);
       if (liveChildren.length > 0) {
         throw new Error(
           `Handler close action cannot absorb ${task.id} while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
@@ -3749,19 +3749,22 @@ function applyTaskActions(
   return { actionsApplied: applied, supersededSessionIds: [...supersededSessionIds] };
 }
 
-function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
-  return (task.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
+function liveChildTaskIds(tree: TaskTree, taskId: string): string[] {
+  return Object.values(tree.resources ?? {})
+    .filter((resource) => resource.spec.parentId === taskId)
+    .map((resource) => resource.metadata.id);
 }
 
 function recordExecutableParentTrigger(
   tree: TaskTree,
-  child: TaskNode,
+  childId: string,
   disposition: "converged" | "attention",
   summary: string,
   evidence: string[] | undefined,
   now: string,
 ): string | undefined {
-  const parentTaskId = child.parent_id ?? undefined;
+  const child = tree.resources?.[childId];
+  const parentTaskId = child?.spec.parentId ?? undefined;
   if (!parentTaskId) return undefined;
   const parent = tree.resources?.[parentTaskId];
   if (!parent) return undefined;
@@ -3771,7 +3774,7 @@ function recordExecutableParentTrigger(
     source: APP_TASK_RECOVERY_OWNER,
     target: { taskId: parentTaskId },
     taskId: parentTaskId,
-    childTaskId: child.id,
+    childTaskId: childId,
     disposition,
     summary,
     evidence: [...(evidence ?? [])],
@@ -3918,8 +3921,7 @@ export function completeAppTask(
       taskIds: [claim.taskId, ...taskActionContextIds(actions)],
     });
     const match = matchingTaskAttempt(tree, claim);
-    const task = tree.tasks[claim.taskId];
-    if (!match || !task) {
+    if (!match) {
       return {
         status: "stale",
         actionsApplied: [],
@@ -3928,9 +3930,9 @@ export function completeAppTask(
       };
     }
     const { resource } = match;
-    if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
+    if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
-        taskId: task.id,
+        taskId: claim.taskId,
         expectedGeneration: claim.generation,
         currentGeneration: resource.metadata.generation,
         currentPhase: resource.status.phase,
@@ -3960,7 +3962,6 @@ export function completeAppTask(
       if (!revised || revised.metadata.generation <= claim.generation) {
         throw new Error(`Handler self-update for ${claim.taskId} must change task execution intent`);
       }
-      refreshActiveTaskProjection(tree);
       saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
       return {
         status: "applied",
@@ -3970,17 +3971,17 @@ export function completeAppTask(
         taskContinues: true,
       };
     }
-    const liveChildren = liveChildTaskIds(tree, task);
+    const liveChildren = liveChildTaskIds(tree, claim.taskId);
     if (claim.mode === "achieve" && liveChildren.length > 0) {
       throw new Error(
-        `Task ${task.id} cannot converge while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
+        `Task ${claim.taskId} cannot converge while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
           liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
         }`,
       );
     }
     const now = new Date().toISOString();
-    consumeAcceptedLiveTaskEvents(tree, task.id, claim.agent, input.acceptedLiveEventIds);
-    unlinkTaskConditions(tree, task.id);
+    consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+    unlinkTaskConditions(tree, claim.taskId);
     finishAttempt(tree, resource, "completed", input.summary, now);
     const reconcileActionTaskIds = actions.flatMap((action) =>
       action.kind === "create-task"
@@ -3989,21 +3990,21 @@ export function completeAppTask(
           ? [action.taskId]
           : [],
     );
-    const pendingSelfTrigger = Boolean(tree.taskTriggers?.[task.id]?.event);
+    const pendingSelfTrigger = Boolean(tree.taskTriggers?.[claim.taskId]?.event);
     const satisfiedTaskIds = [
-      ...(claim.mode === "achieve" && !pendingSelfTrigger ? [task.id] : []),
+      ...(claim.mode === "achieve" && !pendingSelfTrigger ? [claim.taskId] : []),
       ...actions.filter((action) => action.kind === "close-task").map((action) => action.taskId),
     ];
     const parentTaskId =
       claim.mode === "maintain" || !pendingSelfTrigger
-        ? recordExecutableParentTrigger(tree, task, "converged", input.summary, input.evidence, now)
+        ? recordExecutableParentTrigger(tree, claim.taskId, "converged", input.summary, input.evidence, now)
         : undefined;
     trackResourceMutationTask(mutationScope, tree, parentTaskId);
     const maintainHasLiveChildren = claim.mode === "maintain" && liveChildren.length > 0;
     const dependentTaskIds = [
       ...new Set([
         ...reconcileActionTaskIds,
-        ...(pendingSelfTrigger ? [task.id] : []),
+        ...(pendingSelfTrigger ? [claim.taskId] : []),
         ...(parentTaskId ? [parentTaskId] : []),
         ...Object.values(tree.resources ?? {})
           .filter((candidate) => candidate.spec.dependsOn?.some((id) => satisfiedTaskIds.includes(id)))
@@ -4029,21 +4030,20 @@ export function completeAppTask(
         evidence: [...(input.evidence ?? [])],
         conditionIds: [],
       });
-      syncTaskProjection(task, resource, claim.agent);
     } else {
       const intent = resourceIntent(resource);
       const failureFingerprints = [
         ...new Set(
           Object.values(tree.attempts ?? {})
-            .filter((attempt) => attempt.taskId === task.id && attempt.failureReason)
+            .filter((attempt) => attempt.taskId === claim.taskId && attempt.failureReason)
             .map((attempt) => String(attempt.failureReason)),
         ),
       ];
       tree.receipts = {
         ...(tree.receipts ?? {}),
-        [task.id]: {
+        [claim.taskId]: {
           metadata: {
-            id: task.id,
+            id: claim.taskId,
             generation: claim.generation,
             resourceVersion: 1,
           },
@@ -4067,13 +4067,9 @@ export function completeAppTask(
           ...(match.attempt.workspace ? { workspace: structuredClone(match.attempt.workspace) } : {}),
         },
       };
-      const parent = task.parent_id ? tree.tasks[task.parent_id] : undefined;
-      if (parent) parent.children = (parent.children ?? []).filter((id) => id !== task.id);
-      delete tree.tasks[task.id];
-      if (tree.resources) delete tree.resources[task.id];
-      if (tree.taskTriggers) delete tree.taskTriggers[task.id];
+      if (tree.resources) delete tree.resources[claim.taskId];
+      if (tree.taskTriggers) delete tree.taskTriggers[claim.taskId];
     }
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     return {
       status: "applied",
@@ -4115,26 +4111,25 @@ export function deferAppTask(
       ),
     });
     const match = matchingTaskAttempt(tree, claim);
-    const task = tree.tasks[claim.taskId];
-    if (!match || !task) {
+    if (!match) {
       return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };
     }
     const { resource } = match;
-    if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
+    if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
-        taskId: task.id,
+        taskId: claim.taskId,
         expectedGeneration: claim.generation,
         currentGeneration: resource.metadata.generation,
         currentPhase: resource.status.phase,
         reason: "newer Task evidence is pending",
       });
     }
-    consumeAcceptedLiveTaskEvents(tree, task.id, claim.agent, input.acceptedLiveEventIds);
+    consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
     const conditions = boundedReviewConditions(claim, input.conditions);
     const waitsForChildren =
-      liveChildTaskIds(tree, task).length > 0 ||
+      liveChildTaskIds(tree, claim.taskId).length > 0 ||
       actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);
-    const pendingTriggerRecord = tree.taskTriggers?.[task.id];
+    const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
     const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
     const pendingTrigger = pendingTriggerRecord?.event;
     if (
@@ -4165,15 +4160,15 @@ export function deferAppTask(
       config,
       acceptanceBasis,
     );
-    if (!conditions?.length && liveChildTaskIds(tree, task).length === 0) {
+    if (!conditions?.length && liveChildTaskIds(tree, claim.taskId).length === 0) {
       throw new Error(`Waiting task ${claim.taskId} requires an exact Condition or live direct child`);
     }
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "completed", input.summary, now);
     if (conditions?.length) {
-      materializeWaitingConditions(tree, task.id, conditions, now);
+      materializeWaitingConditions(tree, claim.taskId, conditions, now);
     } else {
-      unlinkTaskConditions(tree, task.id);
+      unlinkTaskConditions(tree, claim.taskId);
     }
     touchResource(resource, {
       phase: input.disposition,
@@ -4192,14 +4187,14 @@ export function deferAppTask(
     // matching semantic observation wakes the task again; an unrelated stale
     // pulse is consumed. Explicit human/override triggers still bypass the wait.
     if (pendingEvents.length > 0) {
-      delete tree.taskTriggers![task.id];
+      delete tree.taskTriggers![claim.taskId];
       for (const entry of pendingEvents.filter(({ event }) => !triggerOverridesWait(event))) {
         for (const wake of applyAppTaskConditionEvent(tree, entry.event)) {
           trackResourceMutationTask(mutationScope, tree, wake.taskId);
         }
       }
       for (const entry of pendingEvents.filter(({ event }) => triggerOverridesWait(event))) {
-        const previous = tree.taskTriggers?.[task.id];
+        const previous = tree.taskTriggers?.[claim.taskId];
         const events = appendTaskTriggerEvent(
           previous ? taskTriggerEvents(previous) : [],
           entry.event,
@@ -4207,8 +4202,8 @@ export function deferAppTask(
         );
         tree.taskTriggers = {
           ...(tree.taskTriggers ?? {}),
-          [task.id]: {
-            taskId: task.id,
+          [claim.taskId]: {
+            taskId: claim.taskId,
             taskGeneration: resource.metadata.generation,
             resourceVersion: (previous?.resourceVersion ?? 0) + 1,
             event: structuredClone(preferredTriggerFromEvents(events, claim.agent)),
@@ -4218,8 +4213,6 @@ export function deferAppTask(
         };
       }
     }
-    syncTaskProjection(task, resource, claim.agent);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     const satisfiedTaskIds = actions.filter((action) => action.kind === "close-task").map((action) => action.taskId);
     const reconcileTaskIds = [
@@ -4254,25 +4247,24 @@ export function markAppTaskAttention(
   return withTaskStateLock(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTaskAttempt(tree, claim);
-    const task = tree.tasks[claim.taskId];
-    if (!match || !task) return { status: "stale" };
+    if (!match) return { status: "stale" };
     const { resource, attempt } = match;
-    if (hasUnacceptedLiveTaskEvents(tree, task.id, input.acceptedLiveEventIds)) {
+    if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
       throw new AppTaskActionStaleError({
-        taskId: task.id,
+        taskId: claim.taskId,
         expectedGeneration: claim.generation,
         currentGeneration: resource.metadata.generation,
         currentPhase: resource.status.phase,
         reason: "newer Task evidence is pending",
       });
     }
-    consumeAcceptedLiveTaskEvents(tree, task.id, claim.agent, input.acceptedLiveEventIds);
+    consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
     const mutationScope = beginResourceMutationScope(tree, claim, []);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "failed", input.summary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = input.reason;
-    unlinkTaskConditions(tree, task.id);
+    unlinkTaskConditions(tree, claim.taskId);
     touchResource(resource, {
       phase: "attention",
       observedGeneration: claim.generation,
@@ -4284,10 +4276,8 @@ export function markAppTaskAttention(
     const parentTaskId =
       input.wakeParent === false
         ? undefined
-        : recordExecutableParentTrigger(tree, task, "attention", input.summary, input.evidence, now);
+        : recordExecutableParentTrigger(tree, claim.taskId, "attention", input.summary, input.evidence, now);
     trackResourceMutationTask(mutationScope, tree, parentTaskId);
-    syncTaskProjection(task, resource, claim.agent);
-    refreshActiveTaskProjection(tree);
     saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     return { status: "applied", ...(parentTaskId ? { parentTaskId } : {}) };
   });
