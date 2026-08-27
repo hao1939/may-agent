@@ -1,5 +1,13 @@
 import type { SqliteDb } from "../db.js";
 
+/** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
+export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
+  db.prepare(
+    `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
+     ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
+  ).run(appId);
+}
+
 /** Resource-local Task rows share the EventHub database for atomic fenced emission. */
 export const TASK_RESOURCE_SCHEMA = `
 CREATE TABLE IF NOT EXISTS app_task_store_meta (
