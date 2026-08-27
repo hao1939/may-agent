@@ -145,8 +145,12 @@ export class AppTaskController {
       if (this.queue.pendingCount === 0 || this.queue.runningCount >= this.queue.maxConcurrent) return;
       const lane = this.queue.nextLane();
       if (!lane) return;
-      const release =
-        lane === "human" ? this.options.capacity.tryAcquireForeground() : this.options.capacity.tryAcquire();
+      // The lane orders Task work inside this controller. It does not make a
+      // Task attempt the interactive frontend: letting every P0/owner-review
+      // attempt consume foreground capacity can fill the slot reserved for a
+      // live human turn. All Task executions therefore share background Host
+      // capacity; the May inbox alone uses the foreground reservation.
+      const release = this.options.capacity.tryAcquire();
       if (!release) {
         this.waitForCapacity(lane);
         return;
@@ -186,10 +190,7 @@ export class AppTaskController {
       if (taskId) this.run(taskId, release, lane);
       else release();
     };
-    this.cancelCapacityWait =
-      lane === "human"
-        ? this.options.capacity.acquireForegroundCancellable(acquired)
-        : this.options.capacity.acquireCancellable(acquired);
+    this.cancelCapacityWait = this.options.capacity.acquireCancellable(acquired);
   }
 
   private run(taskId: string, capacityRelease?: () => void, lane: AppTaskLane = "normal"): void {
