@@ -1008,7 +1008,7 @@ export function recoverableAppTaskAttempts(
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     let changed = false;
-    const mutationScope = emptyResourceMutationScope();
+    const mutationScope = emptyResourceMutationScope(tree);
     const recoveries = Object.values(tree.resources ?? {}).flatMap((resource) => {
       if (resource.status.phase !== "running") return [];
       if (matchingCompletionReceipt(tree, resource, config.worker)) {
@@ -1294,7 +1294,7 @@ export function repairPreviousRuntimeRecoveryAttention(
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     const repairs: AppTaskRecoveryRepair[] = [];
-    const mutationScope = emptyResourceMutationScope();
+    const mutationScope = emptyResourceMutationScope(tree);
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "attention") continue;
       const attempt = Object.values(tree.attempts ?? {})
@@ -1346,7 +1346,7 @@ export function repairUnadmittedAppDependencyWaits(
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     const repairs: AppTaskRecoveryRepair[] = [];
-    const mutationScope = emptyResourceMutationScope();
+    const mutationScope = emptyResourceMutationScope(tree);
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "waiting") continue;
       const missingRequestId = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
@@ -1394,7 +1394,7 @@ export function repairRunningAppTasksWithoutAttempt(
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     const repairs: AppTaskRecoveryRepair[] = [];
-    const mutationScope = emptyResourceMutationScope();
+    const mutationScope = emptyResourceMutationScope(tree);
     const now = new Date().toISOString();
     for (const resource of Object.values(tree.resources ?? {})) {
       if (resource.status.phase !== "running") continue;
@@ -3662,6 +3662,9 @@ type ResourceMutationScope = {
   conditionIds: Set<string>;
   attemptIds: Set<string>;
   receiptIds: Set<string>;
+  originalConditionVersions: Map<string, number>;
+  originalAttemptVersions: Map<string, number>;
+  originalReceiptVersions: Map<string, number>;
   fences: Array<{
     taskId: string;
     resourceVersion: number;
@@ -3670,7 +3673,7 @@ type ResourceMutationScope = {
   }>;
 };
 
-function emptyResourceMutationScope(): ResourceMutationScope {
+function emptyResourceMutationScope(tree: TaskTree): ResourceMutationScope {
   return {
     taskIds: new Set(),
     originalTaskIds: new Set(),
@@ -3678,12 +3681,23 @@ function emptyResourceMutationScope(): ResourceMutationScope {
     conditionIds: new Set(),
     attemptIds: new Set(),
     receiptIds: new Set(),
+    originalConditionVersions: new Map(
+      Object.values(tree.conditions ?? {}).flatMap((condition) =>
+        isAppTaskCondition(condition) ? [[condition.metadata.id, condition.metadata.resourceVersion] as const] : [],
+      ),
+    ),
+    originalAttemptVersions: new Map(
+      Object.values(tree.attempts ?? {}).map((attempt) => [attempt.metadata.id, attempt.metadata.resourceVersion]),
+    ),
+    originalReceiptVersions: new Map(
+      Object.values(tree.receipts ?? {}).map((receipt) => [receipt.metadata.id, receipt.metadata.resourceVersion]),
+    ),
     fences: [],
   };
 }
 
 function beginResourceMutationScopeForTasks(tree: TaskTree, taskIds: Iterable<string>): ResourceMutationScope {
-  const scope = emptyResourceMutationScope();
+  const scope = emptyResourceMutationScope(tree);
   for (const taskId of taskIds) trackResourceMutationTask(scope, tree, taskId);
   return scope;
 }
@@ -3693,7 +3707,7 @@ function beginResourceMutationScope(
   claim: AppTaskClaim,
   actions: AppTaskAction[],
 ): ResourceMutationScope {
-  const scope = emptyResourceMutationScope();
+  const scope = emptyResourceMutationScope(tree);
   const track = (taskId: string | undefined) => trackResourceMutationTask(scope, tree, taskId);
   track(claim.taskId);
   track(tree.resources?.[claim.taskId]?.spec.parentId);
@@ -3737,14 +3751,26 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
     const resource = tree.resources?.[taskId];
     return resource ? [resourceWrite(tree, resource, isRunnableOnPassiveResync(tree, resource))] : [];
   });
-  const receipts = [...scope.taskIds].flatMap((taskId) => (tree.receipts?.[taskId] ? [tree.receipts[taskId]] : []));
+  const receipts = [...scope.taskIds].flatMap((taskId) => {
+    const receipt = tree.receipts?.[taskId];
+    return receipt && scope.originalReceiptVersions.get(taskId) !== receipt.metadata.resourceVersion ? [receipt] : [];
+  });
   return {
     fences: scope.fences,
     expectMissingTaskIds: [...scope.createdTaskIds].filter((taskId) => !scope.originalTaskIds.has(taskId)),
     tasks,
     deleteTaskIds: [...scope.originalTaskIds].filter((taskId) => !tree.resources?.[taskId]),
-    attempts: [...scope.attemptIds].flatMap((id) => (tree.attempts?.[id] ? [tree.attempts[id]] : [])),
-    conditions: [...scope.conditionIds].flatMap((id) => (tree.conditions?.[id] ? [tree.conditions[id]] : [])),
+    attempts: [...scope.attemptIds].flatMap((id) => {
+      const attempt = tree.attempts?.[id];
+      return attempt && scope.originalAttemptVersions.get(id) !== attempt.metadata.resourceVersion ? [attempt] : [];
+    }),
+    conditions: [...scope.conditionIds].flatMap((id) => {
+      const condition = tree.conditions?.[id];
+      return isAppTaskCondition(condition) &&
+        scope.originalConditionVersions.get(id) !== condition.metadata.resourceVersion
+        ? [condition]
+        : [];
+    }),
     deleteConditionIds: [...scope.conditionIds].filter((id) => !tree.conditions?.[id]),
     receipts,
     deleteReceiptIds: [...scope.receiptIds].filter((id) => !tree.receipts?.[id]),
