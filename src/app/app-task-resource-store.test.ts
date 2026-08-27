@@ -60,7 +60,7 @@ function fixture(): TaskTree {
     project: "example",
     project_lifecycle: "paused",
     root_task_id: "project",
-    groups: { project: { id: "project", parent_id: null, goal: "example", state: "backlog" } },
+    groups: { project: { id: "project", parent_id: null, goal: "example" } },
     resources: { human: resource("human"), normal: resource("normal", "waiting"), active },
     attempts: {
       "attempt-1": {
@@ -238,6 +238,7 @@ describe("AppTaskResourceStore", () => {
   it("imports and shadow-compares a paused App snapshot", () => {
     const store = open();
     const tree = fixture() as TaskTree & { satisfied_dependency_ids?: string[] };
+    (tree.groups!.project as TaskTree["groups"][string] & { state?: string }).state = "backlog";
     tree.satisfied_dependency_ids = ["legacy-derived-copy"];
     store.importPausedSnapshot(tree, "revision-1", ["human"]);
 
