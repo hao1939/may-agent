@@ -4,9 +4,7 @@
     "may": {
       "id": "may",
       "parent_id": null,
-      "state": "backlog",
-      "owner": "may",
-      "children": []
+      "owner": "may"
     }
   },
   "resources": {}
