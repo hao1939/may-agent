@@ -1028,6 +1028,7 @@ export class EventBus {
   private deliveryRecorder: DeliveryRecorder | undefined;
   private emitDepth = 0;
   private reportingFailures = false;
+  private failureFlushScheduled = false;
   private pendingFailureEvents: AgentEvent[] = [];
   private subscriberLabels = new WeakMap<Subscriber | EventListener, string>();
 
@@ -1348,12 +1349,15 @@ export class EventBus {
   }
 
   private flushFailureEvents(): void {
-    if (this.reportingFailures) return;
-    this.reportingFailures = true;
-    try {
-      while (this.pendingFailureEvents.length > 0) {
-        const failure = this.pendingFailureEvents.shift();
-        if (!failure) continue;
+    if (this.reportingFailures || this.failureFlushScheduled || this.pendingFailureEvents.length === 0) return;
+    this.failureFlushScheduled = true;
+    setImmediate(() => {
+      this.failureFlushScheduled = false;
+      if (this.reportingFailures) return;
+      const failure = this.pendingFailureEvents.shift();
+      if (!failure) return;
+      this.reportingFailures = true;
+      try {
         try {
           this.emit(failure);
         } catch (error) {
@@ -1366,10 +1370,11 @@ export class EventBus {
             `[event-bus] failed to persist subscriber.failed: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
+      } finally {
+        this.reportingFailures = false;
+        this.flushFailureEvents();
       }
-    } finally {
-      this.reportingFailures = false;
-    }
+    });
   }
 }
 
