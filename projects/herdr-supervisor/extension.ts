@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { HerdrClient } from "./src/herdr-client.js";
+import { formatObservation, observeWorker } from "./src/observation.js";
 import { loadState, updateState } from "./src/store.js";
 import {
   findAgent,
@@ -15,6 +16,12 @@ import {
 
 const Pane = Type.String({ description: "Exact Herdr pane ID, for example w1:p2" });
 const client = new HerdrClient();
+const supervisorTools = [
+  "supervisor_status",
+  "supervisor_observe",
+  "supervisor_steer",
+  "supervisor_finish",
+];
 type SupervisorMode = "observe" | "dry-run" | "live";
 
 function text(value: string, isError = false) {
@@ -115,24 +122,6 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   }
 
   pi.registerTool({
-    name: "supervisor_register",
-    label: "Supervise worker",
-    description: "Bind one explicit goal and its acceptance criteria to an existing Herdr worker. Reusing the pane updates that binding rather than creating another unit of work.",
-    parameters: Type.Object({
-      pane_id: Pane,
-      goal: Type.String({ description: "The outcome the worker must achieve" }),
-      acceptance: Type.Array(Type.String(), { description: "Concrete evidence required before accepting the goal" }),
-    }),
-    executionMode: "sequential",
-    async execute(_id, params) {
-      try {
-        const binding = await register(params.pane_id, params.goal, params.acceptance);
-        return text(`Now supervising ${binding.agentSession.agent} in ${binding.paneId}.\nGoal: ${binding.goal}`);
-      } catch (error) { return text(`Could not register worker: ${error.message}`, true); }
-    },
-  });
-
-  pi.registerTool({
     name: "supervisor_status",
     label: "Supervised workers",
     description: "Show supervised goals against fresh Herdr worker state.",
@@ -158,13 +147,19 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         const agent = findAgent(snapshot, params.pane_id);
         const mismatch = identityMismatch(binding, agent);
         if (mismatch) return text(`Refusing to observe as the registered worker: ${mismatch}.`, true);
-        const result = await client.readAgent(params.pane_id, params.lines || 80);
+        const observation = await observeWorker(binding, client, {
+          terminalLines: params.lines || 40,
+          fallbackWhenEmpty: agent.agent_status === "blocked" || agent.agent_status === "unknown",
+        });
         await updateState((next) => {
           const current = next.workers.find((worker) => worker.paneId === params.pane_id);
-          if (current) current.lastReviewStateChangeSeq = Number(agent.state_change_seq || 0);
+          if (current) {
+            current.lastReviewStateChangeSeq = Number(agent.state_change_seq || 0);
+            if (observation.cursor) current.observationCursor = observation.cursor;
+          }
           return next;
         });
-        return text(`Goal: ${binding.goal}\nHerdr state: ${agent.agent_status}\n\nRecent worker output:\n${result.read.text}`);
+        return text(`Goal: ${binding.goal}\nHerdr state: ${agent.agent_status}\n\n${formatObservation(observation)}`);
       } catch (error) { return text(`Could not observe worker: ${error.message}`, true); }
     },
   });
@@ -216,23 +211,6 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     },
   });
 
-  pi.registerTool({
-    name: "supervisor_stop",
-    label: "Stop supervision",
-    description: "Stop supervising a worker only when the human explicitly asks. This does not stop the worker.",
-    parameters: Type.Object({ pane_id: Pane }),
-    executionMode: "sequential",
-    async execute(_id, params) {
-      let removed = false;
-      await updateState((state) => {
-        removed = removeBinding(state, params.pane_id);
-        return state;
-      });
-      await connectObserver();
-      return text(removed ? `Stopped supervising ${params.pane_id}. The worker was not stopped.` : `${params.pane_id} is not supervised.`);
-    },
-  });
-
   pi.registerCommand("supervise", {
     description: "Supervise an existing pane: /supervise <pane> <goal>",
     async handler(args, ctx) {
@@ -270,10 +248,12 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   });
 
   pi.on("before_agent_start", (event) => ({
-    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. On a supervision event, inspect the exact worker, compare evidence with the goal, and act: leave healthy work alone, steer the same worker when more can be done, ask the human only for a real decision, or finish only with convincing evidence. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide but worker actions are only displayed. Only live mode applies worker actions. Do not create another worker or goal unless the human asks. Use plain language.`,
+    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, ask the human only for a real decision, or call supervisor_finish only with convincing evidence. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
   }));
 
   pi.on("session_start", async (_event, ctx) => {
+    // This Pi session is a supervisor, not a second implementation worker.
+    pi.setActiveTools(supervisorTools);
     shuttingDown = false;
     await connectObserver();
     const state = await loadState();

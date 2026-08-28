@@ -1,6 +1,6 @@
 # Proof-of-concept design
 
-**Status:** Stage 1 implemented
+**Status:** Stage 2 in progress
 **Date:** 2026-08-28
 
 ## 1. Purpose
@@ -45,7 +45,8 @@ Herdr remains the runtime:
 
 A goal binding is not another task. It does not have its own pending/running/
 waiting lifecycle. It only attaches human intent and acceptance criteria to an
-existing worker identity.
+existing worker identity. The worker receives that goal normally and does not
+need to know that Herdr or a supervisor exists.
 
 ## 4. Boundary
 
@@ -53,7 +54,7 @@ existing worker identity.
 
 - explicitly register and unregister an existing worker;
 - observe multiple registered workers;
-- react to Herdr state changes and worker result markers;
+- react to Herdr state changes and native worker messages;
 - perform a stale-progress review at a configured deadline;
 - read bounded current output or structured history;
 - steer the same worker;
@@ -151,7 +152,6 @@ Herdr event or stale deadline
 | Output/activity while `working`          | Refresh liveness only; do not invoke the model                          |
 | `blocked`                                | Review immediately and determine whether the worker or human can answer |
 | `idle` or Herdr `done`                   | Review the result; never assume goal completion                         |
-| Structured result marker                 | Review the reported evidence immediately                                |
 | `pane.exited`                            | Review identity and choose conservative recovery                        |
 | Stale deadline                           | Inspect current evidence before deciding whether to steer               |
 | Human message                            | Review immediately with the new authority or information                |
@@ -159,21 +159,36 @@ Herdr event or stale deadline
 The event means "reconsider this goal now." It never decides success by
 itself.
 
-## 8. Worker report convention
+## 8. Worker-transparent observation
 
-The supervisor should work with ordinary agent output, but workers are asked
-to end a meaningful turn with a compact report:
+The worker is responsible only for pursuing its goal and communicating
+normally through its native agent interface. It must not call a supervisor
+command, emit a protocol marker, know its Herdr pane, or maintain supervision
+state.
+
+The infrastructure boundary is a small observation operation:
 
 ```text
-Status: continue | blocked | candidate complete
-Progress: what changed
-Evidence: tests, files, commands, or observations
-Need: the exact missing fact or decision, if any
-Next: the next safe action
+observe(exact worker identity, previous cursor)
+  -> new native assistant messages
+  -> current cursor
+  -> source and truncation facts
 ```
 
-This is a convention, not a second protocol authority. Herdr remains the
-source of live state, and the supervisor verifies claimed evidence.
+The adapter performs only mechanical collection. It does not classify text,
+guess progress from keywords, or decide whether the goal is complete. The
+supervisor model makes those semantic decisions from the goal, acceptance
+criteria, and collected evidence.
+
+The initial Codex adapter resolves the native session ID reported by Herdr and
+reads only new assistant messages from that session's JSONL record. It excludes
+user, developer, and reasoning records. A cursor prevents rereading the whole
+session. Other agents use a bounded terminal fallback until their native
+adapters are justified and implemented.
+
+Herdr lifecycle events answer "when should this goal be reconsidered?" Native
+agent records answer "what did the worker communicate?" Neither one alone
+decides success.
 
 ## 9. Supervisor decision
 
@@ -209,8 +224,8 @@ Only one registered worker is reviewed per model call. Context includes:
 - goal and acceptance criteria;
 - exact current Herdr identity and state;
 - the event or deadline that caused review;
-- bounded output since the last meaningful checkpoint;
-- the latest worker report when present;
+- new native assistant messages since the previous observation cursor;
+- a bounded terminal fallback only when native evidence is unavailable;
 - previous supervisor action and whether subsequent progress occurred;
 - new human steering, if any;
 - allowed decisions and safety limits.
@@ -252,7 +267,7 @@ an event may have been missed or delayed.
 | Worker occupant changed       | Stop and ask the human; never prompt the replacement automatically                                 |
 | Malformed model output        | Apply no action, record a visible diagnostic, and retry only on the next signal or bounded backoff |
 | Prompt/send failure           | Re-read current identity and state before one bounded retry                                        |
-| Worker reports blocked        | Determine whether existing context can unblock it before asking the human                          |
+| Herdr reports blocked         | Read new native evidence and determine whether existing context can unblock it before asking the human |
 | Worker repeatedly stalls      | Explain the evidence and ask the human after a bounded number of ineffective steers                |
 | Completion claim lacks proof  | Steer the same worker to verify; do not accept or spawn another worker                             |
 | Supervisor session disappears | Workers continue unaffected; recovery resumes from Herdr and the small binding file                |
@@ -275,6 +290,11 @@ Live mode permits only:
 - starting or resuming that exact worker when the recovery policy allows it;
 - notifying the human;
 - marking the local goal binding accepted or stopped.
+
+Registering, replacing, and explicitly stopping a binding are human
+control-plane operations exposed through commands and the CLI. Event-driven
+model turns cannot perform them. This prevents a review wakeup from silently
+changing the goal it is supposed to judge.
 
 The PoC may not close panes, delete worktrees, approve permissions, merge,
 push, deploy, or create another worker. Those capabilities require separate
@@ -313,11 +333,21 @@ event. Transport metadata remains secondary.
 - **Verified:** passive mode starts no model calls and performs no worker
   mutation.
 
-### Stage 2: dry-run supervision
+### Stage 2a: event-driven dry-run review
 
-- Invoke the model on blocked, settled, exited, and stale signals.
-- Display the decision without applying it.
-- Compare decisions with human judgment.
+- **Implemented:** collect new native Codex assistant messages without worker
+  participation.
+- **Implemented:** invoke the model on blocked, settled, and exited signals.
+- **Implemented:** display proposed steering or acceptance without applying it.
+- Compare dry-run decisions with human judgment on controlled workers.
+
+### Stage 2b: stale-progress review
+
+- Add one nearest-deadline timer across all registered workers.
+- Wake only workers whose review deadline elapsed.
+- Re-read live state and bounded native evidence before proposing an action.
+- Prove that healthy workers remain quiet and a semantically stalled worker is
+  not silently lost.
 
 ### Stage 3: bounded live steering
 
@@ -353,8 +383,8 @@ The PoC is successful when all of these are demonstrated:
 - Are Herdr's bounded pane reads sufficient across Codex, Claude Code, Pi, and
   OpenCode, or is Shepherd's structured history materially better?
 - Which Herdr transitions are reliable enough across all worker CLIs?
-- Is a structured worker report consistently produced without making prompts
-  cumbersome?
+- Are ordinary native assistant messages sufficient evidence across worker
+  agents, or does one agent need a richer mechanical adapter?
 - What stale interval catches real stalls without nagging healthy workers?
 - Can one Pi supervisor remain understandable with five workers, or should the
   experiment remain intentionally smaller?
@@ -375,12 +405,25 @@ The PoC is successful when all of these are demonstrated:
   is picked up when the extension starts or reloads; dynamic cross-process
   binding notification is intentionally deferred until a real use case proves
   it necessary.
-- Stage 1 deliberately has no stale timer. Lifecycle events are sufficient to
-  validate identity, event wakeups, and quiet working behavior first. The
-  single nearest-deadline timer belongs in Stage 2.
+- Stage 2a deliberately has no stale timer. Lifecycle events are sufficient to
+  validate native observation, event wakeups, and dry-run decisions first. The
+  single nearest-deadline timer is the separate Stage 2b slice.
 - A live passive smoke test bound an idle Codex pane, loaded the Pi extension,
   emitted one review notice, and left the worker on the same Herdr state and
   `state_change_seq`. This confirms the observe path does not prompt the worker.
+- Requiring a worker to call `herdr-supervisor update` would leak infrastructure
+  into goal execution. Stage 2 instead introduces a supervisor-side observation
+  adapter; Codex workers remain unchanged and unaware of supervision.
+- A controlled Stage 2a run exposed an important boundary failure: a normal Pi
+  session could inspect the worker's repository with built-in coding tools.
+  The dedicated supervisor now activates only its identity-fenced supervisor
+  tools. Launching with `--no-builtin-tools` provides the same boundary before
+  extension initialization.
+- The repeated dry-run then used only supervisor observation, status, and
+  proposed-steering tools. It made no workspace call and did not mutate the
+  worker. The run also showed that registration must not be a model tool: an
+  event review tried to restate the existing binding before observing it.
+  Registration and explicit stopping are now command/CLI-only.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

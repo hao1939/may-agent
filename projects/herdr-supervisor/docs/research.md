@@ -134,8 +134,8 @@ Limits:
 - deliberately does not automatically retry writes;
 - very new and lightly adopted at review time.
 
-Decision: borrow the structured worker-report and acceptance ideas, not the
-whole topology.
+Decision: borrow its acceptance discipline, not its coordinator topology or a
+worker-facing reporting protocol.
 
 ### Other useful Herdr components
 

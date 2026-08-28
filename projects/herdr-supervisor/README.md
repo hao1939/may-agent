@@ -23,6 +23,14 @@ Stage 1 is implemented. It can bind goals to existing workers, show their live
 state, fence worker identity, and observe lifecycle transitions without model
 calls or worker mutation.
 
+Stage 2a uses the worker's ordinary native agent messages as review evidence.
+The worker does not know about Herdr or the supervisor. A small observation
+adapter resolves the exact native session supplied by Herdr and returns only
+new assistant messages; terminal output is a bounded fallback, not the normal
+contract. The Pi session exposes only supervisor tools, so it cannot become a
+second worker by reading or modifying the worker's workspace. The single
+stale-progress timer remains the next Stage 2b slice.
+
 ## Try it
 
 List the workers Herdr currently knows:
@@ -34,16 +42,19 @@ node bin/herdr-supervisor.js workers
 Start Pi with the extension in passive mode:
 
 ```sh
-pi -e /app/projects/herdr-supervisor/extension.ts --supervisor-mode observe
+pi --no-builtin-tools -e /app/projects/herdr-supervisor/extension.ts --supervisor-mode observe
 ```
 
-Inside Pi, use `/supervise <pane> <goal>` and `/supervised`, or ask the agent to
-supervise a worker with explicit acceptance criteria. Passive mode displays
-meaningful lifecycle signals but never starts a model turn or prompts a worker.
+Inside Pi, use `/supervise <pane> <goal>` and `/supervised`. Use the standalone
+CLI when explicit acceptance criteria are needed. Registering and stopping are
+human commands, not model tools. Passive mode displays meaningful lifecycle
+signals but never starts a model turn or prompts a worker.
 
 After passive behavior is verified, use `--supervisor-mode dry-run` to let the
-supervisor model review events without applying its decisions. `live` is the
-only mode that may prompt a registered worker.
+supervisor model review events without applying its decisions. The extension
+also disables non-supervisor tools itself; `--no-builtin-tools` makes that
+boundary explicit at launch. `live` is the only mode that may prompt a
+registered worker.
 
 The standalone CLI can also register a binding before Pi starts:
 
