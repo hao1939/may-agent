@@ -67,6 +67,35 @@ describe("isolated Task attempt process", () => {
     await expect(attempt).resolves.toEqual([]);
   });
 
+  it("yields between bounded batches of worker event notifications", async () => {
+    const bus = new EventBus();
+    let observed = 0;
+    bus.subscribe(() => {
+      observed += 1;
+      const until = Date.now() + 4;
+      while (Date.now() < until) {}
+    });
+    const execute = createTaskAttemptProcessExecutor({
+      bus,
+      spawnWorker: () =>
+        scriptedWorker(`
+          const fs = require("node:fs");
+          for (let eventId = 1; eventId <= 64; eventId += 1) {
+            fs.writeSync(3, JSON.stringify({kind:"event",eventId,event:{type:"info",message:"progress"}})+"\\n");
+          }
+          fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+        `),
+    });
+
+    const startedAt = Date.now();
+    const parentTurn = new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - startedAt), 20));
+    const attempt = execute(request);
+
+    expect(await parentTurn).toBeLessThan(180);
+    await expect(attempt).resolves.toEqual([]);
+    expect(observed).toBe(64);
+  });
+
   it("surfaces worker failure without inventing another Task", async () => {
     const execute = createTaskAttemptProcessExecutor({
       bus: new EventBus(),

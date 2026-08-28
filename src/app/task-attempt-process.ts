@@ -21,6 +21,9 @@ import { isBundled } from "./bundle-mode.js";
 import type { ModelRegistry } from "./model-registry.js";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
+const WORKER_RELAY_BATCH_SIZE = 16;
+const WORKER_RELAY_PAUSE_AT = 256;
+const WORKER_RELAY_RESUME_AT = 128;
 
 type WorkerEventFrame = { kind: "event"; eventId: number; event: AgentEvent };
 type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[] };
@@ -144,6 +147,47 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
   let result: string[] | undefined;
   let workerError: string | undefined;
   let protocolError: Error | undefined;
+  const frames: WorkerFrame[] = [];
+  let relayScheduled = false;
+  let relaySettled: (() => void) | undefined;
+  const relayDrained = () =>
+    frames.length === 0 && !relayScheduled
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => {
+          relaySettled = resolve;
+        });
+  const applyFrame = (frame: WorkerFrame) => {
+    if (frame.kind === "event") bus.fanoutPersisted(frame.event, frame.eventId);
+    else if (frame.kind === "result") result = frame.dependentTaskIds;
+    else workerError = frame.error;
+  };
+  const drainFrames = () => {
+    relayScheduled = false;
+    try {
+      for (let count = 0; count < WORKER_RELAY_BATCH_SIZE && frames.length > 0; count += 1) {
+        applyFrame(frames.shift()!);
+      }
+    } catch (error) {
+      protocolError = error instanceof Error ? error : new Error(String(error));
+      frames.length = 0;
+      child.kill("SIGKILL");
+    }
+    if (relay.isPaused() && frames.length <= WORKER_RELAY_RESUME_AT) relay.resume();
+    if (frames.length > 0) {
+      relayScheduled = true;
+      setImmediate(drainFrames);
+      return;
+    }
+    relaySettled?.();
+    relaySettled = undefined;
+  };
+  const enqueueFrame = (frame: WorkerFrame) => {
+    frames.push(frame);
+    if (frames.length >= WORKER_RELAY_PAUSE_AT) relay.pause();
+    if (relayScheduled) return;
+    relayScheduled = true;
+    setImmediate(drainFrames);
+  };
   relay.setEncoding("utf8");
   relay.on("data", (chunk: string) => {
     if (protocolError) return;
@@ -158,10 +202,7 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
     for (const line of lines) {
       if (!line.trim()) continue;
       try {
-        const frame = parseWorkerFrame(line);
-        if (frame.kind === "event") bus.fanoutPersisted(frame.event, frame.eventId);
-        else if (frame.kind === "result") result = frame.dependentTaskIds;
-        else workerError = frame.error;
+        enqueueFrame(parseWorkerFrame(line));
       } catch (error) {
         protocolError = error instanceof Error ? error : new Error(String(error));
         child.kill("SIGKILL");
@@ -169,15 +210,19 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
       }
     }
   });
+  const relayEnded = new Promise<void>((resolveEnd, rejectEnd) => {
+    relay.once("end", resolveEnd);
+    relay.once("error", rejectEnd);
+  });
 
   const exit = await waitForChild(child, timeoutMs);
+  await relayEnded;
   if (protocolError) throw protocolError;
   if (buffer.trim()) {
-    const frame = parseWorkerFrame(buffer);
-    if (frame.kind === "event") bus.fanoutPersisted(frame.event, frame.eventId);
-    else if (frame.kind === "result") result = frame.dependentTaskIds;
-    else workerError = frame.error;
+    enqueueFrame(parseWorkerFrame(buffer));
   }
+  await relayDrained();
+  if (protocolError) throw protocolError;
   if (workerError) throw new Error(workerError);
   if (exit.code !== 0) {
     throw new Error(`Task worker exited with ${exit.signal ? `signal ${exit.signal}` : `code ${exit.code}`}`);
