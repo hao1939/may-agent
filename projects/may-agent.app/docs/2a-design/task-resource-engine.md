@@ -656,10 +656,21 @@ row IDs so parent-side listeners can observe them without duplicate journal
 rows. If the worker exits, the controller's existing retry and lease recovery
 continue the same Task identity.
 
-An attempt worker loads only its owning App's Task runtime and reuses the read
-models already published by the parent. It must not resynchronize every App at
-startup: those duplicate writes contend with the Event journal and can delay
-human-message durability.
+An attempt worker loads only its owning App's Task runtime and owning agent.
+The recovery worker loads only the agents required by Task-enabled Apps. Both
+reuse the read models already published by the parent; they must not
+resynchronize every App at startup because those duplicate writes contend with
+the Event journal and can delay human-message durability.
+
+The worker is owned by that Runtime process. A private lifetime pipe closes
+when the parent exits, causing the worker to stop; normal recovery then
+continues the same Task. A worker from an old Runtime must never remain alive
+and write beside its replacement.
+
+Startup launches recovery after opening the interfaces, but does not await it
+before accepting human input. Task controllers open when that pass either
+finishes or yields to their bounded recovery checks. A recovery error is Task
+evidence to retry, not a reason to terminate the interface process.
 
 Resource-backed Tasks coordinate concurrent writers with their existing
 SQLite transaction and exact resource-version/generation/attempt fences. They

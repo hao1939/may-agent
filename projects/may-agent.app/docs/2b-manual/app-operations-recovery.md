@@ -10,12 +10,14 @@ Restart the daemon normally. Startup:
 1. loads and validates every `app.ts` into one immutable registry snapshot;
 2. prepares input routes and the task controller from that same snapshot;
 3. republishes the generation only after every consumer accepts it;
-4. repairs request correlation and runs bounded indexed recovery for ready,
-   changed, due, or expired tasks;
-5. interrupts stale task execution evidence and requeues the same Task through
+4. opens the human interfaces and App input handler;
+5. starts bounded indexed Task recovery in a parent-owned worker without
+   blocking those interfaces;
+6. interrupts stale task execution evidence and requeues the same Task through
    normal bounded Host capacity; it does not directly resume every old task
    session outside the dispatcher;
-6. attaches adapters, which independently resume bounded resource observation.
+7. starts Task controllers after recovery settles; later indexed checks retry
+   any failed recovery work.
 
 Do not recreate requests, task ticks, or Condition events merely because the
 process restarted.

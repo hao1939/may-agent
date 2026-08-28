@@ -270,13 +270,17 @@ inbox delivery API rather than becoming a current App contract.
 
 ## Recovery
 
-At startup the Host:
+After opening its interfaces, the Host starts an isolated recovery worker that:
 
 - releases or repairs stale claims and leases;
 - repairs request correlation and requeues runnable tasks;
 - preserves completed results and event-admission evidence;
 - resumes only compatible sessions that are not owned by a Task; and
 - leaves paused task work retained but unqueued.
+
+The interface process does not await this work. A recovery failure is logged
+and left to the bounded recovery checks; it must not terminate or stall the
+human interface. Task controllers start after the initial pass settles.
 
 For a resource-backed App, recovery is indexed insurance: one bounded startup
 query, one nearest-due timer, indexed expired-lease repair, and a bounded safety
