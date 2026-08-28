@@ -21,7 +21,7 @@ import { isBundled } from "./bundle-mode.js";
 import type { ModelRegistry } from "./model-registry.js";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
-const WORKER_RELAY_BATCH_SIZE = 16;
+const WORKER_RELAY_BATCH_SIZE = 1;
 const WORKER_RELAY_PAUSE_AT = 256;
 const WORKER_RELAY_RESUME_AT = 128;
 

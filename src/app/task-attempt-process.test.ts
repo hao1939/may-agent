@@ -70,8 +70,13 @@ describe("isolated Task attempt process", () => {
   it("yields between bounded batches of worker event notifications", async () => {
     const bus = new EventBus();
     let observed = 0;
+    let resolveAfterFirst!: (count: number) => void;
+    const afterFirst = new Promise<number>((resolve) => {
+      resolveAfterFirst = resolve;
+    });
     bus.subscribe(() => {
       observed += 1;
+      if (observed === 1) setTimeout(() => resolveAfterFirst(observed), 10);
       const until = Date.now() + 4;
       while (Date.now() < until) {}
     });
@@ -92,6 +97,7 @@ describe("isolated Task attempt process", () => {
     const attempt = execute(request);
 
     expect(await parentTurn).toBeLessThan(180);
+    expect(await afterFirst).toBeLessThan(16);
     await expect(attempt).resolves.toEqual([]);
     expect(observed).toBe(64);
   });
