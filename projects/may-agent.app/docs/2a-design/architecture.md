@@ -134,6 +134,10 @@ parent for local listeners and routes without a second append. A worker exit
 therefore loses neither the Task nor its durable Events, and CPU-heavy work
 cannot block interface commands or message admission.
 
+Startup Task repair runs through the same process boundary. The parent waits
+asynchronously, then refreshes its ready set from the bounded canonical index;
+it does not scan or repair the Task store on the interface event loop.
+
 One `HostCapacity` object limits task attempts. Each App may declare a smaller
 local limit. Request correlation and delivery do not run a second App worker.
 

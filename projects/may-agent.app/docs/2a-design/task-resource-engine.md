@@ -665,8 +665,10 @@ until that compatibility path is retired.
 
 Only scheduling and bounded readiness checks remain in the interface process.
 Task claim, context construction, execution, and result persistence belong to
-the worker process. Read-only interface queries remain independent and must
-meet their responsiveness budget while workers are active.
+the worker process. The startup repair pass uses the same process boundary;
+after it finishes, the parent performs only one bounded indexed readiness scan.
+Read-only interface queries remain independent and must meet their
+responsiveness budget while workers are active.
 
 ## Required invariants
 
