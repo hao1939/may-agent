@@ -70,8 +70,9 @@ export type AppInboxRuntime = {
   reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
 };
 
-// The Event turn persists a small admission plan; its commands run afterward,
-// one per event-loop turn. The same journal is also the recovery authority.
+// The Event turn persists a small admission plan. Canonical Task mutation runs
+// in one persistent worker; this process only records routes and exact wakes.
+// The Event journal remains the sole recovery authority.
 const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const ADMISSION_COMMAND_TURN_GAP_MS = 2;
@@ -100,6 +101,16 @@ export type StartAppInboxRuntimeOptions = {
     targetedTaskId?: string;
     conditionTaskIds?: string[];
   }) => DeliveryResult | undefined;
+  /** Persistent process boundary for canonical Task mutation after routing. */
+  createTaskAdmissionWorker?: () => {
+    dispatch(
+      command: AppEventAdmissionCommand,
+      event: AgentEvent,
+    ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
+    close(): void;
+  };
+  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[]; supersededSessionIds: string[] }) => void;
+  hasTaskTarget?: (input: { appId: string; taskId: string }) => boolean;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
   /** One event-type-first Condition lookup across all loaded Task Apps. */
   previewTaskEventRoutes?: (input: { event: AgentEvent }) => Array<{ appId: string; taskIds: string[] }>;
@@ -302,6 +313,7 @@ function addressedAgentMessage(event: AgentEvent):
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
+  let taskAdmissionWorker = options.createTaskAdmissionWorker?.();
   let registrySnapshot = options.registry.snapshot();
   let loaded = options.registry.entries();
   if (loaded.some((entry) => (entry.definition.observers?.length ?? 0) > 0) && !options.observerContext) {
@@ -331,8 +343,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     conversationUpdateHandle = setTimeout(() => {
       conversationUpdateHandle = null;
       const entry = pendingConversationUpdates.entries().next().value as
-        | [string, { appId: string; conversationId: string }]
-        | undefined;
+        [string, { appId: string; conversationId: string }] | undefined;
       if (!entry) return;
       const [key, update] = entry;
       pendingConversationUpdates.delete(key);
@@ -465,10 +476,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (!item.conversationId) {
         throw new Error(`App follow-up ${item.id} requires a Conversation`);
       }
-      const requestId = `appreq_${createHash("sha256")
-        .update(`${item.id}\0follow-up`)
-        .digest("hex")
-        .slice(0, 24)}`;
+      const requestId = `appreq_${createHash("sha256").update(`${item.id}\0follow-up`).digest("hex").slice(0, 24)}`;
       const target = loadedById.get(followUp.appId);
       if (!target?.definition.task || !target.definition.tasks) {
         throw new Error(`App follow-up targets non-Task App ${followUp.appId}`);
@@ -785,9 +793,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const recoverTaskDependencies = (): Promise<void> => {
     if (taskRecovery) return taskRecovery;
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
-      .then(() =>
-        closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies(),
-      )
+      .then(() => (closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies()))
       .then((outcome) => {
         for (const appId of outcome.wokenAppIds) schedule(appId);
         if (outcome.errors.length > 0) {
@@ -869,11 +875,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) ${note}`,
   });
 
-  const dispatchAdmissionCommand = (
+  const dispatchAdmissionCommand = async (
     plan: AppEventAdmissionPlan,
     command: AppEventAdmissionCommand,
     event: AgentEvent,
-  ): void => {
+  ): Promise<void> => {
     const identity = `event:${plan.eventId}`;
     try {
       const entry = loaded.find(({ definition }) => definition.id === command.appId);
@@ -901,16 +907,31 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!options.admitTaskEvent) {
           throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
         }
-        const delivery = options.admitTaskEvent({
-          appId: command.appId,
-          appDir: entry.appDir,
-          event,
-          intent: command.kind === "task" ? command.intent : null,
-          ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
-          conditionTaskIds: command.conditionTaskIds,
-        });
-        if (!delivery) {
-          throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+        if (command.kind !== "inbox" && taskAdmissionWorker) {
+          let admitted: { taskIds: string[]; supersededSessionIds: string[] };
+          try {
+            admitted = await taskAdmissionWorker.dispatch(command, event);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.startsWith("Task admission worker ") || message.startsWith("Invalid Task admission worker ")) {
+              taskAdmissionWorker.close();
+              taskAdmissionWorker = options.createTaskAdmissionWorker?.();
+            }
+            throw error;
+          }
+          options.wakeAdmittedTasks?.({ appId: command.appId, ...admitted });
+        } else {
+          const delivery = options.admitTaskEvent({
+            appId: command.appId,
+            appDir: entry.appDir,
+            event,
+            intent: command.kind === "task" ? command.intent : null,
+            ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
+            conditionTaskIds: command.conditionTaskIds,
+          });
+          if (!delivery) {
+            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+          }
         }
         if (String(event.type) === "app.follow-up.requested" && command.kind === "task" && command.intent) {
           const data = eventData(event);
@@ -960,6 +981,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const pendingAdmissionEvents = new Map<number, AgentEvent>();
   let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
+  let admissionDispatching = false;
 
   const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
     if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
@@ -969,38 +991,45 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
-  function dispatchNextAdmissionCommand(): void {
+  async function dispatchNextAdmissionCommand(): Promise<void> {
     admissionDispatchHandle = null;
-    if (closed) return;
+    if (closed || admissionDispatching) return;
     const next = pendingAdmissionEvents.entries().next().value as [number, AgentEvent] | undefined;
     if (!next) return;
     const [eventId, event] = next;
-    const plan = getAppEventAdmissionPlan(options.db, eventId);
+    admissionDispatching = true;
     let reschedule: AppEventAdmissionPlan | null = null;
-    if (plan?.status === "pending") {
-      const command = plan.commands.find((candidate) => candidate.status === "pending");
-      if (command) {
-        try {
-          dispatchAdmissionCommand(plan, command, event);
-        } catch {
-          // The durable command retains the error for bounded recovery. A
-          // failed handler must not prevent unrelated plans from advancing.
+    try {
+      const plan = getAppEventAdmissionPlan(options.db, eventId);
+      if (plan?.status === "pending") {
+        const command = plan.commands.find((candidate) => candidate.status === "pending");
+        if (command) {
+          try {
+            await dispatchAdmissionCommand(plan, command, event);
+          } catch {
+            // The durable command retains the error for bounded recovery. A
+            // failed handler must not prevent unrelated plans from advancing.
+          }
+        }
+        const updated = getAppEventAdmissionPlan(options.db, eventId);
+        if (updated?.status === "pending") {
+          const pendingCommands = updated.commands.filter((candidate) => candidate.status === "pending");
+          if (pendingCommands.length === 0) {
+            completeAppEventAdmissionPlan(options.db, eventId, now());
+          } else if (pendingCommands.some((candidate) => !candidate.lastError)) {
+            reschedule = updated;
+          }
         }
       }
-      const updated = getAppEventAdmissionPlan(options.db, eventId);
-      if (updated?.status === "pending") {
-        const pendingCommands = updated.commands.filter((candidate) => candidate.status === "pending");
-        if (pendingCommands.length === 0) {
-          completeAppEventAdmissionPlan(options.db, eventId, now());
-        } else if (pendingCommands.some((candidate) => !candidate.lastError)) {
-          reschedule = updated;
-        }
-      }
+    } catch {
+      // The journal remains authoritative; bounded recovery will retry a
+      // transient coordinator read without blocking other Event plans.
+    } finally {
+      // Keep the Event present while its command runs so nested Event delivery
+      // cannot schedule the same plan twice.
+      pendingAdmissionEvents.delete(eventId);
+      admissionDispatching = false;
     }
-    // Keep the Event present while its command runs so nested Event delivery
-    // cannot schedule the same plan twice. A multi-command plan is added back
-    // only after this turn has finished.
-    pendingAdmissionEvents.delete(eventId);
     if (reschedule) scheduleAdmissionDispatch(reschedule, event);
     if (pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
@@ -1011,13 +1040,38 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (plan.status === "superseded") {
       throw new Error(`Frozen App admission plan for event:${plan.eventId} is superseded`);
     }
-    // An explicit exact-Task command has one bounded destination and its
-    // publication contract promises that exact link already exists. Keep
-    // that validation inside the acceptance turn; broad Event fan-out is the
-    // asynchronous path below.
-    if (plan.status === "pending" && plan.commands.every((command) => command.kind === "exact-task")) {
+    if (
+      !taskAdmissionWorker &&
+      plan.status === "pending" &&
+      plan.commands.every((command) => command.kind === "exact-task")
+    ) {
       for (const command of plan.commands) {
-        if (command.status === "pending") dispatchAdmissionCommand(plan, command, event);
+        if (command.status !== "pending") continue;
+        try {
+          const entry = loaded.find(({ definition }) => definition.id === command.appId);
+          if (!entry || command.kind !== "exact-task" || !options.admitTaskEvent) {
+            throw new Error(`Canonical App ${command.appId} exact Task admission is unavailable`);
+          }
+          const delivery = options.admitTaskEvent({
+            appId: command.appId,
+            appDir: entry.appDir,
+            event,
+            intent: null,
+            targetedTaskId: command.targetedTaskId,
+            conditionTaskIds: command.conditionTaskIds,
+          });
+          if (!delivery)
+            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+          markAppEventAdmissionCommandAdmitted(options.db, { eventId: plan.eventId, appId: command.appId, now: now() });
+        } catch (error) {
+          recordAppEventAdmissionCommandFailure(options.db, {
+            eventId: plan.eventId,
+            appId: command.appId,
+            error,
+            now: now(),
+          });
+          throw error;
+        }
       }
       if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
         throw new Error(`Frozen App admission plan for event:${plan.eventId} still has pending commands`);
@@ -1292,12 +1346,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const summary = typeof data.summary === "string" ? data.summary.trim() : "";
         if (appId && taskId && !(appId === "may" && taskId === "conversation/follow-up")) {
           for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
-            emitConversationTaskChanged(link, { appId, taskId }, {
-              followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
-              disposition,
-              summary,
-              idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
-            });
+            emitConversationTaskChanged(
+              link,
+              { appId, taskId },
+              {
+                followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
+                disposition,
+                summary,
+                idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
+              },
+            );
           }
         }
         const conversationResult = record(record(data.result).conversation);
@@ -1425,6 +1483,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           if (!tasks) {
             throw new Error(
               `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability in registry generation ${routeGeneration}`,
+            );
+          }
+          if (
+            taskAdmissionWorker &&
+            options.hasTaskTarget &&
+            !options.hasTaskTarget({ appId: exactTarget.appId, taskId: exactTarget.taskId })
+          ) {
+            throw new Error(
+              `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} does not exist`,
             );
           }
           const conditionTaskIds =
@@ -1623,6 +1690,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           throw error;
         }
       }, projectsRoot);
+      taskAdmissionWorker?.close();
+      taskAdmissionWorker = options.createTaskAdmissionWorker?.();
       // App definitions may have made a previously unavailable frozen route
       // admissible. Retry one bounded slice immediately after the reload.
       recoverAdmissionPlans(true);
@@ -1641,6 +1710,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
       admissionDispatchHandle = null;
       pendingAdmissionEvents.clear();
+      taskAdmissionWorker?.close();
+      taskAdmissionWorker = undefined;
       if (conversationUpdateHandle) clearTimeout(conversationUpdateHandle);
       conversationUpdateHandle = null;
       pendingConversationUpdates.clear();

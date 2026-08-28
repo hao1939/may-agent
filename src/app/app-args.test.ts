@@ -73,4 +73,8 @@ describe("app args", () => {
   it("parses the private one-shot recovery worker", () => {
     expect(parseAppArgs(["may-agent", "--task-recovery-once"], {}).taskRecoveryWorker).toBe(true);
   });
+
+  it("parses the private persistent Task admission worker", () => {
+    expect(parseAppArgs(["bun", "may.ts", "--task-admission-worker"], {}).taskAdmissionWorker).toBeTrue();
+  });
 });

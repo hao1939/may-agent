@@ -1402,6 +1402,46 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("runs canonical Task mutation through the admission worker and only wakes the local controller", async () => {
+    const bus = persistentBus();
+    let localAdmissions = 0;
+    const workerAdmissions: string[] = [];
+    const wakes: string[] = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      hostCapacity: new HostCapacity(2),
+      admitTaskEvent: () => {
+        localAdmissions += 1;
+        return { accepted: true, by: "unexpected-local-task", route: "direct" };
+      },
+      createTaskAdmissionWorker: () => ({
+        async dispatch(command) {
+          workerAdmissions.push(command.routeId);
+          return { taskIds: [command.routeId], supersededSessionIds: [] };
+        },
+        close() {},
+      }),
+      wakeAdmittedTasks: ({ appId, taskIds }) => wakes.push(`${appId}:${taskIds.join(",")}`),
+      previewTaskEventRoutes: () => [],
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "project.task.tick",
+      source: "provider",
+      owner: "app:evaluation",
+      target: { appId: "evaluation", taskId: "existing-task" },
+      data: { project: "evaluation" },
+    });
+
+    await waitUntil(() => workerAdmissions.length === 1);
+    expect(localAdmissions).toBe(0);
+    expect(workerAdmissions).toEqual(["existing-task"]);
+    expect(wakes).toEqual(["evaluation:existing-task"]);
+  });
+
   it("keeps failed asynchronous admission durable and retries it through bounded recovery", async () => {
     const bus = persistentBus();
     let attempts = 0;
