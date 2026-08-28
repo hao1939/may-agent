@@ -173,7 +173,7 @@ describe("EventBus subscriber priority", () => {
 
     bus.emit({ type: "info", message: "test" });
     expect(persisted).toEqual(["info"]);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let turn = 0; turn < 2; turn++) await new Promise<void>((resolve) => setImmediate(resolve));
     expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
 
@@ -265,7 +265,7 @@ describe("EventBus subscriber priority", () => {
     expect(order).toEqual(["persist"]);
   });
 
-  it("does not let passive failure reporting change an accepted event when storage is full", () => {
+  it("does not let passive failure reporting change an accepted event when storage is full", async () => {
     const bus = new EventBus();
     const persisted: string[] = [];
     bus.setPersistenceSubscriber((event) => {
@@ -277,6 +277,8 @@ describe("EventBus subscriber priority", () => {
     });
 
     expect(() => bus.emit({ type: "info", message: "durable first" })).not.toThrow();
+    expect(persisted).toEqual(["info"]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
 
@@ -292,7 +294,7 @@ describe("EventBus subscriber priority", () => {
     });
 
     bus.emit({ type: "info", message: "accepted before observation" });
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let turn = 0; turn < 2; turn++) await new Promise<void>((resolve) => setImmediate(resolve));
 
     expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
@@ -313,7 +315,7 @@ describe("EventBus subscriber priority", () => {
     expect(observed[0]).toBe(emitted);
   });
 
-  it("emits a durable subscriber.failed signal after subscriber exceptions", () => {
+  it("emits a durable subscriber.failed signal after subscriber exceptions", async () => {
     const bus = new EventBus();
     const events: any[] = [];
 
@@ -323,6 +325,8 @@ describe("EventBus subscriber priority", () => {
     });
 
     bus.emit({ type: "info", message: "z" });
+    expect(events.map((event) => event.type)).toEqual(["info"]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
 
     expect(events.map((event) => event.type)).toEqual(["info", "subscriber.failed"]);
     expect(events[1]).toMatchObject({
