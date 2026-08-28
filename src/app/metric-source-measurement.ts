@@ -247,7 +247,7 @@ export async function measureSourceMetrics(options: {
       // boundary. Yield before the next metric so a large snapshot cannot keep
       // control traffic, including readiness, off the daemon event loop for the
       // duration of the complete metric collection.
-      await new Promise<void>((resolve) => setImmediate(resolve));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }
 
@@ -378,7 +378,7 @@ export function attachMetricSourceMeasurement(options: {
     // Calling an async function does not defer its synchronous prefix. Start
     // on the next event-loop turn so opening the DB and discovering sources
     // can never extend EventBus.emit()/EventInterface.publish() latency.
-    drain = new Promise<void>((resolve) => setImmediate(resolve))
+    drain = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         while (pending) {
           const current = pending;
@@ -423,7 +423,7 @@ export function attachMetricSourceMeasurement(options: {
     async idle() {
       // Let the EventBus listener consume a just-published wake before
       // inspecting the measurement drain.
-      await new Promise<void>((resolve) => setImmediate(resolve));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       while (drain) await drain;
     },
   };
