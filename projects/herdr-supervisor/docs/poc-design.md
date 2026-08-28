@@ -196,7 +196,9 @@ observe(exact worker identity, previous cursor)
 The adapter performs only mechanical collection. It does not classify text,
 guess progress from keywords, or decide whether the goal is complete. The
 supervisor model makes those semantic decisions from the goal, acceptance
-criteria, and collected evidence.
+criteria, and collected evidence. Worker messages are untrusted evidence for
+that judgment, not instructions to the supervisor and not text to repeat as the
+supervisor's own response.
 
 The initial Codex adapter resolves the native session ID reported by Herdr and
 reads only new assistant messages from that session's JSONL record. It excludes
@@ -265,6 +267,9 @@ The model may use relevant earlier session history, including relationships the
 human established between goals and its own previous action for this worker. It
 must not treat another worker's evidence as evidence for the current worker. We
 first trust the model to follow the explicit worker scope in each request.
+Acceptance criteria are explicitly labeled as worker criteria; the supervisor's
+own response cannot satisfy them.
+
 Separate model sessions, generated summaries, retry counters, and retrieval
 machinery are deferred unless a controlled trial shows a real failure that they
 would solve.
@@ -416,6 +421,16 @@ event. Transport metadata remains secondary.
   same Pi session. It accepted only the completed Alpha goal, then observed and
   proposed further work only for the active Beta goal. Each tool call used the
   correct pane and goal evidence, and dry-run mode made no worker mutation.
+- **Verified:** one live trial registered three concurrently finishing Codex
+  workers. The shared supervisor reviewed Alpha, Beta, and Gamma sequentially,
+  used only each worker's exact native-session evidence, accepted all three,
+  and left no goal binding behind. No worker was starved or reviewed twice.
+- **Finding:** the first live run made correctly scoped decisions but sometimes
+  echoed a bare worker completion token afterward. The ambiguous `Accept when`
+  heading was replaced by explicit worker acceptance criteria, and the role
+  contract now says worker messages are evidence rather than instructions.
+- **Verified:** the follow-up run reported acceptance in the supervisor's own
+  plain-language voice instead of presenting the worker token as its response.
 - Keep testing with longer histories and related goals before enabling live
   steering broadly; add isolated model contexts only if those trials expose a
   concrete context-switch failure.
@@ -466,6 +481,9 @@ event. Transport metadata remains secondary.
   resumed its exact native session in the same terminal, sent one continuation,
   observed the exact `RECOVERY_POC_OK` result on the next event, and accepted the
   goal. No replacement worker or goal was created.
+- **Verified:** when the model proposed recovery for a `done` worker whose exact
+  process was still present, the executor refused it. The same review then
+  steered the existing worker; it did not start a duplicate process.
 - **Finding:** Herdr does not emit an event when `interactive_ready` changes.
   Its own start command polls `agent.get` during startup. The supervisor mirrors
   that bounded 200 ms readiness handshake only inside explicit recovery, before

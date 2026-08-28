@@ -164,8 +164,9 @@ test("review notice explains the goal and signal in plain language", () => {
   assert.match(message, /Worker review · codex w1:p2/);
   assert.match(message, /Goal\n  Fix cancellation/);
   assert.match(message, /Why review now\n  worker is idle; Herdr reports idle/);
-  assert.match(message, /Accept when\n- focused test passes/);
+  assert.match(message, /Worker acceptance criteria\n- focused test passes/);
   assert.match(message, /Observe this exact worker/);
+  assert.match(message, /Your own response is not worker evidence/);
   assert.doesNotMatch(message, /supervisor_observe/);
 });
 

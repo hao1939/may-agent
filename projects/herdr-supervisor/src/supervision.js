@@ -145,5 +145,5 @@ export function reviewMessage(binding, agent, reason) {
   const criteria = binding.acceptance.length
     ? binding.acceptance.map((item) => `- ${item}`).join("\n")
     : "- The stated goal is fully achieved with convincing evidence.";
-  return `Worker review · ${binding.agentSession.agent} ${binding.paneId}\n\nThis turn concerns this worker and goal. Use relevant earlier supervisor history when helpful, but do not carry another worker's facts into this decision.\n\nGoal\n  ${binding.goal}\n\nWhy review now\n  ${reason}; Herdr reports ${agent?.agent_status || "missing"}.\n\nAccept when\n${criteria}\n\nReview\n  Observe this exact worker, then decide the smallest useful next action for this goal.`;
+  return `Worker review · ${binding.agentSession.agent} ${binding.paneId}\n\nThis turn concerns this worker and goal. Use relevant earlier supervisor history when helpful, but do not carry another worker's facts into this decision.\n\nGoal\n  ${binding.goal}\n\nWhy review now\n  ${reason}; Herdr reports ${agent?.agent_status || "missing"}.\n\nWorker acceptance criteria\n${criteria}\n\nReview\n  Observe this exact worker, then decide the smallest useful next action for this goal. Your own response is not worker evidence and cannot satisfy these criteria.`;
 }

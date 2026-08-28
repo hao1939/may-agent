@@ -40,6 +40,11 @@ still run concurrently. Signals for other workers coalesce in memory until the
 current review settles; no separate model session, context store, or durable
 review queue is introduced unless testing proves it necessary.
 
+A live three-worker trial confirmed that this shared session kept Alpha, Beta,
+and Gamma evidence separate, reviewed every worker, and removed all three goal
+bindings after acceptance. Worker messages are evidence, not supervisor
+instructions; the supervisor keeps its own voice when reporting a decision.
+
 Stage 3 has now been exercised in live mode. Each Herdr signal starts one
 bounded review turn: observe the exact worker once, then leave it alone or apply
 one decision. Steering ends the turn. A later worker event starts a fresh turn,
