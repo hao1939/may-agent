@@ -1,6 +1,6 @@
 # Proof-of-concept design
 
-**Status:** Proposed
+**Status:** Stage 1 implemented
 **Date:** 2026-08-28
 
 ## 1. Purpose
@@ -75,15 +75,16 @@ existing worker identity.
 
 ## 5. Initial deployment
 
-The first supervisor is one Pi session in a normal Herdr pane.
+The first supervisor is one Pi session in a normal Herdr pane. Its small
+extension connects directly to Herdr's local socket for snapshots, lifecycle
+events, bounded reads, and identity-fenced prompts. This is enough on the
+installed Herdr 0.8.0 protocol, so Bellwether is not a required dependency.
+It remains useful prior art and may be reconsidered only if later stages reveal
+a capability that the direct contract cannot provide simply.
 
-Pi is selected because Pi Bellwether already supplies direct Herdr tools and
-non-blocking event watches that can wake the same Pi session. The supervisor's
-model is configurable. Workers can use any agent Herdr can observe.
-
-The PoC should be implemented as a small Pi extension that uses Bellwether. An
-optional Herdr plugin may later display supervisor metadata, but it must not
-own reasoning or duplicate the watch loop.
+The supervisor's model is configurable. Workers can use any agent Herdr can
+observe. An optional Herdr plugin may later display supervisor metadata, but it
+must not own reasoning or duplicate the watch loop.
 
 No standalone daemon is required for the first PoC. The Pi session is the
 long-lived supervisor; its watches are dormant while workers run.
@@ -151,7 +152,7 @@ Herdr event or stale deadline
 | `blocked`                                | Review immediately and determine whether the worker or human can answer |
 | `idle` or Herdr `done`                   | Review the result; never assume goal completion                         |
 | Structured result marker                 | Review the reported evidence immediately                                |
-| `pane.exited` or Bellwether `targetGone` | Review identity and choose conservative recovery                        |
+| `pane.exited`                            | Review identity and choose conservative recovery                        |
 | Stale deadline                           | Inspect current evidence before deciding whether to steer               |
 | Human message                            | Review immediately with the new authority or information                |
 
@@ -258,7 +259,15 @@ an event may have been missed or delayed.
 
 ## 14. Safety
 
-The PoC starts in observe-only mode, followed by dry-run mode.
+The same extension has three explicit authority modes:
+
+- `observe` displays meaningful signals but starts no model turn and cannot
+  mutate a worker;
+- `dry-run` wakes the model and displays its proposed action but cannot mutate
+  a worker or accept a goal;
+- `live` may prompt an identity-matching registered worker and accept its goal.
+
+The PoC starts in `observe`, followed by `dry-run`.
 
 Live mode permits only:
 
@@ -297,10 +306,12 @@ event. Transport metadata remains secondary.
 
 ### Stage 1: passive observation
 
-- Register two existing workers.
-- Arm event-driven watches.
-- Show current state and meaningful transitions.
-- Confirm no model calls occur for ordinary working output.
+- **Implemented:** register existing workers and update one binding per pane.
+- **Implemented:** arm non-blocking Herdr lifecycle subscriptions.
+- **Implemented:** show fresh state and meaningful transitions.
+- **Implemented:** exact terminal and native agent-session identity fencing.
+- **Verified:** passive mode starts no model calls and performs no worker
+  mutation.
 
 ### Stage 2: dry-run supervision
 
@@ -347,8 +358,29 @@ The PoC is successful when all of these are demonstrated:
 - What stale interval catches real stalls without nagging healthy workers?
 - Can one Pi supervisor remain understandable with five workers, or should the
   experiment remain intentionally smaller?
-- Is Bellwether's public surface sufficient, or should a narrowly scoped
-  capability be contributed upstream?
+- Does a later stage prove Bellwether's crash probe or watch lifecycle is worth
+  adding instead of retaining the direct Herdr subscription?
+
+## 19. Stage 1 findings
+
+- The installed runtime is Herdr 0.8.0 using protocol 19. Its direct socket API
+  already provides every Stage 1 capability and the later bounded prompt path.
+- Lifecycle subscription messages do not carry `state_change_seq`. The
+  extension therefore treats an event only as a wakeup and immediately reads a
+  fresh snapshot for the authoritative sequence, status, and identity.
+- Pi Bellwether is not installed locally. Making it mandatory would add setup
+  and another compatibility boundary without improving this slice.
+- A standalone CLI is useful for inspecting workers and preparing bindings,
+  but the Pi extension owns active subscriptions. A binding added externally
+  is picked up when the extension starts or reloads; dynamic cross-process
+  binding notification is intentionally deferred until a real use case proves
+  it necessary.
+- Stage 1 deliberately has no stale timer. Lifecycle events are sufficient to
+  validate identity, event wakeups, and quiet working behavior first. The
+  single nearest-deadline timer belongs in Stage 2.
+- A live passive smoke test bound an idle Codex pane, loaded the Pi extension,
+  emitted one review notice, and left the worker on the same Herdr state and
+  `state_change_seq`. This confirms the observe path does not prompt the worker.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

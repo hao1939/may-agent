@@ -13,16 +13,46 @@ The intended behavior is simple:
    steers the same worker, asks the human, recovers the worker, or accepts the
    result.
 
-The first proof of concept will use Pi as the supervisor because the existing
-[Pi Bellwether](https://github.com/joelhooks/pi-bellwether) package already
-provides direct, event-driven Herdr watches and wakeups. Workers remain ordinary
-Herdr agents and may use Codex, Claude Code, Pi, OpenCode, or another supported
-CLI.
+The proof of concept uses one Pi session as the supervisor and talks directly
+to Herdr's local socket. Workers remain ordinary Herdr agents and may use Codex,
+Claude Code, Pi, OpenCode, or another supported CLI.
 
 ## Current status
 
-Design only. No runtime, dependency, or live Herdr configuration has been
-added yet.
+Stage 1 is implemented. It can bind goals to existing workers, show their live
+state, fence worker identity, and observe lifecycle transitions without model
+calls or worker mutation.
+
+## Try it
+
+List the workers Herdr currently knows:
+
+```sh
+node bin/herdr-supervisor.js workers
+```
+
+Start Pi with the extension in passive mode:
+
+```sh
+pi -e /app/projects/herdr-supervisor/extension.ts --supervisor-mode observe
+```
+
+Inside Pi, use `/supervise <pane> <goal>` and `/supervised`, or ask the agent to
+supervise a worker with explicit acceptance criteria. Passive mode displays
+meaningful lifecycle signals but never starts a model turn or prompts a worker.
+
+After passive behavior is verified, use `--supervisor-mode dry-run` to let the
+supervisor model review events without applying its decisions. `live` is the
+only mode that may prompt a registered worker.
+
+The standalone CLI can also register a binding before Pi starts:
+
+```sh
+node bin/herdr-supervisor.js register w1:p2 \
+  --goal "Fix request cancellation" \
+  --accept "The focused test passes"
+node bin/herdr-supervisor.js status
+```
 
 ## Documents
 

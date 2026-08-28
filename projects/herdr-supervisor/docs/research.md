@@ -19,11 +19,12 @@ tmux, captures terminal text, and applies status heuristics. Herdr already
 provides better event and identity primitives, so that mechanism should not be
 copied.
 
-The strongest Herdr-native foundation is Pi Bellwether. It provides direct
-Herdr control, non-blocking watches, one-time Pi wakeups, exact watch
-lifecycles, and lightweight crash detection. It deliberately does not own
-durable workflow meaning. That missing semantic layer is the small component
-this project should test.
+The strongest Herdr-native prior art is Pi Bellwether. It provides direct Herdr
+control, non-blocking watches, one-time Pi wakeups, exact watch lifecycles, and
+lightweight crash detection. It deliberately does not own durable workflow
+meaning. The installed Herdr 0.8.0 socket already exposes the smaller set of
+primitives needed by this PoC, and Bellwether is not installed locally, so the
+first implementation uses the direct contract without adding a dependency.
 
 ## Herdr itself
 
@@ -88,8 +89,10 @@ What it does not provide:
 - a policy for steering, human escalation, recovery, or completion;
 - a durable multi-worker supervisor view.
 
-Decision: use its public behavior as the PoC foundation. Do not fork its Herdr
-client or reimplement watches unless integration proves impossible.
+Decision: use its public behavior as prior art, but keep the PoC on Herdr's
+direct socket while that remains smaller. Reconsider Bellwether only if later
+stages need its output matching, crash probe, or watch lifecycle as a cohesive
+public capability.
 
 ### Shepherd
 

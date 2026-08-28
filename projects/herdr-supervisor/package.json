@@ -1,0 +1,16 @@
+{
+  "name": "herdr-supervisor-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "herdr-supervisor": "bin/herdr-supervisor.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check bin/herdr-supervisor.js && node --check src/herdr-client.js && node --check src/store.js && node --check src/supervision.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
