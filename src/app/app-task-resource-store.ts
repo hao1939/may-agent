@@ -538,21 +538,31 @@ export class AppTaskResourceStore {
   /** One event-type-first lookup across all resource-backed Apps. */
   readConditionRoutesForAllApps(
     eventType: string,
+    subjects?: readonly string[],
   ): Array<{ appId: string; condition: AppTaskCondition; taskIds: string[] }> {
+    const exactSubjects = subjects ? [...new Set(subjects.map((value) => value.trim()).filter(Boolean))] : undefined;
+    if (exactSubjects?.length === 0) return [];
     const rows = this.db
       .prepare(
         `SELECT c.app_id, c.condition_id, c.condition_json, linked.task_id
-         FROM app_task_conditions c INDEXED BY idx_app_task_conditions_type_app
+         FROM app_task_conditions c INDEXED BY ${
+           exactSubjects ? "idx_app_task_conditions_type_subject_app" : "idx_app_task_conditions_type_app"
+         }
          JOIN app_task_condition_routes linked
            ON linked.app_id = c.app_id AND linked.condition_id = c.condition_id
          JOIN app_tasks task
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE json_extract(c.condition_json, '$.spec.type') = ?
+           ${
+             exactSubjects
+               ? `AND json_extract(c.condition_json, '$.spec.subject') IN (${exactSubjects.map(() => "?").join(", ")})`
+               : ""
+           }
            AND c.state <> 'true'
            AND task.phase IN ('waiting', 'running')
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )
-      .all(eventType) as Array<{
+      .all(eventType, ...(exactSubjects ?? [])) as Array<{
       app_id?: string;
       condition_id?: string;
       condition_json?: string;
