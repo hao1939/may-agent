@@ -129,6 +129,14 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     void drainSignals();
   }
 
+  async function reconsiderCurrentBindings() {
+    const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
+    for (const binding of state.workers) {
+      const decision = shouldWake(binding, findAgent(snapshot, binding.paneId));
+      if (decision.wake && binding.lastNoticeKey !== decision.key) handleSignal(binding.paneId);
+    }
+  }
+
   async function drainSignals() {
     if (shuttingDown || reviewPumpRunning || activeReviewPane) return;
     reviewPumpRunning = true;
@@ -219,8 +227,11 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         reconnectTimer.unref?.();
         reconnectDelay = Math.min(reconnectDelay * 2, 5000);
       },
+      () => {
+        reconnectDelay = 250;
+        void reconsiderCurrentBindings().catch(() => armReviewTimer());
+      },
     );
-    reconnectDelay = 250;
   }
 
   async function register(paneId: string, goal: string, acceptance: string[]) {
@@ -417,12 +428,6 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     await armReviewTimer();
     const state = await loadState();
     ctx.ui.setStatus("herdr-supervisor", state.workers.length ? `supervising ${state.workers.length}` : undefined);
-    const snapshot = await client.snapshot();
-    for (const binding of state.workers) {
-      const agent = findAgent(snapshot, binding.paneId);
-      const decision = shouldWake(binding, agent);
-      if (decision.wake && binding.lastNoticeKey !== decision.key) void handleSignal(binding.paneId);
-    }
   });
 
   pi.on("agent_settled", async () => {

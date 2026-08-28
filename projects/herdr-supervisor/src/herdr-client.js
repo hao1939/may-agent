@@ -73,11 +73,12 @@ export class HerdrClient {
     return this.request("agent.prompt", { target: paneId, text });
   }
 
-  subscribe(subscriptions, onEvent, onDisconnect = () => {}) {
+  subscribe(subscriptions, onEvent, onDisconnect = () => {}, onReady = () => {}) {
     const id = `herdr-supervisor:subscribe:${process.pid}:${++this.nextId}`;
     let buffer = "";
     let stopped = false;
     let disconnected = false;
+    let ready = false;
     const socket = net.createConnection(this.socketPath);
     const disconnect = (error) => {
       if (stopped || disconnected) return;
@@ -100,6 +101,10 @@ export class HerdrClient {
         try { message = JSON.parse(line); } catch { continue; }
         if (message.id === id) {
           if (message.error) disconnect(responseError(message));
+          else if (!ready) {
+            ready = true;
+            onReady();
+          }
         } else if (message.event) {
           onEvent(message);
         }

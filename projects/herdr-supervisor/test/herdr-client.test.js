@@ -35,6 +35,9 @@ test("request correlates a newline-delimited Herdr response", async () => {
 test("subscription returns immediately and forwards events", async () => {
   let eventResolve;
   const received = new Promise((resolve) => { eventResolve = resolve; });
+  let readyResolve;
+  const ready = new Promise((resolve) => { readyResolve = resolve; });
+  let readyCount = 0;
   const fake = await fakeHerdr((request, socket) => {
     socket.write(`${JSON.stringify({ id: request.id, result: { type: "subscription_started" } })}\n`);
     socket.write(`${JSON.stringify({ event: "pane.agent_status_changed", data: { pane_id: "w1:p2", agent_status: "idle" } })}\n`);
@@ -43,9 +46,38 @@ test("subscription returns immediately and forwards events", async () => {
   const stop = client.subscribe(
     [{ type: "pane.agent_status_changed", pane_id: "w1:p2" }],
     eventResolve,
+    undefined,
+    () => {
+      readyCount += 1;
+      readyResolve();
+    },
   );
   try {
+    await ready;
+    assert.equal(readyCount, 1);
     assert.equal((await received).data.agent_status, "idle");
+  } finally {
+    stop();
+    await fake.close();
+  }
+});
+
+test("subscription reports one disconnect after it was ready", async () => {
+  let disconnectResolve;
+  const disconnected = new Promise((resolve) => { disconnectResolve = resolve; });
+  const fake = await fakeHerdr((request, socket) => {
+    socket.write(`${JSON.stringify({ id: request.id, result: { type: "subscription_started" } })}\n`);
+    socket.end();
+  });
+  const client = new HerdrClient({ socketPath: fake.socketPath });
+  let disconnectCount = 0;
+  const stop = client.subscribe([], () => {}, () => {
+    disconnectCount += 1;
+    disconnectResolve();
+  });
+  try {
+    await disconnected;
+    assert.equal(disconnectCount, 1);
   } finally {
     stop();
     await fake.close();

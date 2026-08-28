@@ -437,6 +437,9 @@ event. Transport metadata remains secondary.
 ### Stage 4: acceptance and recovery
 
 - **Implemented:** permit evidence-backed `accept`.
+- **Implemented:** treat the subscription acknowledgement as the reconnect
+  boundary, then reset retry backoff and reread current Herdr state so a
+  transition during the disconnect is not lost until the stale deadline.
 - **Verified:** the worker's later idle event began a new review turn; the
   supervisor observed the new byte-exact output once and accepted the binding.
   The first turn contained exactly observe/steer, and the second exactly
@@ -450,6 +453,9 @@ event. Transport metadata remains secondary.
   exposed that the turn fence did not count a verified mismatch as collected
   evidence; the minimal correction now permits a safe human question or
   evidence-backed stop without exposing replacement output.
+- **Verified:** the socket fixture reports readiness once and reports a dropped
+  ready subscription once. A shared-server restart is intentionally not used as
+  a PoC test because it would disrupt unrelated live workers.
 - Test reconnect and conservative process recovery.
 - Decide from evidence whether Shepherd or any additional component is needed.
 
