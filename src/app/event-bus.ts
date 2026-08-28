@@ -1269,7 +1269,7 @@ export class EventBus {
       state.pending.push(event);
       if (state.scheduled) continue;
       state.scheduled = true;
-      setImmediate(() => void this.drainListenerEvents(state));
+      setTimeout(() => void this.drainListenerEvents(state), 0);
     }
   }
 
@@ -1304,7 +1304,7 @@ export class EventBus {
       }
     }
     if (state.active && state.pending.length > 0) {
-      setImmediate(() => void this.drainListenerEvents(state));
+      setTimeout(() => void this.drainListenerEvents(state), 0);
     } else {
       state.scheduled = false;
     }
@@ -1351,7 +1351,7 @@ export class EventBus {
   private flushFailureEvents(): void {
     if (this.reportingFailures || this.failureFlushScheduled || this.pendingFailureEvents.length === 0) return;
     this.failureFlushScheduled = true;
-    setImmediate(() => {
+    setTimeout(() => {
       this.failureFlushScheduled = false;
       if (this.reportingFailures) return;
       const failure = this.pendingFailureEvents.shift();
@@ -1374,7 +1374,7 @@ export class EventBus {
         this.reportingFailures = false;
         this.flushFailureEvents();
       }
-    });
+    }, 0);
   }
 }
 

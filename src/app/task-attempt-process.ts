@@ -52,10 +52,10 @@ function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
     scheduler!.pending.shift()?.();
     if (scheduler!.pending.length > 0) {
       scheduler!.scheduled = true;
-      setImmediate(drainOne);
+      setTimeout(drainOne, 0);
     }
   };
-  setImmediate(drainOne);
+  setTimeout(drainOne, 0);
 }
 
 type WorkerEventFrame = { kind: "event"; eventId: number; event: AgentEvent };
