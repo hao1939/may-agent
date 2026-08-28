@@ -46,14 +46,16 @@ describe("Herdr web terminal", () => {
     expect(nginx).toContain("listen 8080;");
     expect(nginx).toContain("absolute_redirect off;");
     expect(nginx).toContain("location /terminal/");
-    expect(nginx).toContain("proxy_pass http://127.0.0.1:7681;");
+    expect(nginx).toContain("proxy_pass http://unix:/tmp/may-agent-ttyd.sock;");
     expect(nginx).toContain("proxy_pass http://127.0.0.1:8081;");
     expect(nginx).toContain("proxy_set_header Upgrade $http_upgrade;");
-    expect(supervisor).toContain("--interface 127.0.0.1 --port 7681");
+    expect(supervisor).toContain("--interface /tmp/may-agent-ttyd.sock");
+    expect(supervisor).not.toContain("--port 7681");
     expect(supervisor).toContain('WEB_PORT="8081"');
     expect(compose).not.toContain("TERMINAL_PORT");
     expect(compose).not.toContain(":7681");
     expect(dockerfile).not.toContain("EXPOSE 7681");
+    expect(nginx).not.toContain("127.0.0.1:7681");
   });
 
   test("does not load the retired browser terminal stack", () => {
