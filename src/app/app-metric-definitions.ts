@@ -1,4 +1,5 @@
 import type { AppDefinition, MetricDefinition } from "@may-agent/sdk";
+import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
 import type { MetricService } from "../lib/metrics.js";
 
 export type AppMetricDefinitionEntry = {
@@ -18,7 +19,7 @@ export function syncAppMetricDefinitions(
         owner: declared.owner ?? defaultOwner,
         project: declared.project ?? definition.id,
       };
-      metrics.define(metric);
+      withSqliteBusyRetry(`sync App metric definition '${metric.id}'`, () => metrics.define(metric));
     }
   }
 }
