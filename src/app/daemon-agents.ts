@@ -32,6 +32,7 @@ export async function prepareDaemonAgents(opts: {
   /** Controllers in the daemon, descriptor-only setup in an attempt worker, or no Task runtime. */
   taskRuntimeMode?: "controllers" | "manual" | "none";
   executeTaskAttempt?: AppTaskRuntimeOptions["executeAttempt"];
+  executeTaskRecovery?: AppTaskRuntimeOptions["executeRecovery"];
 }): Promise<{
   loaderOpts: AgentLoaderOptions;
   appTaskOptions?: AppTaskRuntimeOptions;
@@ -169,6 +170,7 @@ export async function prepareDaemonAgents(opts: {
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
       ...(opts.executeTaskAttempt ? { executeAttempt: opts.executeTaskAttempt } : {}),
+      ...(opts.executeTaskRecovery ? { executeRecovery: opts.executeTaskRecovery } : {}),
       installControllers: taskRuntimeMode === "controllers",
       executors: {
         "codex-goal": codexGoalExecutor,

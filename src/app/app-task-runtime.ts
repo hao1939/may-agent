@@ -252,6 +252,8 @@ export interface AppTaskRuntimeOptions {
    * The canonical Task resource remains the scheduling and fencing authority.
    */
   executeAttempt?: (input: { appId: string; taskId: string; dispatch: AppTaskDispatch }) => Promise<string[]>;
+  /** Optional process boundary for the startup repair pass. */
+  executeRecovery?: () => Promise<void>;
   /** Install descriptors and routing without starting local controllers. */
   installControllers?: boolean;
   /** Optional host adapters selected by Task intent. Built-ins remain replaceable. */
@@ -4613,6 +4615,11 @@ function recoverInterruptedAppTasks(
 export async function recoverInstalledAppTasks(bus: EventBus): Promise<void> {
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
+  if (opts.executeRecovery) {
+    await opts.executeRecovery();
+    for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
+    return;
+  }
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);

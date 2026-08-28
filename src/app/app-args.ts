@@ -26,6 +26,8 @@ export interface AppArgs {
   envParentAgent?: string;
   /** Private parent-to-child payload for one isolated Task attempt. */
   taskWorkerRequest?: string;
+  /** Private one-shot Task recovery worker. */
+  taskRecoveryWorker: boolean;
 }
 
 export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessEnv = process.env): AppArgs {
@@ -45,6 +47,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const interfaceAgent = parseInterfaceAgent(argv, env);
   const taskWorkerIndex = argv.indexOf("--task-worker-once");
   const taskWorkerRequest = taskWorkerIndex >= 0 ? argv[taskWorkerIndex + 1] : undefined;
+  const taskRecoveryWorker = argv.includes("--task-recovery-once");
   if (taskWorkerIndex >= 0 && !taskWorkerRequest) {
     throw new Error("--task-worker-once requires one request payload");
   }
@@ -81,6 +84,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     envParentSessionId: env.PARENT_SESSION_ID || undefined,
     envParentAgent: env.PARENT_AGENT || undefined,
     ...(taskWorkerRequest ? { taskWorkerRequest } : {}),
+    taskRecoveryWorker,
   };
 }
 

@@ -38,7 +38,7 @@ import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
-import { createTaskAttemptProcessExecutor } from "./task-attempt-process.js";
+import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
 import { prepareAgentGeneration } from "./agent-loader.js";
 
 export function createAppInputAdmission(options: {
@@ -234,6 +234,7 @@ export async function runAppRuntime(opts: {
     appRegistry,
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({ bus }),
+    executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus }),
   });
   markStartupPhase("agents-and-tasks");
 
