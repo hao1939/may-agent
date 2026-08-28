@@ -76,7 +76,7 @@ need to know that Herdr or a supervisor exists.
 
 ## 5. Initial deployment
 
-The first supervisor is one Pi session in a normal Herdr pane. Its small
+The first supervisor is one persistent Pi session in a normal Herdr pane. Its small
 extension connects directly to Herdr's local socket for snapshots, lifecycle
 events, bounded reads, and identity-fenced prompts. This is enough on the
 installed Herdr 0.8.0 protocol, so Bellwether is not a required dependency.
@@ -87,8 +87,9 @@ The supervisor's model is configurable. Workers can use any agent Herdr can
 observe. An optional Herdr plugin may later display supervisor metadata, but it
 must not own reasoning or duplicate the watch loop.
 
-No standalone daemon is required for the first PoC. The Pi session is the
-long-lived supervisor; its watches are dormant while workers run.
+No standalone daemon is required for the first PoC. The Pi session is both the
+human-facing supervisor conversation and its long-lived judgment context; its
+watches are dormant while workers run.
 
 ## 6. Minimal durable state
 
@@ -227,9 +228,15 @@ The executor contains no keyword router for these judgments. It validates the
 shape, authority, identity, cooldown, and evidence requirements, then performs
 the selected operation.
 
-## 10. Context supplied to the model
+## 10. Shared supervisor context
 
-Only one registered worker is reviewed per model call. Context includes:
+The PoC deliberately uses one persistent supervisor session. Each review is a
+new, self-contained request inside that session. The model retains the useful
+history of the overall supervision conversation while the new request clearly
+re-establishes which worker and goal it must judge.
+
+Only one registered worker is the subject of a review turn. Its request
+includes:
 
 - goal and acceptance criteria;
 - exact current Herdr identity and state;
@@ -240,18 +247,31 @@ Only one registered worker is reviewed per model call. Context includes:
 - new human steering, if any;
 - allowed decisions and safety limits.
 
-Do not dump all workers or full transcripts into every call. Cross-worker
-context is included only when the human explicitly made the goals related.
+The model may use relevant earlier session history, including relationships the
+human established between goals. It must not treat another worker's evidence as
+evidence for the current worker. We first trust the model to follow the explicit
+worker scope in each request. Separate model sessions, generated summaries, and
+retrieval machinery are deferred unless a controlled multi-worker trial shows
+real context confusion or context growth that Pi's normal compaction cannot
+handle.
 
 ## 11. Concurrency and coalescing
 
-- At most one supervisor review runs for a worker.
-- Different workers may be reviewed independently.
-- Events received during a review collapse to the greatest observed Herdr
-  sequence and cause at most one follow-up review.
+- Workers run concurrently, while the one supervisor session makes one semantic
+  judgment at a time.
+- Each worker has at most one pending review signal. Repeated signals coalesce;
+  the eventual review always rereads authoritative Herdr state.
+- Pending workers are reviewed in first-observed order, so a noisy worker cannot
+  continually displace another worker.
+- Events received during a worker review cause at most one later review of that
+  worker.
 - Repeated identical actions are suppressed with a fingerprint and cooldown.
 - No durable work queue is introduced. On restart, a fresh Herdr snapshot plus
   the saved sequence checkpoints reconstructs what needs review.
+
+The small in-memory set of workers needing reconsideration is coordination for
+the shared model session, not another work queue. Human commands and Herdr
+workers remain responsive while the model reviews one worker.
 
 ## 12. Stale progress
 
@@ -364,6 +384,22 @@ event. Transport metadata remains secondary.
 - **Verified:** a short-interval test exposed and fixed overlapping review
   wakeups; signals now coalesce while a worker review is in flight.
 
+### Stage 2c: shared-session context switching
+
+- **Implemented:** one persistent Pi session serializes semantic reviews while
+  workers continue concurrently.
+- **Implemented:** every review request restates the exact worker, goal,
+  acceptance criteria, trigger, and next review operation.
+- **Implemented:** signals for other workers coalesce in a fair in-memory set
+  until the current model turn settles.
+- **Verified:** one controlled dry-run reviewed two distinct Codex panes in the
+  same Pi session. It accepted only the completed Alpha goal, then observed and
+  proposed further work only for the active Beta goal. Each tool call used the
+  correct pane and goal evidence, and dry-run mode made no worker mutation.
+- Keep testing with longer histories and related goals before enabling live
+  steering broadly; add isolated model contexts only if those trials expose a
+  concrete context-switch failure.
+
 ### Stage 3: bounded live steering
 
 - Permit `leave`, one-message `steer`, and `ask_human`.
@@ -393,6 +429,8 @@ The PoC is successful when all of these are demonstrated:
 9. Herdr remains the sole source of live worker state.
 10. With no due registered goal, idle operation performs no LLM call and no
     global terminal scan.
+11. Sequential reviews of two different workers remain correctly scoped while
+    useful shared supervisor history remains available.
 
 ## 18. Questions the PoC must answer
 
@@ -402,8 +440,9 @@ The PoC is successful when all of these are demonstrated:
 - Are ordinary native assistant messages sufficient evidence across worker
   agents, or does one agent need a richer mechanical adapter?
 - What stale interval catches real stalls without nagging healthy workers?
-- Can one Pi supervisor remain understandable with five workers, or should the
-  experiment remain intentionally smaller?
+- Can one persistent Pi supervisor switch cleanly among five workers without
+  confusing their evidence, and does normal session compaction keep the history
+  manageable?
 - Does a later stage prove Bellwether's crash probe or watch lifecycle is worth
   adding instead of retaining the direct Herdr subscription?
 
@@ -445,6 +484,12 @@ The PoC is successful when all of these are demonstrated:
   One in-flight fence per worker now coalesces intervening signals, and the next
   deadline is measured from the settled review. A clean rerun produced one
   wakeup and one bounded observation, then returned to sleep.
+- The first two-worker shared-session trial showed that a separate model session
+  per worker is not presently justified. One Pi conversation handled Alpha and
+  Beta sequentially, retained the useful overall history, selected the correct
+  pane-specific tools, and did not use Alpha evidence to complete Beta. The
+  extension now admits only one semantic review turn at a time and coalesces the
+  other workers' signals until that turn settles.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

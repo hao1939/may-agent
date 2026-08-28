@@ -112,9 +112,34 @@ test("review notice explains the goal and signal in plain language", () => {
   const state = { version: 1, workers: [] };
   const binding = registerBinding(state, agent(), "Fix cancellation", ["focused test passes"]);
   const message = reviewMessage(binding, agent({ agent_status: "idle" }), "worker is idle");
-  assert.match(message, /Review needed · codex w1:p2/);
+  assert.match(message, /Worker review · codex w1:p2/);
   assert.match(message, /Goal\n  Fix cancellation/);
-  assert.match(message, /Why now\n  worker is idle; Herdr reports idle/);
+  assert.match(message, /Why review now\n  worker is idle; Herdr reports idle/);
   assert.match(message, /Accept when\n- focused test passes/);
+  assert.match(message, /Observe this exact worker/);
   assert.doesNotMatch(message, /supervisor_observe/);
+});
+
+test("each shared-session review request re-establishes one worker context", () => {
+  const state = { version: 1, workers: [] };
+  const first = registerBinding(state, agent(), "Fix API cancellation", ["API test passes"]);
+  const second = registerBinding(
+    state,
+    agent({ pane_id: "w1:p3", terminal_id: "term-3", agent_session: { ...agent().agent_session, value: "session-3" } }),
+    "Simplify the console view",
+    ["console output is readable"],
+  );
+  const firstRequest = reviewMessage(first, agent({ agent_status: "idle" }), "worker is idle");
+  const secondRequest = reviewMessage(
+    second,
+    agent({ pane_id: "w1:p3", terminal_id: "term-3", agent_status: "blocked", agent_session: { ...agent().agent_session, value: "session-3" } }),
+    "worker is blocked",
+  );
+
+  assert.match(firstRequest, /w1:p2/);
+  assert.match(firstRequest, /Fix API cancellation/);
+  assert.doesNotMatch(firstRequest, /Simplify the console view|w1:p3/);
+  assert.match(secondRequest, /w1:p3/);
+  assert.match(secondRequest, /Simplify the console view/);
+  assert.doesNotMatch(secondRequest, /Fix API cancellation|w1:p2/);
 });

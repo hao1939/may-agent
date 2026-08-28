@@ -34,6 +34,12 @@ Stage 2b adds one nearest-deadline timer across all bindings. It is a recovery
 safety net, not a polling loop: only due workers wake, and signals received
 during a review coalesce until that review settles.
 
+Stage 2c keeps the model side equally simple: one persistent Pi supervisor
+session receives one explicitly scoped worker-review request at a time. Workers
+still run concurrently. Signals for other workers coalesce in memory until the
+current review settles; no separate model session, context store, or durable
+review queue is introduced unless testing proves it necessary.
+
 ## Try it
 
 List the workers Herdr currently knows:

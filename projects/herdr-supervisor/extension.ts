@@ -26,6 +26,7 @@ const supervisorTools = [
   "supervisor_finish",
 ];
 type SupervisorMode = "observe" | "dry-run" | "live";
+type ReviewSignal = { force: boolean; reason: string; key: string };
 
 function text(value: string, isError = false) {
   return { content: [{ type: "text" as const, text: value }], isError };
@@ -35,9 +36,10 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   let stopSubscription: undefined | (() => void);
   let reconnectTimer: undefined | ReturnType<typeof setTimeout>;
   let reviewTimer: undefined | ReturnType<typeof setTimeout>;
-  const signalsInFlight = new Set<string>();
-  const reviewsInFlight = new Set<string>();
-  const signalsDuringReview = new Set<string>();
+  const pendingSignals = new Map<string, ReviewSignal | undefined>();
+  let preparingReviewPane: string | undefined;
+  let activeReviewPane: string | undefined;
+  let reviewPumpRunning = false;
   let shuttingDown = false;
   let reconnectDelay = 250;
 
@@ -69,7 +71,9 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     if (shuttingDown) return;
     const state = await loadState();
     const waiting = state.workers.filter(
-      (worker) => !signalsInFlight.has(worker.paneId) && !reviewsInFlight.has(worker.paneId),
+      (worker) => !pendingSignals.has(worker.paneId)
+        && preparingReviewPane !== worker.paneId
+        && activeReviewPane !== worker.paneId,
     );
     const delay = nextReviewDelay(waiting);
     if (delay === undefined) return;
@@ -83,7 +87,9 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   async function reviewDueWorkers() {
     const state = await loadState();
     const due = dueBindings(state.workers.filter(
-      (worker) => !signalsInFlight.has(worker.paneId) && !reviewsInFlight.has(worker.paneId),
+      (worker) => !pendingSignals.has(worker.paneId)
+        && preparingReviewPane !== worker.paneId
+        && activeReviewPane !== worker.paneId,
     ));
     if (due.length) {
       const nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
@@ -97,7 +103,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     }
     try {
       for (const binding of due) {
-        await handleSignal(binding.paneId, {
+        handleSignal(binding.paneId, {
           force: true,
           reason: "review deadline elapsed",
           key: `deadline:${binding.nextReviewAt || "recovery"}`,
@@ -115,28 +121,35 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     return bindings.map((binding) => formatWorker(liveWorker(binding, snapshot))).join("\n\n");
   }
 
-  async function handleSignal(
-    paneId: string,
-    signal?: { force: boolean; reason: string; key: string },
-  ) {
-    if (signalsInFlight.has(paneId) || reviewsInFlight.has(paneId)) {
-      signalsDuringReview.add(paneId);
-      return;
-    }
-    signalsInFlight.add(paneId);
+  function handleSignal(paneId: string, signal?: ReviewSignal) {
+    if (!pendingSignals.has(paneId) || signal?.force) pendingSignals.set(paneId, signal);
+    void drainSignals();
+  }
+
+  async function drainSignals() {
+    if (shuttingDown || reviewPumpRunning || activeReviewPane) return;
+    reviewPumpRunning = true;
     try {
-      await handleSignalOnce(paneId, signal);
-    } finally {
-      signalsInFlight.delete(paneId);
-      if (!reviewsInFlight.has(paneId) && signalsDuringReview.delete(paneId)) {
-        void handleSignal(paneId);
+      while (!shuttingDown && !activeReviewPane && pendingSignals.size) {
+        const next = pendingSignals.entries().next().value as [string, ReviewSignal | undefined];
+        const [paneId, signal] = next;
+        pendingSignals.delete(paneId);
+        preparingReviewPane = paneId;
+        try {
+          await handleSignalOnce(paneId, signal);
+        } finally {
+          preparingReviewPane = undefined;
+        }
       }
+    } finally {
+      reviewPumpRunning = false;
+      if (!shuttingDown && !activeReviewPane && pendingSignals.size) void drainSignals();
     }
   }
 
   async function handleSignalOnce(
     paneId: string,
-    signal?: { force: boolean; reason: string; key: string },
+    signal?: ReviewSignal,
   ) {
     const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
     const binding = state.workers.find((worker) => worker.paneId === paneId);
@@ -162,7 +175,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       return next;
     });
     const currentMode = mode();
-    if (currentMode !== "observe") reviewsInFlight.add(paneId);
+    if (currentMode !== "observe") activeReviewPane = paneId;
     pi.sendMessage(
       {
         customType: "herdr-supervisor-review",
@@ -350,7 +363,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   });
 
   pi.on("before_agent_start", (event) => ({
-    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, ask the human only for a real decision, or call supervisor_finish only with convincing evidence. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
+    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, ask the human only for a real decision, or call supervisor_finish only with convincing evidence. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
   }));
 
   pi.on("session_start", async (_event, ctx) => {
@@ -370,22 +383,18 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   });
 
   pi.on("agent_settled", async () => {
-    const reviewed = [...reviewsInFlight];
-    const pending = [...signalsDuringReview];
-    signalsDuringReview.clear();
-    reviewsInFlight.clear();
-    signalsInFlight.clear();
-    if (reviewed.length) {
-      const panes = new Set(reviewed);
+    const reviewedPane = activeReviewPane;
+    activeReviewPane = undefined;
+    if (reviewedPane) {
       const nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
       await updateState((state) => {
         for (const binding of state.workers) {
-          if (panes.has(binding.paneId)) binding.nextReviewAt = nextReviewAt;
+          if (binding.paneId === reviewedPane) binding.nextReviewAt = nextReviewAt;
         }
         return state;
       });
     }
-    for (const paneId of pending) await handleSignal(paneId);
+    await drainSignals();
     await armReviewTimer();
   });
 
@@ -394,7 +403,8 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     stopSubscription?.();
     if (reconnectTimer) clearTimeout(reconnectTimer);
     if (reviewTimer) clearTimeout(reviewTimer);
-    reviewsInFlight.clear();
-    signalsDuringReview.clear();
+    pendingSignals.clear();
+    preparingReviewPane = undefined;
+    activeReviewPane = undefined;
   });
 }
