@@ -970,6 +970,7 @@ export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRe
 // when several independent listeners have accumulated worker Event bursts.
 const EVENT_LISTENER_BATCH_SIZE = 1;
 const EVENT_LISTENER_BACKLOG_LIMIT = 256;
+const EVENT_LISTENER_BACKLOG_DELAY_MS = 1;
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
 /** Exact synchronous durable-route acceptance observed for this emission. */
 export const EVENT_DELIVERY_RESULT = Symbol.for("may-agent.eventDeliveryResult");
@@ -1304,7 +1305,9 @@ export class EventBus {
       }
     }
     if (state.active && state.pending.length > 0) {
-      setTimeout(() => void this.drainListenerEvents(state), 0);
+      // A non-empty listener backlog is background work. Leave a real poll
+      // window so continuously arriving observations cannot starve interfaces.
+      setTimeout(() => void this.drainListenerEvents(state), EVENT_LISTENER_BACKLOG_DELAY_MS);
     } else {
       state.scheduled = false;
     }

@@ -2,7 +2,7 @@ import { log } from "../log.js";
 
 const SQLITE_BUSY_PATTERNS = [/database is locked/i, /SQLITE_BUSY/i];
 const WORKER_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000];
-const INTERFACE_RETRY_DELAYS_MS = [5, 10, 20, 40];
+const HOST_RETRY_DELAYS_MS = [5, 10, 20, 40, 80, 160, 320, 640];
 const sleepArray = new Int32Array(new SharedArrayBuffer(4));
 
 function isSqliteBusy(error: unknown): boolean {
@@ -17,7 +17,7 @@ function sleepSync(ms: number): void {
 
 export function withSqliteBusyRetry<T>(operation: string, run: () => T): T {
   const retryDelaysMs =
-    process.env.MAY_TASK_ATTEMPT_CHILD === "1" ? WORKER_RETRY_DELAYS_MS : INTERFACE_RETRY_DELAYS_MS;
+    process.env.MAY_TASK_ATTEMPT_CHILD === "1" ? WORKER_RETRY_DELAYS_MS : HOST_RETRY_DELAYS_MS;
   let lastError: unknown = null;
   for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
     try {
