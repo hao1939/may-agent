@@ -25,6 +25,39 @@ const WORKER_RELAY_BATCH_SIZE = 1;
 const WORKER_RELAY_PAUSE_AT = 256;
 const WORKER_RELAY_RESUME_AT = 128;
 
+type WorkerRelayScheduler = {
+  pending: Array<() => void>;
+  scheduled: boolean;
+};
+
+const workerRelaySchedulers = new WeakMap<EventBus, WorkerRelayScheduler>();
+
+/**
+ * Share one parent-side relay turn across every Task worker. Independent
+ * setImmediate chains are individually bounded but still run together in the
+ * same event-loop phase, which can starve socket polling when several workers
+ * are active. This scheduler admits one persisted worker Event per turn.
+ */
+function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
+  let scheduler = workerRelaySchedulers.get(bus);
+  if (!scheduler) {
+    scheduler = { pending: [], scheduled: false };
+    workerRelaySchedulers.set(bus, scheduler);
+  }
+  scheduler.pending.push(callback);
+  if (scheduler.scheduled) return;
+  scheduler.scheduled = true;
+  const drainOne = () => {
+    scheduler!.scheduled = false;
+    scheduler!.pending.shift()?.();
+    if (scheduler!.pending.length > 0) {
+      scheduler!.scheduled = true;
+      setImmediate(drainOne);
+    }
+  };
+  setImmediate(drainOne);
+}
+
 type WorkerEventFrame = { kind: "event"; eventId: number; event: AgentEvent };
 type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[] };
 type WorkerErrorFrame = { kind: "error"; error: string };
@@ -175,7 +208,7 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
     if (relay.isPaused() && frames.length <= WORKER_RELAY_RESUME_AT) relay.resume();
     if (frames.length > 0) {
       relayScheduled = true;
-      setImmediate(drainFrames);
+      scheduleWorkerRelay(bus, drainFrames);
       return;
     }
     relaySettled?.();
@@ -186,7 +219,7 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
     if (frames.length >= WORKER_RELAY_PAUSE_AT) relay.pause();
     if (relayScheduled) return;
     relayScheduled = true;
-    setImmediate(drainFrames);
+    scheduleWorkerRelay(bus, drainFrames);
   };
   relay.setEncoding("utf8");
   relay.on("data", (chunk: string) => {

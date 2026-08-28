@@ -102,6 +102,40 @@ describe("isolated Task attempt process", () => {
     expect(observed).toBe(64);
   });
 
+  it("shares relay turns across concurrent Task workers", async () => {
+    const bus = new EventBus();
+    const observed: string[] = [];
+    let resolveAfterFirst!: (count: number) => void;
+    const afterFirst = new Promise<number>((resolve) => {
+      resolveAfterFirst = resolve;
+    });
+    bus.subscribe((event) => {
+      observed.push(String(event.type));
+      if (observed.length === 1) setTimeout(() => resolveAfterFirst(observed.length), 0);
+      const until = Date.now() + 4;
+      while (Date.now() < until) {}
+    });
+    const worker = (type: string) =>
+      scriptedWorker(`
+        const fs = require("node:fs");
+        const base = ${type === "info" ? 100 : 200};
+        const until = Date.now() + 50;
+        while (Date.now() < until) {}
+        for (let index = 1; index <= 16; index += 1) {
+          fs.writeSync(3, JSON.stringify({kind:"event",eventId:base+index,event:{type:"${type}",message:"working"}})+"\\n");
+        }
+        fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+      `);
+    const first = createTaskAttemptProcessExecutor({ bus, spawnWorker: () => worker("info") });
+    const second = createTaskAttemptProcessExecutor({ bus, spawnWorker: () => worker("prompt") });
+
+    const attempts = Promise.all([first(request), second(request)]);
+    expect(await afterFirst).toBe(1);
+    await attempts;
+    expect(observed.filter((type) => type === "info")).toHaveLength(16);
+    expect(observed.filter((type) => type === "prompt")).toHaveLength(16);
+  });
+
   it("surfaces worker failure without inventing another Task", async () => {
     const execute = createTaskAttemptProcessExecutor({
       bus: new EventBus(),
