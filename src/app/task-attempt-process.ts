@@ -22,6 +22,7 @@ import type { ModelRegistry } from "./model-registry.js";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
 const WORKER_RELAY_BATCH_SIZE = 1;
+const WORKER_RELAY_TURN_DELAY_MS = 5;
 const WORKER_RELAY_PAUSE_AT = 256;
 const WORKER_RELAY_RESUME_AT = 128;
 
@@ -34,9 +35,10 @@ const workerRelaySchedulers = new WeakMap<EventBus, WorkerRelayScheduler>();
 
 /**
  * Share one parent-side relay turn across every Task worker. Independent
- * setImmediate chains are individually bounded but still run together in the
- * same event-loop phase, which can starve socket polling when several workers
- * are active. This scheduler admits one persisted worker Event per turn.
+ * zero-delay chains are individually bounded but can still keep background
+ * work continuously ready and starve socket polling. This scheduler admits
+ * one persisted worker Event per turn and leaves a small poll window before
+ * the next background item.
  */
 function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
   let scheduler = workerRelaySchedulers.get(bus);
@@ -52,10 +54,10 @@ function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
     scheduler!.pending.shift()?.();
     if (scheduler!.pending.length > 0) {
       scheduler!.scheduled = true;
-      setTimeout(drainOne, 0);
+      setTimeout(drainOne, WORKER_RELAY_TURN_DELAY_MS);
     }
   };
-  setTimeout(drainOne, 0);
+  setTimeout(drainOne, WORKER_RELAY_TURN_DELAY_MS);
 }
 
 type WorkerEventFrame = { kind: "event"; eventId: number; event: AgentEvent };
