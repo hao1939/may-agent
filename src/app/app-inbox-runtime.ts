@@ -324,16 +324,42 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     : undefined;
 
+  const pendingConversationUpdates = new Map<string, { appId: string; conversationId: string }>();
+  let conversationUpdateHandle: ReturnType<typeof setTimeout> | null = null;
+  const armConversationUpdate = (): void => {
+    if (conversationUpdateHandle || pendingConversationUpdates.size === 0) return;
+    conversationUpdateHandle = setTimeout(() => {
+      conversationUpdateHandle = null;
+      const entry = pendingConversationUpdates.entries().next().value as
+        | [string, { appId: string; conversationId: string }]
+        | undefined;
+      if (!entry) return;
+      const [key, update] = entry;
+      pendingConversationUpdates.delete(key);
+      try {
+        options.bus.emit({
+          type: "conversation.updated",
+          source: "app-inbox",
+          owner: `app:${update.appId}`,
+          data: update,
+        });
+      } catch (error) {
+        // This is a level-triggered presentation wake; the Conversation is
+        // already durable. A failed optional wake must not crash the Host.
+        console.warn(
+          `[app-inbox] Conversation update wake failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+      armConversationUpdate();
+    }, 1);
+  };
   const notifyConversationUpdated = (appId: string, conversationId?: string): void => {
     const normalizedAppId = appId.trim();
     const normalizedConversationId = conversationId?.trim();
     if (!normalizedAppId || !normalizedConversationId) return;
-    options.bus.emit({
-      type: "conversation.updated",
-      source: "app-inbox",
-      owner: `app:${normalizedAppId}`,
-      data: { appId: normalizedAppId, conversationId: normalizedConversationId },
-    });
+    const key = `${normalizedAppId}\0${normalizedConversationId}`;
+    pendingConversationUpdates.set(key, { appId: normalizedAppId, conversationId: normalizedConversationId });
+    armConversationUpdate();
   };
 
   const emitConversationTaskChanged = (
@@ -1555,6 +1581,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       pumpHandle = null;
       if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
+      if (conversationUpdateHandle) clearTimeout(conversationUpdateHandle);
+      conversationUpdateHandle = null;
+      pendingConversationUpdates.clear();
       observerRuntime.close();
       unsubscribe();
       pending.length = 0;
