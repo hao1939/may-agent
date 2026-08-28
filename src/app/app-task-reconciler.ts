@@ -2085,7 +2085,13 @@ export function recordAppTaskTrigger(
   event: Record<string, unknown>,
 ): { kind: "recorded" | "waiting" | "missing" } {
   return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+    // A wake updates one existing Task. Its children and attempt history do
+    // not participate in trigger selection, so keep this interface-path read
+    // proportional to the exact Task rather than its whole subtree.
+    const tree = config.resourceStore.readTaskContext(
+      { taskIds: [taskId] },
+      { includeHistory: false, childLimit: 0 },
+    );
     const resource = tree.resources?.[taskId];
     if (!resource) return { kind: "missing" };
     if (

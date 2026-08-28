@@ -3616,7 +3616,18 @@ describe("canonical App task runtime", () => {
           bus,
           appId: "sample",
           event: feedback,
-          intent: null,
+          intent:
+            index === 0
+              ? {
+                  id: "work/event-storm",
+                  parentId: "operations",
+                  outcome: "Incorrectly replace the existing goal from a feedback event",
+                  acceptance: ["This replacement must be ignored"],
+                  mode: "achieve",
+                  agent: "sample-owner",
+                  executor: "storm",
+                }
+              : null,
           targetedTaskId: "work/event-storm",
         }),
       );
@@ -3633,6 +3644,7 @@ describe("canonical App task runtime", () => {
     expect(followUpBatchSizes).toEqual([32, 32]);
     expect(readTaskState(config).receipts?.["work/event-storm"]).toMatchObject({
       handler: "executor:storm",
+      outcome: "Reconcile every exact feedback event",
       summary: "Event storm was reconciled",
       evidence: ["test:storm:3"],
     });
