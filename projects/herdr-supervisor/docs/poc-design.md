@@ -1,6 +1,6 @@
 # Proof-of-concept design
 
-**Status:** Stage 2 implemented
+**Status:** Stage 3 verified; Stage 4 acceptance verified
 **Date:** 2026-08-28
 
 ## 1. Purpose
@@ -148,12 +148,11 @@ Herdr event or stale deadline
   -> coalesce latest signal for that worker
   -> read a fresh Herdr snapshot
   -> reject identity mismatch
-  -> collect bounded evidence
-  -> ask the supervisor model for one decision
-  -> validate and apply that decision
-  -> save the handled sequence/checkpoint
-  -> re-arm the worker watch
-  -> sleep
+  -> start one scoped supervisor turn
+  -> observe that exact worker once
+  -> make and apply at most one steering or acceptance decision
+  -> end the turn
+  -> wait for the next Herdr event or stale deadline
 ```
 
 ### Signals
@@ -169,6 +168,13 @@ Herdr event or stale deadline
 
 The event means "reconsider this goal now." It never decides success by
 itself.
+
+One review turn is deliberately bounded. It may successfully observe only its
+exact worker once. After steering or accepting, no more supervisor tool calls
+are allowed in that turn. Worker events received while the turn is active are
+coalesced; after the turn settles, the extension rereads Herdr's authoritative
+state and starts another review only when the latest state warrants one. The
+model never polls a worker while waiting for its instruction to run.
 
 ## 8. Worker-transparent observation
 
@@ -265,6 +271,8 @@ handle.
   continually displace another worker.
 - Events received during a worker review cause at most one later review of that
   worker.
+- A review fence rejects another pane, a repeated successful observation, and
+  every tool call after steering or acceptance until the model turn settles.
 - Repeated identical actions are suppressed with a fingerprint and cooldown.
 - No durable work queue is introduced. On restart, a fresh Herdr snapshot plus
   the saved sequence checkpoints reconstructs what needs review.
@@ -402,13 +410,23 @@ event. Transport metadata remains secondary.
 
 ### Stage 3: bounded live steering
 
-- Permit `leave`, one-message `steer`, and `ask_human`.
-- Verify same-worker identity fencing, cooldown, and event coalescing.
-- Keep recovery and acceptance human-confirmed initially.
+- **Implemented:** permit `leave`, one-message `steer`, and a plain-language
+  request to the human.
+- **Implemented:** enforce one exact-worker observation and at most one applied
+  decision per event-driven model turn.
+- **Verified:** an idle Codex worker that had created the requested file without
+  verification was observed once and steered once. The supervisor turn then
+  settled instead of polling while the worker ran.
+- Keep broad live use narrow until controlled trials cover ineffective steering
+  and genuine human decisions.
 
 ### Stage 4: acceptance and recovery
 
-- Permit evidence-backed `accept`.
+- **Implemented:** permit evidence-backed `accept`.
+- **Verified:** the worker's later idle event began a new review turn; the
+  supervisor observed the new byte-exact output once and accepted the binding.
+  The first turn contained exactly observe/steer, and the second exactly
+  observe/finish.
 - Test restart, reconnect, target replacement, and conservative recovery.
 - Decide from evidence whether Shepherd or any additional component is needed.
 
@@ -431,6 +449,8 @@ The PoC is successful when all of these are demonstrated:
     global terminal scan.
 11. Sequential reviews of two different workers remain correctly scoped while
     useful shared supervisor history remains available.
+12. A live steer ends its review turn; acceptance happens only in a later turn
+    triggered by fresh Herdr state.
 
 ## 18. Questions the PoC must answer
 
@@ -490,6 +510,15 @@ The PoC is successful when all of these are demonstrated:
   pane-specific tools, and did not use Alpha evidence to complete Beta. The
   extension now admits only one semantic review turn at a time and coalesces the
   other workers' signals until that turn settles.
+- The first live steering trial exposed model-side polling: after steering, the
+  supervisor repeatedly observed the worker within the same turn. Prompt wording
+  alone was insufficient. A small in-memory review fence now enforces the natural
+  event boundary without adding a queue or scheduler.
+- The repeated live trial used one disposable Codex worker with an intentionally
+  incomplete result. Its transcript contains two distinct Herdr-triggered model
+  turns: `observe -> steer`, then, after the worker returned idle,
+  `observe -> finish`. Each turn read the exact worker once, and the accepted
+  evidence was the literal byte output `38 34 0a`.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

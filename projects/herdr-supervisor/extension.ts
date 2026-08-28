@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { HerdrClient } from "./src/herdr-client.js";
 import { formatObservation, observeWorker } from "./src/observation.js";
+import { ReviewTurnFence } from "./src/review-turn.js";
 import { loadState, updateState } from "./src/store.js";
 import {
   findAgent,
@@ -42,6 +43,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   let reviewPumpRunning = false;
   let shuttingDown = false;
   let reconnectDelay = 250;
+  const reviewTurn = new ReviewTurnFence();
 
   pi.registerFlag("supervisor-mode", {
     description: "Supervision authority: observe, dry-run, or live",
@@ -175,7 +177,10 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       return next;
     });
     const currentMode = mode();
-    if (currentMode !== "observe") activeReviewPane = paneId;
+    if (currentMode !== "observe") {
+      activeReviewPane = paneId;
+      reviewTurn.begin(paneId);
+    }
     pi.sendMessage(
       {
         customType: "herdr-supervisor-review",
@@ -239,6 +244,11 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     parameters: Type.Object({ pane_id: Type.Optional(Pane) }),
     executionMode: "parallel",
     async execute(_id, params) {
+      const fenceError = reviewTurn.guard(params.pane_id);
+      if (fenceError) return text(fenceError, true);
+      if (activeReviewPane && !params.pane_id) {
+        return text(`This review is scoped to ${activeReviewPane}. Use supervisor_observe for that exact worker.`, true);
+      }
       try { return text(await status(params.pane_id)); }
       catch (error) { return text(`Could not read supervisor status: ${error.message}`, true); }
     },
@@ -251,6 +261,9 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     parameters: Type.Object({ pane_id: Pane, lines: Type.Optional(Type.Integer({ minimum: 10, maximum: 200 })) }),
     executionMode: "parallel",
     async execute(_id, params) {
+      const fenceError = reviewTurn.beginObservation(params.pane_id);
+      if (fenceError) return text(fenceError, true);
+      let observed = false;
       try {
         const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
         const binding = state.workers.find((worker) => worker.paneId === params.pane_id);
@@ -272,8 +285,10 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
           return next;
         });
         await armReviewTimer();
+        observed = true;
         return text(`Goal: ${binding.goal}\nHerdr state: ${agent.agent_status}\n\n${formatObservation(observation)}`);
       } catch (error) { return text(`Could not observe worker: ${error.message}`, true); }
+      finally { reviewTurn.finishObservation(observed); }
     },
   });
 
@@ -284,6 +299,8 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     parameters: Type.Object({ pane_id: Pane, message: Type.String({ minLength: 1 }) }),
     executionMode: "sequential",
     async execute(_id, params) {
+      const fenceError = reviewTurn.guardDecision(params.pane_id);
+      if (fenceError) return text(fenceError, true);
       try {
         const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
         const binding = state.workers.find((worker) => worker.paneId === params.pane_id);
@@ -291,10 +308,12 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         const mismatch = identityMismatch(binding, findAgent(snapshot, params.pane_id));
         if (mismatch) return text(`Refusing to steer: ${mismatch}.`, true);
         if (mode() !== "live") {
-          return text(`${mode()} mode: would steer ${params.pane_id}: ${params.message.trim()}`);
+          reviewTurn.close();
+          return text(`${mode()} mode: would steer ${params.pane_id}: ${params.message.trim()}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
         }
         await client.promptAgent(params.pane_id, params.message.trim());
-        return text(`Steered ${params.pane_id}: ${params.message.trim()}`);
+        reviewTurn.close();
+        return text(`Steered ${params.pane_id}: ${params.message.trim()}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
       } catch (error) { return text(`Could not steer worker: ${error.message}`, true); }
     },
   });
@@ -310,8 +329,11 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     }),
     executionMode: "sequential",
     async execute(_id, params) {
+      const fenceError = reviewTurn.guardDecision(params.pane_id);
+      if (fenceError) return text(fenceError, true);
       if (mode() !== "live") {
-        return text(`${mode()} mode: evidence supports accepting ${params.pane_id}, but its goal binding remains active.\n${params.summary}`);
+        reviewTurn.close();
+        return text(`${mode()} mode: evidence supports accepting ${params.pane_id}, but its goal binding remains active.\n${params.summary}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
       }
       let removed = false;
       await updateState((state) => {
@@ -321,7 +343,8 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       await connectObserver();
       await armReviewTimer();
       if (!removed) return text(`${params.pane_id} is not supervised.`, true);
-      return text(`Goal accepted for ${params.pane_id}.\n${params.summary}\nEvidence:\n${params.evidence.map((item) => `- ${item}`).join("\n")}`);
+      reviewTurn.close();
+      return text(`Goal accepted for ${params.pane_id}.\n${params.summary}\nEvidence:\n${params.evidence.map((item) => `- ${item}`).join("\n")}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
     },
   });
 
@@ -385,6 +408,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   pi.on("agent_settled", async () => {
     const reviewedPane = activeReviewPane;
     activeReviewPane = undefined;
+    reviewTurn.end();
     if (reviewedPane) {
       const nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
       await updateState((state) => {
@@ -406,5 +430,6 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     pendingSignals.clear();
     preparingReviewPane = undefined;
     activeReviewPane = undefined;
+    reviewTurn.end();
   });
 }

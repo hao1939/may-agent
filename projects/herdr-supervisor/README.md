@@ -40,6 +40,13 @@ still run concurrently. Signals for other workers coalesce in memory until the
 current review settles; no separate model session, context store, or durable
 review queue is introduced unless testing proves it necessary.
 
+Stage 3 has now been exercised in live mode. Each Herdr signal starts one
+bounded review turn: observe the exact worker once, then leave it alone or apply
+one decision. Steering ends the turn. A later worker event starts a fresh turn,
+so the supervisor cannot poll while waiting for the worker. A controlled run
+verified `observe -> steer`, followed by a later `observe -> finish` with exact
+result evidence.
+
 ## Try it
 
 List the workers Herdr currently knows:
