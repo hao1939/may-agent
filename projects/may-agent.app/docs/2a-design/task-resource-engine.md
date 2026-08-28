@@ -653,8 +653,10 @@ The worker uses the same Task resources and EventHub journal as the parent. It
 does not create a worker Task, proxy Task, semantic queue, or second retry
 policy. Events are persisted once in the worker and relayed with their durable
 row IDs so parent-side listeners can observe them without duplicate journal
-rows. If the worker exits, the controller's existing retry and lease recovery
-continue the same Task identity.
+rows. The parent fans out a bounded batch and then yields to interface work;
+a burst of progress events must not monopolize the event loop. If the worker
+exits, the controller's existing retry and lease recovery continue the same
+Task identity.
 
 An attempt worker loads only its owning App's Task runtime and owning agent.
 The recovery worker loads only the agents required by Task-enabled Apps. Both
