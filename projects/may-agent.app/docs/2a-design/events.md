@@ -104,6 +104,12 @@ bounded capacity. A busy message handler or Task can delay only that handler's
 work; it cannot delay event publication, resource reads, or another independent
 handler.
 
+Task execution is also a process boundary. A Task worker persists the Events it
+produces to the shared journal, then relays their durable IDs to the parent
+Host. The parent fans out those already-persisted Events to its local routes and
+interface listeners without appending them again. This is transport for the
+same Event, not another queue or lifecycle.
+
 Passive listeners run afterward for persisted, non-replayed events. Each
 listener has its own filtered, bounded FIFO, so socket streams, Console
 rendering, Conversation mirroring, and similar presentation cannot add latency

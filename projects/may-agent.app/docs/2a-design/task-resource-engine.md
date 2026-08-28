@@ -643,9 +643,18 @@ replacement lifecycle or change desired state.
 
 Task readiness may be coalesced and bounded, but admission is never queued
 behind Task execution. Once an Event and its exact wake are durable, the Task
-handler runs asynchronously. Slow workspace inspection, Git commands, file
-reads, provider calls, and tools must use yielding I/O; they cannot run as
-synchronous subprocesses on the interface event loop.
+controller starts an isolated worker process for that attempt. The worker
+rereads and claims the current generation, constructs context, executes, and
+persists the fenced result. Slow workspace inspection, Git commands, file
+reads, provider calls, model turns, and tools therefore never execute on the
+interface event loop.
+
+The worker uses the same Task resources and EventHub journal as the parent. It
+does not create a worker Task, proxy Task, semantic queue, or second retry
+policy. Events are persisted once in the worker and relayed with their durable
+row IDs so parent-side listeners can observe them without duplicate journal
+rows. If the worker exits, the controller's existing retry and lease recovery
+continue the same Task identity.
 
 Resource-backed Tasks coordinate concurrent writers with their existing
 SQLite transaction and exact resource-version/generation/attempt fences. They
@@ -654,11 +663,10 @@ lock adds no authority and a synchronous wait would freeze unrelated Host
 work. The filesystem lock remains only for the guarded legacy JSON importer
 until that compatibility path is retired.
 
-Small SQLite transitions and bounded context construction still run in the
-Host process today. They must remain measured and bounded. If those synchronous
-sections cannot meet the interface responsiveness budget after row-level query
-and projection cleanup, Task execution moves behind a worker process boundary;
-the Event, Task, and executor contracts do not change.
+Only scheduling and bounded readiness checks remain in the interface process.
+Task claim, context construction, execution, and result persistence belong to
+the worker process. Read-only interface queries remain independent and must
+meet their responsiveness budget while workers are active.
 
 ## Required invariants
 

@@ -84,7 +84,7 @@ cannot replace either record.
 desired task (`TaskIntent` in code)
   -> Host stores desired state and trigger
   -> Host queues one attempt within App and Host limits
-  -> selected attempt handler checks current state
+  -> an isolated worker claims current state and runs the selected handler
   -> App says done, waiting, needs-agent, or requests a typed change
   -> Host validates, stores, and applies the result
 ```
@@ -126,6 +126,14 @@ Managed agents and workflows use the agent runtime; Codex, Claude, and any
 registered replacement use thin adapters. No path creates another Task
 lifecycle.
 
+Each expensive Task attempt runs in an isolated worker process. The parent
+controller schedules only the exact persisted Task identity; the worker claims
+that Task, builds context, executes, and persists its fenced result. Events
+produced by the attempt are appended once by the worker and relayed to the
+parent for local listeners and routes without a second append. A worker exit
+therefore loses neither the Task nor its durable Events, and CPU-heavy work
+cannot block interface commands or message admission.
+
 One `HostCapacity` object limits task attempts. Each App may declare a smaller
 local limit. Request correlation and delivery do not run a second App worker.
 
@@ -149,6 +157,9 @@ open storage
 A failed reload leaves the previous generation active. Shutdown stops new
 dispatch and preserves unfinished work.
 
+Deployment readiness includes a bounded control-socket read, not only process
+and HTTP liveness, so an event-loop-starved Host is unhealthy and rolls back.
+
 App source changes are activated deliberately: `/reload` validates and
 publishes one new generation atomically, while a deployment restart performs
 the same startup publication. The Host does not poll and hash every App,
@@ -166,7 +177,7 @@ workflow is invoked.
 | Request correlation and delivery | `src/app/app-inbox-host.ts`, `app-inbox-runtime.ts`                          |
 | Tasks                            | `src/app/app-task-runtime.ts`, `app-task-controller.ts`, `app-task-store.ts` |
 | Events                           | `src/app/event-bus.ts`                                                       |
-| Execution                        | `src/lib/agent-execution.ts`, `manager.ts`, workflow runner files            |
+| Execution                        | `src/app/task-attempt-process.ts`, `src/lib/agent-execution.ts`, `manager.ts`, workflow runner files |
 | Delivery and interfaces          | `src/app/transport/`, `src/app/http/`, `packages/webui/`                     |
 
 ## Dependency rule
