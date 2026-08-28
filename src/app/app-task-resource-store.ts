@@ -545,9 +545,7 @@ export class AppTaskResourceStore {
     const rows = this.db
       .prepare(
         `SELECT c.app_id, c.condition_id, c.condition_json, linked.task_id
-         FROM app_task_conditions c INDEXED BY ${
-           exactSubjects ? "idx_app_task_conditions_type_subject_app" : "idx_app_task_conditions_type_app"
-         }
+         FROM app_task_conditions c INDEXED BY idx_app_task_conditions_type_app
          JOIN app_task_condition_routes linked
            ON linked.app_id = c.app_id AND linked.condition_id = c.condition_id
          JOIN app_tasks task
