@@ -111,7 +111,9 @@ interface listeners without appending them again. This is transport for the
 same Event, not another queue or lifecycle. All Task workers share one bounded
 parent relay: it fans out at most one worker Event per event-loop turn, so
 several active workers cannot combine independent callback chains into one
-long interface stall.
+long interface stall. In the Bun runtime, that yield uses a zero-delay timer;
+an unbroken `setImmediate` chain does not reliably give Unix-socket polling a
+turn under sustained worker traffic.
 
 Passive listeners run afterward for persisted, non-replayed events. Each
 listener has its own filtered, bounded FIFO, so socket streams, Console
@@ -119,8 +121,9 @@ rendering, Conversation mirroring, and similar presentation cannot add latency
 to semantic acceptance or block one another. When a listener falls behind,
 stale notifications may be dropped with a warning; the durable event and
 resource remain available for resynchronization. A listener handles at most one
-notification per event-loop turn before yielding to interface I/O. A listener
-failure is observable but cannot undo the accepted event.
+notification per event-loop turn before yielding through the same poll-capable
+timer boundary. A listener failure is observable but cannot undo the accepted
+event.
 
 Subscriber-failure diagnostics are passive Events too. They are emitted one
 per later event-loop turn; a burst of failed consumers must not recursively

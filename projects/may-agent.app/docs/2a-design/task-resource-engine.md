@@ -659,6 +659,11 @@ worker. A burst of progress events must not monopolize the event loop. If the
 worker exits, the controller's existing retry and lease recovery continue the
 same Task identity.
 
+The parent relay and App message pump yield through an I/O-capable timer turn.
+They must not form a continuous `setImmediate` chain: in the deployed Bun
+runtime that can starve the Unix control socket even though every callback is
+nominally asynchronous.
+
 The parent-side exact wake is constant in scope: it reads the named Task and
 its open Conditions, records the trigger, and schedules that identity. It does
 not load the Task's children or attempt history and does not treat feedback as
