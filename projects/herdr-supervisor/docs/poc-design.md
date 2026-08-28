@@ -1,6 +1,6 @@
 # Proof-of-concept design
 
-**Status:** Stage 3 verified; Stage 4 restart and identity recovery verified
+**Status:** Stage 3 verified; Stage 4 restart, identity, and process recovery verified
 **Date:** 2026-08-28
 
 ## 1. Purpose
@@ -59,7 +59,7 @@ need to know that Herdr or a supervisor exists.
 - read bounded current output or structured history;
 - steer the same worker;
 - notify or ask the human;
-- recover a disappeared or crashed worker conservatively;
+- resume an exact stopped worker process conservatively when its pane remains;
 - verify completion evidence;
 - show a concise supervision view.
 
@@ -162,7 +162,8 @@ Herdr event or stale deadline
 | Output/activity while `working`          | No lifecycle wake; the bounded review deadline remains the safety net   |
 | `blocked`                                | Review immediately and determine whether the worker or human can answer |
 | `idle` or Herdr `done`                   | Review the result; never assume goal completion                         |
-| `pane.exited`                            | Review identity and choose conservative recovery                        |
+| Agent process exits but pane remains     | Review identity and consider exact-session recovery                      |
+| Pane disappears or occupant changes      | Fail closed and ask the human only when a decision is needed             |
 | Stale deadline                           | Inspect current evidence before deciding whether to steer               |
 | Human message                            | Review immediately with the new authority or information                |
 
@@ -314,6 +315,8 @@ model turn cannot enqueue another review behind itself.
 | ----------------------------- | -------------------------------------------------------------------------------------------------- |
 | Supervisor or Herdr reconnect | Load bindings, fetch one session snapshot, validate identities, and re-arm watches                 |
 | Worker occupant changed       | Stop and ask the human; never prompt the replacement automatically                                 |
+| Exact worker process stopped  | Resume only a supported native session in the same terminal, then send one continuation             |
+| Worker pane disappeared       | Fail closed; do not create a pane or replacement worker automatically                               |
 | Malformed model output        | Apply no action, record a visible diagnostic, and retry only on the next signal or bounded backoff |
 | Prompt/send failure           | Re-read current identity and state before one bounded retry                                        |
 | Herdr reports blocked         | Read new native evidence and determine whether existing context can unblock it before asking the human |
@@ -456,7 +459,17 @@ event. Transport metadata remains secondary.
 - **Verified:** the socket fixture reports readiness once and reports a dropped
   ready subscription once. A shared-server restart is intentionally not used as
   a PoC test because it would disrupt unrelated live workers.
-- Test reconnect and conservative process recovery.
+- **Implemented:** distinguish a stopped agent process in an existing pane from
+  a missing pane or replacement occupant. Only the first case is eligible for
+  exact-session recovery.
+- **Verified:** after the registered Codex process stopped, the supervisor
+  resumed its exact native session in the same terminal, sent one continuation,
+  observed the exact `RECOVERY_POC_OK` result on the next event, and accepted the
+  goal. No replacement worker or goal was created.
+- **Finding:** Herdr does not emit an event when `interactive_ready` changes.
+  Its own start command polls `agent.get` during startup. The supervisor mirrors
+  that bounded 200 ms readiness handshake only inside explicit recovery, before
+  sending the continuation. Normal supervision remains event-driven and idle.
 - Decide from evidence whether Shepherd or any additional component is needed.
 
 ## 17. Acceptance criteria
@@ -480,6 +493,8 @@ The PoC is successful when all of these are demonstrated:
     useful shared supervisor history remains available.
 12. A live steer ends its review turn; acceptance happens only in a later turn
     triggered by fresh Herdr state.
+13. A stopped supported process can resume its exact native session in the same
+    terminal; a missing pane or changed identity is never recovered implicitly.
 
 ## 18. Questions the PoC must answer
 

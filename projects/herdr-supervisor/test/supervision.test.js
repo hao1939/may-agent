@@ -3,9 +3,13 @@ import test from "node:test";
 import {
   captureIdentity,
   dueBindings,
+  findPane,
+  formatWorker,
   identityMismatch,
+  liveWorker,
   nextReviewDelay,
   registerBinding,
+  recoveryRequest,
   removeBinding,
   reviewMessage,
   shouldWake,
@@ -19,6 +23,14 @@ function agent(overrides = {}) {
     agent_status: "working",
     state_change_seq: 10,
     agent_session: { source: "herdr:codex", agent: "codex", kind: "id", value: "session-1" },
+    ...overrides,
+  };
+}
+
+function snapshot(currentAgent = agent(), overrides = {}) {
+  return {
+    agents: currentAgent ? [currentAgent] : [],
+    panes: [{ pane_id: "w1:p2", terminal_id: "term-1" }],
     ...overrides,
   };
 }
@@ -75,16 +87,17 @@ test("registering the same pane updates one binding", () => {
 test("working is quiet while settled and blocked states wake review", () => {
   const state = { version: 1, workers: [] };
   const binding = registerBinding(state, agent(), "goal");
-  assert.equal(shouldWake(binding, agent()).wake, false);
-  assert.deepEqual(shouldWake(binding, agent({ agent_status: "idle", state_change_seq: 11 })), {
+  const pane = findPane(snapshot(), "w1:p2");
+  assert.equal(shouldWake(binding, agent(), pane).wake, false);
+  assert.deepEqual(shouldWake(binding, agent({ agent_status: "idle", state_change_seq: 11 }), pane), {
     wake: true,
     reason: "worker is idle",
     sequence: 11,
     key: "state:11:idle",
   });
-  assert.equal(shouldWake(binding, agent({ agent_status: "blocked", state_change_seq: 12 })).wake, true);
+  assert.equal(shouldWake(binding, agent({ agent_status: "blocked", state_change_seq: 12 }), pane).wake, true);
   binding.lastReviewStateChangeSeq = 12;
-  assert.equal(shouldWake(binding, agent({ agent_status: "blocked", state_change_seq: 12 })).wake, false);
+  assert.equal(shouldWake(binding, agent({ agent_status: "blocked", state_change_seq: 12 }), pane).wake, false);
 });
 
 test("replaced worker fails closed", () => {
@@ -96,7 +109,43 @@ test("replaced worker fails closed", () => {
     identityMismatch(binding, agent({ agent_session: { ...agent().agent_session, value: "session-2" } })),
     /value changed/,
   );
-  assert.equal(shouldWake(binding, undefined).wake, true);
+  assert.match(identityMismatch(binding, undefined, findPane(snapshot(null), "w1:p2")), /process is no longer detected/);
+  assert.match(identityMismatch(binding, undefined, undefined), /pane is no longer present/);
+  assert.equal(shouldWake(binding, undefined, findPane(snapshot(null), "w1:p2")).wake, true);
+});
+
+test("recovery resumes only the exact supported session in the same terminal", () => {
+  const state = { version: 1, workers: [] };
+  const binding = registerBinding(state, agent(), "goal");
+  assert.deepEqual(recoveryRequest(binding, snapshot(null)), {
+    name: "codex",
+    kind: "codex",
+    paneId: "w1:p2",
+    args: ["resume", "session-1"],
+  });
+  assert.throws(() => recoveryRequest(binding, snapshot()), /still present/);
+  assert.throws(() => recoveryRequest(binding, snapshot(null, { panes: [] })), /pane is no longer present/);
+  assert.throws(
+    () => recoveryRequest(binding, snapshot(null, { panes: [{ pane_id: "w1:p2", terminal_id: "term-2" }] })),
+    /different terminal/,
+  );
+  assert.throws(
+    () => recoveryRequest({ ...binding, agentSession: { agent: "claude", kind: "id", value: "session-1" } }, snapshot(null)),
+    /not available/,
+  );
+});
+
+test("stopped process is shown as recoverable supervision work, not changed identity", () => {
+  const state = { version: 1, workers: [] };
+  const binding = registerBinding(state, agent(), "finish the goal");
+  assert.equal(
+    formatWorker(liveWorker(binding, snapshot(null))),
+    [
+      "codex w1:p2 · process stopped",
+      "  Goal: finish the goal",
+      "  Next: supervisor should review whether the exact session can resume",
+    ].join("\n"),
+  );
 });
 
 test("removal affects only the selected binding", () => {

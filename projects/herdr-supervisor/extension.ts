@@ -6,6 +6,7 @@ import { ReviewTurnFence } from "./src/review-turn.js";
 import { loadState, updateState } from "./src/store.js";
 import {
   findAgent,
+  findPane,
   formatWorker,
   DEFAULT_REVIEW_INTERVAL_MS,
   dueBindings,
@@ -13,6 +14,7 @@ import {
   liveWorker,
   nextReviewDelay,
   registerBinding,
+  recoveryRequest,
   removeBinding,
   reviewMessage,
   shouldWake,
@@ -25,6 +27,7 @@ const supervisorTools = [
   "supervisor_observe",
   "supervisor_steer",
   "supervisor_ask_human",
+  "supervisor_recover",
   "supervisor_finish",
 ];
 type SupervisorMode = "observe" | "dry-run" | "live";
@@ -132,7 +135,11 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   async function reconsiderCurrentBindings() {
     const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
     for (const binding of state.workers) {
-      const decision = shouldWake(binding, findAgent(snapshot, binding.paneId));
+      const decision = shouldWake(
+        binding,
+        findAgent(snapshot, binding.paneId),
+        findPane(snapshot, binding.paneId),
+      );
       if (decision.wake && binding.lastNoticeKey !== decision.key) handleSignal(binding.paneId);
     }
   }
@@ -166,8 +173,9 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     const binding = state.workers.find((worker) => worker.paneId === paneId);
     if (!binding) return;
     const agent = findAgent(snapshot, paneId);
-    const currentDecision = shouldWake(binding, agent);
-    const decision = signal?.force && !identityMismatch(binding, agent)
+    const pane = findPane(snapshot, paneId);
+    const currentDecision = shouldWake(binding, agent, pane);
+    const decision = signal?.force && !identityMismatch(binding, agent, pane)
       ? {
           wake: true,
           reason: signal.reason,
@@ -245,7 +253,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     });
     await connectObserver();
     await armReviewTimer();
-    if (shouldWake(binding!, agent).wake) void handleSignal(binding!.paneId);
+    if (shouldWake(binding!, agent, findPane(snapshot, paneId)).wake) void handleSignal(binding!.paneId);
     return binding!;
   }
 
@@ -281,7 +289,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         const binding = state.workers.find((worker) => worker.paneId === params.pane_id);
         if (!binding) return text(`${params.pane_id} is not supervised.`, true);
         const agent = findAgent(snapshot, params.pane_id);
-        const mismatch = identityMismatch(binding, agent);
+        const mismatch = identityMismatch(binding, agent, findPane(snapshot, params.pane_id));
         if (mismatch) {
           // Establishing that the registered identity is gone is the complete,
           // safe observation for this turn. No replacement output is exposed.
@@ -322,7 +330,11 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
         const binding = state.workers.find((worker) => worker.paneId === params.pane_id);
         if (!binding) return text(`${params.pane_id} is not supervised.`, true);
-        const mismatch = identityMismatch(binding, findAgent(snapshot, params.pane_id));
+        const mismatch = identityMismatch(
+          binding,
+          findAgent(snapshot, params.pane_id),
+          findPane(snapshot, params.pane_id),
+        );
         if (mismatch) return text(`Refusing to steer: ${mismatch}.`, true);
         if (mode() !== "live") {
           reviewTurn.close(params.pane_id);
@@ -346,6 +358,37 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       if (fenceError) return text(fenceError, true);
       reviewTurn.close(params.pane_id);
       return text(`Needs your input for ${params.pane_id}:\n${params.question.trim()}\n\nEnd this supervisor turn now. Wait for the human's answer; do not prompt or poll the worker.`);
+    },
+  });
+
+  pi.registerTool({
+    name: "supervisor_recover",
+    label: "Resume worker",
+    description: "Resume the exact registered native agent session in the same terminal after its process exits, then send one goal-aware continuation message. Refuses changed panes, replacement agents, and unsupported session identities.",
+    parameters: Type.Object({
+      pane_id: Pane,
+      message: Type.String({ minLength: 1 }),
+    }),
+    executionMode: "sequential",
+    async execute(_id, params) {
+      const fenceError = reviewTurn.guardDecision(params.pane_id);
+      if (fenceError) return text(fenceError, true);
+      try {
+        const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
+        const binding = state.workers.find((worker) => worker.paneId === params.pane_id);
+        if (!binding) return text(`${params.pane_id} is not supervised.`, true);
+        const request = recoveryRequest(binding, snapshot);
+        if (mode() !== "live") {
+          reviewTurn.close(params.pane_id);
+          return text(`${mode()} mode: would resume the exact ${binding.agentSession.agent} session in ${params.pane_id} and send: ${params.message.trim()}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
+        }
+        const resumed = await client.startAndWaitAgent(request);
+        const mismatch = identityMismatch(binding, resumed, resumed);
+        if (mismatch) return text(`Refusing to prompt recovered worker: ${mismatch}.`, true);
+        await client.promptAgent(params.pane_id, params.message.trim());
+        reviewTurn.close(params.pane_id);
+        return text(`Resumed the exact ${binding.agentSession.agent} session in ${params.pane_id} and asked it to continue.\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
+      } catch (error) { return text(`Could not recover worker: ${error.message}`, true); }
     },
   });
 
@@ -417,7 +460,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   });
 
   pi.on("before_agent_start", (event) => ({
-    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, call supervisor_ask_human only for a real human decision, or call supervisor_finish only with convincing evidence. If observation reports an identity mismatch, never steer the replacement; ask the human one concrete question if their decision is needed. When a human decision is required, ask one concrete question with supervisor_ask_human and end the turn; do not prompt a worker merely to keep waiting. When the human answers, steer the same worker once and wait for its next event. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
+    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, call supervisor_ask_human only for a real human decision, call supervisor_recover only when the same terminal remains but its exact registered process exited, or call supervisor_finish only with convincing evidence. If observation reports a replacement identity or missing pane, never steer or recover it; ask the human one concrete question if their decision is needed. When a human decision is required, ask one concrete question with supervisor_ask_human and end the turn; do not prompt a worker merely to keep waiting. When the human answers, steer the same worker once and wait for its next event. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
   }));
 
   pi.on("session_start", async (_event, ctx) => {

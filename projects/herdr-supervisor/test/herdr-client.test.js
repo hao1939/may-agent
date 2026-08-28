@@ -32,6 +32,59 @@ test("request correlates a newline-delimited Herdr response", async () => {
   } finally { await fake.close(); }
 });
 
+test("startAgent requests one exact agent session in an existing pane", async () => {
+  let observed;
+  const fake = await fakeHerdr((request, socket) => {
+    observed = request;
+    socket.write(`${JSON.stringify({ id: request.id, result: { type: "agent_started" } })}\n`);
+  });
+  try {
+    const client = new HerdrClient({ socketPath: fake.socketPath });
+    await client.startAgent({ name: "codex", kind: "codex", paneId: "w1:p2", args: ["resume", "session-1"] });
+    assert.equal(observed.method, "agent.start");
+    assert.deepEqual(observed.params, {
+      name: "codex",
+      kind: "codex",
+      pane_id: "w1:p2",
+      args: ["resume", "session-1"],
+      timeout_ms: 30_000,
+    });
+  } finally {
+    await fake.close();
+  }
+});
+
+test("startAndWaitAgent follows Herdr's bounded readiness handshake", async () => {
+  let launched = false;
+  let checks = 0;
+  const fake = await fakeHerdr((request, socket) => {
+    if (request.method === "agent.start") {
+      launched = true;
+      socket.write(`${JSON.stringify({ id: request.id, result: { type: "agent_started" } })}\n`);
+    } else if (request.method === "agent.get") {
+      checks += 1;
+      socket.write(`${JSON.stringify({
+        id: request.id,
+        result: { agent: { pane_id: "w1:p2", interactive_ready: checks > 1 } },
+      })}\n`);
+    }
+  });
+  try {
+    const client = new HerdrClient({ socketPath: fake.socketPath });
+    const agent = await client.startAndWaitAgent({
+      name: "codex",
+      kind: "codex",
+      paneId: "w1:p2",
+      args: ["resume", "session-1"],
+    });
+    assert.equal(agent.pane_id, "w1:p2");
+    assert.equal(launched, true);
+    assert.equal(checks, 2);
+  } finally {
+    await fake.close();
+  }
+});
+
 test("subscription returns immediately and forwards events", async () => {
   let eventResolve;
   const received = new Promise((resolve) => { eventResolve = resolve; });

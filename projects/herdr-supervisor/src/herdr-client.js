@@ -2,6 +2,8 @@ import net from "node:net";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 export function defaultSocketPath(env = process.env) {
   return env.HERDR_SOCKET_PATH || join(homedir(), ".config", "herdr", "herdr.sock");
 }
@@ -71,6 +73,32 @@ export class HerdrClient {
 
   async promptAgent(paneId, text) {
     return this.request("agent.prompt", { target: paneId, text });
+  }
+
+  async startAgent({ name, kind, paneId, args = [] }) {
+    return this.request("agent.start", {
+      name,
+      kind,
+      pane_id: paneId,
+      args,
+      timeout_ms: 30_000,
+    });
+  }
+
+  async getAgent(paneId) {
+    const result = await this.request("agent.get", { target: paneId });
+    return result.agent;
+  }
+
+  async startAndWaitAgent(request, timeoutMs = 30_000) {
+    await this.startAgent(request);
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const agent = await this.getAgent(request.paneId);
+      if (agent?.interactive_ready) return agent;
+      if (Date.now() >= deadline) throw new Error(`Herdr agent ${request.paneId} did not become ready`);
+      await wait(200);
+    }
   }
 
   subscribe(subscriptions, onEvent, onDisconnect = () => {}, onReady = () => {}) {

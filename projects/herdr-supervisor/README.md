@@ -58,6 +58,14 @@ observes only new evidence, and accepts without repeating the steer. A replaced
 pane occupant fails closed, and repeated ineffective steering causes the
 supervisor to ask the human instead of looping forever.
 
+The recovery path has also been verified end to end. When an exact Codex
+process stopped but its original Herdr pane remained, the supervisor resumed
+that native Codex session, sent one continuation, observed its new result, and
+accepted the goal. A missing pane or changed identity still fails closed. Herdr
+does not emit an event when a newly started agent becomes interactive, so this
+explicit recovery operation uses Herdr's bounded readiness handshake; normal
+supervision remains event-driven and performs no readiness polling.
+
 ## Try it
 
 List the workers Herdr currently knows:

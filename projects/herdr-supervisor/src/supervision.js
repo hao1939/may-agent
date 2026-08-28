@@ -4,6 +4,10 @@ export function findAgent(snapshot, paneId) {
   return snapshot?.agents?.find((agent) => agent.pane_id === paneId);
 }
 
+export function findPane(snapshot, paneId) {
+  return snapshot?.panes?.find((pane) => pane.pane_id === paneId);
+}
+
 export function captureIdentity(agent) {
   if (!agent?.pane_id || !agent?.terminal_id || !agent?.agent_session) {
     throw new Error("the pane does not contain an observable agent session");
@@ -15,8 +19,10 @@ export function captureIdentity(agent) {
   };
 }
 
-export function identityMismatch(binding, agent) {
-  if (!agent) return "worker pane is no longer present";
+export function identityMismatch(binding, agent, pane) {
+  if (!agent && !pane) return "worker pane is no longer present";
+  if (!agent && pane.terminal_id !== binding.terminalId) return "pane now refers to a different terminal";
+  if (!agent) return "worker agent process is no longer detected";
   if (agent.terminal_id !== binding.terminalId) return "pane now refers to a different terminal";
   const expected = binding.agentSession;
   const actual = agent.agent_session;
@@ -77,15 +83,16 @@ export function removeBinding(state, paneId) {
 
 export function liveWorker(binding, snapshot) {
   const agent = findAgent(snapshot, binding.paneId);
+  const pane = findPane(snapshot, binding.paneId);
   return {
     binding,
     agent,
-    mismatch: identityMismatch(binding, agent),
+    mismatch: identityMismatch(binding, agent, pane),
   };
 }
 
-export function shouldWake(binding, agent) {
-  const mismatch = identityMismatch(binding, agent);
+export function shouldWake(binding, agent, pane) {
+  const mismatch = identityMismatch(binding, agent, pane);
   if (mismatch) return { wake: true, reason: mismatch, sequence: undefined, key: `identity:${mismatch}` };
   const sequence = Number(agent.state_change_seq || 0);
   if (sequence <= Number(binding.lastReviewStateChangeSeq || 0)) {
@@ -102,12 +109,33 @@ export function shouldWake(binding, agent) {
   };
 }
 
+export function recoveryRequest(binding, snapshot) {
+  const agent = findAgent(snapshot, binding.paneId);
+  const pane = findPane(snapshot, binding.paneId);
+  const mismatch = identityMismatch(binding, agent, pane);
+  if (agent) throw new Error(mismatch || "the registered worker is still present");
+  if (!pane) throw new Error("the registered worker pane is no longer present");
+  if (pane.terminal_id !== binding.terminalId) throw new Error("the pane now refers to a different terminal");
+  const session = binding.agentSession;
+  if (session.agent !== "codex" || session.kind !== "id") {
+    throw new Error(`exact recovery is not available for ${session.agent} ${session.kind} sessions`);
+  }
+  return {
+    name: "codex",
+    kind: "codex",
+    paneId: binding.paneId,
+    args: ["resume", session.value],
+  };
+}
+
 export function formatWorker({ binding, agent, mismatch }) {
-  const state = mismatch ? "identity changed" : agent.agent_status;
+  const processStopped = mismatch === "worker agent process is no longer detected";
+  const state = processStopped ? "process stopped" : mismatch ? "identity changed" : agent.agent_status;
   const name = `${binding.agentSession.agent} ${binding.paneId}`;
   const lines = [`${name} · ${state}`, `  Goal: ${binding.goal}`];
   if (binding.acceptance.length) lines.push(`  Accept when: ${binding.acceptance.join("; ")}`);
-  if (mismatch) lines.push(`  Needs you: ${mismatch}; supervision is paused`);
+  if (processStopped) lines.push("  Next: supervisor should review whether the exact session can resume");
+  else if (mismatch) lines.push(`  Needs you: ${mismatch}; supervision is paused`);
   else if (agent.agent_status === "working") lines.push("  Next: review when the worker settles or blocks");
   else lines.push(`  Next: supervisor should review current evidence`);
   return lines.join("\n");
