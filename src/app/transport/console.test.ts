@@ -25,7 +25,7 @@ describe("console transport", () => {
         status: "done",
       },
     } as any);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
 
     expect(onResponseDelivered).toHaveBeenCalledTimes(1);
   });

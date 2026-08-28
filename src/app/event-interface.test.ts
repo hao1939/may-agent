@@ -288,7 +288,7 @@ describe("simple event interface", () => {
       { source: "control-socket" },
     );
     expect(observed).toHaveLength(0);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
     unsubscribe();
 
     expect(observed).toHaveLength(1);
