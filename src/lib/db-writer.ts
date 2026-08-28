@@ -464,9 +464,12 @@ export class DbWriter {
   private lastHousekeepingAt = Date.now();
   private housekeepingIntervalMs: number;
 
-  constructor(persistDir: string, opts: { housekeepingIntervalMs?: number } = {}) {
+  constructor(
+    persistDir: string,
+    opts: { housekeepingIntervalMs?: number; existingSchemaOnly?: boolean } = {},
+  ) {
     this.persistDir = persistDir;
-    this.db = getDb(persistDir);
+    this.db = getDb(persistDir, { existingSchemaOnly: opts.existingSchemaOnly });
     this.housekeepingIntervalMs = Math.max(0, opts.housekeepingIntervalMs ?? EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS);
   }
 
