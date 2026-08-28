@@ -108,7 +108,10 @@ Task execution is also a process boundary. A Task worker persists the Events it
 produces to the shared journal, then relays their durable IDs to the parent
 Host. The parent fans out those already-persisted Events to its local routes and
 interface listeners without appending them again. This is transport for the
-same Event, not another queue or lifecycle.
+same Event, not another queue or lifecycle. All Task workers share one bounded
+parent relay: it fans out at most one worker Event per event-loop turn, so
+several active workers cannot combine independent callback chains into one
+long interface stall.
 
 Passive listeners run afterward for persisted, non-replayed events. Each
 listener has its own filtered, bounded FIFO, so socket streams, Console

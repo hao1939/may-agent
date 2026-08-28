@@ -654,9 +654,10 @@ does not create a worker Task, proxy Task, semantic queue, or second retry
 policy. Events are persisted once in the worker and relayed with their durable
 row IDs so parent-side listeners can observe them without duplicate journal
 rows. The parent fans out a bounded batch and then yields to interface work;
-a burst of progress events must not monopolize the event loop. If the worker
-exits, the controller's existing retry and lease recovery continue the same
-Task identity.
+the bound is shared across all active workers, not applied separately to each
+worker. A burst of progress events must not monopolize the event loop. If the
+worker exits, the controller's existing retry and lease recovery continue the
+same Task identity.
 
 The parent-side exact wake is constant in scope: it reads the named Task and
 its open Conditions, records the trigger, and schedules that identity. It does
