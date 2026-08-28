@@ -756,11 +756,12 @@ export class AppInboxHost {
           }
         } catch (error) {
           outcome.errors.push(`App ${appId} task ${taskDependency.id}: ${errorMessage(error)}`);
+        } finally {
+          // Dependency reads can resolve synchronously. Yield after each one
+          // so a large App cannot starve control-socket and human-message I/O.
+          await new Promise<void>((resolve) => setImmediate(resolve));
         }
       }
-      // Each App may own a multi-megabyte canonical Task resource. Let HTTP,
-      // event admission, and other Apps run between bounded per-App reads.
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
     outcome.wokenAppIds = [...wokenApps].sort();
     return outcome;

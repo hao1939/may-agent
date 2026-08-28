@@ -1276,6 +1276,42 @@ describe("App inbox host", () => {
     expect(host.get("aks-1")?.availableAt).toBeUndefined();
   });
 
+  it("yields control traffic between dependency recovery items from one App", async () => {
+    let reads = 0;
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      attachTask: async ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      }),
+      readDependency: async ({ dependency }) => {
+        reads += 1;
+        return { ...dependency, status: "running" };
+      },
+    });
+    for (const [id, taskId] of [
+      ["first", "probe/first"],
+      ["second", "probe/second"],
+    ] as const) {
+      host.admit({
+        id,
+        appId: "evaluation",
+        targetTaskId: taskId,
+        source: { kind: "system", id: "test" },
+        input: { kind: "probe", data: { value: id } },
+      });
+      await host.reconcileOnce("evaluation");
+    }
+    reads = 0;
+
+    const recovery = host.recoverTaskDependencies();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(reads).toBe(1);
+    await recovery;
+    expect(reads).toBe(2);
+  });
+
   it("revisits a nonterminal dependency when repaired App policy assigns request-specific achieve work", async () => {
     const legacy = defineApp({
       ...app("may-agent"),
