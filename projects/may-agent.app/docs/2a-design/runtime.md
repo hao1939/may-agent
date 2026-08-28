@@ -194,6 +194,12 @@ coordination, reconciliation, workflows, agents, commands, network calls, and
 presentation run asynchronously; inline routing never performs the work it
 admits.
 
+Conversation admission follows the same boundary. The human Turn and exact App
+request are durable before `publish` returns. The derived
+`conversation.updated` wake is coalesced and emitted on a later turn; adapters
+reread the Conversation resource when it arrives. A slow presentation route
+therefore cannot hold the human acknowledgement.
+
 Passive listeners receive persisted, non-replayed events afterward in their
 own filtered, bounded FIFOs. A slow Console, socket client, Conversation
 mirror, metric observer, or lifecycle observer therefore cannot extend event

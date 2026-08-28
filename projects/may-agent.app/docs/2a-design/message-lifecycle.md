@@ -77,6 +77,10 @@ transient messages may update presentation or context but never recursively
 invoke May.
 
 Admission does not wait for a Conversation read or a previous May decision.
+It durably records the human Turn and its May request, returns that receipt,
+and only then emits the coalesced `conversation.updated` presentation wake.
+Presentation resynchronizes from the Conversation resource, so this wake is
+level-triggered and never belongs on the human admission call stack.
 After admission returns, May's message handler claims Turns in Conversation
 order and makes the bounded frontend decision. Serialization belongs here,
 because it protects conversational meaning; it does not belong in the EventHub.

@@ -5,8 +5,8 @@
 deferred request-to-Task coordination, exact wakes, Condition wakes, and
 ordered per-attempt Event batches are implemented. All current Apps use that
 single path; request dispositions have been removed. May's current supervision
-Task still mediates delegation and waits on destination work instead of
-observing direct Topic-to-responsible-Task links.
+Task observes direct Topic-to-responsible-Task links; it is not an intermediate
+assignment or a proxy for destination work.
 
 ## Purpose
 
@@ -109,11 +109,10 @@ produces to the shared journal, then relays their durable IDs to the parent
 Host. The parent fans out those already-persisted Events to its local routes and
 interface listeners without appending them again. This is transport for the
 same Event, not another queue or lifecycle. All Task workers share one bounded
-parent relay: it fans out at most one worker Event per event-loop turn, so
-several active workers cannot combine independent callback chains into one
-long interface stall. In the Bun runtime, that yield uses a zero-delay timer;
-an unbroken `setImmediate` chain does not reliably give Unix-socket polling a
-turn under sustained worker traffic.
+parent relay: it fans out at most one worker Event, then leaves a small real
+poll window before the next background item. Several active workers therefore
+cannot combine independent callback chains into one long interface stall. A
+zero-delay callback is not a fairness guarantee in the deployed Bun runtime.
 
 Passive listeners run afterward for persisted, non-replayed events. Each
 listener has its own filtered, bounded FIFO, so socket streams, Console
@@ -121,9 +120,9 @@ rendering, Conversation mirroring, and similar presentation cannot add latency
 to semantic acceptance or block one another. When a listener falls behind,
 stale notifications may be dropped with a warning; the durable event and
 resource remain available for resynchronization. A listener handles at most one
-notification per event-loop turn before yielding through the same poll-capable
-timer boundary. A listener failure is observable but cannot undo the accepted
-event.
+notification per event-loop turn. A continuing backlog leaves a nonzero poll
+window before the next item. A listener failure is observable but cannot undo
+the accepted event.
 
 Subscriber-failure diagnostics are passive Events too. They are emitted one
 per later event-loop turn; a burst of failed consumers must not recursively
@@ -154,7 +153,10 @@ history sweep before inserting a new event. Retained schema fields named
 `conversation.message.created`, `app.input.requested`, direct-agent
 `chat.start.requested`, exact session controls, and Host lifecycle controls are
 required. For a Conversation message, acceptance means the Conversation route
-accepted the message; only `author.kind=human` also creates a May request.
+accepted the message; only `author.kind=human` also creates a May request. The
+durable message and request are the acceptance boundary. The derived
+`conversation.updated` presentation wake is coalesced and emitted afterward;
+it cannot delay or invalidate the publisher's receipt.
 Ordinary reported facts are record-only. A required event may remain `recorded`
 after persistence when its route temporarily fails; recovery retries the same
 event and identity.
