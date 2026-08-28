@@ -957,6 +957,12 @@ describe("App inbox runtime", () => {
     const task = capabilities(bus);
     const started: string[] = [];
     const releases = new Map<string, () => void>();
+    let conversationUpdateWakes = 0;
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "conversation.updated") return;
+      conversationUpdateWakes += 1;
+      return { accepted: true, by: "test-conversation-view", route: "direct" };
+    });
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
       db,
@@ -987,12 +993,15 @@ describe("App inbox runtime", () => {
       });
     publish("conversation-a", "first-a");
     await waitUntil(() => started.includes("message/first-a"));
+    await waitUntil(() => conversationUpdateWakes > 0);
 
     // Event admission is not serialized. The later Turn is durable while the
     // first message-handler invocation is still running; only its handler
     // claim waits for the preceding Turn in this Conversation.
+    const priorConversationUpdateWakes = conversationUpdateWakes;
     publish("conversation-a", "second-a");
     publish("conversation-b", "first-b");
+    expect(conversationUpdateWakes).toBe(priorConversationUpdateWakes);
     const admitted = db
       .prepare(
         `SELECT COUNT(*) AS count
