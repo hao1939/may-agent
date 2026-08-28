@@ -149,6 +149,28 @@ describe("agent registry loader", () => {
     }
   });
 
+  it("loads only the agents requested by a short-lived worker", async () => {
+    const root = tempRoot();
+    try {
+      const agentsRoot = join(root, "agents");
+      for (const name of ["owner", "unrelated"]) {
+        const agentDir = join(agentsRoot, name);
+        mkdirSync(agentDir, { recursive: true });
+        writeFileSync(join(agentDir, "agent.json"), makeAgentJson(name));
+      }
+      const projectsRoot = join(root, "projects");
+      mkdirSync(projectsRoot, { recursive: true });
+      const opts = { ...makeOpts(root, agentsRoot, projectsRoot), agentNames: ["owner"] };
+
+      const result = await loadAgents(opts, makeRuntime());
+
+      expect(result.added).toEqual(["owner"]);
+      expect(opts.manager.agentNames()).toEqual(["owner"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("restores the exact previous manager definitions when publication is rolled back", async () => {
     const root = tempRoot();
     try {

@@ -15,6 +15,8 @@ export interface CronRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   loaderOpts: AgentLoaderOptions;
+  /** Open Task controllers after the isolated recovery pass settles. */
+  onTaskRecoverySettled?: () => void;
 }
 
 function currentProjectLifecycle(appDir: string): string | null {
@@ -70,7 +72,15 @@ export function shouldResumeStartupSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts } = options;
 
-  await recoverInstalledAppTasks(bus);
+  // Recovery is Task work. It must not hold startup, human admission, or the
+  // command interface open while it scans and repairs durable Task state.
+  void recoverInstalledAppTasks(bus)
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      log("warn", `[startup] Task recovery failed; bounded recovery will retry: ${message}`);
+      bus.emit({ type: "info", message: `[startup] Task recovery will retry: ${message}` });
+    })
+    .finally(() => options.onTaskRecoverySettled?.());
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
     shouldResume: shouldResumeStartupSession,
