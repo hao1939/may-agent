@@ -29,6 +29,9 @@ export async function prepareDaemonAgents(opts: {
   cronEnabled: boolean;
   appRegistry: AppRegistry;
   hostCapacity: HostCapacity;
+  /** Controllers in the daemon, descriptor-only setup in an attempt worker, or no Task runtime. */
+  taskRuntimeMode?: "controllers" | "manual" | "none";
+  executeTaskAttempt?: AppTaskRuntimeOptions["executeAttempt"];
 }): Promise<{
   loaderOpts: AgentLoaderOptions;
   appTaskOptions?: AppTaskRuntimeOptions;
@@ -138,7 +141,8 @@ export async function prepareDaemonAgents(opts: {
 
   let appTaskOptions: AppTaskRuntimeOptions | undefined;
   let startAppTaskControllers = () => {};
-  if (opts.cronEnabled) {
+  const taskRuntimeMode = opts.taskRuntimeMode ?? (opts.cronEnabled ? "controllers" : "none");
+  if (taskRuntimeMode !== "none") {
     let started = false;
     let openStartGate = () => {};
     const startAfter = new Promise<void>((resolve) => {
@@ -164,6 +168,8 @@ export async function prepareDaemonAgents(opts: {
       manager: opts.manager,
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
+      ...(opts.executeTaskAttempt ? { executeAttempt: opts.executeTaskAttempt } : {}),
+      installControllers: taskRuntimeMode === "controllers",
       executors: {
         "codex-goal": codexGoalExecutor,
         // Existing trial Tasks keep their durable executor name through the
@@ -172,7 +178,7 @@ export async function prepareDaemonAgents(opts: {
       },
       registerLocalAgent,
       appRegistry: opts.appRegistry,
-      startAfter,
+      ...(taskRuntimeMode === "controllers" ? { startAfter } : {}),
     };
 
     // Publish definitions and gated controllers now. Recovery is activated

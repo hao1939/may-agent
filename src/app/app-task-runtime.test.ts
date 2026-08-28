@@ -3392,6 +3392,52 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it("delegates a controller attempt across the configured execution boundary", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const calls: Array<{ appId: string; taskId: string; lane: string }> = [];
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executeAttempt: async ({ appId, taskId, dispatch }) => {
+        calls.push({ appId, taskId, lane: dispatch.lane });
+        return [];
+      },
+      appRegistrySnapshot: {
+        id: "boot:isolated-attempt",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/isolated",
+          parentId: "operations",
+          outcome: "Run outside the interface event loop",
+          acceptance: ["The configured attempt boundary receives the exact Task"],
+          mode: "achieve",
+          agent: "sample-owner",
+        },
+      },
+      idempotencyKey: "attach:isolated",
+      request: {
+        id: "request-isolated",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+
+    const deadline = Date.now() + 1_000;
+    while (calls.length === 0 && Date.now() < deadline) await Bun.sleep(5);
+    expect(calls).toEqual([{ appId: "sample", taskId: "work/isolated", lane: "human" }]);
+  });
+
   it("retries the same Task after an executor process failure", async () => {
     const f = fixture();
     const bus = eventBus();

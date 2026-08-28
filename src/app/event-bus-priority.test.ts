@@ -53,6 +53,26 @@ describe("EventBus subscriber priority", () => {
     expect(recovered[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, by: "durable-recovery" });
   });
 
+  it("fans out a worker-persisted event without appending it twice", async () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    bus.setPersistenceSubscriber(() => calls.push("persist"));
+    bus.subscribeDurableRoute(() => {
+      calls.push("durable");
+      return { accepted: true, by: "worker-route" };
+    });
+    bus.subscribe(() => calls.push("ordinary"));
+    bus.listen(() => calls.push("listener"));
+    bus.setDeliveryRecorder((event) => calls.push(`receipt:${event[EVENT_ROW_ID]}`));
+
+    const forwarded = bus.fanoutPersisted({ type: "info", message: "from worker" }, 92);
+
+    expect(calls).toEqual(["durable", "ordinary", "receipt:92"]);
+    expect(forwarded[EVENT_ROW_ID]).toBe(92);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(calls).toEqual(["durable", "ordinary", "receipt:92", "listener"]);
+  });
+
   it("runs listeners later in FIFO order without extending emit", async () => {
     const bus = new EventBus();
     const calls: string[] = [];
