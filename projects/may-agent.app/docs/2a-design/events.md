@@ -122,6 +122,10 @@ resource remain available for resynchronization. A listener handles at most one
 notification per event-loop turn before yielding to interface I/O. A listener
 failure is observable but cannot undo the accepted event.
 
+Subscriber-failure diagnostics are passive Events too. They are emitted one
+per later event-loop turn; a burst of failed consumers must not recursively
+persist and route every diagnostic on the originating publication stack.
+
 An `async` function is not by itself an asynchronous boundary: its synchronous
 prefix runs immediately until the first `await`. A handler that opens stores,
 discovers work, scans state, or constructs an execution must first schedule a
