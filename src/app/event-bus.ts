@@ -966,7 +966,9 @@ export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
 
-const EVENT_LISTENER_BATCH_SIZE = 64;
+// One listener notification per turn keeps socket polling responsive even
+// when several independent listeners have accumulated worker Event bursts.
+const EVENT_LISTENER_BATCH_SIZE = 1;
 const EVENT_LISTENER_BACKLOG_LIMIT = 256;
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
 /** Exact synchronous durable-route acceptance observed for this emission. */
