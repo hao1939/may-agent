@@ -39,6 +39,8 @@ import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
+import { createTaskAdmissionProcess } from "./task-admission-process.js";
+import { hasLoadedAppTask, wakeLoadedAppTasks } from "./app-task-runtime.js";
 import { prepareAgentGeneration } from "./agent-loader.js";
 
 export function createAppInputAdmission(options: {
@@ -264,6 +266,10 @@ export async function runAppRuntime(opts: {
     },
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
+    createTaskAdmissionWorker: () => createTaskAdmissionProcess(),
+    wakeAdmittedTasks: ({ appId, taskIds, supersededSessionIds }) =>
+      wakeLoadedAppTasks({ bus, appId, taskIds, supersededSessionIds }),
+    hasTaskTarget: ({ appId, taskId }) => hasLoadedAppTask({ bus, appId, taskId }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),
     readDependency: (input) =>
