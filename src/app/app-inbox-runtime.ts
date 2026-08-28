@@ -619,7 +619,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const dirty = new Set<string>();
   const pending: string[] = [];
   const queued = new Set<string>();
-  let pumpHandle: ReturnType<typeof setImmediate> | null = null;
+  let pumpHandle: ReturnType<typeof setTimeout> | null = null;
   const maxConcurrentRequests = options.maxConcurrentRequests ?? 2;
   if (!Number.isSafeInteger(maxConcurrentRequests) || maxConcurrentRequests <= 0) {
     throw new Error("App request concurrency must be a positive safe integer");
@@ -678,10 +678,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const armPump = (): void => {
     if (closed || !started || pumpHandle) return;
-    pumpHandle = setImmediate(() => {
+    pumpHandle = setTimeout(() => {
       pumpHandle = null;
       pump();
-    });
+    }, 0);
   };
 
   const pump = (): void => {
@@ -758,7 +758,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let nextDependencyRecoveryAt = 0;
   const recoverTaskDependencies = (): Promise<void> => {
     if (taskRecovery) return taskRecovery;
-    const current = new Promise<void>((resolve) => setImmediate(resolve))
+    const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(() =>
         closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies(),
       )
@@ -952,12 +952,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   let nextAdmissionRecoveryAt = 0;
-  let admissionRecoveryHandle: ReturnType<typeof setImmediate> | null = null;
+  let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
   const recoverAdmissionPlans = (force = false): void => {
     const currentTime = now();
     if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
-    admissionRecoveryHandle = setImmediate(() => {
+    admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
       const plans = listPendingAppEventAdmissionPlans(options.db, {
@@ -986,10 +986,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           // acceptance on the original row; ordinary subscribers never replay.
           options.bus.redeliverPersisted(event, plan.eventId);
         }
-        if (index < plans.length) admissionRecoveryHandle = setImmediate(recoverNext);
+        if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
       };
       recoverNext();
-    });
+    }, 0);
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute(
@@ -1494,7 +1494,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       recoverAdmissionPlans(true);
       timer = setInterval(scanNow, scanIntervalMs);
       timer.unref?.();
-      setImmediate(scanNow);
+      setTimeout(scanNow, 0);
       armPump();
       startPromise = Promise.resolve();
       return startPromise;
@@ -1551,9 +1551,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       closed = true;
       if (timer) clearInterval(timer);
       timer = null;
-      if (pumpHandle) clearImmediate(pumpHandle);
+      if (pumpHandle) clearTimeout(pumpHandle);
       pumpHandle = null;
-      if (admissionRecoveryHandle) clearImmediate(admissionRecoveryHandle);
+      if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
       observerRuntime.close();
       unsubscribe();

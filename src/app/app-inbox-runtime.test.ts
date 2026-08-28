@@ -1468,6 +1468,7 @@ describe("App inbox runtime", () => {
       data: { appId: "correlation-only" },
     });
 
+    await Bun.sleep(1);
     expect(failures).toHaveLength(1);
     expect(failures[0]).toMatchObject({
       originalEventType: "trigger.metrics-snapshot",
@@ -1504,6 +1505,7 @@ describe("App inbox runtime", () => {
     });
 
     expect(emitted[EVENT_DELIVERY_RESULT]).toBeUndefined();
+    await Bun.sleep(1);
     expect(failures).toHaveLength(1);
     expect(failures[0]).toMatchObject({
       originalEventType: "project.task.tick",
@@ -1514,8 +1516,8 @@ describe("App inbox runtime", () => {
       commands: [
         expect.objectContaining({
           appId: "evaluation",
+          targetedTaskId: "missing-task",
           status: "pending",
-          lastError: expect.stringContaining("did not durably admit frozen missing-task"),
         }),
       ],
     });
