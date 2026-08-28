@@ -3793,6 +3793,35 @@ function appDependencyUpdateSubject(event: Record<string, unknown>): string | nu
   return id ? `id:${id}` : null;
 }
 
+function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
+  const containers = [event, isRecord(event.target) ? event.target : {}, isRecord(event.data) ? event.data : {}];
+  const values = new Map<string, string>();
+  for (const container of containers) {
+    for (const [field, value] of Object.entries(container)) {
+      if ((typeof value === "string" && value.trim()) || typeof value === "number" || typeof value === "boolean") {
+        values.set(field, String(value).trim());
+      }
+    }
+  }
+  const candidates = new Set<string>();
+  for (const [field, value] of values) candidates.add(`${field}:${value}`);
+  const typed: Record<string, string[]> = {
+    task: ["taskId", "task_id"],
+    session: ["sessionId", "session_id"],
+    "workflow-run": ["workflowRunId", "workflow_run_id", "runId"],
+    metric: ["metricId", "metric_id"],
+    alert: ["alertId", "alert_id"],
+    project: ["project", "projectId", "project_id"],
+    "pipeline-run": ["pipelineRunId", "pipeline_run_id", "runId", "run_id"],
+    "pull-request": ["pullRequestId", "pull_request_id", "prId", "pr_id"],
+  };
+  for (const [kind, fields] of Object.entries(typed)) {
+    const value = fields.map((field) => values.get(field)).find(Boolean);
+    if (value) candidates.add(`${kind}:${value}`);
+  }
+  return [...candidates];
+}
+
 function appDependencyUpdateWakeTaskIds(
   config: ResourceTaskStateConfig,
   event: Record<string, unknown>,
@@ -3943,17 +3972,18 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   if (descriptors.length === 0) return [];
   const event = canonicalTaskEvent(input.event);
   const updateSubject = appDependencyUpdateSubject(event);
+  const subjects = conditionSubjectCandidates(event);
   const matchesByApp = new Map<string, Set<string>>();
   const loadedApps = new Set(descriptors.map((descriptor) => descriptor.id));
   const store = descriptors[0]!.resourceStore;
-  for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""))) {
+  for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""), subjects)) {
     if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
     const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
     for (const taskId of route.taskIds) taskIds.add(taskId);
     matchesByApp.set(route.appId, taskIds);
   }
   if (updateSubject) {
-    for (const route of store.readConditionRoutesForAllApps("app.dependency.completed")) {
+    for (const route of store.readConditionRoutesForAllApps("app.dependency.completed", [updateSubject])) {
       if (!loadedApps.has(route.appId) || route.condition.spec.subject !== updateSubject) continue;
       const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
       for (const taskId of route.taskIds) taskIds.add(taskId);
