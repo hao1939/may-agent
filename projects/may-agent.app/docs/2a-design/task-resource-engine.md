@@ -656,6 +656,11 @@ row IDs so parent-side listeners can observe them without duplicate journal
 rows. If the worker exits, the controller's existing retry and lease recovery
 continue the same Task identity.
 
+An attempt worker loads only its owning App's Task runtime and reuses the read
+models already published by the parent. It must not resynchronize every App at
+startup: those duplicate writes contend with the Event journal and can delay
+human-message durability.
+
 Resource-backed Tasks coordinate concurrent writers with their existing
 SQLite transaction and exact resource-version/generation/attempt fences. They
 must not also wait on the legacy `state.json` filesystem lock: that duplicate
