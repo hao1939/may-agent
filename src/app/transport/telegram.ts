@@ -496,7 +496,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // by one turn so a burst of wake-only events collapses before touching the
     // Conversation resource. An update observed during I/O still requests one
     // dirty retry below.
-    setImmediate(() => {
+    setTimeout(() => {
       conversationSyncScheduled = false;
       if (!running) return;
       if (conversationSyncRunning) {
@@ -518,7 +518,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             queueConversationSync();
           }
         });
-    });
+    }, 0);
   }
 
   async function refreshWatch(surface: string): Promise<void> {
@@ -559,10 +559,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   function queueWatchRefresh(surface: string): void {
     if (!running || scheduledWatches.has(surface)) return;
     scheduledWatches.add(surface);
-    setImmediate(() => {
+    setTimeout(() => {
       scheduledWatches.delete(surface);
       if (running && watchedTasks.has(surface)) void refreshWatch(surface);
-    });
+    }, 0);
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
@@ -622,7 +622,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   function queueTodoRefresh(surface: string): void {
     if (!running || scheduledTodos.has(surface)) return;
     scheduledTodos.add(surface);
-    setImmediate(() => {
+    setTimeout(() => {
       scheduledTodos.delete(surface);
       if (running) {
         void refreshTodos(surface).catch((error) => {
@@ -632,7 +632,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           });
         });
       }
-    });
+    }, 0);
   }
 
   const unsubscribeConversation = bus.listen(
