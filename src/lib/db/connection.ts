@@ -54,7 +54,10 @@ export function getDb(persistDir: string): SqliteDb {
   }
 
   db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA busy_timeout = 5000");
+  // Task workers may wait without affecting an interface. The daemon fails a
+  // contended turn quickly so commands and other sockets keep being served;
+  // durable event/task identities provide the retry boundary.
+  db.exec(`PRAGMA busy_timeout = ${process.env.MAY_TASK_ATTEMPT_CHILD === "1" ? 5000 : 50}`);
   db.exec("PRAGMA foreign_keys = ON");
   // Checkpointing belongs to the dedicated maintenance process. SQLite's
   // default per-connection auto-checkpoint can otherwise run a multi-page
