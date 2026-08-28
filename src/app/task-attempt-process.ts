@@ -10,6 +10,7 @@ import type { AppTaskDispatch } from "./app-task-controller.js";
 import {
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
+  recoverInstalledAppTasks,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
 import { attachEventPersistence } from "./daemon-events.js";
@@ -86,6 +87,15 @@ function workerArguments(request: TaskAttemptProcessRequest): string[] {
   ];
 }
 
+function spawnPrivateWorker(args: string[]): ChildProcess {
+  const invocation = workerInvocation();
+  return spawn(invocation.command, [...invocation.prefix, ...args], {
+    cwd: process.cwd(),
+    env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+    stdio: ["ignore", "inherit", "inherit", "pipe"],
+  });
+}
+
 /**
  * Run the expensive Task attempt outside the interface event loop. Task state
  * remains in the shared canonical resource store; fd 3 carries only wake-like
@@ -97,68 +107,81 @@ export function createTaskAttemptProcessExecutor(input: {
   /** Test seam; production always uses the private current-binary worker. */
   spawnWorker?: (request: TaskAttemptProcessRequest) => ChildProcess;
 }): NonNullable<AppTaskRuntimeOptions["executeAttempt"]> {
-  return async (request) => {
-    const child = input.spawnWorker
-      ? input.spawnWorker(request)
-      : (() => {
-          const invocation = workerInvocation();
-          return spawn(invocation.command, [...invocation.prefix, ...workerArguments(request)], {
-            cwd: process.cwd(),
-            env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
-            stdio: ["ignore", "inherit", "inherit", "pipe"],
-          });
-        })();
-    const relay = child.stdio[3] as Readable | null;
-    if (!relay) {
-      child.kill("SIGKILL");
-      throw new Error("Task worker event pipe is unavailable");
-    }
+  return (request) =>
+    runWorkerProcess(
+      input.bus,
+      input.spawnWorker?.(request) ?? spawnPrivateWorker(workerArguments(request)),
+      input.timeoutMs,
+    );
+}
 
-    let buffer = "";
-    let result: string[] | undefined;
-    let workerError: string | undefined;
-    let protocolError: Error | undefined;
-    relay.setEncoding("utf8");
-    relay.on("data", (chunk: string) => {
-      if (protocolError) return;
-      buffer += chunk;
-      if (Buffer.byteLength(buffer, "utf8") > WORKER_FRAME_LIMIT) {
-        protocolError = new Error("Task worker event buffer exceeded its bound");
+/** Run startup Task repair outside the interface event loop. */
+export function createTaskRecoveryProcessExecutor(input: {
+  bus: EventBus;
+  timeoutMs?: number;
+  /** Test seam; production always uses the private current-binary worker. */
+  spawnWorker?: () => ChildProcess;
+}): NonNullable<AppTaskRuntimeOptions["executeRecovery"]> {
+  return async () => {
+    await runWorkerProcess(
+      input.bus,
+      input.spawnWorker?.() ?? spawnPrivateWorker(["--task-recovery-once"]),
+      input.timeoutMs,
+    );
+  };
+}
+
+async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: number): Promise<string[]> {
+  const relay = child.stdio[3] as Readable | null;
+  if (!relay) {
+    child.kill("SIGKILL");
+    throw new Error("Task worker event pipe is unavailable");
+  }
+
+  let buffer = "";
+  let result: string[] | undefined;
+  let workerError: string | undefined;
+  let protocolError: Error | undefined;
+  relay.setEncoding("utf8");
+  relay.on("data", (chunk: string) => {
+    if (protocolError) return;
+    buffer += chunk;
+    if (Buffer.byteLength(buffer, "utf8") > WORKER_FRAME_LIMIT) {
+      protocolError = new Error("Task worker event buffer exceeded its bound");
+      child.kill("SIGKILL");
+      return;
+    }
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const frame = parseWorkerFrame(line);
+        if (frame.kind === "event") bus.fanoutPersisted(frame.event, frame.eventId);
+        else if (frame.kind === "result") result = frame.dependentTaskIds;
+        else workerError = frame.error;
+      } catch (error) {
+        protocolError = error instanceof Error ? error : new Error(String(error));
         child.kill("SIGKILL");
         return;
       }
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const frame = parseWorkerFrame(line);
-          if (frame.kind === "event") input.bus.fanoutPersisted(frame.event, frame.eventId);
-          else if (frame.kind === "result") result = frame.dependentTaskIds;
-          else workerError = frame.error;
-        } catch (error) {
-          protocolError = error instanceof Error ? error : new Error(String(error));
-          child.kill("SIGKILL");
-          return;
-        }
-      }
-    });
+    }
+  });
 
-    const exit = await waitForChild(child, input.timeoutMs);
-    if (protocolError) throw protocolError;
-    if (buffer.trim()) {
-      const frame = parseWorkerFrame(buffer);
-      if (frame.kind === "event") input.bus.fanoutPersisted(frame.event, frame.eventId);
-      else if (frame.kind === "result") result = frame.dependentTaskIds;
-      else workerError = frame.error;
-    }
-    if (workerError) throw new Error(workerError);
-    if (exit.code !== 0) {
-      throw new Error(`Task worker exited with ${exit.signal ? `signal ${exit.signal}` : `code ${exit.code}`}`);
-    }
-    if (!result) throw new Error("Task worker exited without a result frame");
-    return result;
-  };
+  const exit = await waitForChild(child, timeoutMs);
+  if (protocolError) throw protocolError;
+  if (buffer.trim()) {
+    const frame = parseWorkerFrame(buffer);
+    if (frame.kind === "event") bus.fanoutPersisted(frame.event, frame.eventId);
+    else if (frame.kind === "result") result = frame.dependentTaskIds;
+    else workerError = frame.error;
+  }
+  if (workerError) throw new Error(workerError);
+  if (exit.code !== 0) {
+    throw new Error(`Task worker exited with ${exit.signal ? `signal ${exit.signal}` : `code ${exit.code}`}`);
+  }
+  if (!result) throw new Error("Task worker exited without a result frame");
+  return result;
 }
 
 function waitForChild(
@@ -215,6 +238,32 @@ export async function runTaskAttemptWorker(input: {
   roots: TaskAttemptWorkerRoots;
   models: ModelRegistry;
 }): Promise<void> {
+  return runTaskWorker({
+    roots: input.roots,
+    models: input.models,
+    run: (bus) => reconcileLoadedAppTaskOnce({ bus, ...input.request }),
+  });
+}
+
+/** Entry used only for the isolated startup repair pass. */
+export async function runTaskRecoveryWorker(input: {
+  roots: TaskAttemptWorkerRoots;
+  models: ModelRegistry;
+}): Promise<void> {
+  return runTaskWorker({
+    ...input,
+    run: async (bus) => {
+      await recoverInstalledAppTasks(bus);
+      return [];
+    },
+  });
+}
+
+async function runTaskWorker(input: {
+  roots: TaskAttemptWorkerRoots;
+  models: ModelRegistry;
+  run(bus: EventBus): Promise<string[]>;
+}): Promise<void> {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
     throw new Error("Task worker mode is private to the parent runtime");
   }
@@ -257,7 +306,7 @@ export async function runTaskAttemptWorker(input: {
       hostCapacity,
       taskRuntimeMode: "manual",
     });
-    const dependentTaskIds = await reconcileLoadedAppTaskOnce({ bus, ...input.request });
+    const dependentTaskIds = await input.run(bus);
     writeWorkerFrame({ kind: "result", dependentTaskIds });
   } catch (error) {
     writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });

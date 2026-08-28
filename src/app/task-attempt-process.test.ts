@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { EventBus } from "./event-bus.js";
 import {
   createTaskAttemptProcessExecutor,
+  createTaskRecoveryProcessExecutor,
   parseTaskAttemptProcessRequest,
   type TaskAttemptProcessRequest,
 } from "./task-attempt-process.js";
@@ -78,5 +79,18 @@ describe("isolated Task attempt process", () => {
     });
 
     await expect(execute(request)).rejects.toThrow("attempt failed");
+  });
+
+  it("runs startup recovery through the same isolated process protocol", async () => {
+    const execute = createTaskRecoveryProcessExecutor({
+      bus: new EventBus(),
+      spawnWorker: () =>
+        scriptedWorker(`
+          const fs = require("node:fs");
+          fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+        `),
+    });
+
+    await expect(execute()).resolves.toBeUndefined();
   });
 });

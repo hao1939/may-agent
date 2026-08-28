@@ -3438,6 +3438,27 @@ describe("canonical App task runtime", () => {
     expect(calls).toEqual([{ appId: "sample", taskId: "work/isolated", lane: "human" }]);
   });
 
+  it("delegates startup Task recovery across the configured execution boundary", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let recoveries = 0;
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executeRecovery: async () => {
+        recoveries += 1;
+      },
+      appRegistrySnapshot: {
+        id: "boot:isolated-recovery",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    await recoverInstalledAppTasks(bus);
+    expect(recoveries).toBe(1);
+  });
+
   it("retries the same Task after an executor process failure", async () => {
     const f = fixture();
     const bus = eventBus();
