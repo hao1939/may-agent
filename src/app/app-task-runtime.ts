@@ -1,15 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual, promisify } from "node:util";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import {
   chmod as chmodAsync,
   lstat as lstatAsync,
@@ -150,6 +142,7 @@ import {
   type AppTaskAttemptRecovery,
   type AppTaskChildContext,
   type AppTaskClaim,
+  type AppTaskObservationResult,
 } from "./app-task-reconciler.js";
 import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace, type PreparedTaskWorkspace } from "./app-task-workspace.js";
 
@@ -3557,11 +3550,7 @@ async function reconcileTask(input: {
             })
           : [];
         const conditions = mergeTaskConditions(
-          [
-            ...existingAppDependencyConditions,
-            ...(primaryHandlerResult.conditions ?? []),
-            ...dependencyConditions,
-          ],
+          [...existingAppDependencyConditions, ...(primaryHandlerResult.conditions ?? []), ...dependencyConditions],
           new Set(existingAppDependencyConditions.map((condition) => condition.id)),
         );
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
@@ -3716,7 +3705,8 @@ async function reconcileTask(input: {
             attemptId: activeClaim.attemptId,
             handler: activeClaim.handler,
             disposition: "stale",
-            summary: "The claimed Task changed before executor startup; stale work was discarded without retrying it as a handler failure.",
+            summary:
+              "The claimed Task changed before executor startup; stale work was discarded without retrying it as a handler failure.",
             staleRecovery: stale.staleRecovery,
           },
         );
@@ -3841,16 +3831,22 @@ function appDependencyUpdateWakeTaskIds(
   ].sort();
 }
 
+type AppTaskAdmissionResult = {
+  delivery?: DeliveryResult;
+  taskIds: string[];
+  supersededSessionIds: string[];
+};
+
 function admitResolvedAppTaskEvent(input: {
-  opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   controller?: AppTaskController;
   event: Record<string, unknown>;
   intent: AppTaskIntent | null;
   targetedTaskId?: string;
   conditionTaskIds?: string[];
-}): DeliveryResult | undefined {
-  const { opts, descriptor, controller, event, intent } = input;
+  interruptSuperseded?(observation: AppTaskObservationResult): void;
+}): AppTaskAdmissionResult {
+  const { descriptor, controller, event, intent } = input;
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
   const config = appTaskConfig(descriptor);
   const selectedConditionTaskIds = [
@@ -3868,6 +3864,7 @@ function admitResolvedAppTaskEvent(input: {
       enqueueAppTask(controller, config, taskId, { promote: true });
     }
   }
+  const wokenTaskIds = new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes]);
   // A frozen Condition route is idempotent admission authority. On recovery,
   // its task may already have consumed the fact or left its wait. Accept that
   // no-op instead of retrying the immutable plan forever. Exact targets with
@@ -3890,32 +3887,58 @@ function admitResolvedAppTaskEvent(input: {
     // Task accidentally and loaded its complete subtree before a simple wake.
     const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
     if (triggerResult.kind === "recorded") {
+      wokenTaskIds.add(targetedTaskId);
       if (controller) enqueueAppTask(controller, config, targetedTaskId, { promote: true });
-      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
+      return {
+        delivery: appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted"),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
     }
     if (triggerResult.kind === "waiting") {
-      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task remains asleep on open Conditions");
+      return {
+        delivery: appTaskDelivery(
+          descriptor,
+          targetedTaskId,
+          "existing targeted task remains asleep on open Conditions",
+        ),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
     }
     if (readAppTaskIntent(config, targetedTaskId)) {
-      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task remains asleep on open Conditions");
+      return {
+        delivery: appTaskDelivery(
+          descriptor,
+          targetedTaskId,
+          "existing targeted task remains asleep on open Conditions",
+        ),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
     }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
-    return conditionDelivery;
+    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
   }
-  if (!intent) return conditionDelivery;
+  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
   const observation = observeAppTaskIntent(config, {
     intent,
     appAgent: descriptor.agent,
     trigger: event,
   });
-  interruptSupersededObservationSessions(opts, observation);
+  input.interruptSuperseded?.(observation);
+  if (observation.kind === "observed") wokenTaskIds.add(observation.taskId);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       promote: event.type === "project.comment.created",
     });
   }
-  return appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
+  return {
+    delivery: appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted"),
+    taskIds: [...wokenTaskIds],
+    supersededSessionIds: observation.supersededSessionIds ?? [],
+  };
 }
 
 /**
@@ -3940,14 +3963,96 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
   }
   return admitResolvedAppTaskEvent({
-    opts,
     descriptor,
     controller,
     event: canonicalTaskEvent(input.event),
     intent: input.intent,
     targetedTaskId: input.targetedTaskId,
     conditionTaskIds: input.conditionTaskIds,
+    interruptSuperseded: (observation) => interruptSupersededObservationSessions(opts, observation),
+  }).delivery;
+}
+
+/**
+ * Canonical Task admission without an in-process controller. A persistent
+ * admission worker uses this boundary, then returns exact Task wakes to the
+ * daemon's lightweight controllers.
+ */
+export function admitStandaloneCanonicalAppTaskEvent(input: {
+  descriptor: AppTaskRuntimeDescriptor;
+  event: AgentEvent;
+  intent: AppTaskIntent | null;
+  targetedTaskId?: string;
+  conditionTaskIds?: string[];
+}): AppTaskAdmissionResult {
+  if (!input.descriptor.app.tasks) throw new Error(`App ${input.descriptor.id} has no Task capability`);
+  if (input.descriptor.reconciliationPaused) throw new Error(`App ${input.descriptor.id} reconciliation is paused`);
+  return admitResolvedAppTaskEvent({
+    descriptor: input.descriptor,
+    event: canonicalTaskEvent(input.event),
+    intent: input.intent,
+    targetedTaskId: input.targetedTaskId,
+    conditionTaskIds: input.conditionTaskIds,
   });
+}
+
+/** Prepare only canonical Task state needed by the admission worker. */
+export function standaloneAppTaskAdmissionDescriptors(input: {
+  persistDir: string;
+  projectsRoot: string;
+  stateProjectsRoot: string;
+  entries: AppRegistrySnapshot["entries"];
+}): Map<string, AppTaskRuntimeDescriptor> {
+  const descriptors = new Map<string, AppTaskRuntimeDescriptor>();
+  for (const { appDir, definition: app } of input.entries) {
+    if (!app.tasks) continue;
+    const resourceStore = discoverAppTaskResourceStore(input.persistDir, app.id, appDir);
+    const descriptor: AppTaskRuntimeDescriptor = {
+      id: app.id,
+      appDir,
+      stateAppDir: resolve(input.stateProjectsRoot, basename(appDir)),
+      projectDir: domainProjectDir(input.projectsRoot, appDir, app.id, app),
+      agent: configuredAppAgent(app, appDir),
+      app,
+      reconciliationPaused: resourceStore.projectLifecycle() === "paused",
+      resourceStore,
+    };
+    validatePreparedAppTaskRuntime(descriptor);
+    descriptors.set(descriptor.id, descriptor);
+  }
+  return descriptors;
+}
+
+/** Wake already-admitted Task identities without repeating their mutation. */
+export function wakeLoadedAppTasks(input: {
+  bus: EventBus;
+  appId: string;
+  taskIds: string[];
+  supersededSessionIds?: string[];
+}): void {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
+  const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
+  if (!descriptor?.app.tasks || !controller || descriptor.reconciliationPaused) return;
+  const config = appTaskConfig(descriptor);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  const admittedTaskId = input.taskIds.at(-1);
+  if (opts && admittedTaskId) {
+    interruptSupersededObservationSessions(opts, {
+      taskId: admittedTaskId,
+      generation: descriptor.resourceStore.readTask(admittedTaskId)?.metadata.generation ?? 1,
+      supersededSessionIds: input.supersededSessionIds,
+    });
+  }
+  for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
+    enqueueAppTask(controller, config, taskId, { promote: true });
+  }
+}
+
+/** Bounded exact-identity check used before asynchronously admitting feedback. */
+export function hasLoadedAppTask(input: { bus: EventBus; appId: string; taskId: string }): boolean {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId.trim().replace(/\.app$/, ""));
+  return Boolean(descriptor?.resourceStore.readTask(input.taskId.trim()));
 }
 
 /** Read-only canonical-state task-Condition preflight for the App coordinator. */
