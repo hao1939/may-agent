@@ -759,7 +759,7 @@ export class AppInboxHost {
         } finally {
           // Dependency reads can resolve synchronously. Yield after each one
           // so a large App cannot starve control-socket and human-message I/O.
-          await new Promise<void>((resolve) => setImmediate(resolve));
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
         }
       }
     }
