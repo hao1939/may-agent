@@ -282,6 +282,13 @@ The interface process does not await this work. A recovery failure is logged
 and left to the bounded recovery checks; it must not terminate or stall the
 human interface. Task controllers start after the initial pass settles.
 
+SQLite has one writer. Task workers may wait for it because they are isolated;
+the interface process uses only a short bounded lock wait. If new input cannot
+be made durable in that bound, it is not acknowledged and the adapter retries
+the same idempotency key. If an already-durable worker event cannot finish its
+App admission route, normal admission recovery retries that event identity.
+Database contention must never become a multi-second event-loop sleep.
+
 For a resource-backed App, recovery is indexed insurance: one bounded startup
 query, one nearest-due timer, indexed expired-lease repair, and a bounded safety
 query. The safety query advances an indexed cursor across bounded pages so a
