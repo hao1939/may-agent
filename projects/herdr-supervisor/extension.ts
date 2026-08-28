@@ -24,6 +24,7 @@ const supervisorTools = [
   "supervisor_status",
   "supervisor_observe",
   "supervisor_steer",
+  "supervisor_ask_human",
   "supervisor_finish",
 ];
 type SupervisorMode = "observe" | "dry-run" | "live";
@@ -308,13 +309,27 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         const mismatch = identityMismatch(binding, findAgent(snapshot, params.pane_id));
         if (mismatch) return text(`Refusing to steer: ${mismatch}.`, true);
         if (mode() !== "live") {
-          reviewTurn.close();
+          reviewTurn.close(params.pane_id);
           return text(`${mode()} mode: would steer ${params.pane_id}: ${params.message.trim()}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
         }
         await client.promptAgent(params.pane_id, params.message.trim());
-        reviewTurn.close();
+        reviewTurn.close(params.pane_id);
         return text(`Steered ${params.pane_id}: ${params.message.trim()}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
       } catch (error) { return text(`Could not steer worker: ${error.message}`, true); }
+    },
+  });
+
+  pi.registerTool({
+    name: "supervisor_ask_human",
+    label: "Ask for a decision",
+    description: "Ask the human one concrete question when their authority or missing information is required. This ends the review turn without prompting the worker.",
+    parameters: Type.Object({ pane_id: Pane, question: Type.String({ minLength: 1 }) }),
+    executionMode: "sequential",
+    async execute(_id, params) {
+      const fenceError = reviewTurn.guardDecision(params.pane_id);
+      if (fenceError) return text(fenceError, true);
+      reviewTurn.close(params.pane_id);
+      return text(`Needs your input for ${params.pane_id}:\n${params.question.trim()}\n\nEnd this supervisor turn now. Wait for the human's answer; do not prompt or poll the worker.`);
     },
   });
 
@@ -332,7 +347,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       const fenceError = reviewTurn.guardDecision(params.pane_id);
       if (fenceError) return text(fenceError, true);
       if (mode() !== "live") {
-        reviewTurn.close();
+        reviewTurn.close(params.pane_id);
         return text(`${mode()} mode: evidence supports accepting ${params.pane_id}, but its goal binding remains active.\n${params.summary}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
       }
       let removed = false;
@@ -343,7 +358,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       await connectObserver();
       await armReviewTimer();
       if (!removed) return text(`${params.pane_id} is not supervised.`, true);
-      reviewTurn.close();
+      reviewTurn.close(params.pane_id);
       return text(`Goal accepted for ${params.pane_id}.\n${params.summary}\nEvidence:\n${params.evidence.map((item) => `- ${item}`).join("\n")}\n\nEnd this supervisor turn now. Wait for Herdr's next worker event; do not poll.`);
     },
   });
@@ -386,7 +401,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   });
 
   pi.on("before_agent_start", (event) => ({
-    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, ask the human only for a real decision, or call supervisor_finish only with convincing evidence. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
+    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, call supervisor_ask_human only for a real human decision, or call supervisor_finish only with convincing evidence. When a human decision is required, ask one concrete question with supervisor_ask_human and end the turn; do not prompt a worker merely to keep waiting. When the human answers, steer the same worker once and wait for its next event. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
   }));
 
   pi.on("session_start", async (_event, ctx) => {

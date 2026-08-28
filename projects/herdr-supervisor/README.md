@@ -47,6 +47,11 @@ so the supervisor cannot poll while waiting for the worker. A controlled run
 verified `observe -> steer`, followed by a later `observe -> finish` with exact
 result evidence.
 
+The same session also supports a genuine human decision without another task or
+queue: one review can observe and ask a concrete question while leaving the
+worker untouched; the human's reply steers that worker once, and its next Herdr
+event resumes normal review.
+
 ## Try it
 
 List the workers Herdr currently knows:

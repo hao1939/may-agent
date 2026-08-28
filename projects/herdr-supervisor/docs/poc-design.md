@@ -200,8 +200,11 @@ criteria, and collected evidence.
 The initial Codex adapter resolves the native session ID reported by Herdr and
 reads only new assistant messages from that session's JSONL record. It excludes
 user, developer, and reasoning records. A cursor prevents rereading the whole
-session. Other agents use a bounded terminal fallback until their native
-adapters are justified and implemented.
+session. A new goal binding begins with only the latest assistant message, so
+earlier goals from a reused worker session cannot become evidence for the new
+goal. Later reviews receive every new bounded assistant message after that
+cursor. Other agents use a bounded terminal fallback until their native adapters
+are justified and implemented.
 
 Herdr lifecycle events answer "when should this goal be reconsidered?" Native
 agent records answer "what did the worker communicate?" Neither one alone
@@ -233,6 +236,11 @@ Meaning:
 The executor contains no keyword router for these judgments. It validates the
 shape, authority, identity, cooldown, and evidence requirements, then performs
 the selected operation.
+
+`ask_human` is an explicit supervisor operation because it has different
+effects from steering: it shows one question, closes the review turn, and leaves
+the worker untouched. The human's answer may then steer that same worker once.
+No waiting task or durable message queue is created.
 
 ## 10. Shared supervisor context
 
@@ -410,15 +418,17 @@ event. Transport metadata remains secondary.
 
 ### Stage 3: bounded live steering
 
-- **Implemented:** permit `leave`, one-message `steer`, and a plain-language
-  request to the human.
+- **Implemented:** permit `leave`, one-message `steer`, and one explicit
+  plain-language question to the human without touching the worker.
 - **Implemented:** enforce one exact-worker observation and at most one applied
   decision per event-driven model turn.
 - **Verified:** an idle Codex worker that had created the requested file without
   verification was observed once and steered once. The supervisor turn then
   settled instead of polling while the worker ran.
-- Keep broad live use narrow until controlled trials cover ineffective steering
-  and genuine human decisions.
+- **Verified:** a missing human choice produced one direct question and no
+  worker prompt. The plain answer steered the same worker once; its next event
+  supplied the evidence used for acceptance.
+- Keep broad live use narrow until controlled trials cover ineffective steering.
 
 ### Stage 4: acceptance and recovery
 
@@ -519,6 +529,19 @@ The PoC is successful when all of these are demonstrated:
   turns: `observe -> steer`, then, after the worker returned idle,
   `observe -> finish`. Each turn read the exact worker once, and the accepted
   evidence was the literal byte output `38 34 0a`.
+- The first human-decision trial reached the goal, but the model unnecessarily
+  told an already-waiting worker to keep waiting before it asked the human. The
+  extension had described `ask_human` as a decision without providing that
+  operation, so the model used the nearest available action, `steer`.
+- Adding one matching `supervisor_ask_human` operation removed that ambiguity.
+  The clean rerun followed `observe -> ask human`, plain human answer,
+  `steer`, then a later `observe -> finish`. The worker was untouched while the
+  question was open, and no human-priority queue or second session was needed.
+- Reusing that Codex session for another goal exposed old assistant messages on
+  the first observation. The supervisor rejected the unrelated evidence but
+  spent an unnecessary correction turn. New bindings now expose only the latest
+  assistant message, then advance normally from a cursor; this is a context
+  collection rule rather than a semantic heuristic.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

@@ -54,7 +54,8 @@ export class ReviewTurnFence {
     if (!this.observed) return `Observe ${this.paneId} once before deciding.`;
   }
 
-  close() {
+  close(paneId) {
+    if (!this.paneId && paneId) this.paneId = paneId;
     if (this.paneId) this.closed = true;
   }
 }

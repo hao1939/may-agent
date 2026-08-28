@@ -52,6 +52,25 @@ test("cursor returns only newly appended native messages", async () => {
   assert.deepEqual(second.messages.map((message) => message.text), ["second"]);
 });
 
+test("a new goal binding starts from only the worker's latest assistant message", async () => {
+  const root = await mkdtemp(join(tmpdir(), "codex-sessions-"));
+  const path = join(root, "rollout-new-goal.jsonl");
+  await writeFile(path, [
+    record("assistant", "Old goal completed.", "final_answer"),
+    record("assistant", "Which color should I use for the new goal?", "final_answer"),
+    "",
+  ].join("\n"));
+  const binding = {
+    paneId: "w1:p2",
+    agentSession: { agent: "codex", kind: "path", value: path },
+  };
+  const observation = await observeWorker(binding, { readAgent() {} });
+  assert.deepEqual(observation.messages.map((message) => message.text), [
+    "Which color should I use for the new goal?",
+  ]);
+  assert.equal(observation.truncated, true);
+});
+
 test("cursor retains an incomplete final JSONL record for the next observation", async () => {
   const root = await mkdtemp(join(tmpdir(), "codex-sessions-"));
   const path = join(root, "rollout-session-partial.jsonl");

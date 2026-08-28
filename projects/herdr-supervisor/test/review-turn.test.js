@@ -43,3 +43,10 @@ test("settlement resets the fence for the next event-driven review", () => {
   turn.begin("w1:p2");
   assert.equal(turn.beginObservation("w1:p2"), undefined);
 });
+
+test("a human-initiated steering decision also closes its turn", () => {
+  const turn = new ReviewTurnFence();
+  assert.equal(turn.guardDecision("w1:p2"), undefined);
+  turn.close("w1:p2");
+  assert.match(turn.guard("w1:p2"), /already applied/);
+});

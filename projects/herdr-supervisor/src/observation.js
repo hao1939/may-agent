@@ -117,7 +117,10 @@ export async function observeWorker(binding, herdrClient, options = {}) {
   if (binding.agentSession.agent === "codex") {
     const path = await resolveCodexSessionFile(binding.agentSession, options.codexSessionsRoot);
     if (path) {
-      nativeObservation = await readCodexMessages(path, binding.observationCursor, options);
+      const readOptions = binding.observationCursor
+        ? options
+        : { ...options, maxMessages: options.maxMessages ?? 1 };
+      nativeObservation = await readCodexMessages(path, binding.observationCursor, readOptions);
       if (nativeObservation.messages.length) return nativeObservation;
       if (!options.fallbackWhenEmpty) return nativeObservation;
     }
