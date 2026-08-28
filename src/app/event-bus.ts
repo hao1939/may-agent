@@ -1136,6 +1136,28 @@ export class EventBus {
     return this.dispatch(event, false);
   }
 
+  /**
+   * Fan out an event that a trusted execution worker already appended to the
+   * shared journal. The interface process must not append it again, but its
+   * local admission routes and presentation listeners still need to observe
+   * the exact durable event. Task/resource fences make repeated fan-out
+   * idempotent.
+   */
+  fanoutPersisted(
+    input: AgentEvent,
+    eventId: number,
+  ): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
+    if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+      throw new Error("Persisted event fan-out requires a positive event id");
+    }
+    const event = Object.isExtensible(input) ? input : ({ ...input } as AgentEvent);
+    Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
+    return this.dispatch(event, false);
+  }
+
   private dispatch(
     input: AgentEvent,
     persist: boolean,

@@ -16,6 +16,7 @@ import { runAppRuntime } from "./app-runtime.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
+import { parseTaskAttemptProcessRequest, runTaskAttemptWorker } from "./task-attempt-process.js";
 
 declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
 declare const __MAY_AGENT_PACKAGE_NAME__: string | undefined;
@@ -143,12 +144,31 @@ if (WEB_ONLY_MODE) {
   });
 }
 
-const PROCESS_START_TIME = Date.now();
-const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
-
 // ── Models ──────────────────────────────────────────────────────────────
 
 const models = createModelRegistry();
+
+if (appArgs.taskWorkerRequest) {
+  try {
+    await runTaskAttemptWorker({
+      request: parseTaskAttemptProcessRequest(appArgs.taskWorkerRequest),
+      roots: {
+        projectRoot: PROJECT_ROOT,
+        sharedRoot: ROOTS.sharedRoot,
+        projectsRoot: ROOTS.projectsRoot,
+        persistDir: PERSIST_DIR,
+      },
+      models,
+    });
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+const PROCESS_START_TIME = Date.now();
+const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
 
 await runAppRuntime({
   appArgs,

@@ -38,6 +38,33 @@ ui_had_previous=0
 ui_activation_started=0
 health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"
 health_delay="${MAY_AGENT_HEALTH_DELAY:-1}"
+health_socket="${MAY_AGENT_HEALTH_SOCKET:-${STATE_DIR:-/app/.state}/instances/${DAEMON_INSTANCE:-${INSTANCE:-background}}/${DAEMON_AGENT:-may}.sock}"
+
+probe_control_socket() {
+  SOCKET_PATH="$health_socket" bun -e '
+    const { createConnection } = await import("node:net");
+    const socket = createConnection(process.env.SOCKET_PATH);
+    const timer = setTimeout(() => { socket.destroy(); process.exit(1); }, 5000);
+    let buffer = "";
+    socket.on("connect", () => socket.write(JSON.stringify({ type: "apps.list" }) + "\n"));
+    socket.on("data", (chunk) => {
+      buffer += chunk.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const frame = JSON.parse(line);
+          if (frame.command !== "apps.list") continue;
+          clearTimeout(timer);
+          socket.end();
+          process.exit(frame.type === "ok" ? 0 : 1);
+        } catch {}
+      }
+    });
+    socket.on("error", () => { clearTimeout(timer); process.exit(1); });
+  ' >/dev/null 2>&1
+}
 
 wait_for_health() {
   i=1
@@ -45,7 +72,8 @@ wait_for_health() {
     if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
       && supervisorctl status $runtime_services | grep -q "^may-agent-web[[:space:]].*RUNNING" \
       && supervisorctl status $runtime_services | grep -q "^may-agent-maintenance[[:space:]].*RUNNING" \
-      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1; then
+      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1 \
+      && probe_control_socket; then
       return 0
     fi
     sleep "$health_delay"
