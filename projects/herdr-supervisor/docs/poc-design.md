@@ -1,6 +1,6 @@
 # Proof-of-concept design
 
-**Status:** Stage 3 verified; Stage 4 acceptance verified
+**Status:** Stage 3 verified; Stage 4 restart and identity recovery verified
 **Date:** 2026-08-28
 
 ## 1. Purpose
@@ -234,8 +234,8 @@ Meaning:
 - `accept`: acceptance criteria are supported by current evidence.
 
 The executor contains no keyword router for these judgments. It validates the
-shape, authority, identity, cooldown, and evidence requirements, then performs
-the selected operation.
+shape, authority, identity, evidence requirements, and one-decision turn
+boundary, then performs the selected operation.
 
 `ask_human` is an explicit supervisor operation because it has different
 effects from steering: it shows one question, closes the review turn, and leaves
@@ -257,17 +257,16 @@ includes:
 - the event or deadline that caused review;
 - new native assistant messages since the previous observation cursor;
 - a bounded terminal fallback only when native evidence is unavailable;
-- previous supervisor action and whether subsequent progress occurred;
 - new human steering, if any;
 - allowed decisions and safety limits.
 
 The model may use relevant earlier session history, including relationships the
-human established between goals. It must not treat another worker's evidence as
-evidence for the current worker. We first trust the model to follow the explicit
-worker scope in each request. Separate model sessions, generated summaries, and
-retrieval machinery are deferred unless a controlled multi-worker trial shows
-real context confusion or context growth that Pi's normal compaction cannot
-handle.
+human established between goals and its own previous action for this worker. It
+must not treat another worker's evidence as evidence for the current worker. We
+first trust the model to follow the explicit worker scope in each request.
+Separate model sessions, generated summaries, retry counters, and retrieval
+machinery are deferred unless a controlled trial shows a real failure that they
+would solve.
 
 ## 11. Concurrency and coalescing
 
@@ -281,7 +280,9 @@ handle.
   worker.
 - A review fence rejects another pane, a repeated successful observation, and
   every tool call after steering or acceptance until the model turn settles.
-- Repeated identical actions are suppressed with a fingerprint and cooldown.
+- The persistent supervisor session exposes its previous steering decisions to
+  the next bounded review; code does not guess whether semantic actions are
+  duplicates.
 - No durable work queue is introduced. On restart, a fresh Herdr snapshot plus
   the saved sequence checkpoints reconstructs what needs review.
 
@@ -316,7 +317,7 @@ model turn cannot enqueue another review behind itself.
 | Malformed model output        | Apply no action, record a visible diagnostic, and retry only on the next signal or bounded backoff |
 | Prompt/send failure           | Re-read current identity and state before one bounded retry                                        |
 | Herdr reports blocked         | Read new native evidence and determine whether existing context can unblock it before asking the human |
-| Worker repeatedly stalls      | Explain the evidence and ask the human after a bounded number of ineffective steers                |
+| Worker repeatedly stalls      | Improve the steer from shared history, then ask the human when further steering is not useful      |
 | Completion claim lacks proof  | Steer the same worker to verify; do not accept or spawn another worker                             |
 | Supervisor session disappears | Workers continue unaffected; recovery resumes from Herdr and the small binding file                |
 
@@ -428,7 +429,10 @@ event. Transport metadata remains secondary.
 - **Verified:** a missing human choice produced one direct question and no
   worker prompt. The plain answer steered the same worker once; its next event
   supplied the evidence used for acceptance.
-- Keep broad live use narrow until controlled trials cover ineffective steering.
+- **Verified:** one recoverable refusal was resolved by a more concrete second
+  steer. A hard-refusal worker received three distinct attempts, then the same
+  supervisor session asked whether to replace or reset it; no retry counter or
+  task was needed.
 
 ### Stage 4: acceptance and recovery
 
@@ -437,7 +441,16 @@ event. Transport metadata remains secondary.
   supervisor observed the new byte-exact output once and accepted the binding.
   The first turn contained exactly observe/steer, and the second exactly
   observe/finish.
-- Test restart, reconnect, target replacement, and conservative recovery.
+- **Verified:** Pi was stopped after steering while the worker remained active.
+  The worker finished while the supervisor was down; resuming the same Pi
+  session reloaded the binding, observed only sequence-new evidence, accepted,
+  and did not repeat the steer.
+- **Verified:** replacing the Codex session in the same pane produced an exact
+  native-session mismatch. The replacement received no prompt. The first run
+  exposed that the turn fence did not count a verified mismatch as collected
+  evidence; the minimal correction now permits a safe human question or
+  evidence-backed stop without exposing replacement output.
+- Test reconnect and conservative process recovery.
 - Decide from evidence whether Shepherd or any additional component is needed.
 
 ## 17. Acceptance criteria
@@ -542,6 +555,22 @@ The PoC is successful when all of these are demonstrated:
   spent an unnecessary correction turn. New bindings now expose only the latest
   assistant message, then advance normally from a cursor; this is a context
   collection rule rather than a semantic heuristic.
+- A restart trial stopped Pi immediately after one steer while the Codex worker
+  continued for roughly a minute. Herdr advanced from state sequence 372 to 374
+  while Pi was absent. The resumed session read the saved cursor, observed only
+  the new progress and final response, and accepted with no duplicate steer.
+- A same-pane replacement trial changed only the native Codex session identity.
+  Identity fencing correctly prevented all observation and prompting of the
+  replacement. It also exposed a small authority dead end: the verified mismatch
+  had not satisfied the review fence, so even asking the human was rejected.
+  Treating that mechanical mismatch as the complete safe observation for the
+  turn fixed the dead end without weakening the prompt fence.
+- Two ineffective-steering trials did not justify a retry subsystem. In the
+  first, a clearer second instruction resolved a contradictory worker constraint.
+  In the hard-refusal case, the shared Pi history recognized three ineffective
+  attempts and asked whether to replace or reset the worker. The PoC therefore
+  keeps semantic retry judgment in the model and enforces only the
+  one-action-per-event boundary in code.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

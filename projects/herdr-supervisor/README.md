@@ -52,6 +52,12 @@ queue: one review can observe and ask a concrete question while leaving the
 worker untouched; the human's reply steers that worker once, and its next Herdr
 event resumes normal review.
 
+Restart and failure-edge trials are also passing. If Pi stops while a steered
+worker runs, resuming the same Pi session reloads the binding checkpoint,
+observes only new evidence, and accepts without repeating the steer. A replaced
+pane occupant fails closed, and repeated ineffective steering causes the
+supervisor to ask the human instead of looping forever.
+
 ## Try it
 
 List the workers Herdr currently knows:

@@ -271,7 +271,12 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         if (!binding) return text(`${params.pane_id} is not supervised.`, true);
         const agent = findAgent(snapshot, params.pane_id);
         const mismatch = identityMismatch(binding, agent);
-        if (mismatch) return text(`Refusing to observe as the registered worker: ${mismatch}.`, true);
+        if (mismatch) {
+          // Establishing that the registered identity is gone is the complete,
+          // safe observation for this turn. No replacement output is exposed.
+          observed = true;
+          return text(`Refusing to observe as the registered worker: ${mismatch}.`, true);
+        }
         const observation = await observeWorker(binding, client, {
           terminalLines: params.lines || 40,
           fallbackWhenEmpty: agent.agent_status === "blocked" || agent.agent_status === "unknown",
@@ -401,7 +406,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
   });
 
   pi.on("before_agent_start", (event) => ({
-    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, call supervisor_ask_human only for a real human decision, or call supervisor_finish only with convincing evidence. When a human decision is required, ask one concrete question with supervisor_ask_human and end the turn; do not prompt a worker merely to keep waiting. When the human answers, steer the same worker once and wait for its next event. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
+    systemPrompt: `${event.systemPrompt}\n\nYou supervise Herdr workers pursuing explicit goals. Herdr owns live worker state; goal bindings define what you judge. The current worker-review request defines the subject of that turn; use relevant shared history, but use only that worker's evidence to judge its goal. Evidence about a worker must come through supervisor_observe; never inspect or modify its workspace directly. On a supervision event, observe the exact worker once, compare that evidence with the existing goal, then leave healthy work alone, call supervisor_steer when more can be done, call supervisor_ask_human only for a real human decision, or call supervisor_finish only with convincing evidence. If observation reports an identity mismatch, never steer the replacement; ask the human one concrete question if their decision is needed. When a human decision is required, ask one concrete question with supervisor_ask_human and end the turn; do not prompt a worker merely to keep waiting. When the human answers, steer the same worker once and wait for its next event. Do not register, replace, or stop a goal during an event review; those are explicit human commands. Never treat idle, blocked, done, or a completed turn as goal completion. In observe mode, report signals without starting a model turn. In dry-run mode, decide through the same supervisor tool, whose result only displays the proposed action. Only live mode applies worker actions. Do not create another worker or goal. Use plain language.`,
   }));
 
   pi.on("session_start", async (_event, ctx) => {
