@@ -70,11 +70,11 @@ export type AppInboxRuntime = {
   reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
 };
 
-// Admission normally completes on the event's synchronous durable-route pass.
-// This recovery pass exists only for an interrupted or transiently failed
-// pass, so it stays bounded and never becomes the normal work path.
+// The Event turn persists a small admission plan; its commands run afterward,
+// one per event-loop turn. The same journal is also the recovery authority.
 const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
+const ADMISSION_COMMAND_TURN_GAP_MS = 2;
 
 function assignmentText(item: AppInboxItem): string {
   const data = item.input.data;
@@ -958,22 +958,76 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
+  const pendingAdmissionEvents = new Map<number, AgentEvent>();
+  let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
+
+  const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
+    if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
+    pendingAdmissionEvents.set(plan.eventId, event);
+    if (!admissionDispatchHandle) {
+      admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
+    }
+  };
+
+  function dispatchNextAdmissionCommand(): void {
+    admissionDispatchHandle = null;
+    if (closed) return;
+    const next = pendingAdmissionEvents.entries().next().value as [number, AgentEvent] | undefined;
+    if (!next) return;
+    const [eventId, event] = next;
+    const plan = getAppEventAdmissionPlan(options.db, eventId);
+    let reschedule: AppEventAdmissionPlan | null = null;
+    if (plan?.status === "pending") {
+      const command = plan.commands.find((candidate) => candidate.status === "pending");
+      if (command) {
+        try {
+          dispatchAdmissionCommand(plan, command, event);
+        } catch {
+          // The durable command retains the error for bounded recovery. A
+          // failed handler must not prevent unrelated plans from advancing.
+        }
+      }
+      const updated = getAppEventAdmissionPlan(options.db, eventId);
+      if (updated?.status === "pending") {
+        const pendingCommands = updated.commands.filter((candidate) => candidate.status === "pending");
+        if (pendingCommands.length === 0) {
+          completeAppEventAdmissionPlan(options.db, eventId, now());
+        } else if (pendingCommands.some((candidate) => !candidate.lastError)) {
+          reschedule = updated;
+        }
+      }
+    }
+    // Keep the Event present while its command runs so nested Event delivery
+    // cannot schedule the same plan twice. A multi-command plan is added back
+    // only after this turn has finished.
+    pendingAdmissionEvents.delete(eventId);
+    if (reschedule) scheduleAdmissionDispatch(reschedule, event);
+    if (pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
+      admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
+    }
+  }
+
   const admitAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
     if (plan.status === "superseded") {
       throw new Error(`Frozen App admission plan for event:${plan.eventId} is superseded`);
     }
-    if (plan.status === "pending") {
+    // An explicit exact-Task command has one bounded destination and its
+    // publication contract promises that exact link already exists. Keep
+    // that validation inside the acceptance turn; broad Event fan-out is the
+    // asynchronous path below.
+    if (plan.status === "pending" && plan.commands.every((command) => command.kind === "exact-task")) {
       for (const command of plan.commands) {
         if (command.status === "pending") dispatchAdmissionCommand(plan, command, event);
       }
       if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
         throw new Error(`Frozen App admission plan for event:${plan.eventId} still has pending commands`);
       }
+      return admissionPlanDelivery(getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan, "admitted durably");
     }
-    const admitted = getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan;
+    scheduleAdmissionDispatch(plan, event);
     return admissionPlanDelivery(
-      admitted,
-      plan.status === "completed" ? "already admitted durably" : "admitted durably",
+      plan,
+      plan.status === "completed" ? "already admitted durably" : "routing recorded durably",
     );
   };
 
@@ -983,13 +1037,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const currentTime = now();
     if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
+    // Freeze this bounded recovery slice before yielding. Otherwise the
+    // zero-delay callback can accidentally capture and immediately retry a
+    // plan created by a newer Event turn.
+    const plans = listPendingAppEventAdmissionPlans(options.db, {
+      ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
+      limit: ADMISSION_RECOVERY_BATCH_SIZE,
+    });
     admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
-      const plans = listPendingAppEventAdmissionPlans(options.db, {
-        ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
-        limit: ADMISSION_RECOVERY_BATCH_SIZE,
-      });
       let index = 0;
       const recoverNext = (): void => {
         admissionRecoveryHandle = null;
@@ -1581,6 +1638,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       pumpHandle = null;
       if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
+      if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
+      admissionDispatchHandle = null;
+      pendingAdmissionEvents.clear();
       if (conversationUpdateHandle) clearTimeout(conversationUpdateHandle);
       conversationUpdateHandle = null;
       pendingConversationUpdates.clear();

@@ -330,6 +330,7 @@ describe("App inbox runtime", () => {
       return row?.status === "done";
     });
     await waitUntil(() => task.attached.length === 1);
+    await waitUntil(() => taskAdmissions.length === 1);
     expect(taskAdmissions[0]).toMatchObject({
       appId: "may",
       intent: { id: "conversation/follow-up", mode: "maintain" },
@@ -371,7 +372,7 @@ describe("App inbox runtime", () => {
         summary: "The evidence review is waiting for one source.",
       },
     });
-    await Bun.sleep(50);
+    await waitUntil(() => taskAdmissions.length === 2);
     expect(observedTypes).toContain("conversation.task.changed");
     expect(infos).toEqual([]);
     expect(taskAdmissions).toHaveLength(2);
@@ -399,7 +400,7 @@ describe("App inbox runtime", () => {
       owner: "app:may",
       data: { project: "may", minQuietMs: 60_000, limit: 10 },
     } as any);
-    await Bun.sleep(50);
+    await waitUntil(() => taskAdmissions.length === 3);
     expect(taskAdmissions).toHaveLength(3);
     expect(taskAdmissions[2]).toMatchObject({
       appId: "may",
@@ -484,6 +485,7 @@ describe("App inbox runtime", () => {
     });
 
     await waitUntil(() => task.attached.length === 1);
+    await waitUntil(() => taskAdmissions.length === 1);
     expect(task.attached[0]).toStartWith("goal/appreq_");
     expect(taskAdmissions).toContainEqual(
       expect.objectContaining({
@@ -1218,6 +1220,7 @@ describe("App inbox runtime", () => {
         { status: string } | undefined;
       return row?.status === "done";
     });
+    await waitUntil(() => updates.includes("may:primary"));
 
     expect(task.attached).toEqual([]);
     expect(db.prepare("SELECT conversation_id FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
@@ -1364,18 +1367,20 @@ describe("App inbox runtime", () => {
     expect(admitted).toEqual(["route.old", "route.new"]);
   });
 
-  it("accepts an App event only after its exact Task link is durable", async () => {
+  it("records broad App routing before running Task admission asynchronously", async () => {
     const bus = persistentBus();
     let admitted = 0;
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
       db,
       bus,
+      hostCapacity: new HostCapacity(2),
       admitTaskEvent: () => {
         admitted += 1;
         return { accepted: true, by: "test-task", route: "direct" };
       },
-      previewTaskEventRoutes: () => [{ appId: "evaluation", taskIds: ["waiting-task"] }],
+      previewTaskEventRoutes: ({ event }) =>
+        event.type === "provider.changed" ? [{ appId: "evaluation", taskIds: ["waiting-task"] }] : [],
       scanIntervalMs: 10_000,
     });
 
@@ -1386,11 +1391,90 @@ describe("App inbox runtime", () => {
       data: { project: "evaluation", value: "changed" },
     });
 
-    expect(admitted).toBe(1);
+    expect(admitted).toBe(0);
     expect(emitted[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, route: "direct" });
+    expect(db.prepare("SELECT status FROM app_event_admission_plans WHERE event_id = 1").get()).toEqual({
+      status: "pending",
+    });
+    await waitUntil(() => admitted === 1);
     expect(db.prepare("SELECT status FROM app_event_admission_plans WHERE event_id = 1").get()).toEqual({
       status: "completed",
     });
+  });
+
+  it("keeps failed asynchronous admission durable and retries it through bounded recovery", async () => {
+    const bus = persistentBus();
+    let attempts = 0;
+    let available = false;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      hostCapacity: new HostCapacity(2),
+      admitTaskEvent: () => {
+        attempts += 1;
+        if (!available) throw new Error("temporary admission failure");
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      previewTaskEventRoutes: ({ event }) =>
+        event.type === "provider.changed" ? [{ appId: "evaluation", taskIds: ["waiting-task"] }] : [],
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "provider.changed",
+      source: "provider",
+      owner: "app:evaluation",
+      data: { project: "evaluation", value: "changed" },
+    });
+    db.prepare(
+      `INSERT INTO events (id, event_type, source, owner, project_id, data, timestamp, delivery_status)
+       VALUES (1, 'provider.changed', 'provider', 'app:evaluation', 'evaluation', ?, ?, 'accepted')`,
+    ).run(JSON.stringify({ project: "evaluation", value: "changed" }), Date.now());
+
+    await waitUntil(() => Boolean(getAppEventAdmissionPlan(db, 1)?.commands[0]?.lastError));
+    expect(attempts).toBe(1);
+    expect(getAppEventAdmissionPlan(db, 1)).toMatchObject({
+      status: "pending",
+      commands: [expect.objectContaining({ status: "pending", lastError: "temporary admission failure" })],
+    });
+    await Bun.sleep(20);
+    expect(attempts).toBe(1);
+
+    available = true;
+    await runtime.reload();
+    await waitUntil(() => getAppEventAdmissionPlan(db, 1)?.status === "completed");
+    expect(attempts).toBe(2);
+  });
+
+  it("stops scheduled asynchronous admission when the runtime closes", async () => {
+    const bus = persistentBus();
+    let admitted = 0;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      hostCapacity: new HostCapacity(2),
+      admitTaskEvent: () => {
+        admitted += 1;
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      previewTaskEventRoutes: ({ event }) =>
+        event.type === "provider.changed" ? [{ appId: "evaluation", taskIds: ["waiting-task"] }] : [],
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "provider.changed",
+      source: "provider",
+      owner: "app:evaluation",
+      data: { project: "evaluation", value: "changed" },
+    });
+    runtime.close();
+    await Bun.sleep(20);
+
+    expect(admitted).toBe(0);
+    expect(getAppEventAdmissionPlan(db, 1)?.status).toBe("pending");
   });
 
   it("resumes a frozen plan after restart and does not admit it twice", async () => {
