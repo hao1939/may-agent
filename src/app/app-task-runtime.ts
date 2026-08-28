@@ -3856,15 +3856,9 @@ function admitResolvedAppTaskEvent(input: {
       )
     : undefined;
   if (targetedTaskId) {
-    const existingIntent = readAppTaskIntent(config, targetedTaskId);
-    if (existingIntent && intent?.id === targetedTaskId) {
-      const observation = observeAppTaskIntent(config, {
-        intent,
-        appAgent: descriptor.agent,
-        trigger: event,
-      });
-      interruptSupersededObservationSessions(opts, observation);
-    }
+    // An exact target is feedback for existing work, not another declaration
+    // of its goal. Re-observing the resolver's intent here both changed the
+    // Task accidentally and loaded its complete subtree before a simple wake.
     const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
     if (triggerResult.kind === "recorded") {
       if (controller) enqueueAppTask(controller, config, targetedTaskId, { promote: true });

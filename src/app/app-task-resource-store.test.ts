@@ -224,6 +224,29 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("can read one exact Task without loading its children or attempt history", () => {
+    const store = open();
+    const tree = fixture();
+    tree.resources = { normal: tree.resources!.normal! };
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    for (let index = 0; index < 20; index += 1) {
+      const child = resource(`child-${index}`);
+      child.spec.parentId = "normal";
+      tree.resources[child.metadata.id] = child;
+    }
+    store.importPausedSnapshot(tree, "revision-1");
+
+    const context = store.readTaskContext(
+      { taskIds: ["normal"] },
+      { includeHistory: false, childLimit: 0 },
+    );
+
+    expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
+    expect(Object.keys(context.attempts ?? {})).toEqual([]);
+    store.close();
+  });
+
   it("prunes a detached Condition only after its final Task reference is gone", () => {
     const store = open();
     const tree = fixture();
