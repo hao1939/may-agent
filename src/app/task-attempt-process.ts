@@ -241,6 +241,7 @@ export async function runTaskAttemptWorker(input: {
   return runTaskWorker({
     roots: input.roots,
     models: input.models,
+    appIds: [input.request.appId],
     run: (bus) => reconcileLoadedAppTaskOnce({ bus, ...input.request }),
   });
 }
@@ -262,6 +263,7 @@ export async function runTaskRecoveryWorker(input: {
 async function runTaskWorker(input: {
   roots: TaskAttemptWorkerRoots;
   models: ModelRegistry;
+  appIds?: readonly string[];
   run(bus: EventBus): Promise<string[]>;
 }): Promise<void> {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
@@ -305,6 +307,8 @@ async function runTaskWorker(input: {
       appRegistry: registry,
       hostCapacity,
       taskRuntimeMode: "manual",
+      ...(input.appIds ? { taskAppIds: input.appIds } : {}),
+      syncTaskReadModels: false,
     });
     const dependentTaskIds = await input.run(bus);
     writeWorkerFrame({ kind: "result", dependentTaskIds });
