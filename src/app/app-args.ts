@@ -24,6 +24,8 @@ export interface AppArgs {
   envSessionId?: string;
   envParentSessionId?: string;
   envParentAgent?: string;
+  /** Private parent-to-child payload for one isolated Task attempt. */
+  taskWorkerRequest?: string;
 }
 
 export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessEnv = process.env): AppArgs {
@@ -41,6 +43,11 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const dryRun = argv.includes("--dry-run");
   const initialTask = parseInitialTask(argv);
   const interfaceAgent = parseInterfaceAgent(argv, env);
+  const taskWorkerIndex = argv.indexOf("--task-worker-once");
+  const taskWorkerRequest = taskWorkerIndex >= 0 ? argv[taskWorkerIndex + 1] : undefined;
+  if (taskWorkerIndex >= 0 && !taskWorkerRequest) {
+    throw new Error("--task-worker-once requires one request payload");
+  }
 
   return {
     cronEnabled,
@@ -73,6 +80,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     envSessionId: env.SESSION_ID || undefined,
     envParentSessionId: env.PARENT_SESSION_ID || undefined,
     envParentAgent: env.PARENT_AGENT || undefined,
+    ...(taskWorkerRequest ? { taskWorkerRequest } : {}),
   };
 }
 

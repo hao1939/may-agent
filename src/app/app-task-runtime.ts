@@ -246,6 +246,14 @@ export interface AppTaskRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   hostCapacity: HostCapacity;
+  /**
+   * Optional execution boundary for one claimed Task attempt. Production uses
+   * an isolated process; tests and explicit single-process tools may omit it.
+   * The canonical Task resource remains the scheduling and fencing authority.
+   */
+  executeAttempt?: (input: { appId: string; taskId: string; dispatch: AppTaskDispatch }) => Promise<string[]>;
+  /** Install descriptors and routing without starting local controllers. */
+  installControllers?: boolean;
   /** Optional host adapters selected by Task intent. Built-ins remain replaceable. */
   executors?: Readonly<Record<string, TaskExecutor>>;
   appRegistry?: AppRegistry;
@@ -4025,6 +4033,16 @@ function installConventionTaskControllers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
 ): Map<string, AppTaskController> {
+  if (opts.installControllers === false) {
+    const previous = appTaskControllersByBus.get(opts.bus);
+    for (const scheduler of appTaskRecoverySchedulersByBus.get(opts.bus)?.values() ?? []) scheduler.close();
+    for (const controller of previous?.values() ?? []) controller.close();
+    const empty = new Map<string, AppTaskController>();
+    appTaskControllersByBus.set(opts.bus, empty);
+    appTaskRecoverySchedulersByBus.set(opts.bus, new Map());
+    appTaskControllerBindingsByBus.set(opts.bus, new Map());
+    return empty;
+  }
   const controllers = appTaskControllersByBus.get(opts.bus) ?? new Map<string, AppTaskController>();
   const recoverySchedulers =
     appTaskRecoverySchedulersByBus.get(opts.bus) ?? new Map<string, AppTaskRecoveryScheduler>();
@@ -4065,13 +4083,15 @@ function installConventionTaskControllers(
         const activeDescriptor = binding.descriptor;
         const activeOpts = binding.opts;
         const config = appTaskConfig(activeDescriptor);
-        const dependentTaskIds = await reconcileTask({
-          opts: activeOpts,
-          descriptor: activeDescriptor,
-          taskId,
-          dispatch,
-          reason: "task-controller",
-        });
+        const dependentTaskIds = activeOpts.executeAttempt
+          ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
+          : await reconcileTask({
+              opts: activeOpts,
+              descriptor: activeDescriptor,
+              taskId,
+              dispatch,
+              reason: "task-controller",
+            });
         const dependentEntries = new Map(
           appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
         );
@@ -4129,6 +4149,27 @@ function installConventionTaskControllers(
   appTaskRecoverySchedulersByBus.set(opts.bus, recoverySchedulers);
   appTaskControllerBindingsByBus.set(opts.bus, bindings);
   return controllers;
+}
+
+/** Execute one exact Task locally inside an already prepared worker process. */
+export async function reconcileLoadedAppTaskOnce(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  dispatch: AppTaskDispatch;
+}): Promise<string[]> {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  if (!descriptor?.app.tasks || !opts) {
+    throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  }
+  return reconcileTask({
+    opts,
+    descriptor,
+    taskId: input.taskId,
+    dispatch: input.dispatch,
+    reason: "task-worker-process",
+  });
 }
 
 /**
