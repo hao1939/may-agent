@@ -86,8 +86,27 @@ describe("EventBus subscriber priority", () => {
     bus.emit({ type: "heartbeat", agent: "may" });
 
     expect(calls).toEqual(["route:info", "route:heartbeat"]);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let turn = 0; turn < 2; turn++) await new Promise<void>((resolve) => setImmediate(resolve));
     expect(calls).toEqual(["route:info", "route:heartbeat", "observe:info", "observe:heartbeat"]);
+  });
+
+  it("yields to timers between listener notifications", async () => {
+    const bus = new EventBus();
+    let observed = 0;
+    let resolveAfterFirst!: (count: number) => void;
+    const afterFirst = new Promise<number>((resolve) => {
+      resolveAfterFirst = resolve;
+    });
+    bus.listen(() => {
+      observed += 1;
+      if (observed === 1) setTimeout(() => resolveAfterFirst(observed), 0);
+      const until = Date.now() + 4;
+      while (Date.now() < until) {}
+    });
+    for (let index = 0; index < 64; index += 1) bus.emit({ type: "info", message: String(index) });
+
+    expect(await afterFirst).toBe(1);
+    while (observed < 64) await new Promise<void>((resolve) => setImmediate(resolve));
   });
 
   it("keeps each listener independent and filters before queueing", async () => {
@@ -134,7 +153,7 @@ describe("EventBus subscriber priority", () => {
     await new Promise<void>((resolve) => setImmediate(resolve));
     for (let index = 1; index <= 300; index++) bus.emit({ type: "info", message: String(index) });
     releaseFirst();
-    for (let turn = 0; turn < 8 && observed.at(-1) !== "300"; turn++) {
+    for (let turn = 0; turn < 300 && observed.at(-1) !== "300"; turn++) {
       await new Promise<void>((resolve) => setImmediate(resolve));
     }
 
