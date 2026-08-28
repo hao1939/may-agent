@@ -758,8 +758,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let nextDependencyRecoveryAt = 0;
   const recoverTaskDependencies = (): Promise<void> => {
     if (taskRecovery) return taskRecovery;
-    const current = host
-      .recoverTaskDependencies()
+    const current = new Promise<void>((resolve) => setImmediate(resolve))
+      .then(() =>
+        closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies(),
+      )
       .then((outcome) => {
         for (const appId of outcome.wokenAppIds) schedule(appId);
         if (outcome.errors.length > 0) {
@@ -955,36 +957,39 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const currentTime = now();
     if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
-    const plans = listPendingAppEventAdmissionPlans(options.db, {
-      ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
-      limit: ADMISSION_RECOVERY_BATCH_SIZE,
-    });
-    if (plans.length === 0) return;
-    let index = 0;
-    const recoverNext = (): void => {
+    admissionRecoveryHandle = setImmediate(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
-      const plan = plans[index++];
-      if (!plan) return;
-      const event = loadAdmissionEvent(options.db, plan.eventId, options.persistDir);
-      if (!event) {
-        for (const command of plan.commands) {
-          if (command.status !== "pending") continue;
-          recordAppEventAdmissionCommandFailure(options.db, {
-            eventId: plan.eventId,
-            appId: command.appId,
-            error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
-            now: now(),
-          });
+      const plans = listPendingAppEventAdmissionPlans(options.db, {
+        ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
+        limit: ADMISSION_RECOVERY_BATCH_SIZE,
+      });
+      let index = 0;
+      const recoverNext = (): void => {
+        admissionRecoveryHandle = null;
+        if (closed) return;
+        const plan = plans[index++];
+        if (!plan) return;
+        const event = loadAdmissionEvent(options.db, plan.eventId, options.persistDir);
+        if (!event) {
+          for (const command of plan.commands) {
+            if (command.status !== "pending") continue;
+            recordAppEventAdmissionCommandFailure(options.db, {
+              eventId: plan.eventId,
+              appId: command.appId,
+              error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+              now: now(),
+            });
+          }
+        } else {
+          // EventBus re-runs only idempotent durable routes and records delivery
+          // acceptance on the original row; ordinary subscribers never replay.
+          options.bus.redeliverPersisted(event, plan.eventId);
         }
-      } else {
-        // EventBus re-runs only idempotent durable routes and records delivery
-        // acceptance on the original row; ordinary subscribers never replay.
-        options.bus.redeliverPersisted(event, plan.eventId);
-      }
-      if (index < plans.length) admissionRecoveryHandle = setImmediate(recoverNext);
-    };
-    admissionRecoveryHandle = setImmediate(recoverNext);
+        if (index < plans.length) admissionRecoveryHandle = setImmediate(recoverNext);
+      };
+      recoverNext();
+    });
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute(
@@ -1482,18 +1487,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     start() {
       if (closed) return Promise.resolve();
       if (startPromise) return startPromise;
-      startPromise = (async () => {
-        await recoverTaskDependencies();
-        if (closed) return;
-        started = true;
-        // One bounded startup pass repairs work interrupted by the previous
-        // process. Subsequent recovery observes the normal cooldown.
-        recoverAdmissionPlans(true);
-        timer = setInterval(scanNow, scanIntervalMs);
-        timer.unref?.();
-        scanNow();
-        armPump();
-      })();
+      started = true;
+      // Recovery is scheduled behind admission. It must not delay the caller
+      // that opens the human interface or activates this message handler.
+      void recoverTaskDependencies();
+      recoverAdmissionPlans(true);
+      timer = setInterval(scanNow, scanIntervalMs);
+      timer.unref?.();
+      setImmediate(scanNow);
+      armPump();
+      startPromise = Promise.resolve();
       return startPromise;
     },
     scanNow,
