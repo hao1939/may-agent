@@ -412,7 +412,13 @@ export function trackAppTaskConditionEventForTasks(
   const allowed = new Set(taskIds);
   if (allowed.size === 0) return [];
   return withTaskStateLock(config, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: allowed });
+    // One Condition event changes only the selected Tasks and their Conditions.
+    // Loading their children and attempt history makes a wake proportional to
+    // the size of an unrelated Task subtree and can block the interface loop.
+    const tree = config.resourceStore.readTaskContext(
+      { taskIds: allowed },
+      { includeHistory: false, childLimit: 0 },
+    );
     const wakes = new Map<string, AppTaskConditionWake>();
     const changedConditionIds = new Set<string>();
     if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {

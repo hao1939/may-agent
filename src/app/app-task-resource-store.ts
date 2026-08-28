@@ -687,7 +687,7 @@ export class AppTaskResourceStore {
    * their parent chain, direct children, dependencies, attempts, Conditions,
    * and completed direct children, but never unrelated App history. A current
    * projection may bound direct children and omit attempt and completed-child
-   * history.
+   * history. A child limit of zero omits related children entirely.
    */
   readTaskContext(
     input: {
@@ -729,11 +729,12 @@ export class AppTaskResourceStore {
       }
     }
 
-    if (requested.size > 0) {
+    const requestedChildLimit = options.childLimit;
+    if (requested.size > 0 && requestedChildLimit !== 0) {
       const relatedTo = [...requested];
       const childLimit =
-        Number.isInteger(options.childLimit) && Number(options.childLimit) > 0
-          ? Math.min(1_000, Number(options.childLimit))
+        Number.isInteger(requestedChildLimit) && Number(requestedChildLimit) > 0
+          ? Math.min(1_000, Number(requestedChildLimit))
           : undefined;
       const rows = this.db
         .prepare(
