@@ -148,6 +148,12 @@ resume when the same bounded request can safely continue. A task-owned session
 does not resume independently after process restart: its owning Task is
 requeued and any replacement attempt passes through normal Host capacity.
 
+Task attempts and startup Task repair run outside the interface process. Their
+durable events return as identity-bearing observations, one potentially
+expensive event per event-loop turn. The parent polls interface I/O before
+relaying the next event; a numeric batch bound alone is not sufficient because
+one App route may legitimately take a noticeable bounded read.
+
 ## Workflows
 
 A workflow is one bounded App-owned procedure. It receives typed input, task
