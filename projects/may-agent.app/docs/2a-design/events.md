@@ -124,6 +124,12 @@ discovers work, scans state, or constructs an execution must first schedule a
 later event-loop turn. Only validation, event persistence, exact correlation,
 and the exact durable wake may execute on the publication stack.
 
+An exact durable wake reads and updates only the named Task and the Conditions
+attached to it. It does not load child Tasks, attempt history, or re-resolve and
+rewrite the Task goal. The Event is feedback for existing work; later Task
+reconciliation reads whatever broader bounded context it actually needs in its
+isolated worker.
+
 A required consumer does not gain a special synchronous handler. It first
 persists the exact request, Task link, or operation that makes the work
 recoverable, then handles that resource asynchronously. Ordering is local to

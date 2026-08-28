@@ -658,6 +658,12 @@ a burst of progress events must not monopolize the event loop. If the worker
 exits, the controller's existing retry and lease recovery continue the same
 Task identity.
 
+The parent-side exact wake is constant in scope: it reads the named Task and
+its open Conditions, records the trigger, and schedules that identity. It does
+not load the Task's children or attempt history and does not treat feedback as
+a fresh declaration of the Task goal. Broader context belongs to the isolated
+attempt that later reconciles the Task.
+
 An attempt worker loads only its owning App's Task runtime and owning agent.
 The recovery worker loads only the agents required by Task-enabled Apps. Both
 reuse the read models already published by the parent; they must not
