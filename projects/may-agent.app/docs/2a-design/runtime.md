@@ -298,7 +298,9 @@ task or refill the ready set by scanning the whole tree.
 
 The same rule applies before a task exists. Interrupted event-to-App admission
 is recovered in bounded due batches with a retry cooldown. The ordinary event
-path does not wait for that recovery timer.
+path does not wait for that recovery timer. The App input handler becomes
+active first; dependency and frozen-admission recovery begin on later event-loop
+turns and yield between bounded items.
 
 Recovery preserves request and task identities. Requests correlate callers;
 tasks own App work. Logs and traces are evidence, not reconstruction authority.
