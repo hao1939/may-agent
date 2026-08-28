@@ -92,7 +92,9 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
   return spawn(invocation.command, [...invocation.prefix, ...args], {
     cwd: process.cwd(),
     env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
-    stdio: ["ignore", "inherit", "inherit", "pipe"],
+    // Stdin is a private lifetime pipe. If the daemon exits, the pipe closes
+    // and the worker stops instead of surviving as an orphaned old Runtime.
+    stdio: ["pipe", "inherit", "inherit", "pipe"],
   });
 }
 
@@ -269,6 +271,10 @@ async function runTaskWorker(input: {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
     throw new Error("Task worker mode is private to the parent runtime");
   }
+  const stopWithParent = () => process.exit(143);
+  process.stdin.once("end", stopWithParent);
+  process.stdin.once("error", stopWithParent);
+  process.stdin.resume();
   const bus = new EventBus();
   attachEventPersistence({ bus, persistDir: input.roots.persistDir });
   bus.subscribe(
@@ -290,6 +296,14 @@ async function runTaskWorker(input: {
   const activeSource = appSources.ensureCurrent();
   const registry = new AppRegistry(activeSource.projectsRoot, input.roots.projectsRoot);
   await registry.reload();
+  const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
+  const agentNames = registry
+    .snapshot()
+    .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
+    .map(({ definition }) => {
+      const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
+      return (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(/^agent:/, "");
+    });
   const hostCapacity = new HostCapacity(1);
   try {
     await prepareDaemonAgents({
@@ -309,6 +323,7 @@ async function runTaskWorker(input: {
       taskRuntimeMode: "manual",
       ...(input.appIds ? { taskAppIds: input.appIds } : {}),
       syncTaskReadModels: false,
+      agentNames,
     });
     const dependentTaskIds = await input.run(bus);
     writeWorkerFrame({ kind: "result", dependentTaskIds });
@@ -316,6 +331,9 @@ async function runTaskWorker(input: {
     writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });
     throw error;
   } finally {
+    process.stdin.off("end", stopWithParent);
+    process.stdin.off("error", stopWithParent);
+    process.stdin.pause();
     await closeInstalledAppTaskRuntimes(bus);
     closeAllDbs();
   }

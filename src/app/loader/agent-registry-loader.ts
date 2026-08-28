@@ -27,6 +27,8 @@ export interface AgentLoaderOptions {
   manager: SubagentManager;
   bus: EventBus;
   cronEnabled: boolean;
+  /** Load only these exact agents in a short-lived execution worker. */
+  agentNames?: readonly string[];
 }
 
 export interface LoadResult {
@@ -126,6 +128,7 @@ export async function prepareAgents(
   const { agentsRoot, projectRoot, projectsRoot, models, manager } = opts;
   const allErrors: ValidationError[] = [];
   const warnings: string[] = [];
+  const requestedNames = opts.agentNames ? new Set(opts.agentNames.map((name) => name.trim()).filter(Boolean)) : null;
   const selected = new Map<
     string,
     { config: AgentConfig; source: ReturnType<typeof listRuntimeAgentDirectories>[number] }
@@ -134,6 +137,7 @@ export async function prepareAgents(
   for (const source of listRuntimeAgentDirectories(agentsRoot, projectsRoot)) {
     const config = readCandidate(source.dir, source.name, allErrors);
     if (!config) continue;
+    if (requestedNames && !requestedNames.has(config.name)) continue;
     allErrors.push(...validateAgentConfig(config, models, agentsRoot));
 
     const prior = selected.get(config.name);

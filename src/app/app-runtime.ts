@@ -511,18 +511,16 @@ export async function runAppRuntime(opts: {
     sessionId: taskSessionId,
   });
 
+  await appInboxRuntime.start();
   if (CRON_ENABLED) {
     await startCronRuntime({
       manager,
       bus,
       loaderOpts,
+      // App work begins after recovery succeeds or yields to bounded retry;
+      // neither path is allowed to hold the already-open interfaces.
+      onTaskRecoverySettled: startAppTaskControllers,
     });
-  }
-  await appInboxRuntime.start();
-  if (CRON_ENABLED) {
-    // App work is asynchronous, but it must not compete with state recovery,
-    // session fencing, or opening the human interfaces during daemon startup.
-    startAppTaskControllers();
   }
 
   if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {

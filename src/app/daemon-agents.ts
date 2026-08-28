@@ -35,6 +35,7 @@ export async function prepareDaemonAgents(opts: {
   executeTaskRecovery?: AppTaskRuntimeOptions["executeRecovery"];
   taskAppIds?: readonly string[];
   syncTaskReadModels?: boolean;
+  agentNames?: readonly string[];
 }): Promise<{
   loaderOpts: AgentLoaderOptions;
   appTaskOptions?: AppTaskRuntimeOptions;
@@ -51,6 +52,7 @@ export async function prepareDaemonAgents(opts: {
     manager: opts.manager,
     bus: opts.bus,
     cronEnabled: opts.cronEnabled,
+    ...(opts.agentNames ? { agentNames: opts.agentNames } : {}),
   };
 
   const loadResult = await loadAgents(loaderOpts);
