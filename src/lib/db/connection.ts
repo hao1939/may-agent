@@ -6,11 +6,16 @@ import { applyDbSchema } from "./schema.js";
 
 const dbCache = new Map<string, SqliteDb>();
 
+export type DatabaseConnectionOptions = {
+  /** Open the Host-owned schema without trying to create or upgrade it. */
+  existingSchemaOnly?: boolean;
+};
+
 /**
  * Get or create a SQLite database for request tracking.
  * Uses WAL mode for concurrent read safety and busy_timeout for write contention.
  */
-export function getDb(persistDir: string): SqliteDb {
+export function getDb(persistDir: string, options: DatabaseConnectionOptions = {}): SqliteDb {
   const cached = dbCache.get(persistDir);
   if (cached) return cached;
 
@@ -18,6 +23,26 @@ export function getDb(persistDir: string): SqliteDb {
 
   const dbPath = join(persistDir, "may.db");
   let db = openDatabase(dbPath);
+  const existingSchemaOnly = options.existingSchemaOnly ?? process.env.MAY_TASK_ATTEMPT_CHILD === "1";
+
+  // A Task worker is a short-lived user of the live Host database. Reapplying
+  // every CREATE TABLE/INDEX statement for every attempt takes SQLite's one
+  // write lock and can starve the interface even though the schema is already
+  // current. The Host owns schema initialization; workers only verify it.
+  if (existingSchemaOnly) {
+    db.exec("PRAGMA busy_timeout = 5000");
+    db.exec("PRAGMA foreign_keys = ON");
+    db.exec("PRAGMA wal_autocheckpoint = 0");
+    const required = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('events', 'app_tasks')")
+      .all() as Array<{ name?: string }>;
+    if (new Set(required.map(({ name }) => name)).size !== 2) {
+      db.close();
+      throw new Error("Task worker requires an initialized Host database");
+    }
+    dbCache.set(persistDir, db);
+    return db;
+  }
 
   // Restore only when SQLite cannot read its catalog or the database is empty.
   // A full PRAGMA integrity_check walks retained history and made every daemon,
@@ -57,7 +82,7 @@ export function getDb(persistDir: string): SqliteDb {
   // Task workers may wait without affecting an interface. The daemon fails a
   // contended turn quickly so commands and other sockets keep being served;
   // durable event/task identities provide the retry boundary.
-  db.exec(`PRAGMA busy_timeout = ${process.env.MAY_TASK_ATTEMPT_CHILD === "1" ? 5000 : 50}`);
+  db.exec("PRAGMA busy_timeout = 50");
   db.exec("PRAGMA foreign_keys = ON");
   // Checkpointing belongs to the dedicated maintenance process. SQLite's
   // default per-connection auto-checkpoint can otherwise run a multi-page
