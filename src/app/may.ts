@@ -16,7 +16,11 @@ import { runAppRuntime } from "./app-runtime.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
-import { parseTaskAttemptProcessRequest, runTaskAttemptWorker } from "./task-attempt-process.js";
+import {
+  parseTaskAttemptProcessRequest,
+  runTaskAttemptWorker,
+  runTaskRecoveryWorker,
+} from "./task-attempt-process.js";
 
 declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
 declare const __MAY_AGENT_PACKAGE_NAME__: string | undefined;
@@ -148,10 +152,9 @@ if (WEB_ONLY_MODE) {
 
 const models = createModelRegistry();
 
-if (appArgs.taskWorkerRequest) {
+if (appArgs.taskWorkerRequest || appArgs.taskRecoveryWorker) {
   try {
-    await runTaskAttemptWorker({
-      request: parseTaskAttemptProcessRequest(appArgs.taskWorkerRequest),
+    const workerInput = {
       roots: {
         projectRoot: PROJECT_ROOT,
         sharedRoot: ROOTS.sharedRoot,
@@ -159,7 +162,15 @@ if (appArgs.taskWorkerRequest) {
         persistDir: PERSIST_DIR,
       },
       models,
-    });
+    };
+    if (appArgs.taskWorkerRequest) {
+      await runTaskAttemptWorker({
+        ...workerInput,
+        request: parseTaskAttemptProcessRequest(appArgs.taskWorkerRequest),
+      });
+    } else {
+      await runTaskRecoveryWorker(workerInput);
+    }
     process.exit(0);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
