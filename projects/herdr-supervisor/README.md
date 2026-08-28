@@ -28,8 +28,11 @@ The worker does not know about Herdr or the supervisor. A small observation
 adapter resolves the exact native session supplied by Herdr and returns only
 new assistant messages; terminal output is a bounded fallback, not the normal
 contract. The Pi session exposes only supervisor tools, so it cannot become a
-second worker by reading or modifying the worker's workspace. The single
-stale-progress timer remains the next Stage 2b slice.
+second worker by reading or modifying the worker's workspace.
+
+Stage 2b adds one nearest-deadline timer across all bindings. It is a recovery
+safety net, not a polling loop: only due workers wake, and signals received
+during a review coalesce until that review settles.
 
 ## Try it
 

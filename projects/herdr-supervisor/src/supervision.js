@@ -1,3 +1,5 @@
+export const DEFAULT_REVIEW_INTERVAL_MS = 10 * 60 * 1000;
+
 export function findAgent(snapshot, paneId) {
   return snapshot?.agents?.find((agent) => agent.pane_id === paneId);
 }
@@ -25,7 +27,14 @@ export function identityMismatch(binding, agent) {
   return undefined;
 }
 
-export function registerBinding(state, agent, goal, acceptance = [], now = new Date()) {
+export function registerBinding(
+  state,
+  agent,
+  goal,
+  acceptance = [],
+  now = new Date(),
+  reviewAfterMs = DEFAULT_REVIEW_INTERVAL_MS,
+) {
   const identity = captureIdentity(agent);
   const normalizedGoal = goal.trim();
   const normalizedAcceptance = acceptance.map((item) => item.trim()).filter(Boolean);
@@ -36,11 +45,28 @@ export function registerBinding(state, agent, goal, acceptance = [], now = new D
     goal: normalizedGoal,
     acceptance: normalizedAcceptance,
     registeredAt: existing?.registeredAt || now.toISOString(),
+    nextReviewAt: new Date(now.getTime() + reviewAfterMs).toISOString(),
     lastObservedStateChangeSeq: Number(agent.state_change_seq || 0),
-    lastReviewStateChangeSeq: existing?.lastReviewStateChangeSeq || 0,
+    lastReviewStateChangeSeq: 0,
   };
   state.workers = [...state.workers.filter((worker) => worker.paneId !== identity.paneId), binding];
   return binding;
+}
+
+export function dueBindings(workers, now = new Date()) {
+  const timestamp = now.getTime();
+  return workers.filter((worker) => {
+    const deadline = Date.parse(worker.nextReviewAt || "");
+    return !Number.isFinite(deadline) || deadline <= timestamp;
+  });
+}
+
+export function nextReviewDelay(workers, now = new Date()) {
+  if (!workers.length) return undefined;
+  const timestamp = now.getTime();
+  const deadlines = workers.map((worker) => Date.parse(worker.nextReviewAt || ""));
+  if (deadlines.some((deadline) => !Number.isFinite(deadline))) return 0;
+  return Math.max(0, Math.min(...deadlines) - timestamp);
 }
 
 export function removeBinding(state, paneId) {

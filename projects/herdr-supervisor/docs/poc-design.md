@@ -1,6 +1,6 @@
 # Proof-of-concept design
 
-**Status:** Stage 2 in progress
+**Status:** Stage 2 implemented
 **Date:** 2026-08-28
 
 ## 1. Purpose
@@ -102,25 +102,34 @@ and recovery checkpoints:
     {
       "paneId": "w1:p2",
       "terminalId": "term_abc123",
-      "agentSessionRef": "optional-native-session-reference",
+      "agentSession": {
+        "source": "herdr:codex",
+        "agent": "codex",
+        "kind": "id",
+        "value": "native-session-id"
+      },
       "goal": "Make the requested behavior true.",
       "acceptance": [
         "The focused test passes.",
         "The user-visible behavior is demonstrated."
       ],
-      "lastHandledStateChangeSeq": 42,
-      "lastMeaningfulActivityAt": "2026-08-28T10:00:00Z",
+      "lastObservedStateChangeSeq": 42,
+      "lastReviewStateChangeSeq": 42,
       "nextReviewAt": "2026-08-28T10:10:00Z",
-      "lastActionFingerprint": "optional-deduplication-value"
+      "observationCursor": {
+        "kind": "codex-jsonl",
+        "path": "/exact/native/session.jsonl",
+        "offset": 12345
+      }
     }
   ]
 }
 ```
 
 It must not store a worker status. Every display and decision reads the current
-status from Herdr. `terminalId` and `agentSessionRef` fence a pane against
-occupant replacement. Sequence and timestamps exist only to resume event
-handling safely after interruption.
+status from Herdr. `terminalId` and `agentSession` fence a pane against occupant
+replacement. Sequence, deadline, and observation cursor exist only to resume
+review safely after interruption.
 
 Writes use an atomic temporary-file rename. The PoC needs no database.
 
@@ -131,6 +140,7 @@ register worker
   -> read and fence exact Herdr identity
   -> save goal binding
   -> arm state/result watches
+  -> review immediately when the worker is already settled or blocked
   -> return immediately
 
 Herdr event or stale deadline
@@ -149,7 +159,7 @@ Herdr event or stale deadline
 
 | Signal                                   | Default behavior                                                        |
 | ---------------------------------------- | ----------------------------------------------------------------------- |
-| Output/activity while `working`          | Refresh liveness only; do not invoke the model                          |
+| Output/activity while `working`          | No lifecycle wake; the bounded review deadline remains the safety net   |
 | `blocked`                                | Review immediately and determine whether the worker or human can answer |
 | `idle` or Herdr `done`                   | Review the result; never assume goal completion                         |
 | `pane.exited`                            | Review identity and choose conservative recovery                        |
@@ -245,8 +255,9 @@ context is included only when the human explicitly made the goals related.
 
 ## 12. Stale progress
 
-Staleness is absence of meaningful evidence for the configured interval, not
-merely an idle terminal.
+The stale-progress deadline means a registered goal has gone too long without
+a supervisor review. It is a recovery safety net, not a claim that the worker
+made no progress and not merely an idle terminal.
 
 Use one nearest-deadline timer for all registered workers:
 
@@ -255,9 +266,10 @@ Use one nearest-deadline timer for all registered workers:
 3. Review only the workers whose deadline elapsed.
 4. Recompute the next deadline.
 
-Do not run a global polling scan. Ordinary output refreshes liveness without
-calling the model. A stale review reads current state before steering because
-an event may have been missed or delayed.
+Do not run a global polling scan. A stale review reads current Herdr state and
+bounded native messages before deciding because an event may have been missed
+or delayed. The next deadline starts after the review turn settles, so a slow
+model turn cannot enqueue another review behind itself.
 
 ## 13. Failure handling
 
@@ -343,11 +355,14 @@ event. Transport metadata remains secondary.
 
 ### Stage 2b: stale-progress review
 
-- Add one nearest-deadline timer across all registered workers.
-- Wake only workers whose review deadline elapsed.
-- Re-read live state and bounded native evidence before proposing an action.
-- Prove that healthy workers remain quiet and a semantically stalled worker is
-  not silently lost.
+- **Implemented:** use one nearest-deadline timer across all registered workers.
+- **Implemented:** wake only workers whose review deadline elapsed.
+- **Implemented:** re-read live state and bounded native evidence before
+  proposing an action.
+- **Verified:** a legacy binding without a deadline received one recovery
+  review, then moved to the configured next deadline.
+- **Verified:** a short-interval test exposed and fixed overlapping review
+  wakeups; signals now coalesce while a worker review is in flight.
 
 ### Stage 3: bounded live steering
 
@@ -376,7 +391,8 @@ The PoC is successful when all of these are demonstrated:
    duplicate work.
 8. Replacing a pane occupant fails closed instead of steering the wrong agent.
 9. Herdr remains the sole source of live worker state.
-10. Idle operation performs no periodic LLM calls and no global terminal scan.
+10. With no due registered goal, idle operation performs no LLM call and no
+    global terminal scan.
 
 ## 18. Questions the PoC must answer
 
@@ -405,9 +421,9 @@ The PoC is successful when all of these are demonstrated:
   is picked up when the extension starts or reloads; dynamic cross-process
   binding notification is intentionally deferred until a real use case proves
   it necessary.
-- Stage 2a deliberately has no stale timer. Lifecycle events are sufficient to
-  validate native observation, event wakeups, and dry-run decisions first. The
-  single nearest-deadline timer is the separate Stage 2b slice.
+- Stage 2a deliberately began without a stale timer so native observation,
+  event wakeups, and dry-run decisions could be validated independently. Stage
+  2b then added one nearest-deadline timer without adding a queue or scan loop.
 - A live passive smoke test bound an idle Codex pane, loaded the Pi extension,
   emitted one review notice, and left the worker on the same Herdr state and
   `state_change_seq`. This confirms the observe path does not prompt the worker.
@@ -424,6 +440,11 @@ The PoC is successful when all of these are demonstrated:
   worker. The run also showed that registration must not be a model tool: an
   event review tried to restate the existing binding before observing it.
   Registration and explicit stopping are now command/CLI-only.
+- The first short-deadline smoke test found that a deadline could expire while
+  its prior model turn was still running, repeatedly queueing review messages.
+  One in-flight fence per worker now coalesces intervening signals, and the next
+  deadline is measured from the settled review. A clean rerun produced one
+  wakeup and one bounded observation, then returned to sleep.
 
 These questions are evidence goals for the PoC, not reasons to add mechanisms
 before testing.

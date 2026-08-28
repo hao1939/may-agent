@@ -6,8 +6,11 @@ import { loadState, updateState } from "./src/store.js";
 import {
   findAgent,
   formatWorker,
+  DEFAULT_REVIEW_INTERVAL_MS,
+  dueBindings,
   identityMismatch,
   liveWorker,
+  nextReviewDelay,
   registerBinding,
   removeBinding,
   reviewMessage,
@@ -31,6 +34,10 @@ function text(value: string, isError = false) {
 export default function herdrSupervisor(pi: ExtensionAPI) {
   let stopSubscription: undefined | (() => void);
   let reconnectTimer: undefined | ReturnType<typeof setTimeout>;
+  let reviewTimer: undefined | ReturnType<typeof setTimeout>;
+  const signalsInFlight = new Set<string>();
+  const reviewsInFlight = new Set<string>();
+  const signalsDuringReview = new Set<string>();
   let shuttingDown = false;
   let reconnectDelay = 250;
 
@@ -40,9 +47,65 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     default: process.env.HERDR_SUPERVISOR_MODE || "observe",
   });
 
+  pi.registerFlag("supervisor-review-ms", {
+    description: "Time without a supervision review before a stale-progress check",
+    type: "string",
+    default: process.env.HERDR_SUPERVISOR_REVIEW_MS || String(DEFAULT_REVIEW_INTERVAL_MS),
+  });
+
   function mode(): SupervisorMode {
     const value = pi.getFlag("supervisor-mode");
     return value === "live" || value === "dry-run" ? value : "observe";
+  }
+
+  function reviewIntervalMs() {
+    const value = Number(pi.getFlag("supervisor-review-ms"));
+    return Number.isFinite(value) && value >= 1000 ? value : DEFAULT_REVIEW_INTERVAL_MS;
+  }
+
+  async function armReviewTimer() {
+    if (reviewTimer) clearTimeout(reviewTimer);
+    reviewTimer = undefined;
+    if (shuttingDown) return;
+    const state = await loadState();
+    const waiting = state.workers.filter(
+      (worker) => !signalsInFlight.has(worker.paneId) && !reviewsInFlight.has(worker.paneId),
+    );
+    const delay = nextReviewDelay(waiting);
+    if (delay === undefined) return;
+    reviewTimer = setTimeout(() => {
+      reviewTimer = undefined;
+      void reviewDueWorkers();
+    }, Math.min(delay, 2_147_483_647));
+    reviewTimer.unref?.();
+  }
+
+  async function reviewDueWorkers() {
+    const state = await loadState();
+    const due = dueBindings(state.workers.filter(
+      (worker) => !signalsInFlight.has(worker.paneId) && !reviewsInFlight.has(worker.paneId),
+    ));
+    if (due.length) {
+      const nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
+      const panes = new Set(due.map((binding) => binding.paneId));
+      await updateState((next) => {
+        for (const binding of next.workers) {
+          if (panes.has(binding.paneId)) binding.nextReviewAt = nextReviewAt;
+        }
+        return next;
+      });
+    }
+    try {
+      for (const binding of due) {
+        await handleSignal(binding.paneId, {
+          force: true,
+          reason: "review deadline elapsed",
+          key: `deadline:${binding.nextReviewAt || "recovery"}`,
+        });
+      }
+    } finally {
+      await armReviewTimer();
+    }
   }
 
   async function status(paneId?: string) {
@@ -52,22 +115,54 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     return bindings.map((binding) => formatWorker(liveWorker(binding, snapshot))).join("\n\n");
   }
 
-  async function handleSignal(paneId: string) {
+  async function handleSignal(
+    paneId: string,
+    signal?: { force: boolean; reason: string; key: string },
+  ) {
+    if (signalsInFlight.has(paneId) || reviewsInFlight.has(paneId)) {
+      signalsDuringReview.add(paneId);
+      return;
+    }
+    signalsInFlight.add(paneId);
+    try {
+      await handleSignalOnce(paneId, signal);
+    } finally {
+      signalsInFlight.delete(paneId);
+      if (!reviewsInFlight.has(paneId) && signalsDuringReview.delete(paneId)) {
+        void handleSignal(paneId);
+      }
+    }
+  }
+
+  async function handleSignalOnce(
+    paneId: string,
+    signal?: { force: boolean; reason: string; key: string },
+  ) {
     const [state, snapshot] = await Promise.all([loadState(), client.snapshot()]);
     const binding = state.workers.find((worker) => worker.paneId === paneId);
     if (!binding) return;
     const agent = findAgent(snapshot, paneId);
-    const decision = shouldWake(binding, agent);
+    const currentDecision = shouldWake(binding, agent);
+    const decision = signal?.force && !identityMismatch(binding, agent)
+      ? {
+          wake: true,
+          reason: signal.reason,
+          sequence: agent ? Number(agent.state_change_seq || 0) : undefined,
+          key: signal.key,
+        }
+      : currentDecision;
     if (!decision.wake || binding.lastNoticeKey === decision.key) return;
     await updateState((next) => {
       const current = next.workers.find((worker) => worker.paneId === paneId);
       if (current) {
         current.lastNoticeKey = decision.key;
+        current.nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
         if (decision.sequence !== undefined) current.lastObservedStateChangeSeq = decision.sequence;
       }
       return next;
     });
     const currentMode = mode();
+    if (currentMode !== "observe") reviewsInFlight.add(paneId);
     pi.sendMessage(
       {
         customType: "herdr-supervisor-review",
@@ -76,6 +171,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
       },
       { triggerTurn: currentMode !== "observe", deliverAs: "followUp" },
     );
+    if (!signal?.force) await armReviewTimer();
   }
 
   async function connectObserver() {
@@ -114,10 +210,12 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     if (!agent) throw new Error(`no observable agent in ${paneId}`);
     let binding;
     await updateState((state) => {
-      binding = registerBinding(state, agent, goal, acceptance);
+      binding = registerBinding(state, agent, goal, acceptance, new Date(), reviewIntervalMs());
       return state;
     });
     await connectObserver();
+    await armReviewTimer();
+    if (shouldWake(binding!, agent).wake) void handleSignal(binding!.paneId);
     return binding!;
   }
 
@@ -155,10 +253,12 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
           const current = next.workers.find((worker) => worker.paneId === params.pane_id);
           if (current) {
             current.lastReviewStateChangeSeq = Number(agent.state_change_seq || 0);
+            current.nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
             if (observation.cursor) current.observationCursor = observation.cursor;
           }
           return next;
         });
+        await armReviewTimer();
         return text(`Goal: ${binding.goal}\nHerdr state: ${agent.agent_status}\n\n${formatObservation(observation)}`);
       } catch (error) { return text(`Could not observe worker: ${error.message}`, true); }
     },
@@ -206,6 +306,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         return state;
       });
       await connectObserver();
+      await armReviewTimer();
       if (!removed) return text(`${params.pane_id} is not supervised.`, true);
       return text(`Goal accepted for ${params.pane_id}.\n${params.summary}\nEvidence:\n${params.evidence.map((item) => `- ${item}`).join("\n")}`);
     },
@@ -243,6 +344,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
         return state;
       });
       await connectObserver();
+      await armReviewTimer();
       ctx.ui.notify(removed ? `Stopped supervising ${paneId}.` : `${paneId} was not supervised.`, "info");
     },
   });
@@ -256,6 +358,7 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     pi.setActiveTools(supervisorTools);
     shuttingDown = false;
     await connectObserver();
+    await armReviewTimer();
     const state = await loadState();
     ctx.ui.setStatus("herdr-supervisor", state.workers.length ? `supervising ${state.workers.length}` : undefined);
     const snapshot = await client.snapshot();
@@ -266,9 +369,32 @@ export default function herdrSupervisor(pi: ExtensionAPI) {
     }
   });
 
+  pi.on("agent_settled", async () => {
+    const reviewed = [...reviewsInFlight];
+    const pending = [...signalsDuringReview];
+    signalsDuringReview.clear();
+    reviewsInFlight.clear();
+    signalsInFlight.clear();
+    if (reviewed.length) {
+      const panes = new Set(reviewed);
+      const nextReviewAt = new Date(Date.now() + reviewIntervalMs()).toISOString();
+      await updateState((state) => {
+        for (const binding of state.workers) {
+          if (panes.has(binding.paneId)) binding.nextReviewAt = nextReviewAt;
+        }
+        return state;
+      });
+    }
+    for (const paneId of pending) await handleSignal(paneId);
+    await armReviewTimer();
+  });
+
   pi.on("session_shutdown", () => {
     shuttingDown = true;
     stopSubscription?.();
     if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (reviewTimer) clearTimeout(reviewTimer);
+    reviewsInFlight.clear();
+    signalsDuringReview.clear();
   });
 }

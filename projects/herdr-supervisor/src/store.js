@@ -32,6 +32,9 @@ function validateBinding(binding) {
   if (!Array.isArray(binding.acceptance) || binding.acceptance.some((item) => typeof item !== "string")) {
     throw new Error("worker binding acceptance must be an array of strings");
   }
+  if (binding.nextReviewAt !== undefined && !Number.isFinite(Date.parse(binding.nextReviewAt))) {
+    throw new Error("worker binding nextReviewAt must be an ISO timestamp");
+  }
 }
 
 export async function loadState(path = defaultStatePath()) {

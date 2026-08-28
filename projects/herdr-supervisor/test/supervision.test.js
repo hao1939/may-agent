@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   captureIdentity,
+  dueBindings,
   identityMismatch,
+  nextReviewDelay,
   registerBinding,
   removeBinding,
   reviewMessage,
@@ -23,7 +25,13 @@ function agent(overrides = {}) {
 
 test("registration records the goal and exact worker identity", () => {
   const state = { version: 1, workers: [] };
-  const binding = registerBinding(state, agent(), " Fix cancellation ", [" test passes "]);
+  const binding = registerBinding(
+    state,
+    agent(),
+    " Fix cancellation ",
+    [" test passes "],
+    new Date("2026-08-28T00:00:00.000Z"),
+  );
   assert.deepEqual(captureIdentity(agent()), {
     paneId: "w1:p2",
     terminalId: "term-1",
@@ -31,15 +39,37 @@ test("registration records the goal and exact worker identity", () => {
   });
   assert.equal(binding.goal, "Fix cancellation");
   assert.deepEqual(binding.acceptance, ["test passes"]);
+  assert.equal(binding.nextReviewAt, "2026-08-28T00:10:00.000Z");
   assert.equal(state.workers.length, 1);
+});
+
+test("one nearest deadline selects only workers due for review", () => {
+  const now = new Date("2026-08-28T00:00:00.000Z");
+  const workers = [
+    { paneId: "w1:p1", nextReviewAt: "2026-08-28T00:02:00.000Z" },
+    { paneId: "w1:p2", nextReviewAt: "2026-08-27T23:59:00.000Z" },
+    { paneId: "w1:p3", nextReviewAt: "2026-08-28T00:05:00.000Z" },
+  ];
+  assert.equal(nextReviewDelay(workers, now), 0);
+  assert.deepEqual(dueBindings(workers, now).map((worker) => worker.paneId), ["w1:p2"]);
+  assert.equal(nextReviewDelay(workers.filter((worker) => worker.paneId !== "w1:p2"), now), 120_000);
+  assert.equal(nextReviewDelay([], now), undefined);
+});
+
+test("bindings without a deadline receive one recovery review", () => {
+  const workers = [{ paneId: "w1:p1" }];
+  assert.equal(nextReviewDelay(workers), 0);
+  assert.deepEqual(dueBindings(workers).map((worker) => worker.paneId), ["w1:p1"]);
 });
 
 test("registering the same pane updates one binding", () => {
   const state = { version: 1, workers: [] };
   registerBinding(state, agent(), "first");
+  state.workers[0].lastReviewStateChangeSeq = 10;
   registerBinding(state, agent(), "refined");
   assert.equal(state.workers.length, 1);
   assert.equal(state.workers[0].goal, "refined");
+  assert.equal(state.workers[0].lastReviewStateChangeSeq, 0);
 });
 
 test("working is quiet while settled and blocked states wake review", () => {
