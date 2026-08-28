@@ -148,6 +148,9 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
   let livenessRunning = false;
   const deliveryWriter = new DbWriter(opts.persistDir, {
     housekeepingIntervalMs: once ? 0 : EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS,
+    // The long-lived Host daemon owns schema creation and upgrades. Starting
+    // maintenance beside it must not compete for SQLite's schema write lock.
+    existingSchemaOnly: true,
   });
   const livenessNotBefore = Date.now() + LIVENESS_STARTUP_GRACE_MS;
   let livenessState: RuntimeLivenessState = {
