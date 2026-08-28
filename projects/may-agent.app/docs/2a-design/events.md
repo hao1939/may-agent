@@ -118,8 +118,9 @@ listener has its own filtered, bounded FIFO, so socket streams, Console
 rendering, Conversation mirroring, and similar presentation cannot add latency
 to semantic acceptance or block one another. When a listener falls behind,
 stale notifications may be dropped with a warning; the durable event and
-resource remain available for resynchronization. A listener failure is
-observable but cannot undo the accepted event.
+resource remain available for resynchronization. A listener handles at most one
+notification per event-loop turn before yielding to interface I/O. A listener
+failure is observable but cannot undo the accepted event.
 
 An `async` function is not by itself an asynchronous boundary: its synchronous
 prefix runs immediately until the first `await`. A handler that opens stores,
