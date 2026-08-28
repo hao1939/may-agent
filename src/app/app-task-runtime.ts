@@ -256,6 +256,10 @@ export interface AppTaskRuntimeOptions {
   executeRecovery?: () => Promise<void>;
   /** Install descriptors and routing without starting local controllers. */
   installControllers?: boolean;
+  /** Limit descriptor preparation to exact Apps in a one-attempt worker. */
+  taskAppIds?: readonly string[];
+  /** The parent publishes read models; execution workers reuse them. */
+  syncReadModels?: boolean;
   /** Optional host adapters selected by Task intent. Built-ins remain replaceable. */
   executors?: Readonly<Record<string, TaskExecutor>>;
   appRegistry?: AppRegistry;
@@ -4869,10 +4873,12 @@ function discoverAppTaskResourceStore(
 async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Promise<AppTaskRuntimeDescriptor[]> {
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
+  const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
   const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
   for (const { appDir, definition: app } of entries) {
     if (!app.tasks) continue;
     const id = app.id;
+    if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
     const resourceStore = discoverAppTaskResourceStore(opts.persistDir, id, appDir);
@@ -4915,7 +4921,7 @@ async function commitAppTaskRuntimeDescriptors(
       });
       continue;
     }
-    syncProjectReadModel(opts, descriptor);
+    if (opts.syncReadModels !== false) syncProjectReadModel(opts, descriptor);
     installed.push(descriptor);
   }
 
