@@ -300,7 +300,9 @@ The same rule applies before a task exists. Interrupted event-to-App admission
 is recovered in bounded due batches with a retry cooldown. The ordinary event
 path does not wait for that recovery timer. The App input handler becomes
 active first; dependency and frozen-admission recovery begin on later event-loop
-turns and yield between bounded items.
+turns. Each bounded recovery item yields to the event loop before the next item,
+including consecutive Task dependencies owned by one App, so a large App cannot
+starve control reads or human-message admission.
 
 Recovery preserves request and task identities. Requests correlate callers;
 tasks own App work. Logs and traces are evidence, not reconstruction authority.
