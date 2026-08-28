@@ -69,7 +69,7 @@ describe("EventBus subscriber priority", () => {
 
     expect(calls).toEqual(["durable", "ordinary", "receipt:92"]);
     expect(forwarded[EVENT_ROW_ID]).toBe(92);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await Bun.sleep(1);
     expect(calls).toEqual(["durable", "ordinary", "receipt:92", "listener"]);
   });
 
@@ -86,7 +86,7 @@ describe("EventBus subscriber priority", () => {
     bus.emit({ type: "heartbeat", agent: "may" });
 
     expect(calls).toEqual(["route:info", "route:heartbeat"]);
-    for (let turn = 0; turn < 2; turn++) await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let turn = 0; turn < 2; turn++) await Bun.sleep(1);
     expect(calls).toEqual(["route:info", "route:heartbeat", "observe:info", "observe:heartbeat"]);
   });
 
@@ -106,7 +106,7 @@ describe("EventBus subscriber priority", () => {
     for (let index = 0; index < 64; index += 1) bus.emit({ type: "info", message: String(index) });
 
     expect(await afterFirst).toBe(1);
-    while (observed < 64) await new Promise<void>((resolve) => setImmediate(resolve));
+    while (observed < 64) await Bun.sleep(1);
   });
 
   it("keeps each listener independent and filters before queueing", async () => {
@@ -128,11 +128,11 @@ describe("EventBus subscriber priority", () => {
 
     bus.emit({ type: "info", message: "one" });
     bus.emit({ type: "heartbeat", agent: "may" });
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await Bun.sleep(1);
 
     expect(calls).toEqual(["slow:start", "fast:info"]);
     releaseSlow();
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await Bun.sleep(1);
     expect(calls).toEqual(["slow:start", "fast:info", "slow:end"]);
   });
 
@@ -150,11 +150,11 @@ describe("EventBus subscriber priority", () => {
     });
 
     bus.emit({ type: "info", message: "blocked" });
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await Bun.sleep(1);
     for (let index = 1; index <= 300; index++) bus.emit({ type: "info", message: String(index) });
     releaseFirst();
     for (let turn = 0; turn < 300 && observed.at(-1) !== "300"; turn++) {
-      await new Promise<void>((resolve) => setImmediate(resolve));
+      await Bun.sleep(1);
     }
 
     expect(observed).toHaveLength(257);
@@ -173,7 +173,7 @@ describe("EventBus subscriber priority", () => {
 
     bus.emit({ type: "info", message: "test" });
     expect(persisted).toEqual(["info"]);
-    for (let turn = 0; turn < 2; turn++) await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let turn = 0; turn < 2; turn++) await Bun.sleep(1);
     expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
 
@@ -278,7 +278,7 @@ describe("EventBus subscriber priority", () => {
 
     expect(() => bus.emit({ type: "info", message: "durable first" })).not.toThrow();
     expect(persisted).toEqual(["info"]);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await Bun.sleep(1);
     expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
 
@@ -294,7 +294,7 @@ describe("EventBus subscriber priority", () => {
     });
 
     bus.emit({ type: "info", message: "accepted before observation" });
-    for (let turn = 0; turn < 2; turn++) await new Promise<void>((resolve) => setImmediate(resolve));
+    for (let turn = 0; turn < 2; turn++) await Bun.sleep(1);
 
     expect(persisted).toEqual(["info", "subscriber.failed"]);
   });
@@ -326,7 +326,7 @@ describe("EventBus subscriber priority", () => {
 
     bus.emit({ type: "info", message: "z" });
     expect(events.map((event) => event.type)).toEqual(["info"]);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await Bun.sleep(1);
 
     expect(events.map((event) => event.type)).toEqual(["info", "subscriber.failed"]);
     expect(events[1]).toMatchObject({
