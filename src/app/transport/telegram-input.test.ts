@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { createAppInboxItem, createConversationTopic } from "../app-inbox-store.js";
-import { EVENT_ROW_ID, EventBus } from "../event-bus.js";
+import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus } from "../event-bus.js";
 import {
   attachTelegramBot as attachTelegramBotRuntime,
   renderTelegramApps,
@@ -17,11 +17,13 @@ import {
 } from "./telegram.js";
 
 function attachTelegramBot(
-  options: Omit<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">,
+  options: Omit<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent"> &
+    Partial<Pick<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">>,
 ): ReturnType<typeof attachTelegramBotRuntime> {
   return attachTelegramBotRuntime({
     ...options,
     publishEvent(input) {
+      if (options.publishEvent) return options.publishEvent(input);
       const data = {
         ...input.data,
         ...(input.target ?? {}),
@@ -37,7 +39,7 @@ function attachTelegramBot(
       return {
         eventId: Number(emitted[EVENT_ROW_ID]) || 1,
         eventType: input.type,
-        delivery: "recorded",
+        delivery: emitted[EVENT_DELIVERY_RESULT]?.accepted ? "accepted" : "recorded",
       };
     },
   });
@@ -693,12 +695,24 @@ describe("Telegram May input", () => {
         ],
         getTask: () => task(),
         listTasks: () => ({ items: [], total: 0 }),
-        cancelTask(input: Record<string, unknown>) {
-          cancelCalls.push(input);
-          taskTerminal = true;
-          return task();
-        },
       } as any,
+      publishEvent(input) {
+        const data = {
+          ...input.data,
+          ...(input.target ?? {}),
+          ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+        };
+        const event = {
+          type: input.type,
+          source: "telegram",
+          owner: input.target?.appId ? `app:${input.target.appId}` : "agent:may",
+          ...(input.target ? { target: input.target } : {}),
+          data,
+        } as any;
+        if (input.type === "app.task.cancel.requested") cancelCalls.push(event);
+        const emitted = bus.emit(event);
+        return { eventId: Number(emitted[EVENT_ROW_ID]) || 1, eventType: input.type, delivery: "accepted" };
+      },
     });
     try {
       await waitFor(() => sent.length >= 3);
@@ -754,7 +768,20 @@ describe("Telegram May input", () => {
       releaseFollowup();
       await waitFor(() => sent.some((text) => text.includes("No Task is watched")));
       await waitFor(() => cancelCalls.length === 1);
-      expect(cancelCalls[0]).toEqual({ ref: "8f12ac90", reason: "human requested cancellation from Telegram" });
+      expect(cancelCalls[0]).toEqual({
+        type: "app.task.cancel.requested",
+        source: "telegram",
+        owner: "app:evaluation",
+        target: { appId: "evaluation", taskId: "review/docs" },
+        data: {
+          appId: "evaluation",
+          taskId: "review/docs",
+          expectedGeneration: 1,
+          expectedResourceVersion: 3,
+          reason: "human requested cancellation from Telegram",
+          idempotencyKey: "app-task-cancel:evaluation:review/docs:1:3",
+        },
+      });
       expect(sent).toContain("No Task is watched.");
     } finally {
       bot.close();

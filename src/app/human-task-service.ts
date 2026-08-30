@@ -11,14 +11,7 @@ import {
   type ResolvedTaskReference,
 } from "./task-reference-index.js";
 
-export type HumanTaskStatus =
-  | "pending"
-  | "running"
-  | "waiting"
-  | "attention"
-  | "up-to-date"
-  | "done"
-  | "cancelled";
+export type HumanTaskStatus = "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "cancelled";
 
 export type HumanTaskProgress = {
   stage: string;
@@ -337,9 +330,10 @@ function reachableHumanConditionOwners(
   const rows = db
     .prepare(
       `WITH RECURSIVE reachable(app_id, task_id) AS (
-         ${explicitRoot
-           ? "SELECT ? AS app_id, ? AS task_id"
-           : `SELECT task.app_id, task.task_id
+         ${
+           explicitRoot
+             ? "SELECT ? AS app_id, ? AS task_id"
+             : `SELECT task.app_id, task.task_id
               FROM app_tasks task
               WHERE task.phase IN ('pending', 'running', 'waiting', 'attention', 'converged')
                 AND NOT EXISTS (
@@ -350,7 +344,8 @@ function reachableHumanConditionOwners(
                   SELECT 1 FROM app_task_cancellations cancellation
                   WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
                 )
-                ${roots.activeAppId ? "AND task.app_id = ?" : ""}`}
+                ${roots.activeAppId ? "AND task.app_id = ?" : ""}`
+         }
          UNION
          SELECT request.app_id, request.waiting_on_id
          FROM reachable parent
@@ -631,12 +626,7 @@ export class HumanTaskService {
     private readonly db: SqliteDb,
     private readonly registry: Pick<AppRegistry, "snapshot">,
     private readonly options: {
-      onCancelled?: (input: {
-        appId: string;
-        taskId: string;
-        attemptId?: string;
-        reason: string;
-      }) => void;
+      onCancelled?: (input: { appId: string; taskId: string; attemptId?: string; reason: string }) => void;
     } = {},
   ) {
     ensureTaskReferenceIndex(db);
@@ -872,15 +862,58 @@ export class HumanTaskService {
     return inheritedAction ? { ...detail, humanAction: inheritedAction } : detail;
   }
 
-  cancelTask(input: { ref?: string; appId?: string; taskId?: string; reason?: string }): HumanTaskView {
+  cancelTask(input: {
+    ref?: string;
+    appId?: string;
+    taskId?: string;
+    reason?: string;
+    expectedGeneration?: number;
+    expectedResourceVersion?: number;
+    controlKey?: string;
+  }): HumanTaskView {
     const resolved = this.getTask(input);
     if (!resolved) throw new Error("Task was not found");
     let cancelledAttemptId: string | undefined;
     let reason = input.reason?.trim() || "human requested cancellation";
     this.db.exec("BEGIN IMMEDIATE");
     try {
+      if (input.controlKey) {
+        const prior = this.db
+          .prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = ?")
+          .get(input.controlKey) as { receipt_json?: string } | null;
+        if (prior?.receipt_json) {
+          const receipt = parseJson<{
+            action?: string;
+            appId?: string;
+            taskId?: string;
+            expectedGeneration?: number;
+            expectedResourceVersion?: number;
+          }>(prior.receipt_json);
+          if (
+            receipt?.action !== "cancel" ||
+            receipt.appId !== resolved.appId ||
+            receipt.taskId !== resolved.taskId ||
+            receipt.expectedGeneration !== input.expectedGeneration ||
+            receipt.expectedResourceVersion !== input.expectedResourceVersion
+          ) {
+            throw new Error(`Task control key ${input.controlKey} was already used for a different operation`);
+          }
+          this.db.exec("COMMIT");
+          return this.getTask({ appId: resolved.appId, taskId: resolved.taskId })!;
+        }
+      }
       const current = this.getTask({ appId: resolved.appId, taskId: resolved.taskId });
       if (!current) throw new Error("Task disappeared before cancellation");
+      if (input.expectedGeneration !== undefined && current.generation !== input.expectedGeneration) {
+        throw new Error(
+          `Task ${current.ref} generation changed: expected ${input.expectedGeneration}, current ${current.generation}`,
+        );
+      }
+      if (input.expectedResourceVersion !== undefined && current.resourceVersion !== input.expectedResourceVersion) {
+        throw new Error(
+          `Task ${current.ref} resource version changed: expected ${input.expectedResourceVersion}, current ${current.resourceVersion}`,
+        );
+      }
       if (current.status === "cancelled") {
         this.db.exec("COMMIT");
         return current;
@@ -953,6 +986,36 @@ export class HumanTaskService {
            WHERE app_id = ? AND attempt_id = ?`,
           )
           .run(JSON.stringify(attempt), current.appId, attempt.metadata.id);
+      }
+      if (input.controlKey) {
+        const receipt = {
+          controlKey: input.controlKey,
+          appId: current.appId,
+          taskId: current.taskId,
+          action: "cancel",
+          expectedGeneration: input.expectedGeneration ?? current.generation,
+          expectedResourceVersion: input.expectedResourceVersion ?? current.resourceVersion,
+          appliedResourceVersion: nextVersion,
+          appliedAt: now,
+        };
+        this.db
+          .prepare(
+            `INSERT INTO app_task_control_receipts(
+               control_key, app_id, task_id, action, expected_generation,
+               expected_resource_version, applied_resource_version, applied_at, receipt_json
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            receipt.controlKey,
+            receipt.appId,
+            receipt.taskId,
+            receipt.action,
+            receipt.expectedGeneration,
+            receipt.expectedResourceVersion,
+            receipt.appliedResourceVersion,
+            receipt.appliedAt,
+            JSON.stringify(receipt),
+          );
       }
       advanceTaskResourceRevision(this.db, current.appId);
       cancelledAttemptId = attempt?.metadata.id;

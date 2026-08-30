@@ -4,8 +4,8 @@
  *
  * Run: bun scripts/seed-metrics.ts
  *
- * Idempotent: uses INSERT OR IGNORE so re-running is safe.
- * Does NOT overwrite existing metrics — only inserts new ones.
+ * Idempotent: inserts missing current metrics and retires removed legacy
+ * definitions without deleting their historical samples.
  *
  * Initial metrics come from the approved design doc:
  *   projects/may-agent.app/docs/2a-design/metrics.md
@@ -112,6 +112,21 @@ interface MetricDef {
 
 const now = Date.now();
 
+const retiredLegacyMetricIds = [
+  "gym.pass-rate",
+  "gym.scenario-discrimination",
+  "convention.aggregate",
+  "research.experiments-rate",
+  "research.hypotheses-concluded",
+];
+const retireLegacyMetric = db.prepare(
+  `UPDATE metrics
+   SET status = 'retired', closed_at = COALESCE(closed_at, ?), updated_at = ?
+   WHERE id = ? AND COALESCE(status, '') <> 'retired'`,
+);
+let retired = 0;
+for (const id of retiredLegacyMetricIds) retired += Number(retireLegacyMetric.run(now, now, id).changes);
+
 const metrics: MetricDef[] = [
   // ── Auto-measured from DB (source = 'auto') ─────────────────────
 
@@ -153,44 +168,6 @@ const metrics: MetricDef[] = [
     sensitivity: 0.1,
   },
   {
-    id: "gym.pass-rate",
-    name: "Gym pass rate",
-    type: "continuous",
-    owner: "coach",
-    target: 70,
-    unit: "%",
-    priority: "P1",
-    source: "auto",
-    source_query: `SELECT round(100.0 * sum(CASE WHEN passed = 1 THEN 1 ELSE 0 END) / count(*), 1) FROM gym_runs WHERE timestamp > datetime('now', '-7 days')`,
-    sensitivity: 0.1,
-  },
-  {
-    id: "gym.scenario-discrimination",
-    name: "Gym scenario discrimination rate",
-    type: "continuous",
-    owner: "coach",
-    target: 80,
-    unit: "%",
-    priority: "P2",
-    source: "auto",
-    // % of scenarios with pass rate between 10-90% (i.e., they distinguish good vs bad)
-    source_query: `SELECT round(100.0 * sum(CASE WHEN pr BETWEEN 10 AND 90 THEN 1 ELSE 0 END) / max(count(*), 1), 1) FROM (SELECT scenario, 100.0 * sum(CASE WHEN passed = 1 THEN 1 ELSE 0 END) / count(*) as pr FROM gym_runs WHERE timestamp > datetime('now', '-30 days') GROUP BY scenario HAVING count(*) >= 3)`,
-    sensitivity: 0.15,
-  },
-  {
-    id: "convention.aggregate",
-    name: "Convention compliance",
-    type: "health",
-    owner: "may",
-    target: 100,
-    threshold: 90,
-    unit: "%",
-    priority: "P1",
-    source: "auto",
-    source_query: `SELECT round(100.0 * sum(CASE WHEN passed = 1 THEN 1 ELSE 0 END) / max(count(*), 1), 1) FROM convention_checks WHERE checked_at > (strftime('%s','now')*1000 - 604800000)`,
-    sensitivity: 0.1,
-  },
-  {
     id: "health.error-rate",
     name: "System error rate",
     type: "health",
@@ -214,31 +191,6 @@ const metrics: MetricDef[] = [
     source_query: `SELECT round(avg(opCount), 1) FROM sessions WHERE startedAt > (strftime('%s','now')*1000 - 86400000) AND opCount > 0`,
     sensitivity: 0.15,
   },
-  {
-    id: "research.experiments-rate",
-    name: "Experiments completed per week",
-    type: "health",
-    owner: "bob",
-    target: 10,
-    threshold: 2,
-    unit: "count",
-    priority: "P2",
-    source: "auto",
-    source_query: `SELECT count(*) FROM experiments WHERE created_at > (strftime('%s','now')*1000 - 604800000)`,
-  },
-  {
-    id: "research.hypotheses-concluded",
-    name: "Hypothesis conclusion rate",
-    type: "continuous",
-    owner: "bob",
-    target: 80,
-    unit: "%",
-    priority: "P1",
-    source: "auto",
-    source_query: `SELECT round(100.0 * sum(CASE WHEN status LIKE '%CONFIRMED%' OR status LIKE '%REJECTED%' OR status LIKE '%FALSIFIED%' OR status LIKE '%DISCONFIRMED%' OR status LIKE '%CONCLUDED%' OR status LIKE '%ARCHIVED%' OR status LIKE '%Supported%' OR status LIKE '%SUPPORTED%' THEN 1 ELSE 0 END) / max(count(*), 1), 1) FROM hypotheses WHERE synced_at > (strftime('%s','now')*1000 - 2592000000)`,
-    sensitivity: 0.15,
-  },
-
   // ── Auto-measured from research_log (source = 'auto') ─────────────
 
   {
@@ -391,11 +343,11 @@ for (const m of metrics) {
 
 // ── Validate source queries ───────────────────────────────────────────
 
-console.log(`\n📊 Seed metrics: ${inserted} inserted, ${skipped} already exist\n`);
+console.log(`\n📊 Seed metrics: ${inserted} inserted, ${skipped} already exist, ${retired} legacy retired\n`);
 
-const autoMetrics = db.prepare(
-  "SELECT id, source_query FROM metrics WHERE source = 'auto' AND status = 'active'",
-).all() as Array<{ id: string; source_query: string }>;
+const autoMetrics = db
+  .prepare("SELECT id, source_query FROM metrics WHERE source = 'auto' AND status = 'active'")
+  .all() as Array<{ id: string; source_query: string }>;
 
 let valid = 0;
 let broken = 0;
@@ -418,9 +370,9 @@ console.log(`\nSource query validation: ${valid} valid, ${broken} broken`);
 
 // ── Summary table ─────────────────────────────────────────────────────
 
-const allMetrics = db.prepare(
-  "SELECT id, type, owner, priority, source FROM metrics WHERE status = 'active' ORDER BY priority, type",
-).all() as Array<{ id: string; type: string; owner: string; priority: string; source: string }>;
+const allMetrics = db
+  .prepare("SELECT id, type, owner, priority, source FROM metrics WHERE status = 'active' ORDER BY priority, type")
+  .all() as Array<{ id: string; type: string; owner: string; priority: string; source: string }>;
 
 console.log(`\n📋 Active metrics (${allMetrics.length} total):\n`);
 console.log("  ID".padEnd(40) + "Type".padEnd(14) + "Owner".padEnd(14) + "P".padEnd(5) + "Source");

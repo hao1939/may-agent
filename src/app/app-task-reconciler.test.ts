@@ -11,10 +11,7 @@ import {
   type TaskStateConfig,
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
-import {
-  matchingAppTaskConditionTaskIds,
-  trackAppTaskConditionEventForTasks,
-} from "./app-task-condition-tracker.ts";
+import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
 import { AppTaskQueue } from "./app-task-queue.ts";
 import {
   associateAppTaskSession,
@@ -375,9 +372,7 @@ describe("App task reconciler state", () => {
         ],
       }).status,
     ).toBe("applied");
-    expect(committed?.fences.map((fence) => fence.taskId)).toEqual(
-      expect.arrayContaining([claim.taskId, parent.id]),
-    );
+    expect(committed?.fences.map((fence) => fence.taskId)).toEqual(expect.arrayContaining([claim.taskId, parent.id]));
     expect(committed?.tasks?.map((write) => write.resource.metadata.id)).toEqual([claim.taskId]);
     expect(committed?.deleteReceiptIds).toBeUndefined();
   });
@@ -752,7 +747,7 @@ describe("App task reconciler state", () => {
     expect(readAppTaskIntent(config, "work/orphan")).toBeNull();
   });
 
-  it("selects a CLI adapter without creating a second Task lifecycle", () => {
+  it("selects a registered executor without creating a second Task lifecycle", () => {
     const { config } = fixture();
     const cliIntent: AppTaskIntent = {
       ...intent(),
@@ -813,7 +808,7 @@ describe("App task reconciler state", () => {
     expect(readAppTaskIntent(config, "work/empty-agent")).toBeNull();
   });
 
-  it("rejects ambiguous workflow and CLI executor intent", () => {
+  it("rejects ambiguous workflow and executor intent", () => {
     const { config } = fixture();
     expect(() =>
       observeAppTaskIntent(config, {
@@ -4633,6 +4628,8 @@ describe("App task reconciler state", () => {
       evidence: ["failure-log:811"],
     });
     const before = config.resourceStore.readTaskContext({ taskIds: [failed.taskId] });
+    const failedResourceVersion = before.resources?.[failed.taskId]?.metadata.resourceVersion;
+    if (!failedResourceVersion) throw new Error("expected failed task resource version");
     const attemptsBefore = structuredClone(before.attempts);
     const taskIdsBefore = Object.keys(before.resources ?? {});
 
@@ -4641,13 +4638,33 @@ describe("App task reconciler state", () => {
         appId: "sample",
         taskId: failed.taskId,
         expectedGeneration: failed.generation + 1,
+        expectedResourceVersion: failedResourceVersion,
       }),
     ).toThrow("generation changed");
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: failed.taskId,
+        expectedGeneration: failed.generation,
+        expectedResourceVersion: failedResourceVersion + 1,
+      }),
+    ).toThrow("resource version changed");
     const receipt = retryFailedAppTask(config, {
       appId: "sample",
       taskId: failed.taskId,
       expectedGeneration: failed.generation,
+      expectedResourceVersion: failedResourceVersion,
+      controlKey: `app-task-retry:sample:${failed.taskId}:${failed.generation}:${failedResourceVersion}`,
     });
+    expect(
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: failed.taskId,
+        expectedGeneration: failed.generation,
+        expectedResourceVersion: failedResourceVersion,
+        controlKey: `app-task-retry:sample:${failed.taskId}:${failed.generation}:${failedResourceVersion}`,
+      }),
+    ).toEqual(receipt);
 
     expect(receipt).toMatchObject({
       action: "app.task.retry",
@@ -4681,11 +4698,15 @@ describe("App task reconciler state", () => {
     });
     if (running.kind !== "claimed") throw new Error("expected running claim");
     const runningResourceConfig = resourceFixture(runningState, "retry-running-task").config;
+    const runningResourceVersion = runningResourceConfig.resourceStore.readTaskContext({ taskIds: [running.taskId] })
+      .resources?.[running.taskId]?.metadata.resourceVersion;
+    if (!runningResourceVersion) throw new Error("expected running task resource version");
     expect(() =>
       retryFailedAppTask(runningResourceConfig, {
         appId: "sample",
         taskId: running.taskId,
         expectedGeneration: running.generation,
+        expectedResourceVersion: runningResourceVersion,
       }),
     ).toThrow("expected attention");
 
@@ -4705,11 +4726,16 @@ describe("App task reconciler state", () => {
       false,
     );
     const attentionResourceConfig = resourceFixture(attentionState, "retry-attention-without-failure").config;
+    const attentionResourceVersion = attentionResourceConfig.resourceStore.readTaskContext({
+      taskIds: [attentionClaim.taskId],
+    }).resources?.[attentionClaim.taskId]?.metadata.resourceVersion;
+    if (!attentionResourceVersion) throw new Error("expected attention task resource version");
     expect(() =>
       retryFailedAppTask(attentionResourceConfig, {
         appId: "sample",
         taskId: attentionClaim.taskId,
         expectedGeneration: attentionClaim.generation,
+        expectedResourceVersion: attentionResourceVersion,
       }),
     ).toThrow("no completed failed attempt");
   });

@@ -113,6 +113,18 @@ export type TaskResourceWrite = {
   nextCheckAt?: number | null;
 };
 
+export type AppTaskControlReceipt = {
+  controlKey: string;
+  appId: string;
+  taskId: string;
+  action: "retry" | "cancel";
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  appliedResourceVersion: number;
+  appliedAt: number;
+  result?: unknown;
+};
+
 export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
   expectMissingTaskIds?: string[];
@@ -127,6 +139,7 @@ export type AppTaskResourceMutation = {
   deleteReceiptIds?: string[];
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
+  controlReceipts?: AppTaskControlReceipt[];
 };
 
 export class AppTaskResourceStore {
@@ -481,6 +494,13 @@ export class AppTaskResourceStore {
     return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
   }
 
+  readControlReceipt(controlKey: string): AppTaskControlReceipt | null {
+    const row = this.db
+      .prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = ? AND app_id = ?")
+      .get(controlKey, this.appId) as { receipt_json?: string } | null;
+    return row?.receipt_json ? parseJson<AppTaskControlReceipt>(row.receipt_json) : null;
+  }
+
   readTaskConditions(taskId: string): AppTaskCondition[] {
     const rows = this.db
       .prepare(
@@ -801,29 +821,30 @@ export class AppTaskResourceStore {
     }
 
     const taskIds = Object.keys(resources);
-    const attempts = options.includeHistory !== false && taskIds.length
-      ? Object.fromEntries(
-          (
-            this.db
-              .prepare(
-                `SELECT attempt_id, attempt_json FROM (
+    const attempts =
+      options.includeHistory !== false && taskIds.length
+        ? Object.fromEntries(
+            (
+              this.db
+                .prepare(
+                  `SELECT attempt_id, attempt_json FROM (
                    SELECT attempt_id, attempt_json,
                      ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY started_at DESC, attempt_id DESC) AS position
                    FROM app_task_attempts
                    WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})
                  ) WHERE position <= ?`,
-              )
-              .all(this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
-              attempt_id?: string;
-              attempt_json?: string;
-            }>
-          ).flatMap((row) =>
-            row.attempt_id && row.attempt_json
-              ? [[row.attempt_id, parseJson<AppTaskAttempt>(row.attempt_json)] as const]
-              : [],
-          ),
-        )
-      : {};
+                )
+                .all(this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
+                attempt_id?: string;
+                attempt_json?: string;
+              }>
+            ).flatMap((row) =>
+              row.attempt_id && row.attempt_json
+                ? [[row.attempt_id, parseJson<AppTaskAttempt>(row.attempt_json)] as const]
+                : [],
+            ),
+          )
+        : {};
     const conditionIds = [
       ...new Set([
         ...Object.values(resources).flatMap((resource) => resource.status.conditionIds ?? []),
@@ -1281,6 +1302,27 @@ export class AppTaskResourceStore {
            ON CONFLICT(app_id, task_id) DO UPDATE SET admission_json=excluded.admission_json`,
           )
           .run(this.appId, admission.taskId, json(admission.value));
+      }
+      for (const receipt of mutation.controlReceipts ?? []) {
+        if (receipt.appId !== this.appId) throw new Error("Task control receipt belongs to another App");
+        this.db
+          .prepare(
+            `INSERT INTO app_task_control_receipts(
+               control_key, app_id, task_id, action, expected_generation,
+               expected_resource_version, applied_resource_version, applied_at, receipt_json
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            receipt.controlKey,
+            receipt.appId,
+            receipt.taskId,
+            receipt.action,
+            receipt.expectedGeneration,
+            receipt.expectedResourceVersion,
+            receipt.appliedResourceVersion,
+            receipt.appliedAt,
+            json(receipt),
+          );
       }
       this.bumpRevision();
       return true;

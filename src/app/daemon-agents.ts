@@ -13,7 +13,31 @@ import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } 
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
 import type { HostCapacity } from "./host-capacity.js";
-import { createCodexGoalExecutor } from "./codex-goal-executor.js";
+import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./codex-goal-executor.js";
+import { getDb } from "../lib/requests.js";
+
+function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
+  return Boolean(
+    getDb(persistDir)
+      .prepare(
+        `SELECT 1
+         FROM app_tasks task
+         WHERE json_extract(task.resource_json, '$.spec.executor') = 'codex-goal-poc'
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations cancellation
+             WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
+           )
+           AND (
+             task.phase <> 'converged'
+             OR json_extract(task.resource_json, '$.spec.mode') = 'maintain'
+           )
+         LIMIT 1`,
+      )
+      .get(),
+  );
+}
+
+export const daemonAgentInternals = { hasRetainedCodexGoalTrialTask };
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
@@ -158,8 +182,20 @@ export async function prepareDaemonAgents(opts: {
       started = true;
       openStartGate();
     };
+    const codexGoalStateFile = join(opts.persistDir, "codex-goal-bindings.json");
+    const bindingMigration = migrateCodexGoalBindingFile({
+      legacyPath: join(opts.persistDir, "codex-goal-poc-bindings.json"),
+      currentPath: codexGoalStateFile,
+    });
+    if (bindingMigration.migrated) {
+      opts.bus.emit({
+        type: "info",
+        message: `[app-task] Migrated ${bindingMigration.bindings} Codex goal binding(s) to ${codexGoalStateFile}`,
+      });
+    }
+    const retainTrialExecutorAlias = hasRetainedCodexGoalTrialTask(opts.persistDir);
     const codexGoalExecutor = createCodexGoalExecutor({
-      stateFile: join(opts.persistDir, "codex-goal-poc-bindings.json"),
+      stateFile: codexGoalStateFile,
       command: process.env.MAY_CODEX_GOAL_COMMAND,
       executorName: "codex-goal",
     });
@@ -180,9 +216,7 @@ export async function prepareDaemonAgents(opts: {
       installControllers: taskRuntimeMode === "controllers",
       executors: {
         "codex-goal": codexGoalExecutor,
-        // Existing trial Tasks keep their durable executor name through the
-        // rollout; new Evaluation work uses the production name above.
-        "codex-goal-poc": codexGoalExecutor,
+        ...(retainTrialExecutorAlias ? { "codex-goal-poc": codexGoalExecutor } : {}),
       },
       registerLocalAgent,
       appRegistry: opts.appRegistry,

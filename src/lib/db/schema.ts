@@ -42,76 +42,6 @@ CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 CREATE INDEX IF NOT EXISTS idx_sess_ended ON sessions(endedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_sess_activity ON sessions(lastActivityAt);
 
-CREATE TABLE IF NOT EXISTS gym_runs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  timestamp TEXT DEFAULT (datetime('now')),
-  agent_name TEXT NOT NULL,
-  lab_fork TEXT,
-  scenario TEXT NOT NULL,
-  passed INTEGER NOT NULL DEFAULT 0,
-  duration_ms INTEGER,
-  score_summary TEXT,
-  session_id TEXT,
-  cost_usd REAL,
-  total_ops INTEGER,
-  total_turns INTEGER,
-  method TEXT DEFAULT 'oneshot',
-  run_tag TEXT,
-  prompt_hash TEXT,
-  framework_sha TEXT,
-  model TEXT,
-  batch_id TEXT,
-  categories TEXT,
-  tags TEXT,
-  tier TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_gym_runs_scenario ON gym_runs(scenario);
-CREATE INDEX IF NOT EXISTS idx_gym_runs_agent ON gym_runs(agent_name);
-CREATE INDEX IF NOT EXISTS idx_gym_runs_timestamp ON gym_runs(timestamp);
-CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id);
-CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash);
-
-CREATE TABLE IF NOT EXISTS gym_checks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  run_id INTEGER NOT NULL,
-  check_name TEXT NOT NULL,
-  passed INTEGER NOT NULL DEFAULT 0,
-  detail TEXT,
-  category TEXT,
-  code TEXT,
-  FOREIGN KEY(run_id) REFERENCES gym_runs(id) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_gym_checks_run ON gym_checks(run_id);
-
-CREATE TABLE IF NOT EXISTS gym_prompts (
-  prompt_hash TEXT PRIMARY KEY,
-  agent_name TEXT NOT NULL,
-  model TEXT,
-  framework_sha TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  prompt_text TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS convention_checks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id TEXT NOT NULL,
-  agent TEXT NOT NULL,
-  convention TEXT NOT NULL,
-  passed INTEGER NOT NULL,
-  violations TEXT,
-  checked_at INTEGER NOT NULL,
-  UNIQUE(session_id, convention)
-);
-CREATE INDEX IF NOT EXISTS idx_cc_agent ON convention_checks(agent, convention, checked_at);
-CREATE INDEX IF NOT EXISTS idx_cc_conv ON convention_checks(convention, checked_at);
-
-CREATE TABLE IF NOT EXISTS convention_maturity (
-  convention TEXT PRIMARY KEY,
-  level TEXT NOT NULL DEFAULT 'active',
-  level_since INTEGER,
-  last_regression INTEGER
-);
-
 CREATE TABLE IF NOT EXISTS evaluations (
   sessionId       TEXT PRIMARY KEY,
   agent           TEXT NOT NULL,
@@ -156,44 +86,6 @@ CREATE INDEX IF NOT EXISTS idx_sd_session ON session_digests(sessionId, created_
 CREATE INDEX IF NOT EXISTS idx_sd_agent ON session_digests(agent, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sd_action ON session_digests(action, created_at DESC)
   WHERE action IS NOT NULL;
-
-CREATE TABLE IF NOT EXISTS knowledge_entries (
-  id TEXT PRIMARY KEY,
-  title TEXT,
-  status TEXT,
-  claim TEXT,
-  evidence_refs TEXT,
-  discovered TEXT,
-  last_verified TEXT,
-  raw_content TEXT NOT NULL,
-  synced_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_ke_status ON knowledge_entries(status);
-
-CREATE TABLE IF NOT EXISTS hypotheses (
-  id TEXT PRIMARY KEY,
-  title TEXT,
-  status TEXT,
-  priority TEXT,
-  proposed_by TEXT,
-  hypothesis TEXT,
-  raw_content TEXT NOT NULL,
-  synced_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_hyp_status ON hypotheses(status);
-CREATE INDEX IF NOT EXISTS idx_hyp_priority ON hypotheses(priority);
-
-CREATE TABLE IF NOT EXISTS experiments (
-  id TEXT PRIMARY KEY,
-  title TEXT,
-  status TEXT,
-  hypothesis_ref TEXT,
-  result_summary TEXT,
-  raw_content TEXT NOT NULL,
-  synced_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_exp_status ON experiments(status);
-CREATE INDEX IF NOT EXISTS idx_exp_hyp ON experiments(hypothesis_ref);
 
 CREATE TABLE IF NOT EXISTS file_reads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

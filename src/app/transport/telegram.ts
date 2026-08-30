@@ -30,6 +30,7 @@ import {
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
 import type { HumanAppView, HumanTaskService, HumanTaskView } from "../human-task-service.js";
+import { taskCancelRequestedEvent } from "../task-control-events.js";
 
 const TASK_PAGE_SIZE = 10;
 const TODO_PAGE_SIZE = 50;
@@ -46,7 +47,7 @@ export interface TelegramBotOptions {
   persistDir?: string;
   bus: EventBus;
   interfaceAgent: string;
-  humanTasks: HumanTaskService;
+  humanTasks: Pick<HumanTaskService, "getTask" | "listApps" | "listTasks">;
   publishEvent: (input: EventInput) => EventReceipt;
 }
 
@@ -445,7 +446,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
   let conversationSyncRunning = false;
   let conversationSyncDirty = false;
-  let conversationSyncScheduled = false;
+  let conversationSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function syncConversation(): Promise<void> {
     const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
@@ -490,14 +491,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       conversationSyncDirty = true;
       return;
     }
-    if (conversationSyncScheduled) return;
-    conversationSyncScheduled = true;
+    if (conversationSyncTimer) clearTimeout(conversationSyncTimer);
     // EventBus listeners drain a bounded FIFO asynchronously. Defer the read
     // by one turn so a burst of wake-only events collapses before touching the
     // Conversation resource. An update observed during I/O still requests one
     // dirty retry below.
-    setTimeout(() => {
-      conversationSyncScheduled = false;
+    conversationSyncTimer = setTimeout(() => {
+      conversationSyncTimer = null;
       if (!running) return;
       if (conversationSyncRunning) {
         conversationSyncDirty = true;
@@ -518,7 +518,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             queueConversationSync();
           }
         });
-    }, 0);
+    }, 5);
   }
 
   async function refreshWatch(surface: string): Promise<void> {
@@ -1152,15 +1152,23 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       try {
-        const task = opts.humanTasks.cancelTask(
+        const selected = opts.humanTasks.getTask(
           rest[0]
-            ? { ref: rest[0], reason: "human requested cancellation from Telegram" }
+            ? { ref: rest[0] }
             : {
                 appId: watched!.appId,
                 taskId: watched!.taskId,
-                reason: "human requested cancellation from Telegram",
               },
         );
+        if (!selected) throw new Error("Task was not found");
+        const receipt = opts.publishEvent(
+          taskCancelRequestedEvent(selected, "human requested cancellation from Telegram"),
+        );
+        if (receipt.delivery !== "accepted") {
+          throw new Error("Task cancellation was recorded but not accepted; refresh the Task and retry");
+        }
+        const task = opts.humanTasks.getTask({ appId: selected.appId, taskId: selected.taskId });
+        if (!task) throw new Error("Task disappeared after cancellation");
         stopWatching(surface);
         await deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task));
       } catch (error) {
@@ -1296,6 +1304,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
+      if (conversationSyncTimer) clearTimeout(conversationSyncTimer);
       unsubscribeConversation();
     },
   };
