@@ -1,14 +1,15 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { taskAgentResultSchema, type AppEvent, type TaskAttempt } from "@may-agent/sdk";
-import { codexGoalExecutorInternals, createCodexGoalExecutor, type CodexGoalClient } from "./codex-goal-executor.js";
-import type {
-  AppServerNotification,
-  CodexGoalObservation,
-  CodexTurnCompletion,
-} from "./codex-goal-client.js";
+import {
+  codexGoalExecutorInternals,
+  createCodexGoalExecutor,
+  migrateCodexGoalBindingFile,
+  type CodexGoalClient,
+} from "./codex-goal-executor.js";
+import type { AppServerNotification, CodexGoalObservation, CodexTurnCompletion } from "./codex-goal-client.js";
 
 const roots: string[] = [];
 
@@ -22,6 +23,48 @@ function fixtureRoot(): string {
   mkdirSync(root, { recursive: true });
   return root;
 }
+
+describe("Codex goal binding migration", () => {
+  it("moves the trial filename to the stable name", () => {
+    const root = fixtureRoot();
+    const legacyPath = join(root, "codex-goal-poc-bindings.json");
+    const currentPath = join(root, "codex-goal-bindings.json");
+    writeFileSync(legacyPath, `${JSON.stringify({ version: 1, bindings: {} })}\n`);
+
+    expect(migrateCodexGoalBindingFile({ legacyPath, currentPath })).toEqual({ migrated: true, bindings: 0 });
+    expect(existsSync(legacyPath)).toBe(false);
+    expect(JSON.parse(readFileSync(currentPath, "utf8"))).toEqual({ version: 1, bindings: {} });
+  });
+
+  it("merges disjoint current and trial bindings before removing the trial file", () => {
+    const root = fixtureRoot();
+    const legacyPath = join(root, "codex-goal-poc-bindings.json");
+    const currentPath = join(root, "codex-goal-bindings.json");
+    const currentBinding = { threadId: "thread-current", cwd: root, generation: 1, updatedAt: "now" };
+    const legacyBinding = { threadId: "thread-legacy", cwd: root, generation: 2, updatedAt: "later" };
+    writeFileSync(currentPath, `${JSON.stringify({ version: 1, bindings: { current: currentBinding } })}\n`);
+    writeFileSync(legacyPath, `${JSON.stringify({ version: 1, bindings: { legacy: legacyBinding } })}\n`);
+
+    expect(migrateCodexGoalBindingFile({ legacyPath, currentPath })).toEqual({ migrated: true, bindings: 2 });
+    expect(existsSync(legacyPath)).toBe(false);
+    expect(JSON.parse(readFileSync(currentPath, "utf8"))).toEqual({
+      version: 1,
+      bindings: { current: currentBinding, legacy: legacyBinding },
+    });
+  });
+
+  it("fails closed without deleting either file when the same binding conflicts", () => {
+    const root = fixtureRoot();
+    const legacyPath = join(root, "codex-goal-poc-bindings.json");
+    const currentPath = join(root, "codex-goal-bindings.json");
+    writeFileSync(currentPath, `${JSON.stringify({ version: 1, bindings: { same: { threadId: "current" } } })}\n`);
+    writeFileSync(legacyPath, `${JSON.stringify({ version: 1, bindings: { same: { threadId: "legacy" } } })}\n`);
+
+    expect(() => migrateCodexGoalBindingFile({ legacyPath, currentPath })).toThrow("Conflicting Codex goal binding");
+    expect(existsSync(currentPath)).toBe(true);
+    expect(existsSync(legacyPath)).toBe(true);
+  });
+});
 
 function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
   let listener: ((event: AppEvent<Record<string, unknown>>) => void) | undefined;
@@ -415,18 +458,13 @@ describe("codex-goal Task executor", () => {
         hardStaleAfterMs: 2_000,
       });
 
-      await expect(executor(attempt())).rejects.toThrow(
-        `Codex stopped the current turn because it is ${limitStatus}`,
-      );
+      await expect(executor(attempt())).rejects.toThrow(`Codex stopped the current turn because it is ${limitStatus}`);
       expect(limited.calls).toContain("terminal-turn");
       expect(limited.calls).not.toContain("read");
 
       await expect(executor(attempt({ attemptId: "r_2_retry" }))).resolves.toMatchObject({
         state: "converged",
-        evidence: [
-          "projects/may-agent/src/app/app-task-runtime.ts:2025",
-          `codex-thread:thread-${limitStatus}`,
-        ],
+        evidence: ["projects/may-agent/src/app/app-task-runtime.ts:2025", `codex-thread:thread-${limitStatus}`],
       });
       expect(resumed.calls).toContain(`resume:thread-${limitStatus}`);
       expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({

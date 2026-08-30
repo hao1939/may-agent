@@ -1725,8 +1725,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ digest: content, date: target.replace(".md", ""), available });
   }
 
+  function runtimeTableExists(name: string): boolean {
+    return Boolean(_db().prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name));
+  }
+
   function handleBenchmarks(url: URL): Response {
     try {
+      if (!runtimeTableExists("gym_runs")) {
+        return json({ agents: {}, scenarios: [], runs: 0, checkDetails: {}, batches: [] });
+      }
       const agentFilter = url.searchParams.get("agent") || undefined;
       const batchId = url.searchParams.get("batch") || undefined;
 
@@ -1812,6 +1819,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleBenchmarkPrompts(url: URL): Response {
     try {
+      if (!runtimeTableExists("gym_prompts")) return json({ prompts: [] });
       const hash = url.searchParams.get("hash");
       const diffWith = url.searchParams.get("diff");
       if (hash && diffWith) {
@@ -1845,6 +1853,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleBenchmarkCompare(url: URL): Response {
     try {
+      if (!runtimeTableExists("gym_runs")) {
+        return json({ error: "No Gym benchmark data is installed" }, 404);
+      }
       const batchA = url.searchParams.get("a");
       const batchB = url.searchParams.get("b");
       if (!batchA || !batchB) return json({ error: "Need ?a=<batch_id>&b=<batch_id>" }, 400);

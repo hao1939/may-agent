@@ -59,10 +59,39 @@ describe("Task cancellation fence", () => {
     const retainedEvent = db
       .prepare("SELECT event_json FROM app_task_events WHERE app_id = 'sample' AND task_id = 'work'")
       .get();
-    const service = new HumanTaskService(db, {
-      snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
-    });
-    service.cancelTask({ appId: "sample", taskId: "work", reason: "superseded" });
+    let cancellationSignals = 0;
+    const service = new HumanTaskService(
+      db,
+      {
+        snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
+      },
+      { onCancelled: () => cancellationSignals++ },
+    );
+    const before = service.getTask({ appId: "sample", taskId: "work" });
+    if (!before) throw new Error("expected Task before cancellation");
+    expect(() =>
+      service.cancelTask({
+        appId: "sample",
+        taskId: "work",
+        reason: "stale control",
+        expectedGeneration: before.generation,
+        expectedResourceVersion: before.resourceVersion + 1,
+      }),
+    ).toThrow("resource version changed");
+    const control = {
+      appId: "sample",
+      taskId: "work",
+      reason: "superseded",
+      expectedGeneration: before.generation,
+      expectedResourceVersion: before.resourceVersion,
+      controlKey: "app-task-cancel:sample:work:1:1",
+    };
+    service.cancelTask(control);
+    service.cancelTask(control);
+    expect(cancellationSignals).toBe(1);
+    expect(
+      db.prepare("SELECT action FROM app_task_control_receipts WHERE control_key = ?").get(control.controlKey),
+    ).toEqual({ action: "cancel" });
 
     // Recovery must trust the terminal cancellation even if a legacy writer
     // left stale scheduling columns behind. Cancellation is a fence, not a

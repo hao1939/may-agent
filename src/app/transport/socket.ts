@@ -30,12 +30,10 @@ export interface SocketUIOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
-  retryAppTask?: AttachControlSocketOptions["retryAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
-  cancelTask?: AttachControlSocketOptions["cancelTask"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
@@ -92,12 +90,10 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
-    retryAppTask: opts.retryAppTask,
     resolveAppTask: opts.resolveAppTask,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
     getTask: opts.getTask,
-    cancelTask: opts.cancelTask,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onInfo: opts.reportInfo,

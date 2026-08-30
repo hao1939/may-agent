@@ -10,6 +10,14 @@ import {
 } from "../../src/app/daemon-events.js";
 import { getDb, insertWorkflowRun } from "../../src/lib/requests.js";
 
+async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for daemon event delivery");
+    await Bun.sleep(5);
+  }
+}
+
 describe("daemon event subscribers", () => {
   it("projects metric mutations only from their durable canonical events", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-metric-events-"));
@@ -400,7 +408,7 @@ describe("daemon event subscribers", () => {
         } as any);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await waitFor(() => events.some((event) => event.type === "escalation.created"));
 
       expect(events).toContainEqual(
         expect.objectContaining({

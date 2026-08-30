@@ -82,7 +82,6 @@ import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.j
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppTaskEvents, type AppTaskEmission, type AppTaskEvents } from "./app-task-emitter.js";
-import { executeTaskWithCli, type TaskCliTool } from "./app-task-cli-executor.js";
 import { HostCapacity } from "./host-capacity.js";
 import type { AppTaskQueueOptions } from "./app-task-queue.js";
 import {
@@ -213,7 +212,6 @@ function publishAppTaskTiming(
 
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
-const APP_TASK_CLI_TIMEOUT_MS = 30 * 60_000;
 
 export interface AppTaskRuntimeDescriptor {
   id: string;
@@ -2472,150 +2470,6 @@ async function executeTaskAgent(input: {
   };
 }
 
-function appTaskCliProtocol(appId: string): string {
-  return [
-    `You are the CLI executor pursuing one Task goal owned by App ${appId}.`,
-    "Keep working through as many internal turns and tool calls as needed to satisfy the Task. The Task resource, not this CLI process or native session, owns durable status and recovery.",
-    "Do not edit Host task storage. Use the supplied workspace and paths only.",
-    "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
-    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response for a caller-facing answer or result for App-defined machine-readable state. A waiting Task may preserve current machine state in result.',
-    "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
-    "Do not return merely because one useful step or process turn ended.",
-    "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise keep working now.",
-    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
-    "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
-    DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
-  ].join("\n");
-}
-
-async function executeTaskCli(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  attempt: TaskAttempt;
-  intent: AppTaskIntent;
-  claim: AppTaskClaim;
-  defaultParentId: string;
-  executionPaths: AppTaskExecutionPaths;
-  declaredOutputPaths: string[];
-  childContext: AppTaskChildContext;
-  event?: EventEnvelope;
-  fallbackReason?: string;
-  observer?: AppTaskExecutionObserver;
-  tool: TaskCliTool;
-}): Promise<TaskCapabilityRun> {
-  const { opts, descriptor, intent, claim } = input;
-  if (!opts.persistDir) {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: `Task executor ${input.tool} requires the Host persistence directory`,
-        evidence: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  }
-  const reconciliationEvents = input.attempt.events;
-  const dependencyCatalog = appTaskDependencyCatalog(opts, descriptor.id);
-  const prompt = [
-    appTaskCliProtocol(descriptor.id),
-    "",
-    "## Reconciliation Task",
-    "```json",
-    JSON.stringify(
-      {
-        appId: descriptor.id,
-        taskId: claim.taskId,
-        generation: claim.generation,
-        resourceVersion: claim.resourceVersion,
-        agent: claim.agent,
-        executor: input.tool,
-        role: input.attempt.role,
-        mode: claim.mode,
-        outcome: intent.outcome,
-        acceptance: intent.acceptance,
-        input: intent.input ?? {},
-        children: projectAppTaskChildPromptContext(input.childContext),
-        waits: input.attempt.waits,
-        paths: input.executionPaths,
-        declaredOutputs: input.declaredOutputPaths,
-        fallbackReason: input.fallbackReason ?? null,
-      },
-      null,
-      2,
-    ),
-    "```",
-    ...(dependencyCatalog.length
-      ? [
-          "",
-          "## Installed Apps",
-          "Choose the accountable App by responsibility. These are the currently installed typed dependency targets:",
-          "```json",
-          JSON.stringify(dependencyCatalog, null, 2),
-          "```",
-        ]
-      : []),
-    ...(reconciliationEvents.items.length
-      ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
-      : []),
-  ].join("\n");
-  const residueGuard = await beginCanonicalAgentResidueGuard(input.executionPaths);
-  let restoredResidue: string[] = [];
-  let execution: Awaited<ReturnType<typeof executeTaskWithCli>>;
-  try {
-    input.observer?.providerStarted(Buffer.byteLength(prompt));
-    execution = await executeTaskWithCli({
-      bus: opts.bus,
-      persistDir: opts.persistDir,
-      appId: descriptor.id,
-      taskId: claim.taskId,
-      generation: claim.generation,
-      attemptId: claim.attemptId,
-      owner: claim.agent,
-      tool: input.tool,
-      cwd: input.executionPaths.workspaceDir,
-      prompt,
-      timeoutMs: APP_TASK_CLI_TIMEOUT_MS,
-      signal: input.attempt.signal,
-      ...(childEventTrace(input.event) ? { trace: childEventTrace(input.event) } : {}),
-    });
-  } finally {
-    input.observer?.providerFinished();
-    restoredResidue = await finishCanonicalAgentResidueGuard(residueGuard);
-  }
-  if (execution.status === "failed") {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: execution.summary,
-        evidence: execution.evidence,
-        actions: [],
-      },
-      runId: execution.cliTaskId,
-      executionFailed: true,
-    };
-  }
-  const normalized = normalizeTaskHandlerResult(
-    execution.result,
-    { type: "done", summary: `${input.tool} CLI completed`, runId: execution.cliTaskId },
-    {
-      allowNeedsAgent: false,
-      defaultParentId: input.defaultParentId,
-      rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-      validateAction: input.descriptor.app.tasks?.validateAction,
-      validateCondition: input.descriptor.app.tasks?.validateCondition,
-    },
-  );
-  normalized.evidence = [...new Set([...normalized.evidence, ...execution.evidence])];
-  const handlerResult = rejectConvergedDirectAgentResidue(normalized, restoredResidue);
-  return {
-    handlerResult,
-    runId: execution.cliTaskId,
-    ...(handlerResult.state === "error" ? { executionFailed: true } : {}),
-  };
-}
-
 /**
  * Give every agent/CLI executor the same fenced Task surface. Runtime owns
  * attempt lifetime and lease renewal; adapters only translate TaskAttempt to
@@ -2673,19 +2527,6 @@ async function runTaskAgent(
     childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: (attempt) => executeTaskAgent({ ...input, attempt }),
-  });
-}
-
-async function runTaskCli(input: Omit<Parameters<typeof executeTaskCli>[0], "attempt">): Promise<TaskCapabilityRun> {
-  return runTaskExecutorAttempt({
-    opts: input.opts,
-    descriptor: input.descriptor,
-    claim: input.claim,
-    executionPaths: input.executionPaths,
-    declaredOutputPaths: input.declaredOutputPaths,
-    childContext: input.childContext,
-    ...(input.event ? { event: input.event } : {}),
-    execute: (attempt) => executeTaskCli({ ...input, attempt }),
   });
 }
 
@@ -3299,29 +3140,6 @@ async function reconcileTask(input: {
           observer,
           name: executorKey,
           execute: registered,
-        });
-      } else if (executorKey === "codex" || executorKey === "claude") {
-        primaryResult ??= await runTaskCli({
-          opts,
-          descriptor,
-          intent,
-          claim: primary,
-          defaultParentId,
-          executionPaths,
-          declaredOutputPaths,
-          childContext,
-          event,
-          tool: executorKey,
-          ...(primary.handoff
-            ? {
-                fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-                  primary.handoff.evidence.length
-                    ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
-                    : ""
-                }`,
-              }
-            : {}),
-          observer,
         });
       } else {
         primaryResult ??= {
@@ -4337,12 +4155,17 @@ export function retryLoadedFailedAppTask(input: {
   appId: string;
   taskId: string;
   expectedGeneration: number;
+  expectedResourceVersion: number;
+  controlKey?: string;
 }): ReturnType<typeof retryFailedAppTask> & { queued: boolean } {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const taskId = input.taskId.trim();
   if (!appId || !taskId) throw new Error("App Task retry requires exact appId and taskId");
   if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration < 1) {
     throw new Error("App Task retry requires a positive integer expectedGeneration");
+  }
+  if (!Number.isSafeInteger(input.expectedResourceVersion) || input.expectedResourceVersion < 1) {
+    throw new Error("App Task retry requires a positive integer expectedResourceVersion");
   }
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
@@ -4355,6 +4178,8 @@ export function retryLoadedFailedAppTask(input: {
     appId,
     taskId,
     expectedGeneration: input.expectedGeneration,
+    expectedResourceVersion: input.expectedResourceVersion,
+    ...(input.controlKey ? { controlKey: input.controlKey } : {}),
   });
   const queued = enqueueAppTask(controller, config, taskId, { promote: true });
   return { ...receipt, queued };

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileResult } from "@may-agent/sdk";
 import {
@@ -100,6 +100,39 @@ function writeBinding(path: string, key: string, binding: Binding): void {
   const temporary = `${path}.${process.pid}.tmp`;
   writeFileSync(temporary, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
   renameSync(temporary, path);
+}
+
+/** Move the trial filename to the stable executor name without losing resumable bindings. */
+export function migrateCodexGoalBindingFile(input: { legacyPath: string; currentPath: string }): {
+  migrated: boolean;
+  bindings: number;
+} {
+  if (!existsSync(input.legacyPath)) {
+    return {
+      migrated: false,
+      bindings: Object.keys(readBindings(input.currentPath).bindings).length,
+    };
+  }
+  if (!existsSync(input.currentPath)) {
+    mkdirSync(dirname(input.currentPath), { recursive: true });
+    renameSync(input.legacyPath, input.currentPath);
+    return { migrated: true, bindings: Object.keys(readBindings(input.currentPath).bindings).length };
+  }
+
+  const current = readBindings(input.currentPath);
+  const legacy = readBindings(input.legacyPath);
+  for (const [key, binding] of Object.entries(legacy.bindings)) {
+    const existing = current.bindings[key];
+    if (existing && JSON.stringify(existing) !== JSON.stringify(binding)) {
+      throw new Error(`Conflicting Codex goal binding '${key}' exists in both current and legacy state files`);
+    }
+    current.bindings[key] ??= binding;
+  }
+  const temporary = `${input.currentPath}.${process.pid}.migration.tmp`;
+  writeFileSync(temporary, `${JSON.stringify(current, null, 2)}\n`, { mode: 0o600 });
+  renameSync(temporary, input.currentPath);
+  unlinkSync(input.legacyPath);
+  return { migrated: true, bindings: Object.keys(current.bindings).length };
 }
 
 function finalAnswer(readResult: unknown, turnId: string): string | null {
@@ -359,7 +392,8 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
             await client.steer({
               threadId,
               turnId,
-              message: "Continue toward the Task goal. If something external is required, return the exact waiting condition.",
+              message:
+                "Continue toward the Task goal. If something external is required, return the exact waiting condition.",
             });
             nudgeCount = 1;
             lastActivityAtMs = now();

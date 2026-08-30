@@ -522,23 +522,24 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
-  it("returns an action receipt for an exact generation-fenced App Task retry", async () => {
+  it("publishes an exact generation-and-resource-fenced App Task retry", async () => {
     const receipt = {
-      receiptId: "retry-1",
-      action: "app.task.retry",
-      disposition: "requeued",
-      appId: "evaluation",
-      taskId: "review/docs",
-      generation: 2,
-      previousResourceVersion: 7,
-      resourceVersion: 8,
-      previousAttemptId: "attempt-1",
-      acceptedAt: "2026-08-25T13:00:00.000Z",
-      queued: true,
+      eventId: 71,
+      eventType: "app.task.retry.requested",
+      delivery: "accepted" as const,
     };
     const core = createCore({
-      retryAppTask: (input) => {
-        expect(input).toEqual({ appId: "evaluation", taskId: "review/docs", expectedGeneration: 2 });
+      getTask: (input) => {
+        expect(input).toEqual({ appId: "evaluation", taskId: "review/docs" });
+        return { appId: "evaluation", taskId: "review/docs", generation: 2, resourceVersion: 7 };
+      },
+      publishEvent: (input) => {
+        expect(input).toEqual({
+          type: "app.task.retry.requested",
+          target: { appId: "evaluation", taskId: "review/docs" },
+          data: { expectedGeneration: 2, expectedResourceVersion: 7 },
+          idempotencyKey: "app-task-retry:evaluation:review/docs:2:7",
+        });
         return receipt;
       },
     });
@@ -560,6 +561,74 @@ describe("control socket protocol", () => {
       }),
     ).rejects.toThrow("expectedGeneration must be a positive integer");
     expect(core.emitted).toEqual([]);
+  });
+
+  it("does not report a recorded but unaccepted Task control as success", async () => {
+    const core = createCore({
+      getTask: () => ({ appId: "evaluation", taskId: "review/docs", generation: 2, resourceVersion: 7 }),
+      publishEvent: (input) => ({ eventId: 73, eventType: input.type, delivery: "recorded" }),
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.retry",
+        appId: "evaluation",
+        taskId: "review/docs",
+        expectedGeneration: 2,
+      }),
+    ).rejects.toThrow("retry was recorded but not accepted");
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "task.cancel",
+        appId: "evaluation",
+        taskId: "review/docs",
+      }),
+    ).rejects.toThrow("cancellation was recorded but not accepted");
+  });
+
+  it("resolves a friendly Task reference and publishes a fenced cancellation", async () => {
+    let cancelled = false;
+    const task = () => ({
+      appId: "evaluation",
+      taskId: "review/docs",
+      ref: "8f12ac90",
+      generation: 3,
+      resourceVersion: cancelled ? 10 : 9,
+      status: cancelled ? "cancelled" : "running",
+    });
+    const core = createCore({
+      getTask: (input) => {
+        if ("ref" in input) expect(input).toEqual({ ref: "8f12ac90" });
+        return task();
+      },
+      publishEvent: (input) => {
+        expect(input).toEqual({
+          type: "app.task.cancel.requested",
+          target: { appId: "evaluation", taskId: "review/docs" },
+          data: {
+            expectedGeneration: 3,
+            expectedResourceVersion: 9,
+            reason: "human changed direction",
+          },
+          idempotencyKey: "app-task-cancel:evaluation:review/docs:3:9",
+        });
+        cancelled = true;
+        return { eventId: 72, eventType: input.type, delivery: "accepted" };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "task.cancel",
+        ref: "8f12ac90",
+        reason: "human changed direction",
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      command: "task.cancel",
+      receipt: { eventId: 72, eventType: "app.task.cancel.requested" },
+      task: { status: "cancelled", resourceVersion: 10 },
+    });
   });
 
   it("resolves an installed App Task without emitting an event", async () => {
