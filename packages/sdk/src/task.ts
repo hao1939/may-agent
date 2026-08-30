@@ -18,7 +18,7 @@ export type TaskIntent = {
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
   workflow?: string;
-  /** Bounded executor adapter. Omit or use `agent` for the managed agent; `codex` and `claude` are built in. */
+  /** Registered bounded executor adapter. Omit or use `agent` for the managed agent. */
   executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   outputs?: string[];

@@ -587,6 +587,31 @@ export type SystemEvent =
       };
     }
   | {
+      type: "app.task.retry.requested";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: {
+        appId: string;
+        taskId: string;
+        expectedGeneration: number;
+        expectedResourceVersion: number;
+      };
+    }
+  | {
+      type: "app.task.cancel.requested";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: {
+        appId: string;
+        taskId: string;
+        expectedGeneration: number;
+        expectedResourceVersion: number;
+        reason: string;
+      };
+    }
+  | {
       type: "app.task.cancelled";
       source: "human-task-service";
       owner: "human:operator";

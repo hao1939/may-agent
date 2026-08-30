@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
@@ -35,6 +35,14 @@ function harness(overrides: Partial<SubagentManager> = {}) {
     shutdown: () => {},
   });
   return { projectRoot, bus, emitted, router };
+}
+
+async function waitForFile(path: string, timeoutMs = 1_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!existsSync(path)) {
+    if (Date.now() >= deadline) throw new Error(`Timed out waiting for ${path}`);
+    await Bun.sleep(5);
+  }
 }
 
 describe("command router integration", () => {
@@ -137,8 +145,9 @@ describe("command router integration", () => {
       owner: "agent:tech-lead",
       data: { projectPath, comment: "please continue", author: "hao" },
     });
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    expect(readFileSync(join(projectDir, "discussion.md"), "utf8")).toContain("please continue");
+    const discussionPath = join(projectDir, "discussion.md");
+    await waitForFile(discussionPath);
+    expect(readFileSync(discussionPath, "utf8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf8")).toContain("status: active");
     h.router.close();
   });

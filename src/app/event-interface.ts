@@ -108,18 +108,9 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
         optionalTextField(metadata, "command", "conversation.message.created data.metadata.command");
         optionalTextField(metadata, "topicId", "conversation.message.created data.metadata.topicId");
         if (metadata.followTask !== undefined) {
-          const followTask = record(
-            metadata.followTask,
-            "conversation.message.created data.metadata.followTask",
-          );
-          requiredText(
-            followTask.appId,
-            "conversation.message.created data.metadata.followTask.appId",
-          );
-          requiredText(
-            followTask.taskId,
-            "conversation.message.created data.metadata.followTask.taskId",
-          );
+          const followTask = record(metadata.followTask, "conversation.message.created data.metadata.followTask");
+          requiredText(followTask.appId, "conversation.message.created data.metadata.followTask.appId");
+          requiredText(followTask.taskId, "conversation.message.created data.metadata.followTask.taskId");
         }
         if (
           metadata.taskRefs !== undefined &&
@@ -152,6 +143,14 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
       if (!options.acceptsAppInput(appId, appInput)) throw new Error(`App ${appId} does not accept this input`);
     },
+  },
+  "app.task.retry.requested": {
+    delivery: "required",
+    validate: (input, options) => validateTaskControl(input, options, false),
+  },
+  "app.task.cancel.requested": {
+    delivery: "required",
+    validate: (input, options) => validateTaskControl(input, options, true),
   },
   "chat.start.requested": {
     delivery: "required",
@@ -291,6 +290,20 @@ function optionalTextField(value: Record<string, unknown>, key: string, field: s
 
 function validateOptionalReason(input: EventInput): void {
   optionalTextField(input.data, "reason", `${input.type} data.reason`);
+}
+
+function validateTaskControl(input: EventInput, options: CreateEventInterfaceOptions, requiresReason: boolean): void {
+  const appId = requiredTarget(input, "appId");
+  requiredTarget(input, "taskId");
+  if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
+  requiredText(input.idempotencyKey, `${input.type} idempotencyKey`);
+  for (const field of ["expectedGeneration", "expectedResourceVersion"] as const) {
+    const value = input.data[field];
+    if (!Number.isSafeInteger(value) || Number(value) < 1) {
+      throw new Error(`${input.type} data.${field} must be a positive integer`);
+    }
+  }
+  if (requiresReason) requiredText(input.data.reason, `${input.type} data.reason`);
 }
 
 function record(value: unknown, field: string): Record<string, unknown> {

@@ -2054,18 +2054,20 @@ export function readPendingAppTaskTrigger(
 }
 
 function nextTaskConditionReviewAt(tree: TaskTree, taskId: string): number | null {
-  return taskConditionEntries(tree, taskId)
-    .flatMap(([, condition]) => {
-      if (!isOpenCondition(condition)) return [];
-      const reviewAfterMs = Number(condition.spec.reviewAfterMs);
-      const observedAt = Date.parse(String(condition.status.observedAt ?? ""));
-      return Number.isInteger(reviewAfterMs) &&
-        reviewAfterMs >= MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS &&
-        Number.isFinite(observedAt)
-        ? [observedAt + reviewAfterMs]
-        : [];
-    })
-    .sort((left, right) => left - right)[0] ?? null;
+  return (
+    taskConditionEntries(tree, taskId)
+      .flatMap(([, condition]) => {
+        if (!isOpenCondition(condition)) return [];
+        const reviewAfterMs = Number(condition.spec.reviewAfterMs);
+        const observedAt = Date.parse(String(condition.status.observedAt ?? ""));
+        return Number.isInteger(reviewAfterMs) &&
+          reviewAfterMs >= MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS &&
+          Number.isFinite(observedAt)
+          ? [observedAt + reviewAfterMs]
+          : [];
+      })
+      .sort((left, right) => left - right)[0] ?? null
+  );
 }
 
 function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false) {
@@ -2088,10 +2090,7 @@ export function recordAppTaskTrigger(
     // A wake updates one existing Task. Its children and attempt history do
     // not participate in trigger selection, so keep this interface-path read
     // proportional to the exact Task rather than its whole subtree.
-    const tree = config.resourceStore.readTaskContext(
-      { taskIds: [taskId] },
-      { includeHistory: false, childLimit: 0 },
-    );
+    const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] }, { includeHistory: false, childLimit: 0 });
     const resource = tree.resources?.[taskId];
     if (!resource) return { kind: "missing" };
     if (
@@ -2433,15 +2432,38 @@ export function retryFailedAppTask(
     appId: string;
     taskId: string;
     expectedGeneration: number;
+    expectedResourceVersion: number;
+    controlKey?: string;
   },
 ): AppTaskRetryReceipt {
   return withTaskStateLock(config, () => {
+    const priorControl = input.controlKey ? config.resourceStore.readControlReceipt(input.controlKey) : null;
+    if (priorControl) {
+      if (
+        priorControl.action !== "retry" ||
+        priorControl.appId !== input.appId ||
+        priorControl.taskId !== input.taskId ||
+        priorControl.expectedGeneration !== input.expectedGeneration ||
+        priorControl.expectedResourceVersion !== input.expectedResourceVersion
+      ) {
+        throw new Error(`Task control key ${input.controlKey} was already used for a different operation`);
+      }
+      if (!priorControl.result || typeof priorControl.result !== "object" || Array.isArray(priorControl.result)) {
+        throw new Error(`Task retry control receipt ${input.controlKey} has no valid result`);
+      }
+      return priorControl.result as AppTaskRetryReceipt;
+    }
     const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
     const resource = tree.resources?.[input.taskId];
     if (!resource) throw new Error(`Task ${input.appId}/${input.taskId} was not found`);
     if (resource.metadata.generation !== input.expectedGeneration) {
       throw new Error(
         `Task ${input.appId}/${input.taskId} generation changed: expected ${input.expectedGeneration}, current ${resource.metadata.generation}`,
+      );
+    }
+    if (resource.metadata.resourceVersion !== input.expectedResourceVersion) {
+      throw new Error(
+        `Task ${input.appId}/${input.taskId} resource version changed: expected ${input.expectedResourceVersion}, current ${resource.metadata.resourceVersion}`,
       );
     }
     if (resource.status.phase !== "attention") {
@@ -2465,10 +2487,7 @@ export function retryFailedAppTask(
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
     });
-    saveTaskState(config, tree, {
-      resourceMutation: finishResourceMutationScope(mutationScope, tree),
-    });
-    return {
+    const receipt: AppTaskRetryReceipt = {
       receiptId: randomUUID(),
       action: "app.task.retry",
       disposition: "requeued",
@@ -2480,6 +2499,29 @@ export function retryFailedAppTask(
       previousAttemptId: attempt.metadata.id,
       acceptedAt,
     };
+    saveTaskState(config, tree, {
+      resourceMutation: {
+        ...finishResourceMutationScope(mutationScope, tree),
+        ...(input.controlKey
+          ? {
+              controlReceipts: [
+                {
+                  controlKey: input.controlKey,
+                  appId: input.appId,
+                  taskId: input.taskId,
+                  action: "retry" as const,
+                  expectedGeneration: input.expectedGeneration,
+                  expectedResourceVersion: input.expectedResourceVersion,
+                  appliedResourceVersion: resource.metadata.resourceVersion,
+                  appliedAt: Date.parse(acceptedAt),
+                  result: receipt,
+                },
+              ],
+            }
+          : {}),
+      },
+    });
+    return receipt;
   });
 }
 
