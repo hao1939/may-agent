@@ -511,7 +511,6 @@ export function normalizeAppTaskPhase(task: { phase?: unknown }): AppTaskPhase |
 
 export type ProjectTasksReadModelOptions = {
   path: string;
-  treePath: string;
   measuredAt?: string;
   project?: {
     id: string;
@@ -532,7 +531,6 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     return {
       available: false,
       path: opts.path,
-      treePath: opts.treePath,
       reason: "Task tree JSON must be an object.",
       errors: ["root: expected object"],
     };
@@ -598,7 +596,6 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     return {
       available: false,
       path: opts.path,
-      treePath: opts.treePath,
       reason: "Task tree is malformed.",
       errors,
     };
@@ -627,7 +624,6 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     available: true,
     schemaVersion: 2,
     path: opts.path,
-    treePath: opts.treePath,
     measuredAt: opts.measuredAt ?? new Date().toISOString(),
     taskStateUpdatedAt: tree.updated_at ?? null,
     rootId: rootTaskId,
@@ -2478,7 +2474,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({
         available: false,
         path,
-        treePath: null,
         reason: "Project has no App task attachment.",
       });
     }
@@ -2489,13 +2484,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return json({
           available: false,
           path,
-          treePath: null,
           reason: "App does not attach task reconciliation.",
         });
       }
       const model = buildProjectTasksReadModel(projection, {
         path,
-        treePath: "canonical Task resources",
         project: identity,
       });
       if (!model.available) return json(model);
@@ -2519,7 +2512,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({
         available: false,
         path,
-        treePath: "canonical Task resources",
         reason: "Task view could not be read.",
         errors: [e instanceof Error ? e.message : String(e)],
       });
@@ -2626,7 +2618,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (projection) {
         model = buildProjectTasksReadModel(projection, {
           path,
-          treePath: "canonical Task resources",
           project: identity,
         });
       }
