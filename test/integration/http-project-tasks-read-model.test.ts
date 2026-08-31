@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -70,7 +70,7 @@ function projection(items: Record<string, unknown>, extra: Record<string, unknow
 }
 
 describe("project task read model", () => {
-  it("reads current Task resources while retaining only legacy presentation concurrency", () => {
+  it("reads current Task resources without consulting a legacy projection", () => {
     const root = mkdtempSync(join(tmpdir(), "may-http-task-resources-"));
     roots.push(root);
     const db = openDatabase(join(root, "may.db"));
@@ -96,35 +96,20 @@ describe("project task read model", () => {
       },
       "seed:test",
     );
-    const legacyTreePath = join(root, "tree.json");
-    writeFileSync(
-      legacyTreePath,
-      JSON.stringify(projection({ project: group(["stale"]), stale: task("stale", "waiting") }, { max_concurrent: 4 })),
-    );
+    const result = readProjectTaskProjection(db, "example");
 
-    const result = readProjectTaskProjection(db, "example", legacyTreePath);
-
-    expect(result?.source).toBe("resources");
-    expect(result?.tree.max_concurrent).toBe(4);
-    expect(result?.tree.tasks.current).toMatchObject({ outcome: "Current resource", phase: "pending" });
-    expect(result?.tree.tasks.stale).toBeUndefined();
+    expect(result?.max_concurrent).toBe(1);
+    expect(result?.tasks.current).toMatchObject({ outcome: "Current resource", phase: "pending" });
     db.close();
   });
 
-  it("keeps the generated projection as a fallback without resource authority", () => {
+  it("returns no Task projection without resource authority", () => {
     const root = mkdtempSync(join(tmpdir(), "may-http-task-legacy-"));
     roots.push(root);
     const db = openDatabase(join(root, "may.db"));
     AppTaskResourceStore.fromDb(db, "schema");
-    const legacyTreePath = join(root, "tree.json");
-    const legacy = projection({ project: group(["legacy"]), legacy: task("legacy", "pending") });
-    writeFileSync(legacyTreePath, JSON.stringify(legacy));
-
-    expect(readProjectTaskProjection(db, "example", legacyTreePath)).toEqual({
-      tree: legacy,
-      source: "legacy-file",
-    });
-    expect(readProjectTaskProjection(db, "missing", join(root, "missing.json"))).toBeNull();
+    expect(readProjectTaskProjection(db, "example")).toBeNull();
+    expect(readProjectTaskProjection(db, "missing")).toBeNull();
     db.close();
   });
 

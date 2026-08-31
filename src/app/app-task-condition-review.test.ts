@@ -2,14 +2,9 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { legacyTaskStateConfig, readTaskState } from "./app-task-store.js";
-import {
-  claimObservedAppTask,
-  deferAppTask,
-  listRunnableAppTaskIds,
-  taskReconciliationConfig,
-} from "./app-task-reconciler.ts";
+import { appTaskTestContext } from "./app-task-test-support.js";
+import { readTaskSnapshot } from "./app-task-store.js";
+import { claimObservedAppTask, deferAppTask, listRunnableAppTaskIds } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
 
@@ -45,23 +40,11 @@ function fixture() {
       2,
     )}\n`,
   );
-  const legacyConfig = legacyTaskStateConfig({
+  return appTaskTestContext({
     appDir,
-    projectDir: appDir,
-    worker: "app-owner",
-    maxConcurrent: 1,
-  });
-  const tree = readTaskState(legacyConfig);
-  tree.project = "sample";
-  tree.project_lifecycle = "active";
-  const resourceStore = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
-  resourceStore.bootstrapSnapshot(tree, "condition-review-fixture");
-  return taskReconciliationConfig({
-    appDir,
-    projectDir: appDir,
     agent: "app-owner",
     maxConcurrent: 1,
-    resourceStore,
+    databasePath: join(root, "host.sqlite"),
   });
 }
 
@@ -133,7 +116,7 @@ describe("App task Condition review checkpoint", () => {
 
     expect(listRunnableAppTaskIds(config)).toEqual(["human-request"]);
     const review = claim(config);
-    expect(readTaskState(config).attempts?.[review.attemptId]?.reason).toBe("condition-review-checkpoint-missed");
+    expect(readTaskSnapshot(config).attempts?.[review.attemptId]?.reason).toBe("condition-review-checkpoint-missed");
     expect(review.trigger).toMatchObject({
       type: "project.task.condition-review.missed",
       data: {
@@ -188,7 +171,7 @@ describe("App task Condition review checkpoint", () => {
       });
     }
 
-    const state = readTaskState(config);
+    const state = readTaskSnapshot(config);
     expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
     expect(listRunnableAppTaskIds(config)).toEqual([]);
     expect(config.resourceStore.nextDueAt()).not.toBeNull();

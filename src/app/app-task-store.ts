@@ -1,15 +1,3 @@
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
-import { createHash } from "node:crypto";
-import { dirname, join } from "node:path";
 import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAcceptanceBasis as AppTaskAcceptanceBasis,
@@ -18,9 +6,6 @@ import type {
   AppTaskTrigger as AppTaskTrigger,
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
-import { ensureTaskState, projectRuntimePaths } from "./app-task-runtime-state.js";
-import { writeAppTaskConditionRouteIndex } from "./app-task-condition-index.js";
-import { currentProcessInstance, isProcessInstanceAlive } from "../lib/process-identity.js";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "./app-task-resource-store.js";
 import type { TaskExecutorName } from "@may-agent/sdk";
 
@@ -168,66 +153,25 @@ export type TaskTree = {
   groups?: Record<string, TaskGroup>;
 };
 
-export type TaskStateConfig = {
+export type AppTaskContext = {
   appDir: string;
-  /** Stable writable App root; defaults to appDir for legacy callers. */
-  stateAppDir?: string;
   projectDir: string;
-  statePath: string;
-  journalPath: string;
-  worker: string;
+  agent: string;
   maxConcurrent: number;
-  mutationAuthority?: unknown;
-  validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
-  /** Required by every installed App runtime; absent only in isolated legacy fixtures. */
-  resourceStore?: AppTaskResourceStore;
+  resourceStore: AppTaskResourceStore;
 };
 
-/** Installed App runtimes always use the canonical resource authority. */
-export type ResourceTaskStateConfig = TaskStateConfig & { resourceStore: AppTaskResourceStore };
-
-/** JSON configuration retained only while isolated fixtures migrate to resource authority. */
-export function legacyTaskStateConfig(input: {
-  appDir: string;
-  projectDir: string;
-  worker: string;
-  maxConcurrent: number;
-}): TaskStateConfig {
-  const paths = projectRuntimePaths(input.appDir);
-  return {
-    appDir: input.appDir,
-    projectDir: input.projectDir,
-    statePath: ensureTaskState(input.appDir).path,
-    journalPath: paths.journalPath,
-    worker: input.worker,
-    maxConcurrent: input.maxConcurrent,
-  };
-}
-
-type TaskStateReadCache = {
-  ino?: number;
-  mtimeMs?: number;
-  size?: number;
+type TaskSnapshotCache = {
   tree?: TaskTree;
-  sourceLifecycle?: string;
-  sourceResourceCount?: number;
   resourceRevision?: number;
 };
 
-const taskStateReadCaches = new WeakMap<TaskStateConfig, TaskStateReadCache>();
-const scopedResourceTaskStates = new WeakSet<TaskTree>();
+const taskSnapshotCaches = new WeakMap<AppTaskContext, TaskSnapshotCache>();
+const scopedTaskSnapshots = new WeakSet<TaskTree>();
 
-/** Reuse one parsed tree for a short-lived config dedicated to a sequential pass. */
-export function cacheTaskStateReads(config: TaskStateConfig): void {
-  taskStateReadCaches.set(config, {});
-}
-
-function timeoutFromAnyEnv(names: string[], fallbackMs: number): number {
-  for (const name of names) {
-    const value = Number(process.env[name]);
-    if (Number.isFinite(value) && value > 0) return value;
-  }
-  return fallbackMs;
+/** Reuse one snapshot for a short-lived context dedicated to a sequential pass. */
+export function cacheTaskSnapshots(context: AppTaskContext): void {
+  taskSnapshotCaches.set(context, {});
 }
 
 export function normalizeStringArray(value: unknown): string[] {
@@ -236,176 +180,35 @@ export function normalizeStringArray(value: unknown): string[] {
   return [];
 }
 
-function ensureDir(path: string): void {
-  if (!existsSync(path)) mkdirSync(path, { recursive: true });
+/** Group one read/decide/commit transition; the resource commit owns serialization and fencing. */
+export function withTaskTransition<T>(_context: AppTaskContext, operation: () => T): T {
+  return operation();
 }
 
-function sleepSync(ms: number): void {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-}
-
-function isRetryableTaskTreeReadError(error: unknown): boolean {
-  if (error instanceof SyntaxError) return true;
-  if (!(error instanceof Error)) return false;
-  return error.message.includes("ENOENT") || error.message.includes("EAGAIN");
-}
-
-function taskStateLockOwnerIsDead(lockPath: string): boolean {
-  try {
-    const owner = JSON.parse(readFileSync(join(lockPath, "owner.json"), "utf8")) as {
-      pid?: unknown;
-      processIdentity?: unknown;
-      processStartedAt?: unknown;
-      acquiredAt?: unknown;
-    };
-    const pid = Number(owner.pid);
-    if (!Number.isInteger(pid) || pid <= 0) return false;
-    return !isProcessInstanceAlive({ ...owner, recordedAt: owner.acquiredAt });
-  } catch {
-    return false;
-  }
-}
-
-export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T): T {
-  // Resource-backed Tasks commit through one SQLite transaction with exact
-  // resource-version fences. A second filesystem lock adds no correctness:
-  // it only makes a contending worker spin with synchronous sleeps, freezing
-  // the daemon event loop and therefore unrelated event admission and reads.
-  // Legacy state.json mutation still needs the cross-process file lock below.
-  if (config.resourceStore) return operation();
-
-  const lockPath = `${config.statePath}.lock`;
-  ensureDir(dirname(lockPath));
-  const waitMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_WAIT_MS", "AKS_RP_E2E_TREE_LOCK_WAIT_MS"], 30_000);
-  const staleMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_STALE_MS", "AKS_RP_E2E_TREE_LOCK_STALE_MS"], 2 * 60_000);
-  const deadline = Date.now() + waitMs;
-  while (true) {
-    try {
-      mkdirSync(lockPath);
-      const currentProcess = currentProcessInstance();
-      writeFileSync(
-        join(lockPath, "owner.json"),
-        `${JSON.stringify({
-          ...currentProcess,
-          acquiredAt: new Date().toISOString(),
-        })}\n`,
-      );
-      break;
-    } catch {
-      try {
-        if (taskStateLockOwnerIsDead(lockPath) || Date.now() - statSync(lockPath).mtimeMs > staleMs) {
-          rmSync(lockPath, { recursive: true, force: true });
-          continue;
-        }
-      } catch {
-        // Retry until the deadline.
-      }
-      if (Date.now() > deadline) throw new Error(`Timed out waiting for task state lock: ${lockPath}`);
-      sleepSync(50);
-    }
-  }
-  try {
-    return operation();
-  } finally {
-    rmSync(lockPath, { recursive: true, force: true });
-  }
-}
-
-export function readTaskState(
-  config: TaskStateConfig,
+export function readTaskSnapshot(
+  context: AppTaskContext,
   scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string>; conditionIds?: Iterable<string> },
 ): TaskTree {
-  if (config.resourceStore) {
-    if (scope) {
-      const tree = config.resourceStore.readTaskContext(scope);
-      scopedResourceTaskStates.add(tree);
-      return tree;
-    }
-    const cache = taskStateReadCaches.get(config);
-    const revision = config.resourceStore.revision();
-    if (cache?.tree && cache.resourceRevision === revision) return cache.tree;
-    const tree = config.resourceStore.readSnapshot();
-    if (cache) {
-      cache.tree = tree;
-      cache.resourceRevision = revision;
-    }
+  if (scope) {
+    const tree = context.resourceStore.readTaskContext(scope);
+    scopedTaskSnapshots.add(tree);
     return tree;
   }
-  const canonicalPath = projectRuntimePaths(config.stateAppDir ?? config.appDir).taskStatePath;
-  if (config.statePath !== canonicalPath) {
-    throw new Error(`Task state must be read from canonical state.json: ${canonicalPath}`);
+  const cache = taskSnapshotCaches.get(context);
+  const revision = context.resourceStore.revision();
+  if (cache?.tree && cache.resourceRevision === revision) return cache.tree;
+  const tree = context.resourceStore.readSnapshot();
+  if (cache) {
+    cache.tree = tree;
+    cache.resourceRevision = revision;
   }
-  const retryMs = timeoutFromAnyEnv(["PROJECT_TREE_READ_RETRY_MS", "AKS_RP_E2E_TREE_READ_RETRY_MS"], 250);
-  const deadline = Date.now() + retryMs;
-
-  while (true) {
-    try {
-      const cache = taskStateReadCaches.get(config);
-      if (cache) {
-        const state = statSync(config.statePath);
-        if (cache.tree && cache.ino === state.ino && cache.mtimeMs === state.mtimeMs && cache.size === state.size)
-          return cache.tree;
-        const tree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
-        normalizeTaskStateInPlace(tree);
-        cache.ino = state.ino;
-        cache.mtimeMs = state.mtimeMs;
-        cache.size = state.size;
-        cache.tree = tree;
-        cache.sourceLifecycle = normalizedLifecycle(tree.project_lifecycle);
-        cache.sourceResourceCount = taskStateResourceCount(tree);
-        return tree;
-      }
-      const tree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
-      normalizeTaskStateInPlace(tree);
-      return tree;
-    } catch (error) {
-      if (!isRetryableTaskTreeReadError(error) || Date.now() >= deadline) {
-        throw error;
-      }
-      sleepSync(10);
-    }
-  }
+  return tree;
 }
 
-export type SaveTaskStateOptions = {
-  /** Set to true to bypass the shrinkage guard (e.g. intentional tree reset). */
-  allowShrinkage?: boolean;
-  /**
-   * Required for every explicit project lifecycle transition. Normal task-tree
-   * saves must preserve lifecycle; they cannot silently pause or resume an app.
-   */
-  projectLifecycleReason?: string;
+export type CommitTaskMutationOptions = {
   /** Exact resource rows changed by this transition. Required by resource authority. */
   resourceMutation?: AppTaskResourceMutation;
 };
-
-function normalizedLifecycle(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function appendTaskTreeJournal(config: TaskStateConfig, entry: Record<string, unknown>): void {
-  ensureDir(dirname(config.journalPath));
-  appendFileSync(
-    config.journalPath,
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      actor: config.worker,
-      ...entry,
-    })}\n`,
-    "utf-8",
-  );
-}
-
-function serializeCanonicalTaskState(state: Record<string, unknown>): string {
-  const lifecycle = state.project_lifecycle;
-  if (typeof lifecycle !== "string") return JSON.stringify(state);
-  const { project_lifecycle: _lifecycle, ...rest } = state;
-  // Keep the lifecycle in the bounded header consumed by the generation
-  // watcher while leaving the machine-owned history compact.
-  const serializedRest = JSON.stringify(rest);
-  if (serializedRest === "{}") return `{\n  "project_lifecycle": ${JSON.stringify(lifecycle)}\n}`;
-  return `{\n  "project_lifecycle": ${JSON.stringify(lifecycle)},\n  ${serializedRest.slice(1)}`;
-}
 
 export class ResourceTaskMutationStaleError extends Error {
   constructor() {
@@ -414,244 +217,24 @@ export class ResourceTaskMutationStaleError extends Error {
   }
 }
 
-export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?: SaveTaskStateOptions): void {
-  const runtimePaths = projectRuntimePaths(config.stateAppDir ?? config.appDir);
-  if (config.statePath !== runtimePaths.taskStatePath) {
-    throw new Error(`Task state must be written to canonical state.json: ${runtimePaths.taskStatePath}`);
+export function commitTaskMutation(context: AppTaskContext, tree: TaskTree, options?: CommitTaskMutationOptions): void {
+  if (!options?.resourceMutation) {
+    throw new Error("Task state mutation requires an exact resourceMutation");
   }
-  if (config.resourceStore) {
-    if (!options?.resourceMutation) {
-      throw new Error("Resource-backed task state requires an exact resourceMutation");
-    }
-    if (!config.resourceStore.commit(options.resourceMutation)) {
-      throw new ResourceTaskMutationStaleError();
-    }
-    tree.updated_at = new Date().toISOString();
-    const resourceCache = taskStateReadCaches.get(config);
-    if (resourceCache) {
-      if (scopedResourceTaskStates.has(tree)) {
-        resourceCache.tree = undefined;
-        resourceCache.resourceRevision = undefined;
-      } else {
-        resourceCache.tree = tree;
-        resourceCache.resourceRevision = config.resourceStore.revision();
-      }
-    }
-    return;
+  if (!context.resourceStore.commit(options.resourceMutation)) {
+    throw new ResourceTaskMutationStaleError();
   }
-
-  normalizeTaskStateInPlace(tree);
-
-  const cache = taskStateReadCaches.get(config);
-  let existingTree: TaskTree | null = null;
-  let existingLifecycle: string | null = null;
-  let existingResourceCount: number | null = null;
-  if (existsSync(config.statePath)) {
-    const currentState = statSync(config.statePath);
-    const cacheMatchesDisk =
-      cache?.ino === currentState.ino && cache.mtimeMs === currentState.mtimeMs && cache.size === currentState.size;
-    if (
-      !config.validateMutation &&
-      cache?.tree === tree &&
-      cache.sourceLifecycle !== undefined &&
-      cache.sourceResourceCount !== undefined &&
-      cacheMatchesDisk
-    ) {
-      existingLifecycle = cache.sourceLifecycle;
-      existingResourceCount = cache.sourceResourceCount;
-    } else {
-      try {
-        existingTree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
-        normalizeTaskStateInPlace(existingTree);
-        existingLifecycle = normalizedLifecycle(existingTree.project_lifecycle);
-        existingResourceCount = taskStateResourceCount(existingTree);
-      } catch {
-        existingTree = null;
-      }
-    }
-  }
-
-  if (existingTree && config.validateMutation) {
-    config.validateMutation({
-      current: existingTree,
-      next: tree,
-      authority: config.mutationAuthority,
-    });
-  }
-
-  const nextLifecycle = normalizedLifecycle(tree.project_lifecycle);
-  if (existingLifecycle !== null && existingLifecycle !== nextLifecycle && !options?.projectLifecycleReason?.trim()) {
-    throw new Error(
-      `saveTaskState lifecycle guard: refusing to change project ${config.projectDir} ` +
-        `from ${existingLifecycle || "unset"} to ${nextLifecycle || "unset"} without an explicit reason.`,
-    );
-  }
-
-  // Shrinkage guard: reject writes that reduce task count by >80%.
-  // This prevents agent-caused data loss from whole-file overwrites.
-  if (!options?.allowShrinkage && existsSync(config.statePath)) {
-    try {
-      if (existingResourceCount === null) throw new Error("existing task tree is unavailable");
-      const existingCount = existingResourceCount;
-      const newCount = Object.keys(tree.groups ?? {}).length + Object.keys(tree.resources ?? {}).length;
-      // Only guard when existing tree has enough tasks to be meaningful (>=5)
-      // and the new tree drops by more than 80%.
-      if (existingCount >= 5 && newCount < existingCount * 0.2) {
-        throw new Error(
-          `saveTaskState shrinkage guard: refusing to overwrite ${existingCount} tasks with ${newCount} tasks ` +
-            `(${Math.round((1 - newCount / existingCount) * 100)}% reduction). ` +
-            `Pass { allowShrinkage: true } to override if this is intentional.`,
-        );
-      }
-    } catch (e) {
-      // Re-throw shrinkage guard errors; swallow file read/parse errors
-      if (e instanceof Error && e.message.startsWith("saveTaskState shrinkage guard")) throw e;
-    }
-  }
-
   tree.updated_at = new Date().toISOString();
-  // Canonical state is machine-owned; readable inspection is provided by the
-  // resource API and disposable projection. Pretty-printing multi-megabyte
-  // history on every mutation only enlarges the synchronous durability path.
-  const canonical = canonicalTaskStateForWrite(tree);
-  const serialized = `${serializeCanonicalTaskState(canonical)}\n`;
-  ensureDir(dirname(config.statePath));
-  const tempPath = `${config.statePath}.${process.pid}.${Date.now()}.tmp`;
-  writeFileSync(tempPath, serialized, "utf-8");
-  renameSync(tempPath, config.statePath);
-  if (cache) {
-    const state = statSync(config.statePath);
-    cache.ino = state.ino;
-    cache.mtimeMs = state.mtimeMs;
-    cache.size = state.size;
-    cache.tree = tree;
-    cache.sourceLifecycle = normalizedLifecycle(tree.project_lifecycle);
-    cache.sourceResourceCount = taskStateResourceCount(tree);
+  const resourceCache = taskSnapshotCaches.get(context);
+  if (resourceCache) {
+    if (scopedTaskSnapshots.has(tree)) {
+      resourceCache.tree = undefined;
+      resourceCache.resourceRevision = undefined;
+    } else {
+      resourceCache.tree = tree;
+      resourceCache.resourceRevision = context.resourceStore.revision();
+    }
   }
-  writeAppTaskConditionRouteIndex(config, tree);
-
-  const projectionPath = runtimePaths.taskTreePath;
-  const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
-  ensureDir(dirname(projectionPath));
-  const projection = buildAppTaskTreeProjection(tree, config.maxConcurrent);
-  const serializedProjection = `${JSON.stringify(projection)}\n`;
-  writeFileSync(projectionTempPath, serializedProjection, "utf-8");
-  renameSync(projectionTempPath, projectionPath);
-
-  if (existingLifecycle !== null && existingLifecycle !== normalizedLifecycle(tree.project_lifecycle)) {
-    const from = existingLifecycle;
-    const to = normalizedLifecycle(tree.project_lifecycle);
-    appendTaskTreeJournal(config, {
-      kind:
-        to === "paused"
-          ? "project_lifecycle_paused"
-          : to === "active"
-            ? "project_lifecycle_resumed"
-            : "project_lifecycle_changed",
-      from: from || null,
-      to: to || null,
-      reason: options?.projectLifecycleReason?.trim(),
-    });
-  }
-}
-
-export function setProjectLifecycle(config: TaskStateConfig, lifecycle: string, reason: string): void {
-  const nextLifecycle = normalizedLifecycle(lifecycle);
-  const transitionReason = reason.trim();
-  if (!nextLifecycle) throw new Error("Project lifecycle must not be empty");
-  if (!transitionReason) throw new Error("Project lifecycle change requires a reason");
-
-  if (config.resourceStore) {
-    if (nextLifecycle !== "active" && nextLifecycle !== "paused") {
-      throw new Error(`Resource-backed project lifecycle must be active or paused, found ${nextLifecycle}`);
-    }
-    if (config.resourceStore.projectLifecycle() === nextLifecycle) return;
-    config.resourceStore.setProjectLifecycle(nextLifecycle);
-    const cache = taskStateReadCaches.get(config);
-    if (cache) {
-      cache.tree = undefined;
-      cache.resourceRevision = undefined;
-    }
-    return;
-  }
-
-  withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    if (normalizedLifecycle(tree.project_lifecycle) === nextLifecycle) return;
-    tree.project_lifecycle = nextLifecycle;
-    saveTaskState(config, tree, { projectLifecycleReason: transitionReason });
-  });
-}
-
-export type TaskStateMigrationResult = {
-  revision: string;
-  changed: boolean;
-  written: boolean;
-  taskCountBefore: number;
-  taskCountAfter: number;
-};
-
-function storedTaskStateRevision(config: TaskStateConfig): string {
-  return createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
-}
-
-function comparableTaskState(tree: TaskTree): string {
-  const copy = structuredClone(tree);
-  delete copy.updated_at;
-  normalizeTaskStateInPlace(copy);
-  return JSON.stringify(canonicalTaskStateForWrite(copy));
-}
-
-function taskStateResourceCount(tree: TaskTree): number {
-  return Object.keys(tree.groups ?? {}).length + Object.keys(tree.resources ?? {}).length;
-}
-
-/** Apply one reviewed migration while the project is paused and the state revision is unchanged. */
-export function migrateTaskState(
-  config: TaskStateConfig,
-  input: {
-    expectedRevision?: string;
-    dryRun?: boolean;
-    allowShrinkage?: boolean;
-    migrate: (tree: TaskTree) => void;
-  },
-): TaskStateMigrationResult {
-  return withTaskStateLock(config, () => {
-    const revision = storedTaskStateRevision(config);
-    if (input.expectedRevision && revision !== input.expectedRevision) {
-      throw new Error(`Task state changed after review: expected ${input.expectedRevision}, found ${revision}`);
-    }
-    const current = readTaskState(config);
-    if (normalizedLifecycle(current.project_lifecycle) !== "paused") {
-      throw new Error("Task state migration requires project_lifecycle=paused");
-    }
-    const runningAttemptIds = Object.values(current.attempts ?? {})
-      .filter((attempt) => attempt.state === "running")
-      .map((attempt) => attempt.metadata.id);
-    if (runningAttemptIds.length > 0) {
-      throw new Error(
-        `Task state migration requires drained attempts; still running: ${runningAttemptIds.slice(0, 8).join(", ")}`,
-      );
-    }
-
-    const next = structuredClone(current);
-    input.migrate(next);
-    if (normalizedLifecycle(next.project_lifecycle) !== "paused") {
-      throw new Error("Task state migration cannot resume or change project lifecycle");
-    }
-    const changed = comparableTaskState(current) !== comparableTaskState(next);
-    const result = {
-      revision,
-      changed,
-      written: Boolean(changed && !input.dryRun),
-      taskCountBefore: taskStateResourceCount(current),
-      taskCountAfter: taskStateResourceCount(next),
-    };
-    if (result.written) {
-      saveTaskState(config, next, { allowShrinkage: input.allowShrinkage });
-    }
-    return result;
-  });
 }
 
 export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
@@ -717,198 +300,6 @@ function projectedTaskChildren(
   return Object.fromEntries(
     Object.entries(childSetsById).map(([parentId, children]) => [parentId, [...children].sort()]),
   );
-}
-
-// Reconciliation exposes at most eight completed children to a live parent.
-// Keeping more full-detail receipts cannot affect its next decision; identity,
-// summary, and the detail digest remain durable for every older receipt.
-const FULL_RECEIPTS_PER_PARENT = 8;
-
-function sha256(value: unknown): string {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
-
-function compactHistoricalReceipt(receipt: TaskCompletionReceipt): void {
-  if (!receipt.compactedDetailSha256) {
-    receipt.compactedDetailSha256 = sha256({
-      acceptance: receipt.acceptance,
-      evidence: receipt.evidence,
-      acceptanceBasis: receipt.acceptanceBasis,
-      workspace: receipt.workspace,
-    });
-    receipt.acceptance = [];
-    receipt.evidence = [];
-    receipt.acceptanceBasis = {
-      ...receipt.acceptanceBasis,
-      evidence: [],
-    };
-    delete receipt.workspace;
-  }
-  if (!receipt.compactedPayloadSha256) {
-    const input = receipt.input ?? {};
-    const failureFingerprints = receipt.failureFingerprints ?? [];
-    const needsPayloadCompaction =
-      receipt.outcome.length > 512 ||
-      receipt.summary.length > 512 ||
-      (receipt.response?.length ?? 0) > 512 ||
-      (receipt.result !== undefined && JSON.stringify(receipt.result).length > 512) ||
-      (Object.keys(input).length > 0 && JSON.stringify(input).length > 512) ||
-      (failureFingerprints.length > 0 && JSON.stringify(failureFingerprints).length > 512);
-    if (!needsPayloadCompaction) return;
-    const payload = {
-      outcome: receipt.outcome,
-      summary: receipt.summary,
-      response: receipt.response,
-      result: receipt.result,
-      input,
-      failureFingerprints,
-    };
-    receipt.compactedPayloadSha256 = sha256(payload);
-    receipt.outcome = receipt.outcome.slice(0, 512);
-    receipt.summary = receipt.summary.slice(0, 512);
-    if (receipt.response !== undefined) receipt.response = receipt.response.slice(0, 512);
-    delete receipt.result;
-    receipt.input = {};
-    receipt.failureFingerprints = [];
-  }
-}
-
-function compactHistoricalReceipts(tree: TaskTree): void {
-  const receipts = Object.values(tree.receipts ?? {});
-  const fullByParent = new Map<string, TaskCompletionReceipt[]>();
-  for (const receipt of receipts) {
-    // A prior save already established that this receipt is outside the live
-    // detail window. Finish an older partial compaction once, then never sort
-    // or hash it again on the steady-state save path.
-    if (receipt.compactedDetailSha256 || receipt.compactedPayloadSha256) {
-      compactHistoricalReceipt(receipt);
-      continue;
-    }
-    const group = fullByParent.get(receipt.parentId) ?? [];
-    group.push(receipt);
-    fullByParent.set(receipt.parentId, group);
-  }
-
-  for (const [parentId, group] of fullByParent) {
-    // A receipted parent cannot reconcile from child detail again; its own
-    // receipt is the durable summary. Parent absence alone is not enough:
-    // imported historical receipts may not include their parent resource.
-    if (tree.receipts?.[parentId]) {
-      for (const receipt of group) compactHistoricalReceipt(receipt);
-      continue;
-    }
-    if (group.length <= FULL_RECEIPTS_PER_PARENT) continue;
-    group
-      .sort(
-        (left, right) =>
-          right.completedAt.localeCompare(left.completedAt) || right.metadata.id.localeCompare(left.metadata.id),
-      )
-      .slice(FULL_RECEIPTS_PER_PARENT)
-      .forEach(compactHistoricalReceipt);
-  }
-}
-
-const COMPACT_TRIGGER_KEYS = [
-  "type",
-  "source",
-  "owner",
-  "timestamp",
-  "eventId",
-  "sessionId",
-  "agent",
-  "status",
-  "summary",
-  "outcome",
-  "error",
-  "workflowRunId",
-  "projectId",
-  "project",
-  "taskId",
-  "task_id",
-  "childTaskId",
-  "parentTaskId",
-  "runId",
-  "pipelineRunId",
-  "idempotencyKey",
-  "target",
-  "trace",
-  "action",
-  "urgency",
-] as const;
-const COMPACT_TRIGGER_KEY_SET = new Set<string>([...COMPACT_TRIGGER_KEYS, "data", "compactedPayloadSha256"]);
-
-function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string, unknown> {
-  const existingDigest =
-    typeof trigger.compactedPayloadSha256 === "string" && trigger.compactedPayloadSha256.length === 64
-      ? trigger.compactedPayloadSha256
-      : undefined;
-  const compact: Record<string, unknown> = {
-    // A previously compacted trigger can be re-expanded by an old producer or
-    // compatibility reader. Preserve its original audit digest while restoring
-    // the bounded canonical shape instead of trusting the marker alone.
-    compactedPayloadSha256: existingDigest ?? sha256(trigger),
-  };
-  for (const key of COMPACT_TRIGGER_KEYS) {
-    if (trigger[key] !== undefined) compact[key] = trigger[key];
-  }
-  if (trigger.data !== undefined && JSON.stringify(trigger.data).length <= 8_192) {
-    compact.data = trigger.data;
-  }
-  return compact;
-}
-
-function triggerNeedsCompaction(trigger: Record<string, unknown>): boolean {
-  if (typeof trigger.compactedPayloadSha256 === "string") {
-    // Old compatibility writers could re-expand a previously compacted event.
-    // A bounded envelope contains only the retained canonical keys and data.
-    return Object.keys(trigger).some((key) => !COMPACT_TRIGGER_KEY_SET.has(key));
-  }
-  return JSON.stringify(trigger).length > 16_384;
-}
-
-function compactHistoricalAttemptTriggers(tree: TaskTree): void {
-  const attempts = Object.values(tree.attempts ?? {});
-  for (const attempt of attempts) {
-    for (const entry of attempt.events ?? []) {
-      if (triggerNeedsCompaction(entry.event)) {
-        entry.event = compactAttemptTrigger(entry.event);
-      }
-    }
-    if (!attempt.trigger || attempt.state === "running") continue;
-    if (!triggerNeedsCompaction(attempt.trigger)) continue;
-    attempt.trigger = compactAttemptTrigger(attempt.trigger);
-  }
-}
-
-function compactPendingTaskTriggers(tree: TaskTree): void {
-  for (const trigger of Object.values(tree.taskTriggers ?? {})) {
-    for (const entry of trigger.events ?? []) {
-      const entryEventId = Number(entry.event?.eventId);
-      if (Number.isInteger(entryEventId) && entryEventId > 0 && triggerNeedsCompaction(entry.event)) {
-        entry.event = compactAttemptTrigger(entry.event);
-      }
-    }
-    const eventId = Number(trigger.event?.eventId);
-    if (!Number.isInteger(eventId) || eventId <= 0) continue;
-    if (!triggerNeedsCompaction(trigger.event)) continue;
-    trigger.event = compactAttemptTrigger(trigger.event);
-  }
-}
-
-function canonicalTaskStateForWrite(tree: TaskTree): Record<string, unknown> {
-  // Historical compaction is the canonical in-memory shape too. Keeping a
-  // second, more detailed copy until the next disk read made every state write
-  // clone and parse the complete (often tens-of-megabytes) task tree first.
-  compactHistoricalReceipts(tree);
-  compactHistoricalAttemptTriggers(tree);
-  compactPendingTaskTriggers(tree);
-  const state: Record<string, unknown> = { ...tree };
-  delete state.tasks;
-  delete state.active_task_id;
-  delete state.active_task_ids;
-  // Older state files stored this derived read-model field alongside live state.
-  delete state.satisfied_dependency_ids;
-  return state;
 }
 
 function satisfiedDependencyIds(tree: TaskTree): string[] {

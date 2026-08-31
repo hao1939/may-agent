@@ -4,7 +4,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { cancelAppTask } from "./app-task-reconciler.js";
-import type { ResourceTaskStateConfig } from "./app-task-store.js";
+import type { AppTaskContext } from "./app-task-store.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 import {
   ensureTaskReferenceIndex,
@@ -83,7 +83,7 @@ function insertTask(
   ).run(input.appId, input.taskId, input.phase, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource));
 }
 
-function taskConfig(db: SqliteDb, store: AppTaskResourceStore, appId: string): ResourceTaskStateConfig {
+function taskConfig(db: SqliteDb, store: AppTaskResourceStore, appId: string): AppTaskContext {
   db.prepare(
     `INSERT OR REPLACE INTO app_task_store_meta(app_id, key, value)
      VALUES (?, 'app_metadata', ?)`,
@@ -91,9 +91,7 @@ function taskConfig(db: SqliteDb, store: AppTaskResourceStore, appId: string): R
   return {
     appDir: `/tmp/${appId}.app`,
     projectDir: `/tmp/${appId}`,
-    statePath: `/tmp/${appId}.app/.state/tasks/state.json`,
-    journalPath: `/tmp/${appId}.app/.state/journal.jsonl`,
-    worker: "test",
+    agent: "test",
     maxConcurrent: 1,
     resourceStore: store,
   };

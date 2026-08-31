@@ -48,18 +48,13 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
-  taskReconciliationConfig,
+  appTaskContext,
 } from "./app-task-reconciler.js";
-import {
-  legacyTaskStateConfig,
-  readTaskState,
-  saveTaskState,
-  type ResourceTaskStateConfig,
-  type TaskStateConfig,
-} from "./app-task-store.js";
+import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { getDb } from "../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { HumanTaskService } from "./human-task-service.js";
 import {
@@ -146,8 +141,8 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
   };
 }
 
-function activateTaskResources(config: TaskStateConfig, persistDir: string, appId = "sample"): ResourceTaskStateConfig {
-  const tree = readTaskState(config);
+function activateTaskResources(config: AppTaskContext, persistDir: string, appId = "sample"): AppTaskContext {
+  const tree = readTaskSnapshot(config);
   tree.project ||= appId;
   const finalLifecycle = tree.project_lifecycle === "paused" ? "paused" : "active";
   tree.project_lifecycle = "paused";
@@ -155,14 +150,12 @@ function activateTaskResources(config: TaskStateConfig, persistDir: string, appI
   const staging = AppTaskResourceStore.fromDb(getDb(persistDir), appId);
   staging.bootstrapSnapshot(tree, sourceRevision);
   staging.setProjectLifecycle(finalLifecycle);
-  rmSync(config.statePath, { force: true });
   const active = AppTaskResourceStore.activeFromDb(getDb(persistDir), appId);
   if (!active) throw new Error(`expected active resource store for ${appId}`);
-  return taskReconciliationConfig({
+  return appTaskContext({
     appDir: config.appDir,
-    ...(config.stateAppDir ? { stateAppDir: config.stateAppDir } : {}),
     projectDir: config.projectDir,
-    agent: config.worker,
+    agent: config.agent,
     maxConcurrent: config.maxConcurrent,
     resourceStore: active,
   });
@@ -172,16 +165,15 @@ function loadedTaskConfig(f: ReturnType<typeof fixture>, persistDir = join(f.roo
   let resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
   if (!resourceStore) {
     return activateTaskResources(
-      legacyTaskStateConfig({
+      appTaskTestContext({
         appDir: f.appDir,
-        projectDir: f.appDir,
-        worker: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
       }),
       persistDir,
     );
   }
-  return taskReconciliationConfig({
+  return appTaskContext({
     appDir: f.appDir,
     projectDir: f.appDir,
     agent: "sample-owner",
@@ -194,7 +186,7 @@ function mutateRuntimeAttemptFixture(
   config: ReturnType<typeof loadedTaskConfig>,
   taskId: string,
   attemptId: string,
-  mutate: (attempt: NonNullable<ReturnType<typeof readTaskState>["attempts"]>[string]) => void,
+  mutate: (attempt: NonNullable<ReturnType<typeof readTaskSnapshot>["attempts"]>[string]) => void,
 ): void {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
@@ -828,10 +820,9 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const config = activateTaskResources(
-      legacyTaskStateConfig({
+      appTaskTestContext({
         appDir: f.appDir,
-        projectDir: f.appDir,
-        worker: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
       }),
       join(f.root, "state"),
@@ -884,7 +875,7 @@ describe("canonical App task runtime", () => {
       }),
     ).toThrow("newer Task evidence is pending");
     expect(emitted.filter((event) => event.type === "app.input.requested")).toEqual([]);
-    expect(readTaskState(config).taskTriggers?.[claim.taskId]?.event).toMatchObject({ eventId: 42 });
+    expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.event).toMatchObject({ eventId: 42 });
   });
 
   it("accepts a recovered frozen Condition route after its task has already left the wait", async () => {
@@ -899,16 +890,12 @@ describe("canonical App task runtime", () => {
         tasks: {}
       };\n`,
     );
-    const stateDir = join(f.appDir, ".state", "tasks");
-    mkdirSync(stateDir, { recursive: true });
-    const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
-    writeFileSync(join(stateDir, "state.json"), `${JSON.stringify({ ...seed, project_lifecycle: "paused" })}\n`);
     activateTaskResources(
-      legacyTaskStateConfig({
+      appTaskTestContext({
         appDir: f.appDir,
-        projectDir: f.appDir,
-        worker: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
+        lifecycle: "paused",
       }),
       persistDir,
     );
@@ -968,7 +955,7 @@ describe("canonical App task runtime", () => {
       ],
     });
     const establishedAt = Date.parse(
-      readTaskState(config).conditions?.["credential-ready:xhs"]?.status.observedAt ?? "",
+      readTaskSnapshot(config).conditions?.["credential-ready:xhs"]?.status.observedAt ?? "",
     );
     expect(Number.isFinite(establishedAt)).toBeTrue();
     await installAppTaskRuntimes({
@@ -1052,35 +1039,24 @@ describe("canonical App task runtime", () => {
       };\n`,
     );
 
-    const stateDir = join(f.appDir, ".state", "tasks");
-    mkdirSync(stateDir, { recursive: true });
-    const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
-    writeFileSync(
-      join(stateDir, "state.json"),
-      `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
-    );
     activateTaskResources(
-      legacyTaskStateConfig({
+      appTaskTestContext({
         appDir: f.appDir,
-        projectDir: f.appDir,
-        worker: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
+        lifecycle: "paused",
       }),
       persistDir,
     );
 
     const registry = new AppRegistry(f.projectsRoot);
     await registry.reload();
-    const evaluationSourceConfig = legacyTaskStateConfig({
+    const evaluationSourceConfig = appTaskTestContext({
       appDir: evaluationDir,
-      projectDir: evaluationDir,
-      worker: "evaluator",
+      agent: "evaluator",
       maxConcurrent: 1,
-    });
-    const evaluationState = readTaskState(evaluationSourceConfig);
-    evaluationState.project_lifecycle = "paused";
-    saveTaskState(evaluationSourceConfig, evaluationState, {
-      projectLifecycleReason: "pause deterministic test owner",
+      lifecycle: "paused",
+      appId: "evaluation",
     });
     const evaluationConfig = activateTaskResources(evaluationSourceConfig, persistDir, "evaluation");
     observeAppTaskIntent(evaluationConfig, {
@@ -1187,7 +1163,7 @@ describe("canonical App task runtime", () => {
     try {
       const sampleStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
       if (!sampleStore) throw new Error("expected sample resource authority");
-      const config = taskReconciliationConfig({
+      const config = appTaskContext({
         appDir: f.appDir,
         projectDir: f.appDir,
         agent: "sample-owner",
@@ -1247,7 +1223,7 @@ describe("canonical App task runtime", () => {
       while (!attachedDependencyTaskId && Date.now() < attachmentDeadline) await Bun.sleep(5);
       if (!attachedDependencyTaskId) throw new Error("expected child App request to attach to a Task");
       expect(attachedDependencyTaskId).toBe("review/current");
-      expect(readTaskState(evaluationConfig).taskTriggers?.["review/current"]?.event).toMatchObject({
+      expect(readTaskSnapshot(evaluationConfig).taskTriggers?.["review/current"]?.event).toMatchObject({
         type: "app.task.requested",
         data: {
           taskId: "review/current",
@@ -1257,7 +1233,7 @@ describe("canonical App task runtime", () => {
         },
       });
       expect(
-        Object.keys(readTaskState(evaluationConfig).resources ?? {}).filter((id) => id.startsWith("review/")),
+        Object.keys(readTaskSnapshot(evaluationConfig).resources ?? {}).filter((id) => id.startsWith("review/")),
       ).toEqual(["review/current"]);
       createAppInboxItem(getDb(persistDir), {
         id: requestId,
@@ -1302,7 +1278,7 @@ describe("canonical App task runtime", () => {
           conditions: reused,
         }).status,
       ).toBe("applied");
-      expect(readTaskState(config).resources?.[initial.taskId]?.status.conditionIds).toEqual([conditions[0]!.id]);
+      expect(readTaskSnapshot(config).resources?.[initial.taskId]?.status.conditionIds).toEqual([conditions[0]!.id]);
       await Bun.sleep(10);
       expect(dependencyRequests).toHaveLength(1);
       expect(attachedDependencyTaskCount).toBe(1);
@@ -1367,7 +1343,7 @@ describe("canonical App task runtime", () => {
         data: { kind: "task", id: attachedDependencyTaskId, appId: "evaluation" },
       });
       const progressDeadline = Date.now() + 5_000;
-      while (!readTaskState(config).taskTriggers?.[initial.taskId] && Date.now() < progressDeadline) {
+      while (!readTaskSnapshot(config).taskTriggers?.[initial.taskId] && Date.now() < progressDeadline) {
         await Bun.sleep(5);
       }
       expect(dependencyUpdateEvents).toContainEqual(
@@ -1424,7 +1400,7 @@ describe("canonical App task runtime", () => {
         data: { kind: "task", id: attachedDependencyTaskId },
       });
       const deadline = Date.now() + 5_000;
-      while (!readTaskState(config).taskTriggers?.[initial.taskId] && Date.now() < deadline) {
+      while (!readTaskSnapshot(config).taskTriggers?.[initial.taskId] && Date.now() < deadline) {
         await Bun.sleep(5);
       }
       expect(dependencyEvents).toHaveLength(1);
@@ -1660,7 +1636,7 @@ describe("canonical App task runtime", () => {
       reason: "retry",
     });
     if (retry.kind !== "claimed") throw new Error("expected retry claim");
-    expect(readTaskState(config).resources?.[intent.id]?.status).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.[intent.id]?.status).toMatchObject({
       phase: "running",
       observedGeneration: 1,
       conditionIds: [`app-request:${requestId}`],
@@ -1961,7 +1937,7 @@ describe("canonical App task runtime", () => {
       }),
     ).toThrow("was not accepted by installed App evaluation; the Task remains runnable");
     expect(emitted.some((event) => event.type === "app.input.requested")).toBe(true);
-    expect(Object.keys(readTaskState(config).conditions ?? {})).toEqual([]);
+    expect(Object.keys(readTaskSnapshot(config).conditions ?? {})).toEqual([]);
   });
 
   it("projects the exact ordered claimed event batch into workflow context", () => {
@@ -2206,22 +2182,18 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const legacyConfig = legacyTaskStateConfig({
+    const sourceConfig = appTaskTestContext({
       appDir: f.appDir,
-      projectDir: f.appDir,
-      worker: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
+      lifecycle: "paused",
     });
-    const tree = readTaskState(legacyConfig);
-    tree.project = "sample";
-    tree.project_lifecycle = "paused";
-    saveTaskState(legacyConfig, tree, { projectLifecycleReason: "test migration pause" });
+    const tree = readTaskSnapshot(sourceConfig);
 
     const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
     store.bootstrapSnapshot(tree, "test-source-revision");
     store.setProjectLifecycle("active");
-    rmSync(legacyConfig.statePath);
-    const config = taskReconciliationConfig({
+    const config = appTaskContext({
       appDir: f.appDir,
       projectDir: f.appDir,
       agent: "sample-owner",
@@ -2254,7 +2226,7 @@ describe("canonical App task runtime", () => {
     expect(result.installed).toHaveLength(1);
     expect(result.installed[0]?.resourceStore?.isActive()).toBeTrue();
     expect(result.installed[0]?.reconciliationPaused).toBeFalse();
-    expect(existsSync(legacyConfig.statePath)).toBeFalse();
+    expect(existsSync(projectRuntimePaths(f.appDir).taskStatePath)).toBeFalse();
 
     expect(
       await createAppTaskCapability({ bus }).readDependency({
@@ -2268,7 +2240,7 @@ describe("canonical App task runtime", () => {
       acceptance: ["Dependency reads do not parse legacy state"],
       conditions: [],
     });
-    expect(existsSync(legacyConfig.statePath)).toBeFalse();
+    expect(existsSync(projectRuntimePaths(f.appDir).taskStatePath)).toBeFalse();
   });
 
   it("bootstraps a brand-new App directly into resource authority", async () => {
@@ -2299,12 +2271,9 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const legacy = legacyTaskStateConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      worker: "sample-owner",
-      maxConcurrent: 1,
-    });
+    const historicalStatePath = projectRuntimePaths(f.appDir).taskStatePath;
+    mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+    writeFileSync(historicalStatePath, `${JSON.stringify({ project_lifecycle: "active" })}\n`);
 
     await expect(
       installAppTaskRuntimes({
@@ -2317,38 +2286,35 @@ describe("canonical App task runtime", () => {
         },
       }),
     ).rejects.toThrow("unsupported historical JSON task state");
-    expect(existsSync(legacy.statePath)).toBeTrue();
+    expect(existsSync(historicalStatePath)).toBeTrue();
     expect(AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample")).toBeNull();
   });
 
   it("yields readiness inside one large reconciliation after claim persistence", async () => {
     const f = fixture();
     const bus = eventBus();
-    const sourceConfig = legacyTaskStateConfig({
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      worker: "sample-owner",
-      maxConcurrent: 1,
-    });
     const retainedEvidence = "x".repeat(4 * 1024 * 1024);
-    const seeded = readTaskState(sourceConfig);
-    seeded.receipts = {
-      historical: {
-        metadata: { id: "historical", generation: 1, resourceVersion: 1 },
-        specHash: "historical",
-        parentId: "operations",
-        outcome: "Preserve retained evidence",
-        acceptance: ["Evidence remains immutable"],
-        agent: "sample-owner",
-        handler: "agent:sample-owner",
-        summary: "Historical receipt",
-        evidence: [retainedEvidence],
-        acceptanceBasis: { method: "agent-judgment", evidence: ["historical"] },
-        failureFingerprints: [],
-        completedAt: "2026-08-19T00:00:00.000Z",
-      },
+    const historicalReceipt = {
+      metadata: { id: "historical", generation: 1, resourceVersion: 1 },
+      specHash: "historical",
+      parentId: "operations",
+      outcome: "Preserve retained evidence",
+      acceptance: ["Evidence remains immutable"],
+      owner: "sample-owner",
+      handler: "agent:sample-owner",
+      summary: "Historical receipt",
+      evidence: [retainedEvidence],
+      acceptanceBasis: { method: "agent-judgment" as const, evidence: ["historical"] },
+      failureFingerprints: [],
+      completedAt: "2026-08-19T00:00:00.000Z",
     };
-    saveTaskState(sourceConfig, seeded);
+    const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
+    const sourceConfig = appTaskTestContext({
+      appDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+      tree: { ...seed, receipts: { historical: historicalReceipt } },
+    });
     const config = activateTaskResources(sourceConfig, join(f.root, "state"));
 
     let readinessTurnObserved = false;
@@ -2426,7 +2392,7 @@ describe("canonical App task runtime", () => {
     while (ownerCalls === 0 && Date.now() < deadline) await Bun.sleep(5);
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
-    expect(readTaskState(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
+    expect(readTaskSnapshot(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
   });
 
   it("does not create task worktrees while startup installs and recovers work", async () => {
@@ -2439,10 +2405,9 @@ describe("canonical App task runtime", () => {
     execFileSync("git", ["-C", f.appDir, "add", "."]);
     execFileSync("git", ["-C", f.appDir, "commit", "-m", "baseline"], { stdio: "ignore" });
 
-    const sourceConfig = legacyTaskStateConfig({
+    const sourceConfig = appTaskTestContext({
       appDir: f.appDir,
-      projectDir: f.appDir,
-      worker: "sample-owner",
+      agent: "sample-owner",
       maxConcurrent: 1,
     });
     const config = activateTaskResources(sourceConfig, persistDir);
@@ -2497,12 +2462,12 @@ describe("canonical App task runtime", () => {
     );
 
     expect(existsSync(worktreeRoot)).toBe(false);
-    expect(readTaskState(config).resources?.["work/retry-workspace"]?.status.phase).toBe("attention");
+    expect(readTaskSnapshot(config).resources?.["work/retry-workspace"]?.status.phase).toBe("attention");
 
     await recoverInstalledAppTasks(bus);
 
     expect(existsSync(worktreeRoot)).toBe(false);
-    expect(readTaskState(config).resources?.["work/retry-workspace"]?.status).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.["work/retry-workspace"]?.status).toMatchObject({
       phase: "attention",
       observedGeneration: 1,
     });
@@ -2563,7 +2528,7 @@ describe("canonical App task runtime", () => {
     const recovered = await installAppTaskRuntimes(runtimeOptions, { includeFreshLeases: true });
 
     expect(recovered.installed).toHaveLength(1);
-    expect(readTaskState(config).resources?.["work/resumable"]?.status).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.["work/resumable"]?.status).toMatchObject({
       phase: "pending",
       observedGeneration: 0,
     });
@@ -2719,13 +2684,13 @@ describe("canonical App task runtime", () => {
       });
 
       const receiptDeadline = Date.now() + 2_000;
-      while (!readTaskState(config).receipts?.[intent.id] && Date.now() < receiptDeadline) await Bun.sleep(5);
-      const terminalReceipt = JSON.stringify(readTaskState(config).receipts?.[intent.id]);
+      while (!readTaskSnapshot(config).receipts?.[intent.id] && Date.now() < receiptDeadline) await Bun.sleep(5);
+      const terminalReceipt = JSON.stringify(readTaskSnapshot(config).receipts?.[intent.id]);
       expect(terminalReceipt).not.toBeUndefined();
       expect(await externalReaperExit).toEqual({ code: 0, signal: null });
       await Bun.sleep(700);
       expect(existsSync(staleMutation)).toBe(false);
-      expect(JSON.stringify(readTaskState(config).receipts?.[intent.id])).toBe(terminalReceipt);
+      expect(JSON.stringify(readTaskSnapshot(config).receipts?.[intent.id])).toBe(terminalReceipt);
     } finally {
       try {
         process.kill(-stalePgid, "SIGKILL");
@@ -2808,7 +2773,7 @@ describe("canonical App task runtime", () => {
     expect(readSessionMeta(persistDir, "owner-undrained")?.status).toBe("running");
     expect(existsSync(join(persistDir, "sessions", "owner-undrained", "result.json"))).toBe(false);
     expect(readSessionBashProcessGroups(persistDir, "owner-undrained")).toEqual([424_242]);
-    const afterRecovery = readTaskState(config);
+    const afterRecovery = readTaskSnapshot(config);
     expect(afterRecovery.resources?.[intent.id]?.status.phase).toBe("running");
     expect(afterRecovery.resources?.[intent.id]?.status.currentAttemptId).toBe(claim.attemptId);
     expect(afterRecovery.receipts?.[intent.id]).toBeUndefined();
@@ -2973,7 +2938,7 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
-    while (!readTaskState(config).receipts?.["work/post-claim-superseded"] && Date.now() < deadline) {
+    while (!readTaskSnapshot(config).receipts?.["work/post-claim-superseded"] && Date.now() < deadline) {
       await Bun.sleep(5);
     }
 
@@ -2987,7 +2952,7 @@ describe("canonical App task runtime", () => {
       disposition: "stale",
       staleRecovery: "superseded",
     });
-    expect(readTaskState(config).receipts?.["work/post-claim-superseded"]).toMatchObject({
+    expect(readTaskSnapshot(config).receipts?.["work/post-claim-superseded"]).toMatchObject({
       metadata: { generation: 2 },
       summary: "The replacement generation completed",
     });
@@ -3110,13 +3075,13 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
-    while (!readTaskState(config).receipts?.["work/registered-executor"] && Date.now() < deadline) {
+    while (!readTaskSnapshot(config).receipts?.["work/registered-executor"] && Date.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(calls).toBe(1);
     expect(sawLiveFeedback).toBeTrue();
     expect(published).toHaveLength(1);
-    expect(readTaskState(config).receipts?.["work/registered-executor"]).toMatchObject({
+    expect(readTaskSnapshot(config).receipts?.["work/registered-executor"]).toMatchObject({
       handler: "executor:reviewer",
       executor: "reviewer",
       summary: "Registered executor completed the Task",
@@ -3244,7 +3209,6 @@ describe("canonical App task runtime", () => {
       // Two Task attempts must be able to overlap while the Host still keeps
       // its foreground slot available for a live May conversation.
       hostCapacity: new HostCapacity(3),
-      stateProjectsRoot: join(f.root, "canonical-projects"),
       executors: {
         reviewer: async (attempt: Parameters<TaskExecutor>[0]) => {
           started.push(attempt.task.id);
@@ -3262,8 +3226,6 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: concurrentApp }],
       },
     });
-    expect(installedRelease.installed[0]?.stateAppDir).toBe(join(f.root, "canonical-projects", "sample.app"));
-
     const attach = (taskId: string) =>
       attachLoadedAppTask({
         bus,
@@ -3372,12 +3334,12 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
-    while (!readTaskState(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
+    while (!readTaskSnapshot(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(calls).toBe(1);
     expect(cliRequests).toBe(0);
-    expect(readTaskState(config).receipts?.["work/replacement-executor"]).toMatchObject({
+    expect(readTaskSnapshot(config).receipts?.["work/replacement-executor"]).toMatchObject({
       handler: "executor:codex",
       executor: "codex",
       summary: "Replacement Codex adapter completed the Task",
@@ -3504,11 +3466,11 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 3_000;
-    while (!readTaskState(config).receipts?.["work/resume-codex-goal"] && Date.now() < deadline) {
+    while (!readTaskSnapshot(config).receipts?.["work/resume-codex-goal"] && Date.now() < deadline) {
       await Bun.sleep(5);
     }
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(calls).toBe(2);
     expect(tree.receipts?.["work/resume-codex-goal"]).toMatchObject({
       summary: "The same Task resumed and completed",
@@ -3631,11 +3593,11 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 3_000;
-    while (!readTaskState(config).receipts?.["work/event-storm"] && Date.now() < deadline) await Bun.sleep(5);
+    while (!readTaskSnapshot(config).receipts?.["work/event-storm"] && Date.now() < deadline) await Bun.sleep(5);
 
     expect(calls).toBe(3);
     expect(followUpBatchSizes).toEqual([32, 32]);
-    expect(readTaskState(config).receipts?.["work/event-storm"]).toMatchObject({
+    expect(readTaskSnapshot(config).receipts?.["work/event-storm"]).toMatchObject({
       handler: "executor:storm",
       outcome: "Reconcile every exact feedback event",
       summary: "Event storm was reconciled",
@@ -3646,20 +3608,12 @@ describe("canonical App task runtime", () => {
   it("keeps task admission durable while paused without starting reconciliation", async () => {
     const f = fixture();
     const bus = eventBus();
-    const seedPath = join(f.appDir, "tasks", "seed.json");
-    const seed = JSON.parse(await Bun.file(seedPath).text());
-    const stateDir = join(f.appDir, ".state", "tasks");
-    mkdirSync(stateDir, { recursive: true });
-    writeFileSync(
-      join(stateDir, "state.json"),
-      `${JSON.stringify({ ...seed, project_lifecycle: "paused" }, null, 2)}\n`,
-    );
     activateTaskResources(
-      legacyTaskStateConfig({
+      appTaskTestContext({
         appDir: f.appDir,
-        projectDir: f.appDir,
-        worker: "sample-owner",
+        agent: "sample-owner",
         maxConcurrent: 1,
+        lifecycle: "paused",
       }),
       join(f.root, "state"),
     );
@@ -3727,8 +3681,8 @@ describe("canonical App task runtime", () => {
       id: "work/paused-event",
       status: "pending",
     });
-    const persisted = readTaskState(
-      taskReconciliationConfig({
+    const persisted = readTaskSnapshot(
+      appTaskContext({
         appDir: f.appDir,
         projectDir: f.appDir,
         agent: "sample-owner",
@@ -3769,7 +3723,7 @@ describe("canonical App task runtime", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
     recordAppTaskAttemptSession(config, claim, "session-terminal");
-    const attempt = readTaskState(config).attempts![claim.attemptId];
+    const attempt = readTaskSnapshot(config).attempts![claim.attemptId];
     expect(attempt.handler).toBe("agent:sample-owner");
     expect(Date.parse(attempt.lease!.expiresAt)).toBeGreaterThan(Date.now());
 
@@ -3825,7 +3779,7 @@ describe("canonical App task runtime", () => {
         sessionId: "session-terminal",
       }),
     ).toBeNull();
-    expect(readTaskState(config)).toMatchObject({
+    expect(readTaskSnapshot(config)).toMatchObject({
       resources: {
         [intent.id]: { status: { phase: "waiting" } },
         "work/terminal-child": { spec: { parentId: intent.id } },
@@ -3904,7 +3858,7 @@ describe("canonical App task runtime", () => {
       }),
     ).toBeNull();
     expect(rejection).toContain("multiple actions for work/duplicate-child");
-    expect(readTaskState(config)).toMatchObject({
+    expect(readTaskSnapshot(config)).toMatchObject({
       resources: { [intent.id]: { status: { phase: "running" } } },
       attempts: { [claim.attemptId]: { state: "running", sessionId: "session-invalid-terminal" } },
     });

@@ -210,7 +210,6 @@ export async function runAppRuntime(opts: {
     sharedRoot: opts.sharedRoot,
     definitionSharedRoot: activeAppSource.sharedRoot,
     projectsRoot: activeAppSource.projectsRoot,
-    stateProjectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,

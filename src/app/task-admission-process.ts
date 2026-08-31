@@ -115,7 +115,6 @@ export async function runTaskAdmissionWorker(input: {
   const descriptors = standaloneAppTaskAdmissionDescriptors({
     persistDir: input.persistDir,
     projectsRoot: source.projectsRoot,
-    stateProjectsRoot: input.projectsRoot,
     entries: registry.snapshot().entries,
   });
   const channel = createReadStream("", { fd: 3, autoClose: false });

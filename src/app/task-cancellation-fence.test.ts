@@ -7,8 +7,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { cancelAppTask, claimObservedAppTask } from "./app-task-reconciler.js";
 import { HumanTaskService } from "./human-task-service.js";
-import type { ResourceTaskStateConfig, TaskTree } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 
 const roots: string[] = [];
 
@@ -62,13 +61,10 @@ describe("Task cancellation fence", () => {
     const service = new HumanTaskService(db, {
       snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
     });
-    const paths = projectRuntimePaths(appDir);
-    const config: ResourceTaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "test",
+      agent: "test",
       maxConcurrent: 1,
       resourceStore: store,
     };

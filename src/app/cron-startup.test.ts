@@ -6,6 +6,8 @@ import { join } from "node:path";
 
 import type { PersistedSession } from "../lib/persistence";
 import { shouldResumeStartupSession } from "./cron-startup";
+import { AppTaskResourceStore } from "./app-task-resource-store";
+import { getDb } from "../lib/requests";
 
 function session(appDir: string, source: string, recoveryOwner?: string): PersistedSession {
   return {
@@ -117,16 +119,13 @@ describe("cron startup recovery", () => {
   it("does not resume any background project session while its task tree is paused", () => {
     const projectsRoot = mkdtempSync(join(tmpdir(), "may-paused-projects-"));
     const appDir = join(projectsRoot, "sample.app");
+    const persistDir = join(projectsRoot, "host-state");
     try {
-      const treeDir = join(appDir, ".state", "tasks");
-      mkdirSync(treeDir, { recursive: true });
-      writeFileSync(
-        join(treeDir, "state.json"),
-        `${JSON.stringify({ project_lifecycle: "paused", groups: {}, resources: {} }, null, 2)}\n`,
-      );
+      const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
+      store.bootstrapSnapshot({ project: "sample", project_lifecycle: "paused", groups: {}, resources: {} }, "test");
 
       for (const source of ["workflow:project-planner", "workflow:focus-plan"]) {
-        expect(shouldResumeStartupSession("session-1", session(appDir, source), projectsRoot)).toEqual({
+        expect(shouldResumeStartupSession("session-1", session(appDir, source), projectsRoot, persistDir)).toEqual({
           resume: false,
           reason: expect.stringContaining("Project sample is paused"),
         });
