@@ -4848,7 +4848,7 @@ function discoverAppTaskResourceStore(
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
     throw new Error(
-      `App ${appId} still has legacy task state but no active resource authority; complete the guarded resource cutover before loading it`,
+      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect that evidence outside the Host or restore the canonical resource database`,
     );
   }
 

@@ -179,14 +179,14 @@ export type TaskStateConfig = {
   maxConcurrent: number;
   mutationAuthority?: unknown;
   validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
-  /** Present only after a paused, shadow-compared resource-store cutover. */
+  /** Required by every installed App runtime; absent only in isolated legacy fixtures. */
   resourceStore?: AppTaskResourceStore;
 };
 
 /** Installed App runtimes always use the canonical resource authority. */
 export type ResourceTaskStateConfig = TaskStateConfig & { resourceStore: AppTaskResourceStore };
 
-/** JSON source configuration retained only for offline cutover and fixtures. */
+/** JSON configuration retained only while isolated fixtures migrate to resource authority. */
 export function legacyTaskStateConfig(input: {
   appDir: string;
   projectDir: string;
@@ -375,7 +375,7 @@ export type SaveTaskStateOptions = {
    * saves must preserve lifecycle; they cannot silently pause or resume an app.
    */
   projectLifecycleReason?: string;
-  /** Exact resource rows changed by this transition. Required after cutover. */
+  /** Exact resource rows changed by this transition. Required by resource authority. */
   resourceMutation?: AppTaskResourceMutation;
 };
 
