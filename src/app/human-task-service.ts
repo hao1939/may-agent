@@ -1,8 +1,7 @@
 import type { AppRegistry } from "./app-registry.js";
-import type { AppTaskAttempt, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
+import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
 import type { TaskCompletionReceipt } from "./app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
-import { advanceTaskResourceRevision } from "../lib/db/task-resource-schema.js";
 import {
   displayTaskReferences,
   ensureTaskReferenceIndex,
@@ -104,17 +103,6 @@ type TaskRow = {
 type TaskProgressRow = { data?: string | null; timestamp?: number };
 
 type TaskCursor = { updatedAt: number; appId: string; taskId: string; terminal: number };
-
-type TaskCancellation = {
-  appId: string;
-  taskId: string;
-  generation: number;
-  resourceVersion: number;
-  outcome: string;
-  reason: string;
-  summary: string;
-  cancelledAt: string;
-};
 
 function parseJson<T>(value: string | null | undefined): T | null {
   if (!value) return null;
@@ -408,7 +396,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (!appId || !taskId) return null;
   const terminal = row.terminal !== 0;
   if (row.terminal === 2) {
-    const cancellation = parseJson<TaskCancellation>(row.payload);
+    const cancellation = parseJson<AppTaskCancellation>(row.payload);
     if (!cancellation) return null;
     const view: HumanTaskView = {
       appId,
@@ -625,9 +613,6 @@ export class HumanTaskService {
   constructor(
     private readonly db: SqliteDb,
     private readonly registry: Pick<AppRegistry, "snapshot">,
-    private readonly options: {
-      onCancelled?: (input: { appId: string; taskId: string; attemptId?: string; reason: string }) => void;
-    } = {},
   ) {
     ensureTaskReferenceIndex(db);
   }
@@ -860,176 +845,5 @@ export class HumanTaskService {
     if (conditions.length > 0) return withHumanAction(detail, conditions);
     const inheritedAction = descendantHumanAction(this.db, detail);
     return inheritedAction ? { ...detail, humanAction: inheritedAction } : detail;
-  }
-
-  cancelTask(input: {
-    ref?: string;
-    appId?: string;
-    taskId?: string;
-    reason?: string;
-    expectedGeneration?: number;
-    expectedResourceVersion?: number;
-    controlKey?: string;
-  }): HumanTaskView {
-    const resolved = this.getTask(input);
-    if (!resolved) throw new Error("Task was not found");
-    let cancelledAttemptId: string | undefined;
-    let reason = input.reason?.trim() || "human requested cancellation";
-    this.db.exec("BEGIN IMMEDIATE");
-    try {
-      if (input.controlKey) {
-        const prior = this.db
-          .prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = ?")
-          .get(input.controlKey) as { receipt_json?: string } | null;
-        if (prior?.receipt_json) {
-          const receipt = parseJson<{
-            action?: string;
-            appId?: string;
-            taskId?: string;
-            expectedGeneration?: number;
-            expectedResourceVersion?: number;
-          }>(prior.receipt_json);
-          if (
-            receipt?.action !== "cancel" ||
-            receipt.appId !== resolved.appId ||
-            receipt.taskId !== resolved.taskId ||
-            receipt.expectedGeneration !== input.expectedGeneration ||
-            receipt.expectedResourceVersion !== input.expectedResourceVersion
-          ) {
-            throw new Error(`Task control key ${input.controlKey} was already used for a different operation`);
-          }
-          this.db.exec("COMMIT");
-          return this.getTask({ appId: resolved.appId, taskId: resolved.taskId })!;
-        }
-      }
-      const current = this.getTask({ appId: resolved.appId, taskId: resolved.taskId });
-      if (!current) throw new Error("Task disappeared before cancellation");
-      if (input.expectedGeneration !== undefined && current.generation !== input.expectedGeneration) {
-        throw new Error(
-          `Task ${current.ref} generation changed: expected ${input.expectedGeneration}, current ${current.generation}`,
-        );
-      }
-      if (input.expectedResourceVersion !== undefined && current.resourceVersion !== input.expectedResourceVersion) {
-        throw new Error(
-          `Task ${current.ref} resource version changed: expected ${input.expectedResourceVersion}, current ${current.resourceVersion}`,
-        );
-      }
-      if (current.status === "cancelled") {
-        this.db.exec("COMMIT");
-        return current;
-      }
-      if (current.terminal) throw new Error(`Task ${current.ref} is already terminal`);
-      if (!current.cancellable) {
-        throw new Error(`Task ${current.ref} is maintained and does not allow generic cancellation`);
-      }
-
-      const now = Date.now();
-      const cancelledAt = new Date(now).toISOString();
-      const taskRow = this.db
-        .prepare("SELECT resource_json, current_attempt_id FROM app_tasks WHERE app_id = ? AND task_id = ?")
-        .get(current.appId, current.taskId) as { resource_json?: string; current_attempt_id?: string | null } | null;
-      const resource = parseJson<AppTaskResource>(taskRow?.resource_json);
-      if (!resource || resource.metadata.resourceVersion !== current.resourceVersion) {
-        throw new Error("Task changed before cancellation; read it again and retry");
-      }
-      const attemptId = taskRow?.current_attempt_id ?? undefined;
-      const attemptRow = attemptId
-        ? (this.db
-            .prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
-            .get(current.appId, attemptId) as { attempt_json?: string } | null)
-        : null;
-      const attempt = parseJson<AppTaskAttempt>(attemptRow?.attempt_json);
-      const nextVersion = resource.metadata.resourceVersion + 1;
-      const summary = `Cancelled by human: ${reason}`;
-      const cancellation: TaskCancellation = {
-        appId: current.appId,
-        taskId: current.taskId,
-        generation: resource.metadata.generation,
-        resourceVersion: nextVersion,
-        outcome: resource.spec.outcome,
-        reason,
-        summary,
-        cancelledAt,
-      };
-      resource.metadata.resourceVersion = nextVersion;
-      resource.status.phase = "attention";
-      resource.status.currentAttemptId = undefined;
-      resource.status.summary = summary;
-      resource.status.updatedAt = cancelledAt;
-      if (attempt) {
-        attempt.metadata.resourceVersion += 1;
-        attempt.state = "interrupted";
-        attempt.reason = summary;
-        attempt.summary = summary;
-        attempt.finishedAt = cancelledAt;
-      }
-
-      this.db
-        .prepare(
-          `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
-         VALUES (?, ?, ?, ?, ?)`,
-        )
-        .run(current.appId, current.taskId, now, reason, JSON.stringify(cancellation));
-      const updated = this.db
-        .prepare(
-          `UPDATE app_tasks SET resource_version = ?, phase = 'attention', changed = 0, ready = 0,
-           next_check_at = NULL, lease_until = NULL, current_attempt_id = NULL, updated_at = ?,
-           resource_json = ?, trigger_json = NULL
-         WHERE app_id = ? AND task_id = ? AND resource_version = ?`,
-        )
-        .run(nextVersion, now, JSON.stringify(resource), current.appId, current.taskId, current.resourceVersion);
-      if (updated.changes !== 1) throw new Error("Task changed before cancellation; read it again and retry");
-      if (attempt) {
-        this.db
-          .prepare(
-            `UPDATE app_task_attempts SET state = 'interrupted', lease_until = NULL, attempt_json = ?
-           WHERE app_id = ? AND attempt_id = ?`,
-          )
-          .run(JSON.stringify(attempt), current.appId, attempt.metadata.id);
-      }
-      if (input.controlKey) {
-        const receipt = {
-          controlKey: input.controlKey,
-          appId: current.appId,
-          taskId: current.taskId,
-          action: "cancel",
-          expectedGeneration: input.expectedGeneration ?? current.generation,
-          expectedResourceVersion: input.expectedResourceVersion ?? current.resourceVersion,
-          appliedResourceVersion: nextVersion,
-          appliedAt: now,
-        };
-        this.db
-          .prepare(
-            `INSERT INTO app_task_control_receipts(
-               control_key, app_id, task_id, action, expected_generation,
-               expected_resource_version, applied_resource_version, applied_at, receipt_json
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(
-            receipt.controlKey,
-            receipt.appId,
-            receipt.taskId,
-            receipt.action,
-            receipt.expectedGeneration,
-            receipt.expectedResourceVersion,
-            receipt.appliedResourceVersion,
-            receipt.appliedAt,
-            JSON.stringify(receipt),
-          );
-      }
-      advanceTaskResourceRevision(this.db, current.appId);
-      cancelledAttemptId = attempt?.metadata.id;
-      this.db.exec("COMMIT");
-    } catch (error) {
-      this.db.exec("ROLLBACK");
-      throw error;
-    }
-    this.options.onCancelled?.({
-      appId: resolved.appId,
-      taskId: resolved.taskId,
-      ...(cancelledAttemptId ? { attemptId: cancelledAttemptId } : {}),
-      reason,
-    });
-    return this.getTask({ appId: resolved.appId, taskId: resolved.taskId })!;
   }
 }

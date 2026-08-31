@@ -5,9 +5,10 @@ import { tmpdir } from "node:os";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { claimObservedAppTask } from "./app-task-reconciler.js";
+import { cancelAppTask, claimObservedAppTask } from "./app-task-reconciler.js";
 import { HumanTaskService } from "./human-task-service.js";
-import type { TaskStateConfig, TaskTree } from "./app-task-store.js";
+import type { ResourceTaskStateConfig, TaskTree } from "./app-task-store.js";
+import { projectRuntimePaths } from "./app-task-runtime-state.js";
 
 const roots: string[] = [];
 
@@ -59,18 +60,23 @@ describe("Task cancellation fence", () => {
     const retainedEvent = db
       .prepare("SELECT event_json FROM app_task_events WHERE app_id = 'sample' AND task_id = 'work'")
       .get();
-    let cancellationSignals = 0;
-    const service = new HumanTaskService(
-      db,
-      {
-        snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
-      },
-      { onCancelled: () => cancellationSignals++ },
-    );
+    const service = new HumanTaskService(db, {
+      snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
+    });
+    const paths = projectRuntimePaths(appDir);
+    const config: ResourceTaskStateConfig = {
+      appDir,
+      projectDir,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "test",
+      maxConcurrent: 1,
+      resourceStore: store,
+    };
     const before = service.getTask({ appId: "sample", taskId: "work" });
     if (!before) throw new Error("expected Task before cancellation");
     expect(() =>
-      service.cancelTask({
+      cancelAppTask(config, {
         appId: "sample",
         taskId: "work",
         reason: "stale control",
@@ -86,9 +92,8 @@ describe("Task cancellation fence", () => {
       expectedResourceVersion: before.resourceVersion,
       controlKey: "app-task-cancel:sample:work:1:1",
     };
-    service.cancelTask(control);
-    service.cancelTask(control);
-    expect(cancellationSignals).toBe(1);
+    expect(cancelAppTask(config, control).applied).toBeTrue();
+    expect(cancelAppTask(config, control).applied).toBeFalse();
     expect(
       db.prepare("SELECT action FROM app_task_control_receipts WHERE control_key = ?").get(control.controlKey),
     ).toEqual({ action: "cancel" });
@@ -101,15 +106,6 @@ describe("Task cancellation fence", () => {
        WHERE app_id = 'sample' AND task_id = 'work'`,
     ).run();
 
-    const config: TaskStateConfig = {
-      appDir,
-      projectDir,
-      statePath: join(appDir, ".state", "tasks.json"),
-      journalPath: join(appDir, ".state", "tasks.jsonl"),
-      worker: "test",
-      maxConcurrent: 1,
-      resourceStore: store,
-    };
     expect(
       claimObservedAppTask(config, {
         taskId: "work",

@@ -3,6 +3,8 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { cancelAppTask } from "./app-task-reconciler.js";
+import type { ResourceTaskStateConfig } from "./app-task-store.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 import {
   ensureTaskReferenceIndex,
@@ -79,6 +81,22 @@ function insertTask(
        changed, ready, updated_at, resource_json
      ) VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, ?, ?, ?)`,
   ).run(input.appId, input.taskId, input.phase, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource));
+}
+
+function taskConfig(db: SqliteDb, store: AppTaskResourceStore, appId: string): ResourceTaskStateConfig {
+  db.prepare(
+    `INSERT OR REPLACE INTO app_task_store_meta(app_id, key, value)
+     VALUES (?, 'app_metadata', ?)`,
+  ).run(appId, JSON.stringify({ version: 1, project: appId, project_lifecycle: "active", root_task_id: "root" }));
+  return {
+    appDir: `/tmp/${appId}.app`,
+    projectDir: `/tmp/${appId}`,
+    statePath: `/tmp/${appId}.app/.state/tasks/state.json`,
+    journalPath: `/tmp/${appId}.app/.state/journal.jsonl`,
+    worker: "test",
+    maxConcurrent: 1,
+    resourceStore: store,
+  };
 }
 
 test("shows every live Task regardless of descriptive category", () => {
@@ -814,27 +832,28 @@ describe("Human Task service", () => {
     db.prepare(
       "UPDATE app_tasks SET current_attempt_id = 'attempt-1', resource_json = ? WHERE app_id = 'alpha' AND task_id = 'work'",
     ).run(JSON.stringify(resource));
-    const cancelled: unknown[] = [];
-    const service = new HumanTaskService(db, registry("alpha"), {
-      onCancelled: (input) => cancelled.push(input),
-    });
+    const service = new HumanTaskService(db, registry("alpha"));
     const store = AppTaskResourceStore.fromDb(db, "alpha");
     const revision = store.revision();
-
-    const result = service.cancelTask({
-      ref: taskReferenceDigest("alpha", "work").slice(0, 8),
+    const before = service.getTask({ ref: taskReferenceDigest("alpha", "work").slice(0, 8) });
+    if (!before) throw new Error("expected Task before cancellation");
+    const control = {
+      appId: "alpha",
+      taskId: "work",
+      expectedGeneration: before.generation,
+      expectedResourceVersion: before.resourceVersion,
       reason: "no longer needed",
-    });
+      controlKey: "cancel:alpha:work:2:3",
+    };
 
-    expect(result).toMatchObject({ status: "cancelled", terminal: true, cancellable: false });
-    expect(cancelled).toEqual([
-      {
-        appId: "alpha",
-        taskId: "work",
-        attemptId: "attempt-1",
-        reason: "no longer needed",
-      },
-    ]);
+    const result = cancelAppTask(taskConfig(db, store, "alpha"), control);
+
+    expect(result).toMatchObject({ applied: true, cancelledAttemptId: "attempt-1" });
+    expect(service.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
+      status: "cancelled",
+      terminal: true,
+      cancellable: false,
+    });
     expect(service.listTasks().items).toEqual([]);
     expect(service.listTasks({ includeDone: true }).items).toEqual([
       expect.objectContaining({ taskId: "work", status: "cancelled" }),
@@ -843,16 +862,24 @@ describe("Human Task service", () => {
       state: "interrupted",
     });
     expect(store.revision()).toBe(revision + 1);
-    expect(service.cancelTask({ appId: "alpha", taskId: "work" })).toMatchObject({ status: "cancelled" });
-    expect(cancelled).toHaveLength(1);
+    expect(cancelAppTask(taskConfig(db, store, "alpha"), control).applied).toBeFalse();
   });
 
   test("refuses generic cancellation for maintained responsibilities", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10, mode: "maintain" });
     const service = new HumanTaskService(db, registry("alpha"));
-    expect(() => service.cancelTask({ appId: "alpha", taskId: "watch" })).toThrow(
-      "does not allow generic cancellation",
-    );
+    const current = service.getTask({ appId: "alpha", taskId: "watch" });
+    if (!current) throw new Error("expected maintained Task");
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    expect(() =>
+      cancelAppTask(taskConfig(db, store, "alpha"), {
+        appId: "alpha",
+        taskId: "watch",
+        expectedGeneration: current.generation,
+        expectedResourceVersion: current.resourceVersion,
+        reason: "stop",
+      }),
+    ).toThrow("does not allow generic cancellation");
   });
 });

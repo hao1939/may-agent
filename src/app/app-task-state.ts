@@ -98,6 +98,18 @@ export type AppTaskAttempt = {
   workspace?: AppTaskWorkspace;
 };
 
+/** Immutable terminal evidence that an operator cancelled one exact Task generation. */
+export type AppTaskCancellation = {
+  appId: string;
+  taskId: string;
+  generation: number;
+  resourceVersion: number;
+  outcome: string;
+  reason: string;
+  summary: string;
+  cancelledAt: string;
+};
+
 export type AppTaskTrigger = {
   taskId: string;
   taskGeneration: number;
