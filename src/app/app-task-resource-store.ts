@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { basename } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
-import { getDb } from "../lib/requests.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
 import type {
@@ -15,12 +12,9 @@ import type {
 import {
   normalizeTaskStateInPlace,
   normalizeTaskGroup,
-  readTaskState,
-  withTaskStateLock,
   type AppTaskAdmission,
   type TaskCompletionReceipt,
   type TaskGroup,
-  type TaskStateConfig,
   type TaskTree,
 } from "./app-task-store.js";
 
@@ -170,7 +164,7 @@ export class AppTaskResourceStore {
     return new AppTaskResourceStore(db, normalized, false);
   }
 
-  /** Discover an already-cut-over App without creating or activating state. */
+  /** Discover an active App without creating or activating state. */
   static activeFromDb(db: SqliteDb, appId: string): AppTaskResourceStore | null {
     const normalized = appId.trim().replace(/\.app$/, "");
     if (!normalized) return null;
@@ -289,24 +283,20 @@ export class AppTaskResourceStore {
     }
   }
 
-  importPausedSnapshot(
+  /** Atomically establish resource authority for a brand-new App seed. */
+  bootstrapSnapshot(
     treeInput: TaskTree,
     sourceRevision: string,
     readyTaskIds: Iterable<string> = [],
-    options: { activate?: boolean; finalLifecycle?: "active" | "paused" } = {},
   ): void {
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
-    if (tree.project_lifecycle !== "paused") throw new Error("Task resource import requires project_lifecycle=paused");
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
       throw new Error(`Task snapshot project ${tree.project} does not match App ${this.appId}`);
     }
     const ready = new Set(readyTaskIds);
     transaction(this.db, () => {
       const currentAuthority = this.meta("authority");
-      if (currentAuthority === "resources") {
-        throw new Error(`Task resource authority for ${this.appId} is already active`);
-      }
-      if (options.activate && currentAuthority) {
+      if (currentAuthority) {
         throw new Error(`Task resource bootstrap for ${this.appId} found existing ${currentAuthority} authority`);
       }
       for (const table of [
@@ -396,24 +386,15 @@ export class AppTaskResourceStore {
           version: tree.version,
           project: tree.project,
           updated_at: tree.updated_at,
-          project_lifecycle: options.finalLifecycle ?? tree.project_lifecycle,
+          project_lifecycle: tree.project_lifecycle === "paused" ? "paused" : "active",
           root_task_id: tree.root_task_id,
         }),
       );
       this.setMeta("source_revision", sourceRevision);
-      this.setMeta("imported_at", new Date().toISOString());
-      this.setMeta("authority", options.activate ? "resources" : "shadow");
-      if (options.activate) this.setMeta("activated_at", new Date().toISOString());
+      this.setMeta("authority", "resources");
+      this.setMeta("activated_at", new Date().toISOString());
       this.bumpRevision();
     });
-  }
-
-  /** Atomically establish resource authority for a brand-new App seed. */
-  bootstrapSnapshot(treeInput: TaskTree, sourceRevision: string): void {
-    const tree = structuredClone(treeInput);
-    const finalLifecycle = tree.project_lifecycle === "paused" ? "paused" : "active";
-    tree.project_lifecycle = "paused";
-    this.importPausedSnapshot(tree, sourceRevision, [], { activate: true, finalLifecycle });
   }
 
   sourceRevision(): string | null {
@@ -431,19 +412,6 @@ export class AppTaskResourceStore {
 
   private bumpRevision(): void {
     advanceTaskResourceRevision(this.db, this.appId);
-  }
-
-  activate(expectedSourceRevision: string): void {
-    transaction(this.db, () => {
-      const sourceRevision = this.sourceRevision();
-      if (!sourceRevision || sourceRevision !== expectedSourceRevision) {
-        throw new Error(
-          `Task resource activation revision mismatch: expected ${expectedSourceRevision}, found ${sourceRevision ?? "none"}`,
-        );
-      }
-      this.setMeta("authority", "resources");
-      this.setMeta("activated_at", new Date().toISOString());
-    });
   }
 
   setProjectLifecycle(lifecycle: "active" | "paused"): void {
@@ -1400,64 +1368,4 @@ export class AppTaskResourceStore {
     return changed;
   }
 
-  shadowCompare(treeInput: TaskTree): string[] {
-    const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
-    const snapshot = this.readSnapshot();
-    const mismatches: string[] = [];
-    const registries: Array<[string, unknown, unknown]> = [
-      ["resources", tree.resources ?? {}, snapshot.resources ?? {}],
-      ["triggers", tree.taskTriggers ?? {}, snapshot.taskTriggers ?? {}],
-      ["attempts", tree.attempts ?? {}, snapshot.attempts ?? {}],
-      ["conditions", tree.conditions ?? {}, snapshot.conditions ?? {}],
-      ["receipts", tree.receipts ?? {}, snapshot.receipts ?? {}],
-      ["groups", tree.groups ?? {}, snapshot.groups ?? {}],
-      ["admissions", tree.appTaskAdmissions ?? {}, snapshot.appTaskAdmissions ?? {}],
-    ];
-    for (const [name, source, stored] of registries) if (json(source) !== json(stored)) mismatches.push(name);
-    if (tree.project !== snapshot.project) mismatches.push("metadata:project");
-    if (tree.project_lifecycle !== snapshot.project_lifecycle) mismatches.push("metadata:lifecycle");
-    if (tree.root_task_id !== snapshot.root_task_id) mismatches.push("metadata:root-task");
-    return mismatches.sort();
-  }
-}
-
-function appIdFor(config: TaskStateConfig, tree: TaskTree): string {
-  return (tree.project?.trim() || basename(config.appDir).replace(/\.app$/, "")).replace(/\.app$/, "");
-}
-
-export function importPausedTaskStateToResourceStore(
-  config: TaskStateConfig,
-  persistDir: string,
-  readyTaskIds: Iterable<string> = [],
-  options: { activate?: boolean; expectedSourceRevision?: string } = {},
-): { appId: string; sourceRevision: string; mismatches: string[] } {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    const runningAttempts = Object.values(tree.attempts ?? {}).filter((attempt) => attempt.state === "running");
-    if (runningAttempts.length) {
-      throw new Error(
-        `Task resource migration requires drained attempts; still running: ${runningAttempts
-          .slice(0, 8)
-          .map((attempt) => attempt.metadata.id)
-          .join(", ")}`,
-      );
-    }
-    const sourceRevision = createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
-    if (options.expectedSourceRevision && sourceRevision !== options.expectedSourceRevision) {
-      throw new Error(
-        `Task resource source revision mismatch: expected ${options.expectedSourceRevision}, found ${sourceRevision}`,
-      );
-    }
-    const appId = appIdFor(config, tree);
-    const store = AppTaskResourceStore.fromDb(getDb(persistDir), appId);
-    store.importPausedSnapshot(tree, sourceRevision, readyTaskIds);
-    const mismatches = store.shadowCompare(tree);
-    if (options.activate) {
-      if (mismatches.length) throw new Error(`Task resource shadow comparison failed: ${mismatches.join(", ")}`);
-      const currentRevision = createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
-      if (currentRevision !== sourceRevision) throw new Error("Task state changed during resource activation");
-      store.activate(sourceRevision);
-    }
-    return { appId, sourceRevision, mismatches };
-  });
 }

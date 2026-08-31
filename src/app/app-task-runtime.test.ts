@@ -153,8 +153,7 @@ function activateTaskResources(config: TaskStateConfig, persistDir: string, appI
   tree.project_lifecycle = "paused";
   const sourceRevision = `test:${appId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
   const staging = AppTaskResourceStore.fromDb(getDb(persistDir), appId);
-  staging.importPausedSnapshot(tree, sourceRevision);
-  staging.activate(sourceRevision);
+  staging.bootstrapSnapshot(tree, sourceRevision);
   staging.setProjectLifecycle(finalLifecycle);
   rmSync(config.statePath, { force: true });
   const active = AppTaskResourceStore.activeFromDb(getDb(persistDir), appId);
@@ -2219,8 +2218,7 @@ describe("canonical App task runtime", () => {
     saveTaskState(legacyConfig, tree, { projectLifecycleReason: "test migration pause" });
 
     const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
-    store.importPausedSnapshot(tree, "test-source-revision");
-    store.activate("test-source-revision");
+    store.bootstrapSnapshot(tree, "test-source-revision");
     store.setProjectLifecycle("active");
     rmSync(legacyConfig.statePath);
     const config = taskReconciliationConfig({
@@ -2297,7 +2295,7 @@ describe("canonical App task runtime", () => {
     expect(existsSync(statePath)).toBeFalse();
   });
 
-  it("refuses an existing legacy App until its resource cutover is complete", async () => {
+  it("refuses historical JSON state without canonical resource authority", async () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -2318,7 +2316,7 @@ describe("canonical App task runtime", () => {
           entries: [{ appDir: f.appDir, definition: definition() }],
         },
       }),
-    ).rejects.toThrow("complete the guarded resource cutover");
+    ).rejects.toThrow("unsupported historical JSON task state");
     expect(existsSync(legacy.statePath)).toBeTrue();
     expect(AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample")).toBeNull();
   });
