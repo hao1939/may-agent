@@ -93,6 +93,7 @@ describe("App task Condition review checkpoint", () => {
       type: "review.completed",
       subject: "task:external-review",
       expected: "done",
+      owner: "app:external-review",
       reviewAfterMs: 60_000,
     };
 
@@ -141,6 +142,7 @@ describe("App task Condition review checkpoint", () => {
       type: "review.completed",
       subject: "task:external-review",
       expected: "done",
+      owner: "app:external-review",
       reviewAfterMs: 60_000,
     };
 
@@ -177,7 +179,7 @@ describe("App task Condition review checkpoint", () => {
     expect(config.resourceStore.nextDueAt()).not.toBeNull();
   });
 
-  it("clears an obsolete recovery date when an event-driven Condition has no review", () => {
+  it("replaces an obsolete recovery date with the declared review checkpoint", () => {
     const config = fixture();
     const store = config.resourceStore;
 
@@ -191,6 +193,8 @@ describe("App task Condition review checkpoint", () => {
           type: "approval.submitted",
           subject: "approval:may-ground-truth",
           expected: { field: "status", equals: "submitted" },
+          owner: "human:operator",
+          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -209,7 +213,7 @@ describe("App task Condition review checkpoint", () => {
       }),
     ).toMatchObject({ kind: "waiting", conditionIds: ["approval-submitted"] });
     expect(store.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain("human-request");
-    expect(store.nextDueAt()).toBeNull();
+    expect(store.nextDueAt()).toBeGreaterThan(Date.now());
     store.close();
   });
 });

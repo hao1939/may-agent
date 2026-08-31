@@ -35,7 +35,9 @@ export type Condition = {
   expected: unknown;
   /** Plain-language action shown when this Condition explicitly belongs to a human. */
   requestedAction?: string;
+  /** Required on newly admitted waits; optional here so historical Conditions remain readable. */
   owner?: string;
+  /** Required on newly admitted waits; elapsed time never makes the Condition true. */
   reviewAfterMs?: number;
 };
 

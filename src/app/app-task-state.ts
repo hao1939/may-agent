@@ -12,6 +12,7 @@ export type AppTaskCondition = {
     generation: number;
     resourceVersion: number;
   };
+  /** Historical rows may predate required owner and recovery-checkpoint admission. */
   spec: Omit<Condition, "id">;
   status: {
     observedGeneration: number;

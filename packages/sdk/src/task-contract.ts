@@ -99,8 +99,8 @@ export const conditionSchema = Type.Object(
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
     requestedAction: Type.Optional(nonEmptyStringSchema),
-    owner: Type.Optional(nonEmptyStringSchema),
-    reviewAfterMs: Type.Optional(Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS })),
+    owner: nonEmptyStringSchema,
+    reviewAfterMs: Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS }),
   },
   { additionalProperties: false },
 );
@@ -451,12 +451,15 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   if (!requestedAction.ok) {
     return `conditions[${index}].requestedAction must be a non-empty string when present`;
   }
-  const owner = optionalString(value, "owner");
-  if (!owner.ok) return `conditions[${index}].owner must be a non-empty string when present`;
+  const owner = normalizedString(value.owner);
+  if (!owner) return `conditions[${index}].owner must be a canonical non-empty identity`;
+  if (!/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
+    return `conditions[${index}].owner must be a canonical kind:identity`;
+  }
   const reviewAfterMs = value.reviewAfterMs;
   if (
-    reviewAfterMs !== undefined &&
-    (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS)
+    !Number.isInteger(reviewAfterMs) ||
+    Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS
   ) {
     return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`;
   }
@@ -466,8 +469,8 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     subject,
     expected: structuredClone(value.expected),
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
-    ...(owner.value ? { owner: owner.value } : {}),
-    ...(reviewAfterMs !== undefined ? { reviewAfterMs: Number(reviewAfterMs) } : {}),
+    owner,
+    reviewAfterMs: Number(reviewAfterMs),
   };
 }
 

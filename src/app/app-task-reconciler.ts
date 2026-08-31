@@ -931,8 +931,8 @@ function materializeWaitingConditions(
       subject: raw.subject.trim(),
       expected: raw.expected,
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
-      ...(raw.owner?.trim() ? { owner: raw.owner.trim() } : {}),
-      ...(raw.reviewAfterMs !== undefined ? { reviewAfterMs: raw.reviewAfterMs } : {}),
+      owner: raw.owner!.trim(),
+      reviewAfterMs: raw.reviewAfterMs!,
     };
     const current = registry[id];
     const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
@@ -3559,10 +3559,13 @@ function validateConditions(
     if (condition.requestedAction !== undefined) {
       requireNonEmptyString(condition.requestedAction, `Handler result Condition ${identity} requestedAction`);
     }
+    const owner = requireNonEmptyString(condition.owner, `Handler result Condition ${identity} owner`);
+    if (!/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
+      throw new Error(`Handler result Condition ${identity} owner must be a canonical kind:identity`);
+    }
     if (
-      condition.reviewAfterMs !== undefined &&
-      (!Number.isInteger(condition.reviewAfterMs) ||
-        Number(condition.reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS)
+      !Number.isInteger(condition.reviewAfterMs) ||
+      Number(condition.reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS
     ) {
       throw new Error(
         `Handler result Condition ${identity} reviewAfterMs must be an integer of at least ${MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS}`,

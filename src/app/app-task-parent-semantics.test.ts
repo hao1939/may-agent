@@ -198,6 +198,8 @@ describe("App task parent semantics", () => {
           type: "sample.child.observed",
           subject: "task:child",
           expected: "done",
+          owner: "app:sample-observer",
+          reviewAfterMs: 60_000,
         },
       ],
     });
