@@ -14,6 +14,7 @@ import type { AppRegistrySnapshot } from "./app-registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   attachLoadedAppTask,
+  cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
   getLoadedAppTaskView,
@@ -64,6 +65,14 @@ export type AppTaskCapability = {
     expectedResourceVersion: number;
     controlKey?: string;
   }): ReturnType<typeof retryLoadedFailedAppTask>;
+  cancel(input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+    expectedResourceVersion: number;
+    reason: string;
+    controlKey?: string;
+  }): ReturnType<typeof cancelLoadedAppTask>;
   publishGeneration(input: {
     snapshot: AppRegistrySnapshot;
     definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
@@ -139,6 +148,16 @@ export function createAppTaskCapability(options: {
         taskId,
         expectedGeneration,
         expectedResourceVersion,
+        ...(controlKey ? { controlKey } : {}),
+      }),
+    cancel: ({ appId, taskId, expectedGeneration, expectedResourceVersion, reason, controlKey }) =>
+      cancelLoadedAppTask({
+        bus: options.bus,
+        appId,
+        taskId,
+        expectedGeneration,
+        expectedResourceVersion,
+        reason,
         ...(controlKey ? { controlKey } : {}),
       }),
   };

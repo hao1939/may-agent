@@ -23,6 +23,7 @@ import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
 import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
+  AppTaskCancellation,
   AppTaskResource as AppTaskResource,
   AppTaskTrigger as AppTaskTrigger,
   AppTaskTriggerEvent,
@@ -2522,6 +2523,135 @@ export function retryFailedAppTask(
       },
     });
     return receipt;
+  });
+}
+
+export type AppTaskCancellationResult = {
+  cancellation: AppTaskCancellation;
+  cancelledAttemptId?: string;
+  applied: boolean;
+};
+
+/** Cancel one exact Task through the same fenced resource authority used by reconciliation. */
+export function cancelAppTask(
+  config: ResourceTaskStateConfig,
+  input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+    expectedResourceVersion: number;
+    reason: string;
+    controlKey?: string;
+  },
+): AppTaskCancellationResult {
+  return withTaskStateLock(config, () => {
+    if (input.appId !== config.resourceStore.appId) {
+      throw new Error(`Task cancellation belongs to another App: ${input.appId}`);
+    }
+    const priorControl = input.controlKey ? config.resourceStore.readControlReceipt(input.controlKey) : null;
+    if (priorControl) {
+      if (
+        priorControl.action !== "cancel" ||
+        priorControl.appId !== input.appId ||
+        priorControl.taskId !== input.taskId ||
+        priorControl.expectedGeneration !== input.expectedGeneration ||
+        priorControl.expectedResourceVersion !== input.expectedResourceVersion
+      ) {
+        throw new Error(`Task control key ${input.controlKey} was already used for a different operation`);
+      }
+      const cancellation = config.resourceStore.readCancellation(input.taskId);
+      if (!cancellation) throw new Error(`Task cancellation receipt ${input.controlKey} has no terminal evidence`);
+      return { cancellation, applied: false };
+    }
+
+    const existingCancellation = config.resourceStore.readCancellation(input.taskId);
+    if (existingCancellation) {
+      if (
+        existingCancellation.generation !== input.expectedGeneration ||
+        existingCancellation.resourceVersion !== input.expectedResourceVersion + 1
+      ) {
+        throw new Error(`Task ${input.appId}/${input.taskId} was already cancelled at another version`);
+      }
+      return { cancellation: existingCancellation, applied: false };
+    }
+
+    const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
+    const resource = tree.resources?.[input.taskId];
+    if (!resource) throw new Error(`Task ${input.appId}/${input.taskId} was not found`);
+    if (resource.metadata.generation !== input.expectedGeneration) {
+      throw new Error(
+        `Task ${input.appId}/${input.taskId} generation changed: expected ${input.expectedGeneration}, current ${resource.metadata.generation}`,
+      );
+    }
+    if (resource.metadata.resourceVersion !== input.expectedResourceVersion) {
+      throw new Error(
+        `Task ${input.appId}/${input.taskId} resource version changed: expected ${input.expectedResourceVersion}, current ${resource.metadata.resourceVersion}`,
+      );
+    }
+    if (tree.receipts?.[input.taskId]) throw new Error(`Task ${input.appId}/${input.taskId} is already terminal`);
+    if (resource.spec.mode === "maintain") {
+      throw new Error(`Task ${input.appId}/${input.taskId} is maintained and does not allow generic cancellation`);
+    }
+
+    const reason = input.reason.trim() || "human requested cancellation";
+    const cancelledAt = new Date().toISOString();
+    const summary = `Cancelled by human: ${reason}`;
+    const mutationScope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
+    const cancelledAttemptId = resource.status.currentAttemptId;
+    const attempt = cancelledAttemptId ? tree.attempts?.[cancelledAttemptId] : undefined;
+    if (attempt) {
+      finishAttempt(tree, resource, "interrupted", summary, cancelledAt);
+      attempt.reason = summary;
+      attempt.lease = undefined;
+    }
+    if (tree.taskTriggers) delete tree.taskTriggers[input.taskId];
+    const conditionIds = [...(resource.status.conditionIds ?? [])];
+    touchResource(resource, {
+      phase: "attention",
+      observedGeneration: resource.metadata.generation,
+      currentAttemptId: undefined,
+      summary,
+      conditionIds: [],
+    });
+    resource.status.updatedAt = cancelledAt;
+    const cancellation: AppTaskCancellation = {
+      appId: input.appId,
+      taskId: input.taskId,
+      generation: resource.metadata.generation,
+      resourceVersion: resource.metadata.resourceVersion,
+      outcome: resource.spec.outcome,
+      reason,
+      summary,
+      cancelledAt,
+    };
+    saveTaskState(config, tree, {
+      resourceMutation: {
+        ...finishResourceMutationScope(mutationScope, tree),
+        cancellations: [cancellation],
+        pruneConditionIds: conditionIds,
+        ...(input.controlKey
+          ? {
+              controlReceipts: [
+                {
+                  controlKey: input.controlKey,
+                  appId: input.appId,
+                  taskId: input.taskId,
+                  action: "cancel" as const,
+                  expectedGeneration: input.expectedGeneration,
+                  expectedResourceVersion: input.expectedResourceVersion,
+                  appliedResourceVersion: resource.metadata.resourceVersion,
+                  appliedAt: Date.parse(cancelledAt),
+                },
+              ],
+            }
+          : {}),
+      },
+    });
+    return {
+      cancellation,
+      ...(cancelledAttemptId ? { cancelledAttemptId } : {}),
+      applied: true,
+    };
   });
 }
 

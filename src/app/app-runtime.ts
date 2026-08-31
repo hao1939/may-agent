@@ -194,23 +194,7 @@ export async function runAppRuntime(opts: {
     type: "info",
     message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
   });
-  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry, {
-    onCancelled: ({ appId, taskId, attemptId, reason }) => {
-      bus.emit({
-        type: "app.task.cancelled",
-        source: "human-task-service",
-        owner: "human:operator",
-        target: { appId, taskId },
-        data: { appId, taskId, attemptId, reason },
-      } as unknown as AgentEvent);
-      bus.emit({
-        type: "app.dependency.updated",
-        source: "human-task-service",
-        owner: "human:operator",
-        data: { kind: "task", id: taskId, appId },
-      });
-    },
-  });
+  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry);
 
   attachDaemonEventSubscribers({
     bus,
@@ -254,7 +238,7 @@ export async function runAppRuntime(opts: {
         controlKey,
       }),
     cancelTask: ({ appId, taskId, generation, resourceVersion, reason, controlKey }) =>
-      humanTasks.cancelTask({
+      appTasks.cancel({
         appId,
         taskId,
         reason,
