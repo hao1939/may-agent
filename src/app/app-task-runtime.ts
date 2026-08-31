@@ -103,6 +103,7 @@ import {
   assertAppTaskEffectFresh,
   associateAppTaskSession,
   claimObservedAppTask,
+  cancelAppTask,
   completeAppTask,
   deferAppTask,
   listHandlerExecutionFailedAppTasks,
@@ -4183,6 +4184,57 @@ export function retryLoadedFailedAppTask(input: {
   });
   const queued = enqueueAppTask(controller, config, taskId, { promote: true });
   return { ...receipt, queued };
+}
+
+export function cancelLoadedAppTask(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  reason: string;
+  controlKey?: string;
+}): ReturnType<typeof cancelAppTask> {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const taskId = input.taskId.trim();
+  if (!appId || !taskId) throw new Error("App Task cancellation requires exact appId and taskId");
+  if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration < 1) {
+    throw new Error("App Task cancellation requires a positive integer expectedGeneration");
+  }
+  if (!Number.isSafeInteger(input.expectedResourceVersion) || input.expectedResourceVersion < 1) {
+    throw new Error("App Task cancellation requires a positive integer expectedResourceVersion");
+  }
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
+  if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
+  const result = cancelAppTask(appTaskConfig(descriptor), {
+    appId,
+    taskId,
+    expectedGeneration: input.expectedGeneration,
+    expectedResourceVersion: input.expectedResourceVersion,
+    reason: input.reason,
+    ...(input.controlKey ? { controlKey: input.controlKey } : {}),
+  });
+  if (result.applied) {
+    input.bus.emit({
+      type: "app.task.cancelled",
+      source: "app-task-reconciler",
+      owner: "human:operator",
+      target: { appId, taskId },
+      data: {
+        appId,
+        taskId,
+        ...(result.cancelledAttemptId ? { attemptId: result.cancelledAttemptId } : {}),
+        reason: result.cancellation.reason,
+      },
+    });
+    input.bus.emit({
+      type: "app.dependency.updated",
+      source: "app-task-reconciler",
+      owner: "human:operator",
+      data: { kind: "task", id: taskId, appId },
+    });
+  }
+  return result;
 }
 
 function enqueueAppTask(

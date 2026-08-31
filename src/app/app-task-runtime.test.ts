@@ -19,6 +19,7 @@ import {
   applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
   beginCanonicalAgentResidueGuard,
+  cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   consumePersistedTerminalAgentResult,
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
@@ -3188,7 +3189,7 @@ describe("canonical App task runtime", () => {
     await started;
     bus.emit({
       type: "app.task.cancelled",
-      source: "human-task-service",
+      source: "app-task-reconciler",
       owner: "human:operator",
       target: { appId: "sample", taskId: "work/cancel-executor" },
       data: {
@@ -3201,31 +3202,25 @@ describe("canonical App task runtime", () => {
     await Bun.sleep(1);
     expect(activeSignal?.aborted).toBeFalse();
 
-    const humanTasks = new HumanTaskService(
-      getDb(join(f.root, "state")),
-      {
-        snapshot: () => ({
-          id: "test:cancel",
-          generation: 1,
-          entries: [{ appDir: f.appDir, definition: definition() }],
-        }),
-      },
-      {
-        onCancelled: ({ appId, taskId, attemptId, reason }) => {
-          bus.emit({
-            type: "app.task.cancelled",
-            source: "human-task-service",
-            owner: "human:operator",
-            target: { appId, taskId },
-            data: { appId, taskId, attemptId, reason },
-          });
-        },
-      },
-    );
-    expect(humanTasks.cancelTask({ appId: "sample", taskId: "work/cancel-executor" })).toMatchObject({
-      status: "cancelled",
-      terminal: true,
+    const humanTasks = new HumanTaskService(getDb(join(f.root, "state")), {
+      snapshot: () => ({
+        id: "test:cancel",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      }),
     });
+    const current = humanTasks.getTask({ appId: "sample", taskId: "work/cancel-executor" });
+    if (!current) throw new Error("expected cancellable Task");
+    expect(
+      cancelLoadedAppTask({
+        bus,
+        appId: current.appId,
+        taskId: current.taskId,
+        expectedGeneration: current.generation,
+        expectedResourceVersion: current.resourceVersion,
+        reason: "no longer needed",
+      }),
+    ).toMatchObject({ applied: true, cancelledAttemptId: startedAttemptId });
     await aborted;
     expect(startedAttemptId).not.toBe("");
     expect(humanTasks.getTask({ appId: "sample", taskId: "work/cancel-executor" })).toMatchObject({

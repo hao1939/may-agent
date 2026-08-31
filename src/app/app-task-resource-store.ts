@@ -5,7 +5,13 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { getDb } from "../lib/requests.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import type { AppTaskAttempt, AppTaskCondition, AppTaskResource, AppTaskTrigger } from "./app-task-state.js";
+import type {
+  AppTaskAttempt,
+  AppTaskCancellation,
+  AppTaskCondition,
+  AppTaskResource,
+  AppTaskTrigger,
+} from "./app-task-state.js";
 import {
   normalizeTaskStateInPlace,
   normalizeTaskGroup,
@@ -139,6 +145,7 @@ export type AppTaskResourceMutation = {
   deleteReceiptIds?: string[];
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
+  cancellations?: AppTaskCancellation[];
   controlReceipts?: AppTaskControlReceipt[];
 };
 
@@ -521,6 +528,13 @@ export class AppTaskResourceStore {
         .prepare("SELECT 1 AS cancelled FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
         .get(this.appId, taskId),
     );
+  }
+
+  readCancellation(taskId: string): AppTaskCancellation | null {
+    const row = this.db
+      .prepare("SELECT cancellation_json FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
+      .get(this.appId, taskId) as { cancellation_json?: string } | null;
+    return row?.cancellation_json ? parseJson<AppTaskCancellation>(row.cancellation_json) : null;
   }
 
   readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
@@ -1302,6 +1316,21 @@ export class AppTaskResourceStore {
            ON CONFLICT(app_id, task_id) DO UPDATE SET admission_json=excluded.admission_json`,
           )
           .run(this.appId, admission.taskId, json(admission.value));
+      }
+      for (const cancellation of mutation.cancellations ?? []) {
+        if (cancellation.appId !== this.appId) throw new Error("Task cancellation belongs to another App");
+        this.db
+          .prepare(
+            `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
+             VALUES (?, ?, ?, ?, ?)`,
+          )
+          .run(
+            cancellation.appId,
+            cancellation.taskId,
+            epoch(cancellation.cancelledAt) ?? 0,
+            cancellation.reason,
+            json(cancellation),
+          );
       }
       for (const receipt of mutation.controlReceipts ?? []) {
         if (receipt.appId !== this.appId) throw new Error("Task control receipt belongs to another App");
