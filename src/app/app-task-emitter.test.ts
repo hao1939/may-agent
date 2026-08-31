@@ -79,8 +79,7 @@ function harness(sessionId: string | null = "session-1") {
   roots.push(root);
   const db = getDb(root);
   const store = AppTaskResourceStore.fromDb(db, "sample");
-  store.importPausedSnapshot(fixture(undefined, sessionId), "revision-1", ["task-1"]);
-  store.activate("revision-1");
+  store.bootstrapSnapshot(fixture(undefined, sessionId), "revision-1", ["task-1"]);
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
@@ -170,8 +169,7 @@ function supportedGymAdmissionHarness() {
   };
   const db = getDb(root);
   const store = AppTaskResourceStore.fromDb(db, "gym");
-  store.importPausedSnapshot(tree, "gym-scope-golden-revision", [intent.id]);
-  store.activate("gym-scope-golden-revision");
+  store.bootstrapSnapshot(tree, "gym-scope-golden-revision", [intent.id]);
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);

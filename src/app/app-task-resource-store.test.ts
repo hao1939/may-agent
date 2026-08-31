@@ -177,7 +177,7 @@ describe("AppTaskResourceStore", () => {
     tree.resources = { normal: tree.resources!.normal!, child, dependent, unrelated };
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["normal"] });
     expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child", "dependent", "normal"]);
@@ -212,7 +212,7 @@ describe("AppTaskResourceStore", () => {
       dependent.spec.dependsOn = ["normal"];
       tree.resources[dependent.metadata.id] = dependent;
     }
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext(
       { taskIds: ["normal"] },
@@ -235,7 +235,7 @@ describe("AppTaskResourceStore", () => {
       child.spec.parentId = "normal";
       tree.resources[child.metadata.id] = child;
     }
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext(
       { taskIds: ["normal"] },
@@ -285,7 +285,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("imports and shadow-compares a paused App snapshot", () => {
+  it("bootstraps a normalized resource snapshot", () => {
     const store = open();
     const tree = fixture() as TaskTree & { satisfied_dependency_ids?: string[] };
     const legacyGroup = tree.groups!.project as TaskTree["groups"][string] & {
@@ -297,18 +297,16 @@ describe("AppTaskResourceStore", () => {
     legacyGroup.goal = "legacy group task";
     legacyGroup.state = "backlog";
     tree.satisfied_dependency_ids = ["legacy-derived-copy"];
-    store.importPausedSnapshot(tree, "revision-1", ["human"]);
+    store.bootstrapSnapshot(tree, "revision-1", ["human"]);
 
     expect(store.sourceRevision()).toBe("revision-1");
-    expect(store.isActive()).toBeFalse();
+    expect(store.isActive()).toBeTrue();
     expect(store.readTask("human")).toEqual(tree.resources?.human);
-    expect(store.shadowCompare(tree)).toEqual([]);
     expect(store.listRecoveryCandidates().items).toEqual([
       expect.objectContaining({ taskId: "human", lane: "human", ready: true, changed: true }),
       expect.objectContaining({ taskId: "active", lane: "normal", leaseUntil: 1_787_270_401_000 }),
       expect.objectContaining({ taskId: "normal", lane: "normal", ready: false, changed: true }),
     ]);
-    store.activate("revision-1");
     expect(store.isActive()).toBeTrue();
     const snapshot = store.readSnapshot();
     expect(snapshot.resources).toEqual(tree.resources);
@@ -333,23 +331,23 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("does not overwrite an existing shadow authority during bootstrap", () => {
+  it("does not overwrite existing resource authority during bootstrap", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "migration-revision");
+    store.bootstrapSnapshot(tree, "initial-revision");
     const seed = fixture();
     seed.project_lifecycle = "active";
 
-    expect(() => store.bootstrapSnapshot(seed, "seed:revision-1")).toThrow("existing shadow authority");
-    expect(store.sourceRevision()).toBe("migration-revision");
-    expect(store.isActive()).toBeFalse();
+    expect(() => store.bootstrapSnapshot(seed, "seed:revision-1")).toThrow("existing resources authority");
+    expect(store.sourceRevision()).toBe("initial-revision");
+    expect(store.isActive()).toBeTrue();
     store.close();
   });
 
   it("updates one fenced task and exposes due work through the index", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const next = structuredClone(tree.resources!.normal!);
     next.metadata.resourceVersion = 2;
     next.status.observedGeneration = 1;
@@ -372,7 +370,7 @@ describe("AppTaskResourceStore", () => {
 
   it("updates the private recovery index without invalidating the canonical snapshot", () => {
     const store = open();
-    store.importPausedSnapshot(fixture(), "revision-1");
+    store.bootstrapSnapshot(fixture(), "revision-1");
     const revision = store.revision();
 
     expect(store.setRecoveryState("normal", { ready: true, changed: false, nextCheckAt: null })).toBeTrue();
@@ -387,7 +385,7 @@ describe("AppTaskResourceStore", () => {
 
   it("pages through every indexed recovery candidate", () => {
     const store = open();
-    store.importPausedSnapshot(fixture(), "revision-1", ["human"]);
+    store.bootstrapSnapshot(fixture(), "revision-1", ["human"]);
 
     const first = store.listRecoveryCandidates(Date.now() + 10_000, 2);
     const second = store.listRecoveryCandidates(Date.now() + 10_000, 2, first.nextCursor ?? undefined);
@@ -416,7 +414,7 @@ describe("AppTaskResourceStore", () => {
       delete attempt.sessionId;
       tree.attempts![attempt.metadata.id] = attempt;
     }
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["normal"] });
     expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
@@ -529,8 +527,7 @@ describe("AppTaskResourceStore", () => {
       "2026-08-21T01:00:06.000Z",
       { state: "completed" },
     );
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const taskIds = store.listHandlerExecutionRecoveryTaskIds("target-owner");
     expect(taskIds).toEqual(["execution-failed", "legacy-failed"]);
@@ -576,7 +573,7 @@ describe("AppTaskResourceStore", () => {
     tree.resources = {};
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["first-request", "project"] });
 
@@ -598,8 +595,7 @@ describe("AppTaskResourceStore", () => {
     delete tree.attempts?.["attempt-1"];
     delete tree.taskTriggers?.human;
     tree.resources!.human!.status.observedGeneration = 1;
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const paths = projectRuntimePaths(appDir, root);
     const config: TaskStateConfig = {
       appDir,
@@ -693,7 +689,7 @@ describe("AppTaskResourceStore", () => {
         status: { observedGeneration: 1, state: "true" },
       },
     };
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     expect(store.readConditionRoutes("pipeline-run.state")).toEqual([]);
     store.close();
@@ -701,7 +697,7 @@ describe("AppTaskResourceStore", () => {
 
   it("does not treat an unchanged running attempt as a fresh wake", () => {
     const store = open();
-    store.importPausedSnapshot(fixture(), "revision-1");
+    store.bootstrapSnapshot(fixture(), "revision-1");
     const active = store.listRecoveryCandidates(Date.now() + 10_000).items.find((entry) => entry.taskId === "active");
     expect(active).toMatchObject({ ready: false, changed: false });
     store.close();
@@ -710,7 +706,7 @@ describe("AppTaskResourceStore", () => {
   it("serializes competing transitions with the task resource fence", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const first = structuredClone(tree.resources!.normal!);
     first.metadata.resourceVersion = 2;
     first.status.summary = "first";
@@ -740,8 +736,7 @@ describe("AppTaskResourceStore", () => {
     const appDir = join(root, "resource-test.app");
     mkdirSync(appDir, { recursive: true });
     const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
-    store.importPausedSnapshot(fixture(), "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(fixture(), "revision-1");
     const paths = projectRuntimePaths(appDir, root);
     const config: TaskStateConfig = {
       appDir,
@@ -790,8 +785,7 @@ describe("AppTaskResourceStore", () => {
     const tree = fixture();
     delete tree.resources?.active;
     delete tree.attempts?.["attempt-1"];
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const paths = projectRuntimePaths(appDir, root);
     const config: TaskStateConfig = {
       appDir,
@@ -854,8 +848,7 @@ describe("AppTaskResourceStore", () => {
     tree.resources = {};
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const paths = projectRuntimePaths(appDir, root);
     const config: TaskStateConfig = {
       appDir,
@@ -899,8 +892,7 @@ describe("AppTaskResourceStore", () => {
     tree.resources = { dependency, dependent };
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const paths = projectRuntimePaths(appDir, root);
     const config: TaskStateConfig = {
       appDir,
@@ -944,11 +936,4 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("refuses to import a live mutable authority", () => {
-    const store = open();
-    const tree = fixture();
-    tree.project_lifecycle = "active";
-    expect(() => store.importPausedSnapshot(tree, "revision-1")).toThrow("project_lifecycle=paused");
-    store.close();
-  });
 });

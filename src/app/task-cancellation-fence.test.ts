@@ -52,8 +52,7 @@ describe("Task cancellation fence", () => {
       },
       tasks: {},
     };
-    store.importPausedSnapshot(tree, "revision-1", ["work"]);
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1", ["work"]);
     store.setProjectLifecycle("active");
     const db = openDatabase(dbPath);
     applyDbSchema(db);
