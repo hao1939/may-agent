@@ -520,6 +520,7 @@ describe("project task handler contract", () => {
               type: "credential.ready",
               subject: "credential:xhs",
               expected: { field: "state", equals: "ready" },
+              owner: "app:credential-provider",
               requestedAction: "Restore the xhs credential or confirm that it should remain disabled.",
               reviewAfterMs: 300000,
             },
@@ -560,6 +561,7 @@ describe("project task handler contract", () => {
               type: "credential.ready",
               subject: "credential:xhs",
               expected: "ready",
+              owner: "app:credential-provider",
               reviewAfterMs: 1000,
             },
           ],
@@ -567,6 +569,45 @@ describe("project task handler contract", () => {
         workflowOptions,
       ).ok,
     ).toBe(false);
+
+    const incompleteCondition = {
+      state: "waiting",
+      summary: "Waiting without accountable recovery",
+      evidence: [],
+      conditions: [
+        {
+          id: "credential-ready:xhs",
+          type: "credential.ready",
+          subject: "credential:xhs",
+          expected: "ready",
+        },
+      ],
+    };
+    expect(admitTaskReconcileResult(incompleteCondition, workflowOptions)).toEqual({
+      ok: false,
+      error: "conditions[0].owner must be a canonical non-empty identity",
+    });
+    expect(
+      admitTaskReconcileResult(
+        {
+          ...incompleteCondition,
+          conditions: [{ ...incompleteCondition.conditions[0], owner: "Hao", reviewAfterMs: 60_000 }],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "conditions[0].owner must be a canonical kind:identity" });
+    expect(
+      admitTaskReconcileResult(
+        {
+          ...incompleteCondition,
+          conditions: [{ ...incompleteCondition.conditions[0], owner: "app:credential-provider" }],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "conditions[0].reviewAfterMs must be an integer of at least 60000",
+    });
   });
 
   it("rejects Conditions that turn task state into a second scheduler", () => {

@@ -537,7 +537,16 @@ describe("App Task agent prompt context", () => {
         state: "waiting",
         summary: "Waiting for an invented human event",
         evidence: [],
-        conditions: [{ id: "approval", type: "human-decision", subject: "id:approval", expected: true }],
+        conditions: [
+          {
+            id: "approval",
+            type: "human-decision",
+            subject: "id:approval",
+            expected: true,
+            owner: "human:operator",
+            reviewAfterMs: 60_000,
+          },
+        ],
       },
       { type: "done", summary: "done", runId: "run-1" },
       {
@@ -663,6 +672,8 @@ describe("App Task agent prompt context", () => {
             type: "app.dependency.completed",
             subject: "id:existing-proof",
             expected: { field: "status", equals: "done" },
+            owner: "app:gym",
+            reviewAfterMs: 300_000,
           },
         ],
       }),
@@ -951,6 +962,8 @@ describe("canonical App task runtime", () => {
           type: "credential.state",
           subject: "credential:xhs",
           expected: { field: "state", equals: "ready" },
+          owner: "app:credential-provider",
+          reviewAfterMs: 300_000,
         },
       ],
     });
@@ -1086,6 +1099,8 @@ describe("canonical App task runtime", () => {
           type: "session.end",
           subject: "session:original-decision",
           expected: "done",
+          owner: "human:operator",
+          reviewAfterMs: 300_000,
         },
       ],
     });
@@ -1809,6 +1824,8 @@ describe("canonical App task runtime", () => {
         type: "app.dependency.completed",
         subject: `id:${requestId}`,
         expected: { field: "status", equals: "done" },
+        owner: "app:evaluation",
+        reviewAfterMs: 300_000,
       },
     ]);
     expect(emitted).toHaveLength(emittedBeforeReuse);
@@ -1885,6 +1902,8 @@ describe("canonical App task runtime", () => {
         type: "app.dependency.completed",
         subject: `id:${requestId}`,
         expected: { field: "status", equals: "done" },
+        owner: "app:evaluation",
+        reviewAfterMs: 300_000,
       },
     ]);
   });
