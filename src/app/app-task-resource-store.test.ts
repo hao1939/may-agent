@@ -324,6 +324,23 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("projects loaded App concurrency without changing it when the value is unchanged", () => {
+    const root = mkdtempSync(join(tmpdir(), "app-task-config-"));
+    roots.push(root);
+    const store = AppTaskResourceStore.openStandalone(join(root, "tasks.sqlite"), "example");
+    store.bootstrapSnapshot({ project: "example", resources: {} }, "seed:empty");
+
+    const before = store.revision();
+    store.setConfiguredMaxConcurrent(4);
+    expect(store.configuredMaxConcurrent()).toBe(4);
+    expect(store.revision()).toBe(before + 1);
+
+    store.setConfiguredMaxConcurrent(4);
+    expect(store.revision()).toBe(before + 1);
+    expect(() => store.setConfiguredMaxConcurrent(0)).toThrow("positive safe integer");
+    store.close();
+  });
+
   it("does not overwrite existing resource authority during bootstrap", () => {
     const store = open();
     const tree = fixture();

@@ -427,6 +427,29 @@ export class AppTaskResourceStore {
     });
   }
 
+  /** Refresh the loaded App policy projected for resource-backed read models. */
+  setConfiguredMaxConcurrent(maxConcurrent: number): void {
+    if (!Number.isSafeInteger(maxConcurrent) || maxConcurrent < 1) {
+      throw new Error("Task resource maxConcurrent must be a positive safe integer");
+    }
+    transaction(this.db, () => {
+      if (!this.isActive()) throw new Error("Task resource configuration requires active resource authority");
+      const rawMetadata = this.meta("app_metadata");
+      if (!rawMetadata) throw new Error("Task resource store has no App metadata");
+      const metadata = parseJson<Record<string, unknown>>(rawMetadata);
+      if (metadata.max_concurrent === maxConcurrent) return;
+      this.setMeta("app_metadata", json({ ...metadata, max_concurrent: maxConcurrent }));
+      this.bumpRevision();
+    });
+  }
+
+  configuredMaxConcurrent(): number | null {
+    const rawMetadata = this.meta("app_metadata");
+    if (!rawMetadata) return null;
+    const value = Number(parseJson<Record<string, unknown>>(rawMetadata).max_concurrent);
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  }
+
   rootTaskId(): string | null {
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) return null;
