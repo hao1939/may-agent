@@ -523,7 +523,7 @@ export type ProjectTasksReadModelOptions = {
 export function readProjectTaskProjection(db: SqliteDb, appId: string): AppTaskTreeProjection | null {
   const store = AppTaskResourceStore.activeFromDb(db, appId);
   if (!store) return null;
-  return buildAppTaskTreeProjection(store.readSnapshot(), 1);
+  return buildAppTaskTreeProjection(store.readSnapshot(), store.configuredMaxConcurrent() ?? 1);
 }
 
 export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksReadModelOptions) {

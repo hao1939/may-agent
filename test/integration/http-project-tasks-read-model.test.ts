@@ -96,9 +96,10 @@ describe("project task read model", () => {
       },
       "seed:test",
     );
+    store.setConfiguredMaxConcurrent(4);
     const result = readProjectTaskProjection(db, "example");
 
-    expect(result?.max_concurrent).toBe(1);
+    expect(result?.max_concurrent).toBe(4);
     expect(result?.tasks.current).toMatchObject({ outcome: "Current resource", phase: "pending" });
     db.close();
   });

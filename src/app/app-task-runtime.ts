@@ -4904,6 +4904,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
     };
     descriptor.reconciliationPaused = resourceStore.projectLifecycle() === "paused";
     validatePreparedAppTaskRuntime(descriptor);
+    resourceStore.setConfiguredMaxConcurrent(app.tasks.maxConcurrent ?? 1);
     descriptors.push(descriptor);
   }
   return descriptors;
