@@ -12,7 +12,7 @@ import {
   associateAppTaskSession,
   claimObservedAppTask,
   completeAppTask,
-  deferAppTask,
+  deferAppTask as deferCanonicalAppTask,
   acknowledgeAppTaskRecoveryAttention,
   listHandlerExecutionFailedAppTasks,
   listHandlerUnavailableAppTasks,
@@ -50,6 +50,19 @@ import {
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
+
+/** Most reconciler fixtures exercise mechanics, so give their external waits explicit test ownership. */
+function deferAppTask(...args: Parameters<typeof deferCanonicalAppTask>): ReturnType<typeof deferCanonicalAppTask> {
+  const [config, claim, input] = args;
+  return deferCanonicalAppTask(config, claim, {
+    ...input,
+    conditions: input.conditions?.map((condition) => ({
+      ...condition,
+      owner: condition.owner ?? "app:test-external",
+      reviewAfterMs: condition.reviewAfterMs ?? 60_000,
+    })),
+  });
+}
 
 function trackAppTaskConditionEvent(config: AppTaskContext, event: Record<string, unknown>) {
   return trackAppTaskConditionEventForTasks(config, event, matchingAppTaskConditionTaskIds(config, event));
@@ -5376,6 +5389,38 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("Condition session-terminal:s_1 type requires a non-empty string");
 
+    expect(() =>
+      deferCanonicalAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting without accountable ownership",
+        conditions: [
+          {
+            id: "session-terminal:s_1",
+            type: "session.end",
+            subject: "session:s_1",
+            expected: "done",
+            reviewAfterMs: 60_000,
+          },
+        ],
+      }),
+    ).toThrow("Condition session-terminal:s_1 owner requires a non-empty string");
+
+    expect(() =>
+      deferCanonicalAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting without a recovery checkpoint",
+        conditions: [
+          {
+            id: "session-terminal:s_1",
+            type: "session.end",
+            subject: "session:s_1",
+            expected: "done",
+            owner: "app:test-external",
+          },
+        ],
+      }),
+    ).toThrow("Condition session-terminal:s_1 reviewAfterMs must be an integer");
+
     const result = deferAppTask(config, claim, {
       disposition: "waiting",
       summary: "waiting for the source session",
@@ -6406,6 +6451,8 @@ describe("App task reconciler state", () => {
           type: "pipeline.result.available",
           subject: "pipeline-run:run-42",
           expected: { field: "status", equals: "succeeded" },
+          owner: "app:pipeline-observer",
+          reviewAfterMs: 31_536_000_000,
         },
       ],
     });

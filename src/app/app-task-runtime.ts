@@ -213,6 +213,7 @@ function publishAppTaskTiming(
 
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
+const APP_DEPENDENCY_REVIEW_AFTER_MS = 300_000;
 
 export interface AppTaskRuntimeDescriptor {
   id: string;
@@ -1241,6 +1242,8 @@ export function admitTaskAppDependencies(input: {
       type: "app.dependency.completed",
       subject: `id:${item.id}`,
       expected: { field: "status", equals: "done" },
+      owner: `app:${item.appId}`,
+      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     } satisfies AppTaskConditionSpec,
   });
 
@@ -1402,10 +1405,19 @@ export function admitTaskAppDependencies(input: {
       type: "app.dependency.completed",
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
+      owner: `app:${dependency.appId}`,
+      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     });
   }
 
-  return input.dependencies.map((dependency) => matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!);
+  return input.dependencies.map((dependency) => {
+    const condition = matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!;
+    return {
+      ...condition,
+      owner: condition.owner ?? `app:${dependency.appId}`,
+      reviewAfterMs: condition.reviewAfterMs ?? APP_DEPENDENCY_REVIEW_AFTER_MS,
+    };
+  });
 }
 
 function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string): AppTaskConditionSpec[] {

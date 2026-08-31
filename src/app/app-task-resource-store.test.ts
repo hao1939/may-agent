@@ -613,6 +613,7 @@ describe("AppTaskResourceStore", () => {
             type: "example.completed",
             subject: "example:later",
             expected: "done",
+            owner: "app:example-observer",
             reviewAfterMs: 60_000,
           },
         ],
