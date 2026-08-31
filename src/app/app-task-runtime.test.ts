@@ -3245,6 +3245,9 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: concurrentApp }],
       },
     });
+    expect(
+      AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")?.configuredMaxConcurrent(),
+    ).toBe(2);
     const attach = (taskId: string) =>
       attachLoadedAppTask({
         bus,
