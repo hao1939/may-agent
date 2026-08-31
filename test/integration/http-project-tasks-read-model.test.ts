@@ -182,7 +182,7 @@ describe("project task read model", () => {
       { path: "projects/example" },
     );
 
-    expect(model).toMatchObject({ available: false, reason: "Task tree is malformed." });
+    expect(model).toMatchObject({ available: false, reason: "Task projection is malformed." });
     expect(model.errors).toEqual(
       expect.arrayContaining([
         "schema_version: expected 2",
@@ -201,7 +201,7 @@ describe("project task read model", () => {
       ),
     ).toMatchObject({
       available: false,
-      reason: "Task tree is malformed.",
+      reason: "Task projection is malformed.",
       errors: ["tasks: missing task map"],
     });
   });
