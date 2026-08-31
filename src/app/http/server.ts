@@ -531,7 +531,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     return {
       available: false,
       path: opts.path,
-      reason: "Task tree JSON must be an object.",
+      reason: "Task projection must be an object.",
       errors: ["root: expected object"],
     };
   }
@@ -596,7 +596,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     return {
       available: false,
       path: opts.path,
-      reason: "Task tree is malformed.",
+      reason: "Task projection is malformed.",
       errors,
     };
   }
