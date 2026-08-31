@@ -143,7 +143,6 @@ describe("project task read model", () => {
       }),
       {
         path: "projects/example",
-        treePath: ".state/tasks/tree.json",
         measuredAt: "2026-07-20T01:00:00.000Z",
         project: { id: "example", owner: "owner", posture: "active" },
       },
@@ -180,7 +179,7 @@ describe("project task read model", () => {
         root_task_id: "missing",
         tasks: { project: { id: "project", state: "backlog", children: [7] } },
       },
-      { path: "projects/example", treePath: ".state/tasks/tree.json" },
+      { path: "projects/example" },
     );
 
     expect(model).toMatchObject({ available: false, reason: "Task tree is malformed." });
@@ -198,7 +197,7 @@ describe("project task read model", () => {
     expect(
       buildProjectTasksReadModel(
         { schema_version: 2, root_task_id: "project" },
-        { path: "projects/example", treePath: ".state/tasks/tree.json" },
+        { path: "projects/example" },
       ),
     ).toMatchObject({
       available: false,
