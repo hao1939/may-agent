@@ -29,7 +29,7 @@ import {
   type SocketResponse,
 } from "../../../packages/control/src/client.js";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
-import { loadProjectReadModel, projectRuntimePaths } from "../app-task-runtime-state.js";
+import { loadProjectReadModel } from "../app-task-runtime-state.js";
 import type {
   AppTaskIntegrityFinding,
   AppTaskPhase,
@@ -520,31 +520,10 @@ export type ProjectTasksReadModelOptions = {
   };
 };
 
-export function readProjectTaskProjection(
-  db: SqliteDb,
-  appId: string,
-  legacyTreePath: string,
-): { tree: AppTaskTreeProjection; source: "resources" | "legacy-file" } | null {
+export function readProjectTaskProjection(db: SqliteDb, appId: string): AppTaskTreeProjection | null {
   const store = AppTaskResourceStore.activeFromDb(db, appId);
-  if (store) {
-    let maxConcurrent = 1;
-    try {
-      const legacy = JSON.parse(readFileSync(legacyTreePath, "utf-8")) as { max_concurrent?: unknown };
-      const configured = Number(legacy.max_concurrent);
-      if (Number.isSafeInteger(configured) && configured > 0) maxConcurrent = configured;
-    } catch {
-      // Resource-only Apps use the default until Runtime exposes App configuration to read adapters.
-    }
-    return {
-      tree: buildAppTaskTreeProjection(store.readSnapshot(), maxConcurrent),
-      source: "resources",
-    };
-  }
-  if (!existsSync(legacyTreePath)) return null;
-  return {
-    tree: JSON.parse(readFileSync(legacyTreePath, "utf-8")) as AppTaskTreeProjection,
-    source: "legacy-file",
-  };
+  if (!store) return null;
+  return buildAppTaskTreeProjection(store.readSnapshot(), 1);
 }
 
 export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksReadModelOptions) {
@@ -2503,23 +2482,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         reason: "Project has no App task attachment.",
       });
     }
-    const treePath = projectRuntimePaths(appDir).taskTreePath;
-    if (treePath !== appDir && !treePath.startsWith(`${appDir}/`)) return json({ error: "Access denied" }, 403);
-
     try {
       const identity = projectTaskIdentity(path, appDir);
-      const projection = readProjectTaskProjection(_db(), identity.id, treePath);
+      const projection = readProjectTaskProjection(_db(), identity.id);
       if (!projection) {
         return json({
           available: false,
           path,
-          treePath: `${projectNameFromPath(path)}.app/.state/tasks/tree.json`,
+          treePath: null,
           reason: "App does not attach task reconciliation.",
         });
       }
-      const model = buildProjectTasksReadModel(projection.tree, {
+      const model = buildProjectTasksReadModel(projection, {
         path,
-        treePath: projection.source === "resources" ? "canonical Task resources" : ".state/tasks/tree.json",
+        treePath: "canonical Task resources",
         project: identity,
       });
       if (!model.available) return json(model);
@@ -2543,7 +2519,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({
         available: false,
         path,
-        treePath: ".state/tasks/tree.json",
+        treePath: "canonical Task resources",
         reason: "Task view could not be read.",
         errors: [e instanceof Error ? e.message : String(e)],
       });
@@ -2644,14 +2620,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const appDir = appDirForPath(path);
     if (!appDir) return json({ error: "Project has no App task attachment." }, 404);
     const identity = projectTaskIdentity(path, appDir);
-    const treePath = projectRuntimePaths(appDir).taskTreePath;
     let model: ReturnType<typeof buildProjectTasksReadModel> | null = null;
     try {
-      const projection = readProjectTaskProjection(_db(), identity.id, treePath);
+      const projection = readProjectTaskProjection(_db(), identity.id);
       if (projection) {
-        model = buildProjectTasksReadModel(projection.tree, {
+        model = buildProjectTasksReadModel(projection, {
           path,
-          treePath: projection.source === "resources" ? "canonical Task resources" : ".state/tasks/tree.json",
+          treePath: "canonical Task resources",
           project: identity,
         });
       }

@@ -391,7 +391,6 @@ async function runTaskWorker(input: {
       sharedRoot: input.roots.sharedRoot,
       definitionSharedRoot: activeSource.sharedRoot,
       projectsRoot: activeSource.projectsRoot,
-      stateProjectsRoot: input.roots.projectsRoot,
       projectRoot: input.roots.projectRoot,
       persistDir: input.roots.persistDir,
       models: input.models,

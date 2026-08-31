@@ -7,7 +7,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "./app-inbox-store.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { observeAppTaskIntent, taskReconciliationConfig } from "./app-task-reconciler.js";
+import { observeAppTaskIntent, appTaskContext } from "./app-task-reconciler.js";
 
 describe("App read projections", () => {
   let db: SqliteDb;
@@ -44,7 +44,7 @@ describe("App read projections", () => {
       },
       "seed:test",
     );
-    return taskReconciliationConfig({
+    return appTaskContext({
       appDir,
       projectDir: root,
       agent: "evaluation",

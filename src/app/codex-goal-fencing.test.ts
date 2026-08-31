@@ -2,15 +2,9 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  claimObservedAppTask,
-  completeAppTask,
-  observeAppTaskIntent,
-  taskReconciliationConfig,
-} from "./app-task-reconciler.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { legacyTaskStateConfig, readTaskState } from "./app-task-store.js";
+import { claimObservedAppTask, completeAppTask, observeAppTaskIntent } from "./app-task-reconciler.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
 
 const roots: string[] = [];
 
@@ -29,18 +23,11 @@ function fixture() {
       },
     })}\n`,
   );
-  const legacyConfig = legacyTaskStateConfig({ appDir, projectDir: appDir, worker: "app-owner", maxConcurrent: 1 });
-  const tree = readTaskState(legacyConfig);
-  tree.project = "sample";
-  tree.project_lifecycle = "active";
-  const resourceStore = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
-  resourceStore.bootstrapSnapshot(tree, "codex-goal-fencing");
-  return taskReconciliationConfig({
+  return appTaskTestContext({
     appDir,
-    projectDir: appDir,
     agent: "app-owner",
     maxConcurrent: 1,
-    resourceStore,
+    databasePath: join(root, "host.sqlite"),
   });
 }
 

@@ -12,10 +12,10 @@ import {
   readAppTaskTrigger,
   recordAppTaskTrigger,
   releaseStaleAppTaskResult,
-  taskReconciliationConfig,
+  appTaskContext,
 } from "./app-task-reconciler.ts";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { legacyTaskStateConfig, readTaskState } from "./app-task-store.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
+import { readTaskSnapshot } from "./app-task-store.js";
 
 const roots: string[] = [];
 
@@ -67,27 +67,15 @@ function fixture() {
       2,
     )}\n`,
   );
-  const legacyConfig = legacyTaskStateConfig({
+  return appTaskTestContext({
     appDir,
-    projectDir: appDir,
-    worker: "app-owner",
-    maxConcurrent: 2,
-  });
-  const tree = readTaskState(legacyConfig);
-  tree.project = "sample";
-  tree.project_lifecycle = "active";
-  const resourceStore = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "sample");
-  resourceStore.bootstrapSnapshot(tree, "parent-semantics");
-  return taskReconciliationConfig({
-    appDir,
-    projectDir: appDir,
     agent: "app-owner",
     maxConcurrent: 2,
-    resourceStore,
+    databasePath: join(root, "host.sqlite"),
   });
 }
 
-function claimChild(config: ReturnType<typeof taskReconciliationConfig>) {
+function claimChild(config: ReturnType<typeof appTaskContext>) {
   const claim = claimObservedAppTask(config, {
     taskId: "child",
     appAgent: "app-owner",
@@ -143,7 +131,7 @@ describe("App task parent semantics", () => {
       }),
     ).toMatchObject({ status: "applied", taskContinues: true });
     expect(readAppTaskIntent(config, "parent")).not.toBeNull();
-    const parentStatus = readTaskState(config).resources?.parent?.status;
+    const parentStatus = readTaskSnapshot(config).resources?.parent?.status;
     expect(parentStatus).toMatchObject({ phase: "waiting" });
     expect(parentStatus).not.toHaveProperty("currentAttemptId");
     expect(listRunnableAppTaskIds(config)).toEqual(["child"]);

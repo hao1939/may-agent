@@ -1,9 +1,4 @@
-import {
-  saveTaskState,
-  withTaskStateLock,
-  type ResourceTaskStateConfig,
-  type TaskTree,
-} from "./app-task-store.js";
+import { commitTaskMutation, withTaskTransition, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
 
 export type AppTaskConditionWake = {
@@ -330,7 +325,7 @@ function applyConditionEvent(
 }
 
 function saveConditionMutation(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   tree: TaskTree,
   wakes: ReadonlyMap<string, AppTaskConditionWake>,
   changedConditionIds: ReadonlySet<string>,
@@ -345,7 +340,7 @@ function saveConditionMutation(
     const resource = tree.resources?.[taskId];
     return resource ? [resource] : [];
   });
-  saveTaskState(config, tree, {
+  commitTaskMutation(config, tree, {
     resourceMutation: {
       fences: resources.map((resource) => ({
         taskId: resource.metadata.id,
@@ -385,7 +380,7 @@ export function applyAppTaskConditionEvent(tree: TaskTree, event: Record<string,
 
 /** Read-only canonical-state preflight used before the App router chooses a route. */
 export function matchingAppTaskConditionTaskIds(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   event: Record<string, unknown>,
   allowedTaskIds?: Iterable<string>,
 ): string[] {
@@ -405,20 +400,17 @@ export function matchingAppTaskConditionTaskIds(
 
 /** Persist one fact only for the exact task Conditions selected in preflight. */
 export function trackAppTaskConditionEventForTasks(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   event: Record<string, unknown>,
   taskIds: Iterable<string>,
 ): AppTaskConditionWake[] {
   const allowed = new Set(taskIds);
   if (allowed.size === 0) return [];
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     // One Condition event changes only the selected Tasks and their Conditions.
     // Loading their children and attempt history makes a wake proportional to
     // the size of an unrelated Task subtree and can block the interface loop.
-    const tree = config.resourceStore.readTaskContext(
-      { taskIds: allowed },
-      { includeHistory: false, childLimit: 0 },
-    );
+    const tree = config.resourceStore.readTaskContext({ taskIds: allowed }, { includeHistory: false, childLimit: 0 });
     const wakes = new Map<string, AppTaskConditionWake>();
     const changedConditionIds = new Set<string>();
     if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {

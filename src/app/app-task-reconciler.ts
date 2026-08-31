@@ -12,13 +12,12 @@ import {
 } from "@may-agent/sdk";
 import {
   appTaskReadinessById,
-  saveTaskState,
-  withTaskStateLock,
-  type ResourceTaskStateConfig,
+  commitTaskMutation,
+  withTaskTransition,
+  type AppTaskContext,
   type AppTaskReadiness,
   type TaskTree,
 } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
 import type {
   AppTaskCondition as AppTaskCondition,
@@ -310,11 +309,11 @@ function hasUnacceptedLiveTaskEvents(tree: TaskTree, taskId: string, eventIds: r
 
 /** Reject an externally visible effect when newer Task evidence is still unaccepted. */
 export function assertAppTaskEffectFresh(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   acceptedLiveEventIds?: readonly number[],
 ): void {
-  withTaskStateLock(config, () => {
+  withTaskTransition(config, () => {
     const resource = config.resourceStore.readTask(claim.taskId);
     const attempt = config.resourceStore.readAttempt(claim.attemptId);
     const match = matchingClaimAttempt(resource, attempt, claim);
@@ -427,7 +426,7 @@ function projectIdFromAppDir(appDir: string): string {
 }
 
 function syntheticAttemptTrigger(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   taskId: string,
   reason: string | undefined,
 ): Record<string, unknown> {
@@ -619,7 +618,7 @@ function checkpointRecoveryEvidence(
 }
 
 function buildRecoveredSessionHandoff(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   attempt: AppTaskAttempt | undefined,
 ): AppTaskClaim["handoff"] | undefined {
   if (!attempt?.sessionId || attempt.failureReason !== "previous-runtime-attempt-requeued") {
@@ -747,29 +746,21 @@ function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource,
   return [...sessionIds];
 }
 
-type TaskReconciliationConfigInput = {
+type AppTaskContextInput = {
   appDir: string;
-  /** Stable writable App root when appDir is an immutable definition release. */
-  stateAppDir?: string;
   projectDir: string;
-  agent?: string;
-  /** @deprecated Compatibility for Host callers not yet migrated. */
-  owner?: string;
+  agent: string;
   maxConcurrent: number;
   resourceStore: AppTaskResourceStore;
 };
 
-export function taskReconciliationConfig(input: TaskReconciliationConfigInput): ResourceTaskStateConfig {
-  const paths = projectRuntimePaths(input.stateAppDir ?? input.appDir);
-  const agent = input.agent?.trim() || input.owner?.trim();
+export function appTaskContext(input: AppTaskContextInput): AppTaskContext {
+  const agent = input.agent.trim();
   if (!agent) throw new Error("Task reconciliation requires a default agent");
   return {
     appDir: input.appDir,
-    ...(input.stateAppDir ? { stateAppDir: input.stateAppDir } : {}),
     projectDir: input.projectDir,
-    statePath: paths.taskStatePath,
-    journalPath: paths.journalPath,
-    worker: agent,
+    agent,
     maxConcurrent: input.maxConcurrent,
     resourceStore: input.resourceStore,
   };
@@ -983,12 +974,12 @@ function materializeWaitingConditions(
 }
 
 export function recoverableAppTaskAttempts(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   nowMs = Date.now(),
   includeFreshLeases = false,
   candidateTaskIds: Iterable<string>,
 ): AppTaskAttemptRecovery[] {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const candidates = [...candidateTaskIds];
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
@@ -996,7 +987,7 @@ export function recoverableAppTaskAttempts(
     const mutationScope = emptyResourceMutationScope(tree);
     const recoveries = Object.values(tree.resources ?? {}).flatMap((resource) => {
       if (resource.status.phase !== "running") return [];
-      if (matchingCompletionReceipt(tree, resource, config.worker)) {
+      if (matchingCompletionReceipt(tree, resource, config.agent)) {
         trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
         retireCompletedTaskDuplicate(
           tree,
@@ -1032,7 +1023,7 @@ export function recoverableAppTaskAttempts(
       ];
     });
     if (changed) {
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
     }
@@ -1041,11 +1032,11 @@ export function recoverableAppTaskAttempts(
 }
 
 export function terminalAgentSessionAppTaskClaim(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   taskId: string,
   sessionId: string,
 ): AppTaskClaim | null {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "running") return null;
@@ -1088,12 +1079,12 @@ export function terminalAgentSessionAppTaskClaim(
 }
 
 export function expiredAgentSessionAppTaskAttempt(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   taskId: string,
   nowMs = Date.now(),
   sessionActivity?: AttemptSessionActivity,
 ): AppTaskAttemptRecovery | null {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "running") return null;
@@ -1129,11 +1120,11 @@ export function expiredAgentSessionAppTaskAttempt(
 }
 
 export function releaseInterruptedAppTaskAttempt(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   recovery: AppTaskAttemptRecovery,
   summary: string,
 ): { released: boolean; sessionIds: string[] } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const taskId = recovery.taskId;
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
@@ -1164,7 +1155,7 @@ export function releaseInterruptedAppTaskAttempt(
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
     });
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
     return { released: true, sessionIds };
@@ -1178,13 +1169,13 @@ export function releaseInterruptedAppTaskAttempt(
  * to interrupt the exact attempt and requeue the same task generation.
  */
 export function releaseTerminalSessionExpiredAppTaskAttempt(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   recovery: AppTaskTerminalSessionRecovery,
   summary: string,
   nowMs = Date.now(),
   sessionActivity?: AttemptSessionActivity,
 ): { released: boolean; sessionIds: string[] } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [recovery.taskId] });
     const resource = tree.resources?.[recovery.taskId];
     if (!resource || resource.status.phase !== "running") {
@@ -1225,7 +1216,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
       summary: recoveredSummary,
       conditionIds: [],
     });
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
     return { released: true, sessionIds: [recovery.sessionId] };
@@ -1233,12 +1224,12 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
 }
 
 export function releaseLateTerminalWorkflowAppTaskAttempt(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   binding: { taskId: string; generation: number },
   sessionId: string,
   summary: string,
 ): { released: boolean; taskId: string } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
     const resource = tree.resources?.[binding.taskId];
     if (!resource || resource.metadata.generation !== binding.generation || resource.status.phase !== "running") {
@@ -1263,7 +1254,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
       summary: recoveredSummary,
       conditionIds: [],
     });
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
     return { released: true, taskId: binding.taskId };
@@ -1271,10 +1262,10 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
 }
 
 export function repairPreviousRuntimeRecoveryAttention(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const candidates = [...candidateTaskIds];
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
@@ -1308,7 +1299,7 @@ export function repairPreviousRuntimeRecoveryAttention(
       });
     }
     if (repairs.length > 0) {
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
     }
@@ -1322,11 +1313,11 @@ export function repairPreviousRuntimeRecoveryAttention(
  * same Task must be judged again from its current evidence.
  */
 export function repairUnadmittedAppDependencyWaits(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   isAdmitted: (requestId: string) => boolean,
   candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const candidates = [...candidateTaskIds];
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
@@ -1362,7 +1353,7 @@ export function repairUnadmittedAppDependencyWaits(
       repairs.push({ taskId: resource.metadata.id, disposition: "requeued", summary });
     }
     if (repairs.length > 0) {
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
     }
@@ -1371,10 +1362,10 @@ export function repairUnadmittedAppDependencyWaits(
 }
 
 export function repairRunningAppTasksWithoutAttempt(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryRepair[] {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const candidates = [...candidateTaskIds];
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
@@ -1411,7 +1402,7 @@ export function repairRunningAppTasksWithoutAttempt(
       });
     }
     if (repairs.length > 0) {
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
     }
@@ -1420,10 +1411,10 @@ export function repairRunningAppTasksWithoutAttempt(
 }
 
 export function pendingAppTaskRecoveryAttention(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   candidateTaskIds: Iterable<string>,
 ): AppTaskRecoveryAttention[] {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const candidates = [...candidateTaskIds];
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
@@ -1451,8 +1442,8 @@ export function pendingAppTaskRecoveryAttention(
   });
 }
 
-export function acknowledgeAppTaskRecoveryAttention(config: ResourceTaskStateConfig, taskId: string): boolean {
-  return withTaskStateLock(config, () => {
+export function acknowledgeAppTaskRecoveryAttention(config: AppTaskContext, taskId: string): boolean {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const attempt = Object.values(tree.attempts ?? {})
       .filter((candidate) => candidate.taskId === taskId)
@@ -1462,7 +1453,7 @@ export function acknowledgeAppTaskRecoveryAttention(config: ResourceTaskStateCon
     const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
     attempt.metadata.resourceVersion += 1;
     attempt.attentionNotifiedAt = new Date().toISOString();
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
     return true;
@@ -1508,7 +1499,7 @@ function validateParentReference(tree: TaskTree, taskId: string, parentId: strin
 }
 
 export function observeAppTaskIntent(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   input: {
     intent: AppTaskIntent;
     appAgent: string;
@@ -1522,7 +1513,7 @@ export function observeAppTaskIntent(
   if (input.admissionKey !== undefined && !admissionKey) {
     throw new Error("Task admission key must be non-empty when provided");
   }
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({
       taskIds: [input.intent.id, input.intent.parentId, ...(input.intent.dependsOn ?? [])],
       ...(admissionKey ? { admissionIds: [admissionKey] } : {}),
@@ -1603,7 +1594,7 @@ export function observeAppTaskIntent(
       }
       if (existingResource || admissionKey) {
         const resourceMutation = finishResourceMutationScope(mutationScope, tree);
-        saveTaskState(config, tree, {
+        commitTaskMutation(config, tree, {
           resourceMutation: {
             ...resourceMutation,
             ...(admissionKey && tree.appTaskAdmissions?.[admissionKey]
@@ -1718,7 +1709,7 @@ export function observeAppTaskIntent(
     }
     recordAdmission(input.intent.id, generation);
     const relevantConditionIds = new Set([...initialConditionIds, ...(resource.status.conditionIds ?? [])]);
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: existingFence ? [existingFence] : [],
         ...(!existingFence ? { expectMissingTaskIds: [resource.metadata.id] } : {}),
@@ -1742,8 +1733,8 @@ export function observeAppTaskIntent(
   });
 }
 
-export function readAppTaskIntent(config: ResourceTaskStateConfig, taskId: string): AppTaskIntent | null {
-  return withTaskStateLock(config, () => {
+export function readAppTaskIntent(config: AppTaskContext, taskId: string): AppTaskIntent | null {
+  return withTaskTransition(config, () => {
     const resource = config.resourceStore.readTask(taskId);
     return resource ? resourceIntent(resource) : null;
   });
@@ -1754,8 +1745,8 @@ export function readAppTaskIntent(config: ResourceTaskStateConfig, taskId: strin
  * A live resource takes precedence over an older immutable receipt with the
  * same task id, so a newly revised generation cannot look complete by accident.
  */
-export function isAppTaskConverged(config: ResourceTaskStateConfig, taskId: string, generation?: number): boolean {
-  return withTaskStateLock(config, () => {
+export function isAppTaskConverged(config: AppTaskContext, taskId: string, generation?: number): boolean {
+  return withTaskTransition(config, () => {
     const resource = config.resourceStore.readTask(taskId);
     if (resource) {
       return (
@@ -1858,7 +1849,7 @@ const MAX_CHILD_CONTEXT_TEXT = 512;
 const MAX_SNAPSHOT_CONTEXT_TEXT = 256;
 const MAX_SNAPSHOT_RELATED_TASK_IDS = 8;
 
-function appTaskConcurrencyLimit(config: ResourceTaskStateConfig): number {
+function appTaskConcurrencyLimit(config: AppTaskContext): number {
   return Number.isInteger(config.maxConcurrent) && config.maxConcurrent > 0 ? config.maxConcurrent : 1;
 }
 
@@ -1962,8 +1953,8 @@ function liveTaskSnapshotContext(
 }
 
 /** Bounded current child state supplied to an executable parent reconciliation. */
-export function readAppTaskChildContext(config: ResourceTaskStateConfig, taskId: string): AppTaskChildContext {
-  return withTaskStateLock(config, () => {
+export function readAppTaskChildContext(config: AppTaskContext, taskId: string): AppTaskChildContext {
+  return withTaskTransition(config, () => {
     const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], appTaskConcurrencyLimit(config));
     const tree = config.resourceStore.readTaskContext(
       { taskIds: new Set([taskId, ...runningIds]) },
@@ -2005,8 +1996,8 @@ export type AppTaskLiveSnapshot = {
 };
 
 /** Bounded App-wide live-task facts, excluding the task performing the review. */
-export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, currentTaskId: string): AppTaskLiveSnapshot {
-  return withTaskStateLock(config, () => {
+export function readAppTaskLiveSnapshot(config: AppTaskContext, currentTaskId: string): AppTaskLiveSnapshot {
+  return withTaskTransition(config, () => {
     const indexedIds = config.resourceStore.listLiveTaskIds(currentTaskId, MAX_APP_TASK_LIVE_SNAPSHOT + 1);
     const indexedIdSet = new Set(indexedIds);
     const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], appTaskConcurrencyLimit(config));
@@ -2028,11 +2019,8 @@ export function readAppTaskLiveSnapshot(config: ResourceTaskStateConfig, current
   });
 }
 
-export function readAppTaskTrigger(
-  config: ResourceTaskStateConfig,
-  taskId: string,
-): Record<string, unknown> | undefined {
-  return withTaskStateLock(config, () => {
+export function readAppTaskTrigger(config: AppTaskContext, taskId: string): Record<string, unknown> | undefined {
+  return withTaskTransition(config, () => {
     const pending = config.resourceStore.readTrigger(taskId);
     if (pending) return structuredClone(pending.event);
     const attemptId = config.resourceStore.readTask(taskId)?.status.currentAttemptId;
@@ -2044,11 +2032,8 @@ export function readAppTaskTrigger(
 }
 
 /** Return only a wake that is still pending beyond the active attempt. */
-export function readPendingAppTaskTrigger(
-  config: ResourceTaskStateConfig,
-  taskId: string,
-): Record<string, unknown> | undefined {
-  return withTaskStateLock(config, () => {
+export function readPendingAppTaskTrigger(config: AppTaskContext, taskId: string): Record<string, unknown> | undefined {
+  return withTaskTransition(config, () => {
     const event = config.resourceStore.readTrigger(taskId)?.event;
     return event ? structuredClone(event) : undefined;
   });
@@ -2083,11 +2068,11 @@ function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false)
 
 /** Persist a wake observation for an existing task without resubmitting desired state. */
 export function recordAppTaskTrigger(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   taskId: string,
   event: Record<string, unknown>,
 ): { kind: "recorded" | "waiting" | "missing" } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     // A wake updates one existing Task. Its children and attempt history do
     // not participate in trigger selection, so keep this interface-path read
     // proportional to the exact Task rather than its whole subtree.
@@ -2105,7 +2090,7 @@ export function recordAppTaskTrigger(
     const previous = tree.taskTriggers?.[taskId];
     const observedAt = new Date().toISOString();
     const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, observedAt);
-    const next = preferredTriggerFromEvents(events, resolvedAgent(tree, resourceIntent(resource), config.worker));
+    const next = preferredTriggerFromEvents(events, resolvedAgent(tree, resourceIntent(resource), config.agent));
     tree.taskTriggers = {
       ...(tree.taskTriggers ?? {}),
       [taskId]: {
@@ -2117,7 +2102,7 @@ export function recordAppTaskTrigger(
         observedAt,
       },
     };
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [
           {
@@ -2165,7 +2150,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   return false;
 }
 
-function acknowledgeIndexedRecoveryWait(config: ResourceTaskStateConfig, taskId: string): void {
+function acknowledgeIndexedRecoveryWait(config: AppTaskContext, taskId: string): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
   // wake; leaving any recovery signal set would make safety recovery retry a no-op.
@@ -2218,8 +2203,8 @@ function effectiveAppTaskPriority(
   return appTaskPriorityOrder[promotedRank] ?? declaredPriority;
 }
 
-export function listRunnableAppTaskQueueEntries(config: ResourceTaskStateConfig): AppTaskQueueEntry[] {
-  return withTaskStateLock(config, () => {
+export function listRunnableAppTaskQueueEntries(config: AppTaskContext): AppTaskQueueEntry[] {
+  return withTaskTransition(config, () => {
     const candidates = config.resourceStore.listRecoveryCandidates(Date.now(), 10_000).items;
     const candidateIds = [...new Set(candidates.map((candidate) => candidate.taskId))];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidateIds });
@@ -2263,14 +2248,14 @@ export function listRunnableAppTaskQueueEntries(config: ResourceTaskStateConfig)
   });
 }
 
-export function listRunnableAppTaskIds(config: ResourceTaskStateConfig): string[] {
+export function listRunnableAppTaskIds(config: AppTaskContext): string[] {
   return listRunnableAppTaskQueueEntries(config).map((entry) => entry.taskId);
 }
 
-export function appTaskQueueEntries(config: ResourceTaskStateConfig, taskIds: Iterable<string>): AppTaskQueueEntry[] {
+export function appTaskQueueEntries(config: AppTaskContext, taskIds: Iterable<string>): AppTaskQueueEntry[] {
   const requested = new Set(taskIds);
   if (requested.size === 0) return [];
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: requested });
     const nowMs = Date.now();
     return [...requested].flatMap((taskId) => {
@@ -2309,11 +2294,11 @@ export type AppTaskExecutionRepairCandidate = {
 
 /** Bindings to retry once their owning app reload proves the workflow now resolves. */
 export function listHandlerUnavailableAppTasks(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   appAgent: string,
   candidateTaskIds: Iterable<string>,
 ): AppTaskHandlerRepairCandidate[] {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const candidates = [...candidateTaskIds];
     if (candidates.length === 0) return [];
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
@@ -2336,8 +2321,8 @@ export function listHandlerUnavailableAppTasks(
 }
 
 /** Release attention only after the host has proved the named workflow resolves again. */
-export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig, taskId: string): boolean {
-  return withTaskStateLock(config, () => {
+export function releaseHandlerUnavailableAppTask(config: AppTaskContext, taskId: string): boolean {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "attention") return false;
@@ -2352,7 +2337,7 @@ export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig
       summary,
       conditionIds: [],
     });
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
     return true;
@@ -2361,12 +2346,12 @@ export function releaseHandlerUnavailableAppTask(config: ResourceTaskStateConfig
 
 /** Executions to retry only after a later successful session proves their selected agent is runnable again. */
 export function listHandlerExecutionFailedAppTasks(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   candidateTaskIds: Iterable<string>,
 ): AppTaskExecutionRepairCandidate[] {
   const candidates = [...candidateTaskIds];
   if (candidates.length === 0) return [];
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
     return Object.values(tree.resources ?? {})
       .flatMap((resource): AppTaskExecutionRepairCandidate[] => {
@@ -2428,7 +2413,7 @@ export type AppTaskRetryReceipt = {
  * newer evidence.
  */
 export function retryFailedAppTask(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   input: {
     appId: string;
     taskId: string;
@@ -2437,7 +2422,7 @@ export function retryFailedAppTask(
     controlKey?: string;
   },
 ): AppTaskRetryReceipt {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const priorControl = input.controlKey ? config.resourceStore.readControlReceipt(input.controlKey) : null;
     if (priorControl) {
       if (
@@ -2500,7 +2485,7 @@ export function retryFailedAppTask(
       previousAttemptId: attempt.metadata.id,
       acceptedAt,
     };
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         ...finishResourceMutationScope(mutationScope, tree),
         ...(input.controlKey
@@ -2534,7 +2519,7 @@ export type AppTaskCancellationResult = {
 
 /** Cancel one exact Task through the same fenced resource authority used by reconciliation. */
 export function cancelAppTask(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   input: {
     appId: string;
     taskId: string;
@@ -2544,7 +2529,7 @@ export function cancelAppTask(
     controlKey?: string;
   },
 ): AppTaskCancellationResult {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     if (input.appId !== config.resourceStore.appId) {
       throw new Error(`Task cancellation belongs to another App: ${input.appId}`);
     }
@@ -2624,7 +2609,7 @@ export function cancelAppTask(
       summary,
       cancelledAt,
     };
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         ...finishResourceMutationScope(mutationScope, tree),
         cancellations: [cancellation],
@@ -2657,7 +2642,7 @@ export function cancelAppTask(
 
 /** Release one execution failure after structured evidence from a newer successful agent session. */
 export function releaseHandlerExecutionFailedAppTask(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   taskId: string,
   evidence: {
     agent: string;
@@ -2666,7 +2651,7 @@ export function releaseHandlerExecutionFailedAppTask(
     allowLegacyHandlerBlocked?: boolean;
   },
 ): boolean {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
     const resource = tree.resources?.[taskId];
     if (!resource || resource.status.phase !== "attention") return false;
@@ -2706,7 +2691,7 @@ export function releaseHandlerExecutionFailedAppTask(
     // Replay the unaccepted attempt batch before any newer event that arrived
     // after the failed attempt; neither source may erase the other.
     restoreAttemptEvents(tree, taskId, resource, attempt, evidence.observedAt);
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
     });
     return true;
@@ -2714,7 +2699,7 @@ export function releaseHandlerExecutionFailedAppTask(
 }
 
 export function claimObservedAppTask(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   input: {
     taskId: string;
     appAgent: string;
@@ -2723,7 +2708,7 @@ export function claimObservedAppTask(
     isAgentRunnable?: (agent: string) => boolean;
   },
 ): AppTaskClaimResult {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
     const resource = tree.resources?.[input.taskId];
     if (config.resourceStore.isCancelled(input.taskId)) {
@@ -2756,7 +2741,7 @@ export function claimObservedAppTask(
         resource,
         "Matching completion receipt already exists; retiring stale claim state",
       );
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
       return {
@@ -2795,7 +2780,7 @@ export function claimObservedAppTask(
         summary,
         conditionIds: [],
       });
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: finishResourceMutationScope(mutationScope, tree),
       });
       return {
@@ -3039,7 +3024,7 @@ export function claimObservedAppTask(
     });
     const currentConditionIds = new Set(resource.status.conditionIds ?? []);
     const relevantConditionIds = new Set([...initialConditionIds, ...currentConditionIds]);
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [resourceFence],
         tasks: [resourceWrite(tree, resource, false)],
@@ -3111,11 +3096,11 @@ function matchingTaskAttempt(
 }
 
 export function releaseStaleAppTaskResult(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   summary = "Stale reconciliation result was rejected; retrying from current task evidence",
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const resource = tree.resources?.[claim.taskId];
     if (!resource) return { status: "missing", taskId: claim.taskId };
@@ -3139,7 +3124,7 @@ export function releaseStaleAppTaskResult(
       // execution state instead of letting the retry detach accepted waits.
       ...(resource.status.conditionIds?.length ? { observedGeneration: resource.metadata.generation } : {}),
     });
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [
           {
@@ -3160,17 +3145,17 @@ export function releaseStaleAppTaskResult(
 
 /** Attach observed workspace lineage to the current attempt without changing desired task state. */
 export function recordAppTaskAttemptWorkspace(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   workspace: AppTaskWorkspace,
 ): boolean {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTaskAttempt(tree, claim);
     if (!match) return false;
     match.attempt.metadata.resourceVersion += 1;
     match.attempt.workspace = structuredClone(workspace);
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [
           {
@@ -3200,18 +3185,14 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
 }
 
 /** Keep one currently executing bounded workflow attempt current without weakening its claim fence. */
-export function renewAppTaskAttemptLease(
-  config: ResourceTaskStateConfig,
-  claim: AppTaskClaim,
-  nowMs = Date.now(),
-): boolean {
-  return withTaskStateLock(config, () => {
+export function renewAppTaskAttemptLease(config: AppTaskContext, claim: AppTaskClaim, nowMs = Date.now()): boolean {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTaskAttempt(tree, claim);
     if (!match) return false;
     match.attempt.metadata.resourceVersion += 1;
     refreshAttemptLease(match.attempt, match.attempt.sessionId, nowMs);
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [
           {
@@ -3229,12 +3210,8 @@ export function renewAppTaskAttemptLease(
 }
 
 /** Attach the launched agent-session id and refresh the current attempt lease. */
-export function recordAppTaskAttemptSession(
-  config: ResourceTaskStateConfig,
-  claim: AppTaskClaim,
-  sessionId: string,
-): boolean {
-  return withTaskStateLock(config, () => {
+export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTaskClaim, sessionId: string): boolean {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTaskAttempt(tree, claim);
     if (!match) return false;
@@ -3242,7 +3219,7 @@ export function recordAppTaskAttemptSession(
     match.attempt.metadata.resourceVersion += 1;
     match.attempt.sessionId = sessionId;
     refreshAttemptLease(match.attempt, sessionId);
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [
           {
@@ -3266,11 +3243,11 @@ export function recordAppTaskAttemptSession(
  * work.
  */
 export function associateAppTaskSession(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   binding: { taskId: string; generation: number },
   sessionId: string,
 ): AppTaskSessionAssociation {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
     const resource = tree.resources?.[binding.taskId];
     if (!resource) return { status: "missing", taskId: binding.taskId };
@@ -3294,7 +3271,7 @@ export function associateAppTaskSession(
       attempt.metadata.resourceVersion += 1;
       attempt.sessionId = sessionId;
       refreshAttemptLease(attempt, sessionId);
-      saveTaskState(config, tree, {
+      commitTaskMutation(config, tree, {
         resourceMutation: {
           fences: [
             {
@@ -3612,7 +3589,7 @@ function applyTaskActions(
   claim: AppTaskClaim,
   actions: AppTaskAction[],
   evidence: string[],
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   acceptanceBasis: AppTaskAcceptanceBasis,
 ): { actionsApplied: string[]; supersededSessionIds: string[] } {
   validateTaskActions(tree, actions, config);
@@ -3680,8 +3657,8 @@ function applyTaskActions(
           if (action.category === null) delete nextIntent.category;
           else nextIntent.category = action.category;
         }
-        const currentAgent = resolvedAgent(tree, current, config.worker);
-        const nextAgent = resolvedAgent(tree, nextIntent, config.worker);
+        const currentAgent = resolvedAgent(tree, current, config.agent);
+        const nextAgent = resolvedAgent(tree, nextIntent, config.agent);
         const executionChanged = appTaskSpecHash(current, currentAgent) !== appTaskSpecHash(nextIntent, nextAgent);
         const generation = executionChanged ? resource.metadata.generation + 1 : resource.metadata.generation;
         if (executionChanged) {
@@ -3961,7 +3938,7 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
 }
 
 export function completeAppTask(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   input: {
     summary: string;
@@ -3979,7 +3956,7 @@ export function completeAppTask(
   supersededSessionIds: string[];
   taskContinues?: true;
 } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const actions = input.actions ?? [];
     const tree = config.resourceStore.readTaskContext({
       taskIds: [claim.taskId, ...taskActionContextIds(actions)],
@@ -4026,7 +4003,7 @@ export function completeAppTask(
       if (!revised || revised.metadata.generation <= claim.generation) {
         throw new Error(`Handler self-update for ${claim.taskId} must change task execution intent`);
       }
-      saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+      commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
       return {
         status: "applied",
         actionsApplied,
@@ -4134,7 +4111,7 @@ export function completeAppTask(
       if (tree.resources) delete tree.resources[claim.taskId];
       if (tree.taskTriggers) delete tree.taskTriggers[claim.taskId];
     }
-    saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+    commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     return {
       status: "applied",
       actionsApplied,
@@ -4148,7 +4125,7 @@ export function completeAppTask(
 }
 
 export function deferAppTask(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   input: {
     disposition: "waiting";
@@ -4166,7 +4143,7 @@ export function deferAppTask(
   reconcileTaskIds: string[];
   supersededSessionIds: string[];
 } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const actions = input.actions ?? [];
     const tree = config.resourceStore.readTaskContext({
       taskIds: [claim.taskId, ...taskActionContextIds(actions)],
@@ -4279,7 +4256,7 @@ export function deferAppTask(
         };
       }
     }
-    saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+    commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     const satisfiedTaskIds = actions.filter((action) => action.kind === "close-task").map((action) => action.taskId);
     const reconcileTaskIds = [
       ...new Set([
@@ -4300,7 +4277,7 @@ export function deferAppTask(
 }
 
 export function markAppTaskAttention(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   input: {
     summary: string;
@@ -4310,7 +4287,7 @@ export function markAppTaskAttention(
     wakeParent?: boolean;
   },
 ): { status: "applied" | "stale"; parentTaskId?: string } {
-  return withTaskStateLock(config, () => {
+  return withTaskTransition(config, () => {
     const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     const match = matchingTaskAttempt(tree, claim);
     if (!match) return { status: "stale" };
@@ -4344,7 +4321,7 @@ export function markAppTaskAttention(
         ? undefined
         : recordExecutableParentTrigger(tree, claim.taskId, "attention", input.summary, input.evidence, now);
     trackResourceMutationTask(mutationScope, tree, parentTaskId);
-    saveTaskState(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+    commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
     return { status: "applied", ...(parentTaskId ? { parentTaskId } : {}) };
   });
 }
