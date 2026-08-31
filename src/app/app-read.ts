@@ -9,7 +9,7 @@ import type {
   TaskPage,
   TaskView,
 } from "@may-agent/sdk/app";
-import type { ResourceTaskStateConfig, TaskTree } from "./app-task-store.js";
+import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";
@@ -21,7 +21,7 @@ export type RuntimeAppReadOptions = {
   metrics: MetricService;
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
   taskRead?: AppRead["tasks"];
-  taskStateConfig?: ResourceTaskStateConfig;
+  taskStateConfig?: AppTaskContext;
 };
 
 export function readRuntimeTaskView(
@@ -65,9 +65,7 @@ function resourceTaskView(resource: NonNullable<TaskTree["resources"]>[string]):
     outcome: resource.spec.outcome,
     summary: resource.status.summary,
     response: resource.status.response,
-    result: resource.status.result
-      ? structuredClone(resource.status.result)
-      : undefined,
+    result: resource.status.result ? structuredClone(resource.status.result) : undefined,
     evidence: resource.status.evidence ? [...resource.status.evidence] : undefined,
   };
 }

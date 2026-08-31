@@ -44,7 +44,6 @@ export async function prepareDaemonAgents(opts: {
   sharedRoot: string;
   definitionSharedRoot: string;
   projectsRoot: string;
-  stateProjectsRoot: string;
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -201,7 +200,6 @@ export async function prepareDaemonAgents(opts: {
     });
     appTaskOptions = {
       projectsRoot: opts.projectsRoot,
-      stateProjectsRoot: opts.stateProjectsRoot,
       projectRoot: opts.projectRoot,
       persistDir: opts.persistDir,
       agentsRoot: opts.agentsRoot,

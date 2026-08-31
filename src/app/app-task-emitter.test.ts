@@ -12,8 +12,7 @@ import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js
 import { renewAppTaskAttemptLease, type AppTaskClaim } from "./app-task-reconciler.js";
 import { EventBus } from "./event-bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
-import { cacheTaskStateReads, readTaskState, type ResourceTaskStateConfig, type TaskTree } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -327,18 +326,15 @@ describe("AppTaskEmitter", () => {
     const { root, emitter, store } = harness();
     const appDir = join(root, "sample.app");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, root);
-    const config: ResourceTaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
-    expect(readTaskState(config).taskTriggers?.["child-1"]).toBeUndefined();
+    cacheTaskSnapshots(config);
+    expect(readTaskSnapshot(config).taskTriggers?.["child-1"]).toBeUndefined();
 
     emitter.emit("wake-cached-child", {
       type: "sample.child.requested",
@@ -346,7 +342,7 @@ describe("AppTaskEmitter", () => {
       data: { child: "one" },
     });
 
-    expect(readTaskState(config).taskTriggers?.["child-1"]?.event).toMatchObject({
+    expect(readTaskSnapshot(config).taskTriggers?.["child-1"]?.event).toMatchObject({
       type: "sample.child.requested",
     });
   });
@@ -386,13 +382,10 @@ describe("AppTaskEmitter", () => {
     const { root, db, emitter, store } = harness();
     const appDir = join(root, "sample.app");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, root);
-    const config: ResourceTaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
@@ -465,14 +458,10 @@ describe("AppTaskEmitter", () => {
     const appDir = join(root, "projects", "gym-scope-fence-test.app");
     const projectDir = join(root, "projects", "gym");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, join(root, "projects"));
-    const config: ResourceTaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
-      stateAppDir: paths.stateAppDir,
       projectDir,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "gym",
+      agent: "gym",
       maxConcurrent: 2,
       resourceStore: store,
     };

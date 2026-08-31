@@ -8,15 +8,12 @@ import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import {
-  cacheTaskStateReads,
-  readTaskState,
-  saveTaskState,
-  setProjectLifecycle,
-  type ResourceTaskStateConfig,
-  type TaskStateConfig,
+  cacheTaskSnapshots,
+  readTaskSnapshot,
+  commitTaskMutation,
+  type AppTaskContext,
   type TaskTree,
 } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
   claimObservedAppTask,
   completeAppTask,
@@ -155,10 +152,12 @@ describe("AppTaskResourceStore", () => {
     ).toEqual({ value: "2" });
     expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
     expect(
-      db.prepare(
-        `SELECT source_task_id, relation_kind, target_task_id
+      db
+        .prepare(
+          `SELECT source_task_id, relation_kind, target_task_id
          FROM app_task_relations WHERE app_id = 'example'`,
-      ).all(),
+        )
+        .all(),
     ).toEqual([{ source_task_id: "legacy", relation_kind: "parent", target_task_id: "project" }]);
     db.close();
   });
@@ -214,10 +213,7 @@ describe("AppTaskResourceStore", () => {
     }
     store.bootstrapSnapshot(tree, "revision-1");
 
-    const context = store.readTaskContext(
-      { taskIds: ["normal"] },
-      { includeHistory: false, childLimit: 2 },
-    );
+    const context = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 2 });
 
     expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child-00", "child-01", "normal"]);
     expect(Object.keys(context.attempts ?? {})).toEqual([]);
@@ -237,10 +233,7 @@ describe("AppTaskResourceStore", () => {
     }
     store.bootstrapSnapshot(tree, "revision-1");
 
-    const context = store.readTaskContext(
-      { taskIds: ["normal"] },
-      { includeHistory: false, childLimit: 0 },
-    );
+    const context = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 0 });
 
     expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
     expect(Object.keys(context.attempts ?? {})).toEqual([]);
@@ -542,13 +535,10 @@ describe("AppTaskResourceStore", () => {
     roots.push(configRoot);
     const appDir = join(configRoot, "example.app");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, configRoot);
-    const config: ResourceTaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: configRoot,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "test",
+      agent: "test",
       maxConcurrent: 2,
       resourceStore: store,
     };
@@ -596,17 +586,14 @@ describe("AppTaskResourceStore", () => {
     delete tree.taskTriggers?.human;
     tree.resources!.human!.status.observedGeneration = 1;
     store.bootstrapSnapshot(tree, "revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
     recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 92 });
     const claim = claimObservedAppTask(config, {
       taskId: "normal",
@@ -737,23 +724,20 @@ describe("AppTaskResourceStore", () => {
     mkdirSync(appDir, { recursive: true });
     const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
     store.bootstrapSnapshot(fixture(), "revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "test",
+      agent: "test",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
-    const tree = readTaskState(config);
+    cacheTaskSnapshots(config);
+    const tree = readTaskSnapshot(config);
     const next = tree.resources!.normal!;
     next.metadata.resourceVersion += 1;
     next.status.summary = "resource local";
 
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [{ taskId: "normal", resourceVersion: 1 }],
         tasks: [{ resource: next, ready: false }],
@@ -761,7 +745,7 @@ describe("AppTaskResourceStore", () => {
     });
 
     expect(store.readTask("normal")?.status.summary).toBe("resource local");
-    expect(existsSync(paths.taskStatePath)).toBeFalse();
+    expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     expect(readRuntimeTaskView({ taskStateConfig: config }, "normal")).toMatchObject({
       id: "normal",
       summary: "resource local",
@@ -770,9 +754,9 @@ describe("AppTaskResourceStore", () => {
       "active",
       "human",
     ]);
-    setProjectLifecycle(config, "paused", "resource lifecycle test");
+    store.setProjectLifecycle("paused");
     expect(store.projectLifecycle()).toBe("paused");
-    expect(existsSync(paths.taskStatePath)).toBeFalse();
+    expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     store.close();
   });
 
@@ -786,17 +770,14 @@ describe("AppTaskResourceStore", () => {
     delete tree.resources?.active;
     delete tree.attempts?.["attempt-1"];
     store.bootstrapSnapshot(tree, "revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
 
     expect(recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 91 })).toEqual({
       kind: "recorded",
@@ -834,7 +815,7 @@ describe("AppTaskResourceStore", () => {
     ).toMatchObject({ kind: "observed", taskId: "new-task", generation: 1 });
     expect(store.readTask("new-task")?.spec.outcome).toBe("handle new task");
     expect(store.readSnapshot().appTaskAdmissions?.["new-task-admission"]?.taskId).toBe("new-task");
-    expect(existsSync(paths.taskStatePath)).toBeFalse();
+    expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     store.close();
   });
 
@@ -849,17 +830,14 @@ describe("AppTaskResourceStore", () => {
     tree.attempts = {};
     tree.taskTriggers = {};
     store.bootstrapSnapshot(tree, "revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
 
     expect(
       observeAppTaskIntent(config, {
@@ -893,17 +871,14 @@ describe("AppTaskResourceStore", () => {
     tree.attempts = {};
     tree.taskTriggers = {};
     store.bootstrapSnapshot(tree, "revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
 
     expect(
       claimObservedAppTask(config, {
@@ -935,5 +910,4 @@ describe("AppTaskResourceStore", () => {
     );
     store.close();
   });
-
 });

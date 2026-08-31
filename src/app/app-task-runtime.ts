@@ -54,9 +54,9 @@ import {
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
-  cacheTaskStateReads,
+  cacheTaskSnapshots,
   ResourceTaskMutationStaleError,
-  type ResourceTaskStateConfig,
+  type AppTaskContext,
   type TaskTree,
 } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
@@ -135,7 +135,7 @@ import {
   retryFailedAppTask,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
-  taskReconciliationConfig,
+  appTaskContext,
   renewAppTaskAttemptLease,
   APP_TASK_ATTEMPT_LEASE_DURATION_MS,
   APP_TASK_RECOVERY_OWNER,
@@ -216,8 +216,6 @@ const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
 export interface AppTaskRuntimeDescriptor {
   id: string;
-  /** Stable writable App root; definition code may live in a release checkout. */
-  stateAppDir?: string;
   appDir: string;
   projectDir: string;
   agent: string;
@@ -229,8 +227,6 @@ export interface AppTaskRuntimeDescriptor {
 
 export interface AppTaskRuntimeOptions {
   projectsRoot: string;
-  /** Canonical writable projects root, independent of definition releases. */
-  stateProjectsRoot?: string;
   projectRoot: string;
   persistDir?: string;
   agentsRoot?: string;
@@ -727,7 +723,7 @@ function readPersistedTerminalAgentResult(persistDir: string | undefined, sessio
 
 export function consumePersistedTerminalAgentResult(input: {
   persistDir?: string;
-  config: ResourceTaskStateConfig;
+  config: AppTaskContext;
   descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
   sessionId: string;
@@ -1412,7 +1408,7 @@ export function admitTaskAppDependencies(input: {
   return input.dependencies.map((dependency) => matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!);
 }
 
-function openTaskAppDependencyConditions(config: ResourceTaskStateConfig, taskId: string): AppTaskConditionSpec[] {
+function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string): AppTaskConditionSpec[] {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
   return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
@@ -2685,7 +2681,7 @@ function emitTaskReconciliationEvent(
 }
 
 function recoverStaleTaskResult(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } {
   const recovery = releaseStaleAppTaskResult(
@@ -2700,7 +2696,7 @@ function recoverStaleTaskResult(
 }
 
 function recoverStaleTaskActionResult(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   error: unknown,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
@@ -3632,7 +3628,7 @@ function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
 }
 
 function appDependencyUpdateWakeTaskIds(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   event: Record<string, unknown>,
   allowedTaskIds?: Iterable<string>,
 ): string[] {
@@ -3819,7 +3815,6 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
 export function standaloneAppTaskAdmissionDescriptors(input: {
   persistDir: string;
   projectsRoot: string;
-  stateProjectsRoot: string;
   entries: AppRegistrySnapshot["entries"];
 }): Map<string, AppTaskRuntimeDescriptor> {
   const descriptors = new Map<string, AppTaskRuntimeDescriptor>();
@@ -3829,7 +3824,6 @@ export function standaloneAppTaskAdmissionDescriptors(input: {
     const descriptor: AppTaskRuntimeDescriptor = {
       id: app.id,
       appDir,
-      stateAppDir: resolve(input.stateProjectsRoot, basename(appDir)),
       projectDir: domainProjectDir(input.projectsRoot, appDir, app.id, app),
       agent: configuredAppAgent(app, appDir),
       app,
@@ -3922,7 +3916,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
 function replayPersistedConditionEvents(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   input: { conditionIds?: string[] } = {},
 ): string[] {
   if (!opts.persistDir) return [];
@@ -4239,7 +4233,7 @@ export function cancelLoadedAppTask(input: {
 
 function enqueueAppTask(
   controller: AppTaskController,
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   taskId: string,
   overrides: AppTaskQueueOptions = {},
 ): boolean {
@@ -4250,20 +4244,19 @@ function enqueueAppTask(
   });
 }
 
-const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, ResourceTaskStateConfig>();
+const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, AppTaskContext>();
 
-function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): ResourceTaskStateConfig {
+function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskContext {
   const existing = appTaskConfigs.get(descriptor);
   if (existing) return existing;
-  const config = taskReconciliationConfig({
+  const config = appTaskContext({
     appDir: descriptor.appDir,
-    stateAppDir: descriptor.stateAppDir,
     projectDir: descriptor.projectDir,
     agent: descriptor.agent,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     resourceStore: descriptor.resourceStore,
   });
-  cacheTaskStateReads(config);
+  cacheTaskSnapshots(config);
   appTaskConfigs.set(descriptor, config);
   return config;
 }
@@ -4891,7 +4884,6 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
     const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
-      stateAppDir: opts.stateProjectsRoot ? resolve(opts.stateProjectsRoot, basename(appDir)) : appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       agent: configuredAppAgent(app, appDir),
       app,

@@ -3,14 +3,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
-import {
-  cacheTaskStateReads,
-  legacyTaskStateConfig,
-  readTaskState,
-  type ResourceTaskStateConfig,
-  type TaskStateConfig,
-} from "./app-task-store.js";
+import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
 import { AppTaskQueue } from "./app-task-queue.ts";
 import {
@@ -51,12 +46,12 @@ import {
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
   renewAppTaskAttemptLease,
-  taskReconciliationConfig,
+  appTaskContext,
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
 
-function trackAppTaskConditionEvent(config: ResourceTaskStateConfig, event: Record<string, unknown>) {
+function trackAppTaskConditionEvent(config: AppTaskContext, event: Record<string, unknown>) {
   return trackAppTaskConditionEventForTasks(config, event, matchingAppTaskConditionTaskIds(config, event));
 }
 
@@ -108,37 +103,20 @@ function seedFixture(operationsOwner?: string) {
       2,
     )}\n`,
   );
-  const config = legacyTaskStateConfig({
+  const config = appTaskTestContext({
     appDir,
-    projectDir: appDir,
-    worker: "app-owner",
+    agent: "app-owner",
     maxConcurrent: 3,
+    databasePath: join(root, "host.sqlite"),
   });
   return { root, appDir, config };
 }
 
 function resourceFixture(
-  input: { root: string; appDir: string; config: TaskStateConfig },
-  sourceRevision: string,
-): { config: ResourceTaskStateConfig; store: AppTaskResourceStore } {
-  if (input.config.resourceStore) {
-    return { config: input.config as ResourceTaskStateConfig, store: input.config.resourceStore };
-  }
-  const tree = readTaskState(input.config);
-  tree.project = "sample";
-  tree.project_lifecycle = "active";
-  const store = AppTaskResourceStore.openStandalone(join(input.root, "host.sqlite"), "sample");
-  store.bootstrapSnapshot(tree, sourceRevision);
-  return {
-    config: taskReconciliationConfig({
-      appDir: input.appDir,
-      projectDir: input.appDir,
-      agent: "app-owner",
-      maxConcurrent: 3,
-      resourceStore: store,
-    }),
-    store,
-  };
+  input: { root: string; appDir: string; config: AppTaskContext },
+  _sourceRevision: string,
+): { config: AppTaskContext; store: AppTaskResourceStore } {
+  return { config: input.config, store: input.config.resourceStore };
 }
 
 function fixture(operationsOwner?: string) {
@@ -150,7 +128,7 @@ function mutateAttemptFixture(
   config: ReturnType<typeof resourceFixture>["config"],
   taskId: string,
   attemptId: string,
-  mutate: (attempt: NonNullable<ReturnType<typeof readTaskState>["attempts"]>[string]) => void,
+  mutate: (attempt: NonNullable<ReturnType<typeof readTaskSnapshot>["attempts"]>[string]) => void,
 ): void {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
@@ -177,8 +155,8 @@ function mutateTaskResourceFixture(
   config: ReturnType<typeof resourceFixture>["config"],
   taskId: string,
   mutate: (
-    resource: NonNullable<ReturnType<typeof readTaskState>["resources"]>[string],
-    trigger: NonNullable<ReturnType<typeof readTaskState>["taskTriggers"]>[string] | undefined,
+    resource: NonNullable<ReturnType<typeof readTaskSnapshot>["resources"]>[string],
+    trigger: NonNullable<ReturnType<typeof readTaskSnapshot>["taskTriggers"]>[string] | undefined,
   ) => void,
   ready = true,
 ): void {
@@ -211,7 +189,7 @@ function intent(mode: "achieve" | "maintain" = "achieve") {
 }
 
 function declareAndClaimTask(
-  config: TaskStateConfig,
+  config: AppTaskContext,
   input: {
     intent: AppTaskIntent;
     appAgent: string;
@@ -293,7 +271,7 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    const attempt = readTaskState(config).attempts?.[claim.attemptId];
+    const attempt = readTaskSnapshot(config).attempts?.[claim.attemptId];
     expect(attempt).toMatchObject({
       state: "running",
       runtimeId: expect.any(String),
@@ -441,7 +419,7 @@ describe("App task reconciler state", () => {
       dependentTaskIds: [claim.taskId],
       taskContinues: true,
     });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]).toMatchObject({
       metadata: { generation: claim.generation + 1 },
       spec: {
@@ -484,7 +462,7 @@ describe("App task reconciler state", () => {
       dependentTaskIds: [claim.taskId],
       taskContinues: true,
     });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("pending");
     expect(tree.taskTriggers?.[claim.taskId]?.event).toMatchObject({
       type: "sample.continue",
@@ -522,7 +500,7 @@ describe("App task reconciler state", () => {
       taskContinues: true,
     });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.receipts?.[claim.taskId]).toBeUndefined();
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("pending");
     const next = claimObservedAppTask(config, {
@@ -566,7 +544,7 @@ describe("App task reconciler state", () => {
         acceptedLiveEventIds: [101],
       }),
     ).toMatchObject({ status: "applied", taskContinues: true });
-    expect(readTaskState(config).taskTriggers?.[claim.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
+    expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
       102,
     ]);
   });
@@ -603,7 +581,7 @@ describe("App task reconciler state", () => {
         actions: [action],
       }),
     ).toThrow("newer Task evidence is pending");
-    expect(readTaskState(config).resources?.[action.id]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.[action.id]).toBeUndefined();
 
     expect(
       completeAppTask(config, claim, {
@@ -647,7 +625,7 @@ describe("App task reconciler state", () => {
       Array.from({ length: 32 }, (_, index) => index + 1),
     );
     expect(second.eventsTruncated).toBe(true);
-    expect(readTaskState(config).taskTriggers?.[first.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
+    expect(readTaskSnapshot(config).taskTriggers?.[first.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
       33, 34, 35,
     ]);
   });
@@ -941,7 +919,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ kind: "observed", taskId: "pipeline-monitor", generation: 1, changed: true });
 
-    const observedTree = readTaskState(config);
+    const observedTree = readTaskSnapshot(config);
     expect(observedTree.resources?.["pipeline-monitor"]).toMatchObject({
       metadata: { id: "pipeline-monitor", generation: 1, resourceVersion: 1 },
       spec: { outcome: "Keep the pipeline observable", mode: "maintain" },
@@ -957,7 +935,7 @@ describe("App task reconciler state", () => {
     });
     expect(claim).toMatchObject({ kind: "claimed", taskId: "pipeline-monitor", generation: 1 });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const claimedTree = readTaskState(config);
+    const claimedTree = readTaskSnapshot(config);
     expect(claimedTree.resources?.["pipeline-monitor"]).toMatchObject({
       metadata: { generation: 1, resourceVersion: 2 },
       status: { phase: "running", currentAttemptId: claim.attemptId },
@@ -1215,7 +1193,7 @@ describe("App task reconciler state", () => {
       },
     });
 
-    expect(readTaskState(config).resources?.[humanTask.id]?.status.lane).toBe("human");
+    expect(readTaskSnapshot(config).resources?.[humanTask.id]?.status.lane).toBe("human");
     expect(appTaskQueueEntries(resourceFixture(state, "human-lane-queue").config, [humanTask.id])).toEqual([
       {
         taskId: humanTask.id,
@@ -1392,7 +1370,7 @@ describe("App task reconciler state", () => {
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
     expect(resumed.intent.category).toBe("domain");
     expect(resumed.trigger).toEqual(event);
-    const persistedAttempt = readTaskState(config).attempts?.[resumed.attemptId];
+    const persistedAttempt = readTaskSnapshot(config).attempts?.[resumed.attemptId];
     expect(persistedAttempt?.events?.[0]?.event).toEqual(event);
     expect(persistedAttempt?.trigger).toBeUndefined();
   });
@@ -1436,7 +1414,7 @@ describe("App task reconciler state", () => {
     ]);
     expect(readAppTaskTrigger(config, "work/first")).toEqual(event);
     expect(readAppTaskTrigger(config, "work/second")).toBeUndefined();
-    expect(readTaskState(config).conditions?.["shared-ready:work/second"]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.["shared-ready:work/second"]).toMatchObject({
       status: { state: "unknown" },
     });
   });
@@ -1506,7 +1484,7 @@ describe("App task reconciler state", () => {
   it("returns trigger snapshots that cannot mutate a long-lived cached task tree", () => {
     const f = fixture();
     const { config, store } = resourceFixture(f, "immutable-trigger-snapshots");
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
     const monitor = intent("maintain");
     observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
     recordAppTaskTrigger(config, monitor.id, {
@@ -1614,7 +1592,7 @@ describe("App task reconciler state", () => {
     expect(secondClaim).toMatchObject({ kind: "claimed", taskId: monitor.id });
     if (secondClaim.kind !== "claimed") throw new Error("expected second claim");
 
-    const persistedAttempt = readTaskState(config).attempts?.[secondClaim.attemptId];
+    const persistedAttempt = readTaskSnapshot(config).attempts?.[secondClaim.attemptId];
     expect(persistedAttempt).toMatchObject({
       state: "running",
       events: [{ event: overrideTrigger }],
@@ -1664,7 +1642,7 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     expect(ownerClaim).toMatchObject({ kind: "claimed", taskId: monitor.id, trigger: comment });
-    expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual(["older-external-run-finished"]);
+    expect(readTaskSnapshot(config).resources[monitor.id].status.conditionIds).toEqual(["older-external-run-finished"]);
   });
 
   it.each(["app.input.requested", "app.task.requested"])(
@@ -1711,7 +1689,7 @@ describe("App task reconciler state", () => {
         handler: "workflow:known-workflow",
       });
       expect(claim).toMatchObject({ kind: "claimed", taskId: monitor.id, trigger: inputEvent });
-      expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual(["earlier-decision"]);
+      expect(readTaskSnapshot(config).resources[monitor.id].status.conditionIds).toEqual(["earlier-decision"]);
     },
   );
 
@@ -1729,7 +1707,7 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
     });
     expect(changed).toMatchObject({ kind: "observed", generation: 2, changed: true });
-    const changedTree = readTaskState(config);
+    const changedTree = readTaskSnapshot(config);
     expect(changedTree.resources?.["pipeline-monitor"]).toMatchObject({
       metadata: { generation: 2, resourceVersion: 3 },
       status: { phase: "pending" },
@@ -1778,7 +1756,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ kind: "observed", generation: 2, changed: true });
 
-    const changedTree = readTaskState(config);
+    const changedTree = readTaskSnapshot(config);
     expect(changedTree.resources?.[monitor.id]).toMatchObject({
       metadata: { generation: 2 },
       status: { phase: "pending" },
@@ -1824,7 +1802,7 @@ describe("App task reconciler state", () => {
       reason: "passive-resync",
     });
     expect(claim).toMatchObject({ kind: "claimed", taskId: monitor.id, generation: 2 });
-    const claimedTree = readTaskState(config);
+    const claimedTree = readTaskSnapshot(config);
     expect(claimedTree.conditions?.["stale-run"]).toBeUndefined();
     expect(claimedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
   });
@@ -1845,7 +1823,7 @@ describe("App task reconciler state", () => {
     });
     expect(observed).toEqual({ kind: "observed", taskId: claim.taskId, generation: 1, changed: true });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]).toMatchObject({
       metadata: { generation: 1, resourceVersion: claim.resourceVersion + 1 },
       spec: { parentId: "root", category: "operations", priority: "P0" },
@@ -1871,7 +1849,7 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
     });
     expect(observed).toMatchObject({ kind: "observed", generation: 2, changed: true });
-    expect(readTaskState(config).attempts?.[claim.attemptId]).toMatchObject({ state: "interrupted" });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toMatchObject({ state: "interrupted" });
   });
 
   it("inherits agent selection, claims one attempt, and deduplicates concurrent wakes", () => {
@@ -1890,7 +1868,7 @@ describe("App task reconciler state", () => {
     });
     expect(duplicate).toMatchObject({ kind: "busy", taskId: "evaluate:session-1" });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["evaluate:session-1"]).toMatchObject({
       metadata: { generation: 1 },
       spec: { workflow: "known-workflow" },
@@ -1913,7 +1891,7 @@ describe("App task reconciler state", () => {
       kind: "attention",
       summary: "Resolved agent human is not a runnable agent",
     });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["evaluate:session-1"]).toMatchObject({
       status: {
         phase: "attention",
@@ -1940,7 +1918,7 @@ describe("App task reconciler state", () => {
         response: "The session meets the requested quality bar.",
       }).status,
     ).toBe("applied");
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]).toBeUndefined();
     expect(tree.receipts?.[claim.taskId]).toMatchObject({
       metadata: { id: claim.taskId, generation: 1, resourceVersion: 1 },
@@ -2013,7 +1991,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ kind: "completed", taskId: taskIntent.id, generation: claim.generation });
 
-    const repaired = readTaskState(config);
+    const repaired = readTaskSnapshot(config);
     expect(repaired.resources?.[taskIntent.id]).toBeUndefined();
     expect(repaired.receipts?.[taskIntent.id]).toBeDefined();
   });
@@ -2084,7 +2062,7 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("cannot be pruned while it has live children: work/live-child");
 
-    const preserved = readTaskState(config);
+    const preserved = readTaskSnapshot(config);
     expect(preserved.resources?.[taskIntent.id]).toBeDefined();
     expect(preserved.resources?.["work/live-child"]?.spec.parentId).toBe(taskIntent.id);
   });
@@ -2113,7 +2091,7 @@ describe("App task reconciler state", () => {
 
   it("retains minimal completion receipts needed for durable deduplication", () => {
     const { config } = fixture();
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     tree.receipts = Object.fromEntries(
       Array.from({ length: 1_001 }, (_, index) => {
         const id = `completed-${index}`;
@@ -2153,7 +2131,7 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     completeAppTask(config, claim, { summary: "new completion" });
 
-    const completed = readTaskState(config);
+    const completed = readTaskSnapshot(config);
     expect(Object.keys(completed.receipts ?? {})).toHaveLength(1_002);
     expect(completed.receipts?.["completed-0"]).toBeTruthy();
     expect(completed.receipts?.[claim.taskId]).toBeTruthy();
@@ -2162,7 +2140,7 @@ describe("App task reconciler state", () => {
   it("keeps reconciliation child history small and decision-ready", () => {
     const f = fixture();
     const { config } = f;
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     const longText = "x".repeat(700);
     tree.receipts = Object.fromEntries(
       Array.from({ length: 12 }, (_, index) => {
@@ -2390,7 +2368,7 @@ describe("App task reconciler state", () => {
       status: "applied",
       dependentTaskIds: [dependent.id],
     });
-    expect(readTaskState(config).receipts?.[dependency.id]).toMatchObject({
+    expect(readTaskSnapshot(config).receipts?.[dependency.id]).toMatchObject({
       evidence: ["artifact:evaluation.json"],
       outcome: dependency.outcome,
     });
@@ -2414,7 +2392,7 @@ describe("App task reconciler state", () => {
 
     completeAppTask(config, claim, { summary: "session evaluated" });
 
-    const completed = readTaskState(config);
+    const completed = readTaskSnapshot(config);
     expect(Object.values(completed.resources ?? {}).filter((resource) => resource.status.phase === "running")).toEqual(
       [],
     );
@@ -2430,12 +2408,12 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (completedClaim.kind !== "claimed") throw new Error("expected claim");
-    const completedResource = readTaskState(config).resources?.[taskIntent.id];
+    const completedResource = readTaskSnapshot(config).resources?.[taskIntent.id];
     if (!completedResource) throw new Error("expected running resource");
     const completedSpec = structuredClone(completedResource.spec);
     completeAppTask(config, completedClaim, { summary: "session evaluated" });
 
-    const stale = readTaskState(config);
+    const stale = readTaskSnapshot(config);
     const receipt = stale.receipts?.[taskIntent.id];
     if (!receipt) throw new Error("expected completion receipt");
     stale.resources = {
@@ -2522,7 +2500,7 @@ describe("App task reconciler state", () => {
       if (completedClaim.kind !== "claimed") throw new Error("expected claim");
       completeAppTask(config, completedClaim, { summary: "session evaluated" });
 
-      const tree = readTaskState(config);
+      const tree = readTaskSnapshot(config);
       const receipt = tree.receipts?.[taskIntent.id];
       if (!receipt) throw new Error("expected completion receipt");
       const generation = variant === "generation" ? receipt.metadata.generation + 1 : receipt.metadata.generation;
@@ -2728,7 +2706,7 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     recordAppTaskAttemptSession(config, claim, "terminal-agent-session");
 
-    const before = readTaskState(config);
+    const before = readTaskSnapshot(config);
     expect(Date.parse(before.attempts![claim.attemptId].lease!.expiresAt)).toBeGreaterThan(Date.now());
     const recovered = terminalAgentSessionAppTaskClaim(config, claim.taskId, "terminal-agent-session");
     expect(recovered).toMatchObject({
@@ -2787,7 +2765,7 @@ describe("App task reconciler state", () => {
       if (!current.lease) throw new Error("expected leased attempt");
       current.lease.expiresAt = "2026-08-15T23:57:29.078Z";
     });
-    const expired = readTaskState(config);
+    const expired = readTaskSnapshot(config);
     const resource = expired.resources?.[claim.taskId];
     const attempt = expired.attempts?.[claim.attemptId];
     if (!resource || !attempt?.lease) throw new Error("expected leased attempt");
@@ -2847,7 +2825,7 @@ describe("App task reconciler state", () => {
       if (!current.lease) throw new Error("expected leased attempt");
       current.lease.expiresAt = "2020-01-01T00:00:00.000Z";
     });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     const resource = tree.resources?.[claim.taskId];
     const attempt = tree.attempts?.[claim.attemptId];
     if (!resource || !attempt?.lease) throw new Error("expected leased attempt");
@@ -3045,7 +3023,7 @@ describe("App task reconciler state", () => {
     if (resync.kind !== "claimed") throw new Error("expected reclaim");
     expect(resync.attemptId).not.toBe(first.attemptId);
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.attempts?.[first.attemptId]).toMatchObject({
       runtimeId: "previous-runtime",
       state: "interrupted",
@@ -3115,11 +3093,11 @@ describe("App task reconciler state", () => {
         "nested-workflow-session",
       ),
     ).toEqual({ status: "recorded", taskId: claim.taskId });
-    const associated = readTaskState(config).attempts?.[claim.attemptId];
+    const associated = readTaskSnapshot(config).attempts?.[claim.attemptId];
     expect(associated?.sessionId).toBe("nested-workflow-session");
     const associatedVersion = associated?.metadata.resourceVersion;
     expect(recordAppTaskAttemptSession(config, claim, "nested-workflow-session")).toBe(true);
-    expect(readTaskState(config).attempts?.[claim.attemptId].metadata.resourceVersion).toBe(associatedVersion);
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId].metadata.resourceVersion).toBe(associatedVersion);
 
     const revised: AppTaskIntent = {
       ...original,
@@ -3319,7 +3297,7 @@ describe("App task reconciler state", () => {
     });
     if (reclaimed.kind !== "claimed") throw new Error("expected reclaimed claim");
     expect(reclaimed.attemptId).not.toBe(claim.attemptId);
-    expect(readTaskState(config).attempts?.[reclaimed.attemptId]).toMatchObject({
+    expect(readTaskSnapshot(config).attempts?.[reclaimed.attemptId]).toMatchObject({
       state: "running",
       reason: "test-reclaim",
     });
@@ -3587,7 +3565,7 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     expect(completeAppTask(config, claim, { summary: "pipeline healthy" }).status).toBe("applied");
-    const convergedTree = readTaskState(config);
+    const convergedTree = readTaskSnapshot(config);
     expect(convergedTree.resources?.[claim.taskId]).toMatchObject({
       spec: { mode: "maintain" },
       status: {
@@ -3859,7 +3837,7 @@ describe("App task reconciler state", () => {
         summary: "parent has no direct mutation to make",
       }),
     ).toThrow("cannot converge while it has live children");
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[parentIntent.id]?.status.phase).toBe("running");
     expect(tree.receipts?.[parentIntent.id]).toBeUndefined();
     expect(tree.resources?.[childIntent.id]).toBeDefined();
@@ -3906,7 +3884,7 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("cannot absorb parent-with-live-child while it has live children");
 
-    const rejectedTree = readTaskState(config);
+    const rejectedTree = readTaskSnapshot(config);
     expect(rejectedTree.resources?.[parentIntent.id]).toBeTruthy();
     expect(rejectedTree.receipts?.[parentIntent.id]).toBeUndefined();
     expect(rejectedTree.resources?.[childIntent.id]).toBeTruthy();
@@ -3929,7 +3907,7 @@ describe("App task reconciler state", () => {
       actionsApplied: [`closed ${childIntent.id}`],
     });
 
-    const afterChild = readTaskState(config);
+    const afterChild = readTaskSnapshot(config);
     expect(afterChild.resources?.[childIntent.id]).toBeUndefined();
     expect(afterChild.receipts?.[childIntent.id]).toBeDefined();
     expect(afterChild.resources?.[parentIntent.id]).toBeTruthy();
@@ -3968,7 +3946,7 @@ describe("App task reconciler state", () => {
       actionsApplied: [`closed ${parentIntent.id}`],
     });
 
-    const reconciledTree = readTaskState(config);
+    const reconciledTree = readTaskSnapshot(config);
     expect(reconciledTree.resources?.[parentIntent.id]).toBeUndefined();
     expect(reconciledTree.receipts?.[parentIntent.id]).toBeDefined();
   });
@@ -4020,7 +3998,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ status: "applied", actionsApplied: ["updated useful-wait", "closed stale-parent"] });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[parentIntent.id]).toBeUndefined();
     expect(tree.receipts?.[parentIntent.id]).toBeDefined();
     expect(tree.resources?.[childIntent.id]?.spec.parentId).toBe("operations");
@@ -4065,7 +4043,7 @@ describe("App task reconciler state", () => {
         ],
       }).status,
     ).toBe("stale");
-    expect(readTaskState(config).resources?.["stale-action-must-not-apply"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["stale-action-must-not-apply"]).toBeUndefined();
     expect(completeAppTask(config, fallback, { summary: "owner handled exception" }).status).toBe("applied");
   });
 
@@ -4100,7 +4078,7 @@ describe("App task reconciler state", () => {
       summary: "reviewer must decide the next move",
     });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]).toMatchObject({
       status: {
         phase: "attention",
@@ -4133,8 +4111,8 @@ describe("App task reconciler state", () => {
     });
     expect(next).toMatchObject({ kind: "claimed", taskId: claim.taskId, generation: claim.generation });
     if (next.kind !== "claimed") throw new Error("expected reclaim");
-    expect(readTaskState(config).resources?.[claim.taskId]?.status.phase).toBe("running");
-    const persistedAttempt = readTaskState(config).attempts?.[next.attemptId];
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.phase).toBe("running");
+    const persistedAttempt = readTaskSnapshot(config).attempts?.[next.attemptId];
     expect(persistedAttempt).toMatchObject({ events: [{ event: { type: "project.problem.resolved" } }] });
     expect(persistedAttempt?.trigger).toBeUndefined();
   });
@@ -4371,7 +4349,7 @@ describe("App task reconciler state", () => {
       status: "applied",
       actionsApplied: [],
     });
-    expect(readTaskState(config).resources?.[claim.taskId]).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]).toMatchObject({
       metadata: { resourceVersion: claim.resourceVersion + 2 },
       status: { phase: "converged", summary: "current handler result" },
     });
@@ -4408,13 +4386,13 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toMatchObject({ status: "stale", actionsApplied: [] });
-    expect(readTaskState(config).resources?.["stale-action-must-not-apply"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["stale-action-must-not-apply"]).toBeUndefined();
 
     expect(releaseStaleAppTaskResult(config, claim)).toEqual({
       status: "released",
       taskId: claim.taskId,
     });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]).toMatchObject({
       status: {
         phase: "pending",
@@ -4475,13 +4453,13 @@ describe("App task reconciler state", () => {
       status: "released",
       taskId: taskIntent.id,
     });
-    expect(readTaskState(config).resources?.[taskIntent.id]?.status).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.[taskIntent.id]?.status).toMatchObject({
       phase: "pending",
       summary: "Waiting for the existing owner proof",
       conditionIds: ["app-request:existing-proof"],
       observedGeneration: 1,
     });
-    expect(readTaskState(config).attempts?.[feedback.attemptId]).toMatchObject({
+    expect(readTaskSnapshot(config).attempts?.[feedback.attemptId]).toMatchObject({
       state: "interrupted",
       summary: "newer feedback superseded this attempt",
     });
@@ -4492,7 +4470,7 @@ describe("App task reconciler state", () => {
       handler: "agent:app-owner",
     });
     if (retry.kind !== "claimed") throw new Error("expected retry claim");
-    expect(readTaskState(config).resources?.[taskIntent.id]?.status).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.[taskIntent.id]?.status).toMatchObject({
       phase: "running",
       conditionIds: ["app-request:existing-proof"],
       observedGeneration: 1,
@@ -4533,7 +4511,7 @@ describe("App task reconciler state", () => {
       dependentTaskIds: ["owner-created-task"],
       supersededSessionIds: [],
     });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(readAppTaskIntent(config, "owner-created-task")).toMatchObject({
       mode: "achieve",
       input: { specId: "spec.network-cni.example" },
@@ -4573,7 +4551,7 @@ describe("App task reconciler state", () => {
       taskContinues: true,
     });
 
-    const revised = readTaskState(config).resources?.["runtime/owner-review"];
+    const revised = readTaskSnapshot(config).resources?.["runtime/owner-review"];
     expect(revised?.spec.outcome).toBe("Keep the platform reviewed from current evidence");
     expect(revised?.metadata.generation).toBe(parentClaim.generation + 1);
 
@@ -4787,7 +4765,7 @@ describe("App task reconciler state", () => {
       status: "applied",
       actionsApplied: ["unblocked retry-after-base-race"],
     });
-    expect(readTaskState(config).resources?.[retryIntent.id]).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.[retryIntent.id]).toMatchObject({
       metadata: { generation: 1 },
       status: { phase: "pending", observedGeneration: 0 },
     });
@@ -4826,7 +4804,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toThrow(AppTaskActionStaleError);
-    expect(readTaskState(config).resources?.["already-advancing"]).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.["already-advancing"]).toMatchObject({
       metadata: { generation: 1 },
       status: { phase: "pending" },
     });
@@ -4873,7 +4851,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
-    expect(readTaskState(config).resources?.["owner-created-task"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["owner-created-task"]).toBeUndefined();
   });
 
   it("updates task mode without overwriting its domain category", () => {
@@ -4900,7 +4878,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ status: "applied" });
 
-    const task = readTaskState(config).resources?.["categorized-task"];
+    const task = readTaskSnapshot(config).resources?.["categorized-task"];
     expect(task?.spec.mode).toBe("achieve");
     expect(task?.spec.category).toBe("domain");
   });
@@ -4951,7 +4929,7 @@ describe("App task reconciler state", () => {
       category: "domain",
     });
     expect(readAppTaskIntent(config, "categorized-task")?.workflow).toBeUndefined();
-    expect(readTaskState(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation + 1);
+    expect(readTaskSnapshot(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation + 1);
   });
 
   it("returns sessions superseded by a dependent update-task action", () => {
@@ -5002,7 +4980,7 @@ describe("App task reconciler state", () => {
       supersededSessionIds: ["running-target-session"],
     });
 
-    const targetResource = readTaskState(config).resources?.[targetIntent.id];
+    const targetResource = readTaskSnapshot(config).resources?.[targetIntent.id];
     expect(targetResource).toMatchObject({
       metadata: { generation: target.generation + 1 },
       status: { phase: "pending" },
@@ -5041,7 +5019,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toThrow("Handler action task not found: missing-task");
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["must-roll-back"]).toBeUndefined();
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("running");
   });
@@ -5073,7 +5051,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toThrow("escapes the app/domain roots");
-    expect(readTaskState(config).resources?.["must-not-escape"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["must-not-escape"]).toBeUndefined();
   });
 
   it("treats repeated close actions against already receipted tasks as idempotent", () => {
@@ -5132,7 +5110,7 @@ describe("App task reconciler state", () => {
       actionsApplied: ["already completed categorized-task"],
     });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["categorized-task"]).toBeUndefined();
     expect(tree.receipts?.["categorized-task"]).toBeDefined();
     expect(tree.resources?.["route-review"]).toBeUndefined();
@@ -5187,7 +5165,7 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("Handler update-task action cannot mutate completed task categorized-task; create a new linked task");
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["receipt-update-review"]?.status.phase).toBe("running");
     expect(tree.receipts?.["categorized-task"]).toBeDefined();
   });
@@ -5245,7 +5223,7 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("Handler action task already exists or completed: categorized-task");
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["receipt-create-review"]?.status.phase).toBe("running");
     expect(tree.receipts?.["categorized-task"]).toBeDefined();
   });
@@ -5285,7 +5263,7 @@ describe("App task reconciler state", () => {
         actions: [{ kind: "create-task", ...childIntent }],
       }),
     ).toMatchObject({ status: "applied", actionsApplied: ["already exists already-created-child"] });
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.["already-created-child"]?.metadata.generation).toBe(1);
     expect(tree.resources?.["live-create-review"]?.status.phase).toBe("converged");
   });
@@ -5322,7 +5300,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toThrow("Handler action task already exists with a different specification: categorized-task");
-    expect(readTaskState(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
+    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
   });
 
   it("rejects malformed action payloads and blank evidence before mutation", () => {
@@ -5351,7 +5329,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toThrow("require non-empty evidence");
-    expect(readTaskState(config).resources?.["must-not-apply"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["must-not-apply"]).toBeUndefined();
 
     expect(() =>
       completeAppTask(config, claim, {
@@ -5360,8 +5338,8 @@ describe("App task reconciler state", () => {
         actions: [{ kind: "create-task", id: "bad-shape" } as never],
       }),
     ).toThrow("parentId requires a non-empty string");
-    expect(readTaskState(config).resources?.["bad-shape"]).toBeUndefined();
-    expect(readTaskState(config).resources?.[claim.taskId]?.status.phase).toBe("running");
+    expect(readTaskSnapshot(config).resources?.["bad-shape"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.phase).toBe("running");
   });
 
   it("ends waiting attempts only with an exact Condition", () => {
@@ -5379,7 +5357,7 @@ describe("App task reconciler state", () => {
         summary: "waiting without identity",
       }),
     ).toThrow("requires at least one exact Condition");
-    expect(readTaskState(config).resources?.[claim.taskId]?.status.phase).toBe("running");
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.phase).toBe("running");
 
     expect(() =>
       deferAppTask(config, claim, {
@@ -5388,7 +5366,7 @@ describe("App task reconciler state", () => {
         conditions: [{} as never],
       }),
     ).toThrow("Condition for pipeline-monitor identity requires a non-empty string");
-    expect(readTaskState(config).resources?.[claim.taskId]?.status.phase).toBe("running");
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.phase).toBe("running");
 
     expect(() =>
       deferAppTask(config, claim, {
@@ -5416,7 +5394,7 @@ describe("App task reconciler state", () => {
       ],
     });
     expect(result.status).toBe("applied");
-    expect(readTaskState(config).resources?.[claim.taskId]).toMatchObject({
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]).toMatchObject({
       status: {
         phase: "waiting",
         observedAttemptId: claim.attemptId,
@@ -5427,7 +5405,7 @@ describe("App task reconciler state", () => {
         },
       },
     });
-    expect(readTaskState(config).conditions?.["session-terminal:s_1"]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.["session-terminal:s_1"]).toMatchObject({
       metadata: {
         id: "session-terminal:s_1",
         generation: 1,
@@ -5472,7 +5450,7 @@ describe("App task reconciler state", () => {
         taskId: "pipeline-monitor",
       },
     ]);
-    expect(readTaskState(config).conditions?.["session-terminal:s_1"]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.["session-terminal:s_1"]).toMatchObject({
       metadata: { generation: 1, resourceVersion: 2 },
       status: {
         observedGeneration: 1,
@@ -5490,8 +5468,8 @@ describe("App task reconciler state", () => {
     expect(resumed.kind).toBe("claimed");
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
     completeAppTask(config, resumed, { summary: "session terminal observed" });
-    expect(readTaskState(config).conditions?.["session-terminal:s_1"]).toBeUndefined();
-    expect(readTaskState(config).resources?.["pipeline-monitor"]?.status.conditionIds ?? []).toEqual([]);
+    expect(readTaskSnapshot(config).conditions?.["session-terminal:s_1"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["pipeline-monitor"]?.status.conditionIds ?? []).toEqual([]);
   });
 
   it("consumes an unrelated trigger queued while the task installs a wait", () => {
@@ -5565,7 +5543,7 @@ describe("App task reconciler state", () => {
       ],
     });
 
-    expect(readTaskState(config).conditions?.["pipeline-run:42:completed"]?.status.state).toBe("true");
+    expect(readTaskSnapshot(config).conditions?.["pipeline-run:42:completed"]?.status.state).toBe("true");
     expect(readAppTaskTrigger(config, claim.taskId)).toEqual(completion);
     const resumed = claimObservedAppTask(config, {
       taskId: claim.taskId,
@@ -5688,7 +5666,7 @@ describe("App task reconciler state", () => {
       actionsApplied: ["created work/child-a", "created work/child-b"],
     });
 
-    const tree = readTaskState(config);
+    const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]?.status).toMatchObject({
       phase: "waiting",
       conditionIds: [],
@@ -5876,7 +5854,7 @@ describe("App task reconciler state", () => {
         state: "converged",
       }).map((wake) => wake.taskId),
     ).toEqual(["pipeline-a", "pipeline-b"]);
-    expect(readTaskState(config).conditions?.["shared-dependency"]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.["shared-dependency"]).toMatchObject({
       metadata: { generation: 1, resourceVersion: 2 },
       status: { observedGeneration: 1, state: "true" },
     });
@@ -5890,7 +5868,7 @@ describe("App task reconciler state", () => {
       if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
       completeAppTask(config, resumed, { summary: `${taskIntent.id} converged` });
     }
-    expect(readTaskState(config).conditions?.["shared-dependency"]).toBeUndefined();
+    expect(readTaskSnapshot(config).conditions?.["shared-dependency"]).toBeUndefined();
   });
 
   it("rejects changing a shared Condition specification", () => {
@@ -5968,14 +5946,14 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
-    expect(readTaskState(config).conditions?.[condition.id]).toBeUndefined();
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toBeUndefined();
 
     deferAppTask(config, resumed, {
       disposition: "waiting",
       summary: "waiting for a new observation",
       conditions: [condition],
     });
-    expect(readTaskState(config).conditions?.[condition.id]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toMatchObject({
       status: { observedGeneration: 0, state: "unknown" },
     });
     expect(
@@ -6031,7 +6009,7 @@ describe("App task reconciler state", () => {
     });
 
     expect(trackAppTaskConditionEvent(config, readyObservation)).toEqual([]);
-    expect(readTaskState(config).conditions?.[condition.id]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toMatchObject({
       status: { observedGeneration: 0, state: "unknown" },
     });
   });
@@ -6063,7 +6041,7 @@ describe("App task reconciler state", () => {
     });
 
     expect(trackAppTaskConditionEvent(config, oldPulse)).toEqual([]);
-    expect(readTaskState(config).conditions?.[condition.id]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toMatchObject({
       status: { observedGeneration: 0, state: "unknown" },
     });
 
@@ -6095,7 +6073,7 @@ describe("App task reconciler state", () => {
       summary: "waiting for a future capacity slot",
       conditions: [condition],
     });
-    const establishedAt = Date.parse(readTaskState(config).conditions?.[condition.id]?.status.observedAt ?? "");
+    const establishedAt = Date.parse(readTaskSnapshot(config).conditions?.[condition.id]?.status.observedAt ?? "");
 
     expect(
       trackAppTaskConditionEvent(config, {
@@ -6167,7 +6145,7 @@ describe("App task reconciler state", () => {
       ],
     });
 
-    expect(readTaskState(config).conditions?.["session-terminal"]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.["session-terminal"]).toMatchObject({
       metadata: { generation: 1, resourceVersion: 1 },
       spec: { subject: "session:replacement" },
       status: { observedGeneration: 0, state: "unknown" },
@@ -6267,7 +6245,7 @@ describe("App task reconciler state", () => {
       }),
     ).toEqual([]);
 
-    expect(readTaskState(config).conditions?.[waitId]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.[waitId]).toMatchObject({
       status: { state: "unknown" },
     });
   });
@@ -6320,7 +6298,7 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: waitId }]);
 
-    expect(readTaskState(config).conditions?.[waitId]).toMatchObject({
+    expect(readTaskSnapshot(config).conditions?.[waitId]).toMatchObject({
       status: {
         state: "true",
         observed: {
@@ -6477,7 +6455,7 @@ describe("App task reconciler state", () => {
         ],
       }),
     ).toMatchObject({ status: "applied" });
-    const waitingTree = readTaskState(config);
+    const waitingTree = readTaskSnapshot(config);
     expect(waitingTree.resources?.["pipeline-monitor"]).toMatchObject({
       status: {
         phase: "waiting",
@@ -6607,7 +6585,7 @@ describe("App task reconciler state", () => {
     });
 
     const establishedAt = Date.parse(
-      readTaskState(config).conditions?.["origin-dev-after-abc"]?.status.observedAt ?? "",
+      readTaskSnapshot(config).conditions?.["origin-dev-after-abc"]?.status.observedAt ?? "",
     );
     expect(Number.isFinite(establishedAt)).toBe(true);
 

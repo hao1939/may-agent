@@ -1,26 +1,12 @@
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
 export type ProjectRuntimePaths = {
-  /** Active definition checkout. Code and seeds are read from here. */
   appDir: string;
-  /** Stable app root that owns mutable runtime state. */
-  stateAppDir: string;
   stateDir: string;
+  /** Historical JSON evidence marker. Never a live Task authority. */
   taskStatePath: string;
-  /** Disposable routing projection for task Conditions. */
-  taskConditionRoutesPath: string;
-  /** Generated human/agent read projection. Never a mutation authority. */
-  taskTreePath: string;
   projectStatePath: string;
-  journalPath: string;
-  migrationLogPath: string;
-};
-
-export type EnsureTaskStateResult = {
-  path: string;
-  migrated: boolean;
-  source: "runtime" | "seed" | "empty";
 };
 
 function ensureDir(path: string): void {
@@ -42,129 +28,16 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
-function appendMigrationLog(logPath: string, entry: Record<string, unknown>): void {
-  ensureDir(dirname(logPath));
-  appendFileSync(
-    logPath,
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      ...entry,
-    })}\n`,
-    "utf-8",
-  );
-}
-
-function appendMigrationLogOnce(logPath: string, entry: Record<string, unknown>): void {
-  const fingerprint = JSON.stringify(entry);
-  if (existsSync(logPath)) {
-    const alreadyRecorded = readFileSync(logPath, "utf-8")
-      .split("\n")
-      .some((line) => line.includes(fingerprint.slice(1, -1)));
-    if (alreadyRecorded) return;
-  }
-  appendMigrationLog(logPath, entry);
-}
-
-/**
- * Definition code may be activated from a branch checkout, but mutable App
- * state keeps one stable address. A branch checkout may adopt the canonical
- * root only when that root already has durable task state; otherwise this is a
- * genuinely new App and normal seed bootstrap remains local to the checkout.
- */
-export function resolveRuntimeStateAppDir(
-  appDir: string,
-  canonicalProjectsRoot = resolve(process.env.APP_ROOT || process.env.PROJECT_ROOT || "/app", "projects"),
-): string {
+export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
   const activeAppDir = resolve(appDir);
-  const canonicalAppDir = resolve(canonicalProjectsRoot, basename(activeAppDir));
-  if (canonicalAppDir === activeAppDir) return activeAppDir;
-  return existsSync(join(canonicalAppDir, ".state", "tasks", "state.json")) ? canonicalAppDir : activeAppDir;
-}
-
-export function projectRuntimePaths(appDir: string, canonicalProjectsRoot?: string): ProjectRuntimePaths {
-  const activeAppDir = resolve(appDir);
-  const stateAppDir = resolveRuntimeStateAppDir(activeAppDir, canonicalProjectsRoot);
-  const stateDir = join(stateAppDir, ".state");
+  const stateDir = join(activeAppDir, ".state");
   const taskStateDir = join(stateDir, "tasks");
   return {
     appDir: activeAppDir,
-    stateAppDir,
     stateDir,
     taskStatePath: join(taskStateDir, "state.json"),
-    taskConditionRoutesPath: join(taskStateDir, "condition-routes.json"),
-    taskTreePath: join(taskStateDir, "tree.json"),
     projectStatePath: join(stateDir, "project-state.json"),
-    journalPath: join(stateDir, "journal.jsonl"),
-    migrationLogPath: join(stateDir, "runtime-state-migrations.jsonl"),
   };
-}
-
-/** Read the canonical top-level lifecycle without parsing the potentially large task tree. */
-export function readTaskStateLifecycle(appDir: string): string {
-  const path = projectRuntimePaths(appDir).taskStatePath;
-  let fd: number | undefined;
-  try {
-    fd = openSync(path, "r");
-    // canonicalTaskStateForWrite places project_lifecycle in the small header,
-    // before conditions/resources/history. Keep the generation watcher bounded.
-    const buffer = Buffer.allocUnsafe(4 * 1024);
-    const bytesRead = readSync(fd, buffer, 0, buffer.length, 0);
-    const header = buffer.toString("utf8", 0, bytesRead);
-    const encoded = header.match(/^  "project_lifecycle":\s*("(?:\\.|[^"\\])*")\s*,?$/m)?.[1];
-    const lifecycle = encoded ? JSON.parse(encoded) : "";
-    return typeof lifecycle === "string" ? lifecycle.trim() : "";
-  } catch {
-    return "";
-  } finally {
-    if (fd !== undefined) closeSync(fd);
-  }
-}
-
-export function ensureTaskState(appDir: string, canonicalProjectsRoot?: string): EnsureTaskStateResult {
-  const paths = projectRuntimePaths(appDir, canonicalProjectsRoot);
-  if (existsSync(paths.taskStatePath)) {
-    if (paths.stateAppDir !== paths.appDir) {
-      appendMigrationLogOnce(paths.migrationLogPath, {
-        kind: "task_state_canonical_lineage_selected",
-        activeAppDir: paths.appDir,
-        canonicalAppDir: paths.stateAppDir,
-        taskStatePath: paths.taskStatePath,
-      });
-    }
-    return { path: paths.taskStatePath, migrated: false, source: "runtime" };
-  }
-
-  ensureDir(dirname(paths.taskStatePath));
-  const seedPath = join(appDir, "tasks", "seed.json");
-
-  if (existsSync(seedPath)) {
-    const seed = readFileSync(seedPath);
-    writeFileSync(paths.taskStatePath, seed);
-    appendMigrationLog(paths.migrationLogPath, {
-      kind: "task_state_runtime_bootstrap",
-      source: "seed",
-      from: "tasks/seed.json",
-      to: ".state/tasks/state.json",
-    });
-    return { path: paths.taskStatePath, migrated: true, source: "seed" };
-  }
-
-  const empty = {
-    updated_at: new Date().toISOString(),
-    groups: {},
-    resources: {},
-  };
-  writeJson(paths.taskStatePath, empty);
-  appendMigrationLog(paths.migrationLogPath, {
-    kind: "task_state_runtime_bootstrap",
-    source: "empty",
-    to: ".state/tasks/state.json",
-  });
-  return { path: paths.taskStatePath, migrated: true, source: "empty" };
-}
-
-export function resolveTaskTreePath(appDir: string): string {
-  return projectRuntimePaths(appDir).taskTreePath;
 }
 
 export function loadProjectReadModel(appDir: string): Record<string, unknown> {
