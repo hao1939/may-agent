@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across five cycles: Xiaohongshu reconciliation preceded every GitHub, arXiv, and Reddit decision; arXiv 2608.30177v1 remains the stage-aware memory anchor; and a pinned Mnemo audit separates repository-specific write-control claims from the paper while exposing a source-level caller-identity binding gap."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "XHS seed-first cycle 5"]
+summary: "Seed-first Scout checkpoint across six cycles: a bounded live Xiaohongshu collection baseline confirms 24 seeds before cycle-6 lane selection; arXiv 2608.30177v1 remains the stage-aware memory anchor; and a four-wrapper Mnemo transport reproduction plus isolated repair turns a source-level caller-identity concern into executable, bounded evidence."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "XHS seed-first cycle 6"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; XHS reconciliations through 2026-09-01T10:32:54Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, and 2606.04315v1; and sattyamjjain/mnemo at revision 376ca28606c5b6287d9c8274482fa791d4dc8703."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T11:15:53Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, and 2606.04315v1; and source plus goal-owned MCP transport validation of sattyamjjain/mnemo revision 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -37,6 +37,19 @@ pinned source also turns the abstract principal-scope question into a concrete
 audit finding: Mnemo verifies request identity at dispatch, but its four
 agent-managed handlers accept separate identity fields and do not consume the
 verified caller context. This is source analysis, not a live exploitation claim.
+
+Cycle 6 corrects the remaining access and execution boundaries. A goal-owned
+observer reached the existing Chrome session without entering or executing in
+another worker container, opened an observational Explore tab, and then read a
+bounded collection surface. The collection declares 995 notes and materialized
+24 exact stable IDs; these are confirmed seeds, but no prior readable snapshot
+exists, so none is claimed as newly collected, changed, or removed. Only after
+that reconciliation did the cycle retain memory governance at 15/15, keep
+`2608.30177v1` as its freshest controlled anchor, select GitHub, and defer
+Reddit without quota work. A goal-owned clone then reproduced the Alice→Bob
+write/read/revise/forget path through all four real MCP wrappers and committed
+the smallest principal-binding repair with regression coverage. This remains
+local code evidence, not deployed exploitation or upstream acceptance.
 
 ## Seed reconciliation came first
 
@@ -76,6 +89,35 @@ occurrences / 24 files with fingerprint
 An earlier 78-ID draft count was rejected because the matcher omitted
 `/search_result/`; it was corrected before selecting GitHub or treating any
 follow-up as evidence. Direct seed deltas remain unknown rather than zero.
+
+Cycle 6 first compared the saved local state at `2026-09-01T10:45:50Z`: 104
+stable IDs, 125 occurrences, 24 files, the same full fingerprint, and exact
+local added/removed lists `[]` / `[]`. That fallback still did not prove
+collection membership. After the human clarified direct WSL Chrome access, the
+cycle reopened reconciliation before finalizing topic selection. Direct calls
+from `uid=1000(hao)` to `127.0.0.1:9222` had failed with `ECONNREFUSED`; read-only
+inspection showed the endpoint was loopback-only in container `may-agent`. A
+disposable goal-owned Node sidecar shared only that network namespace and
+mounted the connector read-only; it did not execute a command in the other
+worker container or reveal credentials.
+
+At `2026-09-01T11:10:18Z`, the connector reported `ready=true`, 150 Explore
+notes, and no login wall. A read-only Explore inventory returned 30 unique IDs
+and fingerprint
+`f249607ae5d763e3d8898e7970bc732e62c76c304678ba2dedbeaa5faa8bc7c2`;
+one representative detail read succeeded. Explore is discovery evidence, not
+the human collection. The self-profile collection then declared 995 notes,
+0 albums, and 14 files. A bounded 12-scroll pass at
+`2026-09-01T11:15:53Z` materialized 24 IDs with fingerprint
+`158fa9850788df663eb60ac171461708b2dc4029318cb373e7eaa9494aa110eb`.
+Only `6a7217af00000000210200a2` overlaps the prior local inventory; the other 23
+are newly confirmed to Scout, not proven newly collected. With no earlier
+readable direct snapshot, exact added/changed/removed sets remain unknown.
+`6a6ab006000000001c00c932` is a visible collection card whose ID-only and
+clicked detail reads both reached `/404`; it remains a confirmed but
+detail-unavailable seed, not a removal. The unmaterialized 971 notes and 14
+files are unobserved rather than unavailable. The exact ID ledger was persisted
+before the cycle-6 lane and topic decisions below.
 
 ## What each lane can actually do
 
@@ -124,6 +166,21 @@ turning freshness checks into new deep dives.
 | GitHub | High expected value because `2606.04315v1` claims released artifacts but exposes no URL, and its corrected interpretation made a related implementation audit useful. **Selected.** | Public repository Search API returned HTTP 200 with `incomplete_results=false`: exact `"2606.04315"` returned two repositories (`sattyamjjain/mnemo`, `frycm/pi-muninn`), the exact title returned five, and `"AutoMEM" "Zhikai Chen"` returned one paper index. The attributable `CurryTang/CurryTang` profile at `a1b8f5b…543` links the paper only to arXiv and exposes no attributable paper repository. `OpenDataBox/awesome-agent-memory` at `7273e75…29` and `js-lee-AI/awesome-agent-loop-papers` at `678c0a5…e6` also link only arXiv; they are provenance, not artifacts or confirmation. |
 | arXiv | The selected cluster and papers remain highly relevant, but their full sources were just reviewed and no new paper question outranked the implementation audit. **Checked; no new candidate selected.** | A bounded exact-ID Atom request returned HTTP 200, feed update `2026-09-01T10:43:37Z`, and the same current entries: `2608.30177v1` (updated 2026-08-31) and `2606.04315v1` (updated 2026-06-03). The former remains the 15/15 anchor; the latter remains evidence for query-time reads, not governed writes. |
 | Reddit | The stable thread remains relevant as discovery provenance, but expected new value was low after its interpretation was checked against the paper. **Checked; no new thread selected.** | Post-level RSS returned HTTP 200 again with feed update `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and the same six stable comments. JSON remains last observed HTTP 403. No content delta or access transition appeared; the thread remains community framing, not empirical confirmation. |
+
+### Cycle 6 reconsideration and evidence
+
+The permanent lanes were reconsidered only after the direct collection baseline
+at `11:15:53Z`. The confirmed collection cards strengthen both memory
+governance and self-evolution; memory governance remains the highest-value
+cluster at 15/15 because it has three direct seed connections and a reproducible
+authority question. Activity was selected by expected information value, not a
+per-source quota.
+
+| Lane | Relevance, value, freshness, and decision | Last useful evidence, boundary, and revisit trigger |
+|---|---|---|
+| GitHub | **High relevance / high realized value / current; selected.** Confirmed long-task and memory cards keep principal scope material, and the earlier authenticated-test trigger fired. | At `2026-09-01T11:07:14Z`, the public API resolved `main` to exact Mnemo revision `376ca28606c5b6287d9c8274482fa791d4dc8703`. A complete issue search for the four wrapper names or `CallerContext` returned zero with `incomplete_results=false`. In a goal-owned clone, the strengthened Alice→Bob MCP fixture passed across write/read/revise/forget. Local commit `c82e711e8a2bb386001e98c3437da44c32b62428` rejects the four conflicting requests and preserves correct Bob and Alice state. This is pinned local-code evidence, not upstream, deployed, or live-HTTP behavior. Revisit for upstream head/issue changes, independent review, or authenticated organization identity. |
+| arXiv | **High relevance / high retained value / fresh; retained without another request.** Direct collection now confirms the memory cluster, while another immediate exact-ID fetch had low value. | Last useful evidence remains the exact-ID Atom HTTP 200 at feed update `2026-09-01T10:43:37Z`: `2608.30177v1` updated 2026-08-31 and `2606.04315v1` updated 2026-06-03. Full sources were already reviewed. The post-reconciliation rubric keeps `2608.30177v1` at 15/15, now connected to confirmed seeds `6a6ab006…c932`, `6a72018b…0127`, and `6a743c27…c3a0`. Revisit for a paper version, attributable artifact, or readable XHS body that raises a new question. |
+| Reddit | **Medium relevance / low incremental value / current; deferred without quota work.** Direct seeds add no Reddit-specific claim and the thread's paper interpretation is already checked. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and the same six comments. JSON remains last observed HTTP 403; RSS is attributable community framing and comments are lower-confidence anecdote. No request was issued merely to exercise the lane. Revisit for a new seed-linked thread, post/comment delta, access change, or material claim needing primary-source comparison. |
 
 Hugging Face was selected as useful related discovery rather than a permanent
 quota lane. Its public APIs returned HTTP 200 for paper ID, title-term,
@@ -196,9 +253,10 @@ manually deletes stale versions and omits incidental facts. Under its
 BM25/NoopEmbedding fixture, current-fact F1 is 0.500 for fixed versus 1.000 for
 agent-managed, while incidental recall is 1.000 versus 0.000. These observed
 test fixtures and asserted outputs demonstrate the constructed selectivity
-tradeoff, not a reproduction of `2606.04315v1`. Scout did not execute Mnemo's
-suite, so even those repository results are source claims rather than an
-independent local run.
+tradeoff, not a reproduction of `2606.04315v1`. At the pinned source, Scout
+executed `mcp_test` (11/11) and `per_request_identity` (14/14) in the repository's
+stable Rust toolchain. Those passing upstream fixtures validate their own
+contracts; they do not independently reproduce the paper.
 
 Pinned code inspection found a separate identity-binding gap:
 
@@ -218,18 +276,37 @@ Pinned code inspection found a separate identity-binding gap:
 
 The supported inference is that permission to invoke an agent-managed tool is
 not bound inside these handlers to the principal used for ownership, retrieval
-scope, deletion checks, or provenance. This is a source-code authority finding,
-not a live exploit or a claim about a deployed configuration. The smallest
-validation target is an authenticated transport test that supplies a conflicting
-`agent_id` and proves every `mem_*` path derives scope from `CallerContext`.
+scope, deletion checks, or provenance. Cycle 6 converted that source inference
+into executable local evidence. A strengthened Bob-owned fixture used a valid
+Alice capability through the real MCP duplex service and supplied
+`agent_id: "bob"` to all four wrappers. Write created Bob-owned state with Bob
+write provenance and no capability ID; read returned a separately preseeded Bob
+record; revise retired that record and created a Bob-owned revision with Bob
+provenance; forget removed it. The complete four-wrapper fixture passed before
+the repair. This proves behavior at the pinned code revision, not reachability
+or exploitation of a deployed service.
+
+The smallest isolated repair is goal-owned local commit
+`c82e711e8a2bb386001e98c3437da44c32b62428`. It adds
+`Extension<CallerContext>` to all four handlers, treats optional `agent_id` as
+an assertion that must match the authenticated caller, and passes that caller
+to each engine request. The regression proves four Alice→Bob rejections,
+preserves Bob's independent record, and confirms that an allowed Alice write is
+owned and provenanced as Alice. `cargo fmt --check`, `mcp_test` 11/11,
+`per_request_identity` 14/14, and the complete `mnemo-mcp` package's 89 tests
+passed. The commit remains local, unpushed, unreviewed upstream, undeployed, and
+not live-HTTP validated. It intentionally leaves `org_id` caller-supplied
+because `CallerContext` carries no authenticated organization identity.
 
 ## Why `2608.30177v1` still wins
 
-After reconciliation, the stage-wise memory paper scored 15/15 under the
-living map's `L+C+I+G+F` rubric. It connects to three deduplicated retained XHS
-memory packets, supplies current independent paper evidence, has direct
-operational consequences, resolves a contradiction in an existing Scout note,
-and was published on 2026-08-31. `2608.22339v1` and `2608.25553v3` each scored
+After the direct collection reconciliation, the stage-wise memory paper still
+scores 15/15 under the living map's `L+C+I+G+F` rubric. It now connects to three
+confirmed collection cards—`6a6ab006…c932`, `6a72018b…0127`, and
+`6a743c27…c3a0`—as well as three deduplicated retained XHS memory packets. It
+supplies current independent paper evidence, has direct operational
+consequences, resolves a contradiction in an existing Scout note, and was
+published on 2026-08-31. `2608.22339v1` and `2608.25553v3` each scored
 14/15 (`3+3+3+2+3`) because they overlap more with already-covered skill
 admission or stale-memory work. `2608.17665v1` is a narrower polarization
 branch.
@@ -277,25 +354,34 @@ implementation authority boundary but no new controlled stage-wise experiment.
 Mnemo is therefore linked as related source evidence under the existing 15/15
 cluster; it is not counted as a second confirmation of either paper.
 
+The sixth reconciliation strengthens rather than displaces that result. The
+three confirmed collection cards directly connect task-to-task memory,
+trustworthy long-task progress, and continuity kernels to the selected cluster.
+The executable Mnemo result tests an implementation authority boundary, while
+MemGauge remains the newest controlled stage-wise study. Their evidence roles
+stay distinct.
+
 ## Library and topic-map changes
 
 - [XHS seed ledger](../../knowledge/xhs-seed-ledger.md): records reconciliations
-  through cycle 5, exact seed-before-discovery ordering, and why the incomplete
-  78-ID draft was rejected rather than treated as a removal.
+  through cycle 6, including the 24-ID bounded direct baseline, exact
+  added/changed/removed uncertainty, the one detail-unavailable seed, and why
+  the incomplete 78-ID draft was rejected rather than treated as a removal.
 - [Living topic map](../../knowledge/xhs-topic-map.md): retains stage-aware
-  memory governance at 15/15, records each cycle-5 lane decision, and keeps
-  paper evidence separate from repository claims, synthetic tests, and Reddit
-  anecdotes.
+  memory governance at 15/15 after direct reconciliation, records each cycle-6
+  lane decision and revisit trigger, and keeps paper evidence separate from
+  repository claims, executable local tests, and Reddit anecdotes.
 - [Read-write attention synthesis](../../knowledge/the-read-write-attention-inversion.md):
   corrects its impossible future creation date from 2026-10-28 to the
   repository-observed creation date 2026-06-29, adds the MemGauge deep dive,
   narrows the exclusive-write claim, and adds the active-retrieval boundary.
 - [Knowledge index](../../knowledge/INDEX.md): updates the canonical summary to
-  the qualified stage-aware and active-retrieval conclusion.
+  the qualified stage-aware, active-retrieval, and executable principal-binding
+  conclusion.
 - [Memory-governance authority note](../../knowledge/findings/2026-08-26-agent-memory-governance-authority-boundaries.md): absorbs the survey into the existing subject, adds the five predicates and their limits, and avoids a duplicate paper finding.
-- The same authority note now absorbs the Mnemo audit rather than creating a
-  duplicate finding, distinguishing dispatch identity, handler scope, source
-  inference, and unexecuted live behavior.
+- The same authority note absorbs the Mnemo audit and repair rather than
+  creating a duplicate finding, distinguishing source inference, local
+  reproduction, isolated candidate behavior, and absent deployment proof.
 - Scout app: retains the shared Reddit lane and adds the smallest missing
   GitHub safety/evidence contract plus focused test. Cycle 4 also adds Reddit
   to the existing `explore-now` command schema/help and verifies that it routes
@@ -317,14 +403,24 @@ A broader scan of the pre-existing `knowledge/INDEX.md` still finds 67 broken
 links unrelated to this change. They remain library-health backlog rather than
 being presented as a clean global-link result.
 
-The read-only health scan at `2026-09-01T10:45:00Z` returned 24
+The read-only health scan at `2026-09-01T11:25:00Z` returned 24
 facts and 16 bounded wake signals: 13 future-date facts, 10 oversized-note
 facts, and the existing index unsourced backlog. The packet remains truncated,
 so it is a bounded regression signal rather than a global-health claim. None of
 the changed checkpoint documents appears as a new health fact.
 
-Direct XHS collection membership is still unknown. Reddit JSON remains blocked,
-but post-level RSS is readable. GitHub found paper-index provenance and related
+The human-owned source checkout remained read-only. Before and after this
+checkpoint work, its complete porcelain-v2 status stream had SHA-256
+`f6f8b63c5d176fb48bbd27ee90aa6885401a6fae589a479a88312325be9b24ac`
+and HEAD remained `386b445c236e4609cd8870d22cc773cc4641fec8`. This proves the
+observed dirty state was preserved byte-for-byte at the Git status boundary; it
+does not claim those human-owned changes are reviewed.
+
+Direct XHS collection membership is confirmed for the 24 materialized cards,
+but the previous direct state, 971-note tail, 14 files, and therefore exact
+added/changed/removed deltas remain unknown. The detail for confirmed card
+`6a6ab006…c932` currently resolves to `/404`. Reddit JSON remains blocked, but
+post-level RSS is readable. GitHub found paper-index provenance and related
 repositories but no attributable implementation for the reviewed papers. The
 `2606.04315v1` source says derived metrics, judged-answer files, and run
 configurations are released through a Hugging Face artifact repository, but the
@@ -332,22 +428,21 @@ reviewed TeX contains no repository URL, so reproducibility artifacts remain
 unlocated rather than presumed absent. None of those boundaries blocks the
 supported arXiv update.
 
-Mnemo's authenticated `mem_*` behavior remains live-unverified. The source
-archive and pinned URLs establish the handler/data-flow observation, but Scout
-did not run the external repository suite or send conflicting identities through
-an authenticated transport. The exact remaining validation boundary is whether
-those four handlers can use a caller-supplied principal that differs from the
-verified `CallerContext` in a real configured server; the smallest fix-and-proof
-would bind each handler to that context and add one transport-level regression
-covering write, read, revise, forget, and recorded provenance.
+Mnemo's Alice→Bob behavior is verified through the real local MCP duplex
+transport at the pinned source, and the isolated repair passes its focused and
+full package tests. It remains live-unverified over a deployed HTTP service and
+unreviewed upstream. The exact remaining authority boundary is organization
+scope: `CallerContext` authenticates a principal and roles but no `org_id`, while
+three wrapper inputs still accept caller-supplied organization scope.
 
-The next exploration begins with another XHS reconciliation. It then deep-reads
-an attributable `2606.04315v1` artifact if one becomes locatable, or exercises
-the pinned Mnemo caller-identity boundary through its authenticated transport.
-GitHub is revisited when attributable paper code, a Mnemo identity-binding fix,
-or materially changed search results appear. Reddit is revisited for a new
-high-value thread or a claim needing source comparison, not merely to exercise
-the lane again.
+The next exploration begins cycle 7 with a comparable direct XHS collection
+reconciliation against the 24-ID bounded baseline. If
+`6a6ab006…c932` no longer resolves to `/404`, deep-read it and compare its
+cross-task-memory claims with MemGauge. Otherwise, investigate how authenticated
+organization scope should reach the three Mnemo wrappers. GitHub is revisited
+for upstream or organization-identity evidence; arXiv for a version or
+attributable artifact; Reddit for a new high-value thread or access/content
+change, not merely to exercise the lane.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five proposed lifecycle governance predicates; and Mnemo shows why an authenticated tool gate must also bind the principal used inside each operation. These are source-level audit requirements, not proof of deployed end-to-end governance or live exploitation."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and a pinned Mnemo wire-path reproduction proves why an authenticated tool gate must bind the principal inside each operation. An isolated fix passes focused and package tests, but is not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source inspection of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP transport tests of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -190,11 +190,54 @@ The stronger source-level finding concerns principal binding:
 
 Therefore the verified caller that may invoke the tool is not necessarily the
 principal the handler uses for ownership, retrieval scope, deletion checks, or
-recorded write provenance. This is an inference from the pinned source, not a
-claim that Scout exploited a live deployment. Scout did not execute Mnemo's
-external suite or authenticated transport; the repository's existing flat-store
-contract test calls engine primitives directly and does not cover these four
-handlers under distinct request principals.
+recorded write provenance. The source observation nominated an executable
+transport test; it did not itself prove runtime behavior.
+
+### Executable reproduction and bounded repair
+
+Scout cloned the public repository into a goal-owned isolated worktree and
+checked out exact revision
+`376ca28606c5b6287d9c8274482fa791d4dc8703`. The public API still resolved
+`main` to that revision at `2026-09-01T11:07:14Z`; a complete repository issue
+search for the four wrapper names or `CallerContext` returned zero results with
+`incomplete_results=false`. This is exact code provenance and issue-search
+evidence, not proof that no private or differently worded fix exists.
+
+In Docker image `rust:1.89-bookworm` (observed image digest
+`sha256:948f9b08a66e7fe01b03a98ef1c7568292e07ec2e4fe90d88c07bb14563c84ff`),
+the repository's stable toolchain resolved to Rust 1.98.0. Before any candidate
+change, `mcp_test` passed 11/11 and `per_request_identity` passed 14/14. A new
+goal-owned test then used a valid capability for principal `alice` through the
+real MCP duplex service:
+
+- `mnemo.mem_write` accepted `agent_id: "bob"`; storage owner and write
+  provenance principal became Bob, while capability ID remained absent.
+- `mnemo.mem_read` let Alice retrieve a separately preseeded Bob-owned
+  `agent-managed` record.
+- `mnemo.mem_revise` retired that record and wrote a Bob-owned revision whose
+  provenance principal was Bob with no capability ID.
+- `mnemo.mem_forget` let Alice forget that revision.
+
+The strengthened four-wrapper test passed, so the cross-principal behavior is
+now local executable evidence at the pinned source. It is still not evidence of
+a reachable deployed service, an HTTP configuration, or exploitation of user
+data.
+
+The smallest isolated fix is local commit
+`c82e711e8a2bb386001e98c3437da44c32b62428`. It adds
+`Extension<CallerContext>` to all four wrappers, treats optional `agent_id` as
+an assertion that must match the authenticated caller, and passes that caller
+to every engine request. Its regression proves all four conflicting Alice→Bob
+calls are rejected, Bob's independent record remains active, and an authorized
+Alice write is owned and provenanced as Alice. `cargo fmt --check`, the focused
+11- and 14-test suites, and the complete 89-test `mnemo-mcp` package passed.
+
+The candidate remains local and unreviewed upstream; it has not been pushed,
+deployed, or live-HTTP validated. It deliberately does not claim organization
+binding. `CallerContext` authenticates a principal and roles but carries no
+`org_id`, while write/read/revise inputs still accept caller-supplied
+organization scope. Authenticating and binding that dimension is the next
+authority question, not a property this principal-only fix can prove.
 
 ## Why it matters
 

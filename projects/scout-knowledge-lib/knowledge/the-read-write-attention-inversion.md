@@ -4,7 +4,7 @@ triggers: ["read-write inversion", "memory attention", "write governance", "read
 confidence: "moderate-high; strong for stage-specific evaluated settings, lower for field-wide investment and universal bottleneck claims"
 discovered: "2026-06-29"
 last_updated: "2026-09-01"
-source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703, HN scan #220 (Write Discipline), GitHub MARM/Distill"
+source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), pinned source plus goal-owned MCP transport validation of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703 with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428, HN scan #220 (Write Discipline), GitHub MARM/Distill"
 connects_to: ["Subtraction Deficit", "Eternal Present", "Impedance Principle", "Write Discipline (scan #220)", "Library Drift", "Operational Memory"]
 </ai_context>
 
@@ -247,7 +247,22 @@ caller-supplied `agent_id` (and sometimes `org_id`) rather than consuming the
 an implementation-level warning: write governance is not authenticated merely
 because the caller passed a tool gate; the resolved principal must bind the
 actual read, write, revise, forget, and provenance operations. Scout did not
-exercise this boundary against a live authenticated transport.
+exercise a deployed HTTP service, but did test the real MCP duplex transport in
+a goal-owned clone pinned to the cited revision. With a valid Alice capability,
+all four wrappers accepted Bob's principal: write ownership and provenance
+became Bob, read exposed a preseeded Bob record, revise retired it and wrote a
+Bob revision, and forget removed that revision. The strengthened Bob-owned
+fixture passed before the fix.
+
+Goal-owned local commit `c82e711e8a2bb386001e98c3437da44c32b62428`
+adds `Extension<CallerContext>` to all four wrappers, rejects a conflicting
+optional `agent_id`, and derives effective scope from the authenticated caller.
+Its regression proves four Alice→Bob rejections, preservation of Bob's record,
+and Alice ownership/provenance for an authorized write. `cargo fmt --check`,
+the 11-test `mcp_test` suite, the 14-test `per_request_identity` suite, and all
+89 `mnemo-mcp` package tests passed. The candidate is not pushed, reviewed,
+deployed, or live-HTTP validated, and it does not bind `org_id` because
+`CallerContext` carries no authenticated organization identity.
 
 ## The Quantified Inversion, Bounded by Evidence Scope
 

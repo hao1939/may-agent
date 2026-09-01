@@ -2,15 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-01"
-source_basis: "XHS retained local evidence through 2026-08-19; seed reconciliations through 2026-09-01T10:32:54Z; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, and 2606.04315v1; and sattyamjjain/mnemo at revision 376ca28606c5b6287d9c8274482fa791d4dc8703 on 2026-09-01."
+source_basis: "Direct bounded XHS collection baseline at 2026-09-01T11:15:53Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, and 2606.04315v1; and source plus executable transport validation of sattyamjjain/mnemo revision 376ca28606c5b6287d9c8274482fa791d4dc8703."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
-The direct seed set is currently unobserved, so current cycles use retained
-local XHS evidence as an explicit fallback. No retained URL is called a human
-seed unless a readable collection snapshot confirms it.
+The direct seed surface is now readable but incomplete: the profile declares
+995 collected notes, while a bounded pass materialized 24 stable IDs. Those 24
+are confirmed seeds; the unobserved tail and retained local XHS records remain
+separate. Only one observed seed overlaps the prior 104-ID local inventory.
 
 ## Revisable value rubric
 
@@ -34,9 +35,9 @@ it is not evidence quality.
 
 | Cluster | Seed connection | Score | Supporting sources | Current finding / uncertainty | Confidence | Next exploration |
 |---|---|---:|---|---|---|---|
-| **Self-evolution reliability and evaluation authority** | U | **13** (`3+3+3+2+2`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1) | XHS metadata says attention is moving from generic self-evolution toward evaluator independence, learning state, and human interference. Cross-source evidence adds task-order, security, executor-compatibility, and coalition confounders. Unknown: whether any of these posts are human-collected or whether full XHS content supports more than their visible metadata. | Moderate-high for the cross-source reliability pattern; low for unseen XHS post contents. | Reproduce or independently audit `2608.22610` once code is released; on seed access, deep-read any collected evaluator/skill-reliability post first. |
-| **Long-horizon persistence and stage-aware memory governance** | U | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703) and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | Persistent agents need stage-aware utility/risk measurement plus lifecycle governance. Active iterative retrieval improves cross-scenario generality when retained evidence can still be surfaced, but it cannot recover facts discarded by a build-time schema and is not write authorization. Mnemo is a related implementation, not attributable paper code; its synthetic write-control fixture is not a paper reproduction, and its four agent-managed handlers do not bind caller-supplied identity fields to the verified request principal. | High for the evaluated MemGauge and active-retrieval settings; moderate for the lifecycle synthesis and source-level Mnemo boundary; low for unseen XHS post contents and unexecuted Mnemo behavior. | Test the Mnemo `mem_*` identity boundary through its actual authenticated transport, or inspect a fix that binds all four handlers to `CallerContext`. Reconcile XHS first; revisit paper artifacts if an attributable URL appears. |
-| **Build playbooks and implementation literacy** | U | **10** (`2+2+2+2+2`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md) | In one search packet, process maps and source-code notes had more visible engagement than generic definitions or launch framing. Unknown: collection relevance, content quality, and whether the ranking persists across queries or time. | Low-moderate; title/author/like snapshots only. | On access, compare collected build artifacts by format and inspect whether saves/comments reflect successful use rather than curiosity. |
+| **Self-evolution reliability and evaluation authority** | Confirmed: `6a68001e…101a`, `6a706936…3ed1`, `6a714858…cea5`, `6a71f077…46bf`, `6a7217af…00a2`, `6a753ceb…ff87` | **14** (`3+3+3+2+3`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1) | The direct collection confirms current human interest in MetaEvolve, harnesses, negative self-evolution results, RSI, SWE-Touch, and scaffold evolution. Cross-source evidence adds task-order, security, executor-compatibility, and coalition confounders. Full post claims remain unread except the previously retained SWE-Touch metadata. | Moderate-high for the cross-source reliability pattern; moderate for collection relevance; low for unseen post bodies. | Deep-read `6a714858…cea5` if its detail path becomes readable, then test whether its “stronger becomes less useful” framing maps to evaluator or deployment mismatch. |
+| **Long-horizon persistence and stage-aware memory governance** | Confirmed: `6a6ab006…c932`, `6a72018b…0127`, `6a743c27…c3a0` | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703) and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | Direct collection cards now connect memory-across-tasks, trustworthy long-task progress, and continuity kernels to this cluster. MemGauge remains the freshest controlled stage-wise evidence. A real wire-path test at pinned Mnemo source shows verified Alice can write/read/revise/forget as Bob; a goal-owned candidate binds all four handlers to `CallerContext`. | High for MemGauge and the reproduced Mnemo behavior; moderate for lifecycle synthesis and collection-card meaning; low for unread XHS bodies. | Revisit `6a6ab006…c932` when its `/404` detail boundary changes; independently review or upstream the caller-binding candidate; inspect authenticated `org_id` binding next. |
+| **Build playbooks and implementation literacy** | Confirmed: `6a62d7a9…d139`, `6a73581f…d99e`, `6a762c6e…88d6` | **11** (`2+2+2+2+3`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md) | The collection confirms direct interest in Unity CLI practice, issue triage, and large-project planning. Content quality and successful-use evidence remain unknown without detail reads. | Moderate for collection relevance; low-moderate for the format-performance claim. | Deep-read the project-planning seed and compare its operational steps with the retained playbook packet. |
 
 ## Source-lane continuity
 
@@ -45,9 +46,9 @@ a source-activity quota.
 
 | Lane | Current relevance / expected value / freshness | Access and last useful evidence | Decision and revisit trigger |
 |---|---|---|---|
-| **GitHub** | High relevance because the paper's unlinked artifact claim and the corrected write-control interpretation fired a fresh implementation/provenance trigger. | **Selected in cycle 5.** Public repository Search API returned HTTP 200 with `incomplete_results=false`: exact `"2606.04315"` found two repositories, exact title found five, and `"AutoMEM" "Zhikai Chen"` found one paper index. The attributable author profile linked only arXiv and exposed no paper repository. Mnemo was pinned at `376ca286…8703` and inspected as a related implementation. | Paper artifacts remain unlocated. Paper indexes are discovery provenance, not artifacts or confirmation; Mnemo is neither attributable author code nor a reproduction. Revisit for an author-linked artifact, a search-result change, or an authenticated `mem_*` identity test. |
-| **arXiv** | Highest cluster relevance, but the full `2606.04315v1` source and its 15/15 `2608.30177v1` anchor were just reviewed; expected new-paper value was low. | **Checked in cycle 5.** A bounded exact-ID Atom request returned HTTP 200 and current entries `2608.30177v1` and `2606.04315v1`, updated 2026-08-31 and 2026-06-03 respectively. No version change or higher-value candidate appeared, so no new paper was deep-read. | Preserve `2608.30177v1` as selected primary evidence and `2606.04315v1` as its reviewed follow-up. Revisit on a version change, new seed-linked question, or attributable artifacts. |
-| **Reddit** | Relevant as the path that surfaced both papers, but expected new information is low because stable post `t3_1v8a3sh` and six comments were just reviewed and corrected against primary evidence. | **Checked in cycle 5.** Post-level RSS returned HTTP 200 again at feed update `2026-09-01T10:43:38Z`, with the same stable post and six stable comments; JSON remains last observed HTTP 403. No new thread or content delta appeared. | Retain the post as attributed community framing, not experimental confirmation. Revisit for a new seed-linked thread, material claim requiring comparison, or access change. |
+| **GitHub** | **High relevance / high realized value / current.** Direct memory and long-task seeds keep the principal-scope question central. The previously recorded authenticated-test trigger fired. | **Selected in cycle 6.** At `2026-09-01T11:07:14Z`, the public API still resolved `main` to `376ca28606c5b6287d9c8274482fa791d4dc8703`; a complete issue search for the four `mem_*` names or `CallerContext` returned zero results with `incomplete_results=false`. A clone pinned to that revision reproduced Alice→Bob across all four real MCP wrappers. The repository tests passed at the pinned source; isolated candidate `c82e711e8a2bb386001e98c3437da44c32b62428` rejects conflicting principals and preserves Alice provenance. | Last useful evidence is the pinned source, executable four-wrapper reproduction, and locally committed candidate—not deployed or upstream behavior. Revisit when upstream head/issue state changes, an independent review is available, or organization identity can be authenticated and bound. |
+| **arXiv** | **High relevance / high retained value / fresh.** The direct collection now confirms the memory/continuity cluster, and `2608.30177v1` remains its newest controlled stage-wise study. Expected value from another immediate fetch is low because the exact-ID record was refreshed minutes before this baseline. | **Retained, no quota fetch in cycle 6.** Last useful observation remains the exact-ID Atom HTTP 200 at feed update `2026-09-01T10:43:37Z`: `2608.30177v1` (updated 2026-08-31) and `2606.04315v1` (updated 2026-06-03). Full sources are already reviewed. Post-reconciliation rubric remains 15/15 for `2608.30177v1`; the new seeds strengthen rather than displace its relation. | Preserve `2608.30177v1` as selected anchor, not a newly discovered candidate. Revisit on a version change, a readable body from `6a6ab006…c932` or `6a743c27…c3a0` that raises a new question, or attributable experiment artifacts. |
+| **Reddit** | **Medium relevance / low expected incremental value / current.** The thread remains a discovery bridge to the papers, but direct seeds add no new Reddit-specific claim and its interpretation is already checked against primary evidence. | **Deferred in cycle 6 without quota work.** Last useful evidence is post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and the same six stable comments. JSON remains last observed HTTP 403. RSS is attributable community evidence; comments remain lower-confidence anecdote. | No request was issued merely to exercise the lane. Revisit for a new seed-linked thread, a material claim needing primary-source comparison, a post/comment delta, or a JSON/RSS access change. |
 
 ## Selected deep dive — coalition-conditioned skill reliability
 
@@ -238,8 +239,67 @@ principal only when invoked through its capability-authorized path; otherwise it
 falls back to `created_by` or the record's `agent_id`. The source-level inference
 is therefore that tool invocation permission is not bound to the identity used
 for ownership, retrieval scope, deletion checks, or provenance in these four
-handlers. This is not a live exploitation claim: Scout did not run Mnemo's suite
-or exercise an authenticated transport.
+handlers. At the end of cycle 5 this was source analysis only; cycle 6 below
+then exercised it through the real MCP duplex service in a goal-owned clone.
+Neither step is a live exploitation claim.
+
+## Sixth-cycle follow-up — direct seeds and executable caller scope
+
+The cycle's initial reconciliation at `2026-09-01T10:45:50Z` preserved an
+unavailable direct boundary and an unchanged local 104-ID inventory. After the
+human clarified WSL Chrome access, selection was reopened. A goal-owned observer
+reached the existing Chrome session without executing inside the other worker's
+container, opened an observational XHS tab, and established a bounded direct
+collection baseline at `2026-09-01T11:15:53Z`: 995 notes declared, 24 stable
+IDs materialized, no login wall, no malformed cards, and fingerprint
+`158fa9850788df663eb60ac171461708b2dc4029318cb373e7eaa9494aa110eb`.
+Only `6a7217af…00a2` overlaps the prior local inventory. The remaining 23 are
+newly confirmed Scout seeds, not proven additions to the human collection;
+there is no prior readable snapshot from which to infer added, changed, or
+removed membership.
+
+This reconciliation strengthens two clusters. Six observed cards directly
+support self-evolution reliability, including a negative “stronger becomes less
+useful” framing. Three cards connect cross-task memory, trustworthy progress,
+and long-task continuity to stage-aware memory governance. The latter remains
+15/15 and still outranks the 14/15 self-evolution cluster because it combines a
+fresh controlled study with a current, executable authority gap. Accordingly,
+`2608.30177v1` remains the anchor after direct reconciliation. Its existing
+full-source deep dive is preserved; no repeat arXiv request was needed for a
+quota.
+
+The queued Mnemo test then separated four evidence layers:
+
+1. **Pinned source observation:** public `main` still resolved to
+   `376ca28606c5b6287d9c8274482fa791d4dc8703` at
+   `2026-09-01T11:07:14Z`. Complete issue search returned zero matching issues
+   and `incomplete_results=false`. At that source, `server.rs` handlers
+   `mem_write`, `mem_read`, `mem_revise`, and `mem_forget` accept input
+   `agent_id` without `Extension<CallerContext>`.
+2. **Repository baseline:** in a goal-owned Docker execution space, Rust stable
+   resolved to 1.98.0. Pinned `mcp_test` passed 11/11 and
+   `per_request_identity` passed 14/14. Those suites establish the surrounding
+   dispatch and flat-store contracts, not the missing four-wrapper property.
+3. **Goal-owned wire-path reproduction:** one strengthened test issued a valid
+   capability for `alice` over the real MCP duplex service. Alice wrote as Bob;
+   the stored owner and provenance principal were Bob with no capability ID.
+   Alice then read a separately preseeded Bob `agent-managed` record, revised
+   it, and forgot the revision. The diagnostic passed before any fix.
+4. **Isolated candidate:** commit
+   `c82e711e8a2bb386001e98c3437da44c32b62428` adds the resolved caller extension
+   to all four wrappers, treats optional `agent_id` as a matching assertion,
+   rejects conflicts, and always sends the caller principal to the engine. Its
+   regression proves all four Alice→Bob requests fail, Bob's record remains,
+   and an Alice write is owned and provenanced as Alice. `cargo fmt --check`,
+   the focused 11- and 14-test suites, and the full 89-test `mnemo-mcp` package
+   pass on this candidate.
+
+The candidate is locally committed and reviewable, but it has not been pushed,
+reviewed upstream, deployed, or exercised over a live HTTP server. It also does
+not authenticate `org_id`: the current `CallerContext` carries a principal and
+roles, not an organization. Write/read/revise still accept that field, so
+tenant binding remains a separate open authority question rather than an
+implied property of the fix.
 
 ## Connections and tension
 
@@ -265,16 +325,15 @@ or exercise an authenticated transport.
   authorization boundaries rather than substitute for them.
 - **Implementation authority gap:** Mnemo turns the overstated framing into
   write/revise/forget tools, then accepts identity scope from tool input even
-  though dispatch has already resolved the authenticated caller. A verified
-  tool gate is not sufficient when the guarded operation uses a second,
-  caller-asserted principal.
-- **Blocked evidence:** direct collection membership, current engagement, full
-  XHS post text, and collection removals remain unknown while the browser
-  endpoint is outside this worker's reachable network namespace. Reddit's JSON
-  endpoints previously returned HTTP 403, but post-level RSS now returns HTTP
-  200 with the post and six comments. The body is usable as attributable
-  community evidence, not as validation of its cited papers or production
-  prevalence claims.
+  though dispatch has already resolved the authenticated caller. The
+  Alice→Bob reproduction proves this at the four-wrapper wire path; the isolated
+  caller-binding candidate shows the smallest validated repair.
+- **Bounded evidence:** direct collection membership is confirmed only for 24
+  materialized cards out of 995 declared notes. Seed `6a6ab006…c932` is visible
+  but its detail resolves to `/404`; post bodies, prior direct deltas, the
+  collection tail, and removal state remain unknown. Reddit JSON previously
+  returned HTTP 403, while post RSS returns HTTP 200 with the post and six
+  comments; that is attributable community evidence, not paper validation.
 
 ## Cycle log
 
@@ -285,3 +344,4 @@ or exercise an authenticated transport.
 | 2026-09-01 cycle 3 | Reconciled first at 10:12:33Z: direct set still unobserved; local fallback again unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`. | Bounded GitHub repository searches were complete; the arXiv exact-ID feed returned `2604.16548v2`, `2606.04315v1`, and preserved `2608.30177v1`; Reddit post RSS returned `t3_1v8a3sh` plus six comments. | `2604.16548v2` lifecycle framework and five proposed governance predicates; Reddit claims kept attributable and non-empirical. | The 15/15 cluster and MemGauge anchor remain selected. The 14/15 marginal follow-up adds recoverability and lineage requirements without counting paper indexes or comments as confirmation. | Reconcile XHS first; deep-read `2606.04315v1` and test whether its active-control result entails safe write authorization, provenance, and principal scope. |
 | 2026-09-01 cycle 4 | Reconciled first at 10:24:20Z: direct set still unobserved; local fallback unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`. | GitHub deferred because complete searches were fresh; Reddit deferred because the thread and comments were just reviewed; arXiv selected and `2606.04315v1` full source reviewed. | Cross-scenario memory generality, build-time schema loss, iterative retrieval, AutoMEM cost/accuracy, and the dynamic-task ceiling. | Preserve the 15/15 cluster and `2608.30177v1` anchor. Correct Reddit's write-control interpretation: the paper supports active query-time reads, not governed memory admission. | Reconcile XHS first; seek attributable `2606.04315` artifacts or test principal-scoped iterative retrieval. Revisit GitHub or Reddit only when their recorded triggers fire. |
 | 2026-09-01 cycle 5 | Reconciled first at 10:32:54Z: direct set still unobserved; corrected fallback unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`; rejected an incomplete matcher rather than recording a false delta. | GitHub selected on the paper-artifact trigger; Hugging Face checked as related discovery; bounded arXiv exact-ID and Reddit post-RSS reads returned HTTP 200 with the same versioned papers, post, and six comments. | Pinned Mnemo source audit: repository-specific synthetic crossover, paper misattribution, and an inferred caller-identity binding gap in the four `mem_*` handlers. | Preserve `2608.30177v1` as the 15/15 anchor. No new arXiv or Reddit candidate displaced it. Classify Mnemo as related implementation evidence, not paper artifact, reproduction, or live vulnerability proof. | Reconcile XHS first; exercise the identity boundary through Mnemo's authenticated transport or inspect a fix binding `mem_*` operations to `CallerContext`. Revisit paper artifacts when an attributable URL appears. |
+| 2026-09-01 cycle 6 | Initial 10:45:50Z fallback was superseded by direct reconciliation at 11:15:53Z: 995 notes declared, 24 IDs materialized, one local overlap, 23 newly confirmed Scout seeds, and no prior-readable delta inference. | GitHub selected and refreshed at pinned Mnemo head; arXiv anchor retained from its minutes-old exact-ID refresh; Reddit deferred without quota work. | Real MCP Alice→Bob write/read/revise/forget reproduction, followed by a locally committed caller-binding fix and full package validation. | Direct memory/continuity seeds keep `2608.30177v1` and stage-aware governance at 15/15; self-evolution rises to 14/15. Separate source observation, executable reproduction, candidate behavior, and absent deployment proof. | Begin cycle 7 with a comparable direct collection snapshot; deep-read `6a6ab006…c932` if its `/404` boundary changes, otherwise explore authenticated organization scope in memory tooling. |
