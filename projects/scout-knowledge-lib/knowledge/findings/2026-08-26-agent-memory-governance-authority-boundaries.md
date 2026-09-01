@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo wire-path reproductions prove why authenticated principal and organization scope must reach each operation. Isolated fixes pass focused, package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo wire-path reproductions prove why authenticated principal and organization scope must reach agent-managed, general, and experience-memory operations. Isolated fixes pass focused, package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP transport tests of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated caller candidate c82e711e8a2bb386001e98c3437da44c32b62428 and organization-scope candidate b0e0873c69658cc74ca7b607553b6978e3d4781f."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP transport tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local candidates c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, and a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -272,11 +272,48 @@ HTTP result, or proof that every non-agent-managed Mnemo tool binds
 organization scope. The next code-level revisit is the broader remember,
 recall, and experience-memory surface.
 
+### Cycle 11 general and experience-memory reproduction and repair
+
+The seed-first reconciliation again completed before this audit. Source review
+then found that `mnemo.remember` did not accept the request's verified
+`CallerContext`, `mnemo.recall` used it only for a post-read lease, and the two
+experience-plan handlers independently accepted caller-supplied `agent_id` and
+`org_id`. General remember also allowed `created_by` to determine write
+provenance when no engine capability object was passed. The engine consequently
+fell back to its boot agent or the request's fields even though the MCP
+dispatcher had already authenticated a different principal and organization.
+
+A new real-duplex regression issued `alice` a valid capability scoped to
+`role:writer org:alpha`. Before the repair, general remember accepted
+`org_id: beta` and experience remember accepted `agent_id: bob`; both returned
+`is_error: false`. These are directly observed wrapper behaviors on local
+candidate base `b0e0873c69658cc74ca7b607553b6978e3d4781f`, not claims about a
+deployed service.
+
+Local commit `a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004` extends the existing
+binding helpers to general remember/recall and experience remember/recall. It
+derives the engine agent and a sole signed organization, rejects conflicting
+top-level and nested domain organization inputs, binds authenticated
+`created_by` provenance to the verified caller, and rejects a conflicting plan
+owner or reader. Unauthenticated boot-derived stdio calls retain their former
+request-selected organization and `created_by` behavior.
+
+During the check, public `main` advanced to
+`2994abf185da50d43e5fa4b3f826812bd09c2f20`. Its standalone audit-export
+change touches no MCP wrapper file. The goal branch merged that revision without
+rewriting the three repair commits; current candidate
+`0d7a19d6d09ff7ea17f4cde4dcf2c3aa93c26848` passes both new real-MCP
+regressions, the two earlier principal/organization regressions, all 92
+`mnemo-mcp` tests, `cargo fmt --all -- --check`, and Clippy with warnings
+denied. This remains isolated, unreviewed, and undeployed evidence. It does not
+prove authenticated HTTP behavior or that organization scope reaches every
+other organization-bearing Mnemo tool.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
 worker consume organizational context and lets its outputs influence future
-workers. A governance layer must therefore bind six distinct questions:
+workers. A governance layer must therefore bind eight distinct questions:
 
 1. **Who is the caller?** Identity should come from a credential authority, not
    request prose or model-generated fields.
@@ -293,6 +330,9 @@ workers. A governance layer must therefore bind six distinct questions:
 7. **Does authenticated identity reach the operation?** A role gate at dispatch
    does not bind ownership or provenance if the handler later accepts another
    principal from caller-controlled fields.
+8. **Does tenant scope follow the same path?** Authenticating a principal is
+   incomplete when a handler can still choose another organization, namespace,
+   or domain independently.
 
 This turns “memory governance” from a feature checklist into an authority map.
 The reusable test is to trace every proposal, approval, read, write, plugin call,
