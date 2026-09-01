@@ -2,18 +2,20 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-01"
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T14:59:22.740Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill repositories; goal-owned SkillRise order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and executable principal/organization transport validation of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20 with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, and provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, plus live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T15:59:50.186Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill repositories; goal-owned SkillRise order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and executable principal/organization transport validation of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20 with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, and provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, plus live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
-The direct seed surface is readable but incomplete: the profile declares 995
-collected notes, while two Cycle-15 bounded passes materialized the same 129
-stable IDs. Added and changed sets are empty. Prior card `6a4b745f…5691` is
-absent twice and directly `/404`, so it is unavailable—not inferred removed.
-SkillRise remains readable; the 866-note tail, 14-file surface, and retained
-local XHS records remain separate uncertainty rather than inferred removals.
+The direct seed surface is readable but incomplete. Two comparable Cycle-17
+passes restore the complete historical 130-ID and metadata fingerprints with
+newly collected, changed, absent, and removed sets all `[]`; prior-missing
+`6a4b745f…5691` is collection-visible again. A broader step sample reached 456
+IDs but can skip intervening cards and is not a complete comparison. Signed
+detail reads for that card, SkillRise, and one current card all resolve `/404`;
+the other 127 details, historical tail, file surface, and retained local XHS
+records remain separate uncertainty rather than inferred removals.
 
 ## Revisable value rubric
 
@@ -293,6 +295,57 @@ remains the separate 15/15 arXiv anchor; Reddit remains RSS-readable/JSON-403
 and low-value for this code question, so neither was queried for quota. The
 next exploration begins seed-first, then inspects whether read-side provenance
 selection discloses unauthorized identifiers or metadata before changing code.
+
+## Cycle 17 selection — audit metadata is still a scoped read
+
+Cycle 17 reconciled XHS first. Two clean-reload passes at
+`2026-09-01T15:54:29.734Z–15:59:50.186Z` restored all 130 historical IDs and
+both exact complete fingerprints. Newly collected, title/author-changed,
+absent, and removed sets are `[]`; `6a4b745f…5691` recovered collection
+visibility. A separate 8,000-pixel-step sample reached 456 IDs but can skip
+intervening cards, so its 326 extra observations are not labeled new
+collections. Signed detail reads of the restored card, SkillRise, and current
+card `6a966f4f…92db` each resolved `/404` without a login wall; 127 details and
+the historical tail/file surface remain unknown.
+
+After that persisted comparison, all three lanes were reconsidered:
+
+- **GitHub/local code — selected; high relevance and realized value, current
+  local evidence.** Public Mnemo source remains last pinned at
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`; tested local ancestry begins at
+  `42d5894755fc7bae4601cb7726d4bded50e8f9d4`. The queued read trigger fired:
+  `mnemo.provenance` accepted three selectors without consuming verified
+  caller context. Revisit for upstream head/review or provenance verification
+  and REST read-scope parity.
+- **arXiv — retained and deferred; high relevance, low incremental value,
+  fresh reviewed evidence.** The restored 130-card state changes neither the
+  memory-governance cluster nor its rubric. `2608.30177v1` remains 15/15 and
+  the freshest controlled stage-wise anchor. Revisit for a version, attributable
+  artifact, replication, stronger study, or content-bearing seed delta.
+- **Reddit — deferred without quota work; medium relevance, low incremental
+  value, unchanged access.** Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit for distinct audit-scope evidence, a
+  seed-linked thread, content delta, or access change.
+
+The pre-fix duplex fixture placed boot memory
+`01a05dbb-c925-7590-9b87-80d5b36b4ce5`, Alice/Alpha memory
+`01a05dbb-c94b-7390-88aa-64c50ad85bc0`, and Alice/Beta memory
+`01a05dbb-c975-7d71-a13a-1b4eefd84d9a` in one session. Signed Alice/Alpha
+could read the boot row by exact ID and principal, all three rows by session,
+and both Alice rows by principal. This exposes identity, memory/session IDs,
+time, and hashes across both principal and tenant boundaries.
+
+Local repair `f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c` gives the handler its verified
+caller and filters memory, principal, and session results by caller plus the
+sole signed organization. Foreign exact IDs return `null`; a foreign principal
+is rejected; the shared-session and own-principal queries return only the
+Alice/Alpha row. Operator-only legacy stdio retains its broad audit view.
+Formatting, strict Clippy, all 96 MCP tests, and all 85 HTTP-enabled server
+tests pass. This is local candidate behavior, not upstream review, deployment,
+or proof about any live service. The next exploration begins seed-first, then
+audits read-scope parity for MCP provenance verification and REST provenance
+endpoints before another code change.
 
 ## Selected deep dive — coalition-conditioned skill reliability
 
@@ -685,3 +738,4 @@ audit remain the highest supported evidence in this execution environment.
 | 2026-09-01 cycle 14 | Reconciled first at 14:25:05.607Z–14:25:36.857Z: same exact 130-ID and metadata fingerprints; added/changed/absent/unavailable all `[]`; SkillRise detail remains readable; 865-note tail and 14 files remain unknown. | GitHub/local code selected for the queued tenant-derivation fixture. arXiv `2608.30177v1` remains 15/15 on its reviewed v1 source; Reddit remains deferred at RSS-readable/JSON-403 without quota work. | Signed `alice`/`org:alpha` directly deleted Alice's `org:beta` memory by ID on base `4217163…cae9`; source review found criteria discovery also lacked organization filtering. Repair `fcb022a…dcf8` covers both paths and passes formatting, strict lint, 295 core, 93 MCP, and 85 HTTP-enabled server tests. | Extend the existing authority finding once. Preserve the prior Alice→Bob four-wrapper evidence, distinguish the new same-principal cross-org result, and keep local candidate behavior separate from upstream/deployment claims. | Begin cycle 15 seed-first; if unchanged, inventory other organizationless destructive or bulk-selection paths, including storage-error and nonexistent-ID behavior, before another code change. |
 | 2026-09-01 cycle 15 | Reconciled first at 14:48:01.178Z–14:49:54.073Z: two identical 129-ID passes; added/changed/removed `[]`; prior `6a4b745f…5691` unavailable after repeated absence and direct `/404`; SkillRise readable; 866-note tail and 14 files unknown. | GitHub selected because the unavailable seed's retained title names an open-source self-optimizing skill. Exact Chinese-title search returned zero and a narrow English query eight, both complete. arXiv `2608.30177v1` remains the separate 15/15 memory anchor; Reddit deferred at RSS-readable/JSON-403 without quota work. | Probable relation `SeBastArt/self-optimize-skill` is pinned at `bd43cb3…6bbc`: timing and wording fit, but the unavailable body cannot confirm the link. Five Markdown files expose concrete harness/gate patterns and no executable validation artifacts. | Extend the existing self-evolution control-surface finding; preserve probable relation, source claims, direct structure, and missing validation as separate evidence. Do not inflate the cluster or replace evaluated SkillRise/WikiSkill evidence. | Begin the next seed-first pass; recheck `6a4b745f…5691`, then seek an attributable link or executable baseline/result artifact. Resume the organizationless bulk-path audit if those triggers remain absent. |
 | 2026-09-01 cycle 16 | Reconciled first at 14:58:51.323Z–14:59:22.740Z: exact Cycle-15 129-ID and metadata fingerprints; added/changed/removed `[]`; `6a4b745f…5691` remains unavailable; SkillRise readable; 866-note tail and 14 files unknown. | GitHub/local code selected on the queued bulk-path trigger. arXiv `2608.30177v1` remains 15/15; Reddit deferred at RSS-readable/JSON-403 without quota work. | On local base `fcb022a…dcf8`, signed Alice/Alpha deleted boot-owned records selected by provenance principal and session because the handler dropped caller context. Repair `42d5894…e8f9d4` binds actor and organization; formatting, strict lint, 295 core, 95 MCP, and 85 HTTP-enabled tests pass. | Extend the authority finding once; preserve public source, exact pre-fix outputs, local repair, prior HTTP evidence, and absent upstream/deployment proof as distinct evidence. | Begin cycle 17 seed-first; if unchanged, inspect read-side provenance selection for unauthorized identifier or metadata disclosure before another code change. |
+| 2026-09-01 cycle 17 | Reconciled first at 15:52:12.684Z–15:59:50.186Z: two comparable passes restore all 130 historical IDs and metadata; newly collected/changed/absent/removed `[]`; prior-missing card collection-visible; three sampled signed details `/404`. | GitHub/local code selected on the queued provenance-read trigger. arXiv `2608.30177v1` remains 15/15; Reddit deferred at RSS-readable/JSON-403 without quota work. | Signed Alice/Alpha read boot, shared-session, and Alice/Beta provenance because `mnemo.provenance` ignored caller context. Repair `f90ce82…baa02c` scopes all three selectors; formatting, strict lint, 96 MCP, and 85 HTTP-enabled tests pass. | Extend the authority finding once; keep seed access, public source, exact pre-fix IDs, local repair, and absent upstream/deployment proof distinct. | Begin the next seed-first cycle; if unchanged, audit MCP provenance verification and REST provenance read-scope parity before another code change. |

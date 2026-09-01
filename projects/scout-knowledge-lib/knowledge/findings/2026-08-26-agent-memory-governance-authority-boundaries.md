@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including provenance reads and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, and provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, and provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -467,11 +467,66 @@ and download/toolchain caches remain. This candidate is local, unreviewed, and
 undeployed. Read-side provenance selection and other bulk paths remain outside
 the completed audit.
 
+### Provenance audit data needs the same caller and tenant scope
+
+Cycle 17 reconciled XHS before reopening the code question. Two clean-reload
+passes at `2026-09-01T15:54:29.734Z–15:59:50.186Z` reproduced the complete
+historical 130-card ID and title/author fingerprints: newly collected,
+metadata-changed, absent, and removed arrays are all `[]`. The card absent in
+Cycles 15–16 is collection-visible again rather than newly added. Collection
+cards remain readable without a login wall, but signed detail reads for that
+card, SkillRise, and one current representative card all resolved `/404`; the
+other 127 details remain untested.
+
+Only after that reconciliation did the rubric select the queued
+GitHub/local-code read audit. At local ancestry
+`42d5894755fc7bae4601cb7726d4bded50e8f9d4` over public Mnemo revision
+`2994abf185da50d43e5fa4b3f826812bd09c2f20`, `mnemo.provenance` accepted
+memory, principal, or session selectors but did not consume the verified
+`CallerContext`. A valid `alice` capability scoped to `org:alpha` therefore
+received audit rows selected independently of both authorities.
+
+The pre-fix duplex run generated boot memory
+`01a05dbb-c925-7590-9b87-80d5b36b4ce5`, Alice/Alpha memory
+`01a05dbb-c94b-7390-88aa-64c50ad85bc0`, and Alice/Beta memory
+`01a05dbb-c975-7d71-a13a-1b4eefd84d9a` in one shared session. The exact
+observed results were:
+
+- the foreign memory selector returned the boot row, including provenance ID
+  `01a05dbb-c935-7cd2-8605-6718b2f85ea5`, principal, session, time, and hashes;
+- the foreign-principal selector returned that same boot row;
+- the shared-session selector returned all three memory IDs; and
+- the caller's own-principal selector returned both Alpha and Beta rows,
+  exposing the same principal's other organization.
+
+These are generated fixture identifiers, not production records. They prove a
+local authenticated read boundary, not a deployed exposure.
+
+Repair `f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c` gives the read handler the
+verified caller. Signed requests may query only their own principal; exact
+foreign or other-organization memory IDs return `null`; principal mismatch is
+rejected; and principal/session lists retain only rows whose live memory record
+establishes the caller's sole signed organization. Legacy operator-only stdio
+keeps its historical audit-wide view. An organization-scoped caller does not
+receive provenance for a hard-deleted row because no surviving memory record
+can prove its tenant; this is a deliberate fail-closed limit rather than a
+claim that tenant metadata survives deletion.
+
+Formatting and strict Clippy with warnings denied pass. The full MCP package
+passes 96 tests, including the new five-query fixture, and the HTTP-enabled
+server passes all 85 tests, preserving the prior same-session Bob→Alice
+transport regression. The repair is local, unreviewed, and undeployed. arXiv
+`2608.30177v1` remains the 15/15 stage-wise anchor; Reddit remains useful
+community framing but cannot adjudicate this code path. The next code
+exploration, after another seed-first reconciliation, is read-scope parity for
+provenance verification/export surfaces, beginning with MCP verification and
+the REST provenance endpoints.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
 worker consume organizational context and lets its outputs influence future
-workers. A governance layer must therefore bind eight distinct questions:
+workers. A governance layer must therefore bind nine distinct questions:
 
 1. **Who is the caller?** Identity should come from a credential authority, not
    request prose or model-generated fields.
@@ -491,6 +546,9 @@ workers. A governance layer must therefore bind eight distinct questions:
 8. **Does tenant scope follow the same path?** Authenticating a principal is
    incomplete when a handler can still choose another organization, namespace,
    or domain independently.
+9. **Who may read the audit trail?** Provenance is itself identity, session,
+   timing, and content-hash metadata; an audit selector must not bypass the
+   principal and tenant scope applied to ordinary recall.
 
 This turns “memory governance” from a feature checklist into an authority map.
 The reusable test is to trace every proposal, approval, read, write, plugin call,

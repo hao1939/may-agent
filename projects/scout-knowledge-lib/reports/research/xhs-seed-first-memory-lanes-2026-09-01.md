@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across sixteen cycles: Cycle 16 preserves the reconciled 129-card Xiaohongshu state, proves provenance-based bulk deletion inherited boot authority, repairs both principal and session selectors with caller and organization checks, retains arXiv 2608.30177v1, and defers Reddit at its actual boundary."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 16"]
+summary: "Seed-first Scout checkpoint across seventeen cycles: Cycle 17 restores the complete historical 130-card Xiaohongshu snapshot, proves provenance reads ignored principal and organization scope, repairs memory/principal/session selectors, retains arXiv 2608.30177v1, and defers Reddit at its actual boundary."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 17"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T14:59:22.740Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T15:59:50.186Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -446,6 +446,14 @@ per-source quota.
 | GitHub | **High relevance / moderate realized value / current; selected.** The newly unavailable card's retained title explicitly names an open-source self-optimizing skill, firing a provenance search after seed persistence. | At `2026-09-01T14:51:43.254Z`, exact Chinese-title search returned zero repositories and `"skill self-optimization" agent` returned eight; both report `incomplete_results=false`. `SeBastArt/self-optimize-skill` is the strongest but unconfirmed relation because its creation precedes the ID's heuristic ObjectID-style date by four days and the wording matches. Pinned revision `bd43cb3911ad4ebccf1f309176ca28d964e06bbc` has five Markdown files with concrete harness/gate rules and no executable test, fixture, CI, or result artifact. Preserve direct structure, author claims, missing proof, and probable XHS relation separately. Revisit for a restored XHS link, executable baseline/result artifact, or material revision. |
 | arXiv | **High relevance / low incremental value / fresh; retained and deferred.** The availability-only delta does not change the paper question; GitHub directly addressed the changed seed. | `2608.30177v1` remains the separate memory-governance cluster's 15/15 anchor on its reviewed v1 source. SkillRise and WikiSkill remain the stronger evaluated self-evolution evidence than the new process-only repository. No request was issued for quota. Revisit on a version, attributable artifact, stronger stage-wise study, independent replication, or content-bearing new seed. |
 | Reddit | **Medium relevance / low incremental value / unchanged; deferred without quota work.** The XHS availability boundary and probable repository relation create no community-claim question the existing thread can resolve. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. Revisit for a distinct self-optimization artifact discussion, organization/tenant evidence, new seed-linked thread, content delta, or access change. |
+
+### Cycle 17 reconsideration and evidence
+
+| Lane | Relevance, value, freshness, and decision | Last useful evidence, boundary, and revisit trigger |
+|---|---|---|
+| GitHub/local code | **High relevance / high realized value / current local evidence; selected.** The restored 130-card seed state leaves memory governance at 15/15, and Cycle 16's explicit provenance-read trigger fired. | Public Mnemo source remains last pinned at `2994abf185da50d43e5fa4b3f826812bd09c2f20`; the exact local pre-fix base is `42d5894755fc7bae4601cb7726d4bded50e8f9d4`. Signed Alice/Alpha could read boot, shared-session, and Alice/Beta provenance. Local repair `f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c` scopes all three selectors and passes focused, full-package, HTTP-enabled, formatting, and strict-lint validation. This is local executable evidence, not an upstream or deployed result. Revisit for upstream head/review or provenance verification and REST read-scope parity. |
+| arXiv | **High relevance / low incremental value / fresh reviewed evidence; retained and deferred.** The seed membership and metadata rubric did not change, while the queued code audit directly resolved the highest-value open question. | `2608.30177v1` remains the 15/15 stage-wise memory-governance anchor on its reviewed v1 source. No request was issued for quota. Revisit on a version, attributable artifact, independent replication, stronger stage-wise evidence, or content-bearing new seed. |
+| Reddit | **Medium relevance / low incremental value / unchanged; deferred without quota work.** The provenance-read boundary is repository- and credential-model-specific; the existing community thread adds no distinct evidence. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. Revisit for distinct audit-scope evidence, a new seed-linked thread, post/comment delta, or an access change. |
 
 Hugging Face was selected as useful related discovery rather than a permanent
 quota lane. Its public APIs returned HTTP 200 for paper ID, title-term,
@@ -1102,6 +1110,88 @@ audited. Cycle 17 starts seed-first. If the XHS state and lane triggers remain
 unchanged, the next exploration is whether `mnemo.provenance` can disclose
 unauthorized identifiers or metadata through principal/session selection;
 Reddit is revisited only for distinct evidence or an access/content change.
+
+## Cycle 17 checkpoint — provenance reads now honor caller scope
+
+What was wrong: authenticated `mnemo.provenance` calls reached memory,
+principal, and session selectors without the verified caller context. Audit
+data includes principal, memory and session IDs, timestamps, capability IDs,
+and hashes, so this was a read-authorization gap rather than harmless
+diagnostics. A signed Alice/Alpha request could see boot-owned rows and Alice's
+Beta rows.
+
+Seed ordering was preserved. Cycle 17's live Chrome status check began at
+`2026-09-01T15:52:12.684Z`; two comparable clean-reload passes ended at
+`15:59:50.186Z` and reproduced the complete historical 130-ID and
+ID/title/author fingerprints. Newly collected, metadata-changed, absent, and
+removed sets are all `[]`. Prior-missing `6a4b745f…5691` is collection-visible
+again, an availability recovery rather than a new seed. A broader 456-ID sample
+used jumps that can skip intervening cards and is retained only as coverage
+evidence. Signed detail reads for the restored card, SkillRise, and current
+card `6a966f4f…92db` all resolved `/404` without a login wall; the other 127
+details and historical tail/file surface remain unknown. The exact seed state
+was committed first as `f4860937627e011a71e7209f569675cf825f0a12`.
+
+Only then were the three lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance and high expected
+  value. Public source remains last pinned at
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`; exact local pre-fix ancestry is
+  `42d5894755fc7bae4601cb7726d4bded50e8f9d4`. The next revisit triggers are an
+  upstream head/review change or verification/REST provenance read-scope
+  parity.
+- **arXiv was retained and deferred** because the restored seed state did not
+  change the rubric. Reviewed `2608.30177v1` remains the fresh 15/15
+  stage-wise memory-governance anchor. Revisit on a paper version, attributable
+  artifact, replication, stronger study, or content-bearing seed delta.
+- **Reddit was deferred without quota work.** Last useful evidence remains RSS
+  HTTP 200 at `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six
+  comments; JSON remains last observed HTTP 403. Revisit for distinct
+  audit-scope evidence, a seed-linked thread, content delta, or access change.
+
+The pre-fix fixture generated boot memory
+`01a05dbb-c925-7590-9b87-80d5b36b4ce5`, Alice/Alpha memory
+`01a05dbb-c94b-7390-88aa-64c50ad85bc0`, and Alice/Beta memory
+`01a05dbb-c975-7d71-a13a-1b4eefd84d9a` in one session. Exact results exposed
+the boot row by memory and principal; all three rows by session; and both Alice
+rows by principal. The boot provenance row itself was
+`01a05dbb-c935-7cd2-8605-6718b2f85ea5`. These are generated test IDs, not
+production records.
+
+What changes: local repair
+`f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c` passes verified caller and sole
+signed organization into all three read selectors. Foreign exact IDs return
+`null`, foreign-principal selection is rejected, and shared-session plus
+own-principal results contain only Alice/Alpha. Operator-only legacy stdio
+retains its broad audit view. Organization-scoped provenance for a hard-deleted
+row is deliberately hidden because no live memory row remains to prove its
+tenant.
+
+Proof is current to that code revision: formatting and strict Clippy with
+warnings denied pass; the full MCP package passes 96 tests; and the
+HTTP-enabled server passes all 85 tests, including the prior same-session
+Bob→Alice transport regression. Scout's exact documentation tree passes syntax
+bundling, TypeScript, Prettier, and 78 tests with 226 assertions. All 19
+relative links across the four current checkpoint documents resolve. The
+read-only health scan remains a bounded 24 facts and 16 wake signals; none is a
+new changed-document regression.
+
+The human checkout remained outside this goal's write surface, but concurrent
+state changed, so byte-for-byte stability is not claimed. Its HEAD stayed
+`386b445c236e4609cd8870d22cc773cc4641fec8`; this turn's first comparable read
+saw 386 porcelain-v2 entries with SHA-256
+`eaa081b9082118014df7a90b3468daf1da2139dbef1bccab64edd1685a9c4a4d`, while
+the later `2026-09-01T16:27:21.266Z` read saw 387 entries with SHA-256
+`71baa22bf5d831af49bf3b69e2528fef37249220b35142ac82c0e78f6d2e6fd1`.
+Commands there were limited to read-only `git rev-parse` and `git status`;
+every edit, test, formatter, build, stage, and commit ran in goal-owned Scout
+or Mnemo execution spaces.
+
+Remaining limits are explicit: both repairs are local, unreviewed upstream,
+and undeployed; the current XHS detail boundary is `/404`; and broader
+provenance verification/export surfaces are not yet audited. The next
+exploration begins with another seed-first reconciliation, then checks MCP
+provenance verification and REST provenance endpoints for matching read scope.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
