@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Finding on self-improving agent loops: closed-loop self-evaluation plateaus, while later updates show durable gains require externally grounded verification, pathway- and coalition-level evaluation, repeated runs, order perturbations, security/effect audits, and separate optimization and deployment budgets."
 triggers: ["self-improving agents", "verifier loop", "agent self-improvement", "Goodhart drift", "closed-loop plateau", "retained experience", "skill evolution benchmark", "persistent agents", "pathway evidence", "task order", "hidden curriculum", "run variance", "underspecification", "security drift", "unauthorized state change", "artifact-executor compatibility", "agent optimization budget", "deployment cost frontier", "coalition pollution", "cross-domain utility reversal", "skill reliability"]
-source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077; full paper sources of arXiv 2608.22610v1 and 2607.26784v1; and Within-yao/SkillRise at 2b38da3ad7b64414305d39609484803b07d3b9b0."
+source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077; full paper sources of arXiv 2608.22610v1 and 2607.26784v1; Within-yao/SkillRise at 2b38da3ad7b64414305d39609484803b07d3b9b0; and goal-owned order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8."
 last_updated: "2026-09-01"
 </ai_context>
 
@@ -250,6 +250,32 @@ One commit message says ALFWorld validation plus one GRPO step succeeded, which
 is maintainer provenance, not Scout execution or reproduction. The large GPU,
 model, environment, and external-data requirements make a full independent run
 outside this bounded checkpoint.
+
+### Cycle 8 code audit: the default stream is positionally fixed
+
+At the same pinned revision, all 490 bundled ALFWorld groups are same-family,
+K=3, and nondecreasing by `plan_len`; all 2,138 WebShop groups are same-category,
+K=3, and nondecreasing by their explicit `difficulty` field. The 1,114
+ScienceWorld groups are also same-family and K=3, but expose no explicit
+difficulty field from which to independently verify the claimed progression.
+The loaders shuffle the pool of groups once from `env.seed`, then preserve the
+three task positions inside every group. Each environment manager consumes
+those positions verbatim. Padding accounts for 5, 4, and 20 repeated slots in
+ALFWorld, WebShop, and ScienceWorld respectively.
+
+The public tree bundles only those three K=3 JSONL files. It has no group
+generator, task-order option, K=2–6 files, project-level test suite, or released
+rollout artifacts. Consequently, the paper's length-two-through-six curve and
+order robustness cannot be reconstructed from the repository alone.
+
+Goal-owned candidate
+`66f9384523d8f437ce872c11169e3a7ca3d64da8`, based on the pinned public source,
+adds a standard-library fixture builder. For one selected group it emits the
+original, reversed, deterministic-shuffled, and same-length deliberately
+mis-grouped variants without changing the source. Three focused unit tests pass,
+and bounded fixtures emit successfully for all three bundled environments. This
+validates data preparation only; no model, environment, reward, or performance
+run has occurred.
 
 **Reusable rule:** make a skill rewrite earn credit from held-out downstream
 behavior, but perturb grouping and order before calling the gain transferable.

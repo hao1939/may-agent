@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across seven cycles: the bounded live Xiaohongshu collection surface expands from 24 to 130 stable IDs before cycle-7 discovery; arXiv 2608.30177v1 remains the stage-aware memory anchor; a four-wrapper Mnemo repair is validated; and a newly readable SkillRise seed leads to a paper-and-code deep dive on later-task supervision and hidden task-order curricula."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "SkillRise", "XHS seed-first cycle 7"]
+summary: "Seed-first Scout checkpoint across eight cycles: the bounded live Xiaohongshu set holds at 130 stable IDs with a complete metadata baseline; arXiv 2608.30177v1 remains the stage-aware memory anchor; the Mnemo repair remains validated; and SkillRise's fixed positional curriculum now has a tested data-only perturbation fixture."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "SkillRise", "XHS seed-first cycle 8"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T11:30:14Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, and 2607.26784v1; pinned Within-yao/SkillRise source; and source plus goal-owned MCP transport validation of sattyamjjain/mnemo revision 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T11:40:07Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, and 2607.26784v1; pinned Within-yao/SkillRise source and goal-owned order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and source plus goal-owned MCP transport validation of sattyamjjain/mnemo revision 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -60,6 +60,16 @@ which triggers exact arXiv and GitHub follow-up. Full paper and pinned code
 evidence support later-task outcome supervision while exposing task-family and
 simple-to-complex ordering as the next hidden-curriculum test. Reddit is again
 deferred without quota work.
+
+Cycle 8 starts with the seed surface yet again. A comparable pass returns the
+same 130 stable IDs and fingerprint, with added and absent sets both `[]`. The
+24 title/author pairs comparable with the prior persisted state are unchanged;
+change status for the other 106 is unavailable because Cycle 7 retained only
+their IDs. A complete token-free metadata baseline now closes that continuity
+gap for future cycles. Only afterward does GitHub's order-fixture trigger fire.
+The pinned code confirms fixed within-group positions, and a small isolated
+candidate prepares four order/grouping variants with three passing tests. arXiv
+and Reddit are deferred without quota requests because neither has a new trigger.
 
 ## Seed reconciliation came first
 
@@ -142,6 +152,19 @@ unobserved. The representative detail for `6a6ab006…c932` changed from `/404`
 to readable with unchanged title and author. Only after persisting that result
 did SkillRise GitHub and arXiv discovery begin.
 
+Cycle 8 repeated the observation from `2026-09-01T11:39:38Z` through
+`11:40:07Z`, again before any source-lane request. The same authenticated tab,
+initial viewport, and 12 bounded scrolls produced the same 130 IDs and full ID
+fingerprint. Exact added IDs are `[]`; exact absent IDs are `[]`; no removal is
+inferred. All 24 previously persisted title/author pairs are unchanged. Because
+the other 106 previously had only their IDs retained, historical metadata
+changes for them are unavailable rather than zero. This pass persists all 130
+pairs with metadata fingerprint
+`e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c`.
+The representative SkillRise detail remained readable with no login wall or
+not-found state. The unmaterialized collection tail and 14-file surface remain
+unobserved.
+
 ## What each lane can actually do
 
 | Lane | Implementation and configuration | Live topic-led observation | Provenance, deduplication, and boundary |
@@ -212,6 +235,14 @@ per-source quota.
 | GitHub | **High relevance / high realized value / current; selected.** The newly readable seed named SkillRise and made attributable implementation evidence immediately useful. | Exact repository search returned 78 results with `incomplete_results=false`; `Within-yao/SkillRise` was the relevant first result, and the paper source directly links it. Public `main` resolved to `2b38da3ad7b64414305d39609484803b07d3b9b0`. Its complete recursive tree contains 839 blobs, including the solve/curate loop, three environment managers, K=3 task groups, and run scripts. It has no GitHub Actions runs or project-level suite. A commit message claims ALFWorld validation plus one GRPO step; this is maintainer provenance, not Scout execution. Revisit on source revision, checkpoints/results release, or a bounded order-perturbation fixture. |
 | arXiv | **High relevance / high realized value / fresh enough; selected.** The post's mechanism and benchmark claims required primary-source adjudication. | Exact `all:SkillRise` Atom search returned one result at feed update `2026-09-01T11:30:39Z`: `2607.26784v1`. Full TeX source was reviewed. It supports later-task outcome supervision and the reported three-benchmark gains, while explicitly depending on task-family metadata and ordered difficulty. `2608.30177v1` remains the memory cluster's fresher 15/15 anchor; SkillRise is a self-evolution deep dive, not its replacement. Revisit for paper revision or grouping/order stress evidence. |
 | Reddit | **Medium relevance / low incremental value / unchanged; deferred without quota work.** The direct post, paper, and attributable repository resolve the current question without community evidence. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403. No request was issued merely to exercise the lane. Revisit for distinct SkillRise/order evidence, a new seed-linked thread, content delta, or access change. |
+
+### Cycle 8 reconsideration and evidence
+
+| Lane | Relevance, value, freshness, and decision | Last useful evidence, boundary, and revisit trigger |
+|---|---|---|
+| GitHub | **High relevance / high realized value / current; selected.** Stable seeds preserved SkillRise's 15/15 cluster, and the recorded bounded order-fixture trigger fired. | The public commit endpoint still resolved `main` to `2b38da3ad7b64414305d39609484803b07d3b9b0`. A goal-owned clone confirmed that the loaders shuffle only the group pool while managers consume within-group positions verbatim. The tree has three K=3 group files, no generator or order option, and no project suite. Local candidate `66f9384523d8f437ce872c11169e3a7ca3d64da8` adds a data-only four-variant fixture builder; three focused tests pass. Revisit for upstream change/review, rollout artifacts, or matched repeated-seed execution. |
+| arXiv | **High relevance / low incremental value / fresh; retained and deferred.** The seed set and rubric did not change, and `2607.26784v1` was just fully reviewed. | Last useful evidence remains the exact one-result Atom query at feed update `2026-09-01T11:30:39Z`. `2608.30177v1` remains the fresher 15/15 memory-governance anchor; SkillRise remains the marginal self-evolution deep dive. No request was issued merely for freshness. Revisit on a version/artifact change or new order/grouping evidence. |
+| Reddit | **Medium relevance / low incremental value / unchanged; deferred without quota work.** No new seed-linked claim, thread, content delta, or access trigger appeared. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. Revisit for distinct SkillRise/order evidence, a new seed-linked thread, content delta, or access change. |
 
 Hugging Face was selected as useful related discovery rather than a permanent
 quota lane. Its public APIs returned HTTP 200 for paper ID, title-term,
@@ -440,14 +471,34 @@ its order assumption is immediately testable. `2608.30177v1` remains the
 memory cluster's fresher stage-wise anchor rather than being displaced by a
 different type of experiment.
 
+Cycle 8 turns the order assumption into exact code and data evidence. The three
+group loaders shuffle the group pool once using `env.seed`, but do not permute
+tasks inside a group. The ALFWorld, WebShop, and ScienceWorld environment
+managers then consume positions directly. All 490 ALFWorld groups are K=3,
+same-family, and nondecreasing by `plan_len`; all 2,138 WebShop groups are K=3,
+same-category, and nondecreasing by explicit `difficulty`. The 1,114
+ScienceWorld groups are K=3 and same-family, but lack an explicit difficulty
+field. Padding accounts for 5, 4, and 20 repeated task slots respectively.
+
+The public tree contains only those three K=3 files. It exposes no group
+generator, K=2–6 data, order switch, project-level regression suite, or rollout
+artifacts. Goal-owned candidate
+`66f9384523d8f437ce872c11169e3a7ca3d64da8` adds a standard-library-only
+fixture builder that emits original, reversed, deterministic-shuffled, and
+same-length mis-grouped variants for a selected group. Three focused tests pass.
+Real ALFWorld, WebShop, and ScienceWorld fixture emissions have SHA-256
+`c543db51…cd7`, `f98eabb4…5e9`, and `e53f2de3…006`. These checks validate data
+preparation and invariants, not task outcomes or the paper's robustness.
+
 ## Library and topic-map changes
 
 - [XHS seed ledger](../../knowledge/xhs-seed-ledger.md): records reconciliations
-  through cycle 7, including the 24→130 observable expansion, exact 106-ID
-  coverage delta, empty changed/absent sets, and the resolved detail boundary.
+  through cycle 8, including stable 130-ID membership, exact empty added/absent
+  sets, the 106-record historical metadata limit, a complete new metadata
+  baseline, and the readable representative detail.
 - [Living topic map](../../knowledge/xhs-topic-map.md): retains stage-aware
   memory governance at 15/15, raises self-evolution to a co-leading 15/15,
-  records each cycle-7 lane decision and revisit trigger, and keeps post claims,
+  records each cycle-8 lane decision and revisit trigger, and keeps post claims,
   paper evidence, repository provenance, executable local tests, and Reddit
   anecdotes distinct.
 - [Read-write attention synthesis](../../knowledge/the-read-write-attention-inversion.md):
@@ -462,6 +513,9 @@ different type of experiment.
   creating a duplicate finding, distinguishing source inference, local
   reproduction, isolated candidate behavior, and absent deployment proof.
 - [Self-improvement note](../../knowledge/findings/2026-07-23-hn-self-improving-agent-loops.md): absorbs the SkillRise deep dive rather than creating a duplicate topic, connecting later-task curation credit to the existing task-order, pathway, coalition, and security controls.
+- A separate goal-owned SkillRise candidate adds the smallest missing order
+  fixture tool and tests without changing the public training defaults or
+  treating prepared data as model evidence.
 - Scout app: retains the shared Reddit lane and adds the smallest missing
   GitHub safety/evidence contract plus focused test. Cycle 4 also adds Reddit
   to the existing `explore-now` command schema/help and verifies that it routes
@@ -476,33 +530,51 @@ GitHub contract, Reddit observation rules, workflow-owned timestamps, and
 source deduplication. The full Scout check then passed syntax bundling,
 TypeScript, Prettier, and 78 tests with 226 assertions against the current
 candidate. All 15 relative links in the five changed checkpoint documents
-resolved for Cycle 6. After the Cycle-7 continuation, all 16 relative links in
+resolved for Cycle 6. After the Cycle-8 continuation, all 16 relative links in
 its four changed documents also resolved, and `git diff --check` reported no
 whitespace errors.
+
+The Cycle-8 SkillRise candidate passed three focused standard-library unit
+tests covering source immutability, fixed task budget, deterministic distinct
+variants, and same-family donor rejection. Bounded fixture generation also
+succeeded against each real K=3 group file. No dependency installation, model
+download, environment rollout, GPU training, or result scoring was attempted.
 
 A broader scan of the pre-existing `knowledge/INDEX.md` still finds 67 broken
 links unrelated to this change. They remain library-health backlog rather than
 being presented as a clean global-link result.
 
-The latest read-only health scan at `2026-09-01T11:35:35Z` returned 24
+The latest read-only health scan at `2026-09-01T11:49:29Z` returned 24
 facts and 16 bounded wake signals: 13 future-date facts, 10 oversized-note
 facts, and the existing index unsourced backlog. The packet remains truncated,
 so it is a bounded regression signal rather than a global-health claim. None of
 the changed checkpoint documents appears as a new health fact.
 
-The human-owned source checkout remained read-only. Before and after this
-checkpoint work, its complete porcelain-v2 status stream had SHA-256
+The human-owned source checkout remained read-only: no goal command edited,
+formatted, tested, generated, staged, or committed there. At the Cycle-7
+boundary, its complete porcelain-v2 status stream still had SHA-256
 `f6f8b63c5d176fb48bbd27ee90aa6885401a6fae589a479a88312325be9b24ac`
-and HEAD remained `386b445c236e4609cd8870d22cc773cc4641fec8`. This proves the
-observed dirty state was preserved byte-for-byte at the Git status boundary; it
-does not claim those human-owned changes are reviewed.
+and HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`. During Cycle 8, a final
+read-only check found the same HEAD but status hash
+`309f8666ed820495bd6dc2d67e20984f1eccfd9d38336f7c26c06bd0d34441b0`,
+so a byte-for-byte unchanged claim is no longer valid: human-owned state changed
+concurrently outside the goal-owned worktrees.
 
-Direct XHS collection membership is confirmed for the 130 materialized cards,
-but the remaining collection tail and 14 files are unobserved. Relative to the
-24-ID baseline, all prior IDs remain, 106 are newly materialized, and title/
-author changes are empty; improved coverage prevents classifying those 106 as
-newly collected. The detail for `6a6ab006…c932` is now readable. Reddit JSON
-remains blocked, but post-level RSS is readable. GitHub found an attributable,
+Among this checkpoint's four Scout paths, only the self-improvement note now
+overlaps the dirty checkout. Its read-only diff contains the August 19 task-order,
+August 20 security-effect, and August 25 budget updates; the isolated candidate
+preserves all three and appends the September evidence. The ledger, topic map,
+and checkpoint report do not appear in the dirty status. This reconciles the
+observed overlap without altering or discarding the human copy.
+
+Direct XHS collection membership is confirmed for the same 130 materialized
+cards in Cycle 8, but the remaining collection tail and 14 files are unobserved.
+Exact added and absent sets are empty. The 24 comparable title/author pairs are
+unchanged; historical metadata changes for the other 106 are unavailable
+because Cycle 7 persisted only their IDs. A complete current metadata baseline
+now supports exact future comparisons. The detail for `6a6ab006…c932` remains
+readable. Reddit JSON remains blocked, but post-level RSS is readable. GitHub
+found an attributable,
 paper-linked SkillRise implementation and pinned it for source-level review,
 while the earlier MemGauge and AutoMEM searches found only paper-index
 provenance and related repositories. The `2606.04315v1` source says derived
@@ -519,13 +591,14 @@ scope: `CallerContext` authenticates a principal and roles but no `org_id`, whil
 three wrapper inputs still accept caller-supplied organization scope.
 
 The next exploration begins another seed-first reconciliation against the
-130-ID bounded baseline. It then tests the SkillRise hidden-curriculum question:
-hold tasks and budget fixed while comparing easy-to-hard, shuffled, reversed,
-and deliberately mis-grouped sequences across repeated seeds, preserving each
-evolved document for pathway audit. If a full GPU run remains disproportionate,
-the next bounded step is an exact code/config audit of group construction and a
-small deterministic fixture. Mnemo organization scope remains queued; Reddit is
-revisited only for distinct evidence or an access/content change.
+130-ID and complete metadata baseline. It then uses the prepared fixture to test
+the SkillRise hidden-curriculum question: hold model, tasks, budget, scorer, and
+environment revision fixed while comparing original, shuffled, reversed, and
+deliberately mis-grouped sequences across repeated seeds, preserving each
+evolved document for pathway audit. Until proportionate model and environment
+resources are available, the fixture remains preparation rather than result
+evidence. Mnemo organization scope remains queued; Reddit is revisited only for
+distinct evidence or an access/content change.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
