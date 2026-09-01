@@ -198,51 +198,50 @@ do not authorize an edit in this pilot.
 - Stop supervision only by explicit operator choice. Accept only after the
   Supervisor independently checks every criterion against current evidence.
 
-## Reviewing and integrating the reviewed candidate
+## Reviewing and landing the reconciled candidate
 
-The reviewed enablement chain is
-`f654195455d95c552ca02d25e811da689a3f1273` followed by
-`fd4c68ecd6fe2ce14afd93815b63f790c1514663`. Review both commits without
-changing the shared checkout:
+The local branch `codex/g-12af568e-scout-landing` now carries the complete
+reviewable chain. Commit `9a5c3f9393ba20dbaf3d17fd0af3f23671f62d1b`
+is the mechanical prerequisite snapshot of the owner's 296-path Scout state.
+The branch then merges accepted enablement tip
+`204d9a37e34c7ee3af479b137af3800e0b969109` and accepted health-operation tip
+`2fac591b01e6aafea12b9fe07209105bf34d5f5d`. The detailed fingerprint,
+precedence, validation, and residual-risk record is
+`docs/verification/scout-herdr-landing-2026-09-01.md`.
 
-```sh
-git -C /app status --short -- projects/scout-knowledge-lib.app
-git -C /app log --oneline 386b445c236e4609cd8870d22cc773cc4641fec8..fd4c68ecd6
-git -C /app diff --stat 386b445c236e4609cd8870d22cc773cc4641fec8..fd4c68ecd6
-git -C /app diff 386b445c236e4609cd8870d22cc773cc4641fec8..fd4c68ecd6 \
-  -- projects/scout-knowledge-lib.app
-```
-
-At the 2026-09-01 review, the shared checkout's Scout app changes were limited
-to `package.json`, `agents/scout/workflows/library-health.ts`, and
-`library-health.test.ts`. The candidate changes `README.md`, `tsconfig.json`,
-and five new documentation, contract, command, and test files. There is no exact
-path overlap, but the new command imports `library-health.ts`, so current dirty
-work still requires semantic validation after reconciliation.
-
-Do not cherry-pick into the dirty `/app` checkout. First have the owner preserve
-that work on its intended branch or commit. Then create a clean integration
-worktree from that preserved revision and apply the candidate there:
+Do not merge in the dirty `/app` checkout. Review the candidate read-only, then
+use a new clean worktree whose starting revision is current `main` commit
+`386b445c236e4609cd8870d22cc773cc4641fec8`:
 
 ```sh
-git -C /app worktree add -b integrate/scout-herdr-<date> \
-  /app/worktrees/scout-herdr-integration-<date> <preserved-revision>
-git -C /app/worktrees/scout-herdr-integration-<date> \
-  cherry-pick f654195455d95c552ca02d25e811da689a3f1273 \
-  fd4c68ecd6fe2ce14afd93815b63f790c1514663
-git -C /app/worktrees/scout-herdr-integration-<date> status --short --branch
-cd /app/worktrees/scout-herdr-integration-<date>/projects/scout-knowledge-lib.app
+git -C /app log --graph --oneline \
+  386b445c236e4609cd8870d22cc773cc4641fec8..codex/g-12af568e-scout-landing
+git -C /app diff --stat \
+  386b445c236e4609cd8870d22cc773cc4641fec8..codex/g-12af568e-scout-landing
+git -C /app worktree add -b review/scout-herdr-landing-2026-09-01 \
+  /app/worktrees/review-scout-herdr-landing-2026-09-01 \
+  386b445c236e4609cd8870d22cc773cc4641fec8
+git -C /app/worktrees/review-scout-herdr-landing-2026-09-01 merge --ff-only \
+  codex/g-12af568e-scout-landing
+cd /app/worktrees/review-scout-herdr-landing-2026-09-01/projects/scout-knowledge-lib.app
 bun run check
-bun x prettier --check scripts/library-health-readonly.ts \
-  scripts/library-health-readonly.test.ts docs/herdr-supervisor.md \
-  docs/verification/herdr-library-health-pilot-2026-09-01.md
+bun scripts/library-health-readonly.ts \
+  --app-dir "$PWD" \
+  --project-dir "$PWD/../scout-knowledge-lib"
 ```
 
-Review any conflict against both commits rather than choosing one side
-wholesale. If the integration validation fails, keep `/app` untouched, retain
-the integration worktree as evidence, and fix or abort the cherry-pick there.
-Only merge the validated integration branch after its final diff includes both
-the preserved owner work and this candidate.
+Confirm all three prerequisite ancestors before starting either generated
+follow-up contract:
+
+```sh
+git merge-base --is-ancestor 9a5c3f9393ba20dbaf3d17fd0af3f23671f62d1b HEAD
+git merge-base --is-ancestor 204d9a37e34c7ee3af479b137af3800e0b969109 HEAD
+git merge-base --is-ancestor 2fac591b01e6aafea12b9fe07209105bf34d5f5d HEAD
+```
+
+Only fast-forward a reviewed target from a clean worktree after those commands
+and the recorded validation pass. This leaves the owner checkout untouched and
+keeps the owner snapshot and both accepted histories independently inspectable.
 
 Herdr Supervisor's container and local setup are maintained in
 `projects/herdr-supervisor/README.md`. Its durable contract/checkpoint/audit

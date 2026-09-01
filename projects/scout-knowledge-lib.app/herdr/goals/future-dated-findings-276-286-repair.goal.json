@@ -5,11 +5,12 @@
     "The 2026-09-01 read-only health assessment reported 13 future-dated-library-truth facts across eleven files named 2026-11-11 through 2026-11-18.",
     "Git commit a2d3df9f84 introduced all eleven files on 2026-07-13T13:05:36Z. Their bodies describe Hacker News or arXiv activity from July 1 through July 12, but the exact original observation times are not established by the filenames.",
     "The affected identities are HN scans 276, 277, 278, 279, 280, 282, 284, 285, and 286 plus the arXiv triage and scan 283 files.",
-    "The current /app checkout contains a user-owned 296-path app/library maintenance state, including adjacent future-date cleanup and INDEX.md edits. That work must be preserved as a revision before this goal creates its integration worktree.",
+    "The user-owned 296-path app/library maintenance state, including adjacent future-date cleanup and INDEX.md edits, is preserved by prerequisite commit 9a5c3f9393ba20dbaf3d17fd0af3f23671f62d1b on local landing branch codex/g-12af568e-scout-landing.",
+    "Before creating its worktree, the worker must resolve one explicit starting revision and verify with git merge-base --is-ancestor that it descends from owner prerequisite 9a5c3f9393ba20dbaf3d17fd0af3f23671f62d1b, accepted enablement tip 204d9a37e34c7ee3af479b137af3800e0b969109, and accepted health-operation tip 2fac591b01e6aafea12b9fe07209105bf34d5f5d.",
     "The XHS credential wait is unrelated to these eleven files and must not be bypassed or used as evidence."
   ],
   "acceptance": [
-    "The owner-maintained Scout app/library state is first preserved as an explicit revision, and all work runs in an isolated worktree based on that revision.",
+    "The goal records its exact starting revision, all three prerequisite ancestry checks exit zero, and all work runs in an isolated goal-owned worktree at that revision.",
     "Each of the eleven files receives an evidence table covering its old path, embedded date claims, Git introduction time, cited source dates or stable source IDs, reference search, and final disposition.",
     "Unsupported November chronology is removed without inventing an observation date: use an evidence-backed descriptive path and wording, or preserve the file under explicit triage status when exact chronology cannot be recovered.",
     "All in-library links and metadata for the dispositions are consistent, and no unrelated finding, canonical note, report, digest, task state, or credential state changes.",
@@ -21,6 +22,6 @@
     "Do not delete evidence merely to clear the health signal, fabricate source access, or treat a commit timestamp as the exact source-observation time.",
     "External source checks are read-only. If a source is unavailable, preserve that limitation and choose a conservative triage disposition.",
     "Do not access XHS, change credential state, or bypass credential-ready:xhs.",
-    "Reconcile the preserved owner revision before editing any overlapping navigation or metadata file."
+    "Do not begin from bare main or the dirty /app checkout; fail closed if any prerequisite ancestry check does not exit zero."
   ]
 }
