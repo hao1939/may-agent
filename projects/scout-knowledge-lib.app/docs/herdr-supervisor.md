@@ -198,16 +198,19 @@ do not authorize an edit in this pilot.
 - Stop supervision only by explicit operator choice. Accept only after the
   Supervisor independently checks every criterion against current evidence.
 
-## Reviewing and integrating the initial candidate
+## Reviewing and integrating the reviewed candidate
 
-The initial integration commit is
-`f654195455d95c552ca02d25e811da689a3f1273`. Review it without changing the
-shared checkout:
+The reviewed enablement chain is
+`f654195455d95c552ca02d25e811da689a3f1273` followed by
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`. Review both commits without
+changing the shared checkout:
 
 ```sh
 git -C /app status --short -- projects/scout-knowledge-lib.app
-git -C /app show --stat --oneline f654195455
-git -C /app diff f654195455^ f654195455 -- projects/scout-knowledge-lib.app
+git -C /app log --oneline 386b445c236e4609cd8870d22cc773cc4641fec8..fd4c68ecd6
+git -C /app diff --stat 386b445c236e4609cd8870d22cc773cc4641fec8..fd4c68ecd6
+git -C /app diff 386b445c236e4609cd8870d22cc773cc4641fec8..fd4c68ecd6 \
+  -- projects/scout-knowledge-lib.app
 ```
 
 At the 2026-09-01 review, the shared checkout's Scout app changes were limited
@@ -225,7 +228,8 @@ worktree from that preserved revision and apply the candidate there:
 git -C /app worktree add -b integrate/scout-herdr-<date> \
   /app/worktrees/scout-herdr-integration-<date> <preserved-revision>
 git -C /app/worktrees/scout-herdr-integration-<date> \
-  cherry-pick f654195455d95c552ca02d25e811da689a3f1273
+  cherry-pick f654195455d95c552ca02d25e811da689a3f1273 \
+  fd4c68ecd6fe2ce14afd93815b63f790c1514663
 git -C /app/worktrees/scout-herdr-integration-<date> status --short --branch
 cd /app/worktrees/scout-herdr-integration-<date>/projects/scout-knowledge-lib.app
 bun run check

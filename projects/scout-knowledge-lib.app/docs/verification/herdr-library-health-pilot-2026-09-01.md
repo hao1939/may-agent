@@ -75,6 +75,28 @@ worktree and a fresh full check because the candidate's read-only command
 imports the user-modified `library-health.ts`; path-level non-overlap alone is
 not semantic compatibility evidence.
 
+## Integration compatibility check
+
+The reviewed commits were also validated at `fd4c68ecd6` in a clean isolated
+branch based directly on current `main` revision `386b445c23`. A second,
+detached integration worktree overlaid the shared checkout's three user-owned
+Scout changes without committing or modifying their source files:
+
+- `agents/scout/workflows/library-health.ts`
+- `agents/scout/workflows/library-health.test.ts`
+- `package.json`
+
+The clean candidate passed 13 focused tests and the full 70-test application
+check. The combined overlay passed 14 focused tests and the full 71-test
+application check, including syntax bundling, TypeScript, and tracked format
+validation. The new scripts, documentation, and goal contract separately
+passed Prettier, and the contract passed Herdr's `herdr.goal/v1` validator.
+
+This proves semantic compatibility with the observed owner changes but does
+not transfer their ownership. Preserve those changes on their intended branch
+first, then integrate both reviewed commits in a clean worktree and rerun the
+same checks before merging.
+
 ## Findings and disposition
 
 The single index fact says one canonical knowledge file is not referenced by
