@@ -4,7 +4,7 @@ triggers: ["read-write inversion", "memory attention", "write governance", "read
 confidence: "moderate-high; strong for stage-specific evaluated settings, lower for field-wide investment and universal bottleneck claims"
 discovered: "2026-06-29"
 last_updated: "2026-09-01"
-source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), HN scan #220 (Write Discipline), GitHub MARM/Distill"
+source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), HN scan #220 (Write Discipline), GitHub MARM/Distill"
 connects_to: ["Subtraction Deficit", "Eternal Present", "Impedance Principle", "Write Discipline (scan #220)", "Library Drift", "Operational Memory"]
 </ai_context>
 
@@ -199,6 +199,42 @@ code was linked in the v1 paper or found in the current GitHub paper-index
 cross-check. These limits prevent treating the reported thresholds as universal
 defaults.
 
+### Qualification: Active Retrieval Improves Access, Not Write Authority
+
+**Memory system generality and AutoMEM**
+([2606.04315v1](https://arxiv.org/abs/2606.04315v1)) compare eight memory
+systems plus DCI-Lite across five task families and twelve reported columns.
+DCI-Lite keeps raw trajectory text and chooses `grep`/`read` operations after
+seeing the question. It has the best baseline generality rank, 3.67, even
+though no method dominates every benchmark. This supports delayed query-time
+commitment as a useful read-path strategy.
+
+The paper's AutoMEM harness is distinct from the separate AutoMem paper
+`2607.01224` already represented elsewhere in this library. Here, AutoMEM adds
+`rg`, `read`, `dump`, and `index_query` over a prebuilt LightMem or PlugMem
+index. Its iterative plan-execute-judge loop scores 67.3 on LoCoMo, versus 45.0
+for DCI-Lite and 61.5 for long context, and reaches an inserted average rank of
+3.10 versus 4.10 for DCI-Lite. The full loop adds three to four language-model
+calls plus possible retries. A single-pass ablation loses 3.8 points on LoCoMo
+while cutting query-time tokens 66–72% across the three QA benchmarks.
+
+The result separates retrieval failure from representation loss. In a
+60-question AMABench oracle-storage probe, answerability is 10% for HippoRAG,
+35% for SimpleMem, 83% for AMA-Agent, and 98% for PlugMem. Iterative retrieval
+can surface retained raw evidence missed by a passive router. It cannot recover
+step or action predicates that a build-time schema discarded. On the dynamic
+ALFWorld task, long context reaches 46.7% success, the best evaluated memory
+43.3%, a hand-built golden procedural memory 71.7%, and a GRPO-trained actor
+86.7%; memory access alone does not erase the actor-capability ceiling.
+
+This evidence does **not** establish autonomous write governance. The evaluated
+tools plan query-time reads over raw text or an already-built index; they do not
+authorize admission to long-term memory. The paper explicitly leaves access
+control, content filtering, and audit logging out of scope. Active retrieval
+therefore complements MemGauge's exposure controls and Verifiable Memory
+Governance's authorization, provenance, principal-scope, rollback, and
+forgetting requirements. It cannot substitute for them.
+
 ## The Quantified Inversion, Bounded by Evidence Scope
 
 | Aspect | Industry Investment | Performance Bound |
@@ -272,7 +308,11 @@ These four write-side investments address gaps the earlier evidence makes
 visible. MemGauge adds a fifth requirement: evaluate retrieval budgets under
 matched clean and poisoned conditions, because more exposure can raise utility
 and risk together. The evidence does not support claiming that every read-side
-improvement is lower value.
+improvement is lower value. `2606.04315v1` adds a sixth: when evidence remains
+available, let the answering agent iteratively refine its query rather than
+commit to one passive retrieval. That loop must still inherit principal scope,
+provenance, and audit controls, and cannot repair information discarded during
+memory construction.
 
 ---
 
@@ -296,3 +336,4 @@ Sources:
 - https://arxiv.org/abs/2606.20954
 - https://arxiv.org/abs/2606.10062
 - https://arxiv.org/abs/2608.30177v1
+- https://arxiv.org/abs/2606.04315v1

@@ -28,6 +28,16 @@ describe("Scout task reconciliation", () => {
     }
   });
 
+  it("exposes every supported source through manual exploration", () => {
+    const action = app.actions?.["explore-now"];
+    expect(action?.description).toContain("reddit");
+    expect(JSON.stringify(action?.inputSchema)).toContain('"const":"reddit"');
+    expect(action?.toInput({ source: "reddit" })).toEqual({
+      kind: "explore",
+      data: { source: "reddit" },
+    });
+  });
+
   it("keeps the domain research source when the Host stamps a producer source", () => {
     expect(
       resolveScoutTask({

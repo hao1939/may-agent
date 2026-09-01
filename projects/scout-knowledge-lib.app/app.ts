@@ -482,7 +482,7 @@ export default defineApp({
     },
     "explore-now": {
       description:
-        "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github).",
+        "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github, reddit).",
       inputSchema: Type.Object(
         {
           source: Type.Optional(
@@ -491,6 +491,7 @@ export default defineApp({
               Type.Literal("hn"),
               Type.Literal("xhs"),
               Type.Literal("github"),
+              Type.Literal("reddit"),
             ]),
           ),
         },

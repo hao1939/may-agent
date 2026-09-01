@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across three cycles: Xiaohongshu reconciliation preceded every topic-led GitHub, arXiv, and Reddit decision; arXiv 2608.30177v1 remains the stage-aware memory anchor; 2604.16548v2 adds lifecycle governance and recovery requirements; and Scout now gives GitHub the same explicit read-only, bounded-retrieval discipline as arXiv and Reddit."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "memory lifecycle governance", "XHS seed-first cycle 3"]
+summary: "Seed-first Scout checkpoint across four cycles: Xiaohongshu reconciliation preceded every GitHub, arXiv, and Reddit decision; arXiv 2608.30177v1 remains the stage-aware memory anchor; and full-source review of 2606.04315v1 narrows active memory control to iterative query-time retrieval rather than governed write authorization."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "XHS seed-first cycle 4"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; XHS reconciliations through 2026-09-01T10:12:33Z; bounded public GitHub API, arXiv API/full TeX, and Reddit Atom observations; full-source reviews of arXiv 2608.30177v1 and 2604.16548v2."
+source_basis: "Goal-owned implementation and tests; XHS reconciliations through 2026-09-01T10:24:20Z; bounded public GitHub API, arXiv API/full TeX, and Reddit Atom observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, and 2606.04315v1."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -14,14 +14,21 @@ read-only, bounded-request, rate-limit, complete-search, and revision-pinning
 contract already present for arXiv and Reddit. Source continuity also lived
 across prose and conversation rather than one durable decision record. That
 made a future run more likely to overstate a repository search or repeat work.
+Cycle 4 then found one smaller mismatch: Reddit was scheduled and accepted by
+the workflow, but the manual `explore-now` command omitted it from both its
+schema and help text.
 
 This checkpoint keeps one shared exploration workflow and one standing goal,
 adds the missing GitHub contract and focused test, and records relevance,
 value, freshness, access, last useful evidence, decision, and revisit trigger
 for GitHub, arXiv, and Reddit in the living topic map. It preserves the completed
 `2608.30177v1` deep dive and extends the selected cluster with a full-source
-review of `2604.16548v2`; repository indexes and Reddit discussion are not
-miscounted as experimental confirmation.
+review of `2604.16548v2`. A fourth cycle reviews `2606.04315v1` and corrects
+the Reddit claim from autonomous write/retrieve control to the narrower
+paper-supported result: iterative query-time retrieval over raw text or a
+prebuilt index. The same checkpoint makes Reddit manually invocable through
+the existing shared command and adds a regression test. Repository indexes and
+Reddit discussion are not miscounted as experimental confirmation.
 
 ## Seed reconciliation came first
 
@@ -46,6 +53,13 @@ stable IDs / 125 occurrences / 24 files with the same full fingerprint. GitHub,
 arXiv, and Reddit follow-up began only after that comparison. No direct seed
 delta was inferred from an unreachable collection surface.
 
+Cycle 4 repeated the comparison at `2026-09-01T10:24:20Z`, before lane
+reconsideration and before selecting `2606.04315v1`. The observational preflight
+again failed as `uid=1000(hao)` at `127.0.0.1:9222` with `connect ECONNREFUSED`.
+The local fallback remained 104 stable IDs / 125 occurrences / 24 files with
+the same fingerprint. Direct additions, changes, and removals remain unknown;
+the unreachable collection was not treated as empty.
+
 ## What each lane can actually do
 
 | Lane | Implementation and configuration | Live topic-led observation | Provenance, deduplication, and boundary |
@@ -68,6 +82,62 @@ to meet a source quota.
 | GitHub | Selected to look for attributable paper code and governance implementations. Public repository searches returned HTTP 200. `"MemGauge"` returned 9 results, the exact `2604.16548v2` title returned 3, and `"Verifiable Memory Governance"` returned 4; every response had `incomplete_results=false`. | No attributable implementation of `2608.30177v1` or `2604.16548v2` was found. Paper lists are discovery provenance; thematically similar repositories are not implementations; neither is independent paper confirmation. The agent-mediated lane remains non-deterministic, but its prompt now requires read-only access, both curl timeouts, exact boundary reporting, `incomplete_results`, and a pinned commit before repository contents support claims. |
 | arXiv | Selected as the highest-value evidence lane. One bounded exact-ID Atom request returned HTTP 200 and the current versions of `2604.16548v2`, `2606.04315v1`, and preserved `2608.30177v1`. Full source for `2604.16548v2` was reviewed. | Stable versioned paper IDs are canonical. Search-before-update found neither `2604.16548` nor `2606.04315` in the library, so the survey was merged into the existing governance note instead of creating a duplicate finding. `2606.04315v1` remains the next candidate; its abstract supports an active-control result, but it was not used to validate the Reddit interpretation. |
 | Reddit | Selected because the previously metadata-only post directly linked the cluster to both arXiv papers. Post RSS returned HTTP 200, stable post `t3_1v8a3sh`, and six stable comment IDs. | The post body is now directly observed community evidence. It restates the lifecycle survey and claims `2606.04315` favors agent-controlled storage/retrieval. Comments add tenant isolation, lineage, and rollback concerns. They are not empirical proof: one commenter disclosed an Airia affiliation and another suspected generated discussion. Earlier JSON HTTP 403 is an endpoint boundary, not total Reddit unavailability. |
+
+### Cycle 4 reconsideration and evidence
+
+All three lanes were reconsidered after the `10:24:20Z` seed record. The
+decision was value-driven rather than a requirement to issue one request per
+source.
+
+| Lane | Relevance, value, freshness, and decision | Evidence and boundary |
+|---|---|---|
+| GitHub | Still relevant for reproducibility, but expected new value was low: cycle-3 complete searches were fresh, no reviewed paper exposed a repository, and no recorded revisit trigger fired. **Deferred.** | Last useful evidence remains the complete public searches and pinned AgentSafety-Papers revision. They found no attributable implementation. The lane can perform bounded read-only repository search, but an index mention is provenance, not experimental confirmation. |
+| arXiv | Highest expected value because the queued `2606.04315v1` question could resolve Reddit's active-control interpretation. **Selected and deep-read.** | The source archive returned HTTP 200 as a 71,132-byte gzip with SHA-256 `a6b3c07607c2851f53c97be7900bc8594138961415af820c02b51522571b962c`. Stable versioned ID and the reviewed TeX are primary provenance. |
+| Reddit | Still relevant as the discovery path to both papers, but expected new value was low because the stable post and six comments were just reviewed and no new seed-linked thread or access change appeared. **Deferred.** | Post RSS was readable in cycle 3; JSON remained HTTP 403. No body was requested again merely for a lane count. The post remains attributed community framing, now corrected against its cited paper. |
+
+The existing Scout implementation continues to support these decisions without
+per-source goals. `app.ts` schedules stable `explore-github`, `explore-arxiv`,
+and `explore-reddit` tasks; the shared `scout-explore` workflow owns timestamps,
+allowed-output admission, URL sanitization, removed-source rejection, and
+primary-source deduplication. Source prompts add their actual access contracts:
+GitHub requires bounded read-only requests, completeness reporting, and pinned
+revisions; arXiv requires connect/total timeouts and exact-source no-ops;
+Reddit requires observational RSS-first access, a descriptive User-Agent,
+stable IDs, and no body claims from feed metadata. Retrieval and evidence
+judgment remain agent-mediated rather than deterministic adapters.
+
+## What `2606.04315v1` actually establishes
+
+The paper evaluates eight memory systems plus DCI-Lite across five task
+families and twelve reported columns. DCI-Lite stores raw trajectory text and
+plans query-time `grep`/`read`; its baseline generality rank is 3.67, best in
+the original comparison, although no method wins every benchmark.
+
+The paper's AutoMEM is distinct from AutoMem `2607.01224`, which is already
+represented elsewhere in Scout. This AutoMEM adds `rg`, `read`, `dump`, and
+`index_query` over a prebuilt LightMem or PlugMem index. Its full
+plan-execute-judge loop scores 67.3 on LoCoMo versus 45.0 for DCI-Lite and 61.5
+for long context. Its inserted average rank is 3.10 versus 4.10 for DCI-Lite,
+described by the paper as +49.6% on LoCoMo and +24.4% in overall ranking. The
+full loop adds three to four language-model calls plus possible retries; a
+single-pass ablation loses 3.8 points on LoCoMo while cutting query-time tokens
+66–72% across three QA benchmarks.
+
+The storage probe provides the crucial boundary. Across 60 AMABench questions,
+oracle answerability is 10% for HippoRAG, 35% for SimpleMem, 83% for AMA-Agent,
+and 98% for PlugMem. Active retrieval can recover retained evidence missed by
+a passive router. It cannot recover step or action predicates discarded by a
+build-time schema. Dynamic ALFWorld also resists a memory-only answer: long
+context reaches 46.7%, the best evaluated memory 43.3%, hand-built golden
+procedural memory 71.7%, and a GRPO-trained actor 86.7%.
+
+The Reddit wording “the agent decides what to write and retrieve” therefore
+overstates the evaluated mechanism. The paper demonstrates query-time read
+planning over raw text or an already-built index, not authenticated admission
+to long-term memory. It explicitly leaves access control, content filtering,
+and audit logging out of scope. Scout admits the result as evidence for active,
+iterative retrieval and delayed query-time commitment—not autonomous write
+authorization, principal scope, provenance, rollback, or verified forgetting.
 
 ## Why `2608.30177v1` still wins
 
@@ -121,52 +191,59 @@ systematic.
 ## Library and topic-map changes
 
 - [XHS seed ledger](../../knowledge/xhs-seed-ledger.md): records reconciliations
-  through cycle 3 and exact seed-before-discovery ordering.
+  through cycle 4 and exact seed-before-discovery ordering.
 - [Living topic map](../../knowledge/xhs-topic-map.md): retains stage-aware
-  memory governance at 15/15, adds a durable lane continuity table, and keeps
+  memory governance at 15/15, records each cycle-4 lane decision, and keeps
   paper evidence separate from repository provenance and Reddit anecdotes.
 - [Read-write attention synthesis](../../knowledge/the-read-write-attention-inversion.md):
   corrects its impossible future creation date from 2026-10-28 to the
   repository-observed creation date 2026-06-29, adds the MemGauge deep dive,
-  and narrows the exclusive-write claim.
+  narrows the exclusive-write claim, and adds the active-retrieval boundary.
 - [Knowledge index](../../knowledge/INDEX.md): updates the canonical summary to
-  the qualified stage-aware conclusion.
+  the qualified stage-aware and active-retrieval conclusion.
 - [Memory-governance authority note](../../knowledge/findings/2026-08-26-agent-memory-governance-authority-boundaries.md): absorbs the survey into the existing subject, adds the five predicates and their limits, and avoids a duplicate paper finding.
 - Scout app: retains the shared Reddit lane and adds the smallest missing
-  GitHub safety/evidence contract plus focused test. It does not add a
+  GitHub safety/evidence contract plus focused test. Cycle 4 also adds Reddit
+  to the existing `explore-now` command schema/help and verifies that it routes
+  to `{ kind: "explore", data: { source: "reddit" } }`. It does not add a
   deterministic adapter or a per-source goal.
 
 ## Validation and remaining limits
 
-The focused lane suite passed 45 tests with 156 assertions across task routing,
+The focused lane suite passed 46 tests with 159 assertions across task routing,
 source-output metrics, shared exploration admission, arXiv bounds, the new
 GitHub contract, Reddit observation rules, workflow-owned timestamps, and
 source deduplication. The full Scout check then passed syntax bundling,
-TypeScript, Prettier, and 77 tests with 223 assertions. All 15 relative links in
-the four changed checkpoint documents resolved, the updated index target is
+TypeScript, Prettier, and 78 tests with 226 assertions against the current
+candidate. All 15 relative links in the five changed checkpoint documents
+resolved, the updated index target is
 present, and `git diff --check` reported no whitespace errors.
 
 A broader scan of the pre-existing `knowledge/INDEX.md` still finds 67 broken
 links unrelated to this change. They remain library-health backlog rather than
 being presented as a clean global-link result.
 
-The read-only health scan at `2026-09-01T10:21:28Z` returned 24
+The read-only health scan at `2026-09-01T10:29:19Z` returned 24
 facts and 16 bounded wake signals: 13 future-date facts, 10 oversized-note
 facts, and the existing index unsourced backlog. The packet remains truncated,
 so it is a bounded regression signal rather than a global-health claim. None of
 the changed checkpoint documents appears as a new health fact.
 
 Direct XHS collection membership is still unknown. Reddit JSON remains blocked,
-but post-level RSS is now readable. GitHub found paper-index provenance and
-related repositories but no attributable MemGauge or survey implementation.
-None of those boundaries blocks the supported arXiv update.
+but post-level RSS is readable. GitHub found paper-index provenance and related
+repositories but no attributable implementation for the reviewed papers. The
+`2606.04315v1` source says derived metrics, judged-answer files, and run
+configurations are released through a Hugging Face artifact repository, but the
+reviewed TeX contains no repository URL, so reproducibility artifacts remain
+unlocated rather than presumed absent. None of those boundaries blocks the
+supported arXiv update.
 
 The next exploration begins with another XHS reconciliation. It then deep-reads
-`2606.04315v1` to test whether the paper's active-control result entails safe
-write authorization, provenance, principal scope, or rollback. GitHub is
-revisited when attributable paper code appears or search results change;
-Reddit is revisited for a new high-value thread or a claim needing source
-comparison, not merely to exercise the lane again.
+an attributable `2606.04315v1` artifact if one becomes locatable, or tests how
+principal scope and provenance should constrain iterative retrieval over shared
+memory. GitHub is revisited when attributable paper code appears or search
+results change; Reddit is revisited for a new high-value thread or a claim
+needing source comparison, not merely to exercise the lane again.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
