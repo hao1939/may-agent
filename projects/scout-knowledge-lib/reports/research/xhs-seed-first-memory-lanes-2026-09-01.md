@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twenty-five cycles: Cycle 25 commits the unavailable Xiaohongshu reconciliation first, proves mixed-organization checkpoint chronology and live PostgreSQL legacy migration on the tenant-scoped repair, retains arXiv 2608.30177v1, and records Reddit at its actual access boundary."
+summary: "Seed-first Scout checkpoint across twenty-five cycles: Cycle 25 commits the unavailable Xiaohongshu reconciliation first, proves mixed-organization checkpoint chronology and live PostgreSQL legacy migration on the tenant-scoped repair, retains arXiv 2608.30177v1, records Reddit at its actual access boundary, and begins Cycle 26 with an organization-scoped trajectory-audit fixture."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 25"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-01T20:43:28.718Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, mixed-organization chronology, and a live PostgreSQL legacy migration."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-01T23:35:02.534Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, mixed-organization chronology, and a live PostgreSQL legacy migration."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -2034,6 +2034,33 @@ the live PostgreSQL result is an isolated migration fixture, not production
 migration evidence. This is only a checkpoint. Cycle 26 begins seed-first
 before any further lane work, then uses the standing rubric to select the next
 exploration.
+
+## Cycle 26 has begun seed-first
+
+Cycle 26 reconciliation is committed separately as
+`c834ae83e8eeadf6a2c8ea748f4671e3eaefd90a`, after Cycle 25 checkpoint
+commit `13679b4a25df35b0f12a87a36d05e1871db5cf12`. The observer reached Chrome
+PID 2136 through its network namespace, but the saved Alex profile was followed
+by login, its read-only fetch materialized zero stable IDs with login markers,
+and current-user returned HTTP 500 without identity. Public Explore still
+showed 30 IDs, while representative `6a9690dc…4a3b` ended at `/404`.
+Added and changed collected seeds remain unknown, proven removals are `[]`,
+and all 132 durable seeds remain unavailable.
+
+Only after that seed commit, GitHub/local code was selected again. Exact local
+Mnemo `4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7` has no schema-backed
+`AgentEvent.org_id`; scoped replay trusts core-written payload stamps, while
+`mnemo.trajectory_audit` binds principal but does not pass the capability
+organization when listing events. This is source analysis, not a reproduced
+cross-tenant result. The next exploration is an Alice/Alpha trajectory-audit
+fixture over Alpha and Beta event history. The library-only
+`export_audit_log` path is not simulated as an MCP surface.
+
+arXiv `2608.30177v1` remains the 15/15 retained anchor and is deferred
+without a version/artifact/study trigger. Reddit remains deferred without
+quota work at its last RSS HTTP 200 with six comments and JSON HTTP 403;
+revisit requires seed-linked deployment evidence, thread change, or access
+change.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
