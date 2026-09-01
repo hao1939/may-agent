@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 12 begins seed-first through the verified WSL Chrome boundary and confirms the exact 130-ID and metadata fingerprints plus stable SkillRise detail availability before source-lane work."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 13 begins seed-first through the verified WSL Chrome boundary and confirms the exact 130-ID and metadata fingerprints plus stable SkillRise detail availability before source-lane work."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T13:18:07.290Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T13:47:15.315Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | 2026-09-01T13:17:35.694Z–13:18:07.290Z |
+| Observation time | 2026-09-01T13:46:46.943Z–13:47:15.315Z |
 | Current direct collection snapshot | **Readable, bounded:** 130 stable note IDs; ID fingerprint `ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12`; ID/title/author fingerprint `e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c` |
-| Prior readable snapshot | 2026-09-01T12:53:13.524Z–12:53:44.813Z; 130 stable IDs and complete metadata with the same fingerprints |
+| Prior readable snapshot | 2026-09-01T13:17:35.694Z–13:18:07.290Z; 130 stable IDs and complete metadata with the same fingerprints |
 | Observable added / changed / absent | IDs `[]` / title-author changes `[]` across all 130 comparable records / IDs `[]` |
 | Collection-membership interpretation | Membership is unchanged under a comparable bounded pass; no collection addition or removal is inferred |
-| Representative availability | SkillRise `6a6ab006…c932` card and signed detail remain readable without a login wall in Cycle 12; WikiSkill `6a955b35…afaf` remains last observed `/404` in Cycle 9, not reclassified as removed |
+| Representative availability | SkillRise `6a6ab006…c932` card and signed detail remain readable without a login wall in Cycle 13; WikiSkill `6a955b35…afaf` remains last observed `/404` in Cycle 9, not reclassified as removed |
 | Removal policy | No post is marked removed until a later comparable readable snapshot confirms absence |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -151,6 +151,31 @@ card link to a readable detail with no login wall or not-found state. The
 observer restored scroll position zero to zero and retained no profile
 identifier, token, signed URL, body, media URL, cookie, or comment. No XHS
 account or content state was changed.
+
+## Cycle 13 seed-first reconciliation
+
+Cycle 13 began with another live comparison from
+`2026-09-01T13:46:46.943Z` through `13:47:15.315Z`, before any new source-lane
+or topic selection. The same 18 bounded passes progressed through
+`30, 30, 34, 40, 47, 54, 61, 67, 73, 79, 85, 92, 99, 105, 111, 117, 124,
+130` unique cards. Against the committed Cycle-12 state, exact added IDs,
+title/author changes, absent IDs, and unavailable card IDs are all `[]`.
+
+The ID fingerprint remains
+`ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12`
+and the ordered ID/title/author fingerprint remains
+`e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c`.
+The live surface still declares 995 notes, 0 albums, and 14 files. The other
+865 notes and all 14 files remain unenumerated, so item-level added, changed,
+removed, and unavailable state in that tail is unknown rather than empty.
+
+SkillRise `6a6ab006000000001c00c932` again resolved from its current signed
+collection-card link to readable detail with no login wall or not-found state.
+The observer restored scroll position zero to zero. It retained no raw profile
+identifier, token, signed URL, body, media URL, cookie, or comment, and changed
+no XHS account or content state.
+
+## Live access connector provenance
 
 The repository-native observational connector is
 `agents/scout/tools/xhs-browse.mjs`. It supports `status`, Explore feed, search,
