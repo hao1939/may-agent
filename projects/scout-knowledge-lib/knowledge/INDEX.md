@@ -38,8 +38,13 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Future-dated scans 151–275 provenance repair](../reports/triage/future-dated-scans-151-275-provenance-repair.md) — dispositions and provenance evidence for 14 repaired HN, arXiv, and XHS artifact identities.
 - [Stuck arXiv reconciliation (2026-08-23)](../reports/operations/stuck-arxiv-reconciliation-2026-08-23.md) — verified closure of an orphaned source workflow and the bounded HTTP retrieval contract that prevents recurrence.
 - [XHS seed-first research cycle (2026-09-01)](../reports/research/xhs-seed-first-cycle-2026-09-01.md) — first collection reconciliation boundary, local source deduplication, topic-map rubric, and coalition-reliability deep dive.
+- [Agent self-evolution and autonomy evidence report (2026-09-01)](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md) — 48-card collected-seed inventory, source/claim map, cluster rubric, pinned-code checks, contradictions, and reproduction limits behind the canonical synthesis.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-01
+
+- [Agent self-evolution and autonomy: a governed-release view](./agent-self-evolution-and-autonomy.md) — cross-source taxonomy separating memory, skills, prompts, harnesses, weights, environments, evaluators, and authority; finds bounded externally gated evolution credible while streaming transfer and vague-goal autonomy remain unreliable.
 
 ### 2026-08-28
 
