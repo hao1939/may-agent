@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 23 begins seed-first through a directly reachable WSL Chrome connector, distinguishes public feed/post readability from unavailable collection authority, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 24 begins seed-first through the directly reachable WSL Chrome connector, confirms an unchanged public feed but no collection address or authenticated identity, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-01T19:31:13.461Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, public-feed inventory, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-01T19:39:00.889Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, public-feed inventory, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,8 +16,8 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 23 inventory and access diagnostics `2026-09-01T19:29:55.679Z–19:31:13.461Z` |
-| Current direct collection snapshot | **Unavailable and not comparable:** directly reachable WSL Chrome exposed one Explore page whose only navigation-history entry was Explore; no collection label or address was present, and current-user reads returned HTTP 406 or 500 without an authenticated nickname |
+| Observation time | Cycle 24 inventory and access diagnostics `2026-09-01T19:39:00.104Z–19:39:00.889Z` |
+| Current direct collection snapshot | **Unavailable and not comparable:** directly reachable WSL Chrome again exposed one Explore page whose only navigation-history entry was Explore; no collection label or address was present, and the current-user read returned HTTP 406 without an authenticated nickname |
 | Prior readable snapshot | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs |
 | Observable added / changed / absent | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable |
 | Collection-membership interpretation | Proven removed IDs `[]`. The unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
@@ -551,6 +551,40 @@ like, collect, delete, comment, follow, post, message, settings, login, or other
 XHS account or content mutation occurred. A live collection address under an
 authenticated browser principal remains the smallest condition for a
 comparable next reconciliation.
+
+## Cycle 24 seed-first reconciliation
+
+Cycle 24 began immediately after reviewable Scout checkpoint
+`eba657772c90ee39d0e0a274779f3e77f00408cb` and before any new GitHub, arXiv,
+Reddit, or local-code work. The bounded direct-WSL observation ran at
+`2026-09-01T19:39:00.104Z–19:39:00.889Z` from the goal-owned Scout worktree
+against Chrome DevTools on `127.0.0.1:9333`; the initiating shell and Chrome
+process remained Linux user `hao`, without namespace or elevated authority.
+
+The repository-native status operation returned `ready: true`, 149 rendered
+nodes, and no current login-wall text. The public Explore inventory returned
+the same 29 unique IDs as Cycle 23, with unchanged ID fingerprint
+`18cacabaef80a3b0b319ddf48ef64c937ad21216d35b0401431f39d6bdfa1df6`
+and unchanged ID/title/author fingerprint
+`178aa880786de13888b42c3c3788f62a59c41725b91a596b19a9cd2b9677bf93`.
+This proves no observable change in that public feed window; it does not turn
+those cards into collected seeds.
+
+The page's complete navigation history still contained only Explore, and the
+DOM contained zero collection labels or collection addresses. The `edith`
+current-user endpoint returned HTTP 406 `application/json`, `success: false`,
+code `-1`, and no authenticated nickname. The Cycle 23 representative public
+post remains the last useful detail result and was not reopened merely for
+coverage because neither the public window nor access state changed.
+
+The exact collection reconciliation against Cycle 23 is therefore: added IDs
+unknown, title/author changes unknown, proven removed IDs `[]`, and unavailable
+IDs equal to all 132 durable seeds. Cycle 20 remains the last comparable direct
+collection snapshot. Public feed equality, repository fixtures, cached exports,
+and prior observer history remain separate evidence surfaces and cannot prove
+collection equality. No XHS account or content state was mutated. A live
+collection address under an authenticated browser principal remains the next
+comparison trigger.
 
 ## Live access connector provenance
 
