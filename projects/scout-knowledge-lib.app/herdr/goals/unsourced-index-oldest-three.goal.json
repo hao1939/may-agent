@@ -1,0 +1,25 @@
+{
+  "schema": "herdr.goal/v1",
+  "objective": "Resolve one bounded batch of the three oldest remaining Scout INDEX entries marked Not yet sourced, using source-backed canonical integration or an evidence-backed no-op for each entry.",
+  "context": [
+    "The 2026-09-01 read-only health assessment counted 222 Not yet sourced markers, unchanged for 34 observer windows.",
+    "This goal is intentionally limited to three entries; it does not authorize clearing markers in bulk or treating the entire backlog as one change.",
+    "Select the three oldest markers by declared source-observation date, then by finding path, from the preserved execution revision. Record that selection before editing.",
+    "The current /app checkout has user-owned edits to INDEX.md and multiple canonical notes. Preserve those changes as a revision and reconcile them in an isolated worktree before any edit."
+  ],
+  "acceptance": [
+    "The owner-maintained Scout library state is preserved as an explicit revision, and the goal-owned branch/worktree begins from that revision.",
+    "A pre-edit table names exactly three selected INDEX entries, their finding paths, source URLs or stable IDs, existing related canonical sections, and duplicate-search results.",
+    "For each selected entry, verified useful claims are integrated into no more than two appropriate canonical notes and its INDEX marker is updated, or a concrete no-op explains why the source cannot support a safe integration.",
+    "Claims retain source URLs or stable identifiers and preserve uncertainty; inaccessible sources are reported rather than simulated.",
+    "Link/reference checks, relevant focused tests, and the read-only library-health assessment pass on the final revision. The final assessment and exact backlog count are recorded without claiming the whole backlog is resolved.",
+    "The final diff contains only the three dispositions, at most two canonical notes, INDEX.md, and one bounded verification report, and is reviewed path by path."
+  ],
+  "constraints": [
+    "Do not edit or run write-capable commands in /app or another worker's worktree.",
+    "Do not broaden the batch beyond three entries, remove markers without canonical integration evidence, or fabricate source validation.",
+    "External checks are read-only and must not change services, schedules, task state, credentials, or delivery channels.",
+    "Do not access XHS unless credential-ready:xhs is independently observed ready and a selected entry genuinely requires it; otherwise disposition that entry as waiting and select no replacement.",
+    "Reconcile the preserved owner revision before touching INDEX.md or any canonical note."
+  ]
+}
