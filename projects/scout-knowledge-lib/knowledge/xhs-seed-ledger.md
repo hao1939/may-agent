@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 19 begins seed-first through the verified WSL Chrome boundary, materializes two additional confirmed seeds in a repeatable 130-card window, keeps two historical seeds as unavailable rather than removed, and records the new SkillOpt card's detail boundary."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 20 begins seed-first through the verified WSL Chrome boundary, exactly reproduces Cycle 19's repeatable 130-card state, and keeps two historical seeds as window-unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T17:13:38.951Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T17:48:11.364Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 19 repeated inventories `2026-09-01T17:10:27.634Z–17:10:58.084Z` and `17:12:28.797Z–17:12:59.270Z`; new SkillOpt detail checked at `17:13:38.951Z` |
-| Current direct collection snapshot | **Readable and bounded:** both comparable runs materialized the same 130 stable IDs; ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9`; ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118` |
-| Prior readable snapshot | Cycle 18: 130 IDs with fingerprints `ea12a238…b12` and `e24ce287…c11c`; the durable confirmed-seed union is now 132 IDs |
-| Observable added / changed / absent | Newly materialized confirmed IDs `[6a96667100000000290122ae, 6a96b1320000000012024529]`; title-author changes `[]` across the 128 common records; absent historical IDs `[6a449e58000000001003ca2c, 6a4b745f000000001c025691]` |
+| Observation time | Cycle 20 repeated inventories `2026-09-01T17:46:35.052Z–17:47:05.786Z` and `17:47:40.866Z–17:48:11.364Z` |
+| Current direct collection snapshot | **Readable and bounded:** both comparable runs materialized the same 130 stable IDs and exactly reproduced Cycle 19; ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9`; ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118` |
+| Prior readable snapshot | Cycle 19: the same 130 IDs and complete metadata; the durable confirmed-seed union remains 132 IDs |
+| Observable added / changed / absent | Added IDs `[]`; title-author changes `[]`; absent historical IDs `[6a449e58000000001003ca2c, 6a4b745f000000001c025691]`, unchanged from Cycle 19 |
 | Collection-membership interpretation | Removed IDs `[]`. The two absences are unavailable in this bounded window, not proven uncollected: the same 130-card coverage can shift as newer cards materialize, and the page did not reproduce the prior 995-note / 14-file declaration this cycle |
-| Representative availability | New SkillOpt card `6a96b132…4529` is collection-visible as “微软开源：SkillOpt 技能训练器” by CountryRoad, but its current signed detail resolves `/404` with no login wall or readable body. The other new card and 127 common-card details were not tested; the two absent historical cards have no current signed link |
+| Representative availability | SkillOpt card `6a96b132…4529` remains collection-visible; its last signed detail read in Cycle 19 resolved `/404` with no login wall or readable body. Cycle 20 did not repeat unchanged detail reads; current body availability is therefore not reasserted. The two absent historical cards have no current signed link |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -380,6 +380,44 @@ closed. This proves collection-card visibility but not the post's body claims
 or its relation to any repository or paper. The other new card and 127 common
 details were not sampled, and the two window-absent cards had no current signed
 link. No XHS account or content mutation occurred.
+
+## Cycle 20 seed-first reconciliation
+
+Cycle 20 began immediately after the reviewable Cycle 19 checkpoint and before
+any GitHub, arXiv, Reddit, or local-code reconsideration. At
+`2026-09-01T17:46:26.244Z`, the initiating shell was `uid=1000(hao)`. Direct
+`GET http://127.0.0.1:9222/json/version` failed with curl exit 7 because
+Chrome's listener is not in this shell's network namespace. Passwordless
+`sudo nsenter -t 2136 -n` made the same loopback endpoint readable and reported
+Chrome `152.0.7977.64`. The repository-native observational status operation
+then returned `ready=true`, 150 rendered note nodes, and no login wall. The
+observer ran as `uid=0` only inside that namespace; the authenticated visible
+browser session labeled `Alex`, not either Linux identity, supplied XHS account
+authority. No credential, token, cookie, raw profile identifier, signed URL,
+body, comment, or media URL was retained.
+
+Two comparable inventories ran at
+`2026-09-01T17:46:35.052Z–17:47:05.786Z` and
+`17:47:40.866Z–17:48:11.364Z`. Each reloaded only the existing collection
+page, used 18 passes with 17 bounded 800-pixel scrolls, progressed through
+`10, 20, 30, 39, 48, 54, 61, 66, 74, 78, 86, 92, 98, 104, 110, 117, 123,
+130`, and restored the original 9,600-pixel scroll position. Neither pass saw
+a login wall. Both produced the same ID fingerprint
+`d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9`
+and ordered ID/title/author fingerprint
+`567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`
+as Cycle 19.
+
+The exact post-reconciliation state is added IDs `[]`, changed title/author
+records `[]`, removed IDs `[]`, and window-unavailable IDs
+`[6a449e58000000001003ca2c, 6a4b745f000000001c025691]`. Both unavailable
+items remain part of the 132-ID durable confirmed-seed union. Their absence
+from two bounded 130-card views is not proof of collection removal, especially
+while the larger historical collection tail and file surface remain
+unenumerated. No detail read was repeated because neither the card set nor an
+access trigger changed; SkillOpt's Cycle 19 `/404` is retained as last observed
+detail evidence rather than claimed as a fresh result. The page was observed
+only and no XHS account or content state changed.
 
 ## Live access connector provenance
 
