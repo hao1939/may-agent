@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 15 begins seed-first through the verified WSL Chrome boundary: two bounded passes materialize the same 129 records, one prior card is absent and directly `/404`, and no collection removal is inferred from that current unavailability."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 16 begins seed-first through the verified WSL Chrome boundary and reproduces Cycle 15's 129-record state: one prior card remains unavailable, with no added, changed, or proven removed seeds."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T14:49:54.073Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T14:59:22.740Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,9 +16,9 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Repeated inventory `2026-09-01T14:48:01.178Z–14:49:14.354Z`; targeted availability read `2026-09-01T14:49:54.073Z` |
-| Current direct collection snapshot | **Readable, bounded:** two identical 129-ID passes; ID fingerprint `7c1db60624303893720c4e26abf333026aa3cb94963a487ee24b7fe8ca709fcb`; ID/title/author fingerprint `bbc12b666eb33939fc8019885e6f3a9b1ebc9ac7b543cb67d9098c319f3b8c16` |
-| Prior readable snapshot | Cycle 14: 130 stable IDs with ID fingerprint `ea12a238…b12` and metadata fingerprint `e24ce287…c11c` |
+| Observation time | Cycle 16 inventory `2026-09-01T14:58:51.323Z–14:59:22.740Z`; unavailable-card detail last checked `2026-09-01T14:49:54.073Z` |
+| Current direct collection snapshot | **Readable, bounded:** 129 stable IDs; ID fingerprint `7c1db60624303893720c4e26abf333026aa3cb94963a487ee24b7fe8ca709fcb`; ID/title/author fingerprint `bbc12b666eb33939fc8019885e6f3a9b1ebc9ac7b543cb67d9098c319f3b8c16`, exactly matching both Cycle-15 passes |
+| Prior readable snapshot | Cycle 15: the same 129 IDs and metadata; Cycle 14 remains the last complete 130-record historical baseline |
 | Observable added / changed / absent | IDs `[]` / title-author changes `[]` across all 129 comparable records / prior ID `6a4b745f000000001c025691` absent in both passes |
 | Collection-membership interpretation | Removed IDs `[]`: the one repeated bounded-window absence is current unavailability, not proof of uncollection, because the profile still declares 995 notes and 866 notes remain outside the materialized window |
 | Representative availability | SkillRise `6a6ab006…c932` remains readable. Prior card `6a4b745f…5691` (“让 skill 也学会自我优化的开源项目”) is absent twice and an unsigned direct read resolves `/404` without a login wall; unavailable IDs are therefore `[6a4b745f…5691]` pending a comparable recovery or stronger removal signal |
@@ -241,6 +241,25 @@ it is not a removal claim. Because the declared total remains 995 while only
 and their item-level state is unknown. No profile identifier, token, signed
 URL, body, media URL, cookie, or comment was persisted, and no XHS account or
 content state was changed.
+
+## Cycle 16 seed-first reconciliation
+
+The supervisor resumed the standing goal, and Cycle 16 again reconciled XHS
+before any lane request or topic selection. From
+`2026-09-01T14:58:51.323Z` through `14:59:22.740Z`, the same authenticated
+collection tab produced the same 18-pass progression and exact 129-ID and
+metadata fingerprints as both Cycle-15 passes. Added IDs are `[]`, changed
+title/author records are `[]`, and SkillRise `6a6ab006…c932` remains readable.
+The tab returned to scroll position 115949 and no login wall appeared.
+
+Prior ID `6a4b745f000000001c025691` remains absent from the bounded window.
+Its last direct read, nine minutes earlier at `14:49:54.073Z`, resolved `/404`
+without a login wall; no value or access trigger justified immediately opening
+another identical disposable detail tab. The current classification remains
+added `[]`, changed `[]`, removed `[]`, unavailable
+`[6a4b745f000000001c025691]`. The declared 995-note total is unchanged, so the
+866-note tail and 14 files retain unknown item-level state. No XHS mutation or
+credential action occurred.
 
 ## Live access connector provenance
 
@@ -621,3 +640,4 @@ comments, and other account data are not retained.
 | 2026-09-01T13:46:46.943Z–13:47:15.315Z | Same authenticated Chrome collection tab; 130 stable IDs and exact ID/metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records; SkillRise detail remains readable | `[]` IDs; no removal inferred | `[]` among the 130 materialized cards; 865-note tail and 14 files remain unenumerated and unknown | Cycle 13 reconciled before the GitHub refresh or code audit. Preserve `2608.30177v1` only after this comparison, then inspect the smallest unaudited authority boundary. |
 | 2026-09-01T14:25:05.607Z–14:25:36.857Z | Same authenticated Chrome collection tab; 130 stable IDs and exact ID/metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records; SkillRise detail remains readable | `[]` IDs; no removal inferred | `[]` among the 130 materialized cards; 865-note tail and 14 files remain unenumerated and unknown | Cycle 14 reconciliation is persisted before any lane request or topic selection. Reconsider GitHub, arXiv, and Reddit only from this state. |
 | 2026-09-01T14:48:01.178Z–14:49:54.073Z | Two identical authenticated passes materialize 129 IDs with ID fingerprint `7c1db606…9fcb` and metadata fingerprint `bbc12b66…8c16`; direct detail availability checked separately | `[]` IDs | `[]` across all 129 comparable records | `[]` proven removals; prior ID `6a4b745f…5691` is absent twice but not inferred uncollected | `[6a4b745f…5691]`: stable direct path resolves `/404` without a login wall; 866-note tail and 14 files remain unknown | Cycle 15 reconciliation is persisted before lane reconsideration. Treat the one ID as unavailable, not removed; revisit its card/detail state after the next seed-first pass or stronger collection evidence. |
+| 2026-09-01T14:58:51.323Z–14:59:22.740Z | Same authenticated Chrome tab; 129 IDs and both fingerprints exactly match Cycle 15 | `[]` IDs | `[]` across all 129 comparable records; SkillRise remains readable | `[]` proven removals; `6a4b745f…5691` remains absent | `[6a4b745f…5691]` retains its nine-minute-old direct `/404`; 866-note tail and 14 files remain unknown | Cycle 16 reconciliation is persisted before lane reconsideration. No immediate repeat detail read was issued merely for freshness. |
