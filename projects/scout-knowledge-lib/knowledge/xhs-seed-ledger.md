@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 16 begins seed-first through the verified WSL Chrome boundary and reproduces Cycle 15's 129-record state: one prior card remains unavailable, with no added, changed, or proven removed seeds."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 17 begins seed-first through the verified WSL Chrome boundary, restores the complete historical 130-card collection snapshot with no membership or metadata delta, and records that sampled signed detail reads currently resolve /404."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T14:59:22.740Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T15:59:50.186Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 16 inventory `2026-09-01T14:58:51.323Z–14:59:22.740Z`; unavailable-card detail last checked `2026-09-01T14:49:54.073Z` |
-| Current direct collection snapshot | **Readable, bounded:** 129 stable IDs; ID fingerprint `7c1db60624303893720c4e26abf333026aa3cb94963a487ee24b7fe8ca709fcb`; ID/title/author fingerprint `bbc12b666eb33939fc8019885e6f3a9b1ebc9ac7b543cb67d9098c319f3b8c16`, exactly matching both Cycle-15 passes |
-| Prior readable snapshot | Cycle 15: the same 129 IDs and metadata; Cycle 14 remains the last complete 130-record historical baseline |
-| Observable added / changed / absent | IDs `[]` / title-author changes `[]` across all 129 comparable records / prior ID `6a4b745f000000001c025691` absent in both passes |
-| Collection-membership interpretation | Removed IDs `[]`: the one repeated bounded-window absence is current unavailability, not proof of uncollection, because the profile still declares 995 notes and 866 notes remain outside the materialized window |
-| Representative availability | SkillRise `6a6ab006…c932` remains readable. Prior card `6a4b745f…5691` (“让 skill 也学会自我优化的开源项目”) is absent twice and an unsigned direct read resolves `/404` without a login wall; unavailable IDs are therefore `[6a4b745f…5691]` pending a comparable recovery or stronger removal signal |
+| Observation time | Cycle 17 inventory `2026-09-01T15:54:29.734Z–15:59:50.186Z`; representative details checked through `15:58:27.630Z` |
+| Current direct collection snapshot | **Readable, bounded and repeated:** two clean-reload passes materialized 130 stable IDs; ID fingerprint `ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12`; ID/title/author fingerprint `e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11`, exactly matching the complete Cycle-14 historical baseline |
+| Prior readable snapshot | Cycle 16 materialized 129 of those 130 records; Cycle 14 is the comparable complete baseline |
+| Observable added / changed / absent | Newly collected IDs `[]`; title-author changes `[]` across all 130 records; absent historical IDs `[]`. Prior unavailable card `6a4b745f000000001c025691` is again collection-visible, an access-state recovery rather than a new seed |
+| Collection-membership interpretation | Removed IDs `[]`. One broader non-comparable 8,000-pixel-step pass sampled 456 stable IDs, but its jumps can skip intervening cards; it expands coverage evidence without proving those extra cards are newly collected or providing a complete-set comparison |
+| Representative availability | Collection cards are readable without a login wall, but signed detail opens for restored card `6a4b745f…5691`, SkillRise `6a6ab006…c932`, and current card `6a966f4f…92db` each resolved `/404`. Exact sampled detail-unavailable IDs are therefore `[6a4b745f…5691, 6a6ab006…c932, 6a966f4f…92db]`; the other 127 details were not tested |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -260,6 +260,52 @@ added `[]`, changed `[]`, removed `[]`, unavailable
 `[6a4b745f000000001c025691]`. The declared 995-note total is unchanged, so the
 866-note tail and 14 files retain unknown item-level state. No XHS mutation or
 credential action occurred.
+
+## Cycle 17 seed-first reconciliation
+
+Cycle 17 began before any GitHub, arXiv, Reddit, or new topic-selection work.
+At `2026-09-01T15:52:12.684Z`, the initiating environment was
+`uid=1000(hao)`. Passwordless `sudo nsenter -t 2136 -n` supplied only access to
+Chrome's loopback DevTools endpoint; the existing visible browser session
+labeled `Alex`, not either Linux identity, supplied XHS authority. The
+repository-native status operation at the goal-owned Scout revision returned
+ready at `15:52Z`: the `收藏 / 笔记` page exposed 35 currently rendered card
+nodes and no login wall. No profile identifier, token, signed URL, cookie,
+body, media, or comment was persisted.
+
+The first pass at `15:53:17.372Z–15:53:47.492Z` intentionally tested a broader
+8,000-pixel step. It sampled 456 unique cards with ID fingerprint
+`e120406c5fc771434328b0dad80b25299549164702690c906b33fff2839650ba` and
+metadata fingerprint
+`5a9fd9b2631ca7ecd4293793e7bc27ca3f8ac2074cd216fd7ae60b275f75f02e`,
+including SkillRise and prior-unavailable `6a4b745f…5691`, and restored the
+original scroll position 115949. Because the large jumps can skip cards, this
+is coverage evidence only: its 326 records beyond the durable 130-card baseline
+are newly sampled, not classified as newly collected.
+
+The comparable reconciliation then reloaded the collection and repeated the
+prior 18-pass, 800-pixel method twice at
+`15:54:29.734Z–15:55:00.177Z` and
+`15:59:19.547Z–15:59:50.186Z`. Both passes progressed through
+`10, 20, 30, 40, 47, 54, 61, 67, 73, 78, 85, 92, 99, 105, 111, 117, 124,
+130`, restored scroll position zero, and exactly reproduced Cycle 14's full
+130-ID and ID/title/author fingerprints. Against that complete baseline,
+newly collected IDs are `[]`, changed title/author records are `[]`, absent
+historical IDs are `[]`, and removed IDs are `[]`. Against Cycle 16's partial
+129-card observation, `6a4b745f000000001c025691` has recovered collection
+visibility; it is not a new seed.
+
+Detail access remains narrower than collection access. Read-only disposable-tab
+opens used signed links from the current collection DOM. Restored
+`6a4b745f…5691` at `15:56:09.039Z–15:56:15.131Z`, SkillRise
+`6a6ab006…c932` at `15:56:53.365Z–15:56:59.393Z` and again at
+`15:57:45.222Z–15:57:51.252Z`, and representative current card
+`6a966f4f…92db` at `15:58:21.600Z–15:58:27.630Z` all resolved `/404` with no
+login wall and no readable post body. The exact sampled detail-unavailable set
+is those three IDs; availability for the other 127 details is unknown. The
+current page did not materialize the historical 995-note/14-file header counts,
+so those totals are retained only as prior evidence, not asserted as a fresh
+Cycle-17 observation. No account or content mutation occurred.
 
 ## Live access connector provenance
 
@@ -641,3 +687,4 @@ comments, and other account data are not retained.
 | 2026-09-01T14:25:05.607Z–14:25:36.857Z | Same authenticated Chrome collection tab; 130 stable IDs and exact ID/metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records; SkillRise detail remains readable | `[]` IDs; no removal inferred | `[]` among the 130 materialized cards; 865-note tail and 14 files remain unenumerated and unknown | Cycle 14 reconciliation is persisted before any lane request or topic selection. Reconsider GitHub, arXiv, and Reddit only from this state. |
 | 2026-09-01T14:48:01.178Z–14:49:54.073Z | Two identical authenticated passes materialize 129 IDs with ID fingerprint `7c1db606…9fcb` and metadata fingerprint `bbc12b66…8c16`; direct detail availability checked separately | `[]` IDs | `[]` across all 129 comparable records | `[]` proven removals; prior ID `6a4b745f…5691` is absent twice but not inferred uncollected | `[6a4b745f…5691]`: stable direct path resolves `/404` without a login wall; 866-note tail and 14 files remain unknown | Cycle 15 reconciliation is persisted before lane reconsideration. Treat the one ID as unavailable, not removed; revisit its card/detail state after the next seed-first pass or stronger collection evidence. |
 | 2026-09-01T14:58:51.323Z–14:59:22.740Z | Same authenticated Chrome tab; 129 IDs and both fingerprints exactly match Cycle 15 | `[]` IDs | `[]` across all 129 comparable records; SkillRise remains readable | `[]` proven removals; `6a4b745f…5691` remains absent | `[6a4b745f…5691]` retains its nine-minute-old direct `/404`; 866-note tail and 14 files remain unknown | Cycle 16 reconciliation is persisted before lane reconsideration. No immediate repeat detail read was issued merely for freshness. |
+| 2026-09-01T15:52:12.684Z–15:59:50.186Z | Live `Alex` Chrome session ready; two clean-reload 18×800-pixel passes reproduce all 130 historical IDs and both complete fingerprints. A separate 8,000-pixel-step sample saw 456 IDs but is not complete/comparable. | `[]` newly collected; prior-unavailable `6a4b745f…5691` is collection-visible again | `[]` title/author changes across 130 comparable records; collection access recovered for `6a4b745f…5691` | `[]` IDs | Collection-level unavailable `[]`; sampled detail-unavailable `[6a4b745f…5691, 6a6ab006…c932, 6a966f4f…92db]`; 127 details and the historical tail/file surface remain unknown | Cycle 17 reconciliation is persisted before lane reconsideration. Treat collection inventory and detail reads as separate access surfaces; reconsider GitHub, arXiv, and Reddit from the restored 130-card state. |
