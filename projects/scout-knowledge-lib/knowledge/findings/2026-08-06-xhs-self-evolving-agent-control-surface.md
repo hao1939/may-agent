@@ -1,14 +1,14 @@
 <ai_context>
-summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles now expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection."
+summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection. A Cycle-15 GitHub deep dive adds a probable—but unconfirmed—repository match for one newly unavailable collected card and separates its concrete process rules from unsupported performance claims."
 triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface", "SEED", "Bayesian memory"]
-last_updated: "2026-08-19"
-source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19. Analysis is grounded in current search-result titles, authors, likes, and links only."
+last_updated: "2026-09-01"
+source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19; direct collection metadata and access reconciliation for stable ID 6a4b745f000000001c025691 through 2026-09-01T14:49:54.073Z; and pinned public source for SeBastArt/self-optimize-skill at bd43cb3911ad4ebccf1f309176ca28d964e06bbc."
 </ai_context>
 
 # XHS: Self-Evolving Agent Discussion Narrows to the Control Surface
 
 Date: 2026-08-06
-last_updated: 2026-08-19
+last_updated: 2026-09-01
 Source: https://www.xiaohongshu.com/search_result/6a50bbbf000000000803eb62
 Source: https://www.xiaohongshu.com/search_result/69c4a069000000002200fc9a
 Source: https://www.xiaohongshu.com/search_result/6a5df9630000000006010403
@@ -80,4 +80,50 @@ The useful shift is from a generic **self-reflection loop** toward a set of sepa
 
 ## Caveat
 
-This finding is based only on current XHS search-result metadata supplied in the workflow packets. It does **not** claim details of the linked papers or posts beyond what their public titles and engagement counts support. Likes are mutable snapshots, not quality or adoption measures.
+The original XHS finding is based only on search-result metadata supplied in
+workflow packets. It does **not** claim details of the linked papers or posts
+beyond what their public titles and engagement counts support. Likes are
+mutable snapshots, not quality or adoption measures. The Cycle-15 update adds
+separately labeled collection-access and pinned GitHub evidence; it does not
+recover the unavailable XHS body.
+
+## Update: 2026-09-01 — probable repository match, process evidence only
+
+Cycle 15 began with live collection reconciliation, not repository search. Two
+identical bounded passes materialized 129 of the prior 130 cards. Stable ID
+`6a4b745f000000001c025691`, whose preserved collection title is “让 skill 也学会自我优化的开源项目”,
+was absent in both and its unsigned direct detail path returned `/404` without
+a login wall. It is recorded as unavailable, not removed.
+
+Only after that persisted result did a bounded public GitHub search run. The
+exact Chinese title returned zero repositories; the query `"skill
+self-optimization" agent` returned eight with `incomplete_results=false`.
+[`SeBastArt/self-optimize-skill`](https://github.com/SeBastArt/self-optimize-skill/commit/bd43cb3911ad4ebccf1f309176ca28d964e06bbc)
+is the strongest relation candidate because its name and description match the
+retained title and it was created on 2026-07-02. Interpreting the stable ID's
+first eight hexadecimal digits as an ObjectID-style timestamp yields July 6,
+four days later; that date interpretation is a heuristic. The timing and
+wording are circumstantial provenance, not proof that the unavailable post
+links this repository.
+
+At pinned revision `bd43cb3911ad4ebccf1f309176ca28d964e06bbc`, the complete
+tree is five Markdown files: a router skill, README, and three mode references.
+The directly observed design splits self-optimization into repository setup,
+task setup, and in-flight friction capture. It requires observable stack
+discovery, explicit completion criteria, early risk probes, test-first work,
+persistent friction/win logs, and operator control over costly or authority-
+bearing changes. Its long-running-loop section adds useful safeguards: gates
+may tighten but not silently relax, self-modification needs negative tests,
+and worker/model changes should be treated as measured experiments.
+
+The evidence limit is equally important. The README says the consolidated
+skill was tested against baseline subagent scenarios, and later prose reports
+reference-run lessons, but the pinned tree contains no test, fixture, result,
+CI configuration, or executable implementation. README calls three external
+tools optional while `SKILL.md` calls them a must-have basis; installation
+rules also vary between per-item confirmation and a separately operator-enabled
+free-tool autonomy policy. These are reviewable specification tensions, not
+measured performance results. The repository is therefore admitted as
+implementation-pattern evidence for the existing self-evolution control-
+surface finding, not as proof that self-optimization improves task outcomes or
+as confirmed provenance for the unavailable XHS post.
