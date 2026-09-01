@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation. Isolated fixes and a real-binary transport regression pass focused, package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including general forgetting. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, and a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004 and transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, and a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, and general-forget repair 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -342,6 +342,44 @@ is loopback real-binary evidence, not an upstream-reviewed commit, pushed
 branch, deployed service, TLS boundary, or hostile-network evaluation. The next
 code question is whether any remaining organization-bearing MCP wrapper still
 accepts scope independently of verified caller context.
+
+### Cycle 13 general-forget caller reproduction and repair
+
+Cycle 13 first reproduced the same 130-card XHS snapshot and empty exact deltas.
+Only then did source review trace every explicit MCP `org_id` input to the
+existing `bind_org_id` helper. That audit did not prove the wider tenant
+boundary closed: general `mnemo.forget` accepts memory IDs or criteria without
+an organization field, did not consume `CallerContext`, and constructed an
+engine request without `agent_id`. The engine therefore authorized the
+destructive operation as its boot principal.
+
+The strengthened goal-owned fixture seeded one boot-owned record and one
+Alice-owned record, then called general forget with a valid signed Alice
+capability. Before repair, the boot-owned ID appeared in `forgotten` rather than
+returning a permission denial. This directly reproduces cross-principal
+deletion on local merged base
+`0d7a19d6d09ff7ea17f4cde4dcf2c3aa93c26848`; it does not establish a public
+deployment or exposed service.
+
+Commit `4217163bacba3d85ef34c2ef0a0c33f6faf4cae9` adds the verified caller to
+the handler and sets that principal on the engine `ForgetRequest`. The focused
+fixture now denies Alice's attempt against the boot record and allows deletion
+of Alice's own record. The real installed-binary fixture adds a boot-principal
+write, an Alice general-forget denial, and a boot-principal readback of the
+unchanged record over one loopback Streamable HTTP session.
+`cargo fmt --all -- --check`, strict Clippy for all targets of `mnemo-mcp` and
+the HTTP-enabled server, all 93 `mnemo-mcp` tests, and all 80 HTTP-enabled
+server tests pass.
+
+Public `main` still resolved to
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` at
+`2026-09-01T13:58:09Z`. An exact unauthenticated GitHub issue search for
+`"mnemo.forget" CallerContext` returned zero results with
+`incomplete_results=false`. That is bounded public provenance, not evidence
+about private or differently worded work. The candidate remains local,
+unreviewed, and undeployed. The next audit question is organization derivation
+for destructive requests that expose no `org_id`: coverage of explicit inputs
+does not prove that an addressed record or criteria search is tenant-bound.
 
 ## Why it matters
 

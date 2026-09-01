@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twelve cycles: the bounded Xiaohongshu set remains 130 stable IDs with unchanged metadata, arXiv 2608.30177v1 remains the stage-aware memory anchor, and Mnemo's repaired principal binding now has repeatable real-binary Streamable HTTP proof across four wrappers."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "XHS seed-first cycle 12"]
+summary: "Seed-first Scout checkpoint across thirteen cycles: the bounded Xiaohongshu set remains 130 stable IDs with unchanged metadata, arXiv 2608.30177v1 remains the stage-aware memory anchor, and Mnemo general forgetting now authorizes as the verified caller instead of the boot principal."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "XHS seed-first cycle 13"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T13:18:07.290Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, and third-party WikiSkill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T13:47:15.315Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, and third-party WikiSkill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -113,6 +113,18 @@ Bob→Alice credentials inside one MCP session, rejects Alice's four attempts to
 act as Bob, and confirms Bob's record remains. All 76 HTTP-enabled CLI tests,
 formatting, and strict lint pass. arXiv `2608.30177v1` remains 15/15; Reddit is
 still deferred at its RSS-readable/JSON-403 boundary without quota work.
+
+Cycle 13 again reconciles before the queued wrapper audit. The bounded live
+pass completes at `2026-09-01T13:47:15.315Z` with the same 130 IDs, both exact
+fingerprints, empty added/changed/absent/unavailable arrays, and readable
+SkillRise detail. Only then does GitHub remain selected. All explicit MCP
+`org_id` inputs already use the organization binder, but general
+`mnemo.forget` still authorizes through the boot principal. A strengthened
+fixture reproduces signed Alice deleting a boot-owned record; local repair
+`4217163…cae9` binds the verified caller, denies that deletion over real HTTP,
+and passes formatting, two strict lints, 93 MCP tests, and 80 HTTP-enabled
+server tests. arXiv `2608.30177v1` remains 15/15; Reddit is deferred without
+quota work.
 
 ## Seed reconciliation came first
 
@@ -255,6 +267,25 @@ without changing membership. The 865-note tail and 14 files remain unknown.
 The observer restored zero scroll to zero and persisted no profile identifier,
 token, body, media URL, cookie, or comment; no XHS state was changed.
 
+Cycle 12 repeated the comparable inventory from
+`2026-09-01T13:17:35.694Z` through `13:18:07.290Z`, before the HTTP transport
+test. Both fingerprints and all 130 records remained exact; added, changed,
+absent, and unavailable arrays were `[]`. SkillRise remained readable, the
+865-note tail and 14 files remained unenumerated, zero scroll was restored, and
+no XHS state was changed.
+
+Cycle 13 then repeated the seed-first boundary from
+`2026-09-01T13:46:46.943Z` through `13:47:15.315Z`, before the public GitHub
+refresh or wrapper audit. Its 18 bounded pass counts ended at the same 130
+cards. ID and ordered ID/title/author fingerprints remained
+`ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12` and
+`e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c`;
+added, changed, absent, and unavailable arrays were `[]`. The live surface
+still declared 995 notes, 0 albums, and 14 files, leaving 865 notes and all 14
+files unknown at item level. SkillRise detail remained readable. The observer
+restored zero scroll and retained no token, signed URL, body, media, cookie, or
+comment; no XHS state was changed.
+
 ## What each lane can actually do
 
 | Lane | Implementation and configuration | Live topic-led observation | Provenance, deduplication, and boundary |
@@ -365,6 +396,14 @@ per-source quota.
 | GitHub | **High relevance / high realized value / current; selected.** The unchanged memory-governance seeds and recorded live-HTTP trigger made credential transport the highest-value remaining evidence gap. | Public source remains pinned at `2994abf185da50d43e5fa4b3f826812bd09c2f20`; production repairs merge at `0d7a19d6d09ff7ea17f4cde4dcf2c3aa93c26848`. Goal-owned commit `fbb7000fdb75ae5fc799820570ec4cbd81e21a74` adds a test-only real-binary loopback regression: Bob writes, the same MCP session receives Alice's capability, four Alice→Bob operations reject, and Bob retrieves the unchanged record. This is local HTTP evidence, not upstream review or deployment. Revisit for upstream response or the next unaudited organization-bearing wrapper. |
 | arXiv | **High relevance / low incremental value / fresh; retained and deferred.** No reconciled seed, paper version, artifact, or primary-source question changed, while the transport test closed a queued evidence gap. | `2608.30177v1` remains the memory cluster's 15/15 anchor on its reviewed v1 source; the later `2608.27454v1` WikiSkill evidence remains a separate self-evolution branch. No request was issued for quota. Revisit on a version, attributable artifact, independent replication, stronger stage-wise evidence, or new seed. |
 | Reddit | **Medium relevance / low incremental value / unchanged; deferred without quota work.** The transport question is code-specific and the existing thread adds no distinct claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. Revisit for a distinct tenant-scope discussion, new seed-linked thread, content delta, or access change. |
+
+### Cycle 13 reconsideration and evidence
+
+| Lane | Relevance, value, freshness, and decision | Last useful evidence, boundary, and revisit trigger |
+|---|---|---|
+| GitHub | **High relevance / high realized value / current; selected.** The unchanged memory-governance seeds and remaining-wrapper trigger made general destructive authorization the highest-value open question. | Public Mnemo `main` remained `2994abf185da50d43e5fa4b3f826812bd09c2f20` at `2026-09-01T13:58:09Z`. Exact issue search for `"mnemo.forget" CallerContext` returned zero with `incomplete_results=false`. Every explicit MCP `org_id` input uses `bind_org_id`, but general forget omitted caller context. The strengthened local fixture reproduced signed Alice deleting a boot-owned record; repair `4217163bacba3d85ef34c2ef0a0c33f6faf4cae9` binds the verified caller and passes full focused validation. This is pinned public-source plus local executable evidence, not upstream review or deployment. Revisit after the next seed pass for organization derivation in destructive tools with no explicit `org_id`. |
+| arXiv | **High relevance / low incremental value / fresh; retained and deferred.** The reconciled seed set, paper version, and artifact state did not change, while the general-forget result closed a higher-value executable gap. | `2608.30177v1` remains the 15/15 memory-governance anchor on the reviewed v1 source. No request was issued for quota. Revisit on a version, attributable artifact, independent replication, stronger stage-wise evidence, or new seed. |
+| Reddit | **Medium relevance / low incremental value / unchanged; deferred without quota work.** The general-forget boundary is repository-specific and the existing thread adds no distinct evidence. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. Revisit for a distinct tenant-scope discussion, new seed-linked thread, content delta, or access change. |
 
 Hugging Face was selected as useful related discovery rather than a permanent
 quota lane. Its public APIs returned HTTP 200 for paper ID, title-term,
@@ -543,6 +582,24 @@ proves the current candidate derives identity per network request, rather than
 from boot state or the session, while remaining local loopback evidence rather
 than a deployed-service claim.
 
+Cycle 13 completes the next bounded wrapper audit. Every explicit MCP
+`org_id` input already reaches `bind_org_id`; no bypass was found on that
+enumerated surface. General `mnemo.forget`, however, accepts IDs or criteria
+without caller context and left the engine request's agent unset. A strengthened
+fixture proved the consequence before repair: signed Alice successfully
+soft-deleted a boot-owned record, and the response listed that ID under
+`forgotten` rather than returning a permission error.
+
+Commit `4217163bacba3d85ef34c2ef0a0c33f6faf4cae9` supplies the verified caller
+to the handler and engine request. The unit fixture now rejects Alice against
+the boot-owned record and permits Alice against her own; the live HTTP fixture
+adds a boot-authorized write, Alice's general-forget denial, and a final
+boot-authorized readback. This preserves the observed Cycle-12 four-wrapper
+result while extending the proof to the general destructive path. Public
+source remains at `2994abf…f20`; the fix is local, unreviewed, unpushed, and
+undeployed. The remaining question is tenant derivation for destructive tools
+whose public input contains no organization assertion.
+
 ## Why `2608.30177v1` still wins
 
 After the direct collection reconciliation, the stage-wise memory paper still
@@ -676,13 +733,13 @@ preparation and invariants, not task outcomes or the paper's robustness.
 ## Library and topic-map changes
 
 - [XHS seed ledger](../../knowledge/xhs-seed-ledger.md): records reconciliations
-  through cycle 12, including the exact WSL Chrome connector and authority
+  through cycle 13, including the exact WSL Chrome connector and authority
   boundary, stable 130-ID membership, unchanged complete metadata, empty
   added/changed/absent sets, readable SkillRise detail, WikiSkill's retained
   `/404` boundary, and the unobserved collection tail.
 - [Living topic map](../../knowledge/xhs-topic-map.md): retains stage-aware
   memory governance at 15/15, raises self-evolution to a co-leading 15/15,
-  records each cycle-12 lane decision and revisit trigger, and keeps post claims,
+  records each cycle-13 lane decision and revisit trigger, and keeps post claims,
   paper evidence, repository provenance, executable local tests, and Reddit
   anecdotes distinct.
 - [Read-write attention synthesis](../../knowledge/the-read-write-attention-inversion.md):
@@ -705,6 +762,9 @@ preparation and invariants, not task outcomes or the paper's robustness.
 - Cycle 12 adds one real-binary HTTP regression to that same authority finding.
   It does not count transport coverage as another source or change production
   behavior.
+- Cycle 13 extends the same finding with the reproduced general-forget boot-
+  authority path and repair `4217163…cae9`; it does not count another wrapper
+  as an independent source.
 - [Self-improvement note](../../knowledge/findings/2026-07-23-hn-self-improving-agent-loops.md): absorbs the SkillRise deep dive rather than creating a duplicate topic, connecting later-task curation credit to the existing task-order, pathway, coalition, and security controls.
 - [Evolution-stall synthesis](../../knowledge/findings/2026-07-22-arxiv-evolution-stall-memory-paradigm.md): enriches its existing WikiSkill section from the complete TeX source instead of creating a duplicate finding. It records exact benchmark and ablation results, the severe negative-transfer counterexample, sampling and validation limits, and the distinction between absent author code and one tested community implementation.
 - A separate goal-owned SkillRise candidate adds the smallest missing order
@@ -777,6 +837,23 @@ so the prior 92-test `mnemo-mcp` result still matches the tested code. All 19
 relative links across the four checkpoint documents resolve, and
 `git diff --check` reports no whitespace errors.
 
+For Cycle 13, the pre-fix general-forget fixture failed as intended because
+signed Alice deleted the boot-owned target instead of receiving a permission
+denial. After `4217163bacba3d85ef34c2ef0a0c33f6faf4cae9`, Rust formatting
+passes; strict Clippy passes for all `mnemo-mcp` targets and all HTTP-enabled
+`mnemo-mcp-server` targets with warnings denied; the full `mnemo-mcp` suite
+passes 93 tests; and the full HTTP-enabled server suite passes 80 tests,
+including the real process/loopback regression. Validation used a goal-owned
+Rust container and goal-owned Cargo/target caches because the host has no
+Cargo. The first invocation used a login shell that hid Cargo from `PATH`; the
+normal image shell resolved it. That was convenience wiring, not missing
+execution capability, and it changed no repository file.
+
+Scout's Cycle-13 full check passes syntax bundling, TypeScript, Prettier, and 78
+tests with 226 assertions. All 19 relative links across the four current
+checkpoint documents resolve, and `git diff --check` reports no whitespace
+errors.
+
 The Cycle-8 SkillRise candidate passed three focused standard-library unit
 tests covering source immutability, fixed task budget, deterministic distinct
 variants, and same-family donor rejection. Bounded fixture generation also
@@ -797,7 +874,7 @@ A broader scan of the pre-existing `knowledge/INDEX.md` still finds 67 broken
 links unrelated to this change. They remain library-health backlog rather than
 being presented as a clean global-link result.
 
-The latest read-only health scan at `2026-09-01T13:45:44.275Z` returned 24
+The latest read-only health scan at `2026-09-01T14:22:53.375Z` returned 24
 facts and 16 bounded wake signals: 13 future-date facts, 10 oversized-note
 facts, and the existing index unsourced backlog. The packet remains truncated,
 so it is a bounded regression signal rather than a global-health claim. None of
@@ -814,14 +891,17 @@ entries and status SHA-256
 `af855fe5bf2d82cfed0fbd9e10793e4e3a24248cd309fe143f2fb74adf7c3255`.
 The Cycle-12 final observation returned 386 entries and the original
 fingerprint `e06ad5b26c0f0b8044d9e987e8d0fdc5f32e20e3d8e91797a06375b9ba73d182`,
-with HEAD still `386b445c236e4609cd8870d22cc773cc4641fec8`. Consequently,
+with HEAD still `386b445c236e4609cd8870d22cc773cc4641fec8`. Cycle 13's pre-documentation
+read at `2026-09-01T14:18:14Z` again observed the same HEAD, 386 entries, and
+the same status fingerprint. The post-validation read at
+`2026-09-01T14:23:30Z` reproduced all three values exactly. Consequently,
 byte-for-byte stability throughout the interval cannot be claimed: human-owned
 state changed concurrently outside this worker. The proof this goal can make is
 narrower and exact—repository writes and validation ran only in the goal-owned
 Scout worktree and goal-owned Mnemo clone/cache; commands against the human
 checkout were limited to `git rev-parse` and `git status` reads.
 
-Among the four current Cycle-12 paths, only the memory-governance authority
+Among the four current Cycle-13 paths, only the memory-governance authority
 finding overlaps the dirty checkout, where it is an untracked human-owned file.
 The goal-owned branch already tracked its independently preserved prior version
 before this cycle and appends the new evidence there; the human copy was never
@@ -832,7 +912,7 @@ cycles. This preserves all observed human copies without cleaning, staging, or
 discarding them.
 
 Direct XHS collection membership is confirmed for the same 130 materialized
-cards in Cycle 12. Exact added, changed, absent, and unavailable card sets are
+cards in Cycle 13. Exact added, changed, absent, and unavailable card sets are
 all empty across the complete comparable metadata baseline. The 865-note tail
 and 14 files remain unobserved. SkillRise's current signed detail is readable
 without a login wall; WikiSkill retains its last observed `/404` detail state
@@ -844,18 +924,21 @@ lane quota.
 
 Mnemo's Alice→Bob, signed Alpha→Beta, general-memory, and experience-memory
 behaviors are verified separately through the real local MCP duplex transport.
-The three isolated repairs bind principal and organization across the audited
-agent-managed, general, and plan wrappers. Cycle 12 additionally verifies the
-four Alice→Bob denials through the real installed binary over loopback HTTP,
+The first three isolated repairs bind principal and organization across the
+audited agent-managed, general, and plan wrappers. Cycle 12 additionally
+verifies the four Alice→Bob denials through the real installed binary over
+loopback HTTP,
 including a principal switch within one MCP session and final Bob readback.
-The candidate remains unreviewed upstream and undeployed; other
-organization-bearing MCP surfaces remain outside the audit.
+Cycle 13 verifies that general forget uses the request caller rather than the
+boot principal. The candidate remains unreviewed upstream and undeployed;
+organization derivation for destructive tools without explicit `org_id`
+remains outside the completed audit.
 
 The next exploration begins another seed-first reconciliation against the
 130-ID and complete metadata baseline. If it reveals no higher-value addition
-or change, Scout inventories Mnemo's remaining organization-bearing MCP
-wrappers and selects the smallest still-unaudited executable authority
-boundary. WikiSkill transfer gating is revisited only for author
+or change, Scout traces organization derivation for destructive requests with
+no explicit organization input, beginning with general forget criteria and
+addressed-record checks. WikiSkill transfer gating is revisited only for author
 code, an independently archived accepted run, or new target-model evidence;
 Reddit is revisited only for distinct evidence or an access/content change. The
 prepared SkillRise fixture remains queued for provisioned model and environment
