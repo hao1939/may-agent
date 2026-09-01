@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 21 begins seed-first through the verified WSL Chrome boundary, records that the browser session is now a guest and the saved collection redirects away, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 22 begins seed-first through the verified WSL Chrome boundary, confirms that the browser remains a guest and no live tab or navigation history retains the collection target, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T18:44:00.016Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T19:12:04.728Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 21 inventory and access diagnostics `2026-09-01T18:38:00.454Z–18:44:00.016Z` |
-| Current direct collection snapshot | **Unavailable and not comparable:** the saved collection target was found, but the 18-pass inventory materialized zero cards; bounded network and authentication checks then showed the collection URL redirecting to the home/public-notes view and `/api/sns/web/v2/user/me` returning HTTP 200 with `guest: true` |
+| Observation time | Cycle 22 inventory and access diagnostics `2026-09-01T19:10:56.352Z–19:12:04.728Z` |
+| Current direct collection snapshot | **Unavailable and not comparable:** Chrome DevTools exposed two XHS pages, but neither current URL nor either page's navigation history retained the saved collection target; `/api/sns/web/v2/user/me` returned HTTP 200 with `guest: true` and no nickname |
 | Prior readable snapshot | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs |
 | Observable added / changed / absent | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable |
-| Collection-membership interpretation | Proven removed IDs `[]`. The zero-card public/guest response is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
-| Representative availability | A direct token-free read of SkillOpt `6a96b132…4529` returned the `/404` page with error code `300031`, “Sorry, This Page Isn't Available Right Now,” a QR prompt, and security verification; it returned no post title, description, author, date, tags, comments, or claim-bearing content |
+| Collection-membership interpretation | Proven removed IDs `[]`. The guest/unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
+| Representative availability | A fresh direct token-free read of SkillOpt `6a96b132…4529` returned final path `/404`, `titleReadable: false`, and `notFound: true`; Cycle 21's fuller `/404` diagnostic remains the last observation of error `300031`, the QR prompt, and security verification |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -459,6 +459,43 @@ reload, bounded scroll, navigation, and read operations; it made no like,
 collect, delete, comment, follow, post, message, settings, or other XHS account
 or content mutation.
 
+## Cycle 22 seed-first reconciliation
+
+Cycle 22 began immediately after reviewable Scout checkpoint
+`93fd76a47c777cdc72171d4a2ab811e6a2d89dea` and before any new GitHub, arXiv,
+Reddit, or local-code lane work. At `2026-09-01T19:10:56.352Z`, the initiating
+shell was `uid=1000(hao)` with passwordless `sudo`; joining Chrome PID 2136's
+network namespace made its loopback DevTools endpoint reachable as effective
+UID 0. That Linux/network authority is not XHS account authority.
+
+The safe inventory operation ran from the goal-owned Scout worktree against
+the live browser. DevTools reported three pages, including two XHS pages, but
+zero current collection tabs. A bounded history/authentication inspection
+completed at `2026-09-01T19:11:02.825Z`: neither XHS page retained a collection
+history entry, authenticated page count was zero, and no authenticated
+principal could match a collection profile. The inventory therefore failed at
+the live collection-address boundary before any comparable card scan; this is
+not a zero-item collection snapshot.
+
+A network-backed current-user read at
+`2026-09-01T19:11:32.584Z–19:11:38.604Z` returned HTTP 200, `success: true`,
+code `0`, `guest: true`, and no nickname. It reported that an anonymous stable
+identifier field exists, but its value was neither printed nor retained and is
+not collection authority. A fresh disposable token-free read of retained
+SkillOpt seed `6a96b1320000000012024529` completed at
+`2026-09-01T19:12:04.728Z`; it ended at `/404`, with no readable title and no
+claim-bearing body, then the tab closed.
+
+Against Cycle 21 the live-access state is unchanged in substance and narrower
+in addressability: added IDs and metadata changes remain unknown, proven
+removed IDs are `[]`, and all 132 durable IDs remain unavailable rather than
+removed. Cycle 20's two authenticated 130-card fingerprints remain the last
+comparable membership state. The existing canonical table and prior observer
+evidence are accessible local collected evidence, not a claim that the live
+collection was read. No XHS account or content state was mutated. Restoring a
+logged-in collection tab would make the next live comparison possible; until
+then independent source lanes can continue after this persisted reconciliation.
+
 ## Live access connector provenance
 
 The repository-native observational connector is
@@ -846,3 +883,4 @@ comments, and other account data are not retained.
 | 2026-09-01T17:10:27.634Z–17:13:38.951Z | Two repeated reads through Chrome PID 2136's namespace return the same shifted 130-card snapshot: ID `d83bbde…6cd9`, metadata `567485e8…6118`; original 9,600-pixel scroll restored | `[6a966671…22ae, 6a96b132…4529]` newly materialized, not proven newly collected | `[]` across 128 common title/author pairs | `[]` proven removals | Window-unavailable `[6a449e58…ca2c, 6a4b745f…5691]`; new SkillOpt detail `/404`; historical collection tail/file coverage and other details unknown | Cycle 19 reconciliation is persisted before lane work. Add both new cards to the durable 132-ID confirmed-seed union, do not remove either absent historical seed, and reconsider GitHub/arXiv/Reddit from the content-bearing SkillOpt title plus the unchanged memory-governance cluster. |
 | 2026-09-01T17:46:35.052Z–17:48:11.364Z | Two authenticated passes exactly reproduce Cycle 19's 130-card ID and metadata fingerprints | `[]` IDs | `[]` title/author changes | `[]` proven removals | Window-unavailable `[6a449e58…ca2c, 6a4b745f…5691]`; durable union 132 | Cycle 20 reconciliation was committed before lane work as `c684563…3fea`; preserve both unavailable records and select the queued resource-read audit only afterward. |
 | 2026-09-01T18:38:00.454Z–18:44:00.016Z | Saved collection target found, but zero cards materialized; collection reload redirected to the home/public-notes view; current-user API returned HTTP 200 with `guest: true` | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable; representative `6a96b132…4529` token-free read returned `/404`, error `300031`, QR prompt, and security verification | Cycle 21 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot, infer no collection changes from guest/public output, and revisit immediately when the Chrome session becomes authenticated again. |
+| 2026-09-01T19:10:56.352Z–19:12:04.728Z | DevTools reachable with two XHS pages, but no current/history collection target and zero authenticated pages; current-user API again returned HTTP 200 with `guest: true` | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable; fresh token-free `6a96b132…4529` read ended at `/404` with no title/body | Cycle 22 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot and use local collected evidence without presenting it as a live read; revisit when a logged-in collection tab exists. |
