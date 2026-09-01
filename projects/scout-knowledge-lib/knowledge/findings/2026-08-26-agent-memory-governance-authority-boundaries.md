@@ -714,6 +714,59 @@ Mnemo `main` remained
 `2026-09-01T19:33:07.724Z–19:33:08.510Z`; the organization analysis is local,
 unreviewed, and undeployed.
 
+### Checkpoint organization scope must survive storage and replay
+
+Cycle 24 committed the next XHS observation first as Scout commit
+`ee615be1d780b53374eb65beea8cb7626983d5d9`. Direct WSL Chrome remained
+readable as Linux user `hao`, and its 29-card public Explore window reproduced
+Cycle 23's ID and metadata fingerprints. It still exposed no collection address
+or authenticated nickname, and the current-user endpoint returned HTTP 406,
+`success:false`, code `-1`. Added and changed collected seeds remain unknown,
+proven removals are `[]`, and all 132 durable seeds remain unavailable rather
+than removed. Public-feed equality was not promoted to collection evidence.
+
+Only after that seed record did the same-principal tenant fixture run on exact
+local base `716a1a57753d40f5afe91e0f5f0f5a2d129c0489`. Alice had one Alpha memory
+and one Beta memory under the same thread. Her valid `role:reader org:alpha`
+capability created checkpoint `01a05e84-94ad-75e2-a66d-fbb673688689`; exact
+replay returned both authorized Alpha memory
+`01a05e84-9436-7950-985c-12802e469f23` and unauthorized Beta memory
+`01a05e84-9463-7ae2-8b6a-56085b96695f`. These UUIDs are generated fixture
+records, not production data. The two memory IDs are one reproduced defect, not
+two confirmations.
+
+Repair `d1fa97c6aa21002edbbc3227273a6cd37a3286cc` adds authoritative optional
+`org_id` to checkpoint, replay, branch, and merge MCP inputs and core requests,
+then uses the existing capability binder so a caller cannot assert an
+unauthorized tenant. The checkpoint model persists that owner through DuckDB
+and PostgreSQL inserts and reads. Fresh DuckDB tables include the column;
+existing tables receive an idempotent version-7 column migration before the
+organization index is created; PostgreSQL creates or adds the nullable column
+and index. Compatibility callers that have no per-request capability retain
+their historical unscoped operator behavior.
+
+Selection and replay now use both principal and organization. Checkpoint memory
+capture filters both fields; exact replay rejects a mismatched thread,
+principal, or organization as not found; latest selection scans past a newer
+foreign-scope checkpoint; time travel filters memories and events; and branch,
+full merge, and cherry-pick validate checkpoint ownership and discard foreign
+memory references before persisting a derived checkpoint. Organization-scoped
+event replay intentionally fails closed: only trusted core events carrying the
+same `org_id` are returned. Older and currently unstamped memory events are
+omitted because their tenant cannot be proven; this is a recorded completeness
+limit, not a claim that all audit-event producers now carry tenant scope.
+
+The original Alice→Bob write/read/revise/forget result remains preserved at
+public source `376ca28606c5b6287d9c8274482fa791d4dc8703`, principal repair
+`c82e711e8a2bb386001e98c3437da44c32b62428`, and live-HTTP regression
+`fbb7000fdb75ae5fc799820570ec4cbd81e21a74`; this checkpoint does not recast it
+as tenant evidence. Cycle 16's separate bulk-forget outputs also remain exactly
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`. Public Mnemo `main` remained
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` at
+`2026-09-01T20:19:30.416Z–20:19:31.295Z`; the repair is local, unreviewed,
+undeployed, and not a live PostgreSQL migration claim.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
