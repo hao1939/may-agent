@@ -38,13 +38,15 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Future-dated scans 151–275 provenance repair](../reports/triage/future-dated-scans-151-275-provenance-repair.md) — dispositions and provenance evidence for 14 repaired HN, arXiv, and XHS artifact identities.
 - [Stuck arXiv reconciliation (2026-08-23)](../reports/operations/stuck-arxiv-reconciliation-2026-08-23.md) — verified closure of an orphaned source workflow and the bounded HTTP retrieval contract that prevents recurrence.
 - [XHS seed-first research cycle (2026-09-01)](../reports/research/xhs-seed-first-cycle-2026-09-01.md) — first collection reconciliation boundary, local source deduplication, topic-map rubric, and coalition-reliability deep dive.
-- [Agent self-evolution and autonomy evidence report (2026-09-01)](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md) — 48-card collected-seed inventory, source/claim map, cluster rubric, pinned-code checks, contradictions, and reproduction limits behind the canonical synthesis.
+- [Agent self-evolution and autonomy evidence report (2026-09-01)](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md) — source-agnostic deep investigation across 966 explicit leads, including all 906 observed collection cards, primary-source comparisons, existing Scout reconciliation, code checks, contradictions, and reproduction limits.
+- [Agent self-evolution unified lead ledger (2026-09-01)](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv) — provenance, access, research question, value, related work, novelty, credibility, disposition, and stopping condition for every lead in the bounded frontier.
+- [Agent self-evolution Xiaohongshu resolution ledger (2026-09-01)](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv) — all 906 observed stable card IDs, including metadata-only, unresolved, adjacent, and screened-out records.
 
 ## Recent Source-Grounded Findings
 
 ### 2026-09-01
 
-- [Agent self-evolution and autonomy: a governed-release view](./agent-self-evolution-and-autonomy.md) — cross-source taxonomy separating memory, skills, prompts, harnesses, weights, environments, evaluators, and authority; finds bounded externally gated evolution credible while streaming transfer and vague-goal autonomy remain unreliable.
+- [Agent self-evolution and autonomy: what actually changes?](./agent-self-evolution-and-autonomy.md) — mechanism-first taxonomy separating skill creation, admission, maintenance, internalization, routing, harnesses, weights, world models, evaluators, search, and authority; includes six direct comparison matrices and actionable experiments.
 
 ### 2026-08-28
 
