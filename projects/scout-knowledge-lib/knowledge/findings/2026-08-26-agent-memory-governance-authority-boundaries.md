@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including provenance reads and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including provenance reads, integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, and provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, and integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -521,6 +521,43 @@ community framing but cannot adjudicate this code path. The next code
 exploration, after another seed-first reconciliation, is read-scope parity for
 provenance verification/export surfaces, beginning with MCP verification and
 the REST provenance endpoints.
+
+### Integrity and trajectory diagnostics must bind the verified principal
+
+Cycle 18 first committed its live XHS comparison as
+`dfe2915695f5b9a259eb5f931d3ca672783c77a3`. The authenticated collection pass
+at `2026-09-01T16:29:48.924Z–16:31:47.649Z` reproduced all 130 IDs and complete
+metadata with added, changed, absent, and removed arrays `[]`. SkillRise detail
+recovered; `6a4b745f…5691` remained collection-visible but detail-unavailable.
+Only then did the recorded verification trigger select GitHub/local code.
+
+At exact local pre-fix ancestry
+`f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c`, `mnemo.verify` did not consume
+`CallerContext`; `mnemo.trajectory_audit` received it but accepted an explicit
+foreign `agent_id`. A valid Alice capability scoped to `org:alpha` therefore
+selected a deliberately tampered Bob/Alpha thread. The exact verification
+response disclosed `valid: false`, `total_records: 1`, `verified_records: 0`,
+broken record `01a05ddd-bf9b-7922-8986-39cc67a5d0ce`, and
+`content hash mismatch at record 01a05ddd-bf9b-7922-8986-39cc67a5d0ce`. The trajectory response
+disclosed `scope_label: agent=bob,thread=cycle-18-bob-thread`, `event_count: 1`,
+and Bob's active-bank timeline. These are generated local fixture observations,
+not a deployed exposure.
+
+Repair `60c3edb91b262a7281526b40659d8e5f3f8262e1` passes verified caller context
+to verification and applies the existing principal binder to both tools.
+Authenticated foreign selectors now return the exact Alice-versus-Bob identity
+error; omitted or matching selectors verify Alice's own thread. Legacy
+operator-only stdio retains its broader selector. Formatting, strict Clippy
+with warnings denied for MCP and HTTP-enabled server targets, all 97 MCP tests,
+and all 85 HTTP-enabled server tests pass on the repair commit.
+
+REST has no equivalent request principal to bind. Its router either requires
+one shared `MNEMO_AUTH_TOKEN` across every non-health endpoint or runs open
+with a warning; provenance and verification handlers then accept body/path
+selectors. That is an exact operator-wide authority boundary, not proof of
+agent-scoped authorization and not safely repairable by copying MCP semantics.
+REST parity requires a credential design that resolves a principal and any
+organization scope before handler dispatch.
 
 ## Why it matters
 

@@ -2,19 +2,17 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-01"
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T15:59:50.186Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill repositories; goal-owned SkillRise order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and executable principal/organization transport validation of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20 with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, and provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, plus live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T16:31:47.649Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill repositories; goal-owned SkillRise order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and executable principal/organization transport validation of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20 with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, and integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, plus live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
-The direct seed surface is readable but incomplete. Two comparable Cycle-17
-passes restore the complete historical 130-ID and metadata fingerprints with
-newly collected, changed, absent, and removed sets all `[]`; prior-missing
-`6a4b745f…5691` is collection-visible again. A broader step sample reached 456
-IDs but can skip intervening cards and is not a complete comparison. Signed
-detail reads for that card, SkillRise, and one current card all resolve `/404`;
-the other 127 details, historical tail, file surface, and retained local XHS
+The direct seed surface is readable but incomplete. Cycle 18 reproduces the
+complete historical 130-ID and metadata fingerprints with newly collected,
+changed, absent, and removed sets all `[]`. SkillRise detail is readable again;
+`6a4b745f…5691` remains collection-visible but its signed detail resolves
+`/404`. The other 128 details, 865-note tail, 14 files, and retained local XHS
 records remain separate uncertainty rather than inferred removals.
 
 ## Revisable value rubric
@@ -40,7 +38,7 @@ it is not evidence quality.
 | Cluster | Seed connection | Score | Supporting sources | Current finding / uncertainty | Confidence | Next exploration |
 |---|---|---:|---|---|---|---|
 | **Self-evolution reliability and evaluation authority** | Confirmed historically: the original six plus cards for SkillRise, harness evolution, evaluation, order, boundaries, skill gates, and WikiSkill, including `6a4b745f…5691`, `6a50b737…db71`, `6a5ea1bb…3000`, `6a6ab006…c932`, `6a7f5f7b…348b`, `6a87e8d8…6091`, and `6a955b35…afaf`; `6a4b745f…5691` is currently unavailable, not removed | **15** (`3+3+3+3+3`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); [evolution-stall/WikiSkill synthesis](./findings/2026-07-22-arxiv-evolution-stall-memory-paradigm.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1), [`2607.26784v1`](https://arxiv.org/abs/2607.26784v1), [`2608.27454v1`](https://arxiv.org/abs/2608.27454v1); GitHub [SkillRise revision](https://github.com/Within-yao/SkillRise/commit/2b38da3ad7b64414305d39609484803b07d3b9b0), [third-party WikiSkill revision](https://github.com/ashutoshsinghpr7/wikiskill/commit/4cb78c00e3529b5645c101d4f7779c5ebb2c32b1), and [probable self-optimize-skill relation](https://github.com/SeBastArt/self-optimize-skill/commit/bd43cb3911ad4ebccf1f309176ca28d964e06bbc) | WikiSkill adds a raw-trace → persistent-wiki → gated-skill path, with strong paper averages but severe negative transfer and no independent replication. SkillRise remains the order-sensitive complementary path. Cycle 15's probable repository relation adds concrete harness/friction/gate rules, but its five-file tree has no executable test or result artifact and cannot confirm the unavailable XHS post's provenance. | High for the reviewed papers' reported protocols and exact source/code structure; moderate-high for the cross-source reliability pattern; moderate for the probable repository relation and generalization; low for untested open-ended streams and independent replication. | Recheck `6a4b745f…5691` availability first. Confirm the repository relation only from a restored body or attributable link; otherwise seek executable baseline/result artifacts before using its author-reported reference-run claims. |
-| **Long-horizon persistence and stage-aware memory governance** | Confirmed: original three plus `6a5c3c50…fcb1`, `6a7d3636…b50a`, `6a8afea9…2a35`, `6a902f77…2296`, and other memory/continuity cards | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); [authority-boundary finding](./findings/2026-08-26-agent-memory-governance-authority-boundaries.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/2994abf185da50d43e5fa4b3f826812bd09c2f20) and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | MemGauge remains the freshest controlled stage-wise evidence. Mnemo preserves the prior Alice→Bob four-wrapper denials over real HTTP. Cycle 16 adds a distinct bulk-selection result: signed `alice`/`org:alpha` could select boot-authored records by principal or session and delete them because `mnemo.forget_by_provenance` discarded caller context. Repair `42d5894…e8f9d4` treats provenance only as selection and applies caller plus organization authorization to every selected ID. | High for MemGauge and reproduced local Mnemo behavior; moderate for lifecycle synthesis and generalization beyond evaluated settings; no deployed or upstream proof. | Retain `2608.30177v1` as this cluster's anchor; after the next seed reconciliation, inspect the read-side `mnemo.provenance` selector and other bulk tools for unauthorized identifier/metadata disclosure before another code change. |
+| **Long-horizon persistence and stage-aware memory governance** | Confirmed: original three plus `6a5c3c50…fcb1`, `6a7d3636…b50a`, `6a8afea9…2a35`, `6a902f77…2296`, and other memory/continuity cards | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); [authority-boundary finding](./findings/2026-08-26-agent-memory-governance-authority-boundaries.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/2994abf185da50d43e5fa4b3f826812bd09c2f20) and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | MemGauge remains the freshest controlled stage-wise evidence. Mnemo preserves the prior Alice→Bob four-wrapper denials over real HTTP. Cycles 16–18 separately prove that provenance deletion, provenance reads, and integrity/trajectory diagnostics inherited or accepted broader authority until caller binding reached each handler. Local repairs `42d5894…e8f9d4`, `f90ce82…baa02c`, and `60c3edb…262e1` close the exercised MCP paths. | High for MemGauge and reproduced local Mnemo behavior; moderate for lifecycle synthesis and generalization beyond evaluated settings; no deployed or upstream proof. | Retain `2608.30177v1` as this cluster's anchor; begin the next cycle seed-first, then inspect another MCP bulk/export read. Revisit REST only when requests carry a principal/organization credential rather than the current shared operator token. |
 | **Build playbooks and implementation literacy** | Confirmed: `6a62d7a9…d139`, `6a73581f…d99e`, `6a762c6e…88d6` | **11** (`2+2+2+2+3`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md) | The collection confirms direct interest in Unity CLI practice, issue triage, and large-project planning. Content quality and successful-use evidence remain unknown without detail reads. | Moderate for collection relevance; low-moderate for the format-performance claim. | Deep-read the project-planning seed and compare its operational steps with the retained playbook packet. |
 
 ## Source-lane continuity
@@ -50,9 +48,9 @@ a source-activity quota.
 
 | Lane | Current relevance / expected value / freshness | Access and last useful evidence | Decision and revisit trigger |
 |---|---|---|---|
-| **GitHub / local code** | **High relevance / high realized value / current; selected in cycle 16.** The unchanged post-reconciliation memory cluster and queued bulk-path audit directly tested whether provenance selectors could become deletion authority. | Last public source remains Mnemo `2994abf185da50d43e5fa4b3f826812bd09c2f20`. On local base `fcb022a…dcf8`, `crates/mnemo-mcp/src/server.rs:845` accepted arbitrary principal/session selectors without `CallerContext`; the core path then built `ForgetRequest { agent_id: None }`. The strengthened duplex fixture observed boot-owned IDs `01a05d88-e769-7a20-98d5-bfdb63b27b82` and `01a05d88-e7a4-7f71-99a8-d873033baeaf` in `forgotten` for signed Alice/Alpha. Repair `42d5894755fc7bae4601cb7726d4bded50e8f9d4` binds caller and organization on both selectors; all focused and full validation passes. | Extend the existing authority finding once; do not count local reproduction, repair, public source, or preserved HTTP fixture as independent implementations. Revisit the read-side provenance selector or another bulk tool after the next seed pass, or sooner on upstream change/review. |
-| **arXiv** | **High relevance / low incremental value / fresh; retained and deferred in cycle 16.** The reconciled seeds remain unchanged, and the selected executable boundary directly resolves the current memory-governance question. | `2608.30177v1` still scores 15/15 on its reviewed v1 source. Its stage-specific utility/risk result remains the cross-source reason to enforce read, write, revise, and forget separately; no version, artifact, replication, or stronger study trigger changed. | Retain as the cluster anchor without a quota request. Revisit on a version, attributable artifact, stronger stage-wise study, independent replication, or content-bearing new seed. |
-| **Reddit** | **Medium relevance / low incremental value / unchanged; deferred in cycle 16 without quota work.** The existing anecdotal thread cannot resolve this code-level authorization question. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403; no access/content trigger changed. | Revisit for a distinct bulk-deletion or provenance-disclosure report, a new seed-linked thread, content delta, or access change. |
+| **GitHub / local code** | **High relevance / high realized value / current; selected in cycle 18.** The unchanged post-reconciliation memory cluster fired the recorded integrity-verification trigger. | Last public source remains Mnemo `2994abf185da50d43e5fa4b3f826812bd09c2f20`; exact local pre-fix ancestry is `f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c`. Signed Alice/Alpha used `mnemo.verify` to receive Bob's broken-record UUID `01a05ddd-bf9b-7922-8986-39cc67a5d0ce`, counts, and hash-mismatch text; `mnemo.trajectory_audit` returned Bob's one-event scope and timeline. Repair `60c3edb91b262a7281526b40659d8e5f3f8262e1` binds both MCP handlers to the verified principal; 97 MCP and 85 HTTP-enabled tests plus formatting and strict lint pass. REST remains a separate operator API: one shared bearer token, or open-with-warning, conveys no principal identity. | Revisit on upstream head/review, a design that gives REST requests principal/organization identity, or the next unaudited MCP bulk/export surface. Do not treat the shared REST token as an agent credential. |
+| **arXiv** | **High relevance / low incremental value / fresh; retained and deferred in cycle 18.** The reconciled seeds and selected integrity boundary do not change the 15/15 memory-governance rubric. | `2608.30177v1` remains the freshest reviewed controlled stage-wise anchor. No version, attributable artifact, replication, or stronger study trigger changed. | Retain without a quota request. Revisit on a version, attributable artifact, stronger stage-wise study, independent replication, or content-bearing seed delta. |
+| **Reddit** | **Medium relevance / low incremental value / unchanged; deferred in cycle 18 without quota work.** The existing anecdotal thread cannot resolve authenticated integrity-read scope. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403; no access/content trigger changed. | Revisit for a distinct integrity/provenance-scope report, a new seed-linked thread, content delta, or access change. |
 
 ## Cycle 9 selection — persistent knowledge compilation and transfer gates
 
@@ -346,6 +344,58 @@ tests pass. This is local candidate behavior, not upstream review, deployment,
 or proof about any live service. The next exploration begins seed-first, then
 audits read-scope parity for MCP provenance verification and REST provenance
 endpoints before another code change.
+
+## Cycle 18 selection — integrity diagnostics are scoped reads
+
+Cycle 18 began with the separately committed seed reconciliation
+`dfe2915695f5b9a259eb5f931d3ca672783c77a3`. The authenticated Chrome pass at
+`2026-09-01T16:29:48.924Z–16:31:47.649Z` reproduced the same 130 stable IDs and
+both complete fingerprints: added, metadata-changed, absent, and removed sets
+are all `[]`. SkillRise detail recovered from Cycle 17's `/404` and is readable;
+`6a4b745f…5691` remains collection-visible but detail-unavailable. The other
+128 details, 865-note tail, and 14 files remain unknown.
+
+Only after that commit did the lane rubric run:
+
+- **GitHub/local code — selected; high relevance and realized value, current
+  local evidence.** Public Mnemo remains pinned at
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`; exact local pre-fix ancestry is
+  `f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c`. The recorded verification trigger
+  fired. Revisit on upstream change/review, a REST principal-identity design,
+  or the next unaudited bulk/export surface.
+- **arXiv — retained and deferred; high relevance, low incremental value,
+  fresh reviewed evidence.** `2608.30177v1` remains 15/15 and the freshest
+  controlled stage-wise anchor. Revisit on a version, attributable artifact,
+  replication, stronger study, or content-bearing seed delta.
+- **Reddit — deferred without quota work; medium relevance, low incremental
+  value, unchanged access.** Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains
+  last observed HTTP 403. Revisit for distinct integrity/provenance-scope
+  evidence, a seed-linked thread, content delta, or access change.
+
+Before repair, signed Alice/Alpha selected Bob's deliberately tampered thread
+through `mnemo.verify`. The exact response reported `valid: false`,
+`total_records: 1`, `verified_records: 0`, `first_broken_at` as
+`01a05ddd-bf9b-7922-8986-39cc67a5d0ce`, and `content hash mismatch at record
+01a05ddd-bf9b-7922-8986-39cc67a5d0ce`. The adjacent trajectory handler accepted
+the same selector and returned `scope_label` as
+`agent=bob,thread=cycle-18-bob-thread`, `event_count: 1`, and Bob's timeline.
+
+Repair `60c3edb91b262a7281526b40659d8e5f3f8262e1` gives both handlers verified
+caller context. Capability-scoped requests may now audit only their principal;
+foreign `agent_id` is rejected, while Alice's own integrity and trajectory
+checks still work. Legacy operator stdio keeps its historical broad selector.
+Formatting, strict Clippy for MCP and HTTP-enabled server targets, all 97 MCP
+tests, and all 85 HTTP-enabled server tests pass on that exact commit.
+
+REST is not mislabeled as a missed MCP fix. Its router has one optional shared
+`MNEMO_AUTH_TOKEN` for every non-health route and otherwise runs open with a
+warning; handlers accept body/path principals because the transport supplies no
+per-principal identity. The actual boundary is therefore operator-wide REST
+authority, not agent-scoped authorization. Adding caller binding there requires
+an explicit principal/organization credential design. The next exploration
+begins with Cycle 19 seed reconciliation, then audits another MCP bulk/export
+read if the seed and source triggers remain unchanged.
 
 ## Selected deep dive — coalition-conditioned skill reliability
 
@@ -711,12 +761,13 @@ audit remain the highest supported evidence in this execution environment.
   counterexample: an organizationless destructive request inherited the boot
   principal until its engine request was explicitly bound to the caller.
 - **Bounded evidence:** direct collection membership is confirmed for 130
-  materialized cards out of the last declared 995 notes. Cycle 13 preserves the
-  same ID set and complete token-free title/author fingerprint and restores one
-  representative SkillRise detail read. The 865-note tail, most post bodies,
-  and complete removal state remain unknown. Reddit JSON previously returned
-  HTTP 403, while post RSS returns HTTP 200 with the post and six comments; that
-  is attributable community evidence, not paper validation.
+  materialized cards out of the last declared 995 notes. Cycle 18 preserves the
+  same ID set and complete token-free title/author fingerprint, restores the
+  SkillRise detail read, and keeps `6a4b745f…5691` collection-visible but
+  detail-unavailable. The 865-note tail, most post bodies, and complete removal
+  state remain unknown. Reddit JSON previously returned HTTP 403, while post
+  RSS returns HTTP 200 with the post and six comments; that is attributable
+  community evidence, not paper validation.
 
 ## Cycle log
 
@@ -739,3 +790,4 @@ audit remain the highest supported evidence in this execution environment.
 | 2026-09-01 cycle 15 | Reconciled first at 14:48:01.178Z–14:49:54.073Z: two identical 129-ID passes; added/changed/removed `[]`; prior `6a4b745f…5691` unavailable after repeated absence and direct `/404`; SkillRise readable; 866-note tail and 14 files unknown. | GitHub selected because the unavailable seed's retained title names an open-source self-optimizing skill. Exact Chinese-title search returned zero and a narrow English query eight, both complete. arXiv `2608.30177v1` remains the separate 15/15 memory anchor; Reddit deferred at RSS-readable/JSON-403 without quota work. | Probable relation `SeBastArt/self-optimize-skill` is pinned at `bd43cb3…6bbc`: timing and wording fit, but the unavailable body cannot confirm the link. Five Markdown files expose concrete harness/gate patterns and no executable validation artifacts. | Extend the existing self-evolution control-surface finding; preserve probable relation, source claims, direct structure, and missing validation as separate evidence. Do not inflate the cluster or replace evaluated SkillRise/WikiSkill evidence. | Begin the next seed-first pass; recheck `6a4b745f…5691`, then seek an attributable link or executable baseline/result artifact. Resume the organizationless bulk-path audit if those triggers remain absent. |
 | 2026-09-01 cycle 16 | Reconciled first at 14:58:51.323Z–14:59:22.740Z: exact Cycle-15 129-ID and metadata fingerprints; added/changed/removed `[]`; `6a4b745f…5691` remains unavailable; SkillRise readable; 866-note tail and 14 files unknown. | GitHub/local code selected on the queued bulk-path trigger. arXiv `2608.30177v1` remains 15/15; Reddit deferred at RSS-readable/JSON-403 without quota work. | On local base `fcb022a…dcf8`, signed Alice/Alpha deleted boot-owned records selected by provenance principal and session because the handler dropped caller context. Repair `42d5894…e8f9d4` binds actor and organization; formatting, strict lint, 295 core, 95 MCP, and 85 HTTP-enabled tests pass. | Extend the authority finding once; preserve public source, exact pre-fix outputs, local repair, prior HTTP evidence, and absent upstream/deployment proof as distinct evidence. | Begin cycle 17 seed-first; if unchanged, inspect read-side provenance selection for unauthorized identifier or metadata disclosure before another code change. |
 | 2026-09-01 cycle 17 | Reconciled first at 15:52:12.684Z–15:59:50.186Z: two comparable passes restore all 130 historical IDs and metadata; newly collected/changed/absent/removed `[]`; prior-missing card collection-visible; three sampled signed details `/404`. | GitHub/local code selected on the queued provenance-read trigger. arXiv `2608.30177v1` remains 15/15; Reddit deferred at RSS-readable/JSON-403 without quota work. | Signed Alice/Alpha read boot, shared-session, and Alice/Beta provenance because `mnemo.provenance` ignored caller context. Repair `f90ce82…baa02c` scopes all three selectors; formatting, strict lint, 96 MCP, and 85 HTTP-enabled tests pass. | Extend the authority finding once; keep seed access, public source, exact pre-fix IDs, local repair, and absent upstream/deployment proof distinct. | Begin the next seed-first cycle; if unchanged, audit MCP provenance verification and REST provenance read-scope parity before another code change. |
+| 2026-09-01 cycle 18 | Reconciled and committed first at 16:29:48.924Z–16:31:47.649Z: same exact 130 IDs and metadata; added/changed/absent/removed `[]`; SkillRise detail readable; `6a4b745f…5691` detail `/404`; remaining detail/tail/file surface unknown. | GitHub/local code selected on the integrity-verification trigger. arXiv `2608.30177v1` retained at 15/15; Reddit deferred at RSS-readable/JSON-403 without quota work. | Signed Alice/Alpha received Bob's broken-record UUID and trajectory summary through caller-selected audit scopes. Repair `60c3edb…262e1` binds both MCP handlers; formatting, two strict lints, 97 MCP, and 85 HTTP-enabled tests pass. REST is recorded as an operator-wide shared-token/open boundary, not per-principal MCP parity. | Extend the authority finding once; keep public source, exact local pre-fix output, repair, and absent upstream/deployment proof separate. | Begin Cycle 19 seed-first; if unchanged, inspect the next MCP bulk/export read surface and revisit REST only when a principal credential design exists. |

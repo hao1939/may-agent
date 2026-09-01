@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across seventeen cycles: Cycle 17 restores the complete historical 130-card Xiaohongshu snapshot, proves provenance reads ignored principal and organization scope, repairs memory/principal/session selectors, retains arXiv 2608.30177v1, and defers Reddit at its actual boundary."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 17"]
+summary: "Seed-first Scout checkpoint across eighteen cycles: Cycle 18 reproduces the complete 130-card Xiaohongshu snapshot, proves integrity and trajectory diagnostics accepted a foreign principal, binds both MCP handlers to verified caller identity, retains arXiv 2608.30177v1, and records Reddit and REST at their actual access boundaries."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 18"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T15:59:50.186Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T16:31:47.649Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -1192,6 +1192,98 @@ and undeployed; the current XHS detail boundary is `/404`; and broader
 provenance verification/export surfaces are not yet audited. The next
 exploration begins with another seed-first reconciliation, then checks MCP
 provenance verification and REST provenance endpoints for matching read scope.
+
+## Cycle 18 checkpoint — integrity diagnostics now honor caller identity
+
+What was wrong: authenticated `mnemo.verify` accepted a caller-selected
+principal without consuming verified caller context, while
+`mnemo.trajectory_audit` consumed the context but still honored an explicit
+foreign principal. Integrity failures and trajectory summaries disclose record
+IDs, counts, errors, scope labels, and activity timelines, so these are scoped
+reads rather than harmless health signals.
+
+Seed ordering was preserved. The exact live collection reconciliation was
+committed first as `dfe2915695f5b9a259eb5f931d3ca672783c77a3`. The
+authenticated `Alex` Chrome session pass ran at
+`2026-09-01T16:29:48.924Z–16:31:47.649Z`, reproduced the prior 130 IDs and both
+complete fingerprints, and recorded added, metadata-changed, absent, and
+removed arrays `[]`. SkillRise detail recovered and is readable;
+`6a4b745f…5691` remains collection-visible but its signed detail returns `/404`.
+The other 128 details, 865-note tail, and 14 files remain unknown.
+
+Only after that seed commit were all three lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance and expected value.
+  Public source remains Mnemo
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`; the exact local pre-fix base is
+  `f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c`. Revisit on upstream change or
+  review, a REST principal-identity design, or the next unaudited MCP
+  bulk/export surface.
+- **arXiv was retained and deferred** because no seed or study trigger changed.
+  Reviewed `2608.30177v1` remains the fresh 15/15 stage-wise memory-governance
+  anchor. Revisit on a version, attributable artifact, independent replication,
+  stronger stage-wise study, or content-bearing seed delta.
+- **Reddit was deferred without quota work.** Last useful evidence remains post
+  RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments;
+  JSON remains last observed HTTP 403. Revisit for distinct integrity or
+  provenance-scope evidence, a seed-linked thread, content delta, or access
+  change.
+
+The pre-fix duplex fixture used a valid Alice capability scoped to
+`role:writer org:alpha` and a deliberately tampered Bob/Alpha memory. The exact
+`mnemo.verify` response was `valid: false`, `total_records: 1`,
+`verified_records: 0`, `first_broken_at` as
+`01a05ddd-bf9b-7922-8986-39cc67a5d0ce`, and
+`content hash mismatch at record 01a05ddd-bf9b-7922-8986-39cc67a5d0ce`. The adjacent trajectory request returned
+`scope_label: agent=bob,thread=cycle-18-bob-thread`, `event_count: 1`, and Bob's
+activity timeline. These are generated fixture values, not production IDs.
+
+The earlier Cycle 16 exact pre-fix deletion outputs remain preserved in this
+same checkpoint history: principal selection returned
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and session selection returned
+`01a05d88-e7a4-7f71-99a8-d873033baeaf` in `forgotten`. Cycle 17's boot,
+Alice/Alpha, Alice/Beta, and provenance UUIDs also remain linked above. The
+new audit does not overwrite or relabel those separate behaviors.
+
+What changes: Mnemo branch `codex/g-c1b31972-caller-binding` commit
+`60c3edb91b262a7281526b40659d8e5f3f8262e1` passes verified caller context to
+verification and applies the existing principal binder to both integrity
+handlers. Authenticated foreign selectors are rejected; Alice's own-thread
+verification and trajectory audit still work; legacy operator stdio retains
+its historical broad selector. Formatting and strict Clippy with warnings
+denied pass for MCP and HTTP-enabled server targets. The full MCP package passes
+97 tests, and the HTTP-enabled server passes all 85 tests, including the prior
+same-session Bob→Alice write/read/revise/forget regression.
+
+REST remains an explicit access boundary rather than an unvalidated repair.
+`router_with_auth` accepts one optional shared bearer secret for every
+non-health route; when it is absent, the server runs open with a warning. The
+request therefore carries operator-wide API access, not an authenticated agent
+principal or organization. Provenance and verification selectors cannot be
+bound to MCP identity semantics until REST has a credential design that
+resolves those authorities before handler dispatch.
+
+Scout's Cycle 18 candidate passes the full application check: syntax bundling,
+TypeScript, Prettier, and 78 tests with 226 assertions. All 19 relative links
+across the seed ledger, topic map, authority finding, and standing report
+resolve. The read-only health scan at `2026-09-01T17:05:49.880Z` remains bounded
+at 24 facts and 16 wake signals and is truncated; none identifies a Cycle 18
+changed document. `git diff --check` reports no whitespace errors.
+
+The human checkout remained unchanged across the checkpoint's comparable
+read-only observations. At `2026-09-01T17:02:20.455Z` and
+`2026-09-01T17:05:54.532Z`, both observations returned HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 879 porcelain-v2 entries, and
+status fingerprint
+`3c670026f8b9ecff48f99c9446dc0d07447cfcf58a5639cefd3eec938d6e6c75`.
+Commands there were limited to read-only `git rev-parse` and `git status`;
+every edit, build, formatter, test, and commit ran in goal-owned execution
+spaces.
+
+The repair is local, unreviewed upstream, and undeployed. The next exploration
+starts Cycle 19 with another live XHS reconciliation before any lane work; if
+the seed and source triggers remain unchanged, inspect the next MCP bulk/export
+read surface and revisit REST only when a principal credential design exists.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
