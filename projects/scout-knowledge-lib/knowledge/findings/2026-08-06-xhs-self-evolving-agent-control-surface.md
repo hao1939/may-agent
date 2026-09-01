@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection. A Cycle-15 GitHub deep dive adds a probable—but unconfirmed—repository match for one newly unavailable collected card and separates its concrete process rules from unsupported performance claims."
+summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection. Cycle 19 connects a new collected SkillOpt card to pinned Microsoft code and primary papers, then shows why held-out capability admission must be paired with security and state-change audits."
 triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface", "SEED", "Bayesian memory"]
 last_updated: "2026-09-01"
-source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19; direct collection metadata and access reconciliation for stable ID 6a4b745f000000001c025691 through 2026-09-01T14:49:54.073Z; and pinned public source for SeBastArt/self-optimize-skill at bd43cb3911ad4ebccf1f309176ca28d964e06bbc."
+source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19; direct collection metadata and access reconciliation through 2026-09-01T17:13:38.951Z; pinned SeBastArt/self-optimize-skill source at bd43cb3911ad4ebccf1f309176ca28d964e06bbc; pinned Microsoft SkillOpt source at db46cd9ae7ce12f1dbd73c945185816aa738751d; and full-source reviews of arXiv 2605.23904v2 and 2608.17684v1."
 </ai_context>
 
 # XHS: Self-Evolving Agent Discussion Narrows to the Control Surface
@@ -127,3 +127,64 @@ measured performance results. The repository is therefore admitted as
 implementation-pattern evidence for the existing self-evolution control-
 surface finding, not as proof that self-optimization improves task outcomes or
 as confirmed provenance for the unavailable XHS post.
+
+## Update: 2026-09-01 — capability gates do not cover exposure drift
+
+Cycle 19 first reconciled the live collection in commit
+`eb6b4131f07d46acdcae2b7405ef1a10b9398467`. Two repeated 130-card
+observations added stable ID `6a96b1320000000012024529`, titled
+“微软开源：SkillOpt 技能训练器” by CountryRoad, to the durable confirmed-seed
+union. Its current signed detail resolved `/404` without a login wall, so the
+title supports a topic connection but no claim about the post body. This
+search began only after the seed commit.
+
+A bounded public GitHub repository query for `SkillOpt` returned 130 results
+with `incomplete_results=false` and ranked
+[`microsoft/SkillOpt`](https://github.com/microsoft/SkillOpt/commit/db46cd9ae7ce12f1dbd73c945185816aa738751d)
+first. At `2026-09-01T17:18:20.756Z`, public `main`, the goal-owned clone, and
+revision `db46cd9ae7ce12f1dbd73c945185816aa738751d` agreed. Direct source review
+found the default gate enabled, its metric set to hard score, and ties
+rejected: the candidate must score above the current skill. The repository
+contains 80 Python test files and CI matrices for Python 3.10–3.12, two
+supported Gradio majors, and strict documentation builds. These are source and
+CI definitions, not a claim that this worker reproduced the paper's
+model-dependent results. The source also exposes important configuration
+boundaries: disabling the gate force-accepts candidates after validation, and
+an optional semantic-density bonus is off by default. “Validation-gated”
+accurately describes the default paper path, not every supported run.
+
+The repository links primary arXiv
+[`2605.23904v2`](https://arxiv.org/abs/2605.23904v2). Its exact-ID Atom feed
+returned one entry, and the 27-page TeX source archive had SHA-256
+`ee3bed5c2f0cbdbed0a3ee529f28cb616393e37ecfd9a25a42a04070c4f5bcef`.
+The paper reports that bounded add/delete/replace edits plus a held-out
+selection gate were best or tied in 52 of 52 evaluated
+model/benchmark/harness cells and improved GPT-5.5's six-benchmark direct-chat
+average by 23.5 points. Those are author-reported results. Its own limitations
+require reliable scored feedback, acknowledge optimizer and rollout cost,
+constrain the method to one portable skill, and call for held-out checks before
+transfer to substantially different models, harnesses, or tasks.
+
+The same arXiv topic search surfaced the fresher
+[`2608.17684v1`](https://arxiv.org/abs/2608.17684v1). Full-source SHA-256 was
+`7a325bec5624239aaf36f24b8a2cef218576d2a1e5e5d4fc34e88b12fdbbea46`.
+In one corrected simulated-banking audit with three independently evolved
+lineages, SkillOpt raised benign utility from 0.741 to 0.837 but also turned 10
+previously correct cases wrong, raised injected-content exposure from 0.820 to
+0.943, and raised unauthorized financial-state changes from 0.583 to 0.685.
+Utility, exposure, and unauthorized-state deltas were positive in all three
+lineages; total attack-success rate rose from 0.496 to 0.530 in aggregate but
+agreed in direction in only two of three. The authors claim no statistical
+significance, no transfer, and no production generality: they study one
+primary executor, one simulated banking environment, three lineages, and one
+offline evolution pass. A complete GitHub search for the paper title or arXiv
+ID returned zero repositories, consistent with its statement that code will
+be released upon publication.
+
+The deduplicated operational conclusion is narrower than either headline:
+held-out task improvement is a useful admission gate, but it is not a security
+gate. A skill update also needs paired regression counts, attack-surface
+contact, unauthorized state-change checks, and executor-interface
+compatibility. This extends the existing control-surface finding; it does not
+create a second SkillOpt finding or count the seed, repository, and two papers
+as independent replications.

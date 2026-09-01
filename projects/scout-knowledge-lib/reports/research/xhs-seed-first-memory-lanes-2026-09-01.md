@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across eighteen cycles: Cycle 18 reproduces the complete 130-card Xiaohongshu snapshot, proves integrity and trajectory diagnostics accepted a foreign principal, binds both MCP handlers to verified caller identity, retains arXiv 2608.30177v1, and records Reddit and REST at their actual access boundaries."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 18"]
+summary: "Seed-first Scout checkpoint across nineteen cycles: Cycle 19 reconciles a new Microsoft SkillOpt card first, pins its implementation and primary paper, checks a fresh security audit, retains arXiv 2608.30177v1 as the separate memory-governance anchor, and records Reddit at its actual access boundary."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 19"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T16:31:47.649Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:13:38.951Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -1284,6 +1284,136 @@ The repair is local, unreviewed upstream, and undeployed. The next exploration
 starts Cycle 19 with another live XHS reconciliation before any lane work; if
 the seed and source triggers remain unchanged, inspect the next MCP bulk/export
 read surface and revisit REST only when a principal credential design exists.
+
+## Cycle 19 checkpoint — capability improvement needs a separate security gate
+
+What was missing: the living self-evolution cluster had several admission and
+transfer warnings, but no seed-linked implementation with both a primary
+capability evaluation and a direct security audit. A new collected SkillOpt
+card supplied that connection. The resulting evidence shows why a held-out
+score gate is useful but insufficient: a candidate can improve the selected
+task metric while exposing more injected content and permitting more
+unauthorized state changes.
+
+Seed ordering was preserved. Two live observations of the authenticated
+`Alex` Chrome collection ran at
+`2026-09-01T17:10:27.634Z–17:10:58.084Z` and
+`2026-09-01T17:12:28.797Z–17:12:59.270Z`. Both returned the same 130-card
+fingerprint
+`d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9`
+and metadata fingerprint
+`567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`.
+Compared with Cycle 18, newly materialized IDs are
+`6a96667100000000290122ae` and SkillOpt `6a96b1320000000012024529`;
+common-card title/author changes and removals are `[]`.
+`6a449e58000000001003ca2c` and `6a4b745f000000001c025691` are absent from
+this bounded window and therefore recorded as unavailable, not removed. The
+durable confirmed-seed union is 132 IDs. A signed SkillOpt detail read at
+`2026-09-01T17:13:38.951Z` resolved `/404` without a login wall or body, so its
+collection title supports the topic link but no post-body claim. This exact
+reconciliation was committed first as
+`eb6b4131f07d46acdcae2b7405ef1a10b9398467`; discovery began afterward.
+
+The post-reconciliation lane decisions were explicit:
+
+- **GitHub/local code was selected** for high relevance, high expected value,
+  and current freshness. A complete `SkillOpt` repository search returned 130
+  results with `incomplete_results=false` and ranked `microsoft/SkillOpt`
+  first. At `2026-09-01T17:18:20.756Z`, public `main`, a clean goal-owned
+  clone, and pinned revision
+  `db46cd9ae7ce12f1dbd73c945185816aa738751d` agreed. Source inspection found
+  the default hard-score gate enabled with ties rejected, an explicit option
+  to disable the gate, and an optional semantic-density bonus disabled by
+  default. The tree has 80 Python test files; CI declares Python 3.10–3.12,
+  two Gradio versions, and strict documentation builds. These are directly
+  observed code and CI definitions, not a reproduction of model-dependent
+  results. A complete exact audit-title/arXiv-ID search returned no repository.
+  Revisit on a revision or release, audit-artifact publication, independent
+  executable result, or a readable seed body. Mnemo public
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20` and local
+  `60c3edb91b262a7281526b40659d8e5f3f8262e1` remain the last useful
+  memory-governance code revisions; absent a higher seed trigger, inspect the
+  next MCP bulk/export read surface.
+- **arXiv was selected** for high relevance, high expected value, and current
+  freshness. Exact paper lookup retained SkillOpt primary paper
+  `2605.23904v2`; its 27-page source archive has SHA-256
+  `ee3bed5c2f0cbdbed0a3ee529f28cb616393e37ecfd9a25a42a04070c4f5bcef`.
+  The authors report bounded add/delete/replace edits plus held-out selection,
+  best-or-tied results in 52/52 cells, and a 23.5-point GPT-5.5 direct-chat
+  average gain. Those claims require scored feedback and expensive optimizer
+  rollouts, concern one portable skill, and do not establish transfer to other
+  models, tasks, or harnesses without another held-out check. The fresher
+  `2608.17684v1` source has SHA-256
+  `7a325bec5624239aaf36f24b8a2cef218576d2a1e5e5d4fc34e88b12fdbbea46`.
+  In one corrected simulated-banking audit across three evolved lineages, the
+  authors report utility `0.741→0.837`, injected-content exposure
+  `0.820→0.943`, unauthorized state changes `0.583→0.685`, and aggregate
+  attack success `0.496→0.530`; only two of three lineages agree on the last
+  direction. The study has one primary executor, one environment, three
+  lineages, and one offline pass, with no significance or production claim.
+  Revisit on a paper version, attributable artifact, independent replication,
+  stronger study, or content-bearing seed delta. `2608.30177v1` still wins the
+  distinct stage-aware memory-governance rubric at 15/15 and remains retained.
+- **Reddit was deferred without quota work** because relevance is medium,
+  expected incremental value is low, and neither the seed nor papers require
+  anecdotal adjudication. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON is
+  last observed HTTP 403. Revisit for a seed-linked reproducible SkillOpt
+  deployment, distinct security-drift evidence, content delta, or access
+  change.
+
+Deduplication extends the existing self-evolution control-surface finding once:
+the XHS title, repository, primary paper, and audit are related provenance and
+contrasting evidence, not four replications. The narrow operational result is
+to pair capability admission with regression counts, attack-surface contact,
+unauthorized state-change checks, and executor-interface compatibility.
+SkillOpt does not displace the separate memory-governance cluster or its
+`2608.30177v1` anchor.
+
+The prior authorization evidence remains intact and separately scoped. The
+Cycle 16 Alice→Bob provenance-deletion fixture returned exact generated UUIDs
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` for principal selection and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf` for session selection in `forgotten`.
+The current Mnemo repair revision remains
+`60c3edb91b262a7281526b40659d8e5f3f8262e1`; nothing in this source deep dive
+changes or relabels that local code evidence.
+
+Validation covers both the new Scout documentation and the retained code
+evidence. Scout's full application check passes syntax bundling, TypeScript,
+Prettier, and all 78 tests with 226 assertions. All 19 relative links across
+the seed ledger, topic map, updated finding, and standing report resolve. The
+read-only health scan at `2026-09-01T17:22:46.273Z` remains bounded and
+truncated at 25 facts and 16 wake signals; its only changed-document signal is
+the topic map crossing the existing 800-line size threshold, not a broken
+reference or malformed checkpoint.
+
+Mnemo validation is commit-scoped to
+`60c3edb91b262a7281526b40659d8e5f3f8262e1`. The host shell has no `cargo` or
+`rustc`, and the first reusable-cache attempts failed before testing because a
+root-owned Cargo cache and build lock rejected the effective `hao` identity.
+An ephemeral Rust 1.98 container then mounted source read-only and reused only
+goal-owned caches. A network-disabled core run passed 168 unit tests, failed 27,
+and ignored one because every failure tried to autoload DuckDB's missing
+`json` extension. After one ordinary extension fetch into a separate
+goal-owned DuckDB cache, the complete locked suite passed 295 core tests with
+one intentional network embedding test ignored, 97 MCP tests, and 85
+HTTP-enabled server tests. Subsequent MCP and server runs were network-disabled
+and included the principal/organization regressions plus the same-session
+write/read/revise/forget HTTP test. No source file or system package was
+installed or changed.
+
+The human checkout remained unchanged across the current comparable read. At
+`2026-09-01T17:44:45.560Z`, it still had HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 porcelain-v2 entries, and
+status SHA-256
+`e06ad5b26c0f0b8044d9e987e8d0fdc5f32e20e3d8e91797a06375b9ba73d182`,
+identical to the pre-lane observation. Commands there were read-only; edits,
+builds, tests, staging, and commits remained in goal-owned execution spaces.
+
+Cycle 20 begins seed-first. Its next exploration, if no higher-value collected
+delta fires another trigger, is Mnemo's next unaudited MCP bulk/export read
+surface. REST remains deferred until requests carry a principal and
+organization credential rather than the current shared operator token.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
