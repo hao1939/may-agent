@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including general forgetting. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including general forgetting by ID or criteria. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, and a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, and general-forget repair 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, and 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, and organization-scoped general-forget repair fcb022acf583b6146eb9dc866ced999b48f5dcf8."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -381,6 +381,45 @@ unreviewed, and undeployed. The next audit question is organization derivation
 for destructive requests that expose no `org_id`: coverage of explicit inputs
 does not prove that an addressed record or criteria search is tenant-bound.
 
+### Cycle 14 organization-scoped general-forget reproduction and repair
+
+The next cycle began with the required live seed reconciliation, which again
+found the exact 130-card ID and metadata fingerprints and empty added, changed,
+absent, and unavailable arrays. Only afterward did the queued tenant question
+become the selected GitHub/local-code deep dive.
+
+The prior Alice→Bob evidence remains a separate, preserved result: on pinned
+public revision `2994abf185da50d43e5fa4b3f826812bd09c2f20` plus the goal-owned
+repair ancestry, a real loopback test switches Bob→Alice within one MCP session,
+rejects Alice's write/read/revise/forget attempts against Bob's record, and
+confirms Bob can still recall it. Cycle 14 instead held principal identity
+constant to test tenant isolation. On local base
+`4217163bacba3d85ef34c2ef0a0c33f6faf4cae9`, a capability for signed `alice`
+with `role:writer org:alpha` could soft-delete an Alice-owned `org:beta` memory.
+The explicit Beta ID appeared in `forgotten`. Source review separately showed
+that criteria discovery filtered by principal but not organization; the pre-fix
+fixture stopped at its earlier explicit-ID assertion, so no completed criteria
+outcome is claimed. This is bounded local evidence, not a public-service or
+deployment claim.
+
+Commit `fcb022acf583b6146eb9dc866ced999b48f5dcf8` keeps the public
+`ForgetRequest` compatible and adds a scoped engine entry point. The MCP handler
+derives the sole signed organization from verified caller context. Criteria
+candidate generation filters by both caller and organization; explicit IDs are
+checked against the organization before the existing principal permission
+check. The repaired fixture deletes the Alpha criteria target, retains the Beta
+target, and returns an ordinary `permission denied` for the explicit Beta ID.
+
+`cargo fmt --all -- --check` passes. Strict Clippy passes with warnings denied
+for all core/MCP targets and all HTTP-enabled server targets. Full validation
+passes 295 core tests, 93 MCP tests, and 85 HTTP-enabled server tests. The host
+had no free filesystem blocks when Git first tried to stage the already tested
+patch; deleting only the goal-owned disposable 58 GiB Rust target cache restored
+54 GiB and the same reviewed diff committed. The cache can be rebuilt and no
+repository source was removed. The candidate remains local, unreviewed, and
+undeployed; organizationless bulk/destructive paths beyond this handler remain
+an explicit next-audit question.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
@@ -462,3 +501,6 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Mnemo tool handlers and request dispatch: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-mcp/src/server.rs
 - Mnemo remember provenance path: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-core/src/query/remember.rs
 - Mnemo synthetic crossover test: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-core/tests/agent_managed_crossover.rs
+- Current Mnemo public revision used for Cycle 14 provenance: https://github.com/sattyamjjain/mnemo/commit/2994abf185da50d43e5fa4b3f826812bd09c2f20
+- Current public general-forget handler: https://github.com/sattyamjjain/mnemo/blob/2994abf185da50d43e5fa4b3f826812bd09c2f20/crates/mnemo-mcp/src/server.rs
+- Current public forget engine path: https://github.com/sattyamjjain/mnemo/blob/2994abf185da50d43e5fa4b3f826812bd09c2f20/crates/mnemo-core/src/query/forget.rs
