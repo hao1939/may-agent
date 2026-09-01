@@ -110,15 +110,24 @@ arXiv execution contract:
 - Every arXiv HTTP request must have both a bounded connection timeout and a bounded total timeout. For curl, supply both \`--connect-timeout\` and \`--max-time\`; do not run an unbounded retrieval.
 - If arXiv cannot be reached within those bounds, do not substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and the timeout or retrieval error.
 `
-        : source === "reddit"
+        : source === "github"
           ? `
+GitHub execution contract:
+- Access GitHub observationally through read-only public endpoints only. Never create, edit, comment on, star, watch, fork, or otherwise change a repository or account.
+- Begin topic-led repository discovery with the public repository Search API at \`https://api.github.com/search/repositories\`. Preserve \`owner/name\` and, before using repository contents as claim evidence, pin the inspected commit revision.
+- Every request must use a descriptive User-Agent, a bounded connection timeout, and a bounded total timeout. For curl, supply \`--connect-timeout\` and \`--max-time\`.
+- Record \`incomplete_results\` for Search API responses. Never describe a search as complete when \`incomplete_results\` is true, or treat repository metadata and paper indexes as proof that an implementation exists or works.
+- If GitHub returns an authentication, rate-limit, network-security, or retrieval boundary, do not bypass it or substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and exact HTTP status or retrieval error.
+`
+          : source === "reddit"
+            ? `
 Reddit execution contract:
 - Access Reddit observationally through read-only public endpoints only. Never post, comment, vote, save, follow, message, log in, or otherwise change account or content state.
 - Start topic-led discovery with the public Atom feed at \`https://www.reddit.com/search.rss\`; preserve stable \`t3_...\` post IDs. Treat feed titles and timestamps as metadata, not support for body-level claims, unless the post itself is readable.
 - Every request must use a descriptive User-Agent, a bounded connection timeout, and a bounded total timeout. For curl, supply \`--connect-timeout\` and \`--max-time\`.
 - If Reddit returns an authentication, network-security, rate-limit, or retrieval boundary, do not bypass it or substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and exact HTTP status or retrieval error.
 `
-          : "";
+            : "";
   const resultContract = `
 Result contract:
 - Return summary, source, and outputs through finish().

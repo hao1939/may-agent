@@ -1,16 +1,18 @@
 <ai_context>
-summary: "GitHub finding on authority placement in agent memory: Halofy demonstrates server-resolved identity, governed writes, scoped retrieval, audit, and erasure for organizational context; Switchboard separates proposal, approval, recall grants, project scope, and consumable handoff custody for local coding-agent memory. Both expose useful limits rather than collapsing governance into retrieval quality."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five proposed lifecycle governance predicates and shows why rollback and verified forgetting require authenticated, lineage-bearing state. These are audit requirements, not proof of deployed end-to-end governance."
 triggers: ["Halofy", "Switchboard", "agent memory governance", "organizational context", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody"]
-last_updated: "2026-08-26"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d."
+last_updated: "2026-09-01"
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
 
-Date: 2026-08-26  
-Source: GitHub  
-Repo: https://github.com/halofyai/halofy  
-Repo: https://github.com/Egoist-Machines/switchboard
+Date: 2026-08-26<br>
+Last updated: 2026-09-01<br>
+Source: GitHub and arXiv<br>
+Repo: https://github.com/halofyai/halofy<br>
+Repo: https://github.com/Egoist-Machines/switchboard<br>
+Paper: https://arxiv.org/abs/2604.16548v2
 
 ## Signal
 
@@ -117,6 +119,38 @@ should not inherit the same retention or replay semantics.
   Scout inspected the workflow and focused test source but did **not** execute
   the suite independently.
 
+## Lifecycle governance qualification
+
+The full source of arXiv `2604.16548v2` turns the authority map into five
+proposed Verifiable Memory Governance predicates:
+
+- **Write Authorization:** every committed memory has an authenticated source
+  and an explicit write-time authorization result.
+- **Provenance Visibility:** every memory retains queryable, lineage-complete
+  origin across summarization, merging, and distillation.
+- **Principal-Scoped Retrieval:** a query returns only memories whose scope
+  includes the requesting principal.
+- **Rollbackability:** versioned snapshots and write logs can restore prior
+  memory state.
+- **Verified Forgetting:** post-deletion probes bound re-exposure from raw logs,
+  summaries, indexes, and propagated copies.
+
+The useful architectural claim is dependency, not just coverage. Under the
+paper's lineage model, verified forgetting requires rollback, rollback requires
+provenance, and provenance must be anchored to an authenticated write origin.
+Principal scope is orthogonal to that chain but required for confidentiality.
+The proposed metrics—such as traceable-entry fraction, cross-principal leakage,
+time to remediation, toxic-entry localization, and post-deletion reappearance—
+make the abstractions reviewable.
+
+This evidence is bounded. The paper synthesizes heterogeneous prior studies;
+it does not demonstrate an implementation satisfying all five predicates. Its
+active limitations call the six phases an organizational scaffold whose
+boundaries may blur. The reviewed v2 source labels the review systematic but
+does not expose a reproducible search query, screening counts, or inclusion
+criteria. The predicates should therefore be used as test hypotheses and audit
+questions, not as a completeness theorem or deployment benchmark.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
@@ -161,6 +195,11 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Pair application ACL predicates with database defense-in-depth on every
   authority-bearing table; inventory exceptions rather than claiming blanket
   tenant isolation.
+- Require every derived memory to retain source lineage before promising exact
+  rollback or verified deletion; deleting one visible row is not recovery.
+- Test governance properties separately: authenticated write admission,
+  cross-principal leakage, provenance completeness, rollback fidelity, and
+  post-deletion reappearance measure different failure boundaries.
 - Read CI at the check level. A successful test workflow and a failed security
   workflow can coexist on the same revision.
 
@@ -178,3 +217,4 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Switchboard grants, handoffs, storage, and sync reference: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/DOCS.md
 - Switchboard handoff tests: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/test/handoff.test.mjs
 - Successful Switchboard test run: https://github.com/Egoist-Machines/switchboard/actions/runs/32932761986
+- Long-term memory security survey v2: https://arxiv.org/abs/2604.16548v2

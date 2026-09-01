@@ -152,6 +152,29 @@ describe("scout-explore workflow prompt", () => {
     expect(task).toContain("do not substitute another source");
   });
 
+  it("keeps GitHub exploration read-only, bounded, and complete-search aware", () => {
+    const task = buildExploreTask(
+      "Explore GitHub for AI agent repositories.",
+      undefined,
+      undefined,
+      "github",
+    );
+
+    expect(task).toContain("GitHub execution contract");
+    expect(task).toContain("read-only public endpoints only");
+    expect(task).toContain("https://api.github.com/search/repositories");
+    expect(task).toContain("Preserve `owner/name`");
+    expect(task).toContain("pin the inspected commit revision");
+    expect(task).toContain("descriptive User-Agent");
+    expect(task).toContain("`--connect-timeout`");
+    expect(task).toContain("`--max-time`");
+    expect(task).toContain("`incomplete_results`");
+    expect(task).toContain("paper indexes as proof");
+    expect(task).toContain("exact HTTP status or retrieval error");
+    expect(task).toContain("outputs: []");
+    expect(task).toContain("do not bypass it or substitute another source");
+  });
+
   it("keeps Reddit exploration observational and records exact access boundaries", () => {
     const task = buildExploreTask(
       "Explore Reddit for AI agent discussions.",

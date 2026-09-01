@@ -2,7 +2,7 @@
 summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. It records observation boundaries and seed deltas without treating retained Scout XHS records as proof of collection membership."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories at 2026-09-01T09:53:22Z and 2026-09-01T10:00:06Z."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories at 2026-09-01T09:53:22Z, 2026-09-01T10:00:06Z, and 2026-09-01T10:12:33Z."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,9 +16,9 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | 2026-09-01T10:00:06Z |
+| Observation time | 2026-09-01T10:12:33Z |
 | Current direct collection snapshot | **Unobserved** |
-| Prior goal-owned collection snapshot | 2026-09-01T09:53:22Z, also unobserved |
+| Prior goal-owned collection snapshot | 2026-09-01T10:00:06Z, also unobserved |
 | Confirmed new / changed / removed seeds | Unknown / unknown / unknown |
 | Removal policy | No post is marked removed while the collection surface is unobservable |
 
@@ -62,14 +62,16 @@ evidence count.
 
 ## Cycle-order evidence
 
-This cycle reconciled the seed boundary before discovery. The second XHS
+This cycle reconciled the seed boundary before discovery. The third XHS
 endpoint preflight and local stable-ID inventory completed at
-`2026-09-01T10:00:06Z`; the inventory remained 104 IDs with fingerprint
+`2026-09-01T10:12:33Z`; the inventory remained 104 IDs with fingerprint
 `889d3247e9fd0d7a2772a2901cfa69ff27387de96ea4bf15dfcd21241228d8fb`.
-Only after that recorded comparison did the GitHub, arXiv, and Reddit topic
-queries begin (`2026-09-01T10:02:47Z`). The selected arXiv paper therefore
-cannot be mistaken for a seed or used to retroactively redefine collection
-membership.
+The comparison covered 125 URL occurrences in the same 24 files, so it found
+no local addition, change, or removal. Direct additions, changes, and removals
+remain unknown rather than zero. Only after this record was established did
+the GitHub, arXiv, and Reddit follow-up begin. The selected arXiv follow-up
+therefore cannot be mistaken for a seed or used to retroactively redefine
+collection membership.
 
 ## Reconciliation protocol for the next readable snapshot
 
@@ -91,3 +93,4 @@ membership.
 |---|---|---:|---:|---:|---:|---|
 | 2026-09-01T09:53:22Z | Direct snapshot unavailable | unknown | unknown | unknown | unknown | Preserve collection state as unobserved; continue from explicitly non-seed local evidence. |
 | 2026-09-01T10:00:06Z | Direct endpoint preflight still unavailable; local stable-ID fingerprint unchanged | unknown | unknown | unknown | unknown | Seed reconciliation completed before related discovery. Preserve unknown direct state; the arXiv query followed this snapshot and cannot retroactively establish seed membership. |
+| 2026-09-01T10:12:33Z | Direct endpoint preflight still unavailable; local fallback unchanged at 104 stable IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb` | unknown | unknown | unknown | unknown | Third reconciliation completed before the GitHub, arXiv, and Reddit follow-up. Preserve unknown direct state; no local seed delta was observed. |

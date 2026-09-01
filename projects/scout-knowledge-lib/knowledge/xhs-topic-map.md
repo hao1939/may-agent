@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living seed-first topic map for Scout's Xiaohongshu research loop, including source connections, value scores, confidence, contradictions, blocks, and next explorations."
-triggers: ["XHS topic map", "Xiaohongshu research loop", "topic clusters", "XHS deep dive", "seed-first research"]
+summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
+triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-01"
-source_basis: "XHS retained local evidence through 2026-08-19; seed reconciliations at 2026-09-01T09:53:22Z and 2026-09-01T10:00:06Z; topic-led GitHub, arXiv, and Reddit checks; and full-source reviews of arXiv 2608.22610v1 and 2608.30177v1 on 2026-09-01."
+source_basis: "XHS retained local evidence through 2026-08-19; seed reconciliations at 2026-09-01T09:53:22Z, 2026-09-01T10:00:06Z, and 2026-09-01T10:12:33Z; topic-led GitHub, arXiv, and Reddit checks; and full-source reviews of arXiv 2608.22610v1, 2608.30177v1, and 2604.16548v2 on 2026-09-01."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
@@ -35,8 +35,19 @@ it is not evidence quality.
 | Cluster | Seed connection | Score | Supporting sources | Current finding / uncertainty | Confidence | Next exploration |
 |---|---|---:|---|---|---|---|
 | **Self-evolution reliability and evaluation authority** | U | **13** (`3+3+3+2+2`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1) | XHS metadata says attention is moving from generic self-evolution toward evaluator independence, learning state, and human interference. Cross-source evidence adds task-order, security, executor-compatibility, and coalition confounders. Unknown: whether any of these posts are human-collected or whether full XHS content supports more than their visible metadata. | Moderate-high for the cross-source reliability pattern; low for unseen XHS post contents. | Reproduce or independently audit `2608.22610` once code is released; on seed access, deep-read any collected evaluator/skill-reliability post first. |
-| **Long-horizon persistence and stage-aware memory governance** | U | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1); GitHub [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | Persistent agents need governed admission and management, but retrieval is not merely solved plumbing: greater exposure can raise clean utility and poisoning success together. Direct collection relevance remains unknown, and the paper's four-system results are diagnostic rather than causal stage interventions. | High for the paper's evaluated settings; moderate for transfer beyond two benchmarks and two attacks; low for unseen XHS post contents. | Find or reproduce a released MemGauge implementation, then test whether stage profiles hold under benign retrieval errors and other attacks; reconcile any newly readable collected memory post first. |
+| **Long-horizon persistence and stage-aware memory governance** | U | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1) and [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | Persistent agents need stage-aware utility/risk measurement plus lifecycle governance. The survey makes rollback and verified forgetting depend on authenticated writes, lineage, and versioned state; principal-scoped retrieval remains a separate confidentiality gate. Direct collection relevance is unknown, MemGauge's four-system results are diagnostic, and the survey proposes rather than validates its governance predicates. | High for MemGauge's evaluated settings; moderate for the lifecycle synthesis; low for unseen XHS post contents and unbenchmarked end-to-end governance. | Deep-read `2606.04315v1` to test the Reddit post's “agent-controlled memory generalizes best” interpretation, then map active write/retrieve control to the survey's authorization and provenance prerequisites. Reconcile XHS first. |
 | **Build playbooks and implementation literacy** | U | **10** (`2+2+2+2+2`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md) | In one search packet, process maps and source-code notes had more visible engagement than generic definitions or launch framing. Unknown: collection relevance, content quality, and whether the ranking persists across queries or time. | Low-moderate; title/author/like snapshots only. | On access, compare collected build artifacts by format and inspect whether saves/comments reflect successful use rather than curiosity. |
+
+## Source-lane continuity
+
+This record supports the next seed-first cycle; it is a value decision log, not
+a source-activity quota.
+
+| Lane | Current relevance / expected value / freshness | Access and last useful evidence | Decision and revisit trigger |
+|---|---|---|---|
+| **GitHub** | High relevance to the selected memory cluster because released code could make MemGauge reproducible; high expected value if attributable code appears; search observed 2026-09-01. | Public repository Search API returned HTTP 200. Complete searches (`incomplete_results=false`) returned nine repositories for `"MemGauge"`, three for the exact `2604.16548v2` title, and four for `"Verifiable Memory Governance"`. They exposed paper indexes and thematically related repositories, but no attributable implementation of either paper. GitHub contents were not counted as paper confirmation. | **Selected and checked; no library promotion.** Revisit when either paper links code, a search result changes materially, or an attributable repository revision appears. Pin a commit before using implementation contents as evidence. |
+| **arXiv** | Highest relevance and expected value for the selected cluster; `2608.30177v1` is fresh from 2026-08-31, while the selected governance follow-up is `2604.16548v2`, updated 2026-06-11. | Exact-ID Atom request returned HTTP 200 and one current entry each for `2604.16548v2`, `2606.04315v1`, and preserved `2608.30177v1`. Full TeX reviews now cover `2608.30177v1` and `2604.16548v2`; no paper-index record is treated as duplicate evidence. | **Selected and deep-read.** Keep `2608.30177v1` as the 15/15 cluster anchor. Next deep-read `2606.04315v1` after another XHS reconciliation to test the active-control claim and its governance assumptions. |
+| **Reddit** | Directly relevant because the selected thread links the memory-risk cluster to both follow-up papers; medium information value as practitioner framing; thread published 2026-07-27. | Post-level RSS now returns HTTP 200 for stable post `t3_1v8a3sh` and six `t1_...` comments. The post cites both papers; comments discuss tenant scope, provenance, and rollback. One commenter discloses an Airia affiliation and another suspects generated discussion, so these remain attributed anecdotes rather than empirical proof. Earlier JSON requests returned HTTP 403 and remain a narrower endpoint boundary, not a claim that all Reddit is unavailable. | **Selected and examined; claims admitted only as community evidence.** Revisit when a new high-signal thread connects to a reconciled seed, a cited paper requires interpretation, or post-RSS access changes; do not retry blocked JSON merely to satisfy a lane count. |
 
 ## Selected deep dive — coalition-conditioned skill reliability
 
@@ -90,6 +101,57 @@ confirmation. Reddit's public search RSS also surfaced metadata-only candidate
 whose title connects long-lived memory to an attack surface. The post-level
 deep read was rate-limited, so its body supports no claim here.
 
+## Third-cycle follow-up — lifecycle governance and recoverability
+
+The third reconciliation completed at `2026-09-01T10:12:33Z`, before this
+follow-up discovery. The direct collection stayed unobserved and the local
+fallback stayed at 104 stable IDs / 125 URL occurrences / 24 files with
+fingerprint `889d3247…d8fb`. The 15/15 memory cluster and its fresh
+`2608.30177v1` anchor therefore still win the rubric after reconciliation; the
+paper remains preserved and its full-source deep dive remains the current
+stage-wise evidence. It was not replaced merely because a later related source
+became readable.
+
+Within that already-selected cluster, arXiv `2604.16548v2` wins the marginal
+follow-up rubric at 14/15 (`3+3+3+3+2`). Reddit post `t3_1v8a3sh` is now readable
+through post-level RSS and directly links the retained memory topic to this
+survey. The paper reduces a current recovery gap, while its June v2 date is less
+fresh than MemGauge. The Reddit post also cites `2606.04315v1`, but that paper
+remains a queued candidate rather than evidence for this update.
+
+The reviewed `2604.16548v2` TeX defines six phases—Write, Store, Retrieve,
+Execute, Share & Propagate, and Forget & Rollback—and five Verifiable Memory
+Governance predicates:
+
+- **Write Authorization:** every committed entry has an authenticated source
+  and passes an explicit write authorization check.
+- **Provenance Visibility:** every entry has queryable, lineage-complete origin
+  through summarization, merging, and distillation.
+- **Principal-Scoped Retrieval:** retrieval returns only entries authorized for
+  the requesting principal.
+- **Rollbackability:** versioned snapshots and write logs can restore prior
+  memory state.
+- **Verified Forgetting:** post-deletion probing bounds re-exposure across raw
+  logs, summaries, vector indexes, and propagated copies.
+
+The paper orders the lineage-dependent primitives as verified forgetting
+requiring rollback, rollback requiring provenance, and provenance requiring an
+authenticated write origin; scoped retrieval is orthogonal but necessary for
+confidentiality. Its appendix proposes a metric for each primitive. This is a
+useful audit contract, not evidence that deployed systems satisfy it: the work
+is a heterogeneous literature synthesis, its active limitations call the
+lifecycle an organizational scaffold with blurred phase boundaries, and the
+reviewed source reports no reproducible search query, screening counts, or
+inclusion criteria. No end-to-end implementation evaluation is presented.
+
+Reddit now contributes directly observed community framing rather than only
+metadata. The post restates the survey, asks whether memory is managed as its
+own risk asset, and interprets `2606.04315v1` as evidence for agent-controlled
+write/retrieval. Comments raise tenant-scope leakage, lineage integrity, and
+“delete-and-hope” rollback. They remain practitioner hypotheses, not
+independent empirical confirmation: one commenter discloses working at Airia,
+and another explicitly suspects machine-generated discussion.
+
 ## Connections and tension
 
 - **Self-evolution ↔ governed memory:** a growing skill or memory bank is a
@@ -107,12 +169,12 @@ deep read was rate-limited, so its body supports no claim here.
   utility and attack success. The earlier write-path thesis survives only as a
   claim about neglected controls, not proof that read-side choices are solved.
 - **Blocked evidence:** direct collection membership, current engagement, full
-  post text, comments, and collection removals remain unknown while the browser
-  endpoint is outside this worker's reachable network namespace. Reddit's
-  global and `r/LocalLLaMA` public JSON searches returned HTTP 403 `text/html`
-  network-security blocks. Global search RSS returned HTTP 200 and stable post
-  metadata, but the selected post's RSS returned HTTP 429 on deep read; no
-  body-level Reddit claim was admitted.
+  XHS post text, and collection removals remain unknown while the browser
+  endpoint is outside this worker's reachable network namespace. Reddit's JSON
+  endpoints previously returned HTTP 403, but post-level RSS now returns HTTP
+  200 with the post and six comments. The body is usable as attributable
+  community evidence, not as validation of its cited papers or production
+  prevalence claims.
 
 ## Cycle log
 
@@ -120,3 +182,4 @@ deep read was rate-limited, so its body supports no claim here.
 |---|---|---|---|---|---|
 | 2026-09-01 | Direct set unobserved; no additions, changes, or removals inferred. Local fallback: 104 stable IDs / 125 occurrences, deduplicated by ID. | arXiv query for self-evolving/self-improving agents found `2608.22610v1`; full source reviewed. | Coalition pollution and cross-domain utility reversal. | Added three active clusters; selected reliability/authority at 13/15. | Restore observational collection reachability, then reconcile and prioritize any collected evaluator or skill-bank post; independently test the paper when code appears. |
 | 2026-09-01 cycle 2 | Reconciled first at 10:00:06Z: direct set still unobserved; local fallback unchanged at 104 stable IDs / 125 occurrences and fingerprint `889d3247…d8fb`. | After reconciliation, arXiv HTML search returned `2608.30177` first; the specific API record and full source were readable. GitHub's complete nine-result `MemGauge` query found a pinned paper index but no attributable experiment repository. Reddit JSON returned HTTP 403; global search RSS returned metadata for `t3_1v8a3sh`, then its deep read returned HTTP 429. | Stage-wise utility-risk profiles across controlled interventions and four real systems. | Memory governance rises to 15/15 and qualifies the read-write synthesis; Reddit metadata remains a candidate, not claim support. | Reconcile XHS first again; look for attributable `2608.30177` code, then reproduce stage profiles under additional attacks. Revisit the Reddit candidate after the rate-limit boundary changes. |
+| 2026-09-01 cycle 3 | Reconciled first at 10:12:33Z: direct set still unobserved; local fallback again unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`. | Bounded GitHub repository searches were complete; the arXiv exact-ID feed returned `2604.16548v2`, `2606.04315v1`, and preserved `2608.30177v1`; Reddit post RSS returned `t3_1v8a3sh` plus six comments. | `2604.16548v2` lifecycle framework and five proposed governance predicates; Reddit claims kept attributable and non-empirical. | The 15/15 cluster and MemGauge anchor remain selected. The 14/15 marginal follow-up adds recoverability and lineage requirements without counting paper indexes or comments as confirmation. | Reconcile XHS first; deep-read `2606.04315v1` and test whether its active-control result entails safe write authorization, provenance, and principal scope. |
