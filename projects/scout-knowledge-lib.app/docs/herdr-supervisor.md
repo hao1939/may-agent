@@ -39,9 +39,22 @@ responsibilities:
 - `runtime/library-health-observer` uses `library-health`; and
 - `library-maintenance` uses `knowledge-planner`.
 
-The current runtime projection may be paused or contain old evidence. Read
-`.state/tasks/state.json` for current May-agent state, but do not copy that
-state, its attempts, or its phases into a Herdr contract.
+Schedules and actions emit `scout.explore`, `scout.digest`,
+`project.library_health.tick`, or an owner-review input. The app resolver maps
+that demand to one stable task identity; the Host runs at most one Scout attempt
+at a time, invokes the named workflow, admits its result, and persists the task,
+Condition, attempt, trigger, and receipt state. Workflows converge, wait on an
+exact Condition, or hand novel judgment to Scout. XHS is the reference wait:
+`explore-xhs` remains Scout-owned while `credential-ready:xhs` observes
+`credential.state / credential:xhs / state=ready`.
+
+At the 2026-09-01 discovery read, `.state/tasks/state.json` reported the project
+lifecycle as `paused`: six stable tasks were `converged`, `explore-xhs` was
+`waiting` on `credential-ready:xhs`, and `.state/tasks/tree.json` had no active
+task IDs. Those runtime files contain an August checkpoint and may be stale;
+they are evidence about the deployed execution, not source goal definitions.
+Read `state.json` for May-agent runtime truth, but do not copy its attempts,
+phases, or generated projection into a Herdr contract.
 
 ## Migration classification
 
@@ -97,6 +110,30 @@ Evidence should match the outcome:
 - wait: the failed operation, execution location, effective identity or
   authority, target, observed error, exact changing condition, and the smallest
   action that can satisfy it.
+
+## Operator lifecycle
+
+1. **Start:** run `pi` in a Herdr pane, give the Supervisor the contract path
+   and `/app` starting directory, and let it create one bound Codex worker. The
+   worker initializes its native Goal, rereads the canonical `goal.json`, and
+   creates its isolated execution worktree before running writing commands.
+2. **Monitor:** use `/supervised` for the goal, worker, pane, progress, and last
+   decision. Do not poll the worker. Native worker evidence, Herdr lifecycle
+   changes, and the bounded stale-review deadline wake the Supervisor.
+3. **Review:** Codex runs its work-check-continue loop. On a wake, the Supervisor
+   reads current evidence and makes one decision: leave healthy work alone,
+   steer the same session, ask the human for genuinely missing authority or
+   information, or accept complete evidence.
+4. **Wait:** the worker reports an exact condition once and yields. The
+   Supervisor records that condition and a bounded reconsideration time. A
+   selected GitHub pull request or Azure DevOps build can wake review on a
+   changed revision; other waits use their stated condition and deadline. An
+   unchanged wait never authorizes sleeping or polling in the worker.
+5. **Finish:** the worker reviews its final diff and validation, resolves
+   applicable findings, and marks its native Goal complete only when its whole
+   contract is proven. The Supervisor independently checks every acceptance
+   criterion and accepts the Herdr goal. An operator `stop`, exited process,
+   final message, pull request, or green pipeline alone is not acceptance.
 
 ## Safe first pilot
 
@@ -160,6 +197,48 @@ do not authorize an edit in this pilot.
   after exact-session recovery and safe alternatives are exhausted.
 - Stop supervision only by explicit operator choice. Accept only after the
   Supervisor independently checks every criterion against current evidence.
+
+## Reviewing and integrating the initial candidate
+
+The initial integration commit is
+`f654195455d95c552ca02d25e811da689a3f1273`. Review it without changing the
+shared checkout:
+
+```sh
+git -C /app status --short -- projects/scout-knowledge-lib.app
+git -C /app show --stat --oneline f654195455
+git -C /app diff f654195455^ f654195455 -- projects/scout-knowledge-lib.app
+```
+
+At the 2026-09-01 review, the shared checkout's Scout app changes were limited
+to `package.json`, `agents/scout/workflows/library-health.ts`, and
+`library-health.test.ts`. The candidate changes `README.md`, `tsconfig.json`,
+and five new documentation, contract, command, and test files. There is no exact
+path overlap, but the new command imports `library-health.ts`, so current dirty
+work still requires semantic validation after reconciliation.
+
+Do not cherry-pick into the dirty `/app` checkout. First have the owner preserve
+that work on its intended branch or commit. Then create a clean integration
+worktree from that preserved revision and apply the candidate there:
+
+```sh
+git -C /app worktree add -b integrate/scout-herdr-<date> \
+  /app/worktrees/scout-herdr-integration-<date> <preserved-revision>
+git -C /app/worktrees/scout-herdr-integration-<date> \
+  cherry-pick f654195455d95c552ca02d25e811da689a3f1273
+git -C /app/worktrees/scout-herdr-integration-<date> status --short --branch
+cd /app/worktrees/scout-herdr-integration-<date>/projects/scout-knowledge-lib.app
+bun run check
+bun x prettier --check scripts/library-health-readonly.ts \
+  scripts/library-health-readonly.test.ts docs/herdr-supervisor.md \
+  docs/verification/herdr-library-health-pilot-2026-09-01.md
+```
+
+Review any conflict against both commits rather than choosing one side
+wholesale. If the integration validation fails, keep `/app` untouched, retain
+the integration worktree as evidence, and fix or abort the cherry-pick there.
+Only merge the validated integration branch after its final diff includes both
+the preserved owner work and this candidate.
 
 Herdr Supervisor's container and local setup are maintained in
 `projects/herdr-supervisor/README.md`. Its durable contract/checkpoint/audit
