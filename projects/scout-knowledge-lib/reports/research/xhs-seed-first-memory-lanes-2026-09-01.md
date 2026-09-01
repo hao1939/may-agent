@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across nineteen cycles: Cycle 19 reconciles a new Microsoft SkillOpt card first, pins its implementation and primary paper, checks a fresh security audit, retains arXiv 2608.30177v1 as the separate memory-governance anchor, and records Reddit at its actual access boundary."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 19"]
+summary: "Seed-first Scout checkpoint across twenty cycles: Cycle 20 reconciles an unchanged live Xiaohongshu collection first, proves authenticated MCP resource discovery and exact reads crossed principal and organization boundaries, scopes both handlers to the verified caller, retains arXiv 2608.30177v1, and records Reddit at its actual access boundary."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 20"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:13:38.951Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, including memory-resource discovery and exact reads."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -1414,6 +1414,105 @@ Cycle 20 begins seed-first. Its next exploration, if no higher-value collected
 delta fires another trigger, is Mnemo's next unaudited MCP bulk/export read
 surface. REST remains deferred until requests carry a principal and
 organization credential rather than the current shared operator token.
+
+## Cycle 20 checkpoint — memory resources now honor caller scope
+
+What was wrong: authenticated memory-resource reads were less constrained than
+ordinary recall. `resources/list` filtered Alice's principal but ignored her
+signed organization; `resources/read` ignored the verified request context and
+returned any known memory UUID. A resource URI and its body are authority-
+bearing reads, not a harmless catalog.
+
+Seed ordering was preserved. Cycle 20's exact reconciliation was committed
+first as `c684563835a5f2b59e793c6651a624d6bcda3fea`. Two live authenticated
+inventories at `2026-09-01T17:46:35.052Z–17:48:11.364Z` each returned 130
+cards with the same ID fingerprint `d83bbde4…cd9` and metadata fingerprint
+`567485e8…6118` as Cycle 19. Added, changed, and removed sets are `[]`;
+`6a449e58…ca2c` and `6a4b745f…5691` remain window-unavailable, not removed,
+and the durable confirmed union remains 132. The authenticated browser session
+supplied XHS authority; no account or content state was changed.
+
+Only after that seed commit were all three lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance, high expected value,
+  and current freshness. Public Mnemo `main` refreshed at
+  `2026-09-01T17:50:08.408Z` and remained
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local pre-fix base
+  `60c3edb…262e1` reproduced the queued resource-read boundary. Revisit on an
+  upstream revision, review, or deployment, then inspect resource
+  subscriptions/templates or the next unaudited bulk read. REST remains
+  deferred until requests carry principal/organization credentials.
+- **arXiv was retained and deferred** because relevance and retained value are
+  high but no seed, version, or paper question changed. Reviewed
+  `2608.30177v1` remains the distinct 15/15 stage-wise memory-governance anchor.
+  Revisit on a version, attributable artifact, independent replication,
+  stronger study, or content-bearing seed change.
+- **Reddit was deferred without quota work** because relevance is medium,
+  incremental value is low, and community anecdotes cannot adjudicate the
+  exact handler behavior. Last useful evidence remains post RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains
+  last observed HTTP 403. Revisit on a reproducible seed-linked deployment,
+  distinct resource-scope evidence, content delta, or access change.
+
+The real duplex pre-fix fixture issued Alice a valid
+`role:reader org:alpha` capability and seeded three memories. Its list exposed
+Alice/Beta URI `mem://01a05e1b-458a-7283-8c8f-0ca13ffd2867`. Exact reads
+returned that UUID's `alice-beta-resource-cross-org` marker and Bob/Alpha UUID
+`01a05e1b-4533-7a11-b568-c79c7067564f` with
+`bob-alpha-resource-secret`. Alice/Alpha UUID
+`01a05e1b-455d-7412-bc71-fd5b0f4c6990` was the authorized control. These are
+generated local fixture identifiers and literal marker strings, not production
+records.
+
+What changes: Mnemo branch `codex/g-c1b31972-caller-binding` commit
+`ea7f8ea88a5104d79072e3b4a606e80cfdb20d65` binds both resource handlers to
+the verified principal and signed organization scopes. Alice/Alpha remains
+listed and readable; Alice/Beta and Bob/Alpha are absent from the list or
+return resource-not-found on exact reads. Capability-less stdio retains its
+historical operator exact-read behavior. The earlier Alice→Bob four-wrapper
+HTTP denial and Cycle 16's exact bulk-forget outputs
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf` remain separately preserved.
+
+Validation was checked rather than inferred from silence. The earlier native
+attempt had no surviving process or exit record; its isolated Cargo cache was
+last touched at `2026-09-02 01:39:04 +08:00`, so it was classified as an
+unrecorded exit, not a pass. The first aggregate retry made no test progress
+because a login shell reset the Rust path. A corrected retry was CPU-active,
+but its accumulated goal-owned target reached 71 GB with only 6.4 GB free, so
+only that container was stopped and only generated target artifacts were
+removed. The compact fallback uses Rust 1.98, network disabled, source mounted
+read-only, the existing goal-owned Cargo and DuckDB caches, and a fresh target;
+it performs no install or source mutation. On exact commit
+`ea7f8ea88a5104d79072e3b4a606e80cfdb20d65`, formatting and both strict
+all-target Clippy runs pass, all 295 core tests pass with one intentional
+network embedding test ignored, all 99 MCP tests pass, and all 85 HTTP-enabled
+server tests pass. The MCP total includes the two new resource regressions; the
+server total includes the same-session Alice→Bob write/read/revise/forget
+authorization test.
+
+Scout's final Cycle 20 candidate passes syntax bundling, TypeScript, Prettier,
+and all 78 tests with 226 assertions. All 19 relative links across the seed
+ledger, topic map, authority finding, and standing report resolve. The
+read-only health scan at `2026-09-01T18:36:08.195Z` is bounded and truncated at
+26 facts and 16 wake signals. Of the three currently changed documents, only
+the topic map appears, for crossing the existing 800-line size threshold; the
+other facts are pre-existing library-health backlog rather than broken links or
+malformed Cycle 20 evidence. `git diff --check` reports no whitespace errors.
+
+The human checkout stayed outside this goal's write surface, but concurrent
+human state changed, so byte-for-byte stability is not claimed. Its HEAD stayed
+`386b445c236e4609cd8870d22cc773cc4641fec8` and the final read still counted
+386 porcelain-v2 entries, while the status SHA-256 changed from the
+pre-checkpoint `e06ad5b2…d182` to `eaa081b9…a4d`, a human-state fingerprint
+already observed in Cycle 17. Commands there were limited to read-only
+`git rev-parse` and `git status`; all edits, builds, tests, staging, and commits
+ran in goal-owned Scout or Mnemo execution spaces.
+
+The code remains local, unreviewed upstream, and undeployed. The next
+exploration starts another seed-first cycle, then inspects resource
+subscriptions/templates or the next unaudited bulk read if no higher-value
+seed trigger appears.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.

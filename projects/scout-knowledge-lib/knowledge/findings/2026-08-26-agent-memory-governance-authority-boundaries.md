@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including provenance reads, integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
-triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery and exact reads, provenance reads, integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
+triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, and integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, and memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -558,6 +558,46 @@ selectors. That is an exact operator-wide authority boundary, not proof of
 agent-scoped authorization and not safely repairable by copying MCP semantics.
 REST parity requires a credential design that resolves a principal and any
 organization scope before handler dispatch.
+
+### Resource discovery and exact reads must bind the verified caller
+
+Cycle 20 committed its unchanged live XHS comparison first as
+`c684563835a5f2b59e793c6651a624d6bcda3fea`. Two authenticated collection
+passes at `2026-09-01T17:46:35.052Z–17:48:11.364Z` reproduced the prior
+130-card ID and metadata fingerprints, with added, changed, and removed arrays
+`[]`; two historical cards remain window-unavailable and the durable union is
+132. Only after that ordering did the queued bulk/export-read question select
+GitHub/local code.
+
+Public Mnemo `main` was still
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` when refreshed at
+`2026-09-01T17:50:08.408Z`. At exact local pre-fix base
+`60c3edb91b262a7281526b40659d8e5f3f8262e1`, `resources/list` resolved the
+verified principal but omitted its signed organization, and `resources/read`
+ignored request context entirely. A real duplex fixture gave Alice
+`role:reader org:alpha` and seeded Bob/Alpha, Alice/Alpha, and Alice/Beta. The
+list exposed Alice/Beta URI
+`mem://01a05e1b-458a-7283-8c8f-0ca13ffd2867`; exact reads returned that
+record's `alice-beta-resource-cross-org` content and Bob/Alpha UUID
+`01a05e1b-4533-7a11-b568-c79c7067564f` with
+`bob-alpha-resource-secret`. These are generated fixture identifiers and
+literal marker content, not production data.
+
+Repair `ea7f8ea88a5104d79072e3b4a606e80cfdb20d65` narrows resource listing by
+principal and signed organization and applies the same visibility rule to
+exact reads. Denied exact UUIDs use resource-not-found so authorization does
+not confirm foreign-record existence. The caller's Alice/Alpha record remains
+readable, and a separate fixture preserves capability-less stdio's historical
+operator exact-read behavior. The code is local, unreviewed upstream, and
+undeployed.
+
+This extends rather than duplicates earlier evidence. Cycle 16's separate
+bulk-forget reproduction still has exact outputs
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`; the original Alice→Bob
+write/read/revise/forget HTTP denial remains preserved. Reviewed arXiv
+`2608.30177v1` still anchors the 15/15 stage-aware cluster, while Reddit remains
+RSS-readable/JSON-403 and low-value for adjudicating this code path.
 
 ## Why it matters
 
