@@ -1620,6 +1620,111 @@ with another seed reconciliation before any lane work. If the current session
 remains guest and no higher-value seed delta is observable, the next exploration
 is branch/merge caller binding plus the missing checkpoint organization model.
 
+## Cycle 22 checkpoint — branch and merge now honor caller identity
+
+What was wrong: branch and merge accepted a verified request at dispatch but
+did not carry the verified caller into checkpoint selection or copied-memory
+selection. Signed Alice could name Bob's checkpoint or branch, create a new
+checkpoint containing Bob's state, and carry Bob's memory reference forward.
+Those operations transfer durable state, so checking only the tool name was not
+an ownership boundary.
+
+Seed ordering was preserved. Cycle 22's reconciliation was committed first as
+`2e86ce63fa8b1295f4363116e366d3f74ec02bab`, before any source-lane work. From
+`2026-09-01T19:10:56.352Z` through `19:12:04.728Z`, Chrome PID 2136's WSL
+network namespace and DevTools endpoint were reachable with effective
+namespace UID 0, but there was no XHS account authority: the two open XHS pages
+had no current or history collection target, authenticated-page count was zero,
+and `/api/sns/web/v2/user/me` returned HTTP 200 with `guest: true` and no
+nickname. The representative token-free read of SkillOpt
+`6a96b1320000000012024529` ended at `/404` without a title or body. Added and
+changed sets are unknown, proven removals are `[]`, and all 132 durable seed IDs
+remain temporarily unavailable rather than removed. These observations do not
+turn repository fixtures, cached records, or the durable ledger into live XHS
+evidence. No XHS account or content state was changed.
+
+Only after that persisted reconciliation were the permanent lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance, high expected value,
+  and current executable access. Public Mnemo `main` remained
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20` at
+  `2026-09-01T19:14:04.670Z`. The queued branch/merge audit reproduced a
+  principal-crossing state transfer on exact local base
+  `f75797dd8be91f00b05576bf06ce5995a918c83f`. Revisit on an upstream revision,
+  review, or deployment; absent those, examine the missing checkpoint
+  organization field, metadata trust, or another unaudited state-transfer
+  surface next.
+- **arXiv was retained and deferred** because relevance and retained value are
+  high, but the guest seed boundary and branch/merge result did not create a new
+  paper question. An exact Atom lookup at
+  `2026-09-01T19:14:04.670Z–19:14:05.752Z` returned only `2608.30177v1`,
+  updated `2026-08-31T02:57:08Z`. It still wins the distinct 15/15 rubric as
+  controlled stage-wise memory-governance evidence. Revisit on a new version,
+  attributable artifact, independent replication, stronger stage-wise study,
+  or content-bearing seed change.
+- **Reddit was deferred without quota work** because relevance remains medium,
+  expected incremental value is low, and community anecdotes cannot adjudicate
+  checkpoint state transfer. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on distinct seed-linked reproducible
+  deployment evidence, a thread-content delta, or an access change.
+
+The pre-fix duplex fixture produced two exact local records. A valid Alice/Alpha
+capability branched Bob's state into checkpoint
+`01a05e65-fe4b-74b1-b2c4-dba4bb770305`, then full-merged Bob's `main` branch
+into checkpoint `01a05e65-fe75-78d0-8f10-1b4e87407a7f`. Both exposed the state
+marker `bob-branch-state` and referenced-memory marker
+`bob-branch-memory-secret`. These generated UUIDs and literals are test
+provenance, not production data and not two independent confirmations.
+
+What changes: Mnemo branch `codex/g-c1b31972-caller-binding` commit
+`716a1a57753d40f5afe91e0f5f0f5a2d129c0489` passes the verified principal to
+branch and merge, rejects foreign source or target checkpoints as not found,
+checks the exact branch source's thread, and filters copied memory references
+to the caller before creating a checkpoint. Alice can no longer branch or merge
+Bob's state; Bob still performs both operations on his own state; and
+capability-less stdio retains its historical operator behavior.
+
+The long-running native validation was checked directly rather than inferred
+from quiet output. At `2026-09-01T19:27:18.316Z`, the exact Mnemo worktree was
+clean at `716a1a57753d40f5afe91e0f5f0f5a2d129c0489`, with no `cargo`, `rustc`,
+or `nextest` process left running. The completed commit-scoped validation from
+`2026-09-01T19:19:44Z–19:23:21Z` passed formatting; strict all-target Clippy
+for core, MCP, and the HTTP-enabled server; 295 core tests with one intentional
+network embedding test ignored; 101 MCP tests; and 79 HTTP-enabled server
+tests. Focused branch/merge, replay, legacy-handle, and core integration tests
+also passed. No process needed to be stopped, no cache fallback was needed, and
+no install or source mutation occurred.
+
+Scout's full application check passes the syntax bundle, TypeScript, Prettier,
+and all 78 tests with 226 assertions. All 19 relative links across the seed
+ledger, topic map, authority finding, and this standing report resolve, and
+`git diff --check` reports no whitespace errors. The first health command was
+launched from the repository root and failed locally with `Module not found
+"scripts/library-health-readonly.ts"`; it did not run the observer or change
+source. Rerunning from the Scout app directory with explicit app and knowledge
+roots succeeded at `2026-09-01T19:28:21.883Z`: the read-only observer returned
+26 facts, 16 wake signals, and `truncated: true`—13 future-date facts, 12
+oversized-note facts, and one unsourced-backlog fact. These are bounded
+maintenance signals, not failures introduced by this checkpoint.
+
+The dirty human checkout remained byte-for-byte unchanged across comparable
+full read-only observations. At `2026-09-01T19:08:29.185Z` and
+`19:28:29.794Z`, both observations returned HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 881 porcelain-v2 entries with all
+untracked files included, and status SHA-256
+`082969aacb8d37eaa6f12b11c195024d0d74f1d27a8be14b082c14bd725495de`.
+Commands there used `git --no-optional-locks` only; every edit, formatter,
+build, test, cache, staging action, and commit remained in goal-owned Scout or
+Mnemo execution spaces.
+
+This is principal-scoped evidence, not tenant parity. Checkpoints still lack an
+organization owner, the code is local and unreviewed upstream, and nothing was
+deployed. Cycle 23 begins with another seed reconciliation before any lane work.
+If the XHS surface remains guest and no higher-value seed delta is observable,
+the next exploration is checkpoint organization and metadata ownership or
+another unaudited state-transfer surface.
+
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"

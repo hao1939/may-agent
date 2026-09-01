@@ -639,6 +639,41 @@ bulk-forget outputs `01a05d88-e769-7a20-98d5-bfdb63b27b82` and
 `01a05d88-e7a4-7f71-99a8-d873033baeaf`; none is counted as a second replay
 reproduction.
 
+### Branch and merge must not transfer another principal's checkpoint state
+
+Cycle 22 persisted the guest/unaddressable seed state first as Scout commit
+`2e86ce63fa8b1295f4363116e366d3f74ec02bab`. The live browser remained guest,
+no current or history collection target survived, added and changed sets were
+unknown, proven removals were `[]`, and all 132 durable seeds remained
+temporarily unavailable. Only after that record did the queued state-transfer
+audit select GitHub/local code.
+
+At exact local pre-fix base
+`f75797dd8be91f00b05576bf06ce5995a918c83f`, the MCP branch and merge handlers
+did not consume `CallerContext`. A valid Alice/Alpha capability could therefore
+branch Bob's checkpoint state and memory reference into generated checkpoint
+`01a05e65-fe4b-74b1-b2c4-dba4bb770305`, then full-merge Bob's `main` branch
+into generated checkpoint `01a05e65-fe75-78d0-8f10-1b4e87407a7f`. The literal
+fixture state was `bob-branch-state` and its referenced memory marker was
+`bob-branch-memory-secret`. These are local test records, not production data.
+
+Repair `716a1a57753d40f5afe91e0f5f0f5a2d129c0489` passes the verified caller
+principal into both operations. Core branch rejects a foreign exact checkpoint
+or mismatched thread, merge rejects foreign source and target checkpoints, and
+both paths retain only memory references owned by the caller before writing a
+new checkpoint. Alice receives not-found results without Bob's markers; Bob
+can branch and merge his own state; capability-less stdio keeps its historical
+operator behavior.
+
+This extends the same authority pattern without inflating evidence count. The
+branch and merge results are two operations in one reproduced checkpoint-state
+boundary, not independent confirmation of the paper or the earlier replay
+defect. Checkpoints still lack an organization owner, so signed tenant scope
+cannot constrain state transfer. Public Mnemo remains pinned at
+`2994abf185da50d43e5fa4b3f826812bd09c2f20`; the repair is local, unreviewed,
+and undeployed. Reviewed `2608.30177v1` remains the controlled 15/15 stage-wise
+anchor, and Reddit remains deferred at its RSS-readable/JSON-403 boundary.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
