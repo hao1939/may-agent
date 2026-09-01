@@ -22,8 +22,10 @@ exploration explicit.
 At `2026-09-01T09:53:22Z`, the repository XHS tool could not connect to
 `127.0.0.1:9222` from the goal-owned worktree. Chrome is running with that port
 in a different network namespace, but localhost, host aliases, and gateway
-checks were unreachable and this container identity was denied namespace entry.
-The operation failed before a login or collection-page verdict. Consequently:
+checks were unreachable. The worker ran as `uid=1000(hao)` with no effective
+Linux capabilities; namespace entry was denied even though the identity belongs
+to the local `docker` group. The operation failed before a login or
+collection-page verdict. Consequently:
 
 - the human's collection is **unobserved**, not empty;
 - new, changed, removed, and unavailable seed counts are unknown;

@@ -28,10 +28,11 @@ and failed before any XHS page or credential check: `connect ECONNREFUSED
 127.0.0.1:9222`. A Chrome process exists outside this worker's network
 namespace with `--remote-debugging-port=9222`, but the endpoint is unreachable
 through localhost, the container host aliases, and the container gateway. This
-worker's effective container identity cannot enter that process's network
-namespace (`nsenter: ... Permission denied`). Therefore this checkpoint does
-not know whether the browser session is logged in and does not reinterpret the
-failure as an empty collection.
+worker ran as `uid=1000(hao)`, with no effective Linux capabilities, and cannot
+enter that process's network namespace (`nsenter: ... Permission denied`).
+Membership in the local `docker` group did not make the endpoint reachable.
+Therefore this checkpoint does not know whether the browser session is logged
+in and does not reinterpret the failure as an empty collection.
 
 Smallest enabling change: make that existing Chrome DevTools endpoint reachable
 inside this worker container, or start an observational Chrome session with an
