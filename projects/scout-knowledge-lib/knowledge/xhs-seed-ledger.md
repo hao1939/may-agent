@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 22 begins seed-first through the verified WSL Chrome boundary, confirms that the browser remains a guest and no live tab or navigation history retains the collection target, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 23 begins seed-first through a directly reachable WSL Chrome connector, distinguishes public feed/post readability from unavailable collection authority, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T19:12:04.728Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-01T19:31:13.461Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, public-feed inventory, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 22 inventory and access diagnostics `2026-09-01T19:10:56.352Z–19:12:04.728Z` |
-| Current direct collection snapshot | **Unavailable and not comparable:** Chrome DevTools exposed two XHS pages, but neither current URL nor either page's navigation history retained the saved collection target; `/api/sns/web/v2/user/me` returned HTTP 200 with `guest: true` and no nickname |
+| Observation time | Cycle 23 inventory and access diagnostics `2026-09-01T19:29:55.679Z–19:31:13.461Z` |
+| Current direct collection snapshot | **Unavailable and not comparable:** directly reachable WSL Chrome exposed one Explore page whose only navigation-history entry was Explore; no collection label or address was present, and current-user reads returned HTTP 406 or 500 without an authenticated nickname |
 | Prior readable snapshot | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs |
 | Observable added / changed / absent | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable |
-| Collection-membership interpretation | Proven removed IDs `[]`. The guest/unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
-| Representative availability | A fresh direct token-free read of SkillOpt `6a96b132…4529` returned final path `/404`, `titleReadable: false`, and `notFound: true`; Cycle 21's fuller `/404` diagnostic remains the last observation of error `300031`, the QR prompt, and security verification |
+| Collection-membership interpretation | Proven removed IDs `[]`. The unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
+| Representative availability | A signed public-feed read of `6a6eb88e…31fc` returned its title, author, and body at `/explore/6a6eb88e…31fc`; this proves public-post readability, not collection membership or access to any of the 132 durable seeds |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -495,6 +495,62 @@ evidence are accessible local collected evidence, not a claim that the live
 collection was read. No XHS account or content state was mutated. Restoring a
 logged-in collection tab would make the next live comparison possible; until
 then independent source lanes can continue after this persisted reconciliation.
+
+## Cycle 23 seed-first reconciliation
+
+Cycle 23 began immediately after reviewable Scout checkpoint
+`5cea5f8e983ce4443b7339b38c167c692d93766d` and before any new GitHub, arXiv,
+Reddit, or local-code lane work. This cycle used the human-confirmed direct WSL
+Chrome path as well as the already known container connector, while keeping
+their browser sessions and authority distinct.
+
+At `2026-09-01T19:29:55.679Z–19:29:55.760Z`, the initiating shell was
+`uid=1000(hao)`. Chrome PID 1022, also running as `hao`, exposed DevTools
+directly on `127.0.0.1:9333`; no namespace or elevated identity was needed.
+Its sanitized target inventory contained one XHS Explore page and one XHS
+service worker. The older container Chrome on port 9222 remained reachable only
+through Chrome PID 2136's network namespace as effective UID 0 and separately
+showed a login page, Explore, and a new tab. Linux process or namespace
+authority does not supply XHS collection authority in either browser.
+
+The repository-native status and feed reads against the direct WSL connector
+ran at `2026-09-01T19:30:20.399Z–19:30:20.547Z`. Status found 149 rendered
+nodes and a login-wall signal. The visible public feed yielded 29 unique stable
+IDs, with ID fingerprint
+`18cacabaef80a3b0b319ddf48ef64c937ad21216d35b0401431f39d6bdfa1df6`
+and ID/title/author fingerprint
+`178aa880786de13888b42c3c3788f62a59c41725b91a596b19a9cd2b9677bf93`.
+These are public-feed discovery observations, not human-collection seeds.
+
+A representative signed-card read at
+`2026-09-01T19:30:44.857Z–19:30:51.705Z` opened a disposable tab for public
+post `6a6eb88e00000000320231fc`. Its title, author, and body were readable at the
+expected Explore path, with no navigation error or not-found result; the tab
+then closed. No signed token, body, comment, media URL, or raw profile identifier
+was printed or retained. This proves public-post access but does not establish
+collection membership.
+
+The bounded collection and identity inspection completed at
+`2026-09-01T19:31:12.704Z–19:31:13.461Z`. The page's only navigation-history
+entry was Explore, and the DOM contained no collection label or collection
+address. A direct read of the `edith` current-user endpoint returned HTTP 406,
+JSON `success: false`, code `-1`, and no nickname. The same-origin endpoint
+returned HTTP 500 `text/plain`; JSON parsing failed at the non-JSON `create
+inv…` response. Thirty profile links belonged to public feed cards and cannot
+identify a signed-in collection owner. A transient login-wall text difference
+between bounded DOM reads likewise cannot prove account authority.
+
+The exact reconciliation against Cycle 22 is therefore unchanged in membership
+terms: added IDs and title/author changes are unknown, proven removed IDs are
+`[]`, and all 132 durable IDs remain unavailable rather than removed. Cycle
+20's two authenticated 130-card fingerprints remain the last comparable direct
+collection evidence. Repository fixtures, the canonical ledger, cached exports,
+prior observer history, the 29-card public feed, and the readable public post
+are accessible evidence but do not prove current collection membership. No
+like, collect, delete, comment, follow, post, message, settings, login, or other
+XHS account or content mutation occurred. A live collection address under an
+authenticated browser principal remains the smallest condition for a
+comparable next reconciliation.
 
 ## Live access connector provenance
 
