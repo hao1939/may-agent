@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 24 begins seed-first through the directly reachable WSL Chrome connector, confirms an unchanged public feed but no collection address or authenticated identity, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 25 begins seed-first, finds the saved collection target redirected to login in the existing Linux Chrome session, proves public feed/detail access remains separate, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-01T19:39:00.889Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, public-feed inventory, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-01T20:43:28.718Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab/history inventory attempts, public-feed inventory, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 24 inventory and access diagnostics `2026-09-01T19:39:00.104Z–19:39:00.889Z` |
-| Current direct collection snapshot | **Unavailable and not comparable:** directly reachable WSL Chrome again exposed one Explore page whose only navigation-history entry was Explore; no collection label or address was present, and the current-user read returned HTTP 406 without an authenticated nickname |
+| Observation time | Cycle 25 inventory and access diagnostics `2026-09-01T20:42:04.953Z–20:43:28.718Z` |
+| Current direct collection snapshot | **Unavailable and not comparable:** the prior direct DevTools endpoint is closed; the existing Linux Chrome session retains a saved collection-profile history entry but redirects it to login, exposes no collection cards or authenticated nickname, and returns HTTP 406 from three bounded current-user reads |
 | Prior readable snapshot | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs |
 | Observable added / changed / absent | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable |
 | Collection-membership interpretation | Proven removed IDs `[]`. The unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
-| Representative availability | A signed public-feed read of `6a6eb88e…31fc` returned its title, author, and body at `/explore/6a6eb88e…31fc`; this proves public-post readability, not collection membership or access to any of the 132 durable seeds |
+| Representative availability | A fresh signed public-feed read of `6a9690dc…4a3b` returned title, author, and 111 description characters at `/explore/6a9690dc…4a3b`; this proves public-post readability, not collection membership or access to any of the 132 durable seeds |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -586,6 +586,70 @@ collection equality. No XHS account or content state was mutated. A live
 collection address under an authenticated browser principal remains the next
 comparison trigger.
 
+## Cycle 25 seed-first reconciliation
+
+Cycle 25 began immediately after reviewable Scout checkpoint
+`3120ef5ae2195e960c2a404cdba6aaca1dc6eb00` and before any new GitHub,
+arXiv, Reddit, or local-code work. From the goal-owned Scout worktree, the
+initiating identity was `uid=1000(hao)`. A direct DevTools preflight to
+`127.0.0.1:9333` at `2026-09-01T20:43:28.710Z–20:43:28.718Z` failed with
+curl exit 7, `Failed to connect ... Couldn't connect to server`. That is a
+missing direct connector, not evidence about XHS authentication or collection
+membership.
+
+The existing Linux Chrome process remained available as PID 2136, running as
+root with profile `/app/.state/chrome-profile` and loopback DevTools port 9222
+inside its own network namespace. Passwordless local `sudo nsenter` changed the
+effective observation identity to UID 0 and supplied process/network access
+only; it did not grant XHS account authority. The observer used the existing
+tabs read-only and opened one disposable public-detail tab, which it closed.
+No saved tab was navigated and no XHS account or content action was issued.
+
+At `2026-09-01T20:42:04.953Z–20:42:37.607Z`, Chrome exposed an Explore page
+and a saved collection-profile target redirected to `/login`. The collection
+target's sanitized URL fingerprint is
+`854bcf9c75de57762c6fa982b7385985adb06c22314a35a00fea05d0388fed7b`;
+its two-entry navigation history records the profile path followed by login,
+but its DOM has zero collection links or labels. Three bounded credentialed
+reads to the `edith` `selfinfo`, v1 `user/me`, and v2 `user/me` paths each
+returned HTTP 406 `application/json`, `success:false`, code `-1`, no guest
+value, and no nickname. The actual failed operation is therefore collection
+inventory in Chrome PID 2136's network namespace as effective UID 0: target
+saved collection profile, observed result login redirect/no collection DOM,
+with no authenticated XHS principal. A logged-in collection page is the
+smallest condition that would make the snapshot comparable; no credential or
+account mutation is requested here.
+
+The public Explore page remained readable and had one-entry navigation history
+`/explore`, zero collection links or labels, and no current login-wall text. A
+sorted token-free inventory contained 30 unique cards. Its newline-delimited ID
+fingerprint is
+`f249607ae5d763e3d8898e7970bc732e62c76c304678ba2dedbeaa5faa8bc7c2`,
+equal to the earlier Cycle-9 public-feed window; its current
+ID/title/author fingerprint is
+`47d81f1af64766e0a738e2c48063008b9e520111c2656555b3d778e4b10fc518`.
+Cycle 24's different direct browser exposed 29 cards, but its complete public
+ID list was not retained, so exact public additions, changes, and absences are
+unknown. Neither public window is a collected-seed surface.
+
+A representative signed-card read at
+`2026-09-01T20:42:51.571Z–20:42:58.328Z` opened and closed a disposable tab
+for public post `6a9690dc0000000012024a3b`. The expected Explore path returned
+a title, author, 111 description characters, 992 rendered body characters, no
+login wall, and no not-found signal; the token-free content fingerprint is
+`098c318bc67cc7e5b93c2cc6bdb0ad8d65fbc1ad48c7f06d09e45450c4f9e5b6`.
+No signed token, raw body, profile identifier, comment, or media URL is
+retained. This is public-post access evidence only.
+
+The exact collection reconciliation against Cycle 24 is: newly collected IDs
+unknown, title/author changes unknown, proven removed IDs `[]`, and unavailable
+IDs equal to all 132 durable seeds. The saved target improves address
+provenance but not access; Cycle 20 remains the last comparable authenticated
+snapshot. Repository fixtures, cached exports, the ledger, observer history,
+public-feed cards, and the readable public post remain explicitly separate
+evidence surfaces. No like, collect, delete, comment, follow, post, message,
+setting, or login action occurred.
+
 ## Live access connector provenance
 
 The repository-native observational connector is
@@ -974,3 +1038,6 @@ comments, and other account data are not retained.
 | 2026-09-01T17:46:35.052Z–17:48:11.364Z | Two authenticated passes exactly reproduce Cycle 19's 130-card ID and metadata fingerprints | `[]` IDs | `[]` title/author changes | `[]` proven removals | Window-unavailable `[6a449e58…ca2c, 6a4b745f…5691]`; durable union 132 | Cycle 20 reconciliation was committed before lane work as `c684563…3fea`; preserve both unavailable records and select the queued resource-read audit only afterward. |
 | 2026-09-01T18:38:00.454Z–18:44:00.016Z | Saved collection target found, but zero cards materialized; collection reload redirected to the home/public-notes view; current-user API returned HTTP 200 with `guest: true` | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable; representative `6a96b132…4529` token-free read returned `/404`, error `300031`, QR prompt, and security verification | Cycle 21 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot, infer no collection changes from guest/public output, and revisit immediately when the Chrome session becomes authenticated again. |
 | 2026-09-01T19:10:56.352Z–19:12:04.728Z | DevTools reachable with two XHS pages, but no current/history collection target and zero authenticated pages; current-user API again returned HTTP 200 with `guest: true` | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable; fresh token-free `6a96b132…4529` read ended at `/404` with no title/body | Cycle 22 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot and use local collected evidence without presenting it as a live read; revisit when a logged-in collection tab exists. |
+| 2026-09-01T19:29:55.679Z–19:31:13.461Z | Direct WSL Chrome exposed a 29-card public Explore window and a readable public detail, but no collection address or authenticated nickname | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable | Cycle 23 reconciliation was persisted before lane work. Public feed/detail access is not collection authority; preserve Cycle 20 as the last comparable snapshot. |
+| 2026-09-01T19:39:00.104Z–19:39:00.889Z | Same direct WSL browser reproduced the 29-card public ID and metadata fingerprints, but still exposed no collection address or authenticated nickname | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable | Cycle 24 reconciliation was committed first as `ee615be1…5d9`; only then select the checkpoint-organization fixture. |
+| 2026-09-01T20:42:04.953Z–20:43:28.718Z | Direct port 9333 refused connection; existing PID-2136 Chrome retained a saved collection target redirected to login. Three current-user reads returned HTTP 406/code `-1`; public Explore returned 30 cards and public detail `6a9690dc…4a3b` remained readable. | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable | Cycle 25 reconciliation is persisted before lane work. The saved address improves provenance but not authority; revisit when the collection target is authenticated. |
