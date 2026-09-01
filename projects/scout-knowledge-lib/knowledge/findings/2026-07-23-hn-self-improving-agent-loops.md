@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Finding on self-improving agent loops: closed-loop self-evaluation plateaus, while later updates show durable gains require externally grounded verification, pathway- and coalition-level evaluation, repeated runs, order perturbations, security/effect audits, and separate optimization and deployment budgets."
 triggers: ["self-improving agents", "verifier loop", "agent self-improvement", "Goodhart drift", "closed-loop plateau", "retained experience", "skill evolution benchmark", "persistent agents", "pathway evidence", "task order", "hidden curriculum", "run variance", "underspecification", "security drift", "unauthorized state change", "artifact-executor compatibility", "agent optimization budget", "deployment cost frontier", "coalition pollution", "cross-domain utility reversal", "skill reliability"]
-source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077; arXiv 2608.22610v1 full paper source."
+source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077; full paper sources of arXiv 2608.22610v1 and 2607.26784v1; and Within-yao/SkillRise at 2b38da3ad7b64414305d39609484803b07d3b9b0."
 last_updated: "2026-09-01"
 </ai_context>
 
@@ -199,3 +199,60 @@ seeds, and a fixed judge. The target masking result uses only 20 unlabeled
 queries, the clearest target reversal is directional rather than significant,
 and the paper says its audit toolkit, method code, and checkpoints **will be
 released**. Independent reproduction and broader skill types remain open.
+
+## Update 2026-09-01: SkillRise makes later tasks the curation evaluator
+
+**Sources**:
+
+- Xiaohongshu collection seed `6a6ab006000000001c00c932`, observed readable at
+  `2026-09-01T11:29:49Z–11:30:14Z`
+- https://arxiv.org/abs/2607.26784v1
+- https://github.com/Within-yao/SkillRise/commit/2b38da3ad7b64414305d39609484803b07d3b9b0
+
+The now-readable human-collected post nominates SkillRise as a direct test of
+cross-task skill transfer. Its useful mechanism is not unconstrained reflection:
+one policy alternates between solving an ordered task and rewriting a single
+sequence-local skill document. Current-task outcome supervises solving; the
+discounted outcomes of later tasks supervise curation. The document is the sole
+information channel across tasks, so a later task is an external behavioral
+test of whether the prior rewrite transferred.
+
+The full `2607.26784v1` source reports Qwen3-1.7B and Qwen3-4B experiments on
+128 held-out instances from each of ALFWorld, WebShop, and ScienceWorld. With
+Qwen3-4B, Pass@1 is 85.9%, 84.4%, and 54.6%, beating the strongest listed
+baseline by 2.3, 7.1, and 8.5 percentage points. On the same 128 ALFWorld tasks,
+increasing related sequence length from two to six raises success from 83.6%
+to 87.5% while each task is attempted once; the strongest-baseline margin grows
+from 3.9 to 8.6 points. A no-curation ablation trails by roughly three points at
+the end of training. In the authors' same-GPU pipeline comparison, SkillRise
+matches RetroAgent at 85.9%, beats their SkillRL reproduction by 12.5 points,
+and uses 1/6 and about 1/4.3 of those systems' respective running times.
+
+### Why this does not settle robust self-improvement
+
+The result is controlled evidence for later-task outcome credit, not proof that
+the learned document transfers under open-ended task streams. Sequence
+construction assumes environment-provided task-family metadata and an explicit
+simple-to-complex order; this is exactly where the earlier task-order finding
+warns that a hidden curriculum can manufacture improvement. The paper reports
+one family/order protocol, models no larger than 4B, three text environments,
+and readily verifiable rewards. It does not report shuffled-order or
+mis-grouped-task stress tests, persistent cross-session governance, hostile
+content, or multi-principal skill ownership.
+
+GitHub gives attributable implementation provenance rather than an independent
+replication. The paper source links `Within-yao/SkillRise`; public `main` resolved
+to `2b38da3ad7b64414305d39609484803b07d3b9b0`. Its recursive tree was complete
+(`truncated=false`), with 839 blobs and exact environment managers, a
+solve/curate rollout loop, K=3 group data for all three benchmarks, and runnable
+scripts. The repository has no GitHub Actions runs or project-level test suite.
+One commit message says ALFWorld validation plus one GRPO step succeeded, which
+is maintainer provenance, not Scout execution or reproduction. The large GPU,
+model, environment, and external-data requirements make a full independent run
+outside this bounded checkpoint.
+
+**Reusable rule:** make a skill rewrite earn credit from held-out downstream
+behavior, but perturb grouping and order before calling the gain transferable.
+The next test should hold tasks and budget fixed while comparing easy-to-hard,
+shuffled, reversed, and deliberately mis-grouped sequences across repeated
+seeds, preserving every evolved document for pathway audit.
