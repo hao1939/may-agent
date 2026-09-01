@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 8 confirms the 130-ID bounded surface is stable and persists a complete token-free title/author baseline for exact future reconciliation."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 9 directly verifies the WSL Chrome authority boundary, exactly confirms stable 130-ID membership and metadata, and records the current detail-read limitation."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T11:40:07Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T12:05:31Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,13 +16,67 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | 2026-09-01T11:39:38Z–11:40:07Z |
+| Observation time | 2026-09-01T12:01:50Z–12:05:31Z |
 | Current direct collection snapshot | **Readable, bounded:** 130 stable note IDs; ID fingerprint `ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12`; ID/title/author fingerprint `e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c` |
-| Prior readable snapshot | 2026-09-01T11:29:49Z–11:30:14Z; 130 stable IDs with the same ID fingerprint; metadata persisted for 24 |
-| Observable added / changed / absent | IDs `[]` / title-author changes `[]` among 24 comparable records and unavailable for the other 106 / IDs `[]` |
+| Prior readable snapshot | 2026-09-01T11:54:40Z–11:55:05Z; 130 stable IDs and complete metadata with the same fingerprints |
+| Observable added / changed / absent | IDs `[]` / title-author changes `[]` across all 130 comparable records / IDs `[]` |
 | Collection-membership interpretation | Membership is unchanged under a comparable bounded pass; no collection addition or removal is inferred |
-| Representative availability | `6a6ab006…c932` remains readable at its stable detail path with unchanged stored title and author |
+| Representative availability | Collection cards for `6a955b35…afaf` and `6a6ab006…c932` remain readable with unchanged title/author, but fresh signed detail GETs currently resolve to `/404`; this is detail unavailability, not seed removal |
 | Removal policy | No post is marked removed until a later comparable readable snapshot confirms absence |
+
+## Cycle 9 direct WSL Chrome access boundary
+
+The live observational connector is Chrome DevTools on loopback port 9222 in
+Chrome PID 2136's network namespace. The initiating shell is
+`uid=1000(hao)` and has passwordless `sudo` authority; Chrome itself runs as
+root with profile `/app/.state/chrome-profile`. The browser session, not either
+Linux identity, supplies XHS authority. Its visible account label is `Alex`,
+the self-profile `收藏 / 笔记` surface is readable, and no login wall appears. No
+cookie, token, raw profile identifier, signed media URL, or comment text was
+read back or persisted.
+
+The default worker network still cannot reach that loopback listener: at
+`2026-09-01T12:05:31Z`, read-only
+`GET http://127.0.0.1:9222/json/version` from the goal worktree as
+`uid=1000(hao)` failed with curl exit 7, `Failed to connect to 127.0.0.1 port
+9222`. A passwordless `sudo nsenter -t 2136 -n` joins only Chrome's network
+namespace and makes the same DevTools listener readable. This is available
+connector wiring, not additional XHS account authority and not a missing
+credential.
+
+From `2026-09-01T12:01:50Z` through `12:02:06Z`, a read-only observer used the
+existing authenticated collection tab, returned it to its original scroll
+position, and materialized the saved bounded window in 18 passes: initial
+viewport plus 17 800-pixel scrolls. Counts progressed
+`30, 30, 34, 40, 47, 54, 61, 67, 73, 79, 85, 92, 99, 105, 111, 117, 124,
+130`. The surface declared **995 notes, 0 albums, and 14 files**. Against the
+complete Cycle-8 table, exact added IDs are `[]`, exact title/author changes
+are `[]`, exact absent IDs are `[]`, and all 130 records have metadata. The
+canonical ID and metadata fingerprints therefore remain
+`ea12a238…b12` and `e24ce287…c11c`. The other 865 declared notes and the
+14-file surface remain unobserved; they are coverage uncertainty, not removed
+or unavailable item IDs.
+
+An initial 13-pass attempt at `2026-09-01T12:00:49Z–12:01:04Z` stopped at 99
+cards, so it was discarded as non-comparable and no absence was inferred. Its
+first-line fallback also misread the visible `文件` badge on
+`6a59fc8f000000000503a52b` as a title. The corrected observer selected
+`a.title span` and `.author .name`; the saved title `清华等机构提出SEED：让Agent学会任务复盘`
+and author `Oscholar` are unchanged.
+
+Representative detail access is narrower than collection-card access. A fresh
+signed-card GET for WikiSkill seed `6a955b35000000000400afaf` at
+`2026-09-01T12:03:47Z–12:03:55Z` resolved to `/404`, without a login wall.
+SkillRise seed `6a6ab006000000001c00c932` did the same at
+`2026-09-01T12:04:09Z–12:04:24Z`; reloading the collection in a disposable tab
+to obtain a fresh card link and retrying at
+`2026-09-01T12:04:45Z–12:05:04Z` again resolved to `/404`. Both disposable tabs
+were closed, the original collection tab was left open and restored, and no
+XHS mutation was made. The cards' stable IDs, titles, and authors remain live
+collection evidence; their bodies are unavailable in this observation and
+support no additional claim. Repository fixtures, cached exports, prior
+observer history, and the 104-ID retained local corpus below remain explicitly
+separate from this live result.
 
 The repository-native observational connector is
 `agents/scout/tools/xhs-browse.mjs`. It supports `status`, Explore feed, search,
@@ -393,3 +447,5 @@ comments, and other account data are not retained.
 | 2026-09-01T11:15:53Z | Live self-profile collection declares 995 notes / 0 albums / 14 files; bounded pass materialized 24 IDs, fingerprint `158fa985…10eb` | prior-readable delta unknown; 24 newly observable baseline IDs | unknown | unknown | `6a6ab006…c932` detail resolves `/404`; 971-note tail and 14 files unobserved | Reopen cycle-6 selection on direct seeds. Deduplicate one local overlap, add 23 collection-confirmed Scout seed records, make no removal inference, and preserve the bounded-coverage caveat. |
 | 2026-09-01T11:29:49Z–11:30:14Z | Same direct collection tab; 130 stable IDs, fingerprint `ea12a238…b12`, reproduced twice | 106 newly materialized, not proven newly collected | `[]` title/author changes; `6a6ab006…c932` access became readable | `[]` prior IDs absent; no removal inferred | Tail unobserved; detail availability of other new IDs not enumerated | Cycle 7 reconciled before discovery. Select SkillRise follow-up from the now-readable seed; preserve coverage uncertainty. |
 | 2026-09-01T11:39:38Z–11:40:07Z | Same direct collection tab; 130 stable IDs and unchanged ID fingerprint; complete metadata fingerprint `e24ce287…c11c` | `[]` IDs | `[]` among 24 comparable records; unavailable for 106 previously ID-only records | `[]` IDs; no removal inferred | Collection tail and 14-file surface unobserved; representative SkillRise detail readable | Cycle 8 reconciled before lane reconsideration. Persist all 130 title/author pairs so the next cycle can identify exact metadata changes. |
+| 2026-09-01T11:54:40Z–11:55:05Z | Same direct collection tab; 130 stable IDs; ID and complete metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records | `[]` IDs; no removal inferred | Collection tail and 14-file surface unobserved; representative SkillRise detail readable | Cycle 9 reconciled before discovery. With exact membership and metadata continuity established, reconsider all lanes and select the next seed-linked evaluation question by value. |
+| 2026-09-01T12:01:50Z–12:05:31Z | Direct WSL Chrome boundary verified through PID 2136's network namespace; same 130 IDs and metadata; 995 notes / 0 albums / 14 files declared | `[]` IDs | `[]` across all 130 comparable records | `[]` IDs; no removal inferred | 865-note tail and 14 files unobserved; `6a955b35…afaf` and `6a6ab006…c932` cards readable but signed details `/404` | Preserve the completed pre-discovery Cycle-9 reconciliation. Record live inventory access separately from current detail unavailability; no credential action is required. |

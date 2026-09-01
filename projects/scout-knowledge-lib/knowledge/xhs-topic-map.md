@@ -2,19 +2,19 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-01"
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T11:40:07Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, 2606.04315v1, and 2607.26784v1; pinned SkillRise and Mnemo repositories; goal-owned SkillRise order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and executable transport validation of sattyamjjain/mnemo revision 376ca28606c5b6287d9c8274482fa791d4dc8703."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T12:05:31Z plus retained local evidence; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, and third-party WikiSkill repositories; goal-owned SkillRise order-fixture candidate 66f9384523d8f437ce872c11169e3a7ca3d64da8; and executable transport validation of sattyamjjain/mnemo revision 376ca28606c5b6287d9c8274482fa791d4dc8703."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
-The direct seed surface is readable but incomplete: the profile last declared
-995 collected notes, while the latest bounded pass materialized 130 stable IDs.
-Cycle 8 found the same 130 IDs, persisted a complete title/author fingerprint,
-and found no added or absent ID. Metadata changes are empty for the 24 records
-that were comparable with Cycle 7 and unavailable for the other 106 because
-their earlier metadata was not persisted. The unobserved tail and retained local
-XHS records remain separate.
+The direct seed surface is readable but incomplete: the profile declares 995
+collected notes, while the latest comparable bounded pass materialized 130
+stable IDs. Cycle 9 found no added, changed, or absent item across all 130
+complete title/author records. Collection cards remain readable, but two fresh
+signed detail reads resolved to `/404`; the 865-note tail, 14-file surface, and
+retained local XHS records remain separate uncertainty rather than inferred
+removals.
 
 ## Revisable value rubric
 
@@ -38,7 +38,7 @@ it is not evidence quality.
 
 | Cluster | Seed connection | Score | Supporting sources | Current finding / uncertainty | Confidence | Next exploration |
 |---|---|---:|---|---|---|---|
-| **Self-evolution reliability and evaluation authority** | Confirmed: the original six plus newly materialized cards for SkillRise, harness evolution, evaluation, order, boundaries, and skill gates, including `6a4b745f…5691`, `6a50b737…db71`, `6a5ea1bb…3000`, `6a6ab006…c932`, `6a7f5f7b…348b`, `6a87e8d8…6091`, and `6a955b35…afaf` | **15** (`3+3+3+3+3`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1), [`2607.26784v1`](https://arxiv.org/abs/2607.26784v1); GitHub [SkillRise revision](https://github.com/Within-yao/SkillRise/commit/2b38da3ad7b64414305d39609484803b07d3b9b0) | The expanded direct surface makes self-evolution a co-leading cluster. SkillRise makes later-task outcomes supervise skill curation and reports cross-task scaling, but assumes family metadata and simple-to-complex order. The pinned code audit confirms fixed within-group positions; a local fixture candidate can express perturbations but has not run performance trials. | High for the reviewed paper's reported protocol and code structure; moderate-high for the cross-source reliability pattern; moderate for generalization; low for untested open-ended streams. | Run matched model/environment trials from the prepared original, shuffled, reversed, and mis-grouped fixtures across repeated seeds, preserving evolved documents. |
+| **Self-evolution reliability and evaluation authority** | Confirmed: the original six plus cards for SkillRise, harness evolution, evaluation, order, boundaries, skill gates, and WikiSkill, including `6a4b745f…5691`, `6a50b737…db71`, `6a5ea1bb…3000`, `6a6ab006…c932`, `6a7f5f7b…348b`, `6a87e8d8…6091`, and `6a955b35…afaf` | **15** (`3+3+3+3+3`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); [evolution-stall/WikiSkill synthesis](./findings/2026-07-22-arxiv-evolution-stall-memory-paradigm.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1), [`2607.26784v1`](https://arxiv.org/abs/2607.26784v1), [`2608.27454v1`](https://arxiv.org/abs/2608.27454v1); GitHub [SkillRise revision](https://github.com/Within-yao/SkillRise/commit/2b38da3ad7b64414305d39609484803b07d3b9b0) and [third-party WikiSkill revision](https://github.com/ashutoshsinghpr7/wikiskill/commit/4cb78c00e3529b5645c101d4f7779c5ebb2c32b1) | WikiSkill adds a distinct raw-trace → persistent-wiki → gated-skill path. Its full source supports strong averaged gains and conditional cross-model transfer, but also shows severe negative transfer, small validation sets, no retrieval test, and no wiki pruning. The third-party implementation passes local tests yet reports no live accepted improvement. SkillRise remains the order-sensitive complementary path. | High for the reviewed papers' reported protocols and exact source/code structure; moderate-high for the cross-source reliability pattern; moderate for generalization; low for untested open-ended streams and independent replication. | Revisit target-model transfer/regression gating when author code, an independently archived accepted run, or a new direct seed fires the trigger; otherwise compare the queued Mnemo organization-scope question after the next seed reconciliation. |
 | **Long-horizon persistence and stage-aware memory governance** | Confirmed: original three plus `6a5c3c50…fcb1`, `6a7d3636…b50a`, `6a8afea9…2a35`, `6a902f77…2296`, and other memory/continuity cards | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703) and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | The readable SkillRise seed bridges memory and self-evolution: a sequence-local skill document is the sole cross-task channel. MemGauge remains the freshest controlled stage-wise memory evidence. The Mnemo reproduction and candidate retain their distinct principal-binding role. | High for MemGauge and reproduced Mnemo behavior; moderate for lifecycle synthesis and generalization beyond evaluated settings. | Retain `2608.30177v1` as this cluster's anchor; inspect authenticated `org_id` binding after the higher-value new SkillRise order trigger. |
 | **Build playbooks and implementation literacy** | Confirmed: `6a62d7a9…d139`, `6a73581f…d99e`, `6a762c6e…88d6` | **11** (`2+2+2+2+3`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md) | The collection confirms direct interest in Unity CLI practice, issue triage, and large-project planning. Content quality and successful-use evidence remain unknown without detail reads. | Moderate for collection relevance; low-moderate for the format-performance claim. | Deep-read the project-planning seed and compare its operational steps with the retained playbook packet. |
 
@@ -49,9 +49,40 @@ a source-activity quota.
 
 | Lane | Current relevance / expected value / freshness | Access and last useful evidence | Decision and revisit trigger |
 |---|---|---|---|
-| **GitHub** | **High relevance / high realized value / current; selected in cycle 8.** Stable seeds kept SkillRise selected and the order-fixture trigger fired. | Public `main` still resolved to `2b38da3ad7b64414305d39609484803b07d3b9b0`. In a goal-owned clone, all ALFWorld and WebShop groups were nondecreasing by their available order metric; ScienceWorld exposed no difficulty field. Loaders shuffle groups, not tasks. The tree has only three K=3 group files, no generator/order option, and no project suite. Local candidate `66f9384523d8f437ce872c11169e3a7ca3d64da8` adds a data-only four-variant fixture builder with three passing tests. | Last useful evidence is pinned source structure plus a validated local data-preparation candidate, not a model reproduction. Under `uid=1000(hao)`, the clone has no `nvidia-smi`, PyTorch, Java, model checkpoint, ALFWorld data, or ScienceWorld data; a matched rollout is not currently runnable. Revisit for upstream change/review, released rollout artifacts, or provisioned model/environment resources. Mnemo `org_id` remains queued. |
-| **arXiv** | **High relevance / low incremental value / fresh; retained and deferred in cycle 8.** The seed set and rubric are unchanged, and the full `2607.26784v1` source was just reviewed. | Last useful evidence remains the exact one-result query at feed update `2026-09-01T11:30:39Z` and the reviewed TeX. `2608.30177v1` remains the fresher 15/15 memory anchor; SkillRise remains the marginal self-evolution deep dive. No request was issued for quota. | Revisit `2607.26784` on version change or new order/grouping results. Revisit `2608.30177v1` for version, artifacts, or a stronger stage-wise study. |
-| **Reddit** | **Medium relevance / low incremental value / unchanged; deferred in cycle 8 without quota work.** No new seed, claim, or access trigger appeared. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. | Revisit for a SkillRise/order discussion with distinct evidence, a new seed-linked thread, content delta, or access change. |
+| **GitHub** | **High relevance / moderate realized value / current; selected in cycle 9.** The exact WikiSkill seed and paper created an artifact question. | The paper and arXiv metadata expose no author code. At `2026-09-01T12:07:28Z–12:07:45Z`, unauthenticated public repository search was complete and returned 77 broad WikiSkill matches plus one exact-title match. The strongest-looking community result was created after the paper, is not author-attributed, and was pinned at `ashutoshsinghpr7/wikiskill` revision `4cb78c00e3529b5645c101d4f7779c5ebb2c32b1`. Its local offline suite passed 48 tests; its maintainer run log reports only rejection/no-action outcomes. | Treat the repository as implementation experience, not official code or replication. Last useful attributable evidence remains SkillRise `2b38da3…b0`; the WikiSkill revision is last useful community evidence. Revisit for author-linked code, an independently archived accepted run, revision/review change, or a focused-goal artifact. |
+| **arXiv** | **High relevance / high realized value / fresh; selected in cycle 9.** Confirmed seed `6a955b35…afaf` exactly names skills and a knowledge base co-evolving. | Exact search returned five candidates at `2026-09-01T11:57:06Z`; `2608.27454v1` was the semantic match. The 789 KiB source archive returned HTTP 200 with SHA-256 `476256f4…eab4`; complete TeX supplied benchmark, transfer, ablation, implementation, and limitation evidence. The existing abstract-only section was enriched rather than duplicated. | WikiSkill scores 15/15 for the self-evolution cluster. It does not supersede `2608.30177v1`, which remains the co-leading memory-governance cluster's fresher 15/15 anchor. Revisit on a version, author artifact, independent replication, or transfer-gate result. |
+| **Reddit** | **Medium relevance / low incremental value / unchanged; deferred in cycle 9 without quota work.** The seed, full paper, and code search resolve the current question; no community-specific claim or revisit trigger appeared. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. No request was issued merely to satisfy a lane count. | Revisit for a WikiSkill/transfer discussion with distinct evidence, a new seed-linked thread, content delta, or access change. |
+
+## Cycle 9 selection — persistent knowledge compilation and transfer gates
+
+The cycle reconciled the complete 130-record bounded XHS window at
+`2026-09-01T11:54:40Z–11:55:05Z` before the first discovery request. A second
+direct WSL Chrome check at `12:01:50Z–12:05:31Z` reproduced the same IDs and
+metadata, established the live browser authority boundary, and found current
+detail reads `/404` without a login wall. This preserves the card title as seed
+evidence without treating its inaccessible body as claim evidence.
+
+Confirmed seed `6a955b35000000000400afaf` (“谷歌团队：让Agent Skills和知识库一起演化”)
+makes WikiSkill a 15/15 self-evolution candidate: direct seed connection,
+primary cross-source evidence, operational impact, a resolvable architecture
+gap, and August 27 freshness all score 3. The full source deep dive retained
+that selection. Deduplication found arXiv `2608.27454` already represented in
+the evolution-stall finding, so this cycle enriched that section instead of
+creating a second finding or counting the third-party code as a second paper.
+
+The durable boundary is a four-stage gate: preserve immutable traces, compile
+patterns and rejected-proposal history into a persistent knowledge layer,
+propose one bounded skill change, and evaluate it on the target consumer with a
+regression sentinel. WikiSkill supports the first three and strict validation;
+its negative-transfer result shows why the fourth cannot be inferred from
+source-model success. The available community implementation provides concrete
+rollback/profile-isolation experience, but its 48 passing tests and
+maintainer-reported rejected runs do not reproduce the paper's gains.
+
+The next standing-loop exploration begins seed-first. If no new seed or author
+artifact fires the target-model transfer/regression trigger, the queued Mnemo
+organization-scope question is the next bounded exploration. All lanes and
+topics remain inside this one standing goal.
 
 ## Selected deep dive — coalition-conditioned skill reliability
 
