@@ -540,6 +540,16 @@ variants, and same-family donor rejection. Bounded fixture generation also
 succeeded against each real K=3 group file. No dependency installation, model
 download, environment rollout, GPU training, or result scoring was attempted.
 
+The next-run boundary was checked in the goal-owned SkillRise clone under
+`uid=1000(hao)`. `nvidia-smi` is unavailable; Python 3 is present but PyTorch is
+not; Java is unavailable; `/path/to/Qwen3-4B` and `/path/to/jdk-11` are still
+documented placeholders; and `/home/hao/data/alfworld` plus
+`/home/hao/data/sciworld` do not exist. Missing Python dependency installation
+would be convenience wiring, but it would not provide the absent accelerator,
+4B checkpoint, Java runtime, and environment datasets. A matched performance
+run is therefore not currently supported, and no credential or account action
+is requested.
+
 A broader scan of the pre-existing `knowledge/INDEX.md` still finds 67 broken
 links unrelated to this change. They remain library-health backlog rather than
 being presented as a clean global-link result.
@@ -597,8 +607,10 @@ environment revision fixed while comparing original, shuffled, reversed, and
 deliberately mis-grouped sequences across repeated seeds, preserving each
 evolved document for pathway audit. Until proportionate model and environment
 resources are available, the fixture remains preparation rather than result
-evidence. Mnemo organization scope remains queued; Reddit is revisited only for
-distinct evidence or an access/content change.
+evidence. Its next revisit trigger is provisioned model/environment resources or
+a smaller controlled CPU proxy with the same positional contract. Mnemo
+organization scope remains queued; Reddit is revisited only for distinct
+evidence or an access/content change.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.

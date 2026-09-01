@@ -49,7 +49,7 @@ a source-activity quota.
 
 | Lane | Current relevance / expected value / freshness | Access and last useful evidence | Decision and revisit trigger |
 |---|---|---|---|
-| **GitHub** | **High relevance / high realized value / current; selected in cycle 8.** Stable seeds kept SkillRise selected and the order-fixture trigger fired. | Public `main` still resolved to `2b38da3ad7b64414305d39609484803b07d3b9b0`. In a goal-owned clone, all ALFWorld and WebShop groups were nondecreasing by their available order metric; ScienceWorld exposed no difficulty field. Loaders shuffle groups, not tasks. The tree has only three K=3 group files, no generator/order option, and no project suite. Local candidate `66f9384523d8f437ce872c11169e3a7ca3d64da8` adds a data-only four-variant fixture builder with three passing tests. | Last useful evidence is pinned source structure plus a validated local data-preparation candidate, not a model reproduction. Revisit for upstream change/review, released rollout artifacts, or resources to execute matched repeated-seed trials. Mnemo `org_id` remains queued. |
+| **GitHub** | **High relevance / high realized value / current; selected in cycle 8.** Stable seeds kept SkillRise selected and the order-fixture trigger fired. | Public `main` still resolved to `2b38da3ad7b64414305d39609484803b07d3b9b0`. In a goal-owned clone, all ALFWorld and WebShop groups were nondecreasing by their available order metric; ScienceWorld exposed no difficulty field. Loaders shuffle groups, not tasks. The tree has only three K=3 group files, no generator/order option, and no project suite. Local candidate `66f9384523d8f437ce872c11169e3a7ca3d64da8` adds a data-only four-variant fixture builder with three passing tests. | Last useful evidence is pinned source structure plus a validated local data-preparation candidate, not a model reproduction. Under `uid=1000(hao)`, the clone has no `nvidia-smi`, PyTorch, Java, model checkpoint, ALFWorld data, or ScienceWorld data; a matched rollout is not currently runnable. Revisit for upstream change/review, released rollout artifacts, or provisioned model/environment resources. Mnemo `org_id` remains queued. |
 | **arXiv** | **High relevance / low incremental value / fresh; retained and deferred in cycle 8.** The seed set and rubric are unchanged, and the full `2607.26784v1` source was just reviewed. | Last useful evidence remains the exact one-result query at feed update `2026-09-01T11:30:39Z` and the reviewed TeX. `2608.30177v1` remains the fresher 15/15 memory anchor; SkillRise remains the marginal self-evolution deep dive. No request was issued for quota. | Revisit `2607.26784` on version change or new order/grouping results. Revisit `2608.30177v1` for version, artifacts, or a stronger stage-wise study. |
 | **Reddit** | **Medium relevance / low incremental value / unchanged; deferred in cycle 8 without quota work.** No new seed, claim, or access trigger appeared. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403. | Revisit for a SkillRise/order discussion with distinct evidence, a new seed-linked thread, content delta, or access change. |
 
@@ -371,6 +371,14 @@ Three unit tests pass, and real fixtures emit for all three environments. This
 does not validate the paper's gains or order robustness; it makes the next
 matched repeated-seed experiment concrete. arXiv and Reddit were both deferred
 without quota requests because neither had a new trigger.
+
+The rollout boundary was checked in that goal-owned clone as `uid=1000(hao)`.
+`nvidia-smi` is unavailable, PyTorch and Java are not installed, the documented
+model and Java paths are placeholders, and the default ALFWorld and ScienceWorld
+data paths do not exist. Installing a Python package alone would be convenience
+wiring, not enough to supply the absent accelerator, checkpoint, and environment
+datasets. No credential or account action is requested; the fixture and source
+audit remain the highest supported evidence in this execution environment.
 
 ## Connections and tension
 
