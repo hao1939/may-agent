@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 20 begins seed-first through the verified WSL Chrome boundary, exactly reproduces Cycle 19's repeatable 130-card state, and keeps two historical seeds as window-unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 21 begins seed-first through the verified WSL Chrome boundary, records that the browser session is now a guest and the saved collection redirects away, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T17:48:11.364Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T18:44:00.016Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 20 repeated inventories `2026-09-01T17:46:35.052Z–17:47:05.786Z` and `17:47:40.866Z–17:48:11.364Z` |
-| Current direct collection snapshot | **Readable and bounded:** both comparable runs materialized the same 130 stable IDs and exactly reproduced Cycle 19; ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9`; ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118` |
-| Prior readable snapshot | Cycle 19: the same 130 IDs and complete metadata; the durable confirmed-seed union remains 132 IDs |
-| Observable added / changed / absent | Added IDs `[]`; title-author changes `[]`; absent historical IDs `[6a449e58000000001003ca2c, 6a4b745f000000001c025691]`, unchanged from Cycle 19 |
-| Collection-membership interpretation | Removed IDs `[]`. The two absences are unavailable in this bounded window, not proven uncollected: the same 130-card coverage can shift as newer cards materialize, and the page did not reproduce the prior 995-note / 14-file declaration this cycle |
-| Representative availability | SkillOpt card `6a96b132…4529` remains collection-visible; its last signed detail read in Cycle 19 resolved `/404` with no login wall or readable body. Cycle 20 did not repeat unchanged detail reads; current body availability is therefore not reasserted. The two absent historical cards have no current signed link |
+| Observation time | Cycle 21 inventory and access diagnostics `2026-09-01T18:38:00.454Z–18:44:00.016Z` |
+| Current direct collection snapshot | **Unavailable and not comparable:** the saved collection target was found, but the 18-pass inventory materialized zero cards; bounded network and authentication checks then showed the collection URL redirecting to the home/public-notes view and `/api/sns/web/v2/user/me` returning HTTP 200 with `guest: true` |
+| Prior readable snapshot | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs |
+| Observable added / changed / absent | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable |
+| Collection-membership interpretation | Proven removed IDs `[]`. The zero-card public/guest response is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
+| Representative availability | A direct token-free read of SkillOpt `6a96b132…4529` returned the `/404` page with error code `300031`, “Sorry, This Page Isn't Available Right Now,” a QR prompt, and security verification; it returned no post title, description, author, date, tags, comments, or claim-bearing content |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -419,6 +419,46 @@ access trigger changed; SkillOpt's Cycle 19 `/404` is retained as last observed
 detail evidence rather than claimed as a fresh result. The page was observed
 only and no XHS account or content state changed.
 
+## Cycle 21 seed-first reconciliation
+
+Cycle 21 began immediately after Scout checkpoint
+`ae66d12d6957019b71e9e8cecc079f20dc5eef2f` and before any GitHub, arXiv,
+Reddit, or local-code reconsideration. The first runner failed before a page
+operation because the namespace's default Node 18 lacks a global `WebSocket`
+(`ReferenceError: WebSocket is not defined`). Retrying with the already
+installed Node 22 runtime required no install or source change.
+
+The goal-owned observer ran from the Scout worktree through
+`sudo nsenter -t 2136 -n` as effective `uid=0`; this Linux authority reaches
+Chrome's loopback DevTools endpoint but does not confer XHS account authority.
+At `2026-09-01T18:38:00.454Z–18:38:31.036Z`, it found the saved collection
+target and no initial login-wall text, but all 18 bounded passes returned zero
+cards. This result is not an empty authenticated snapshot. A network-backed
+diagnostic at `18:39:34.321Z–18:39:41.329Z` showed the complete page rendering
+the public “no published content” view and the saved collection URL redirecting
+away; relevant page and current-user endpoints returned HTTP 200 rather than a
+transport error. The decisive current-user check at
+`18:42:43.304Z–18:42:49.310Z` returned `success: true`, code `0`, and
+`guest: true`, with no authenticated nickname. No cookie, token, anonymous
+identifier, raw profile identifier, signed URL, or response body was retained.
+
+A representative token-free read of retained SkillOpt seed
+`6a96b1320000000012024529` completed before `18:44:00.016Z`. It returned the
+XHS `/404` surface with error code `300031`, the message “Sorry, This Page
+Isn't Available Right Now,” a QR prompt, and security verification; no post
+title, description, author, date, tags, comments, or claim-bearing body was
+read. The disposable detail tab closed normally.
+
+The exact reconciliation is therefore: added IDs unknown, metadata changes
+unknown, proven removed IDs `[]`, and unavailable IDs equal to all 132 stable
+IDs in the canonical table below. Cycle 20 remains the last comparable direct
+snapshot and its two 130-card fingerprints remain the last live membership
+evidence. This may be a transient expired browser login, but the current guest
+response cannot establish which seeds changed. The observer performed only
+reload, bounded scroll, navigation, and read operations; it made no like,
+collect, delete, comment, follow, post, message, settings, or other XHS account
+or content mutation.
+
 ## Live access connector provenance
 
 The repository-native observational connector is
@@ -804,3 +844,5 @@ comments, and other account data are not retained.
 | 2026-09-01T15:52:12.684Z–15:59:50.186Z | Live `Alex` Chrome session ready; two clean-reload 18×800-pixel passes reproduce all 130 historical IDs and both complete fingerprints. A separate 8,000-pixel-step sample saw 456 IDs but is not complete/comparable. | `[]` newly collected; prior-unavailable `6a4b745f…5691` is collection-visible again | `[]` title/author changes across 130 comparable records; collection access recovered for `6a4b745f…5691` | `[]` IDs | Collection-level unavailable `[]`; sampled detail-unavailable `[6a4b745f…5691, 6a6ab006…c932, 6a966f4f…92db]`; 127 details and the historical tail/file surface remain unknown | Cycle 17 reconciliation is persisted before lane reconsideration. Treat collection inventory and detail reads as separate access surfaces; reconsider GitHub, arXiv, and Reddit from the restored 130-card state. |
 | 2026-09-01T16:29:48.924Z–16:31:47.649Z | Same authenticated Chrome collection tab; 130 IDs and both complete fingerprints exactly match Cycle 17; 995 notes / 0 albums / 14 files declared | `[]` newly collected | `[]` title/author changes; SkillRise signed detail changed from `/404` to readable | `[]` IDs | Collection-level unavailable `[]`; sampled detail-unavailable `[6a4b745f…5691]`; 128 details, 865-note tail, and 14 file items remain unknown | Cycle 18 reconciliation is persisted before any lane or next-code exploration. Reconsider GitHub, arXiv, and Reddit from the unchanged membership state and the narrower detail-access delta. |
 | 2026-09-01T17:10:27.634Z–17:13:38.951Z | Two repeated reads through Chrome PID 2136's namespace return the same shifted 130-card snapshot: ID `d83bbde…6cd9`, metadata `567485e8…6118`; original 9,600-pixel scroll restored | `[6a966671…22ae, 6a96b132…4529]` newly materialized, not proven newly collected | `[]` across 128 common title/author pairs | `[]` proven removals | Window-unavailable `[6a449e58…ca2c, 6a4b745f…5691]`; new SkillOpt detail `/404`; historical collection tail/file coverage and other details unknown | Cycle 19 reconciliation is persisted before lane work. Add both new cards to the durable 132-ID confirmed-seed union, do not remove either absent historical seed, and reconsider GitHub/arXiv/Reddit from the content-bearing SkillOpt title plus the unchanged memory-governance cluster. |
+| 2026-09-01T17:46:35.052Z–17:48:11.364Z | Two authenticated passes exactly reproduce Cycle 19's 130-card ID and metadata fingerprints | `[]` IDs | `[]` title/author changes | `[]` proven removals | Window-unavailable `[6a449e58…ca2c, 6a4b745f…5691]`; durable union 132 | Cycle 20 reconciliation was committed before lane work as `c684563…3fea`; preserve both unavailable records and select the queued resource-read audit only afterward. |
+| 2026-09-01T18:38:00.454Z–18:44:00.016Z | Saved collection target found, but zero cards materialized; collection reload redirected to the home/public-notes view; current-user API returned HTTP 200 with `guest: true` | unknown | unknown | `[]` proven removals | All 132 canonical IDs unavailable; representative `6a96b132…4529` token-free read returned `/404`, error `300031`, QR prompt, and security verification | Cycle 21 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot, infer no collection changes from guest/public output, and revisit immediately when the Chrome session becomes authenticated again. |
