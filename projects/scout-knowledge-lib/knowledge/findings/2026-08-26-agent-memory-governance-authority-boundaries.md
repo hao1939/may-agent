@@ -2,7 +2,7 @@
 summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery and exact reads, provenance reads, integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, and memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, and memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -766,6 +766,43 @@ as tenant evidence. Cycle 16's separate bulk-forget outputs also remain exactly
 `2994abf185da50d43e5fa4b3f826812bd09c2f20` at
 `2026-09-01T20:19:30.416Z–20:19:31.295Z`; the repair is local, unreviewed,
 undeployed, and not a live PostgreSQL migration claim.
+
+### Scoped chronology and legacy migration are now fixture-proven
+
+Cycle 25 persisted the unavailable live-seed boundary first as Scout commit
+`84c48a671ca27b307c65cfef12e95d05bdff26a2`. The saved XHS collection
+target redirected to login, three current-user reads returned HTTP 406/code
+`-1`, and all 132 durable seeds remained unavailable; no addition, change,
+or removal was inferred from the separately readable public Explore/detail
+surface.
+
+Only afterward did follow-up commit
+`4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7` validate repair
+`d1fa97c6aa21002edbbc3227273a6cd37a3286cc`. Its mixed-organization MCP
+fixture creates Alpha-first, Beta-newer, and Alpha-newest checkpoints for the
+same principal and thread. Alpha latest replay skips the intervening Beta row,
+Beta latest replay sees its own row, and Alpha-newest names Alpha-first—not
+Beta—as its parent. This directly tests chronology and parent selection rather
+than inferring them from query predicates.
+
+The gated live PostgreSQL fixture creates a unique schema with a legacy
+`checkpoints` table lacking `org_id`, inserts one legacy row, and initializes
+the current backend. Migration adds a nullable organization column and its
+index, preserves the legacy row with unknown organization, round-trips a new
+Alpha-scoped checkpoint, and succeeds a second time. The fixture drops only
+its unique schema afterward. This is live database migration evidence for the
+test schema, not production migration or deployment proof.
+
+Formatting and strict all-target Clippy pass for core, MCP, the HTTP-enabled
+server, and PostgreSQL. Full suites pass 296 core tests with one intentional
+network test ignored, 104 MCP tests, 83 HTTP-enabled server tests, and nine
+PostgreSQL tests. An initial parallel run filled goal-owned cache storage and
+`lld` exited with `SIGBUS`; after removing only disposable goal-owned
+caches, the isolated single-job targets passed without installs or source
+changes. Public Mnemo `main` remained
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` over HTTP 200 at
+`2026-09-01T20:45:33.321Z–20:45:34.083Z`. The repair and regression remain
+local, unreviewed upstream, and undeployed.
 
 ## Why it matters
 

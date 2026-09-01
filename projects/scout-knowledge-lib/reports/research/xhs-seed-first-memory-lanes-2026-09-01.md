@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twenty-four cycles: Cycle 24 commits the public-only Xiaohongshu reconciliation first, reproduces same-principal cross-organization checkpoint replay, carries verified organization scope through every checkpoint storage and replay path, retains arXiv 2608.30177v1, and records Reddit at its actual access boundary."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 24"]
+summary: "Seed-first Scout checkpoint across twenty-five cycles: Cycle 25 commits the unavailable Xiaohongshu reconciliation first, proves mixed-organization checkpoint chronology and live PostgreSQL legacy migration on the tenant-scoped repair, retains arXiv 2608.30177v1, and records Reddit at its actual access boundary."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 25"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and public-only/unaddressable direct-WSL observations through 2026-09-01T19:39:00.889Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, including checkpoint storage, replay, branch, and merge."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-01T20:43:28.718Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, mixed-organization chronology, and a live PostgreSQL legacy migration."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -1931,6 +1931,109 @@ migration proof. The next exploration begins Cycle 25 seed-first. If the
 collected surface remains unavailable and no higher-value trigger appears, it
 tests organization-scoped replay chronology and a live PostgreSQL v6-to-v7
 checkpoint migration before auditing the next state-transfer surface.
+
+## Cycle 25 checkpoint — scoped chronology and live migration are proven
+
+What was still unproven: Cycle 24's tenant repair covered every checkpoint
+storage and replay path, but query inspection alone did not prove that an
+Alpha replay would skip a chronologically newer Beta checkpoint or that the
+next Alpha checkpoint would choose an Alpha parent. PostgreSQL migration was
+also compile- and unit-tested, not exercised from an actual legacy table.
+
+Seed ordering was preserved. Cycle 25's direct observation was committed first
+on Scout branch `codex/g-c1b31972-scout-loop` as
+`84c48a671ca27b307c65cfef12e95d05bdff26a2`. From
+`2026-09-01T20:42:04.953Z–20:43:28.718Z`, direct port 9333 refused the
+connection. The existing PID-2136 Chrome session still retained a saved
+collection target, but it redirected to login; three current-user reads
+returned HTTP 406/code `-1`. A separate public Explore page materialized 30
+cards and public detail `6a9690dc…4a3b` remained readable. Those public
+surfaces do not establish collection membership. Added and changed seeds
+remain unknown, proven removals are `[]`, and all 132 canonical IDs are
+unavailable rather than removed. No XHS account or content state was changed.
+
+Only after that seed commit were all permanent lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance and expected value,
+  current access, and the queued chronology/migration proof. Public Mnemo
+  `main` remained `2994abf185da50d43e5fa4b3f826812bd09c2f20` over
+  HTTP 200 at `2026-09-01T20:45:33.321Z–20:45:34.083Z`. Revisit on upstream
+  revision, review, deployment, or regression; otherwise inspect the next
+  organization-bearing checkpoint/event export or subscription surface.
+- **arXiv was retained and deferred.** Its relation to the historically
+  confirmed memory-governance seeds remains high-value, but the unavailable
+  collection state and successful local regression create no new paper
+  question. Exact lookup returned only `2608.30177v1`, unchanged at v1 and
+  published/updated `2026-08-31T02:57:08Z`. It still wins the separate 15/15
+  rubric. Revisit on a version, attributable artifact, independent replication,
+  stronger study, or content-bearing seed change.
+- **Reddit was deferred without quota work.** Relevance is medium and
+  incremental value is low for a schema migration. Last useful evidence
+  remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable post
+  `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403.
+  Revisit on seed-linked deployment evidence, a thread-content delta, or an
+  access change.
+
+What changes: Mnemo branch `codex/g-c1b31972-caller-binding` commit
+`4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7`, on exact repair
+`d1fa97c6aa21002edbbc3227273a6cd37a3286cc`, adds two regressions without a
+further production-code change. The mixed-organization MCP fixture creates
+Alpha-first, Beta-newer, and Alpha-newest checkpoints under one principal and
+thread. Alpha latest replay skips Beta, Beta sees its own latest, and
+Alpha-newest selects Alpha-first—not Beta—as its parent. The gated PostgreSQL
+fixture creates a unique schema and legacy table without `org_id`, migrates
+it, preserves the legacy row with nullable unknown ownership, verifies the
+organization index, round-trips a new Alpha row, reruns the migration
+idempotently, and drops only its own schema.
+
+The original Alice→Bob four-wrapper result remains separately traceable to
+public source `376ca28606c5b6287d9c8274482fa791d4dc8703`, principal repair
+`c82e711e8a2bb386001e98c3437da44c32b62428`, and real-HTTP regression
+`fbb7000fdb75ae5fc799820570ec4cbd81e21a74`. Cycle 24's exact pre-fix Alpha
+and Beta memory outputs remain
+`01a05e84-9436-7950-985c-12802e469f23` and
+`01a05e84-9463-7ae2-8b6a-56085b96695f`; Cycle 16's separate exact
+bulk-forget outputs remain `01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`. These are generated local fixture
+records, not production data or independent confirmations.
+
+Mnemo validation is commit-scoped to `4e0061b2…edca7`. Formatting and strict
+all-target Clippy pass for `mnemo-core`, `mnemo-mcp`, the HTTP-enabled
+`mnemo-mcp-server`, and `mnemo-postgres`. Full suites pass 296 core tests
+with one intentional network test ignored, 104 MCP tests, 83 HTTP-enabled
+server tests, and nine PostgreSQL tests including the live migration. The
+first parallel build filled the local filesystem and `lld` exited with
+`SIGBUS`; no assertion failed. Only disposable goal-owned caches were
+removed, and fresh single-job targets then passed without installs or source
+mutation. The PostgreSQL container is goal-owned test infrastructure; no
+credential is recorded here.
+
+Scout's exact candidate passes syntax bundling, TypeScript, Prettier, and all
+78 tests with 226 assertions. All 19 relative links across the seed ledger,
+topic map, authority finding, and this report resolve. The read-only health
+scan at `2026-09-01T23:32:18.725Z` returned 26 facts and 16 wake signals,
+truncated: 13 future-date facts, 12 oversized-note facts, and one 222-entry
+unsourced-backlog fact. Its app state directory was empty before and after.
+These are existing maintenance signals, not malformed Cycle 25 evidence.
+`git diff --check` reports no whitespace errors.
+
+The protected human checkout and dirty peer overlay match their pre-validation
+fingerprints. At `2026-09-01T23:31:01.613Z`, the human checkout remained at
+HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 881 full porcelain-v2
+entries, and newline-status SHA-256
+`082969aacb8d37eaa6f12b11c195024d0d74f1d27a8be14b082c14bd725495de`.
+The peer overlay remained at
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three entries, and SHA-256
+`06abefe35a5b0b9f373db8cf99999dcc60f5c1f85c0b88c5680edbadfd510452`.
+Both exact hashes reproduce their baselines. All inspection there used
+read-only `--no-optional-locks` commands; edits, validation, caches, and
+commits remained in goal-owned worktrees.
+
+The repair and regressions remain local, unreviewed upstream, and undeployed;
+the live PostgreSQL result is an isolated migration fixture, not production
+migration evidence. This is only a checkpoint. Cycle 26 begins seed-first
+before any further lane work, then uses the standing rubric to select the next
+exploration.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
