@@ -1514,6 +1514,112 @@ exploration starts another seed-first cycle, then inspects resource
 subscriptions/templates or the next unaudited bulk read if no higher-value
 seed trigger appears.
 
+## Cycle 21 checkpoint — checkpoint replay now honors caller identity
+
+What was wrong: a valid per-request capability did not constrain checkpoint
+replay. Signed Alice could provide Bob's checkpoint UUID and receive Bob's
+state snapshot and referenced memory. Time-travel replay also loaded events by
+thread without filtering their owner. Replay is a bulk read of durable state,
+so dispatch authorization alone was not sufficient.
+
+Seed ordering was preserved. Cycle 21's reconciliation was committed first as
+`5524d52c956fb890b73ba7ae7f59611961c31c6b`, before source-lane work. From
+`2026-09-01T18:38:00.454Z` through `18:44:00.016Z`, Chrome PID 2136's WSL
+network namespace and the saved collection target were reachable, but the
+current-user API returned HTTP 200 with `guest: true`. Reloading the collection
+redirected to public/home notes and materialized zero cards. Added and changed
+sets are unknown, proven removals are `[]`, and all 132 durable seed IDs are
+temporarily unavailable rather than removed. A token-free read of SkillOpt
+`6a96b1320000000012024529` returned `/404`, error `300031`, a QR prompt, and
+security verification without a post body. The effective Linux observer was
+UID 0 inside the Chrome network namespace, but that authority did not grant an
+authenticated XHS session. No XHS account or content state was changed.
+
+Only after that persisted reconciliation were the permanent lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance, high expected value,
+  and current executable access. Public Mnemo `main` still resolved to
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20` at
+  `2026-09-01T19:06:02.078Z`. Source inspection found no resource subscription
+  or template handler, so those unsupported surfaces were recorded rather than
+  simulated. `mnemo.replay` was the next actual bulk-read surface. Revisit on
+  upstream revision, review, or deployment; absent those, audit branch/merge
+  caller binding and checkpoint organization ownership next.
+- **arXiv was retained and deferred** because relevance and retained value are
+  high but the guest seed view and replay result did not create a new paper
+  question. A bounded exact Atom lookup at
+  `2026-09-01T19:06:02.078Z–19:06:03.256Z` returned only `2608.30177v1`,
+  updated `2026-08-31T02:57:08Z`. It still wins the separate 15/15 stage-wise
+  memory-governance rubric. Revisit on a version, attributable artifact,
+  independent replication, stronger study, or content-bearing seed delta.
+- **Reddit was deferred without quota work** because relevance remains medium,
+  expected incremental value is low, and community anecdotes cannot adjudicate
+  exact replay behavior. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains
+  last observed HTTP 403. Revisit on distinct seed-linked checkpoint evidence,
+  thread-content delta, or access change.
+
+The pre-fix duplex fixture ran on exact local base
+`ea7f8ea88a5104d79072e3b4a606e80cfdb20d65`. A valid Alice/Alpha capability
+replayed Bob-owned checkpoint `01a05e4c-9ca0-7463-87fa-9cea4e96fda0`, state
+marker `bob-checkpoint-state`, and referenced memory
+`01a05e4c-9c56-7571-a5ed-728d258014eb` with marker
+`bob-checkpoint-memory-secret`. These are generated local fixture values, not
+production records.
+
+What changes: Mnemo branch `codex/g-c1b31972-caller-binding` commit
+`f75797dd8be91f00b05576bf06ce5995a918c83f` stores verified checkpoint
+creation under the caller principal, rejects foreign exact checkpoints as not
+found, filters referenced memories and thread events to the checkpoint owner,
+and scopes time-travel replay to the verified principal. Alice is denied Bob's
+exact checkpoint and sees zero Bob memories/events through time travel; Bob
+still replays his own checkpoint; an Alice-created checkpoint is Alice-owned.
+Capability-less stdio retains historical operator replay.
+
+This repair is intentionally narrower than tenant-wide checkpoint governance.
+The checkpoint model has no organization owner, and branch/merge have separate
+selectors that remain unaudited. The earlier Alice→Bob four-wrapper HTTP denial
+remains preserved, as do Cycle 16's exact bulk-forget outputs
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`; they are separate provenance-backed
+results, not duplicate replay confirmations.
+
+The long-running native validation was checked directly. It remained CPU-active
+for DuckDB compilation, produced `libduckdb.a`, and completed rather than being
+stopped. On exact commit `f75797dd8be91f00b05576bf06ce5995a918c83f`, the
+network-disabled Rust 1.89 container mounted source read-only and used only
+goal-owned Cargo, target, and DuckDB caches. From
+`2026-09-01T19:00:51Z–19:05:06Z`, formatting and strict all-target Clippy for
+core, MCP, and the HTTP-enabled server passed; complete suites passed 295 core
+tests with one intentional network embedding test ignored, 100 MCP tests, and
+79 HTTP-enabled server tests. The focused exact/time-travel regression also
+passed independently. No install, source mutation, or unrelated process stop
+was needed.
+
+Scout's full application check passes syntax bundling, TypeScript, Prettier,
+and all 78 tests with 226 assertions. All 19 relative links across the seed
+ledger, topic map, authority finding, and standing report resolve. The read-only
+health scan at `2026-09-01T19:08:17.690Z` remains bounded and truncated at 26
+facts and 16 wake signals. It reports the already-known size thresholds for the
+849-line seed ledger and 917-line topic map; neither the authority finding nor
+this report appears as a new health fact. `git diff --check` reports no
+whitespace errors.
+
+The dirty human checkout remained byte-for-byte unchanged across this
+checkpoint's comparable read-only observations. At
+`2026-09-01T19:06:11.676Z` and `19:08:29.185Z`, both observations returned HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 881 porcelain-v2 entries, and
+status SHA-256
+`082969aacb8d37eaa6f12b11c195024d0d74f1d27a8be14b082c14bd725495de`.
+Commands there used `git --no-optional-locks` for read-only revision and status
+inspection. Every edit, formatter, build, test, cache, staging action, and
+commit remained in goal-owned execution spaces.
+
+The code remains local, unreviewed upstream, and undeployed. Cycle 22 begins
+with another seed reconciliation before any lane work. If the current session
+remains guest and no higher-value seed delta is observable, the next exploration
+is branch/merge caller binding plus the missing checkpoint organization model.
+
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"

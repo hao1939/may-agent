@@ -599,6 +599,46 @@ write/read/revise/forget HTTP denial remains preserved. Reviewed arXiv
 `2608.30177v1` still anchors the 15/15 stage-aware cluster, while Reddit remains
 RSS-readable/JSON-403 and low-value for adjudicating this code path.
 
+### Checkpoint creation and replay must bind the verified principal
+
+Cycle 21 persisted its seed boundary before this audit as Scout commit
+`5524d52c956fb890b73ba7ae7f59611961c31c6b`. Chrome PID 2136's network
+namespace remained reachable, but the effective XHS session was a guest: the
+current-user API returned HTTP 200 with `guest: true`, the saved collection
+redirected to public/home notes, and zero cards materialized. Added and changed
+sets are unknown, proven removals are `[]`, and all 132 durable seeds are
+temporarily unavailable rather than removed. That access regression did not
+erase the last comparable memory-governance seed cluster.
+
+After that reconciliation, source review established that resource
+subscriptions and templates are not implemented. The next actual bulk-read
+surface was `mnemo.replay`. At exact local pre-fix base
+`ea7f8ea88a5104d79072e3b4a606e80cfdb20d65`, a real duplex fixture issued
+Alice a valid `role:reader org:alpha` capability. It then replayed Bob-owned
+checkpoint `01a05e4c-9ca0-7463-87fa-9cea4e96fda0`, returning state marker
+`bob-checkpoint-state` and referenced Bob memory
+`01a05e4c-9c56-7571-a5ed-728d258014eb` with marker
+`bob-checkpoint-memory-secret`. These UUIDs and markers are generated local
+fixture evidence, not production records.
+
+Repair `f75797dd8be91f00b05576bf06ce5995a918c83f` makes verified checkpoint
+creation use the caller principal, makes foreign exact checkpoints look absent,
+filters checkpoint memory and event material to the checkpoint owner, and
+filters time-travel replay to the authenticated principal. The regression
+proves Alice cannot exact-replay Bob, Alice's time-travel response contains
+zero Bob memories or events, Bob still replays his checkpoint, and an
+Alice-created checkpoint is stored as Alice-owned. Capability-less stdio keeps
+its historical operator replay behavior.
+
+This is principal evidence, not organization parity. The checkpoint model has
+no organization owner, so a signed organization cannot yet narrow replay.
+Branch and merge have separate checkpoint selectors and have not been audited
+or changed in this checkpoint. The original same-session Alice→Bob
+write/read/revise/forget HTTP denial remains preserved, as do Cycle 16's exact
+bulk-forget outputs `01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`; none is counted as a second replay
+reproduction.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
